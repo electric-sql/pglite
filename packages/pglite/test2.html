@@ -1,0 +1,23 @@
+<script type="module">
+import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.0.1-alpha.0/dist/index.js";
+
+const pg = new PGlite('idb://pgdata');
+
+await pg.query(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`);
+
+for (let i = 0; i < 10; i++) {
+  await pg.query(`INSERT INTO test (name) VALUES ('test${i}');`);
+}
+
+const res = await pg.query(`
+  SELECT * FROM test;
+`);
+
+document.write(JSON.stringify(res))
+
+</script>
