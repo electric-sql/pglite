@@ -86,7 +86,6 @@ export class IdbFs extends FilesystemBase {
 
   syncToFs(fs: FS) {
     return new Promise<void>((resolve, reject) => {
-      console.log("Syncing to fs");
       fs.syncfs((err: any) => {
         if (err) {
           reject(err);

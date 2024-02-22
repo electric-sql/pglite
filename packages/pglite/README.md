@@ -5,8 +5,8 @@
 Prerequisites:
 
 - postgres build toolchain
-- emscripten/3.1.0
-  `emsdk install 3.1.0 && emsdk activate 3.1.0`
+- emscripten/3.1.25
+  `emsdk install 3.1.25 && emsdk activate 3.1.25`
 
 Then run:
 

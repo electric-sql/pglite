@@ -1,8 +1,8 @@
-import { PGlite } from "./index.js";
+import { PGlite } from "./src/index.ts";
 
 console.log("Starting...");
-const pg = new PGlite();
-// const pg = new PGlite('pgdata');
+// const pg = new PGlite();
+const pg = new PGlite('pgdata');
 
 console.log("Waiting for ready...");
 await pg.waitReady;
@@ -51,7 +51,7 @@ await pg.query("COMMIT;");
 console.log(await pg.query("SELECT * FROM test;"));
 
 console.log("Closing...");
-await pg.close();
+// await pg.close();
 
 // async timeout 1s
 await new Promise((resolve) => setTimeout(resolve, 1000));

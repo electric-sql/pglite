@@ -60,7 +60,6 @@ export class PGlite {
       }
       this.#initStarted = true;
 
-      console.log("Initializing...");
       if (this.dataDir && this.fsType === "nodefs") {
         const { NodeFS } = await import("./nodefs.js");
         this.fs = new NodeFS(this.dataDir);
@@ -69,7 +68,6 @@ export class PGlite {
       } else {
         this.fs = new MemoryFS();
       }
-      console.log("Initialized fs");
       await this.fs.init();
 
       let emscriptenOpts: Partial<EmPostgres> = {
@@ -105,7 +103,6 @@ export class PGlite {
         },
         onRuntimeInitialized: async (Module: EmPostgres) => {
           await this.fs!.initialSyncFs(Module.FS);
-          console.log("Synced fs");
           this.#ready = true;
           resolve();
         },
