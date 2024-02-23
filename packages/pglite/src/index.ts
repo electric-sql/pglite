@@ -3,9 +3,24 @@ import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import type { Filesystem } from "./fs.js";
 import { MemoryFS } from "./memoryfs.js";
 import { IdbFs } from "./idbfs.js";
-import { nodeValues } from "./utils.js";
+import { IN_NODE, nodeValues } from "./utils.js";
 
 type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
+
+if (IN_NODE && typeof CustomEvent === 'undefined') {
+  (globalThis as any).CustomEvent = class CustomEvent<T> extends Event {
+    #detail: T | null;
+
+    constructor(type: string, options?: EventInit & { detail: T }) {
+      super(type, options);
+      this.#detail = options?.detail ?? null;
+    }
+
+    get detail() {
+      return this.#detail;
+    }
+  }
+}
 
 export class PGlite {
   readonly dataDir?: string;
