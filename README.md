@@ -62,6 +62,23 @@ or to persist the database to indexedDB:
 const db = new PGlite('idb://my-pgdata')
 ```
 
+## Deno
+
+To use the in-memory Postgres, create a file `server.ts`:
+
+```ts
+import { PGlite } from "npm:@electric-sql/pglite"
+
+Deno.serve(async (_request: Request) => {
+  const db = new PGlite()
+  const query = await db.query("select 'Hello world' as message;")
+
+  return new Response(JSON.stringify(query))
+})
+```
+
+Then run the file with `deno run --allow-net --allow-read  server.ts`.
+
 ## Limitations
 
 Parameterized queries are not currently supported, but this will be added soon.
