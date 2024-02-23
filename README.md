@@ -7,7 +7,7 @@ PGlite is a WASM Postgres build packaged into a TypeScript client library that e
 ```js
 import { PGlite } from "@electric-sql/pglite"
 
-const db = new PGlite
+const db = new PGlite()
 await db.query("select 'Hello world' as message;")
 // -> [ { message: "Hello world" } ]
 ```
