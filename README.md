@@ -87,12 +87,14 @@ Parameterized queries are not currently supported, but this will be added soon.
 
 There are a couple of prerequisites:
 
-- the Postgres build toolchain
-- emscripten version 3.1.25
+- the Postgres build toolchain - https://www.postgresql.org/download/
+- emscripten version 3.1.25 - https://emscripten.org/docs/getting_started/downloads.html
 
 To build, checkout the repo, then:
 
 ```
+git submodule init
+git submodule update
 cd ./pglite/packages/pglite
 emsdk install 3.1.25
 emsdk activate 3.1.25
