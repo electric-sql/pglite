@@ -93,8 +93,7 @@ There are a couple of prerequisites:
 To build, checkout the repo, then:
 
 ```
-git submodule init
-git submodule update
+git submodule update --init
 cd ./pglite/packages/pglite
 emsdk install 3.1.25
 emsdk activate 3.1.25
