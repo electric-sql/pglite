@@ -12,7 +12,7 @@ await db.query("select 'Hello world' as message;")
 // -> [ { message: "Hello world" } ]
 ```
 
-It can be used both as an ephemeral in-memory database or with persistance to the file system (Node/Bun) or indexedDB (Browser).
+It can be used both as an ephemeral in-memory database or with persistence to the file system (Node/Bun) or indexedDB (Browser).
 
 Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
 
