@@ -62,7 +62,7 @@ or to persist the database to indexedDB:
 const db = new PGlite('idb://my-pgdata')
 ```
 
-## Deno
+## Demo
 
 To use the in-memory Postgres, create a file `server.ts`:
 
