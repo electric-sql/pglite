@@ -23,9 +23,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:wasm": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build",
+    "build:wasm:debug": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build-debug",
     "build:sharedir": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir",
+    "build:sharedir:debug": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir-debug",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:wasm && npm run build:sharedir && npm run build:js",
+    "build:debug": "npm run build:wasm:debug && npm run build:sharedir:debug && npm run build:js",
     "format": "prettier --write ./src"
   },
   "devDependencies": {
