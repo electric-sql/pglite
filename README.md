@@ -104,3 +104,7 @@ pnpm build
 ## Acknowledgments
 
 PGlite builds on the work of [Stas Kelvich](https://github.com/kelvich) of [Neon](https://neon.tech) in this [Postgres fork](https://github.com/electric-sql/postgres-wasm).
+
+## License
+
+PGlite is dual licensed under the terms of the Apache License 2.0 and the PostgreSQL License. Changes to the Postgres source are licensed under the PostgreSQL License.
