@@ -1,53 +1,37 @@
-import * as fs from "fs/promises";
+import * as fsExtra from "fs-extra";
 import * as path from "path";
+import * as glob from "glob";
+import { promisify } from "util";
+import { exec } from "child_process";
 
-async function findAndReplaceInFile(
-  find: string | RegExp,
-  replace: string,
-  file: string
-): Promise<void> {
-  const content = await fs.readFile(file, "utf8");
-  const replacedContent = content.replace(find, replace);
-  await fs.writeFile(file, replacedContent);
-}
+const findAndReplaceInFile = promisify(fsExtra.replaceFile);
+const globPromise = promisify(glob);
 
-async function findAndReplaceInDir(
-  dir: string,
-  find: string | RegExp,
-  replace: string,
-  extensions: string[],
-  recursive = false
-): Promise<void> {
-  const files = await fs.readdir(dir, { withFileTypes: true });
+const copyFile = (src, dest) => fsExtra.copyFile(src, dest);
+
+const replaceInFile = (file, find, replace) =>
+  findAndReplaceInFile(file, find, replace, "utf8");
+
+const replaceInDir = async (dir, find, replace, extensions, recursive = false) => {
+  const files = await globPromise(`${dir}/**/*.{${extensions.join(",")}}`, {
+    nodir: true,
+  });
 
   for (const file of files) {
-    const filePath = path.join(dir, file.name);
-    if (file.isDirectory() && recursive) {
-      await findAndReplaceInDir(filePath, find, replace, extensions);
-    } else {
-      const fileExt = path.extname(file.name);
-      if (extensions.includes(fileExt)) {
-        await findAndReplaceInFile(find, replace, filePath);
-      }
-    }
+    await replaceInFile(file, find, replace);
   }
-}
+};
 
-async function main() {
-  await fs.copyFile("./release/postgres.wasm", "./dist/postgres.wasm");
-  await fs.copyFile("./release/share.data", "./dist/share.data");
-  await findAndReplaceInDir(
-    "./dist",
-    /new URL\('\.\.\/release\//g,
-    "new URL('./",
-    [".js"]
-  );
-  await findAndReplaceInDir(
-    "./dist",
-    /new URL\("\.\.\/release\//g,
-    'new URL("./',
-    [".js"]
-  );
-}
+const main = async () => {
+  await Promise.all([
+    copyFile("./release/postgres.wasm", "./dist/postgres.wasm"),
+    copyFile("./release/share.data", "./dist/share.data"),
+  ]);
 
-await main();
+  await replaceInDir("./dist", "new URL('../release/", "new URL('./", [".js"], true);
+  await replaceInDir("./dist", "new URL(\"../release/", 'new URL("./', [".js"], true);
+};
+
+main()
+  .then(() => console.log("Find and replace completed successfully"))
+  .catch((err) => console.error(err));
