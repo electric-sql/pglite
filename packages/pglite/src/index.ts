@@ -7,7 +7,7 @@ import { IN_NODE, nodeValues } from "./utils.js";
 
 type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
-if (IN_NODE && typeof CustomEvent === 'undefined') {
+if (IN_NODE && typeof CustomEvent === "undefined") {
   (globalThis as any).CustomEvent = class CustomEvent<T> extends Event {
     #detail: T | null;
 
@@ -19,7 +19,7 @@ if (IN_NODE && typeof CustomEvent === 'undefined') {
     get detail() {
       return this.#detail;
     }
-  }
+  };
 }
 
 export class PGlite {
@@ -31,6 +31,7 @@ export class PGlite {
   #initStarted = false;
   #ready = false;
   #eventTarget: EventTarget;
+  #closing = false;
   #closed = false;
 
   #awaitingResult = false;
@@ -113,6 +114,12 @@ export class PGlite {
             text.includes("ERROR:")
           ) {
             this.#resultError = text.split("ERROR:")[1].trim();
+          } else if (
+            this.#closing &&
+            text.includes("NOTICE:  database system is shut down")
+          ) {
+            this.#closed = true;
+            this.#eventTarget.dispatchEvent(new CustomEvent("closed"));
           }
           // console.error(text);
         },
@@ -140,15 +147,18 @@ export class PGlite {
     return this.#closed;
   }
 
-  async close() {
+  close() {
+    this.#closing = true;
+    const promise = new Promise((resolve, reject) => {
+      this.#eventTarget.addEventListener("closed", resolve, {
+        once: true,
+      });
+    });
     const event = new CustomEvent("query", {
-      detail: {
-        query: "",
-        qtype: "X",
-      },
+      detail: "X",
     });
     this.#eventTarget.dispatchEvent(event);
-    this.#closed = true;
+    return promise;
   }
 
   async query(query: String) {
@@ -156,6 +166,9 @@ export class PGlite {
      * TODO:
      * - Support for parameterized queries
      */
+    if (this.#closing) {
+      throw new Error("Postgreslite is closing");
+    }
     if (this.#closed) {
       throw new Error("Postgreslite is closed");
     }
@@ -180,7 +193,7 @@ export class PGlite {
         const handleResult = async (e: any) => {
           await this.#syncToFs();
           this.#eventTarget.removeEventListener("waiting", handleWaiting);
-          resolve(e.detail.result);
+          resolve(JSON.parse(e.detail.result));
           this.#resultError = undefined;
           this.#awaitingResult = false;
         };
@@ -193,9 +206,7 @@ export class PGlite {
         });
 
         const event = new CustomEvent("query", {
-          detail: {
-            query: query,
-          },
+          detail: `Q${query}`,
         });
         this.#eventTarget.dispatchEvent(event);
       });

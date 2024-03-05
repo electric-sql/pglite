@@ -2,7 +2,7 @@
 
 build:
 	EMCC_CFLAGS="-Wl,--allow-undefined" \
-	emconfigure ./configure CFLAGS='-Oz' \
+	emconfigure ./configure CFLAGS='-O3' \
 		--without-readline \
 		--without-zlib \
 		--disable-thread-safety \
@@ -33,7 +33,7 @@ build-debug:
 		--disable-thread-safety \
 		--disable-spinlocks \
 		--with-system-tzdata=/usr/share/zoneinfo
-	EMCC_CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=65536000 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORTED_RUNTIME_METHODS='FS' -s ASSERTIONS=1" \
+	EMCC_CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=65536000 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORTED_RUNTIME_METHODS='FS' -s ASSERTIONS=2 -s SAFE_HEAP=1" \
 		emmake make -C src/backend MAKELEVEL=0
 	mkdir -p ../packages/pglite/release
 	cp src/backend/postgres ../packages/pglite/release/postgres.js
@@ -43,7 +43,7 @@ build-debug:
 sharedir-debug:
 	mkdir -p tmp_install
 	DESTDIR="$(abspath tmp_install)" \
-	EMCC_CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=65536000 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORTED_RUNTIME_METHODS='FS' -s ASSERTIONS=1" \
+	EMCC_CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s WARN_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=65536000 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORTED_RUNTIME_METHODS='FS' -s ASSERTIONS=2 -s SAFE_HEAP=1" \
 		emmake make MAKELEVEL=0 -C src/backend/ install
 	node ../packages/pglite/scripts/modify-share.js
 	cd ../packages/pglite/release && \

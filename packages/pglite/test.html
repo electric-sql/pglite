@@ -1,6 +1,6 @@
 <script type="module">
-  // import { PGlite } from "./dist/index.js";
-  import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+  import { PGlite } from "./dist/index.js";
+  // import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
 
   console.log("Starting...");
   // const pg = new PGlite();
@@ -54,7 +54,5 @@
 
   console.log("Closing...");
   await pg.close();
-
-  // async timeout 1s
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.log('Closed');
 </script>

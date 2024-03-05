@@ -11,7 +11,7 @@ export class IdbFs extends FilesystemBase {
   initModule?: any;
 
   async init() {
-    const dbExists = (await window.indexedDB.databases())
+    const dbExists = (await globalThis.indexedDB.databases())
       .map((db) => db.name)
       .includes(`/pglite${this.dataDir}`);
     if (!dbExists) {
