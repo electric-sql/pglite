@@ -107,4 +107,6 @@ PGlite builds on the work of [Stas Kelvich](https://github.com/kelvich) of [Neon
 
 ## License
 
-PGlite is dual licensed under the terms of the Apache License 2.0 and the PostgreSQL License. Changes to the Postgres source are licensed under the PostgreSQL License.
+PGlite is dual licensed under the terms of the [Apache License 2.0](./LICENSE) and the [PostgreSQL License](./POSTGRES-LICENSE), you can choose which you prefer.
+
+Changes to the [Postgres source](https://github.com/electric-sql/postgres-wasm) are licensed under the PostgreSQL License.
