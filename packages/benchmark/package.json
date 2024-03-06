@@ -1,0 +1,20 @@
+{
+  "name": "benchmark",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Electric DB Limited",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "ascii-table3": "^0.9.0",
+    "better-sqlite3": "^9.4.3",
+    "embedded-postgres": "15.5.1-beta.9",
+    "tsx": "^4.7.1"
+  }
+}
