@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>wa-sqlite benchmarks</title>
+    <style>
+      #controls {
+        margin-top: 1em;
+        display: flex;
+        align-items: center;
+      }
+
+      #controls * {
+        margin-right: 0.5em;
+      }
+
+      table {
+        margin-top: 1em;
+        margin-left: 0.4em;
+        margin-right: 0.4em;
+        border-collapse: collapse;
+      }
+
+      td:first-child {
+        min-width: 15em;
+      }
+
+      td, th {
+        border: 1px solid #999;
+        padding: 0.5rem;
+        text-align: left;
+        max-width: 3in;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PGlite benchmarks</h1>
+    <p>Based on the <a href="https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html">wa-sqlite bechmarks</a></p>
+
+    <div id="controls">
+      <textarea id="preamble" rows="2" cols="48">
+-- Pre-run setup
+      </textarea>
+      <button id="start">Start</button>
+    </div>
+    <div><pre id="error" style="color: red"></pre></div>
+    <div>
+      <table>
+        <thead>
+          <tr id="vfs">
+            <th>Test</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="test1">
+            <td>Test 1: 1000 INSERTs</td>
+          </tr>
+          <tr id="test2">
+            <td>Test 2: 25000 INSERTs in a transaction</td>
+          </tr>
+          <tr id="test3">
+            <td>Test 3: 25000 INSERTs into an indexed table</td>
+          </tr>
+          <tr id="test4">
+            <td>Test 4: 100 SELECTs without an index</td>
+          </tr>
+          <tr id="test5">
+            <td>Test 5: 100 SELECTs on a string comparison</td>
+          </tr>
+          <tr id="test6">
+            <td>Test 6: Creating an index</td>
+          </tr>
+          <tr id="test7">
+            <td>Test 7: 5000 SELECTs with an index</td>
+          </tr>
+          <tr id="test8">
+            <td>Test 8: 1000 UPDATEs without an index</td>
+          </tr>
+          <tr id="test9">
+            <td>Test 9: 25000 UPDATEs with an index</td>
+          </tr>
+          <tr id="test10">
+            <td>Test 10: 25000 text UPDATEs with an index</td>
+          </tr>
+          <tr id="test11">
+            <td>Test 11: INSERTs from a SELECT</td>
+          </tr>
+          <tr id="test12">
+            <td>Test 12: DELETE without an index</td>
+          </tr>
+          <tr id="test13">
+            <td>Test 13: DELETE with an index</td>
+          </tr>
+          <tr id="test14">
+            <td>Test 14: A big INSERT after a big DELETE</td>
+          </tr>
+          <tr id="test15">
+            <td>Test 15: A big DELETE followed by many small INSERTs</td>
+          </tr>
+          <tr id="test16">
+            <td>Test 16: DROP TABLE</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <script type="module" src="benchmarks.js"></script>
+
+  </body>
+</html>
