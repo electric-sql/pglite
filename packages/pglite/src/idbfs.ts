@@ -11,10 +11,29 @@ export class IdbFs extends FilesystemBase {
   initModule?: any;
 
   async init() {
-    const dbExists = (await globalThis.indexedDB.databases())
-      .map((db) => db.name)
-      .includes(`/pglite${this.dataDir}`);
-    if (!dbExists) {
+    const dbExists = () =>
+      new Promise((resolve, reject) => {
+        const request = window.indexedDB.open(`/pglite${this.dataDir}`);
+        let exists = true;
+        request.onupgradeneeded = (e) => {
+          if (e.oldVersion === 0) {
+            exists = false;
+          }
+        };
+        request.onerror = (e) => {
+          resolve(false);
+        };
+        request.onsuccess = (e) => {
+          const db = request.result;
+          db.close();
+          if (!exists) {
+            window.indexedDB.deleteDatabase(`/pglite${this.dataDir}`);
+          }
+          resolve(exists);
+        };
+      });
+
+    if (!(await dbExists())) {
       this.initModule = await initDb();
     }
   }
@@ -39,7 +58,7 @@ export class IdbFs extends FilesystemBase {
             mod.FS.mount(
               proxyfs,
               { root: PGDATA + "/", fs: this.initModule.FS },
-              PGDATA + "_temp",
+              PGDATA + "_temp"
             );
             copyDir(mod.FS, PGDATA + "_temp", PGDATA);
             mod.FS.unmount(PGDATA + "_temp");
