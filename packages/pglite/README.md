@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  PGlite - the WASM build of Postrges from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
+  PGlite - the WASM build of Postgres from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
   Build reactive, realtime, local-first apps directly on Postgres.
 <p>
 
