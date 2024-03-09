@@ -13,7 +13,7 @@ build:
 	mkdir -p ../packages/pglite/release
 	cp src/backend/postgres ../packages/pglite/release/postgres.js
 	cp src/backend/postgres.wasm ../packages/pglite/release/postgres.wasm
-	cd ../packages/pglite/ && node scripts/modify-postrges-js.js
+	cd ../packages/pglite/ && node scripts/modify-postgres-js.js
 
 sharedir:
 	mkdir -p tmp_install
@@ -38,7 +38,7 @@ build-debug:
 	mkdir -p ../packages/pglite/release
 	cp src/backend/postgres ../packages/pglite/release/postgres.js
 	cp src/backend/postgres.wasm ../packages/pglite/release/postgres.wasm
-	cd ../packages/pglite/ && node scripts/modify-postrges-js.js
+	cd ../packages/pglite/ && node scripts/modify-postgres-js.js
 
 sharedir-debug:
 	mkdir -p tmp_install
