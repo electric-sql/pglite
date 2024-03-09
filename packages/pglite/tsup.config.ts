@@ -6,4 +6,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   format: ['esm'],
+  esbuildOptions(options, context) {
+    options.inject = ['src/buffer-polyfill.ts']
+  },
 })

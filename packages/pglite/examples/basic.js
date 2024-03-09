@@ -1,4 +1,4 @@
-import { PGlite } from "./dist/index.js";
+import { PGlite } from "../dist/index.js";
 
 console.log("Starting...");
 const pg = new PGlite();

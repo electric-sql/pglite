@@ -1,4 +1,5 @@
 import { Mutex } from "async-mutex";
+import { serialize } from "pg-protocol/src/index.js"; // Importing the source as the built version is not ESM compatible
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import type { Filesystem } from "./fs.js";
 import { MemoryFS } from "./memoryfs.js";
@@ -39,6 +40,7 @@ export class PGlite {
 
   waitReady: Promise<void>;
 
+  #executeMutex = new Mutex();
   #queryMutex = new Mutex();
   #fsSyncMutex = new Mutex();
 
@@ -154,29 +156,44 @@ export class PGlite {
         once: true,
       });
     });
-    const event = new CustomEvent("query", {
-      detail: "X",
-    });
-    this.#eventTarget.dispatchEvent(event);
+    this.execute("X");
     return promise;
   }
 
-  async query(query: String) {
-    /**
-     * TODO:
-     * - Support for parameterized queries
-     */
+  async query(query: string, params?: any[]) {
+    return await this.#queryMutex.runExclusive(async () => {
+      if (params) {
+        // We need to parse, bind and execute the query
+        await this.execute(
+          serialize.parse({
+            text: query,
+          })
+        );
+        await this.execute(
+          serialize.bind({
+            values: params,
+          })
+        );
+        return await this.execute(serialize.execute({}));
+      } else {
+        // No params so we can just send the query
+        return await this.execute(serialize.query(query));
+      }
+    });
+  }
+
+  private async execute(message: string | Uint8Array) {
     if (this.#closing) {
-      throw new Error("Postgreslite is closing");
+      throw new Error("PGlite is closing");
     }
     if (this.#closed) {
-      throw new Error("Postgreslite is closed");
+      throw new Error("PGlite is closed");
     }
     if (!this.#ready) {
       await this.waitReady;
     }
     return new Promise(async (resolve, reject) => {
-      await this.#queryMutex.runExclusive(async () => {
+      await this.#executeMutex.runExclusive(async () => {
         this.#awaitingResult = true;
         const handleWaiting = async () => {
           await this.#syncToFs();
@@ -206,7 +223,7 @@ export class PGlite {
         });
 
         const event = new CustomEvent("query", {
-          detail: `Q${query}`,
+          detail: message,
         });
         this.#eventTarget.dispatchEvent(event);
       });
