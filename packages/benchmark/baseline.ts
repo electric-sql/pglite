@@ -3,10 +3,15 @@ import EmbeddedPostgres from "embedded-postgres";
 import fs from "fs";
 import { AsciiTable3, AlignmentEnum } from "ascii-table3";
 
-const benchmarks: string[] = [];
-for (let i = 1; i <= 16; i++) {
-  benchmarks.push(fs.readFileSync(`benchmark${i}.sql`, "utf8"));
-}
+const benchmarkIds = [
+  '1', '2', '2.1', '3', '3.1', '4', '5', '6', '7', '8', '9', '10',
+  '11', '12', '13', '14', '15', '16'
+]
+
+const benchmarks: [string, string][] = [];
+benchmarkIds.forEach((id) => {
+  benchmarks.push([id, fs.readFileSync(`benchmark${id}.sql`, "utf8")]);
+});
 
 interface Result {
   sqliteInMemory: number;
@@ -28,17 +33,17 @@ for (let i = 0; i < benchmarks.length; i++) {
 function runSQLite(fileName: string) {
   const inMemory = fileName === ":memory:";
   const resultsName = inMemory ? "sqliteInMemory" : "sqliteOnDisk";
-  if (inMemory && fs.existsSync(fileName)) {
+  if (!inMemory && fs.existsSync(fileName)) {
     fs.unlinkSync(fileName);
   }
   const db = new SQLite(fileName);
 
   console.log("SQLite", fileName);
-  benchmarks.forEach((b, i) => {
+  benchmarks.forEach(([id, b], i) => {
     const startTime = Date.now();
     db.exec(b);
     const elapsed = (Date.now() - startTime) / 1000;
-    console.log(`Test ${i}: ${elapsed}ms`);
+    console.log(`Test ${id}: ${elapsed}ms`);
     results[i][resultsName] = elapsed;
   });
 
@@ -63,11 +68,11 @@ async function runPostgres() {
   const client = pg.getPgClient();
   await client.connect();
 
-  for (const [i, b] of benchmarks.entries()) {
+  for (const [i, [id, b]] of benchmarks.entries()) {
     const startTime = Date.now();
     await client.query(b);
     const elapsed = (Date.now() - startTime) / 1000;
-    console.log(`Test ${i}: ${elapsed}ms`);
+    console.log(`Test ${id}: ${elapsed}ms`);
     results[i].postgres = elapsed;
   }
 
@@ -79,14 +84,14 @@ async function runPostgres() {
 function resultsTable() {
   const table = new AsciiTable3("Benchmark Results");
   table.setHeading("Test", "SQLite In-Memory", "SQLite On-Disk", "Postgres");
-  for (let i = 0; i < benchmarks.length; i++) {
+  benchmarks.forEach(([id, _], i) => {
     table.addRow(
-      i + 1,
+      id,
       results[i].sqliteInMemory,
       results[i].sqliteOnDisk,
       results[i].postgres
     );
-  }
+  });
   table.setAlign(AlignmentEnum.Center);
   console.log(table.toString());
 }
