@@ -4,8 +4,10 @@
 
 import { PGlite } from "../pglite/dist/index.js";
 
-(async function() {
-  const Comlink = await import('https://unpkg.com/comlink/dist/esm/comlink.mjs');
+(async function () {
+  const Comlink = await import(
+    "https://unpkg.com/comlink/dist/esm/comlink.mjs"
+  );
 
   /**
    * @param {Config} config
@@ -18,9 +20,10 @@ import { PGlite } from "../pglite/dist/index.js";
     // Create the query interface.
     async function query(sql) {
       // console.log('Query:', sql);
-      const ret = await pg.query(sql);
-      console.log(ret);
-      return ret;
+      const startTime = performance.now();
+      const ret = await pg.exec(sql);
+      const elapsed = performance.now() - startTime;
+      return { elapsed };
     }
     return Comlink.proxy(query);
   }
@@ -28,4 +31,3 @@ import { PGlite } from "../pglite/dist/index.js";
   postMessage(null);
   Comlink.expose(open);
 })();
-

@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>wa-sqlite benchmarks</title>
+    <title>PGlite benchmarks</title>
     <style>
       #controls {
         margin-top: 1em;
@@ -58,8 +58,14 @@
           <tr id="test2">
             <td>Test 2: 25000 INSERTs in a transaction</td>
           </tr>
+          <tr id="test2.1">
+            <td>Test 2.1: 25000 INSERTs in single statement</td>
+          </tr>
           <tr id="test3">
             <td>Test 3: 25000 INSERTs into an indexed table</td>
+          </tr>
+          <tr id="test3">
+            <td>Test 3.1: 25000 INSERTs into an indexed table in single statement</td>
           </tr>
           <tr id="test4">
             <td>Test 4: 100 SELECTs without an index</td>
