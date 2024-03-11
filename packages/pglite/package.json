@@ -21,7 +21,7 @@
     "directory": "packages/pglite"
   },
   "scripts": {
-    "test": "ava",
+    "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava ./tests/**/*.test.js\"",
     "build:wasm": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build",
     "build:wasm:debug": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build-debug",
     "build:sharedir": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir",
@@ -36,6 +36,7 @@
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
+    "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "pg-protocol": "^1.6.0",
     "playwright": "^1.42.1",

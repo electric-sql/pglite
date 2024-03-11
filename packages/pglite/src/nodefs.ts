@@ -6,9 +6,6 @@ import loadPgShare from "../release/share.js";
 import type { EmPostgres } from "../release/postgres.js";
 import { nodeValues } from "./utils.js";
 
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
-
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;
 
@@ -38,18 +35,6 @@ export class NodeFS extends FilesystemBase {
           mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA);
         },
       ],
-      locateFile: (base: string, _path: any) => {
-        let path = "";
-        if (base === "share.data") {
-          path = PGSHARE_URL.toString();
-        } else if (base === "postgres.wasm") {
-          path = PGWASM_URL.toString();
-        }
-        if (path?.startsWith("file://")) {
-          path = path.slice(7);
-        }
-        return path;
-      },
     };
     const { require } = await nodeValues();
     loadPgShare(options, require);

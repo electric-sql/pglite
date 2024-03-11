@@ -4,9 +4,6 @@ import loadPgShare from "../release/share.js";
 import { initDb } from "./initdb.js";
 import { nodeValues } from "./utils.js";
 
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
-
 export class MemoryFS extends FilesystemBase {
   initModule?: any;
 
@@ -35,18 +32,6 @@ export class MemoryFS extends FilesystemBase {
           mod.FS.unmount(PGDATA + "_temp");
         },
       ],
-      locateFile: (base: string, _path: any) => {
-        let path = "";
-        if (base === "share.data") {
-          path = PGSHARE_URL.toString();
-        } else if (base === "postgres.wasm") {
-          path = PGWASM_URL.toString();
-        }
-        if (path?.startsWith("file://")) {
-          path = path.slice(7);
-        }
-        return path;
-      },
     };
     const { require } = await nodeValues();
     loadPgShare(options, require);
