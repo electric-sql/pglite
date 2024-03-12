@@ -3,12 +3,13 @@ import type { FS, EmPostgres } from "../release/postgres.js";
 import loadPgShare from "../release/share.js";
 import { initDb } from "./initdb.js";
 import { nodeValues } from "./utils.js";
+import type { DebugLevel } from "./index.ts";
 
 export class MemoryFS extends FilesystemBase {
   initModule?: any;
 
-  async init() {
-    this.initModule = await initDb();
+  async init(debug?: DebugLevel) {
+    this.initModule = await initDb(undefined, debug);
   }
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {

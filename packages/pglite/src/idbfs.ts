@@ -3,11 +3,12 @@ import type { FS, EmPostgres } from "../release/postgres.js";
 import loadPgShare from "../release/share.js";
 import { initDb } from "./initdb.js";
 import { nodeValues } from "./utils.js";
+import type { DebugLevel } from "./index.ts";
 
 export class IdbFs extends FilesystemBase {
   initModule?: any;
 
-  async init() {
+  async init(debug?: DebugLevel) {
     const dbExists = () =>
       new Promise((resolve, reject) => {
         const request = window.indexedDB.open(`/pglite${this.dataDir}`);
@@ -31,7 +32,7 @@ export class IdbFs extends FilesystemBase {
       });
 
     if (!(await dbExists())) {
-      this.initModule = await initDb();
+      this.initModule = await initDb(undefined, debug);
     }
   }
 

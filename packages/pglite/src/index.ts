@@ -1,21 +1,29 @@
 import { Mutex } from "async-mutex";
-import { serialize } from "pg-protocol/src/index.js"; // Importing the source as the built version is not ESM compatible
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import type { Filesystem } from "./fs.js";
 import { MemoryFS } from "./memoryfs.js";
 import { IdbFs } from "./idbfs.js";
 import { nodeValues } from "./utils.js";
 import { PGEvent } from "./pg-event.js";
+import { parseResults } from "./parse.js";
 
-export { Mutex, serialize }
+// Importing the source as the built version is not ESM compatible
+import { serialize } from "pg-protocol/src/index.js";
+import { Parser } from "pg-protocol/src/parser.js";
+import { BackendMessage } from "pg-protocol/src/messages.js";
+
+export { Mutex, serialize };
+export * from "pg-protocol/src/messages.js";
 
 const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
 const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
 
 type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
+export type DebugLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
 export interface PGliteOptions {
-  verbose?: boolean;
+  debug?: DebugLevel;
 }
 
 export class PGlite {
@@ -30,7 +38,7 @@ export class PGlite {
   #closing = false;
   #closed = false;
 
-  #resultAccumulator: any[] = [];
+  #resultAccumulator: Uint8Array[] = [];
   #awaitingResult = false;
   #resultError?: string;
 
@@ -41,7 +49,9 @@ export class PGlite {
   #transactionMutex = new Mutex();
   #fsSyncMutex = new Mutex();
 
-  verbose = false;
+  debug: DebugLevel = 0;
+
+  #parser = new Parser();
 
   /**
    * Create a new PGlite instance
@@ -77,9 +87,9 @@ export class PGlite {
       this.fsType = "nodefs";
     }
 
-    // Enable verbose logging if requested
-    if (options?.verbose) {
-      this.verbose = true;
+    // Enable debug logging if requested
+    if (options?.debug) {
+      this.debug = options.debug;
     }
 
     // Create an event target to handle events from the emscripten module
@@ -87,7 +97,7 @@ export class PGlite {
 
     // Listen for result events from the emscripten module and accumulate them
     this.#eventTarget.addEventListener("result", async (e: any) => {
-      this.#resultAccumulator.push(JSON.parse(e.detail.result));
+      this.#resultAccumulator.push(e.detail);
     });
 
     // Initialize the database, and store the promise so we can wait for it to be ready
@@ -113,7 +123,7 @@ export class PGlite {
       } else {
         this.fs = new MemoryFS();
       }
-      await this.fs.init();
+      await this.fs.init(this.debug);
 
       let emscriptenOpts: Partial<EmPostgres> = {
         arguments: [
@@ -127,8 +137,8 @@ export class PGlite {
           "dynamic_shared_memory_type=mmap",
           "-c",
           "max_prepared_transactions=10",
-          "-d", // Debug level
-          "0",
+          // Debug level
+          ...(this.debug ? ["-d", this.debug.toString()] : []),
           "-D", // Data directory
           "/pgdata",
           "template1",
@@ -145,29 +155,9 @@ export class PGlite {
           }
           return path;
         },
-        print: (text: string) => {
-          if (this.verbose) {
-            console.info(text);
-          }
-        },
-        printErr: (text: string) => {
-          if (
-            this.#awaitingResult &&
-            !this.#resultError &&
-            text.includes("ERROR:")
-          ) {
-            this.#resultError = text.split("ERROR:")[1].trim();
-          } else if (
-            this.#closing &&
-            text.includes("NOTICE:  database system is shut down")
-          ) {
-            this.#closed = true;
-            this.#eventTarget.dispatchEvent(new PGEvent("closed"));
-          }
-          if (this.verbose) {
-            console.error(text);
-          }
-        },
+        ...(this.debug
+          ? { print: console.info, printErr: console.error }
+          : { print: () => {}, printErr: () => {} }),
         onRuntimeInitialized: async (Module: EmPostgres) => {
           await this.fs!.initialSyncFs(Module.FS);
           this.#ready = true;
@@ -209,25 +199,40 @@ export class PGlite {
         once: true,
       });
     });
-    this.execute(serialize.end());
+    this.execProtocol(serialize.end());
+    // TODO: handel settings this.#closed = true and this.#closing = false;
+    // TODO: silence the unhandled promise rejection warning
     return promise;
   }
 
   /**
-   * Execute a query
+   * Execute a single SQL statement
+   * This uses the "Extended Query" postgres wire protocol message.
    * @param query The query to execute
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async query<T>(
-    query: string,
-    params?: any[]
-  ): Promise<Results<T> | Array<Results<T>>> {
+  async query<T>(query: string, params?: any[]): Promise<Results<T>> {
     // We wrap the public query method in the transaction mutex to ensure that
     // only one query can be executed at a time and not concurrently with a
     // transaction.
     return await this.#transactionMutex.runExclusive(async () => {
       return await this.#runQuery<T>(query, params);
+    });
+  }
+
+  /**
+   * Execute a SQL query, this can have multiple statements.
+   * This uses the "Simple Query" postgres wire protocol message.
+   * @param query The query to execute
+   * @returns The result of the query
+   */
+  async exec(query: string): Promise<Array<Results>> {
+    // We wrap the public exec method in the transaction mutex to ensure that
+    // only one query can be executed at a time and not concurrently with a
+    // transaction.
+    return await this.#transactionMutex.runExclusive(async () => {
+      return await this.#runExec(query);
     });
   }
 
@@ -238,44 +243,42 @@ export class PGlite {
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async #runQuery<T>(
-    query: string,
-    params?: any[]
-  ): Promise<Results<T> | Array<Results<T>>> {
+  async #runQuery<T>(query: string, params?: any[]): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
-      if (params) {
-        // We need to parse, bind and execute a query with parameters
-        await this.execute(
+      // We need to parse, bind and execute a query with parameters
+      const results = [
+        ...await this.execProtocol(
           serialize.parse({
             text: query,
           })
-        );
-        await this.execute(
+        ),
+        ...await this.execProtocol(
           serialize.bind({
             values: params,
           })
-        );
-        const results = await this.execute<Row[][]>(serialize.execute({}));
-        // Parameterized query always returns a single result
-        return {
-          rows: results[0] ?? [],
-        } as Results<T>;
-      } else {
-        // No params so we can just send the query
-        const results = await this.execute<Row[][]>(serialize.query(query));
-        // Non-parameterized query can return multiple results
-        if (results.length === 1) {
-          // If there's only one result, return it as a single Results object
-          return {
-            rows: results[0] ?? [],
-          } as Results<T>;
-        } else {
-          // If there are multiple results, return them as an array of Results objects
-          return results.map((r) => ({
-            rows: r ?? [],
-          })) as Array<Results<T>>;
-        }
-      }
+        ),
+        ...await this.execProtocol(serialize.execute({})),
+        ...await this.execProtocol(serialize.sync()),
+      ];
+      return parseResults(results.map(([msg]) => msg))[0] as Results<T>;
+    });
+  }
+
+  /**
+   * Internal method to execute a query
+   * Not protected by the transaction mutex, so it can be used inside a transaction
+   * @param query The query to execute
+   * @param params Optional parameters for the query
+   * @returns The result of the query
+   */
+  async #runExec(query: string): Promise<Array<Results>> {
+    return await this.#queryMutex.runExclusive(async () => {
+      // No params so we can just send the query
+      const results = [
+        ...await this.execProtocol(serialize.query(query)),
+        // ...await this.execProtocol(serialize.sync()),
+      ]
+      return parseResults(results.map(([msg]) => msg)) as Array<Results>;
     });
   }
 
@@ -293,6 +296,9 @@ export class PGlite {
         const tx: Transaction = {
           query: async (query: string, params?: any[]) => {
             return await this.#runQuery(query, params);
+          },
+          exec: async (query: string) => {
+            return await this.#runExec(query);
           },
           rollback: () => {
             throw new Rollback();
@@ -317,7 +323,9 @@ export class PGlite {
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
    */
-  async execute<T = any>(message: Uint8Array): Promise<T> {
+  async execProtocol(
+    message: Uint8Array
+  ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       if (this.#closing) {
         throw new Error("PGlite is closing");
@@ -333,29 +341,45 @@ export class PGlite {
       if (this.#resultAccumulator.length > 0) {
         this.#resultAccumulator = [];
       }
-      return new Promise<T>(async (resolve, reject) => {
-        this.#awaitingResult = true;
-        const handleWaiting = async () => {
-          await this.#syncToFs();
-          if (this.#resultError) {
-            reject(new Error(this.#resultError));
-          } else {
-            resolve(this.#resultAccumulator as T);
-          }
-          this.#resultAccumulator = [];
-          this.#resultError = undefined;
-          this.#awaitingResult = false;
-        };
 
-        this.#eventTarget.addEventListener("waiting", handleWaiting, {
-          once: true,
-        });
+      const resData: Array<Uint8Array> = await new Promise(
+        async (resolve, reject) => {
+          this.#awaitingResult = true;
+          const handleWaiting = async () => {
+            await this.#syncToFs();
+            if (this.#resultError) {
+              reject(new Error(this.#resultError));
+            } else {
+              resolve(this.#resultAccumulator);
+            }
+            this.#resultAccumulator = [];
+            this.#resultError = undefined;
+            this.#awaitingResult = false;
+          };
 
-        const event = new PGEvent("query", {
-          detail: message,
+          this.#eventTarget.addEventListener("waiting", handleWaiting, {
+            once: true,
+          });
+
+          const event = new PGEvent("query", {
+            detail: message,
+          });
+          this.#eventTarget.dispatchEvent(event);
+        }
+      );
+
+      const results = resData.map((data) => {
+        let message: BackendMessage | undefined;
+        this.#parser.parse(Buffer.from(data), (mgs) => {
+          message = mgs;
         });
-        this.#eventTarget.dispatchEvent(event);
+        return [message, data] as [BackendMessage, Uint8Array];
       });
+
+      // TODO: handle any error message here
+
+      // TODO: handle any notify message here
+      return results;
     });
   }
 
@@ -372,17 +396,16 @@ export class PGlite {
 
 export type Row<T = { [key: string]: any }> = T;
 
-// TODO: in the future this will have more properties provided by the postgres
-// wire protocol
-export type Results<T> = {
+export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[];
+  affectedRows?: number;
+  fields: { name: string; dataTypeID: number }[];
+  command?: string;
 };
 
 export interface Transaction {
-  query<T>(
-    query: string,
-    params?: any[]
-  ): Promise<Results<T> | Array<Results<T>>>;
+  query<T>(query: string, params?: any[]): Promise<Results<T>>;
+  exec(query: string): Promise<Array<Results>>;
   rollback(): void;
 }
 

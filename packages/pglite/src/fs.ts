@@ -1,4 +1,5 @@
 import type { EmPostgres, FS } from "../release/postgres.js";
+import type { DebugLevel } from "./index.ts";
 export const PGDATA = "/pgdata";
 
 export interface FilesystemFactory {
@@ -6,7 +7,7 @@ export interface FilesystemFactory {
 }
 
 export interface Filesystem {
-  init(): Promise<void>;
+  init(debug?: DebugLevel): Promise<void>;
   emscriptenOpts(opts: Partial<EmPostgres>): Promise<Partial<EmPostgres>>;
   syncToFs(mod: FS): Promise<void>;
   initialSyncFs(mod: FS): Promise<void>;

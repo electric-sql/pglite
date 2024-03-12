@@ -1,7 +1,9 @@
 import { PGlite } from "../dist/index.js";
 
 console.log("Starting...");
-const pg = new PGlite();
+const pg = new PGlite(undefined, {
+  // verbose: true,
+});
 
 console.log("Creating table...");
 await pg.query(`
@@ -13,10 +15,11 @@ await pg.query(`
 
 console.log("Inserting data...");
 await pg.query("INSERT INTO test (name) VALUES ($1);", ["test"]);
+await pg.query("INSERT INTO test (name) VALUES ($1);", ["other"]);
 
 console.log("Selecting data...");
 const res = await pg.query(`
-  SELECT * FROM test;
-`);
+  SELECT * FROM test WHERE name = $1;
+`, ["test"]);
 
 console.log(res);

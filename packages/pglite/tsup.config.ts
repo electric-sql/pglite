@@ -1,4 +1,19 @@
 import { defineConfig } from 'tsup'
+import path from 'path'
+
+const thisFile = new URL(import.meta.url).pathname
+const root = path.dirname(thisFile)
+
+let replaceAssertPlugin = {
+  name: 'replace-assert',
+  setup(build: any) {
+    // Resolve `assert` to a blank file
+    build.onResolve({ filter: /^assert$/ }, (args: any) => {
+      console.log(args)
+      return { path: path.join(root, 'src', 'blank.ts') }
+    })
+  },
+}
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -9,4 +24,7 @@ export default defineConfig({
   esbuildOptions(options, context) {
     options.inject = ['src/buffer-polyfill.ts']
   },
+  esbuildPlugins: [
+    replaceAssertPlugin,
+  ],
 })

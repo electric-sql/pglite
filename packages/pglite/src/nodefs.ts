@@ -5,6 +5,7 @@ import { initDb } from "./initdb.js";
 import loadPgShare from "../release/share.js";
 import type { EmPostgres } from "../release/postgres.js";
 import { nodeValues } from "./utils.js";
+import type { DebugLevel } from "./index.ts";
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;
@@ -14,7 +15,7 @@ export class NodeFS extends FilesystemBase {
     this.rootDir = path.resolve(dataDir);
   }
 
-  async init() {
+  async init(debug?: DebugLevel) {
     if (!this.dataDir) {
       throw new Error("No datadir specified");
     }
@@ -22,7 +23,7 @@ export class NodeFS extends FilesystemBase {
       return;
     }
     fs.mkdirSync(this.dataDir);
-    await initDb(this.dataDir);
+    await initDb(this.dataDir, debug);
   }
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {

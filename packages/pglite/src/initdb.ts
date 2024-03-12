@@ -39,7 +39,7 @@ export const FILES = [
   "pg_hba.conf",
 ];
 
-export async function initDb(dataDir?: string) {
+export async function initDb(dataDir?: string, debug?: 0 | 1 | 2 | 3 | 4 | 5) {
   var emscriptenOpts: Partial<EmPostgres> = {
     preRun: [
       (mod: any) => {
@@ -70,19 +70,15 @@ export async function initDb(dataDir?: string) {
       }
       return path;
     },
-    print: (text: string) => {
-      // console.error(text);
-    },
-    printErr: (text: string) => {
-      // console.error(text);
-    },
+    ...(debug
+      ? { print: console.info, printErr: console.error }
+      : { print: () => {}, printErr: () => {} }),
     arguments: [
       "--boot",
       "-x1",
       "-X",
       "16777216",
-      "-d",
-      "5",
+      ...(debug ? ["-d", debug.toString()] : []),
       "-c",
       "dynamic_shared_memory_type=mmap",
       "-D",
