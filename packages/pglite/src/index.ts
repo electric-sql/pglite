@@ -247,18 +247,18 @@ export class PGlite {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
       const results = [
-        ...await this.execProtocol(
+        ...(await this.execProtocol(
           serialize.parse({
             text: query,
           })
-        ),
-        ...await this.execProtocol(
+        )),
+        ...(await this.execProtocol(
           serialize.bind({
             values: params,
           })
-        ),
-        ...await this.execProtocol(serialize.execute({})),
-        ...await this.execProtocol(serialize.sync()),
+        )),
+        ...(await this.execProtocol(serialize.execute({}))),
+        ...(await this.execProtocol(serialize.sync())),
       ];
       return parseResults(results.map(([msg]) => msg))[0] as Results<T>;
     });
@@ -275,9 +275,9 @@ export class PGlite {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
       const results = [
-        ...await this.execProtocol(serialize.query(query)),
+        ...(await this.execProtocol(serialize.query(query))),
         // ...await this.execProtocol(serialize.sync()),
-      ]
+      ];
       return parseResults(results.map(([msg]) => msg)) as Array<Results>;
     });
   }
@@ -368,12 +368,12 @@ export class PGlite {
         }
       );
 
-      const results = resData.map((data) => {
-        let message: BackendMessage | undefined;
-        this.#parser.parse(Buffer.from(data), (mgs) => {
-          message = mgs;
+      const results: Array<[BackendMessage, Uint8Array]> = [];
+
+      resData.forEach((data) => {
+        this.#parser.parse(Buffer.from(data), (message) => {
+          results.push([message, data]);
         });
-        return [message, data] as [BackendMessage, Uint8Array];
       });
 
       // TODO: handle any error message here
