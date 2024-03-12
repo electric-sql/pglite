@@ -52,6 +52,17 @@ export function tests(env, dbFilename, target) {
     });
 
     t.deepEqual(res, {
+      affectedRows: 0,
+      fields: [
+        {
+          dataTypeID: 23,
+          name: "id",
+        },
+        {
+          dataTypeID: 25,
+          name: "name",
+        },
+      ],
       rows: [
         {
           id: 1,
@@ -71,6 +82,17 @@ export function tests(env, dbFilename, target) {
     });
 
     t.deepEqual(res, {
+      affectedRows: 0,
+      fields: [
+        {
+          dataTypeID: 23,
+          name: "id",
+        },
+        {
+          dataTypeID: 25,
+          name: "name",
+        },
+      ],
       rows: [
         {
           id: 1,
@@ -104,6 +126,17 @@ export function tests(env, dbFilename, target) {
     });
 
     t.deepEqual(res, {
+      affectedRows: 0,
+      fields: [
+        {
+          dataTypeID: 23,
+          name: "id",
+        },
+        {
+          dataTypeID: 25,
+          name: "name",
+        },
+      ],
       rows: [
         {
           id: 1,

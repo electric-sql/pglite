@@ -9,7 +9,6 @@ let replaceAssertPlugin = {
   setup(build: any) {
     // Resolve `assert` to a blank file
     build.onResolve({ filter: /^assert$/ }, (args: any) => {
-      console.log(args)
       return { path: path.join(root, 'src', 'blank.ts') }
     })
   },

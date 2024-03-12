@@ -6,11 +6,12 @@ import { IdbFs } from "./idbfs.js";
 import { nodeValues } from "./utils.js";
 import { PGEvent } from "./pg-event.js";
 import { parseResults } from "./parse.js";
+import { serializeType } from "./types.js";
 
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/src/index.js";
 import { Parser } from "pg-protocol/src/parser.js";
-import { BackendMessage } from "pg-protocol/src/messages.js";
+import { BackendMessage, DatabaseError } from "pg-protocol/src/messages.js";
 
 export { Mutex, serialize };
 export * from "pg-protocol/src/messages.js";
@@ -246,17 +247,20 @@ export class PGlite {
   async #runQuery<T>(query: string, params?: any[]): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
+      const parsedParams = params?.map((p) => serializeType(p)) || [];
       const results = [
         ...(await this.execProtocol(
           serialize.parse({
             text: query,
+            types: parsedParams.map(([, type]) => type),
           })
         )),
         ...(await this.execProtocol(
           serialize.bind({
-            values: params,
+            values: parsedParams.map(([val]) => val),
           })
         )),
+        ...(await this.execProtocol(serialize.describe({ type: "P" }))),
         ...(await this.execProtocol(serialize.execute({}))),
         ...(await this.execProtocol(serialize.sync())),
       ];
@@ -376,9 +380,14 @@ export class PGlite {
         });
       });
 
-      // TODO: handle any error message here
+      const error = results.find(([msg]) => msg instanceof DatabaseError)?.[0];
+      if (error) {
+        throw error;
+        // TODO: Do we want to wrap the error in a custom error?
+      }
 
       // TODO: handle any notify message here
+
       return results;
     });
   }
@@ -400,7 +409,6 @@ export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[];
   affectedRows?: number;
   fields: { name: string; dataTypeID: number }[];
-  command?: string;
 };
 
 export interface Transaction {

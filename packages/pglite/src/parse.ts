@@ -5,7 +5,8 @@ import {
   CommandCompleteMessage,
   ReadyForQueryMessage,
 } from "pg-protocol/src/messages.js";
-import type { Results, Row } from "./index.ts";
+import type { Results, Row } from "./index.js";
+import { parseType } from "./types.js";
 
 /**
  * This function is used to parse the results of either a simple or extended query.
@@ -28,14 +29,28 @@ export function parseResults(messages: Array<BackendMessage>): Array<Results> {
     } else if (msg instanceof DataRowMessage && currentResultSet) {
       currentResultSet.rows.push(
         Object.fromEntries(
+          // TODO: fix where column names are not unique, i.e. ?column?
           msg.fields.map((field, i) => [
             currentResultSet!.fields[i].name,
-            field,
+            parseType(field, currentResultSet!.fields[i].dataTypeID),
           ])
         )
       );
+    } else if (msg instanceof CommandCompleteMessage) {
+      if (currentResultSet) {
+        currentResultSet.affectedRows = affectedRows(msg);
+      }
     }
   }
 
   return resultSets;
+}
+
+function affectedRows(msg: CommandCompleteMessage): number {
+  const parts = msg.text.split(" ");
+  if (parts[0] === "INSERT" || parts[0] === "UPDATE" || parts[0] === "DELETE") {
+    return parseInt(parts[2]);
+  } else {
+    return 0;
+  }
 }
