@@ -2,14 +2,21 @@ export const types = {
   string: {
     to: 25,
     from: [25],
-    serialize: (x: string) => "" + x,
+    serialize: (x: string) => x,
     parse: (x: string) => x,
   },
   number: {
     to: 0,
     from: [21, 23, 26, 700, 701],
-    serialize: (x: number) => "" + x,
+    serialize: (x: number) => x.toString(),
     parse: (x: string) => +x,
+  },
+  bigint: {
+    to: 20,
+    from: [20],
+    js: [BigInt],
+    serialize: (x: BigInt) => x.toString(),
+    parse: (x: string) => BigInt(x),
   },
   json: {
     to: 114,
@@ -36,7 +43,8 @@ export const types = {
     from: [17],
     js: [Uint8Array, Buffer],
     serialize: (x: Uint8Array) => "\\x" + Buffer.from(x).toString("hex"),
-    parse: (x: string) => Buffer.from(x.slice(2), "hex") as Uint8Array,
+    parse: (x: string): Uint8Array =>
+      new Uint8Array(Buffer.from(x.slice(2), "hex").buffer),
   },
 } satisfies TypeHandlers;
 

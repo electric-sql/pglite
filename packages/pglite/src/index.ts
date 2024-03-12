@@ -11,7 +11,11 @@ import { serializeType } from "./types.js";
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/src/index.js";
 import { Parser } from "pg-protocol/src/parser.js";
-import { BackendMessage, DatabaseError } from "pg-protocol/src/messages.js";
+import {
+  BackendMessage,
+  DatabaseError,
+  NoticeMessage,
+} from "pg-protocol/src/messages.js";
 
 export { Mutex, serialize };
 export * from "pg-protocol/src/messages.js";
@@ -40,8 +44,6 @@ export class PGlite {
   #closed = false;
 
   #resultAccumulator: Uint8Array[] = [];
-  #awaitingResult = false;
-  #resultError?: string;
 
   waitReady: Promise<void>;
 
@@ -295,7 +297,7 @@ export class PGlite {
     callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined> {
     return await this.#transactionMutex.runExclusive(async () => {
-      await this.query("BEGIN");
+      await this.#runExec("BEGIN");
       try {
         const tx: Transaction = {
           query: async (query: string, params?: any[]) => {
@@ -309,10 +311,10 @@ export class PGlite {
           },
         };
         const result = await callback(tx);
-        await this.query("COMMIT");
+        await this.#runExec("COMMIT");
         return result;
       } catch (e) {
-        await this.query("ROLLBACK");
+        await this.#runExec("ROLLBACK");
         if (e instanceof Rollback) {
           return; // Rollback was called, so we return undefined (TODO: is this the right thing to do?)
         } else {
@@ -348,17 +350,10 @@ export class PGlite {
 
       const resData: Array<Uint8Array> = await new Promise(
         async (resolve, reject) => {
-          this.#awaitingResult = true;
           const handleWaiting = async () => {
             await this.#syncToFs();
-            if (this.#resultError) {
-              reject(new Error(this.#resultError));
-            } else {
-              resolve(this.#resultAccumulator);
-            }
+            resolve(this.#resultAccumulator);
             this.#resultAccumulator = [];
-            this.#resultError = undefined;
-            this.#awaitingResult = false;
           };
 
           this.#eventTarget.addEventListener("waiting", handleWaiting, {
@@ -375,18 +370,17 @@ export class PGlite {
       const results: Array<[BackendMessage, Uint8Array]> = [];
 
       resData.forEach((data) => {
-        this.#parser.parse(Buffer.from(data), (message) => {
-          results.push([message, data]);
+        this.#parser.parse(Buffer.from(data), (msg) => {
+          if (msg instanceof DatabaseError) {
+            throw msg;
+            // TODO: Do we want to wrap the error in a custom error?
+          } else if (msg instanceof NoticeMessage) {
+            // Notice messages are warnings, we should log them
+            console.warn(msg);
+          }
+          results.push([msg, data]);
         });
       });
-
-      const error = results.find(([msg]) => msg instanceof DatabaseError)?.[0];
-      if (error) {
-        throw error;
-        // TODO: Do we want to wrap the error in a custom error?
-      }
-
-      // TODO: handle any notify message here
 
       return results;
     });
