@@ -17,7 +17,10 @@ let replaceAssertPlugin = {
 export default defineConfig({
   entry: ['src/index.ts'],
   sourcemap: true,
-  dts: true,
+  dts: {
+    entry: 'src/index.ts',
+    resolve: true
+  },
   clean: true,
   format: ['esm'],
   esbuildOptions(options, context) {

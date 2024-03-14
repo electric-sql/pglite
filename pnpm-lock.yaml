@@ -4,7 +4,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  pg-protocol@1.6.0:
+    hash: m6gmuhkj45op6ok66bc7av7i4y
+    path: patches/pg-protocol@1.6.0.patch
+
 importers:
+
+  .: {}
 
   packages/pglite:
     devDependencies:
@@ -28,7 +35,7 @@ importers:
         version: 14.1.1
       pg-protocol:
         specifier: ^1.6.0
-        version: 1.6.0
+        version: 1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
       playwright:
         specifier: ^1.42.1
         version: 1.42.1
@@ -1825,9 +1832,10 @@ packages:
     engines: {node: '>=12'}
     dev: true
 
-  /pg-protocol@1.6.0:
+  /pg-protocol@1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
     resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
     dev: true
+    patched: true
 
   /picomatch@2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}

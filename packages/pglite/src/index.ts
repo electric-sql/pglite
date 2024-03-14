@@ -9,16 +9,16 @@ import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 
 // Importing the source as the built version is not ESM compatible
-import { serialize } from "pg-protocol/src/index.js";
-import { Parser } from "pg-protocol/src/parser.js";
+import { serialize } from "pg-protocol/dist/index.js";
+import { Parser } from "pg-protocol/dist/parser.js";
 import {
   BackendMessage,
   DatabaseError,
   NoticeMessage,
-} from "pg-protocol/src/messages.js";
+} from "pg-protocol/dist/messages.js";
 
 export { Mutex, serialize };
-export * from "pg-protocol/src/messages.js";
+export * from "pg-protocol/dist/messages.js";
 
 const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
 const PGSHARE_URL = new URL("../release/share.data", import.meta.url);

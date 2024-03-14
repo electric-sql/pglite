@@ -4,7 +4,7 @@ import {
   DataRowMessage,
   CommandCompleteMessage,
   ReadyForQueryMessage,
-} from "pg-protocol/src/messages.js";
+} from "pg-protocol/dist/messages.js";
 import type { Results, Row } from "./index.js";
 import { parseType } from "./types.js";
 
