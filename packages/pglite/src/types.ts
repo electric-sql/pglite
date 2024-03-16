@@ -1,38 +1,58 @@
 export const types = {
   string: {
     to: 25,
-    from: [25],
+    from: [
+      25, // text
+      1043, // varchar
+    ],
     serialize: (x: string) => x,
     parse: (x: string) => x,
   },
   number: {
     to: 0,
-    from: [21, 23, 26, 700, 701],
+    from: [
+      21, // int2
+      23, // int4
+      26, // oid
+      700, // float4
+      701, // float8
+    ],
     serialize: (x: number) => x.toString(),
     parse: (x: string) => +x,
   },
   bigint: {
     to: 20,
-    from: [20],
+    from: [
+      20, // int8
+    ],
     js: [BigInt],
     serialize: (x: BigInt) => x.toString(),
     parse: (x: string) => BigInt(x),
   },
   json: {
     to: 114,
-    from: [114, 3802],
+    from: [
+      114, // json
+      3802, // jsonb
+    ],
     serialize: (x: any) => JSON.stringify(x),
     parse: (x: string) => JSON.parse(x),
   },
   boolean: {
     to: 16,
-    from: [16],
+    from: [
+      16, // boolean
+    ],
     serialize: (x: boolean) => (x === true ? "t" : "f"),
     parse: (x: string) => x === "t",
   },
   date: {
     to: 1184,
-    from: [1082, 1114, 1184],
+    from: [
+      1082, // date
+      1114, // timestamp
+      1184, // timestamptz
+    ],
     js: [Date],
     serialize: (x: Date | string | number) =>
       (x instanceof Date ? x : new Date(x)).toISOString(),
@@ -40,11 +60,13 @@ export const types = {
   },
   bytea: {
     to: 17,
-    from: [17],
+    from: [
+      17, // bytea
+    ],
     js: [Uint8Array, Buffer],
     serialize: (x: Uint8Array) => "\\x" + Buffer.from(x).toString("hex"),
     parse: (x: string): Uint8Array =>
-      new Uint8Array(Buffer.from(x.slice(2), "hex").buffer),
+      new Uint8Array(Buffer.from(x.slice(2), "hex")),
   },
 } satisfies TypeHandlers;
 
