@@ -8,9 +8,24 @@ export interface FilesystemFactory {
 }
 
 export interface Filesystem {
-  init(debug?: DebugLevel): Promise<void>;
+  /**
+   * Returns true if the filesystem was initialized and this is the fun run.
+   */
+  init(debug?: DebugLevel): Promise<boolean>;
+
+  /**
+   * Returns the options to pass to the emscripten module.
+   */
   emscriptenOpts(opts: Partial<EmPostgres>): Promise<Partial<EmPostgres>>;
+
+  /**
+   * Sync the filesystem to the emscripten filesystem.
+   */
   syncToFs(mod: FS): Promise<void>;
+
+  /**
+   * Sync the emscripten filesystem to the filesystem.
+   */
   initialSyncFs(mod: FS): Promise<void>;
 }
 
@@ -19,7 +34,7 @@ export abstract class FilesystemBase implements Filesystem {
   constructor(dataDir?: string) {
     this.dataDir = dataDir;
   }
-  abstract init(): Promise<void>;
+  abstract init(): Promise<boolean>;
   abstract emscriptenOpts(
     opts: Partial<EmPostgres>,
   ): Promise<Partial<EmPostgres>>;

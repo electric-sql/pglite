@@ -85,7 +85,8 @@ export class PGlite {
    * @returns A promise that resolves when the database is ready
    */
   async #init() {
-    return new Promise<void>(async (resolve, reject) => {
+    let firstRun = false;
+    await new Promise<void>(async (resolve, reject) => {
       if (this.#initStarted) {
         throw new Error("Already initializing");
       }
@@ -93,7 +94,11 @@ export class PGlite {
 
       // Load a filesystem based on the type
       this.fs = await loadFs(this.dataDir, this.fsType);
-      await this.fs.init(this.debug);
+
+      // Initialize the filesystem
+      // returns true if this is the first run, we then need to perform
+      // additional setup steps at the end of the init.
+      firstRun = await this.fs.init(this.debug);
 
       let emscriptenOpts: Partial<EmPostgres> = {
         arguments: [
@@ -142,6 +147,36 @@ export class PGlite {
       const emp = await EmPostgresFactory(emscriptenOpts, dirname, require);
       this.emp = emp;
     });
+
+    if (firstRun) {
+      await this.#firstRun();
+    }
+    await this.#runExec("SET search_path TO public;");
+  }
+
+  /**
+   * Perform the first run initialization of the database
+   * This is only run when the database is first created
+   */
+  async #firstRun() {
+    const shareDir = "/usr/local/pgsql/share";
+    const sqlFiles = [
+      ["information_schema.sql"],
+      ["system_constraints.sql", "pg_catalog"],
+      ["system_functions.sql", "pg_catalog"],
+      ["system_views.sql", "pg_catalog"],
+    ];
+    // Load the sql files into the database
+    for (const [file, schema] of sqlFiles) {
+      const sql = await this.emp.FS.readFile(shareDir + "/" + file, {
+        encoding: "utf8",
+      });
+      if (schema) {
+        await this.#runExec(`SET search_path TO ${schema};\n ${sql}`);
+      } else {
+        await this.#runExec(sql);
+      }
+    }
   }
 
   /**
@@ -162,7 +197,8 @@ export class PGlite {
    * Close the database
    * @returns A promise that resolves when the database is closed
    */
-  close() {
+  async close() {
+    await this.#checkReady();
     this.#closing = true;
     const promise = new Promise((resolve, reject) => {
       this.#eventTarget.addEventListener("closed", resolve, {
@@ -183,6 +219,7 @@ export class PGlite {
    * @returns The result of the query
    */
   async query<T>(query: string, params?: any[]): Promise<Results<T>> {
+    await this.#checkReady();
     // We wrap the public query method in the transaction mutex to ensure that
     // only one query can be executed at a time and not concurrently with a
     // transaction.
@@ -198,6 +235,7 @@ export class PGlite {
    * @returns The result of the query
    */
   async exec(query: string): Promise<Array<Results>> {
+    await this.#checkReady();
     // We wrap the public exec method in the transaction mutex to ensure that
     // only one query can be executed at a time and not concurrently with a
     // transaction.
@@ -269,6 +307,7 @@ export class PGlite {
   async transaction<T>(
     callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined> {
+    await this.#checkReady();
     return await this.#transactionMutex.runExclusive(async () => {
       await this.#runExec("BEGIN");
 
@@ -317,6 +356,23 @@ export class PGlite {
   }
 
   /**
+   * Wait for the database to be ready
+   */
+  async #checkReady() {
+    if (this.#closing) {
+      throw new Error("PGlite is closing");
+    }
+    if (this.#closed) {
+      throw new Error("PGlite is closed");
+    }
+    if (!this.#ready) {
+      // Starting the database can take a while and it might not be ready yet
+      // We'll wait for it to be ready before continuing
+      await this.waitReady;
+    }
+  }
+
+  /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
@@ -325,17 +381,6 @@ export class PGlite {
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
-      if (this.#closing) {
-        throw new Error("PGlite is closing");
-      }
-      if (this.#closed) {
-        throw new Error("PGlite is closed");
-      }
-      if (!this.#ready) {
-        // Starting the database can take a while and it might not be ready yet
-        // We'll wait for it to be ready before continuing
-        await this.waitReady;
-      }
       if (this.#resultAccumulator.length > 0) {
         this.#resultAccumulator = [];
       }
