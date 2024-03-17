@@ -110,6 +110,78 @@ Deno.serve(async (_request: Request) => {
 
 Then run the file with `deno run --allow-net --allow-read server.ts`.
 
+## API Reference  
+
+### Main Constructor:
+
+#### `new PGlite(dataDir: string, options: PGliteOptions)`
+
+A new pglite instance is created using the `new PGlite()` constructor.
+
+##### `dataDir`
+
+Path to the directory to store the Postgres database. You can provide a url scheme for various storage backends:
+
+- `file://` or unprefixed: File system storage, available in Node and Bun.
+- `idb://`: IndexedDB storage, available in the browser.
+- `memory://`: In-memory ephemeral storage, available in all platforms.
+
+##### `options`:
+
+- `debug`: 1-5 - the Postgres debug level. Logs are sent to the consol.
+
+### Methods:
+
+#### `.query<T>(query: string, params?: any[]): Promise<Results<T>>`
+
+Execute a single statement, optionally with parameters.
+
+Returns single result object.
+
+#### `.exec(query: string): Promise<Array<Results>>`
+
+Execute one or more statements. *(note that parameters are not supported)*
+
+Returns array of result objects, one for each statement.
+
+#### `.close(): Promise<void>`
+
+Close the database, ensuring it is shut down cleanly.
+
+#### `.transaction<T>(callback: (tx: Transaction) => Promise<T>)`
+
+To start an interactive transaction pass a callback to the transaction method. It is passed a `Transaction` object which can be used to perform operations within the transaction.
+
+##### `Transaction` objects:
+
+- `.query<T>(query: string, params?: any[]): Promise<Results<T>>`
+  The same as the main `.query` method.
+- `.exec(query: string): Promise<Array<Results>>`
+  The same as the main `.exec` method.
+- `.rollback()`
+  Rollback the current transaction.
+
+### Properties:
+
+- `.ready` *boolean (read only)*: The ready state of the database.
+- `.closed` *boolean (read only)*: The closed state of the database.
+- `.waitReady` *Promise<void>*: Promise that resolves when the database is ready to use. Note that queries will wait for this if called before the database has fully initialised.
+
+### Results<T> Objects:
+
+Result objects have the following properties:
+
+- `rows: Row<T>[]` - The rows retuned by the query
+- `affectedRows?: number` - Count of the rows affected by the query. Note this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
+-  `fields: { name: string; dataTypeID: number }[]` - Field name and Postgres data type id for each field returned.
+
+
+### Row<T> Objects:
+
+Rows objects are a key / value mapping for each row returned by the query.
+
+The `.query<T>` method can take a type describing the expected shape of the returned rows. 
+
 ## How it works
 
 PostgreSQL typically operates using a process forking model; whenever a client initiates a connection, a new process is forked to manage that connection. However, programs compiled with Emscripten - a C to WebAssembly (WASM) compiler - cannot fork new processes, and operates strictly in a single-process mode. As a result, PostgreSQL cannot be directly compiled to WASM for conventional operation.
@@ -119,19 +191,16 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 ## Limitations
 
 - PGlite is single user/connection.
-- Parameterized queries are not currently supported, but this will be added soon.
 
 ## Roadmap
 
 PGlite is *Alpha* and under active development, the current roadmap is:
 
-- Support parameterized queries [#17](https://github.com/electric-sql/pglite/issues/17)
 - CI builds [#19](https://github.com/electric-sql/pglite/issues/19)
 - Benchmarking [#24](https://github.com/electric-sql/pglite/issues/24)
 - Support Postgres extensions, starting with:
   - pgvector [#18](https://github.com/electric-sql/pglite/issues/18)
-  - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)
-- Use the Postgres wire protocol for input/output [#31](https://github.com/electric-sql/pglite/issues/31)
+  - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)electric-sql/pglite/issues/31)
 
 ## Repository Structure
 
