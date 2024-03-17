@@ -35,6 +35,9 @@ export class IdbFs extends FilesystemBase {
 
     if (!(await dbExists())) {
       this.initModule = await initDb(undefined, debug);
+      return true;
+    } else {
+      return false;
     }
   }
 
