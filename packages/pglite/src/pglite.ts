@@ -247,22 +247,26 @@ export class PGlite {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
       const parsedParams = params?.map((p) => serializeType(p)) || [];
-      const results = [
-        ...(await this.execProtocol(
-          serialize.parse({
-            text: query,
-            types: parsedParams.map(([, type]) => type),
-          })
-        )),
-        ...(await this.execProtocol(
-          serialize.bind({
-            values: parsedParams.map(([val]) => val),
-          })
-        )),
-        ...(await this.execProtocol(serialize.describe({ type: "P" }))),
-        ...(await this.execProtocol(serialize.execute({}))),
-        ...(await this.execProtocol(serialize.sync())),
-      ];
+      let results;
+      try {
+        results = [
+          ...(await this.execProtocol(
+            serialize.parse({
+              text: query,
+              types: parsedParams.map(([, type]) => type),
+            })
+          )),
+          ...(await this.execProtocol(
+            serialize.bind({
+              values: parsedParams.map(([val]) => val),
+            })
+          )),
+          ...(await this.execProtocol(serialize.describe({ type: "P" }))),
+          ...(await this.execProtocol(serialize.execute({}))),
+        ];
+      } finally {
+        await this.execProtocol(serialize.sync());
+      }
       return parseResults(results.map(([msg]) => msg))[0] as Results<T>;
     });
   }
@@ -277,10 +281,12 @@ export class PGlite {
   async #runExec(query: string): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
-      const results = [
-        ...(await this.execProtocol(serialize.query(query))),
-        // ...await this.execProtocol(serialize.sync()),
-      ];
+      let results;
+      try {
+        results = await this.execProtocol(serialize.query(query));
+      } finally {
+        await this.execProtocol(serialize.sync());
+      }
       return parseResults(results.map(([msg]) => msg)) as Array<Results>;
     });
   }
@@ -369,6 +375,7 @@ export class PGlite {
       resData.forEach((data) => {
         this.#parser.parse(Buffer.from(data), (msg) => {
           if (msg instanceof DatabaseError) {
+            this.#parser = new Parser(); // Reset the parser
             throw msg;
             // TODO: Do we want to wrap the error in a custom error?
           } else if (msg instanceof NoticeMessage) {
