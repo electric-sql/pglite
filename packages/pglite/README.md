@@ -136,13 +136,50 @@ Path to the directory to store the Postgres database. You can provide a url sche
 
 Execute a single statement, optionally with parameters.
 
-Returns single result object.
+Returns single [result object](#results-objects).
+
+##### Example:
+
+```ts
+await pg.query(
+  'INSERT INTO test (name) VALUES ('$1');',
+  [ 'test' ]
+);
+// { affectedRows: 1 },
+```
 
 #### `.exec(query: string): Promise<Array<Results>>`
 
 Execute one or more statements. *(note that parameters are not supported)*
 
-Returns array of result objects, one for each statement.
+Returns array of [result objects](#results-objects), one for each statement.
+
+##### Example:
+
+```ts
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+  INSERT INTO test (name) VALUES ('test');
+  SELECT * FROM test;
+`);
+// [
+//   { affectedRows: 0 },
+//   { affectedRows: 1 },
+//   {
+//     rows: [
+//       { id: 1, name: 'test' }
+//     ]
+//     affectedRows: 0,
+//     fields: [
+//       { name: 'id', dataTypeID: '23' },
+//       { name: 'name', dataTypeID: '25' },
+//     ]
+//   }
+// ]
+```
 
 #### `.close(): Promise<void>`
 
@@ -154,18 +191,30 @@ To start an interactive transaction pass a callback to the transaction method. I
 
 ##### `Transaction` objects:
 
-- `.query<T>(query: string, params?: any[]): Promise<Results<T>>`
+- `tx.query<T>(query: string, params?: any[]): Promise<Results<T>>`
   The same as the main `.query` method.
-- `.exec(query: string): Promise<Array<Results>>`
+- `tx.exec(query: string): Promise<Array<Results>>`
   The same as the main `.exec` method.
-- `.rollback()`
+- `tx.rollback()`
   Rollback the current transaction.
+
+##### Example:
+
+```ts
+await pg.transaction((tx) => {
+  ts.query(
+    'INSERT INTO test (name) VALUES ('$1');',
+    [ 'test' ]
+  );
+  return ts.query('SELECT * FROM test;');
+});
+```
 
 ### Properties:
 
 - `.ready` *boolean (read only)*: The ready state of the database.
 - `.closed` *boolean (read only)*: The closed state of the database.
-- `.waitReady` *Promise<void>*: Promise that resolves when the database is ready to use. Note that queries will wait for this if called before the database has fully initialised.
+- `.waitReady` *Promise<void>*: Promise that resolves when the database is ready to use. Note that queries will wait for this if called before the database has fully initialised, and so its not necessary to wait for it explicitly.
 
 ### Results<T> Objects:
 
@@ -180,7 +229,7 @@ Result objects have the following properties:
 
 Rows objects are a key / value mapping for each row returned by the query.
 
-The `.query<T>` method can take a type describing the expected shape of the returned rows. 
+The `.query<T>()` method can take a type describing the expected shape of the returned rows. 
 
 ## How it works
 
@@ -197,10 +246,12 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 PGlite is *Alpha* and under active development, the current roadmap is:
 
 - CI builds [#19](https://github.com/electric-sql/pglite/issues/19)
-- Benchmarking [#24](https://github.com/electric-sql/pglite/issues/24)
 - Support Postgres extensions, starting with:
+  - pl_pgsql [#35](https://github.com/electric-sql/pglite/issues/36)
   - pgvector [#18](https://github.com/electric-sql/pglite/issues/18)
-  - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)electric-sql/pglite/issues/31)
+  - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)
+- OPFS support in browser [#9](https://github.com/electric-sql/pglite/issues/9)
+- Muti-tab support in browser [#32](https://github.com/electric-sql/pglite/issues/32)
 
 ## Repository Structure
 
