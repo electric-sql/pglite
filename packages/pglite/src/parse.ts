@@ -43,6 +43,13 @@ export function parseResults(messages: Array<BackendMessage>): Array<Results> {
     }
   }
 
+  if (resultSets.length === 0) {
+    resultSets.push({
+      rows: [],
+      fields: [],
+    });
+  }
+
   return resultSets;
 }
 
