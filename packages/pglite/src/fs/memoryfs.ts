@@ -1,9 +1,11 @@
-import { FilesystemBase, PGDATA, copyDir } from "./fs.js";
-import type { FS, EmPostgres } from "../release/postgres.js";
-import loadPgShare from "../release/share.js";
-import { initDb } from "./initdb.js";
-import { nodeValues } from "./utils.js";
-import type { DebugLevel } from "./index.ts";
+import { FilesystemBase } from "./types.js";
+import { PGDATA } from "./index.js";
+import { copyDir } from "./utils.js";
+import type { EmPostgres } from "../../release/postgres.js";
+import loadPgShare from "../../release/share.js";
+import { initDb } from "../initdb.js";
+import { nodeValues } from "../utils.js";
+import type { DebugLevel } from "../index.js";
 
 export class MemoryFS extends FilesystemBase {
   initModule?: any;

@@ -254,7 +254,7 @@ test("basic transaction", async (t) => {
       ],
       affectedRows: 0,
     });
-    tx.rollback();
+    await tx.rollback();
   });
   const res = await db.query(`
     SELECT * FROM test;

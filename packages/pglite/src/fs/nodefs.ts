@@ -1,11 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import { FilesystemBase, PGDATA } from "./fs.js";
-import { initDb } from "./initdb.js";
-import loadPgShare from "../release/share.js";
-import type { EmPostgres } from "../release/postgres.js";
-import { nodeValues } from "./utils.js";
-import type { DebugLevel } from "./index.ts";
+import { FilesystemBase } from "./types.js";
+import { PGDATA } from "./index.js";
+import { initDb } from "../initdb.js";
+import loadPgShare from "../../release/share.js";
+import type { EmPostgres } from "../../release/postgres.js";
+import { nodeValues } from "../utils.js";
+import type { DebugLevel } from "../index.js";
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;

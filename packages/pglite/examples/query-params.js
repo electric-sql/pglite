@@ -1,9 +1,7 @@
 import { PGlite } from "../dist/index.js";
 
 console.log("Starting...");
-const pg = new PGlite(undefined, {
-  // verbose: true,
-});
+const pg = new PGlite();
 
 console.log("Creating table...");
 await pg.query(`

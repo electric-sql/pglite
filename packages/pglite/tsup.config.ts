@@ -9,7 +9,7 @@ let replaceAssertPlugin = {
   setup(build: any) {
     // Resolve `assert` to a blank file
     build.onResolve({ filter: /^assert$/ }, (args: any) => {
-      return { path: path.join(root, 'src', 'blank.ts') }
+      return { path: path.join(root, 'src', 'polyfills', 'blank.ts') }
     })
   },
 }
@@ -24,7 +24,7 @@ export default defineConfig({
   clean: true,
   format: ['esm'],
   esbuildOptions(options, context) {
-    options.inject = ['src/buffer-polyfill.ts']
+    options.inject = ['src/polyfills/buffer.ts']
   },
   esbuildPlugins: [
     replaceAssertPlugin,

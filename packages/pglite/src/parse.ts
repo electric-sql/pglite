@@ -33,13 +33,11 @@ export function parseResults(messages: Array<BackendMessage>): Array<Results> {
           msg.fields.map((field, i) => [
             currentResultSet!.fields[i].name,
             parseType(field, currentResultSet!.fields[i].dataTypeID),
-          ])
-        )
+          ]),
+        ),
       );
-    } else if (msg instanceof CommandCompleteMessage) {
-      if (currentResultSet) {
-        currentResultSet.affectedRows = affectedRows(msg);
-      }
+    } else if (msg instanceof CommandCompleteMessage && currentResultSet) {
+      currentResultSet.affectedRows = affectedRows(msg);
     }
   }
 
@@ -55,9 +53,12 @@ export function parseResults(messages: Array<BackendMessage>): Array<Results> {
 
 function affectedRows(msg: CommandCompleteMessage): number {
   const parts = msg.text.split(" ");
-  if (parts[0] === "INSERT" || parts[0] === "UPDATE" || parts[0] === "DELETE") {
-    return parseInt(parts[2]);
-  } else {
-    return 0;
+  switch (parts[0]) {
+    case "INSERT":
+    case "UPDATE":
+    case "DELETE":
+      return parseInt(parts[1]);
+    default:
+      return 0;
   }
 }

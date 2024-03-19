@@ -1,10 +1,8 @@
 import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
-import type { Filesystem } from "./fs.js";
-import { MemoryFS } from "./memoryfs.js";
-import { IdbFs } from "./idbfs.js";
+import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { nodeValues } from "./utils.js";
-import { PGEvent } from "./pg-event.js";
+import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 
@@ -61,34 +59,12 @@ export class PGlite {
    * @param options Optional options
    */
   constructor(dataDir?: string, options?: PGliteOptions) {
-    if (dataDir?.startsWith("file://")) {
-      // Remove the file:// prefix, and use node filesystem
-      this.dataDir = dataDir.slice(7);
-      if (!this.dataDir) {
-        throw new Error("Invalid dataDir, must be a valid path");
-      }
-      this.fsType = "nodefs";
-    } else if (dataDir?.startsWith("idb://")) {
-      // Remove the idb:// prefix, and use indexeddb filesystem
-      this.dataDir = dataDir.slice(6);
-      if (!this.dataDir.startsWith("/")) {
-        this.dataDir = "/" + this.dataDir;
-      }
-      if (this.dataDir.length <= 1) {
-        throw new Error("Invalid dataDir, path required for idbfs");
-      }
-      this.fsType = "idbfs";
-    } else if (!dataDir || dataDir?.startsWith("memory://")) {
-      // Use in-memory filesystem
-      this.fsType = "memoryfs";
-    } else {
-      // No prefix, use node filesystem
-      this.dataDir = dataDir;
-      this.fsType = "nodefs";
-    }
+    const { dataDir: dir, fsType } = parseDataDir(dataDir);
+    this.dataDir = dir;
+    this.fsType = fsType;
 
     // Enable debug logging if requested
-    if (options?.debug) {
+    if (options?.debug !== undefined) {
       this.debug = options.debug;
     }
 
@@ -115,14 +91,8 @@ export class PGlite {
       }
       this.#initStarted = true;
 
-      if (this.dataDir && this.fsType === "nodefs") {
-        const { NodeFS } = await import("./nodefs.js");
-        this.fs = new NodeFS(this.dataDir);
-      } else if (this.dataDir && this.fsType === "idbfs") {
-        this.fs = new IdbFs(this.dataDir);
-      } else {
-        this.fs = new MemoryFS();
-      }
+      // Load a filesystem based on the type
+      this.fs = await loadFs(this.dataDir, this.fsType);
       await this.fs.init(this.debug);
 
       let emscriptenOpts: Partial<EmPostgres> = {
@@ -155,7 +125,7 @@ export class PGlite {
           }
           return path;
         },
-        ...(this.debug
+        ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
           : { print: () => {}, printErr: () => {} }),
         onRuntimeInitialized: async (Module: EmPostgres) => {
@@ -254,12 +224,12 @@ export class PGlite {
             serialize.parse({
               text: query,
               types: parsedParams.map(([, type]) => type),
-            })
+            }),
           )),
           ...(await this.execProtocol(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
-            })
+            }),
           )),
           ...(await this.execProtocol(serialize.describe({ type: "P" }))),
           ...(await this.execProtocol(serialize.execute({}))),
@@ -297,32 +267,51 @@ export class PGlite {
    * @returns The result of the transaction
    */
   async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>
+    callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined> {
     return await this.#transactionMutex.runExclusive(async () => {
       await this.#runExec("BEGIN");
+
+      // Once a transaction is closed, we throw an error if it's used again
+      let closed = false;
+      const checkClosed = () => {
+        if (closed) {
+          throw new Error("Transaction is closed");
+        }
+      };
+
       try {
         const tx: Transaction = {
           query: async (query: string, params?: any[]) => {
+            checkClosed();
             return await this.#runQuery(query, params);
           },
           exec: async (query: string) => {
+            checkClosed();
             return await this.#runExec(query);
           },
-          rollback: () => {
-            throw new Rollback();
+          rollback: async () => {
+            checkClosed();
+            // Rollback and set the closed flag to prevent further use of this
+            // transaction
+            await this.#runExec("ROLLBACK");
+            closed = true;
+          },
+          get closed() {
+            return closed;
           },
         };
         const result = await callback(tx);
-        await this.#runExec("COMMIT");
+        if (!closed) {
+          closed = true;
+          await this.#runExec("COMMIT");
+        }
         return result;
       } catch (e) {
-        await this.#runExec("ROLLBACK");
-        if (e instanceof Rollback) {
-          return; // Rollback was called, so we return undefined (TODO: is this the right thing to do?)
-        } else {
-          throw e;
+        if (!closed) {
+          await this.#runExec("ROLLBACK");
         }
+        throw e;
       }
     });
   }
@@ -333,7 +322,7 @@ export class PGlite {
    * @returns The result of the query
    */
   async execProtocol(
-    message: Uint8Array
+    message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       if (this.#closing) {
@@ -367,7 +356,7 @@ export class PGlite {
             detail: message,
           });
           this.#eventTarget.dispatchEvent(event);
-        }
+        },
       );
 
       const results: Array<[BackendMessage, Uint8Array]> = [];
@@ -412,14 +401,6 @@ export type Results<T = { [key: string]: any }> = {
 export interface Transaction {
   query<T>(query: string, params?: any[]): Promise<Results<T>>;
   exec(query: string): Promise<Array<Results>>;
-  rollback(): void;
-}
-
-/**
- * An error that can be thrown to rollback a transaction
- */
-class Rollback extends Error {
-  constructor() {
-    super("Rollback");
-  }
+  rollback(): Promise<void>;
+  get closed(): boolean;
 }

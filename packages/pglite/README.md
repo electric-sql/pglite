@@ -128,7 +128,7 @@ Path to the directory to store the Postgres database. You can provide a url sche
 
 ##### `options`:
 
-- `debug`: 1-5 - the Postgres debug level. Logs are sent to the consol.
+- `debug`: 1-5 - the Postgres debug level. Logs are sent to the console.
 
 ### Methods:
 
@@ -136,13 +136,15 @@ Path to the directory to store the Postgres database. You can provide a url sche
 
 Execute a single statement, optionally with parameters.
 
+Uses the *extended query* Postgres wire protocol.
+
 Returns single [result object](#results-objects).
 
 ##### Example:
 
 ```ts
 await pg.query(
-  'INSERT INTO test (name) VALUES ('$1');',
+  'INSERT INTO test (name) VALUES ($1);',
   [ 'test' ]
 );
 // { affectedRows: 1 },
@@ -151,6 +153,10 @@ await pg.query(
 #### `.exec(query: string): Promise<Array<Results>>`
 
 Execute one or more statements. *(note that parameters are not supported)*
+
+This is useful for applying database migrations, or running multi-statement sql that doesn't use parameters.
+
+Uses the *simple query* Postgres wire protocol.
 
 Returns array of [result objects](#results-objects), one for each statement.
 
@@ -181,10 +187,6 @@ await pg.exec(`
 // ]
 ```
 
-#### `.close(): Promise<void>`
-
-Close the database, ensuring it is shut down cleanly.
-
 #### `.transaction<T>(callback: (tx: Transaction) => Promise<T>)`
 
 To start an interactive transaction pass a callback to the transaction method. It is passed a `Transaction` object which can be used to perform operations within the transaction.
@@ -192,29 +194,33 @@ To start an interactive transaction pass a callback to the transaction method. I
 ##### `Transaction` objects:
 
 - `tx.query<T>(query: string, params?: any[]): Promise<Results<T>>`
-  The same as the main `.query` method.
+  The same as the main [`.query` method](#querytquery-string-params-any-promiseresultst).
 - `tx.exec(query: string): Promise<Array<Results>>`
-  The same as the main `.exec` method.
+  The same as the main [`.exec` method](#execquery-string-promisearrayresults).
 - `tx.rollback()`
-  Rollback the current transaction.
+  Rollback and close the current transaction.
 
 ##### Example:
 
 ```ts
-await pg.transaction((tx) => {
-  ts.query(
+await pg.transaction(async (tx) => {
+  await ts.query(
     'INSERT INTO test (name) VALUES ('$1');',
     [ 'test' ]
   );
-  return ts.query('SELECT * FROM test;');
+  return await ts.query('SELECT * FROM test;');
 });
 ```
 
+#### `.close(): Promise<void>`
+
+Close the database, ensuring it is shut down cleanly.
+
 ### Properties:
 
-- `.ready` *boolean (read only)*: The ready state of the database.
-- `.closed` *boolean (read only)*: The closed state of the database.
-- `.waitReady` *Promise<void>*: Promise that resolves when the database is ready to use. Note that queries will wait for this if called before the database has fully initialised, and so its not necessary to wait for it explicitly.
+- `.ready` *boolean (read only)*: Whether the database is ready to accept queries.
+- `.closed` *boolean (read only)*: Whether the database is closed and no longer accepting queries.
+- `.waitReady` *Promise<void>*: Promise that resolves when the database is ready to use. Note that queries will wait for this if called before the database has fully initialised, and so it's not necessary to wait for it explicitly.
 
 ### Results<T> Objects:
 
@@ -222,14 +228,14 @@ Result objects have the following properties:
 
 - `rows: Row<T>[]` - The rows retuned by the query
 - `affectedRows?: number` - Count of the rows affected by the query. Note this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
--  `fields: { name: string; dataTypeID: number }[]` - Field name and Postgres data type id for each field returned.
+-  `fields: { name: string; dataTypeID: number }[]` - Field name and Postgres data type ID for each field returned.
 
 
 ### Row<T> Objects:
 
 Rows objects are a key / value mapping for each row returned by the query.
 
-The `.query<T>()` method can take a type describing the expected shape of the returned rows. 
+The `.query<T>()` method can take a TypeScript type describing the expected shape of the returned rows. *(Note: this is not validated at run time, the result only cast to the provided type)*
 
 ## How it works
 

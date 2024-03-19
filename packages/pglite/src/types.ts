@@ -120,7 +120,7 @@ function typeHandlers(types: TypeHandlers) {
       serializers[k] = theSerializer;
       if (types[k].js) {
         types[k].js.forEach((Type: any) =>
-          serializerInstanceof.push([Type, theSerializer])
+          serializerInstanceof.push([Type, theSerializer]),
         );
       }
       if (parse) {
@@ -139,6 +139,6 @@ function typeHandlers(types: TypeHandlers) {
         [key: number | string]: (x: any) => [string, number];
       },
       serializerInstanceof: [] as Array<[any, (x: any) => [string, number]]>,
-    }
+    },
   );
 }
