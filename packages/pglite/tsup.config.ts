@@ -15,10 +15,16 @@ let replaceAssertPlugin = {
 }
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: [
+    'src/index.ts',
+    'src/extensions/plpgsql.ts',
+  ],
   sourcemap: true,
   dts: {
-    entry: 'src/index.ts',
+    entry: [
+      'src/index.ts',
+      'src/extensions/plpgsql.ts',
+    ],
     resolve: true
   },
   clean: true,

@@ -5,6 +5,7 @@ import { nodeValues } from "./utils.js";
 import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
+import type { Extension } from "./extensions/interface.js";
 
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/dist/index.js";
@@ -24,6 +25,7 @@ export type DebugLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface PGliteOptions {
   debug?: DebugLevel;
+  extensions?: Extension[];
 }
 
 export class PGlite {
@@ -31,6 +33,7 @@ export class PGlite {
   readonly fsType: FilesystemType;
   protected fs?: Filesystem;
   protected emp?: any;
+  protected extensions: Extension[] = [];
 
   #initStarted = false;
   #ready = false;
@@ -68,6 +71,11 @@ export class PGlite {
       this.debug = options.debug;
     }
 
+    // save the extensions
+    if (options?.extensions) {
+      this.extensions = options.extensions;
+    }
+
     // Create an event target to handle events from the emscripten module
     this.#eventTarget = new EventTarget();
 
@@ -100,6 +108,19 @@ export class PGlite {
       // additional setup steps at the end of the init.
       firstRun = await this.fs.init(this.debug);
 
+      // File URLs
+      const fileURLs: {[filename: string]: string} = {
+        "share.data": PGSHARE_URL.toString(),
+        "postgres.wasm": PGWASM_URL.toString(),
+      };
+      for (const ext of this.extensions) {
+        const { dataUrls } = ext;
+        if (dataUrls) {
+          const urls = await dataUrls();
+          Object.assign(fileURLs, urls);
+        }
+      }
+
       let emscriptenOpts: Partial<EmPostgres> = {
         arguments: [
           "--single", // Single user mode
@@ -120,10 +141,10 @@ export class PGlite {
         ],
         locateFile: (base: string, _path: any) => {
           let path = "";
-          if (base === "share.data") {
-            path = PGSHARE_URL.toString();
-          } else if (base === "postgres.wasm") {
-            path = PGWASM_URL.toString();
+          if (fileURLs[base]) {
+            path = fileURLs[base];
+          } else {
+            path = new URL(base, _path).toString();
           }
           if (path?.startsWith("file://")) {
             path = path.slice(7);
@@ -142,8 +163,18 @@ export class PGlite {
         Event: PGEvent,
       };
 
-      const { dirname, require } = await nodeValues();
+      // Load the filesystem
       emscriptenOpts = await this.fs.emscriptenOpts(emscriptenOpts);
+
+      // Load the extensions
+      for (const ext of this.extensions) {
+        const { load: loadEx } = ext;
+        if (loadEx) {
+          emscriptenOpts = await loadEx(emscriptenOpts);
+        }
+      }
+
+      const { dirname, require } = await nodeValues();
       const emp = await EmPostgresFactory(emscriptenOpts, dirname, require);
       this.emp = emp;
     });
@@ -175,6 +206,12 @@ export class PGlite {
         await this.#runExec(`SET search_path TO ${schema};\n ${sql}`);
       } else {
         await this.#runExec(sql);
+      }
+    }
+    // Initialize extensions
+    for (const { init: exInit } of this.extensions) {
+      if (exInit) {
+        await exInit(this);
       }
     }
   }

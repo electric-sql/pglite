@@ -1,0 +1,28 @@
+<script type="module">
+  import { PGlite } from "../dist/index.js";
+  import plpgsql from "../dist/extensions/plpgsql.js";
+
+  console.log("Starting...");
+  const pg = new PGlite(undefined, {
+    extensions: [plpgsql],
+  });
+
+  console.log("Waiting for ready...");
+  await pg.waitReady;
+
+  let ret = await pg.exec(`
+    CREATE EXTENSION IF NOT EXISTS plpgsql;
+  `);
+  console.log(ret);
+  
+  // await pg.exec(`
+  //   CREATE OR REPLACE FUNCTION testfunc()
+  //   RETURNS void AS $$
+  //   BEGIN
+  //     INSERT INTO test (name) VALUES ('testfunc');
+  //   END;
+  //   $$ LANGUAGE plpgsql;
+  // `);
+
+  console.log("Ready!");
+</script>
