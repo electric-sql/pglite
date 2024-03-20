@@ -13,7 +13,7 @@ export class IdbFs extends FilesystemBase {
   async init(debug?: DebugLevel) {
     const dbExists = () =>
       new Promise((resolve, reject) => {
-        const request = window.indexedDB.open(`/pglite${this.dataDir}`);
+        const request = globalThis.indexedDB.open(`/pglite${this.dataDir}`);
         let exists = true;
         request.onupgradeneeded = (e) => {
           if (e.oldVersion === 0) {
@@ -27,7 +27,7 @@ export class IdbFs extends FilesystemBase {
           const db = request.result;
           db.close();
           if (!exists) {
-            window.indexedDB.deleteDatabase(`/pglite${this.dataDir}`);
+            globalThis.indexedDB.deleteDatabase(`/pglite${this.dataDir}`);
           }
           resolve(exists);
         };
