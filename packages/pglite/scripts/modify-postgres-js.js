@@ -15,6 +15,10 @@ function(Module) {`,
     `return (
 function (Module, __dirname, require) {`
   )
+  // Fix for ReferenceError: asyncifyStubs is not defined
+  // see: https://github.com/emscripten-core/emscripten/issues/21104
+  // var Module=moduleArg or var Module = moduleArg
+  .replace(/var Module\s?=\s?moduleArg;/g, "var Module = moduleArg; var asyncifyStubs = {};")
   .replace("function doRun()", "async function doRun()")
   .replace(
     'Module["onRuntimeInitialized"]()',
