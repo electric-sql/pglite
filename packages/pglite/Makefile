@@ -2,7 +2,7 @@
 
 build-configure:
 	EMCC_CFLAGS="-Wl,--allow-undefined" \
-	emconfigure ./configure CFLAGS='-O3' \
+	emconfigure ./configure CFLAGS='-O2' \
 		--without-readline \
 		--without-zlib \
 		--disable-thread-safety \
@@ -10,7 +10,7 @@ build-configure:
 		--with-system-tzdata=/usr/share/zoneinfo
 
 build:
-	EMCC_CFLAGS="-sMAIN_MODULE=2 -sALLOW_MEMORY_GROWTH=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sEMULATE_FUNCTION_POINTER_CASTS=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_FUNCTIONS=_main,_ExecProtocolMsg,_malloc,_free -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS" \
+	EMCC_CFLAGS="--profiling -sMAIN_MODULE=2 -sALLOW_MEMORY_GROWTH=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_FUNCTIONS=@/Users/samwillis/Code/pglite/packages/pglite/exports.txt -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,FS" \
 		emmake make -C src/backend MAKELEVEL=0
 	mkdir -p ../packages/pglite/release
 	cp src/backend/postgres ../packages/pglite/release/postgres.js
@@ -20,7 +20,7 @@ build:
 sharedir:
 	mkdir -p tmp_install
 	DESTDIR="$(abspath tmp_install)" \
-	EMCC_CFLAGS="-sMAIN_MODULE=2 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sEMULATE_FUNCTION_POINTER_CASTS=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
+	EMCC_CFLAGS="-sMAIN_MODULE=2 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
 		emmake make MAKELEVEL=0 -C src/backend/ install
 	node ../packages/pglite/scripts/modify-share.js
 	cd ../packages/pglite/release && \
@@ -28,7 +28,7 @@ sharedir:
 	cd ../packages/pglite/ && node scripts/modify-share-js.js
 
 build-plpgsql:
-	EMCC_CFLAGS="-sSIDE_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sEMULATE_FUNCTION_POINTER_CASTS=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
+	EMCC_CFLAGS="--profiling --emit-symbol-map -sSIDE_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
 		emmake make -C src/pl/plpgsql MAKELEVEL=0
 	mkdir -p tmp_install/plpgsql/share/extension
 	mkdir -p tmp_install/plpgsql/lib

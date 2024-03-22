@@ -5,6 +5,7 @@
   console.log("Starting...");
   const pg = new PGlite(undefined, {
     extensions: [plpgsql],
+    debug: 1,
   });
 
   console.log("Waiting for ready...");
