@@ -151,7 +151,10 @@ export class PGlite {
     if (firstRun) {
       await this.#firstRun();
     }
-    await this.#runExec("SET search_path TO public;");
+    await this.#runExec(`
+      SET search_path TO public;
+      CREATE EXTENSION IF NOT EXISTS plpgsql;
+    `);
   }
 
   /**

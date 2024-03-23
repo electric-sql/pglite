@@ -29,4 +29,5 @@ export default defineConfig({
   esbuildPlugins: [
     replaceAssertPlugin,
   ],
+  minify: true,
 })

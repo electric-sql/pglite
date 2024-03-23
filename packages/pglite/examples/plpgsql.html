@@ -1,0 +1,41 @@
+<script type="module">
+  import { PGlite } from "../dist/index.js";
+
+  console.log("Starting...");
+  const pg = new PGlite(undefined, {
+    // debug: 1,
+  });
+
+  console.log("Waiting for ready...");
+  await pg.waitReady;
+
+  let ret = await pg.exec(`
+    CREATE EXTENSION IF NOT EXISTS plpgsql;
+  `);
+  console.log(ret);
+  
+  await pg.exec(`
+    CREATE OR REPLACE FUNCTION calculate_factorial(n INT) RETURNS INT AS $$
+    DECLARE
+        result INT := 1;
+    BEGIN
+        IF n < 0 THEN
+            RAISE EXCEPTION 'The input cannot be negative.';
+        ELSIF n = 0 OR n = 1 THEN
+            RETURN result;
+        ELSE
+            FOR i IN 2..n LOOP
+                result := result * i;
+            END LOOP;
+            RETURN result;
+        END IF;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+
+  ret = await pg.exec(`
+    SELECT calculate_factorial(5) AS result;
+  `);
+  console.log(ret);
+
+</script>
