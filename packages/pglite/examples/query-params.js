@@ -1,4 +1,4 @@
-import { PGlite } from "../dist/index.js";
+import { PGlite, types } from "../dist/index.js";
 
 console.log("Starting...");
 const pg = new PGlite();
@@ -21,3 +21,15 @@ const res = await pg.query(`
 `, ["test"]);
 
 console.log(res);
+
+console.log("Selecting data with options...");
+const res2 = await pg.query(`
+  SELECT * FROM test WHERE name = $1;
+`, ["test"], {
+  rowMode: "array",
+  parsers: {
+    [types.TEXT]: (value) => value.toUpperCase(),
+  }
+});
+
+console.log(res2);

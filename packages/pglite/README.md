@@ -132,7 +132,7 @@ Path to the directory to store the Postgres database. You can provide a url sche
 
 ### Methods:
 
-#### `.query<T>(query: string, params?: any[]): Promise<Results<T>>`
+#### `.query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>>`
 
 Execute a single statement, optionally with parameters.
 
@@ -150,7 +150,29 @@ await pg.query(
 // { affectedRows: 1 },
 ```
 
-#### `.exec(query: string): Promise<Array<Results>>`
+##### QueryOptions:
+
+The `query` and `exec` methods take an optional `options` objects with the following parameters:
+
+- `rowMode: "object" | "array"`
+  The returned row object type, either an object of `felidName: value` mappings or an array of positional values. Defaults to `"object"`.
+- `parsers: ParserOptions`
+  An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type id to parser function.
+  For convenance the `pglite` package exports a const for most common Postgres types:
+
+  ```ts
+  import { types } from "@electric-sql/pglite";
+  await pg.query(`
+    SELECT * FROM test WHERE name = $1;
+  `, ["test"], {
+    rowMode: "array",
+    parsers: {
+      [types.TEXT]: (value) => value.toUpperCase(),
+    }
+  });
+  ```
+
+#### `.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`
 
 Execute one or more statements. *(note that parameters are not supported)*
 
@@ -193,9 +215,9 @@ To start an interactive transaction pass a callback to the transaction method. I
 
 ##### `Transaction` objects:
 
-- `tx.query<T>(query: string, params?: any[]): Promise<Results<T>>`
+- `tx.query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>>`
   The same as the main [`.query` method](#querytquery-string-params-any-promiseresultst).
-- `tx.exec(query: string): Promise<Array<Results>>`
+- `tx.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`
   The same as the main [`.exec` method](#execquery-string-promisearrayresults).
 - `tx.rollback()`
   Rollback and close the current transaction.

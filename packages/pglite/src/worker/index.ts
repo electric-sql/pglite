@@ -5,6 +5,7 @@ import type {
   FilesystemType,
   DebugLevel,
   Results,
+  QueryOptions,
 } from "../interface.js";
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
 import { parseDataDir } from "../fs/index.js";
@@ -52,12 +53,12 @@ export class PGliteWorker implements PGliteInterface {
     this.#closed = true;
   }
 
-  async query<T>(query: string, params?: any[]): Promise<Results<T>> {
-    return this.#worker.query(query, params) as Promise<Results<T>>;
+  async query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
+    return this.#worker.query(query, params, options) as Promise<Results<T>>;
   }
 
-  async exec(query: string): Promise<Array<Results>> {
-    return this.#worker.exec(query);
+  async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+    return this.#worker.exec(query, options);
   }
 
   async transaction<T>(callback: (tx: any) => Promise<T>) {
