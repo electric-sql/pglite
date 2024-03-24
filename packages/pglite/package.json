@@ -17,6 +17,17 @@
   "author": "Electric DB Limited",
   "license": "Apache-2.0",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./worker": "./dist/worker/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "worker": [
+        "./dist/worker/index.d.ts"
+      ]
+    }
+  },
   "type": "module",
   "types": "dist/index.d.ts",
   "files": [
@@ -43,6 +54,7 @@
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
+    "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "pg-protocol": "^1.6.0",

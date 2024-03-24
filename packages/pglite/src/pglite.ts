@@ -5,6 +5,14 @@ import { nodeValues } from "./utils.js";
 import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
+import type {
+  DebugLevel,
+  PGliteOptions,
+  FilesystemType,
+  PGliteInterface,
+  Results,
+  Transaction,
+} from "./interface.js";
 
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/dist/index.js";
@@ -18,15 +26,7 @@ import {
 const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
 const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
 
-type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
-
-export type DebugLevel = 0 | 1 | 2 | 3 | 4 | 5;
-
-export interface PGliteOptions {
-  debug?: DebugLevel;
-}
-
-export class PGlite {
+export class PGlite implements PGliteInterface {
   readonly dataDir?: string;
   readonly fsType: FilesystemType;
   protected fs?: Filesystem;
@@ -40,14 +40,14 @@ export class PGlite {
 
   #resultAccumulator: Uint8Array[] = [];
 
-  waitReady: Promise<void>;
+  readonly waitReady: Promise<void>;
 
   #executeMutex = new Mutex();
   #queryMutex = new Mutex();
   #transactionMutex = new Mutex();
   #fsSyncMutex = new Mutex();
 
-  debug: DebugLevel = 0;
+  readonly debug: DebugLevel = 0;
 
   #parser = new Parser();
 
@@ -203,8 +203,8 @@ export class PGlite {
   async close() {
     await this.#checkReady();
     this.#closing = true;
-    const promise = new Promise((resolve, reject) => {
-      this.#eventTarget.addEventListener("closed", resolve, {
+    const promise = new Promise<void>((resolve, reject) => {
+      this.#eventTarget.addEventListener("closed", () => resolve(), {
         once: true,
       });
     });
@@ -265,12 +265,12 @@ export class PGlite {
             serialize.parse({
               text: query,
               types: parsedParams.map(([, type]) => type),
-            }),
+            })
           )),
           ...(await this.execProtocol(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
-            }),
+            })
           )),
           ...(await this.execProtocol(serialize.describe({ type: "P" }))),
           ...(await this.execProtocol(serialize.execute({}))),
@@ -308,7 +308,7 @@ export class PGlite {
    * @returns The result of the transaction
    */
   async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
+    callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined> {
     await this.#checkReady();
     return await this.#transactionMutex.runExclusive(async () => {
@@ -381,7 +381,7 @@ export class PGlite {
    * @returns The result of the query
    */
   async execProtocol(
-    message: Uint8Array,
+    message: Uint8Array
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       if (this.#resultAccumulator.length > 0) {
@@ -425,19 +425,4 @@ export class PGlite {
       await this.fs!.syncToFs(this.emp.FS);
     });
   }
-}
-
-export type Row<T = { [key: string]: any }> = T;
-
-export type Results<T = { [key: string]: any }> = {
-  rows: Row<T>[];
-  affectedRows?: number;
-  fields: { name: string; dataTypeID: number }[];
-};
-
-export interface Transaction {
-  query<T>(query: string, params?: any[]): Promise<Results<T>>;
-  exec(query: string): Promise<Array<Results>>;
-  rollback(): Promise<void>;
-  get closed(): boolean;
 }
