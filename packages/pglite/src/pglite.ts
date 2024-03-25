@@ -12,6 +12,7 @@ import type {
   PGliteInterface,
   Results,
   Transaction,
+  QueryOptions,
 } from "./interface.js";
 
 // Importing the source as the built version is not ESM compatible
@@ -221,13 +222,13 @@ export class PGlite implements PGliteInterface {
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async query<T>(query: string, params?: any[]): Promise<Results<T>> {
+  async query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
     await this.#checkReady();
     // We wrap the public query method in the transaction mutex to ensure that
     // only one query can be executed at a time and not concurrently with a
     // transaction.
     return await this.#transactionMutex.runExclusive(async () => {
-      return await this.#runQuery<T>(query, params);
+      return await this.#runQuery<T>(query, params, options);
     });
   }
 
@@ -237,13 +238,13 @@ export class PGlite implements PGliteInterface {
    * @param query The query to execute
    * @returns The result of the query
    */
-  async exec(query: string): Promise<Array<Results>> {
+  async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
     await this.#checkReady();
     // We wrap the public exec method in the transaction mutex to ensure that
     // only one query can be executed at a time and not concurrently with a
     // transaction.
     return await this.#transactionMutex.runExclusive(async () => {
-      return await this.#runExec(query);
+      return await this.#runExec(query, options);
     });
   }
 
@@ -254,7 +255,7 @@ export class PGlite implements PGliteInterface {
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async #runQuery<T>(query: string, params?: any[]): Promise<Results<T>> {
+  async #runQuery<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
       const parsedParams = params?.map((p) => serializeType(p)) || [];
@@ -278,7 +279,7 @@ export class PGlite implements PGliteInterface {
       } finally {
         await this.execProtocol(serialize.sync());
       }
-      return parseResults(results.map(([msg]) => msg))[0] as Results<T>;
+      return parseResults(results.map(([msg]) => msg), options)[0] as Results<T>;
     });
   }
 
@@ -289,7 +290,7 @@ export class PGlite implements PGliteInterface {
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async #runExec(query: string): Promise<Array<Results>> {
+  async #runExec(query: string, options?: QueryOptions): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
       let results;
@@ -298,7 +299,7 @@ export class PGlite implements PGliteInterface {
       } finally {
         await this.execProtocol(serialize.sync());
       }
-      return parseResults(results.map(([msg]) => msg)) as Array<Results>;
+      return parseResults(results.map(([msg]) => msg), options) as Array<Results>;
     });
   }
 
@@ -324,13 +325,13 @@ export class PGlite implements PGliteInterface {
 
       try {
         const tx: Transaction = {
-          query: async (query: string, params?: any[]) => {
+          query: async (query: string, params?: any[], options?: QueryOptions) => {
             checkClosed();
-            return await this.#runQuery(query, params);
+            return await this.#runQuery(query, params, options);
           },
-          exec: async (query: string) => {
+          exec: async (query: string, options?: QueryOptions) => {
             checkClosed();
-            return await this.#runExec(query);
+            return await this.#runExec(query, options);
           },
           rollback: async () => {
             checkClosed();

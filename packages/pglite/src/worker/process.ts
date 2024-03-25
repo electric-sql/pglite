@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
-import { PGlite, type PGliteOptions } from "../index.js";
+import { PGlite } from "../index.js";
+import type { PGliteOptions, QueryOptions } from "../interface.js";
 
 let db: PGlite;
 
@@ -12,11 +13,11 @@ const worker = {
   async close() {
     await db.close();
   },
-  async query(query: string, params?: any[]) {
-    return await db.query(query, params);
+  async query(query: string, params?: any[], options?: QueryOptions) {
+    return await db.query(query, params, options);
   },
-  async exec(query: string) {
-    return await db.exec(query);
+  async exec(query: string, options?: QueryOptions) {
+    return await db.exec(query, options);
   },
   async transaction(callback: (tx: any) => Promise<any>) {
     return await db.transaction((tx) => {
@@ -26,7 +27,7 @@ const worker = {
   async execProtocol(message: Uint8Array) {
     return await db.execProtocol(message);
   },
-}
+};
 
 Comlink.expose(worker);
 

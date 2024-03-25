@@ -3,16 +3,18 @@ import {
   RowDescriptionMessage,
   DataRowMessage,
   CommandCompleteMessage,
-  ReadyForQueryMessage,
 } from "pg-protocol/dist/messages.js";
-import type { Results, Row } from "./index.js";
+import type { Results, QueryOptions } from "./interface.js";
 import { parseType } from "./types.js";
 
 /**
  * This function is used to parse the results of either a simple or extended query.
  * https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-SIMPLE-QUERY
  */
-export function parseResults(messages: Array<BackendMessage>): Array<Results> {
+export function parseResults(
+  messages: Array<BackendMessage>,
+  options?: QueryOptions
+): Array<Results> {
   const resultSets: Results[] = [];
   let currentResultSet: Results | null = null;
 
@@ -27,15 +29,30 @@ export function parseResults(messages: Array<BackendMessage>): Array<Results> {
       };
       resultSets.push(currentResultSet);
     } else if (msg instanceof DataRowMessage && currentResultSet) {
-      currentResultSet.rows.push(
-        Object.fromEntries(
-          // TODO: fix where column names are not unique, i.e. ?column?
-          msg.fields.map((field, i) => [
-            currentResultSet!.fields[i].name,
-            parseType(field, currentResultSet!.fields[i].dataTypeID),
-          ]),
-        ),
-      );
+      if (options?.rowMode === "array") {
+        currentResultSet.rows.push(
+          msg.fields.map((field, i) =>
+            parseType(
+              field,
+              currentResultSet!.fields[i].dataTypeID,
+              options?.parsers
+            )
+          )
+        );
+      } else { // rowMode === "object"
+        currentResultSet.rows.push(
+          Object.fromEntries(
+            msg.fields.map((field, i) => [
+              currentResultSet!.fields[i].name,
+              parseType(
+                field,
+                currentResultSet!.fields[i].dataTypeID,
+                options?.parsers
+              ),
+            ])
+          )
+        );
+      }
     } else if (msg instanceof CommandCompleteMessage && currentResultSet) {
       currentResultSet.affectedRows = affectedRows(msg);
     }
