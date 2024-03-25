@@ -21,10 +21,11 @@ export class NodeFS extends FilesystemBase {
       throw new Error("No datadir specified");
     }
     if (fs.existsSync(path.join(this.dataDir!, "PG_VERSION"))) {
-      return;
+      return false;
     }
     fs.mkdirSync(this.dataDir);
     await initDb(this.dataDir, debug);
+    return true;
   }
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {

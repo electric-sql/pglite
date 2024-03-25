@@ -12,6 +12,7 @@ export class MemoryFS extends FilesystemBase {
 
   async init(debug?: DebugLevel) {
     this.initModule = await initDb(undefined, debug);
+    return true;
   }
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {
