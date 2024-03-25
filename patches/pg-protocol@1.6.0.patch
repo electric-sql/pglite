@@ -1,0 +1,13 @@
+diff --git a/src/buffer-reader.ts b/src/buffer-reader.ts
+index 2305e130c930bbd33974d3f7232faeeebca765c1..2903a188e9975194a5bdb2cea887e2abaf83c042 100644
+--- a/src/buffer-reader.ts
++++ b/src/buffer-reader.ts
+@@ -4,7 +4,7 @@ export class BufferReader {
+   private buffer: Buffer = emptyBuffer
+ 
+   // TODO(bmc): support non-utf8 encoding?
+-  private encoding: string = 'utf-8'
++  private encoding = 'utf-8' as const
+ 
+   constructor(private offset: number = 0) {}
+ 

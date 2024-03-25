@@ -1,117 +1,281 @@
 import test from "ava";
-import playwright from "playwright";
-import { spawn } from "child_process";
-import fs from "fs";
+import { PGlite } from "../dist/index.js";
 
-const envs = {
-  node: ["memory://", "./pgdata-test"],
-  chromium: ["memory://", "idb://pgdata-test"],
-  firefox: ["memory://", "idb://pgdata-test"],
-  webkit: ["memory://", "idb://pgdata-test"],
-};
+test("basic exec", async (t) => {
+  const db = new PGlite();
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+  await db.exec("INSERT INTO test (name) VALUES ('test');");
+  const res = await db.exec(`
+    SELECT * FROM test;
+  `);
 
-let webserver;
-const wsPort = 3334;
-const packageDir = new URL("..", import.meta.url).pathname;
-
-test.serial.before(async (t) => {
-  webserver = spawn("npx", ["http-server", "--port", wsPort, packageDir], {
-    stdio: "ignore",
-  });
-  await new Promise((resolve) => setTimeout(resolve, 500));
-});
-
-test.after.always(async (t) => {
-  if (webserver) {
-    webserver.kill();
-  }
-  fs.rmSync("./pgdata-test", { recursive: true });
-});
-
-Object.entries(envs).forEach(([env, dbFilenames]) => {
-  let browser;
-
-  test.before(async (t) => {
-    if (env !== "node") {
-      browser = await playwright[env].launch();
-    }
-  });
-
-  test.after(async (t) => {
-    if (browser) {
-      await browser.close();
-    }
-  });
-
-  dbFilenames.forEach((dbFilename) => {
-    let evaluate;
-    let page;
-
-    test.serial.before(async (t) => {
-      if (env === "node") {
-        evaluate = async (fn) => fn();
-      } else {
-        const context = await browser.newContext();
-        page = await context.newPage();
-        await page.goto(`http://localhost:${wsPort}/tests/blank.html`);
-        page.evaluate(`window.dbFilename = "${dbFilename}";`);
-        evaluate = async (fn) => await page.evaluate(fn);
-      }
-    });
-
-    test.serial(`basic ${env} ${dbFilename}`, async (t) => {
-      const res = await evaluate(async () => {
-        const { PGlite } = await import("../dist/index.js");
-        const pg = new PGlite(dbFilename);
-        await pg.waitReady;
-        await pg.query(`
-          CREATE TABLE IF NOT EXISTS test (
-            id SERIAL PRIMARY KEY,
-            name TEXT
-          );
-        `);
-        await pg.query("INSERT INTO test (name) VALUES ('test');");
-        const res = await pg.query(`
-          SELECT * FROM test;
-        `);
-        // await pg.close(); // Currently throws an unhandled promise rejection
-        return res;
-      });
-
-      t.deepEqual(res, [
+  t.deepEqual(res, [
+    {
+      rows: [
         {
           id: 1,
           name: "test",
         },
-      ]);
-    });
+      ],
+      fields: [
+        {
+          name: "id",
+          dataTypeID: 23,
+        },
+        {
+          name: "name",
+          dataTypeID: 25,
+        },
+      ],
+      affectedRows: 0,
+    },
+  ]);
+});
 
-    if (dbFilename === "memory://") {
-      // Skip the rest of the tests for memory:// as it's not persisted
-      return;
+test("basic query", async (t) => {
+  const db = new PGlite();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+  await db.query("INSERT INTO test (name) VALUES ('test');");
+  const res = await db.query(`
+    SELECT * FROM test;
+  `);
+
+  t.deepEqual(res, {
+    rows: [
+      {
+        id: 1,
+        name: "test",
+      },
+    ],
+    fields: [
+      {
+        name: "id",
+        dataTypeID: 23,
+      },
+      {
+        name: "name",
+        dataTypeID: 25,
+      },
+    ],
+    affectedRows: 0,
+  });
+});
+
+test("basic types", async (t) => {
+  const db = new PGlite();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      text TEXT,
+      number INT,
+      float FLOAT,
+      bigint BIGINT,
+      bool BOOLEAN,
+      date DATE,
+      timestamp TIMESTAMP,
+      json JSONB,
+      blob BYTEA
+    );
+  `);
+
+  await db.query(
+    `
+    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+  `,
+    [
+      "test",
+      1,
+      1.5,
+      9223372036854775807n,
+      true,
+      new Date("2021-01-01"),
+      new Date("2021-01-01T12:00:00"),
+      { test: "test" },
+      Uint8Array.from([1, 2, 3]),
+    ]
+  );
+
+  const res = await db.query(`
+    SELECT * FROM test;
+  `);
+
+  t.deepEqual(res, {
+    rows: [
+      {
+        id: 1,
+        text: "test",
+        number: 1,
+        float: 1.5,
+        bigint: 9223372036854775807n,
+        bool: true,
+        date: new Date("2021-01-01T00:00:00.000Z"),
+        timestamp: new Date("2021-01-01T12:00:00.000Z"),
+        json: { test: "test" },
+        blob: Uint8Array.from([1, 2, 3]),
+      },
+    ],
+    fields: [
+      {
+        name: "id",
+        dataTypeID: 23,
+      },
+      {
+        name: "text",
+        dataTypeID: 25,
+      },
+      {
+        name: "number",
+        dataTypeID: 23,
+      },
+      {
+        name: "float",
+        dataTypeID: 701,
+      },
+      {
+        name: "bigint",
+        dataTypeID: 20,
+      },
+      {
+        name: "bool",
+        dataTypeID: 16,
+      },
+      {
+        name: "date",
+        dataTypeID: 1082,
+      },
+      {
+        name: "timestamp",
+        dataTypeID: 1114,
+      },
+      {
+        name: "json",
+        dataTypeID: 3802,
+      },
+      {
+        name: "blob",
+        dataTypeID: 17,
+      },
+    ],
+    affectedRows: 0,
+  });
+});
+
+test("basic params", async (t) => {
+  const db = new PGlite();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+  await db.query("INSERT INTO test (name) VALUES ($1);", ["test2"]);
+  const res = await db.query(`
+    SELECT * FROM test;
+  `);
+
+  t.deepEqual(res, {
+    rows: [
+      {
+        id: 1,
+        name: "test2",
+      },
+    ],
+    fields: [
+      {
+        name: "id",
+        dataTypeID: 23,
+      },
+      {
+        name: "name",
+        dataTypeID: 25,
+      },
+    ],
+    affectedRows: 0,
+  });
+});
+
+test("basic error", async (t) => {
+  const db = new PGlite();
+  await t.throwsAsync(
+    async () => {
+      await db.query("SELECT * FROM test;");
+    },
+    {
+      message: 'relation "test" does not exist',
     }
+  );
+});
 
-    test.serial(`basic persisted ${env} ${dbFilename}`, async (t) => {
-      await page?.reload(); // Refresh the page
-      page?.evaluate(`window.dbFilename = "${dbFilename}";`);
-
-      const res = await evaluate(async () => {
-        const { PGlite } = await import("../dist/index.js");
-        const pg = new PGlite(dbFilename);
-        await pg.waitReady;
-        const res = await pg.query(`
-          SELECT * FROM test;
-        `);
-        // await pg.close(); // Currently throws an unhandled promise rejection
-        return res;
-      });
-
-      t.deepEqual(res, [
+test("basic transaction", async (t) => {
+  const db = new PGlite();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+  await db.query("INSERT INTO test (name) VALUES ('test');");
+  await db.transaction(async (tx) => {
+    await tx.query("INSERT INTO test (name) VALUES ('test2');");
+    const res = await tx.query(`
+      SELECT * FROM test;
+    `);
+    t.deepEqual(res, {
+      rows: [
         {
           id: 1,
           name: "test",
         },
-      ]);
+        {
+          id: 2,
+          name: "test2",
+        },
+      ],
+      fields: [
+        {
+          name: "id",
+          dataTypeID: 23,
+        },
+        {
+          name: "name",
+          dataTypeID: 25,
+        },
+      ],
+      affectedRows: 0,
     });
+    await tx.rollback();
+  });
+  const res = await db.query(`
+    SELECT * FROM test;
+  `);
+  t.deepEqual(res, {
+    rows: [
+      {
+        id: 1,
+        name: "test",
+      },
+    ],
+    fields: [
+      {
+        name: "id",
+        dataTypeID: 23,
+      },
+      {
+        name: "name",
+        dataTypeID: 25,
+      },
+    ],
+    affectedRows: 0,
   });
 });

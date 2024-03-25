@@ -1,7 +1,8 @@
-import { PGDATA } from "./fs.js";
+import { PGDATA } from "./fs/index.js";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import loadPgShare from "../release/share.js";
 import { nodeValues } from "./utils.js";
+import { DebugLevel } from "./index.js";
 
 const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
 const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
@@ -39,8 +40,10 @@ export const FILES = [
   "pg_hba.conf",
 ];
 
-export async function initDb(dataDir?: string) {
-  var emscriptenOpts: Partial<EmPostgres> = {
+export async function initDb(dataDir?: string, debug?: DebugLevel) {
+  const debugMode = debug !== undefined && debug > 0;
+
+  const emscriptenOpts: Partial<EmPostgres> = {
     preRun: [
       (mod: any) => {
         mod.FS.mkdir(PGDATA, 0o750);
@@ -70,19 +73,15 @@ export async function initDb(dataDir?: string) {
       }
       return path;
     },
-    print: (text: string) => {
-      // console.error(text);
-    },
-    printErr: (text: string) => {
-      // console.error(text);
-    },
+    ...(debugMode
+      ? { print: console.info, printErr: console.error }
+      : { print: () => {}, printErr: () => {} }),
     arguments: [
       "--boot",
       "-x1",
       "-X",
       "16777216",
-      "-d",
-      "5",
+      ...(debug ? ["-d", debug.toString()] : []),
       "-c",
       "dynamic_shared_memory_type=mmap",
       "-D",

@@ -5,8 +5,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "description": "",
-  "keywords": [],
+  "description": "PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.",
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "client",
+    "pglite"
+  ],
   "author": "Electric DB Limited",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -17,11 +24,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/electric-sql/",
+    "url": "https://github.com/electric-sql/pglite",
     "directory": "packages/pglite"
   },
   "scripts": {
-    "test": "ava",
+    "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\"",
     "build:wasm": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build",
     "build:wasm:debug": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build-debug",
     "build:sharedir": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir",
@@ -35,7 +42,10 @@
     "@types/node": "^20.11.18",
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
+    "buffer": "^6.0.3",
+    "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
+    "pg-protocol": "^1.6.0",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
     "tsup": "^8.0.2",

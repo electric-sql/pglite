@@ -1,19 +1,19 @@
-import { FilesystemBase, PGDATA, copyDir } from "./fs.js";
-import type { FS, EmPostgres } from "../release/postgres.js";
-import loadPgShare from "../release/share.js";
-import { initDb } from "./initdb.js";
-import { nodeValues } from "./utils.js";
-
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
+import { FilesystemBase } from "./types.js";
+import { PGDATA } from "./index.js";
+import { copyDir } from "./utils.js";
+import type { FS, EmPostgres } from "../../release/postgres.js";
+import loadPgShare from "../../release/share.js";
+import { initDb } from "../initdb.js";
+import { nodeValues } from "../utils.js";
+import type { DebugLevel } from "../index.js";
 
 export class IdbFs extends FilesystemBase {
   initModule?: any;
 
-  async init() {
+  async init(debug?: DebugLevel) {
     const dbExists = () =>
       new Promise((resolve, reject) => {
-        const request = window.indexedDB.open(`/pglite${this.dataDir}`);
+        const request = globalThis.indexedDB.open(`/pglite${this.dataDir}`);
         let exists = true;
         request.onupgradeneeded = (e) => {
           if (e.oldVersion === 0) {
@@ -27,14 +27,14 @@ export class IdbFs extends FilesystemBase {
           const db = request.result;
           db.close();
           if (!exists) {
-            window.indexedDB.deleteDatabase(`/pglite${this.dataDir}`);
+            globalThis.indexedDB.deleteDatabase(`/pglite${this.dataDir}`);
           }
           resolve(exists);
         };
       });
 
     if (!(await dbExists())) {
-      this.initModule = await initDb();
+      this.initModule = await initDb(undefined, debug);
     }
   }
 
@@ -58,7 +58,7 @@ export class IdbFs extends FilesystemBase {
             mod.FS.mount(
               proxyfs,
               { root: PGDATA + "/", fs: this.initModule.FS },
-              PGDATA + "_temp"
+              PGDATA + "_temp",
             );
             copyDir(mod.FS, PGDATA + "_temp", PGDATA);
             mod.FS.unmount(PGDATA + "_temp");
@@ -67,18 +67,6 @@ export class IdbFs extends FilesystemBase {
           }
         },
       ],
-      locateFile: (base: string, _path: any) => {
-        let path = "";
-        if (base === "share.data") {
-          path = PGSHARE_URL.toString();
-        } else if (base === "postgres.wasm") {
-          path = PGWASM_URL.toString();
-        }
-        if (path?.startsWith("file://")) {
-          path = path.slice(7);
-        }
-        return path;
-      },
     };
     const { require } = await nodeValues();
     loadPgShare(options, require);

@@ -1,13 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import { FilesystemBase, PGDATA } from "./fs.js";
-import { initDb } from "./initdb.js";
-import loadPgShare from "../release/share.js";
-import type { EmPostgres } from "../release/postgres.js";
-import { nodeValues } from "./utils.js";
-
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
+import { FilesystemBase } from "./types.js";
+import { PGDATA } from "./index.js";
+import { initDb } from "../initdb.js";
+import loadPgShare from "../../release/share.js";
+import type { EmPostgres } from "../../release/postgres.js";
+import { nodeValues } from "../utils.js";
+import type { DebugLevel } from "../index.js";
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;
@@ -17,7 +16,7 @@ export class NodeFS extends FilesystemBase {
     this.rootDir = path.resolve(dataDir);
   }
 
-  async init() {
+  async init(debug?: DebugLevel) {
     if (!this.dataDir) {
       throw new Error("No datadir specified");
     }
@@ -25,7 +24,7 @@ export class NodeFS extends FilesystemBase {
       return;
     }
     fs.mkdirSync(this.dataDir);
-    await initDb(this.dataDir);
+    await initDb(this.dataDir, debug);
   }
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {
@@ -38,18 +37,6 @@ export class NodeFS extends FilesystemBase {
           mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA);
         },
       ],
-      locateFile: (base: string, _path: any) => {
-        let path = "";
-        if (base === "share.data") {
-          path = PGSHARE_URL.toString();
-        } else if (base === "postgres.wasm") {
-          path = PGWASM_URL.toString();
-        }
-        if (path?.startsWith("file://")) {
-          path = path.slice(7);
-        }
-        return path;
-      },
     };
     const { require } = await nodeValues();
     loadPgShare(options, require);
