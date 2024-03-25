@@ -385,24 +385,13 @@ export class PGlite {
         this.#resultAccumulator = [];
       }
 
-      const resData: Array<Uint8Array> = await new Promise(
-        async (resolve, reject) => {
-          const handleWaiting = async () => {
-            await this.#syncToFs();
-            resolve(this.#resultAccumulator);
-            this.#resultAccumulator = [];
-          };
+      var bytes = message.length;
+      var ptr = this.emp._malloc(bytes);
+      this.emp.HEAPU8.set(message, ptr);
+      this.emp._ExecProtocolMsg(ptr);
 
-          this.#eventTarget.addEventListener("waiting", handleWaiting, {
-            once: true,
-          });
-
-          const event = new PGEvent("query", {
-            detail: message,
-          });
-          this.#eventTarget.dispatchEvent(event);
-        },
-      );
+      await this.#syncToFs();
+      const resData = this.#resultAccumulator;
 
       const results: Array<[BackendMessage, Uint8Array]> = [];
 
