@@ -14,11 +14,17 @@ let replaceAssertPlugin = {
   },
 }
 
+const entryPoints = [
+  'src/index.ts',
+  'src/worker/index.ts',
+  'src/worker/process.ts',
+]
+
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: entryPoints,
   sourcemap: true,
   dts: {
-    entry: 'src/index.ts',
+    entry: entryPoints,
     resolve: true
   },
   clean: true,

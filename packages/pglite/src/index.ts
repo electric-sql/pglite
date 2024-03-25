@@ -1,4 +1,5 @@
 export * from "./pglite.js";
+export * from "./interface.js";
 export * as types from "./types.js";
 export * as parse from "./parse.js";
 export * as messages from "pg-protocol/dist/messages.js";

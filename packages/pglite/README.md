@@ -237,6 +237,24 @@ Rows objects are a key / value mapping for each row returned by the query.
 
 The `.query<T>()` method can take a TypeScript type describing the expected shape of the returned rows. *(Note: this is not validated at run time, the result only cast to the provided type)*
 
+### Web Workers:
+
+It's likely that you will want to run PGlite in a Web Worker so that it doenst block the main thread. To aid in this we provide a `PGliteWorker` with the same API as the core `PGlite` but it runs Postgres in a dedicated Web Worker. To use, import from the `/worker` export:
+
+```
+import { PGliteWorker } from "@electric-sql/pglite/worker";
+
+const pg = new PGliteWorker('idb://my-database');
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`);
+```
+
+*Work in progress: We plan to expand this API to allow sharing of the worker PGlite across browser tabs.*
+
 ## Extensions
 
 PGlite supports the pl/pgsql procedural langue extension, this is included and enabled by default.
