@@ -237,6 +237,12 @@ Rows objects are a key / value mapping for each row returned by the query.
 
 The `.query<T>()` method can take a TypeScript type describing the expected shape of the returned rows. *(Note: this is not validated at run time, the result only cast to the provided type)*
 
+## Extensions
+
+PGlite supports the pl/pgsql procedural langue extension, this is included and enabled by default.
+
+In future we plan to support additional extensions, see the [roadmap](#roadmap).
+
 ## How it works
 
 PostgreSQL typically operates using a process forking model; whenever a client initiates a connection, a new process is forked to manage that connection. However, programs compiled with Emscripten - a C to WebAssembly (WASM) compiler - cannot fork new processes, and operates strictly in a single-process mode. As a result, PostgreSQL cannot be directly compiled to WASM for conventional operation.
@@ -253,7 +259,6 @@ PGlite is *Alpha* and under active development, the current roadmap is:
 
 - CI builds [#19](https://github.com/electric-sql/pglite/issues/19)
 - Support Postgres extensions, starting with:
-  - pl_pgsql [#35](https://github.com/electric-sql/pglite/issues/36)
   - pgvector [#18](https://github.com/electric-sql/pglite/issues/18)
   - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)
 - OPFS support in browser [#9](https://github.com/electric-sql/pglite/issues/9)
