@@ -283,8 +283,8 @@ To build, checkout the repo, then:
 ```
 git submodule update --init
 cd ./pglite/packages/pglite
-emsdk install 3.1.25
-emsdk activate 3.1.25
+emsdk install 3.1.56
+emsdk activate 3.1.56
 pnpm install
 pnpm build
 ```
