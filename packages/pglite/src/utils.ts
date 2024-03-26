@@ -1,5 +1,3 @@
-import { fileURLToPath } from "url";
-
 export const IN_NODE =
   typeof process === "object" &&
   typeof process.versions === "object" &&
@@ -16,22 +14,28 @@ export async function nodeValues() {
 }
 
 
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
-export function locatePostgresFile(base: string) {
-  let url: URL | null = null;
-  switch (base) {
-    case "share.data":
-      url = PGSHARE_URL;
-      break;
-    case "postgres.wasm":
-      url = PGWASM_URL;
-      break;
-    default:
+export async function makeLocateFile() {
+  const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
+  const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
+  let fileURLToPath = (fileUrl: URL) => fileUrl.pathname
+  if (IN_NODE) {
+    fileURLToPath = (await import("url")).fileURLToPath
   }
-
-  if (url?.protocol === "file:") {
-    return fileURLToPath(url);
+  return (base: string) => {
+    let url: URL | null = null;
+    switch (base) {
+      case "share.data":
+        url = PGSHARE_URL;
+        break;
+      case "postgres.wasm":
+        url = PGWASM_URL;
+        break;
+      default:
+    }
+  
+    if (url?.protocol === "file:") {
+      return fileURLToPath(url);
+    }
+    return url?.toString() ?? '';
   }
-  return url?.toString() ?? '';
 }

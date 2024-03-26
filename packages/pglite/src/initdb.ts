@@ -1,7 +1,7 @@
 import { PGDATA } from "./fs/index.js";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import loadPgShare from "../release/share.js";
-import { locatePostgresFile, nodeValues } from "./utils.js";
+import { makeLocateFile, nodeValues } from "./utils.js";
 import { DebugLevel } from "./index.js";
 
 export const DIRS = [
@@ -58,7 +58,7 @@ export async function initDb(dataDir?: string, debug?: DebugLevel) {
         mod.FS.writeFile(PGDATA + "/base/1/PG_VERSION", "15devel");
       },
     ],
-    locateFile: locatePostgresFile,
+    locateFile: await makeLocateFile(),
     ...(debugMode
       ? { print: console.info, printErr: console.error }
       : { print: () => { }, printErr: () => { } }),

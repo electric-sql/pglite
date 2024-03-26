@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
-import { locatePostgresFile, nodeValues } from "./utils.js";
+import { makeLocateFile } from "./utils.js";
 import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
@@ -116,7 +116,7 @@ export class PGlite implements PGliteInterface {
           "/pgdata",
           "template1",
         ],
-        locateFile: locatePostgresFile,
+        locateFile: await makeLocateFile(),
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
           : { print: () => {}, printErr: () => {} }),
