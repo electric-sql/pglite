@@ -143,9 +143,8 @@ export class PGlite implements PGliteInterface {
         Event: PGEvent,
       };
 
-      const { dirname, require } = await nodeValues();
       emscriptenOpts = await this.fs.emscriptenOpts(emscriptenOpts);
-      const emp = await EmPostgresFactory(emscriptenOpts, dirname, require);
+      const emp = await EmPostgresFactory(emscriptenOpts);
       this.emp = emp;
     });
 
