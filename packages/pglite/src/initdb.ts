@@ -1,11 +1,8 @@
 import { PGDATA } from "./fs/index.js";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import loadPgShare from "../release/share.js";
-import { nodeValues } from "./utils.js";
+import { locatePostgresFile, nodeValues } from "./utils.js";
 import { DebugLevel } from "./index.js";
-
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
 
 export const DIRS = [
   "global",
@@ -61,21 +58,10 @@ export async function initDb(dataDir?: string, debug?: DebugLevel) {
         mod.FS.writeFile(PGDATA + "/base/1/PG_VERSION", "15devel");
       },
     ],
-    locateFile: (base: string, _path: any) => {
-      let path = "";
-      if (base === "share.data") {
-        path = PGSHARE_URL.toString();
-      } else if (base === "postgres.wasm") {
-        path = PGWASM_URL.toString();
-      }
-      if (path?.startsWith("file://")) {
-        path = path.slice(7);
-      }
-      return path;
-    },
+    locateFile: locatePostgresFile,
     ...(debugMode
       ? { print: console.info, printErr: console.error }
-      : { print: () => {}, printErr: () => {} }),
+      : { print: () => { }, printErr: () => { } }),
     arguments: [
       "--boot",
       "-x1",

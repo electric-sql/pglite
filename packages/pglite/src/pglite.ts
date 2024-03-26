@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
-import { nodeValues } from "./utils.js";
+import { locatePostgresFile, nodeValues } from "./utils.js";
 import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
@@ -23,9 +23,6 @@ import {
   DatabaseError,
   NoticeMessage,
 } from "pg-protocol/dist/messages.js";
-
-const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
-const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
 
 export class PGlite implements PGliteInterface {
   readonly dataDir?: string;
@@ -119,18 +116,7 @@ export class PGlite implements PGliteInterface {
           "/pgdata",
           "template1",
         ],
-        locateFile: (base: string, _path: any) => {
-          let path = "";
-          if (base === "share.data") {
-            path = PGSHARE_URL.toString();
-          } else if (base === "postgres.wasm") {
-            path = PGWASM_URL.toString();
-          }
-          if (path?.startsWith("file://")) {
-            path = path.slice(7);
-          }
-          return path;
-        },
+        locateFile: locatePostgresFile,
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
           : { print: () => {}, printErr: () => {} }),
