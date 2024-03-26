@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>PGlite RTT benchmarks</title>
+    <style>
+      #controls {
+        margin-top: 1em;
+        display: flex;
+        align-items: center;
+      }
+
+      #controls * {
+        margin-right: 0.5em;
+      }
+
+      table {
+        margin-top: 1em;
+        margin-left: 0.4em;
+        margin-right: 0.4em;
+        border-collapse: collapse;
+      }
+
+      td:first-child {
+        min-width: 15em;
+      }
+
+      td, th {
+        border: 1px solid #999;
+        padding: 0.5rem;
+        text-align: left;
+        max-width: 3in;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PGlite RTT benchmarks</h1>
+    <p>100 interactions per test, top/bottom 10% removed, average of the rest. Times in ms.</p>
+    <p>SQLite tests using 
+      <a href="https://github.com/rhashimoto/wa-sqlite">
+       wa-sqlite
+      </a>
+    </p>
+    <button id="start">Start</button>
+
+    <div><pre id="error" style="color: red"></pre></div>
+    <div>
+      <table>
+        <thead>
+          <tr id="vfs">
+            <th>Test</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="test1">
+            <td>Test 1: insert small row</td>
+          </tr>
+          <tr id="test2">
+            <td>Test 2: select small row</td>
+          </tr>
+          <tr id="test3">
+            <td>Test 3: update small row</td>
+          </tr>
+          <tr id="test4">
+            <td>Test 4: delete small row</td>
+          </tr>
+          <tr id="test5">
+            <td>Test 5: insert 1kb row</td>
+          </tr>
+          <tr id="test6">
+            <td>Test 6: select 1kb row</td>
+          </tr>
+          <tr id="test7">
+            <td>Test 7: update 1kb row</td>
+          </tr>
+          <tr id="test8">
+            <td>Test 8: delete 1kb row</td>
+          </tr>
+          <tr id="test9">
+            <td>Test 9: insert 10kb row</td>
+          </tr>
+          <tr id="test10">
+            <td>Test 10: select 10kb row</td>
+          </tr>
+          <tr id="test11">
+            <td>Test 11: update 10kb row</td>
+          </tr>
+          <tr id="test12">
+            <td>Test 12: delete 10kb row</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <script type="module" src="benchmarks-rtt.js"></script>
+
+  </body>
+</html>
