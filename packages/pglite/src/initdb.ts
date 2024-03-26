@@ -89,10 +89,10 @@ export async function initDb(dataDir?: string, debug?: DebugLevel) {
     ],
   };
 
-  const { dirname, require } = await nodeValues();
+  const { require } = await nodeValues();
 
   loadPgShare(emscriptenOpts, require);
 
-  const mod = await EmPostgresFactory(emscriptenOpts, dirname, require);
+  const mod = await EmPostgresFactory(emscriptenOpts);
   return mod;
 }
