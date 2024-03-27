@@ -178,7 +178,7 @@ await pg.query(
 The `query` and `exec` methods take an optional `options` objects with the following parameters:
 
 - `rowMode: "object" | "array"`
-  The returned row object type, either an object of `felidName: value` mappings or an array of positional values. Defaults to `"object"`.
+  The returned row object type, either an object of `fielddName: value` mappings or an array of positional values. Defaults to `"object"`.
 - `parsers: ParserOptions`
   An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type id to parser function.
   For convenance the `pglite` package exports a const for most common Postgres types:
@@ -302,7 +302,7 @@ await pg.exec(`
 
 ## Extensions
 
-PGlite supports the pl/pgsql procedural langue extension, this is included and enabled by default.
+PGlite supports the pl/pgsql procedural language extension, this is included and enabled by default.
 
 In future we plan to support additional extensions, see the [roadmap](#roadmap).
 
