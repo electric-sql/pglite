@@ -1,7 +1,8 @@
 import { defineConfig } from 'tsup'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
-const thisFile = new URL(import.meta.url).pathname
+const thisFile = fileURLToPath(new URL(import.meta.url))
 const root = path.dirname(thisFile)
 
 let replaceAssertPlugin = {
