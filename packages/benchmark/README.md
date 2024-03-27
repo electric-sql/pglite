@@ -1,14 +1,145 @@
 # Benchmarks
 
-PGlite benchmarks based on the [wa-sqlite bechmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
+There are two sets of benchmarks, one testing [round trip time](#round-trip-time-benchmarks) for both PGlite and wa-sqlite, and [another](#pglite-results-from-wa-sqlite-benchmark-suite) based on the [wa-sqlite bechmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
 
-To run, start a web server in this directory and open `benchmarks.html`.
+To run, start a web server in this directory and open `index.html` for the benchmarks based on the wa-sqlite set, and `rtt.html` for the round trip time benchmarks.
 
-SQLite and Postgres are very different databases and it hard to compare them directly, see [comparative native (none wasm) results below](#native-baseline).
+There is also a script `baseline.ts` that generates a set of native baseline results for the wa-sqlite benchmark suite, see [comparative native (none wasm) results below](#native-baseline).
 
 These results below were run on a M2 Macbook Air.
 
-## PGlite Results:
+These initial benchmarks show good performance, albeit not quite on par with wa-sqlite yet. We have many plans for improving upon these, including dropping the need for the [emscripten option `EMULATE_FUNCTION_POINTER_CASTS`](https://github.com/electric-sql/pglite/issues/56) and moving to [OPFS for persistance](https://github.com/electric-sql/pglite/issues/9).
+
+## Round trip time benchmarks:
+
+These tests run a series of inserts/updates/deletes to find the average time to execute the type of CRUD operations that are regularly used in an app.
+
+![](./images/rtt-in-memory.svg)
+
+![](./images/rtt-persisted.svg)
+
+<details>
+<summary>Round trip time results</summary>
+<table>
+  <thead>
+    <tr>
+      <th>Test</th>
+      <th>PGlite Memory</th>
+      <th>PGlite IDB</th>
+      <th>SQLite Memory</th>
+      <th>SQLite IDB</th>
+      <th>SQLite OPFS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Test 1: insert small row</td>
+      <td>0.050</td>
+      <td>16.905</td>
+      <td>0.030</td>
+      <td>6.156</td>
+      <td>3.315</td>
+    </tr>
+    <tr>
+      <td>Test 2: select small row</td>
+      <td>0.054</td>
+      <td>8.591</td>
+      <td>0.010</td>
+      <td>0.705</td>
+      <td>0.639</td>
+    </tr>
+    <tr>
+      <td>Test 3: update small row</td>
+      <td>0.044</td>
+      <td>8.674</td>
+      <td>0.009</td>
+      <td>0.705</td>
+      <td>0.811</td>
+    </tr>
+    <tr>
+      <td>Test 4: delete small row</td>
+      <td>0.097</td>
+      <td>17.026</td>
+      <td>0.024</td>
+      <td>3.891</td>
+      <td>2.825</td>
+    </tr>
+    <tr>
+      <td>Test 5: insert 1kb row</td>
+      <td>0.065</td>
+      <td>17.071</td>
+      <td>0.059</td>
+      <td>6.983</td>
+      <td>3.402</td>
+    </tr>
+    <tr>
+      <td>Test 6: select 1kb row</td>
+      <td>0.094</td>
+      <td>8.589</td>
+      <td>0.029</td>
+      <td>0.711</td>
+      <td>0.661</td>
+    </tr>
+    <tr>
+      <td>Test 7: update 1kb row</td>
+      <td>0.070</td>
+      <td>17.030</td>
+      <td>0.016</td>
+      <td>0.761</td>
+      <td>0.821</td>
+    </tr>
+    <tr>
+      <td>Test 8: delete 1kb row</td>
+      <td>0.081</td>
+      <td>17.037</td>
+      <td>0.034</td>
+      <td>6.886</td>
+      <td>3.349</td>
+    </tr>
+    <tr>
+      <td>Test 9: insert 10kb row</td>
+      <td>0.275</td>
+      <td>17.047</td>
+      <td>0.107</td>
+      <td>9.267</td>
+      <td>3.856</td>
+    </tr>
+    <tr>
+      <td>Test 10: select 10kb row</td>
+      <td>0.145</td>
+      <td>8.824</td>
+      <td>0.051</td>
+      <td>0.832</td>
+      <td>0.681</td>
+    </tr>
+    <tr>
+      <td>Test 11: update 10kb row</td>
+      <td>0.245</td>
+      <td>8.835</td>
+      <td>0.071</td>
+      <td>0.746</td>
+      <td>0.851</td>
+    </tr>
+    <tr>
+      <td>Test 12: delete 10kb row</td>
+      <td>0.081</td>
+      <td>17.006</td>
+      <td>0.021</td>
+      <td>11.224</td>
+      <td>4.079</td>
+    </tr>
+  </tbody>
+</table>
+</details>
+
+## wa-sqlite benchmark suite 
+
+The wa-sqlite benchmark suite performs a number of large queries to test the performance of the sql engin.
+
+![](./images/wa-benchmark.svg)
+
+<details>
+  <summary>PGlite results</summary>
 
 <table>
   <thead>
@@ -131,7 +262,10 @@ These results below were run on a M2 Macbook Air.
   </tbody>
 </table>
 
-## WASM SQLite (wa-sqlite) Results:
+</details>
+
+<details>
+  <summary>WASM SQLite results</summary>
 
 <table>
   <thead>
@@ -361,7 +495,9 @@ These results below were run on a M2 Macbook Air.
   </tbody>
 </table>
 
-## Native Baseline:
+</details>
+
+## Native baseline:
 
 All tests run with Node, [Better-SQLite3](https://www.npmjs.com/package/better-sqlite3) and [node-postgres](https://www.npmjs.com/package/pg) (via [embedded-postgres](https://github.com/leinelissen/embedded-postgres))
 
@@ -373,145 +509,124 @@ npm install
 npx tsx baseline.ts
 ```
 
+![](./images/native.svg)
+
+<details>
+<summary>Native Results</summary>
+
 <table cellspacing="0" cellpadding="0">
   <thead>
     <tr>
-      <th></th>
-      <th>A</th>
-      <th>B</th>
-      <th>C</th>
-      <th>D</th>
+      <th>Test</th>
+      <th>SQLite In-Memory</th>
+      <th>SQLite On-Disk</th>
+      <th>Postgres</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
-      <td>Test</td>
-      <td>SQLite In-Memory</td>
-      <td>SQLite On-Disk</td>
-      <td>Postgres</td>
-    </tr>
-    <tr>
-      <th>2</th>
       <td>Test 1: 1000 INSERTs</td>
       <td>0.002</td>
       <td>0.288</td>
       <td>0.007</td>
     </tr>
     <tr>
-      <th>3</th>
       <td>Test 2: 25000 INSERTs in a transaction</td>
       <td>0.022</td>
       <td>0.019</td>
       <td>0.114</td>
     </tr>
     <tr>
-      <th>4</th>
       <td>Test 2.1: 25000 INSERTs in single statement</td>
       <td>0.019</td>
       <td>0.02</td>
       <td>0.053</td>
     </tr>
     <tr>
-      <th>5</th>
       <td>Test 3: 25000 INSERTs into an indexed table</td>
       <td>0.035</td>
       <td>0.04</td>
       <td>0.383</td>
     </tr>
     <tr>
-      <th>6</th>
       <td>Test 3.1: 25000 INSERTs into an indexed table in single statement</td>
       <td>0.025</td>
       <td>0.029</td>
       <td>0.29</td>
     </tr>
     <tr>
-      <th>7</th>
       <td>Test 4: 100 SELECTs without an index</td>
       <td>0.076</td>
       <td>0.078</td>
       <td>0.094</td>
     </tr>
     <tr>
-      <th>8</th>
       <td>Test 5: 100 SELECTs on a string comparison</td>
       <td>0.268</td>
       <td>0.429</td>
       <td>0.259</td>
     </tr>
     <tr>
-      <th>9</th>
       <td>Test 6: Creating an index</td>
       <td>0.007</td>
       <td>0.011</td>
       <td>0.01</td>
     </tr>
     <tr>
-      <th>10</th>
       <td>Test 7: 5000 SELECTs with an index</td>
       <td>0.01</td>
       <td>0.01</td>
       <td>0.078</td>
     </tr>
     <tr>
-      <th>11</th>
       <td>Test 8: 1000 UPDATEs without an index</td>
       <td>0.018</td>
       <td>0.021</td>
       <td>0.047</td>
     </tr>
     <tr>
-      <th>12</th>
       <td>Test 9: 25000 UPDATEs with an index</td>
       <td>0.047</td>
       <td>0.056</td>
       <td>0.307</td>
     </tr>
     <tr>
-      <th>13</th>
       <td>Test 10: 25000 text UPDATEs with an index</td>
       <td>0.032</td>
       <td>0.041</td>
       <td>0.416</td>
     </tr>
     <tr>
-      <th>14</th>
       <td>Test 11: INSERTs from a SELECT</td>
       <td>0.022</td>
       <td>0.027</td>
       <td>0.072</td>
     </tr>
     <tr>
-      <th>15</th>
       <td>Test 12: DELETE without an index</td>
       <td>0.01</td>
       <td>0.023</td>
       <td>0.007</td>
     </tr>
     <tr>
-      <th>16</th>
       <td>Test 13: DELETE with an index</td>
       <td>0.017</td>
       <td>0.021</td>
       <td>0.019</td>
     </tr>
     <tr>
-      <th>17</th>
       <td>Test 14: A big INSERT after a big DELETE</td>
       <td>0.017</td>
       <td>0.021</td>
       <td>0.048</td>
     </tr>
     <tr>
-      <th>18</th>
       <td>Test 15: A big DELETE followed by many small INSERTs</td>
       <td>0.008</td>
       <td>0.01</td>
       <td>0.067</td>
     </tr>
     <tr>
-      <th>19</th>
       <td>Test 16: DROP TABLE</td>
       <td>0.001</td>
       <td>0.003</td>
@@ -519,3 +634,4 @@ npx tsx baseline.ts
     </tr>
   </tbody>
 </table>
+</details>
