@@ -20,7 +20,7 @@
 <p>
 
 <p align="center">
-  <a href="https://github.com/electric-sql/pglite/stargazers/"><img src="https://img.shields.io/github/stars/electric-sql/pglite?style=social&label=Star&maxAge=2592000" /></a>
+  <a href="https://github.com/electric-sql/pglite/stargazers/"><img src="https://img.shields.io/github/stars/electric-sql/pglite?style=social&label=Star" /></a>
   <!-- <a href="https://github.com/electric-sql/pglite/actions"><img src="https://github.com/electric-sql/pglite/workflows/CI/badge.svg" alt="CI"></a> -->
   <a href="https://github.com/electric-sql/pglite/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-green" alt="License - Apache 2.0"></a>
   <a href="#roadmap"><img src="https://img.shields.io/badge/status-alpha-orange" alt="Status - Alpha"></a>
@@ -40,7 +40,7 @@ import { PGlite } from "@electric-sql/pglite";
 
 const db = new PGlite();
 await db.query("select 'Hello world' as message;");
-// -> [ { message: "Hello world" } ]
+// -> { rows: [ { message: "Hello world" } ] }
 ```
 
 It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun) or indexedDB (Browser).
@@ -48,6 +48,49 @@ It can be used as an ephemeral in-memory database, or with persistence either to
 Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
 
 It is being developed at [ElectricSQL](http://electric-sql.com) in collaboration with [Neon](http://neon.tech). We will continue to build on this experiment with the aim of creating a fully capable lightweight WASM Postgres with support for extensions such as pgvector.
+
+## Whats new in V0.1
+
+Version 0.1 (up from 0.0.2) includes significant changes to the Postgres build - it's about 1/3 smaller at 2.6mb gzipped, and up to 2-3 times faster. We have also found a way to statically compile Postgres extensions into the build - the first of these is pl/pgsql with more coming soon.
+
+Key changes in this release are:
+
+- Support for [parameterised queries](#querytquery-string-params-any-options-queryoptions-promiseresultst) #39
+- An interactive [transaction API](#transactiontcallback-tx-transaction--promiset) #39
+- pl/pgsql support #48
+- Additional [query options](#queryoptions) #51
+- Run PGlite in a [Web Workers](#web-workers) #49
+- Fix for running on Windows #54
+- Fix for missing `pg_catalog` and `information_schema` tables and view #41
+
+We have also [published some benchmarks](https://github.com/electric-sql/pglite/blob/main/packages/benchmark/README.md) in comparison to a WASM SQLite build, and both native Postgres and SQLite. While PGlite is currently a little slower than WASM SQLite we have plans for further optimisations, including OPFS support and removing some the the Emscripten options that can add overhead.
+
+## Browser
+
+It can be installed and imported using your usual package manager:
+
+```js
+import { PGlite } from "@electric-sql/pglite";
+```
+or using a CDN such as JSDeliver:
+
+```js
+import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+```
+
+Then for an in-memory Postgres:
+
+```js
+const db = new PGlite()
+await db.query("select 'Hello world' as message;")
+// -> { rows: [ { message: "Hello world" } ] }
+```
+
+or to persist the database to indexedDB:
+
+```js
+const db = new PGlite("idb://my-pgdata");
+```
 
 ## Node/Bun
 
@@ -64,33 +107,13 @@ import { PGlite } from "@electric-sql/pglite";
 
 const db = new PGlite();
 await db.query("select 'Hello world' as message;");
-// -> [ { message: "Hello world" } ]
+// -> { rows: [ { message: "Hello world" } ] }
 ```
 
 or to persist to the filesystem:
 
 ```javascript
 const db = new PGlite("./path/to/pgdata");
-```
-
-## Browser
-
-It can be loaded via JSDeliver or your usual package manager, and for an in-memory Postgres:
-
-```xml
-<script type="module">
-import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
-
-const db = new PGlite()
-await db.query("select 'Hello world' as message;")
-// -> [ { message: "Hello world" } ]
-</script>
-```
-
-or to persist the database to indexedDB:
-
-```javascript
-const db = new PGlite("idb://my-pgdata");
 ```
 
 ## Deno
@@ -226,7 +249,7 @@ To start an interactive transaction pass a callback to the transaction method. I
 
 ```ts
 await pg.transaction(async (tx) => {
-  await ts.query(
+  await tx.query(
     'INSERT INTO test (name) VALUES ('$1');',
     [ 'test' ]
   );
@@ -261,9 +284,9 @@ The `.query<T>()` method can take a TypeScript type describing the expected shap
 
 ### Web Workers:
 
-It's likely that you will want to run PGlite in a Web Worker so that it doenst block the main thread. To aid in this we provide a `PGliteWorker` with the same API as the core `PGlite` but it runs Postgres in a dedicated Web Worker. To use, import from the `/worker` export:
+It's likely that you will want to run PGlite in a Web Worker so that it doesn't block the main thread. To aid in this we provide a `PGliteWorker` with the same API as the core `PGlite` but it runs Postgres in a dedicated Web Worker. To use, import from the `/worker` export:
 
-```
+```js
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 
 const pg = new PGliteWorker('idb://my-database');
@@ -303,6 +326,7 @@ PGlite is *Alpha* and under active development, the current roadmap is:
   - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)
 - OPFS support in browser [#9](https://github.com/electric-sql/pglite/issues/9)
 - Muti-tab support in browser [#32](https://github.com/electric-sql/pglite/issues/32)
+- Syncing via [ElectricSQL](https://electric-sql.com) with a Postgres server [electric/#1058](https://github.com/electric-sql/electric/pull/1058) 
 
 ## Repository Structure
 
@@ -321,7 +345,7 @@ Please use the [issues](https://github.com/electric-sql/pglite/issues/) in this 
 There are a couple of prerequisites:
 
 - the Postgres build toolchain - https://www.postgresql.org/download/
-- emscripten version 3.1.25 - https://emscripten.org/docs/getting_started/downloads.html
+- emscripten version 3.1.56 - https://emscripten.org/docs/getting_started/downloads.html
 
 To build, checkout the repo, then:
 
