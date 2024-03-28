@@ -64,9 +64,27 @@ export const BOOL = 16,
   REGNAMESPACE = 4089,
   REGROLE = 4096;
 
+export const arrayTypes = {
+  1001: BYTEA,
+  1002: CHAR,
+  1016: INT8,
+  1005: INT2,
+  1007: INT4,
+  1009: TEXT,
+  1028: OID,
+  199: JSON,
+  1021: FLOAT4,
+  1022: FLOAT8,
+  1015: VARCHAR,
+  3807: JSONB,
+  1182: DATE,
+  1115: TIMESTAMP,
+  1116: TIMESTAMPTZ,
+};
+
 export const types = {
   string: {
-    to: TEXT,
+    to: 0,
     from: [TEXT, VARCHAR],
     serialize: (x: string) => x,
     parse: (x: string) => x,
@@ -82,7 +100,14 @@ export const types = {
     from: [INT8],
     js: [BigInt],
     serialize: (x: BigInt) => x.toString(),
-    parse: (x: string) => BigInt(x),
+    parse: (x: string) => {
+      const n = BigInt(x);
+      if (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER) {
+        return n; // return BigInt
+      } else {
+        return Number(n); // in range of standard JS numbers so return number
+      }
+    },
   },
   json: {
     to: JSON,
@@ -112,6 +137,18 @@ export const types = {
     parse: (x: string): Uint8Array =>
       new Uint8Array(Buffer.from(x.slice(2), "hex")),
   },
+  array: {
+    to: 0,
+    from: Object.keys(arrayTypes).map((x) => +x),
+    serialize: (x: any[]) => serializeArray(x),
+    parse: (x: string, typeId?: number) => {
+      let parser;
+      if (typeId && typeId in arrayTypes) {
+        parser = parsers[arrayTypes[typeId as keyof typeof arrayTypes]];
+      }
+      return parseArray(x, parser);
+    },
+  },
 } satisfies TypeHandlers;
 
 export type TypeHandler = {
@@ -119,7 +156,7 @@ export type TypeHandler = {
   from: number | number[];
   js?: any;
   serialize: (x: any) => string;
-  parse: (x: string) => any;
+  parse: (x: string, typeId?: number) => any;
 };
 
 export type TypeHandlers = {
@@ -132,18 +169,113 @@ export const parsers = defaultHandlers.parsers;
 export const serializers = defaultHandlers.serializers;
 export const serializerInstanceof = defaultHandlers.serializerInstanceof;
 
-export function serializeType(x: any): [string, number] {
+export type Serializer = (x: any) => [string, number];
+
+export function serializerFor(x: any): Serializer {
+  if (Array.isArray(x)) {
+    return serializers.array;
+  }
   const handler = serializers[typeof x];
   if (handler) {
-    return handler(x);
-  } else {
-    for (const [Type, handler] of serializerInstanceof) {
-      if (x instanceof Type) {
-        return handler(x);
-      }
-    }
-    return serializers.json(x);
+    return handler;
   }
+  for (const [Type, handler] of serializerInstanceof) {
+    if (x instanceof Type) {
+      return handler;
+    }
+  }
+  return serializers.json;
+}
+
+export function serializeType(x: any): [string | null, number] {
+  if (x === null) {
+    return [null, 0];
+  }
+  return serializerFor(x)(x);
+}
+
+function escapeElement(elementRepresentation: string) {
+  const escaped = elementRepresentation
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"');
+  return '"' + escaped + '"';
+}
+
+function serializeArray(x: any[]) {
+  let result = "{";
+  for (let i = 0; i < x.length; i++) {
+    if (i > 0) {
+      result = result + ",";
+    }
+    if (x[i] === null || typeof x[i] === "undefined") {
+      result = result + "NULL";
+    } else if (Array.isArray(x[i])) {
+      result = result + serializeArray(x[i]);
+    } else if (ArrayBuffer.isView(x[i])) {
+      let item = x[i];
+      if (!(item instanceof Buffer)) {
+        const buf = Buffer.from(item.buffer, item.byteOffset, item.byteLength);
+        if (buf.length === item.byteLength) {
+          item = buf;
+        } else {
+          item = buf.slice(item.byteOffset, item.byteOffset + item.byteLength);
+        }
+      }
+      result += "\\\\x" + item.toString("hex");
+    } else {
+      result += escapeElement(serializeType(x[i])[0]!);
+    }
+  }
+  result = result + "}";
+  return result;
+}
+
+export function parseArray(value: string, parser?: (s: string) => any) {
+  let i = 0;
+  let char = null;
+  let str = "";
+  let quoted = false;
+  let last = 0;
+  let p: string | undefined = undefined;
+
+  function loop(x: string): any[] {
+    const xs = [];
+    for (; i < x.length; i++) {
+      char = x[i];
+      if (quoted) {
+        if (char === "\\") {
+          str += x[++i];
+        } else if (char === '"') {
+          xs.push(parser ? parser(str) : str);
+          str = "";
+          quoted = x[i + 1] === '"';
+          last = i + 2;
+        } else {
+          str += char;
+        }
+      } else if (char === '"') {
+        quoted = true;
+      } else if (char === "{") {
+        last = ++i;
+        xs.push(loop(x));
+      } else if (char === "}") {
+        quoted = false;
+        last < i &&
+          xs.push(parser ? parser(x.slice(last, i)) : x.slice(last, i));
+        last = i + 1;
+        break;
+      } else if (char === "," && p !== "}" && p !== '"') {
+        xs.push(parser ? parser(x.slice(last, i)) : x.slice(last, i));
+        last = i + 1;
+      }
+      p = char;
+    }
+    last < i &&
+      xs.push(parser ? parser(x.slice(last, i + 1)) : x.slice(last, i + 1));
+    return xs;
+  }
+
+  return loop(value)[0];
 }
 
 export function parseType(
@@ -151,9 +283,12 @@ export function parseType(
   type: number,
   parsers?: ParserOptions
 ): any {
+  if (x === null) {
+    return null;
+  }
   const handler = parsers?.[type] ?? defaultHandlers.parsers[type];
   if (handler) {
-    return handler(x);
+    return handler(x, type);
   } else {
     return x;
   }
@@ -182,11 +317,11 @@ function typeHandlers(types: TypeHandlers) {
       return { parsers, serializers, serializerInstanceof };
     },
     {
-      parsers: {} as { [key: number | string]: (x: string) => any },
+      parsers: {} as { [key: number | string]: (x: string, typeId?: number) => any },
       serializers: {} as {
-        [key: number | string]: (x: any) => [string, number];
+        [key: number | string]: Serializer;
       },
-      serializerInstanceof: [] as Array<[any, (x: any) => [string, number]]>,
+      serializerInstanceof: [] as Array<[any, Serializer]>,
     }
   );
 }
