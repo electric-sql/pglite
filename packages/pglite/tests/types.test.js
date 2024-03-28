@@ -3,8 +3,8 @@ import { types } from "../dist/index.js";
 
 // Parse type tests
 
-test("parse text 25", (t) => {
-  t.deepEqual(types.parseType("test", 25), "test");
+test("parse text", (t) => {
+  t.deepEqual(types.parseType("test", 0), "test");
 });
 
 test("parse varchar 1043", (t) => {
@@ -32,7 +32,7 @@ test("parse float8 701", (t) => {
 });
 
 test("parse int8 20", (t) => {
-  t.deepEqual(types.parseType("1", 20), 1n);
+  t.deepEqual(types.parseType("1", 20), 1);
 });
 
 test("parse json 114", (t) => {
@@ -79,7 +79,7 @@ test("parse unknown", (t) => {
 // Serialize type tests
 
 test("serialize string", (t) => {
-  t.deepEqual(types.serializeType("test"), ["test", 25]);
+  t.deepEqual(types.serializeType("test"), ["test", 0]);
 });
 
 test("serialize number", (t) => {

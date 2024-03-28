@@ -139,7 +139,6 @@ export class PGlite implements PGliteInterface {
     }
     await this.#runExec(`
       SET search_path TO public;
-      CREATE EXTENSION IF NOT EXISTS plpgsql;
     `);
   }
 
@@ -166,6 +165,10 @@ export class PGlite implements PGliteInterface {
         await this.#runExec(sql);
       }
     }
+    await this.#runExec(`
+      SET search_path TO public;
+      CREATE EXTENSION IF NOT EXISTS plpgsql;
+    `);
   }
 
   /**
@@ -243,6 +246,9 @@ export class PGlite implements PGliteInterface {
   async #runQuery<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
+      if (this.debug > 1) {
+        console.log("runQuery", query, params, options);
+      }
       const parsedParams = params?.map((p) => serializeType(p)) || [];
       let results;
       try {
@@ -278,6 +284,9 @@ export class PGlite implements PGliteInterface {
   async #runExec(query: string, options?: QueryOptions): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
+      if (this.debug > 1) {
+        console.log("runExec", query, options);
+      }
       let results;
       try {
         results = await this.execProtocol(serialize.query(query));
@@ -390,7 +399,7 @@ export class PGlite implements PGliteInterface {
             this.#parser = new Parser(); // Reset the parser
             throw msg;
             // TODO: Do we want to wrap the error in a custom error?
-          } else if (msg instanceof NoticeMessage) {
+          } else if (msg instanceof NoticeMessage && this.debug > 0) {
             // Notice messages are warnings, we should log them
             console.warn(msg);
           }

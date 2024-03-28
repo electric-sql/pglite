@@ -84,14 +84,17 @@ test("basic types", async (t) => {
       date DATE,
       timestamp TIMESTAMP,
       json JSONB,
-      blob BYTEA
+      blob BYTEA,
+      array_text TEXT[],
+      array_number INT[],
+      nested_array_float FLOAT[][]
     );
   `);
 
   await db.query(
     `
-    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob, array_text, array_number, nested_array_float)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
   `,
     [
       "test",
@@ -103,6 +106,9 @@ test("basic types", async (t) => {
       new Date("2021-01-01T12:00:00"),
       { test: "test" },
       Uint8Array.from([1, 2, 3]),
+      ["test1", "test2", "test,3"],
+      [1, 2, 3],
+      [[1.1, 2.2], [3.3, 4.4]],
     ]
   );
 
@@ -123,6 +129,9 @@ test("basic types", async (t) => {
         timestamp: new Date("2021-01-01T12:00:00.000Z"),
         json: { test: "test" },
         blob: Uint8Array.from([1, 2, 3]),
+        array_text: ["test1", "test2", "test,3"],
+        array_number: [1, 2, 3],
+        nested_array_float: [[1.1, 2.2], [3.3, 4.4]],
       },
     ],
     fields: [
@@ -165,6 +174,18 @@ test("basic types", async (t) => {
       {
         name: "blob",
         dataTypeID: 17,
+      },
+      {
+        name: "array_text",
+        dataTypeID: 1009,
+      },
+      {
+        name: "array_number",
+        dataTypeID: 1007,
+      },
+      {
+        name: "nested_array_float",
+        dataTypeID: 1022,
       },
     ],
     affectedRows: 0,
