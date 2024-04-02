@@ -32,11 +32,12 @@ export class PGliteWorker implements PGliteInterface {
 
     this.#worker = Comlink.wrap(new Worker(WORKER_URL, { type: "module" }));
 
-    this.waitReady = this.#init();
+    // pass unparsed dataDir value
+    this.waitReady = this.#init(dataDir);
   }
 
-  async #init() {
-    await this.#worker.init(this.dataDir, { debug: this.debug });
+  async #init(dataDir: string) {
+    await this.#worker.init(dataDir, { debug: this.debug });
     this.#ready = true;
   }
 
