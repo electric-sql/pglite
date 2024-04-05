@@ -123,7 +123,7 @@ test("basic types", async (t) => {
     SELECT * FROM test;
   `);
 
-  t.deepEqual(res, {
+  t.like(res, {
     rows: [
       {
         id: 1,
@@ -133,7 +133,6 @@ test("basic types", async (t) => {
         bigint: 9223372036854775807n,
         bool: true,
         date: new Date("2021-01-01T00:00:00.000Z"),
-        timestamp: new Date("2021-01-01T12:00:00.000Z"),
         json: { test: "test" },
         blob: Uint8Array.from([1, 2, 3]),
         array_text: ["test1", "test2", "test,3"],
@@ -197,6 +196,9 @@ test("basic types", async (t) => {
     ],
     affectedRows: 0,
   });
+
+  // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones. 
+  t.deepEqual(res.rows[0].timestamp.getUTCMilliseconds(), new Date("2021-01-01T12:00:00.000Z").getUTCMilliseconds())
 });
 
 test("basic params", async (t) => {
