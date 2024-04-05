@@ -13,21 +13,17 @@ import { parseType } from "./types.js";
  */
 export function parseResults(
   messages: Array<BackendMessage>,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): Array<Results> {
   const resultSets: Results[] = [];
-  let currentResultSet: Results | null = null;
+  const currentResultSet: Results = { rows: [], fields: [] };
 
   for (const msg of messages) {
     if (msg instanceof RowDescriptionMessage) {
-      currentResultSet = {
-        rows: [],
-        fields: msg.fields.map((field) => ({
-          name: field.name,
-          dataTypeID: field.dataTypeID,
-        })),
-      };
-      resultSets.push(currentResultSet);
+      currentResultSet.fields = msg.fields.map((field) => ({
+        name: field.name,
+        dataTypeID: field.dataTypeID,
+      }));
     } else if (msg instanceof DataRowMessage && currentResultSet) {
       if (options?.rowMode === "array") {
         currentResultSet.rows.push(
@@ -35,11 +31,12 @@ export function parseResults(
             parseType(
               field,
               currentResultSet!.fields[i].dataTypeID,
-              options?.parsers
-            )
-          )
+              options?.parsers,
+            ),
+          ),
         );
-      } else { // rowMode === "object"
+      } else {
+        // rowMode === "object"
         currentResultSet.rows.push(
           Object.fromEntries(
             msg.fields.map((field, i) => [
@@ -47,14 +44,15 @@ export function parseResults(
               parseType(
                 field,
                 currentResultSet!.fields[i].dataTypeID,
-                options?.parsers
+                options?.parsers,
               ),
-            ])
-          )
+            ]),
+          ),
         );
       }
-    } else if (msg instanceof CommandCompleteMessage && currentResultSet) {
+    } else if (msg instanceof CommandCompleteMessage) {
       currentResultSet.affectedRows = affectedRows(msg);
+      resultSets.push(currentResultSet);
     }
   }
 

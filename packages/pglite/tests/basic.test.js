@@ -46,11 +46,11 @@ test("basic query", async (t) => {
     );
   `);
   await db.query("INSERT INTO test (name) VALUES ('test');");
-  const res = await db.query(`
+  const selectResult = await db.query(`
     SELECT * FROM test;
   `);
 
-  t.deepEqual(res, {
+  t.deepEqual(selectResult, {
     rows: [
       {
         id: 1,
@@ -69,6 +69,13 @@ test("basic query", async (t) => {
     ],
     affectedRows: 0,
   });
+
+  const updateResult = await db.query("UPDATE test SET name = 'test2';");
+  t.deepEqual(updateResult, {
+    rows: [],
+    fields: [],
+    affectedRows: 1
+  })
 });
 
 test("basic types", async (t) => {
