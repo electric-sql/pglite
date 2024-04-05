@@ -16,9 +16,17 @@ export function parseResults(
   options?: QueryOptions,
 ): Array<Results> {
   const resultSets: Results[] = [];
-  const currentResultSet: Results = { rows: [], fields: [] };
+  let currentResultSet: Results = { rows: [], fields: [] };
+  let affectedRows = 0;
 
-  for (const msg of messages) {
+  const filteredMessages = messages.filter(
+    (msg) =>
+      msg instanceof RowDescriptionMessage ||
+      msg instanceof DataRowMessage ||
+      msg instanceof CommandCompleteMessage,
+  );
+
+  filteredMessages.forEach((msg, index) => {
     if (msg instanceof RowDescriptionMessage) {
       currentResultSet.fields = msg.fields.map((field) => ({
         name: field.name,
@@ -51,10 +59,15 @@ export function parseResults(
         );
       }
     } else if (msg instanceof CommandCompleteMessage) {
-      currentResultSet.affectedRows = affectedRows(msg);
-      resultSets.push(currentResultSet);
+      affectedRows += retrieveRowCount(msg);
+
+      if (index === filteredMessages.length - 1)
+        resultSets.push({ ...currentResultSet, affectedRows });
+      else resultSets.push(currentResultSet);
+
+      currentResultSet = { rows: [], fields: [] };
     }
-  }
+  });
 
   if (resultSets.length === 0) {
     resultSets.push({
@@ -66,13 +79,14 @@ export function parseResults(
   return resultSets;
 }
 
-function affectedRows(msg: CommandCompleteMessage): number {
+function retrieveRowCount(msg: CommandCompleteMessage): number {
   const parts = msg.text.split(" ");
   switch (parts[0]) {
     case "INSERT":
+      return parseInt(parts[2], 10);
     case "UPDATE":
     case "DELETE":
-      return parseInt(parts[1]);
+      return parseInt(parts[1], 10);
     default:
       return 0;
   }

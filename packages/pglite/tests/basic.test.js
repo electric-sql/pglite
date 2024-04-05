@@ -9,31 +9,27 @@ test("basic exec", async (t) => {
       name TEXT
     );
   `);
-  await db.exec("INSERT INTO test (name) VALUES ('test');");
-  const res = await db.exec(`
-    SELECT * FROM test;
-  `);
 
-  t.deepEqual(res, [
+  const multiStatementResult = await db.exec(`
+    INSERT INTO test (name) VALUES ('test');
+    UPDATE test SET name = 'test2';
+    SELECT * FROM test;
+`);
+
+  t.deepEqual(multiStatementResult, [
     {
-      rows: [
-        {
-          id: 1,
-          name: "test",
-        },
-      ],
-      fields: [
-        {
-          name: "id",
-          dataTypeID: 23,
-        },
-        {
-          name: "name",
-          dataTypeID: 25,
-        },
-      ],
-      affectedRows: 0,
+      rows: [],
+      fields: [],
     },
+    {
+      rows: [],
+      fields: [],
+    },
+    {
+      rows: [ { id: 1, name: 'test2' } ],
+      fields: [ { name: 'id', dataTypeID: 23 }, { name: 'name', dataTypeID: 25 } ],
+      affectedRows: 2
+    }
   ]);
 });
 
