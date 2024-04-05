@@ -13,13 +13,12 @@ export async function nodeValues() {
   return { dirname, require };
 }
 
-
 export async function makeLocateFile() {
   const PGWASM_URL = new URL("../release/postgres.wasm", import.meta.url);
   const PGSHARE_URL = new URL("../release/share.data", import.meta.url);
-  let fileURLToPath = (fileUrl: URL) => fileUrl.pathname
+  let fileURLToPath = (fileUrl: URL) => fileUrl.pathname;
   if (IN_NODE) {
-    fileURLToPath = (await import("url")).fileURLToPath
+    fileURLToPath = (await import("url")).fileURLToPath;
   }
   return (base: string) => {
     let url: URL | null = null;
@@ -32,10 +31,10 @@ export async function makeLocateFile() {
         break;
       default:
     }
-  
+
     if (url?.protocol === "file:") {
       return fileURLToPath(url);
     }
-    return url?.toString() ?? '';
-  }
+    return url?.toString() ?? "";
+  };
 }

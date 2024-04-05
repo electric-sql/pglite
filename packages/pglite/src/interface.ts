@@ -8,7 +8,7 @@ export type RowMode = "array" | "object";
 
 export interface ParserOptions {
   [pgType: number]: (value: string) => any;
-};
+}
 
 export interface QueryOptions {
   rowMode?: RowMode;
@@ -31,14 +31,14 @@ export interface PGliteInterface {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   transaction<T>(
-    callback: (tx: Transaction) => Promise<T>
+    callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined>;
   execProtocol(
-    message: Uint8Array
+    message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
 }
 
@@ -54,7 +54,7 @@ export interface Transaction {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   rollback(): Promise<void>;
