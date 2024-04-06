@@ -54,7 +54,11 @@ export class PGliteWorker implements PGliteInterface {
     this.#closed = true;
   }
 
-  async query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
+  async query<T>(
+    query: string,
+    params?: any[],
+    options?: QueryOptions,
+  ): Promise<Results<T>> {
     return this.#worker.query(query, params, options) as Promise<Results<T>>;
   }
 
@@ -68,7 +72,7 @@ export class PGliteWorker implements PGliteInterface {
   }
 
   async execProtocol(
-    message: Uint8Array
+    message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return this.#worker.execProtocol(message);
   }

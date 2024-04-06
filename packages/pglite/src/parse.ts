@@ -13,21 +13,25 @@ import { parseType } from "./types.js";
  */
 export function parseResults(
   messages: Array<BackendMessage>,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): Array<Results> {
   const resultSets: Results[] = [];
-  let currentResultSet: Results | null = null;
+  let currentResultSet: Results = { rows: [], fields: [] };
+  let affectedRows = 0;
 
-  for (const msg of messages) {
+  const filteredMessages = messages.filter(
+    (msg) =>
+      msg instanceof RowDescriptionMessage ||
+      msg instanceof DataRowMessage ||
+      msg instanceof CommandCompleteMessage,
+  );
+
+  filteredMessages.forEach((msg, index) => {
     if (msg instanceof RowDescriptionMessage) {
-      currentResultSet = {
-        rows: [],
-        fields: msg.fields.map((field) => ({
-          name: field.name,
-          dataTypeID: field.dataTypeID,
-        })),
-      };
-      resultSets.push(currentResultSet);
+      currentResultSet.fields = msg.fields.map((field) => ({
+        name: field.name,
+        dataTypeID: field.dataTypeID,
+      }));
     } else if (msg instanceof DataRowMessage && currentResultSet) {
       if (options?.rowMode === "array") {
         currentResultSet.rows.push(
@@ -35,11 +39,12 @@ export function parseResults(
             parseType(
               field,
               currentResultSet!.fields[i].dataTypeID,
-              options?.parsers
-            )
-          )
+              options?.parsers,
+            ),
+          ),
         );
-      } else { // rowMode === "object"
+      } else {
+        // rowMode === "object"
         currentResultSet.rows.push(
           Object.fromEntries(
             msg.fields.map((field, i) => [
@@ -47,16 +52,22 @@ export function parseResults(
               parseType(
                 field,
                 currentResultSet!.fields[i].dataTypeID,
-                options?.parsers
+                options?.parsers,
               ),
-            ])
-          )
+            ]),
+          ),
         );
       }
-    } else if (msg instanceof CommandCompleteMessage && currentResultSet) {
-      currentResultSet.affectedRows = affectedRows(msg);
+    } else if (msg instanceof CommandCompleteMessage) {
+      affectedRows += retrieveRowCount(msg);
+
+      if (index === filteredMessages.length - 1)
+        resultSets.push({ ...currentResultSet, affectedRows });
+      else resultSets.push(currentResultSet);
+
+      currentResultSet = { rows: [], fields: [] };
     }
-  }
+  });
 
   if (resultSets.length === 0) {
     resultSets.push({
@@ -68,13 +79,14 @@ export function parseResults(
   return resultSets;
 }
 
-function affectedRows(msg: CommandCompleteMessage): number {
+function retrieveRowCount(msg: CommandCompleteMessage): number {
   const parts = msg.text.split(" ");
   switch (parts[0]) {
     case "INSERT":
+      return parseInt(parts[2], 10);
     case "UPDATE":
     case "DELETE":
-      return parseInt(parts[1]);
+      return parseInt(parts[1], 10);
     default:
       return 0;
   }

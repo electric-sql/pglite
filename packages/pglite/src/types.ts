@@ -281,7 +281,7 @@ export function parseArray(value: string, parser?: (s: string) => any) {
 export function parseType(
   x: string,
   type: number,
-  parsers?: ParserOptions
+  parsers?: ParserOptions,
 ): any {
   if (x === null) {
     return null;
@@ -303,7 +303,7 @@ function typeHandlers(types: TypeHandlers) {
       serializers[k] = theSerializer;
       if (types[k].js) {
         types[k].js.forEach((Type: any) =>
-          serializerInstanceof.push([Type, theSerializer])
+          serializerInstanceof.push([Type, theSerializer]),
         );
       }
       if (parse) {
@@ -317,11 +317,13 @@ function typeHandlers(types: TypeHandlers) {
       return { parsers, serializers, serializerInstanceof };
     },
     {
-      parsers: {} as { [key: number | string]: (x: string, typeId?: number) => any },
+      parsers: {} as {
+        [key: number | string]: (x: string, typeId?: number) => any;
+      },
       serializers: {} as {
         [key: number | string]: Serializer;
       },
       serializerInstanceof: [] as Array<[any, Serializer]>,
-    }
+    },
   );
 }

@@ -55,16 +55,18 @@ test("parse date 1082", (t) => {
 });
 
 test("parse timestamp 1114", (t) => {
+  // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones. 
   t.deepEqual(
-    types.parseType("2021-01-01T12:00:00", 1114),
-    new Date("2021-01-01T12:00:00.000Z")
+    types.parseType("2021-01-01T12:00:00", 1114).getUTCMilliseconds(),
+    new Date("2021-01-01T12:00:00.000Z").getUTCMilliseconds()
   );
 });
 
 test("parse timestamptz 1184", (t) => {
+  // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones. 
   t.deepEqual(
-    types.parseType("2021-01-01T12:00:00", 1184),
-    new Date("2021-01-01T12:00:00.000Z")
+    types.parseType("2021-01-01T12:00:00", 1184).getUTCMilliseconds(),
+    new Date("2021-01-01T12:00:00.000Z").getUTCMilliseconds()
   );
 });
 

@@ -61,7 +61,7 @@ export async function initDb(dataDir?: string, debug?: DebugLevel) {
     locateFile: await makeLocateFile(),
     ...(debugMode
       ? { print: console.info, printErr: console.error }
-      : { print: () => { }, printErr: () => { } }),
+      : { print: () => {}, printErr: () => {} }),
     arguments: [
       "--boot",
       "-x1",
