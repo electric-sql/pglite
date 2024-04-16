@@ -195,15 +195,21 @@ export class PGlite implements PGliteInterface {
   async close() {
     await this.#checkReady();
     this.#closing = true;
-    const promise = new Promise<void>((resolve, reject) => {
-      this.#eventTarget.addEventListener("closed", () => resolve(), {
-        once: true,
-      });
+    await new Promise<void>(async (resolve, reject) => {
+      try {
+        await this.execProtocol(serialize.end());
+      } catch (e) {
+        console.log("PGlite close error", e)
+        const err = e as { name: string; status: number };
+        if (err.name === "ExitStatus" && err.status === 0) {
+          resolve();
+        } else {
+          reject(e);
+        }
+      }
     });
-    this.execProtocol(serialize.end());
-    // TODO: handel settings this.#closed = true and this.#closing = false;
-    // TODO: silence the unhandled promise rejection warning
-    return promise;
+    this.#closed = true;
+    this.#closing = false;
   }
 
   /**
