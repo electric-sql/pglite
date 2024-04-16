@@ -15,6 +15,10 @@ export interface QueryOptions {
   parsers?: ParserOptions;
 }
 
+export interface ExecProtocolOptions {
+  syncToFs?: boolean;
+}
+
 export interface PGliteOptions {
   debug?: DebugLevel;
 }
@@ -39,6 +43,7 @@ export interface PGliteInterface {
   ): Promise<T | undefined>;
   execProtocol(
     message: Uint8Array,
+    options?: ExecProtocolOptions,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
 }
 

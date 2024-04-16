@@ -13,6 +13,7 @@ import type {
   Results,
   Transaction,
   QueryOptions,
+  ExecProtocolOptions,
 } from "./interface.js";
 
 // Importing the source as the built version is not ESM compatible
@@ -22,6 +23,7 @@ import {
   BackendMessage,
   DatabaseError,
   NoticeMessage,
+  CommandCompleteMessage,
 } from "pg-protocol/dist/messages.js";
 
 export class PGlite implements PGliteInterface {
@@ -35,6 +37,7 @@ export class PGlite implements PGliteInterface {
   #eventTarget: EventTarget;
   #closing = false;
   #closed = false;
+  #inTransaction = false;
 
   #resultAccumulator: Uint8Array[] = [];
 
@@ -261,22 +264,27 @@ export class PGlite implements PGliteInterface {
       let results;
       try {
         results = [
-          ...(await this.execProtocol(
+          ...(await this.#execProtocolNoSync(
             serialize.parse({
               text: query,
               types: parsedParams.map(([, type]) => type),
             }),
           )),
-          ...(await this.execProtocol(
+          ...(await this.#execProtocolNoSync(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
             }),
           )),
-          ...(await this.execProtocol(serialize.describe({ type: "P" }))),
-          ...(await this.execProtocol(serialize.execute({}))),
+          ...(await this.#execProtocolNoSync(
+            serialize.describe({ type: "P" }),
+          )),
+          ...(await this.#execProtocolNoSync(serialize.execute({}))),
         ];
       } finally {
-        await this.execProtocol(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync());
+      }
+      if (!this.#inTransaction) {
+        this.#syncToFs();
       }
       return parseResults(
         results.map(([msg]) => msg),
@@ -303,9 +311,12 @@ export class PGlite implements PGliteInterface {
       }
       let results;
       try {
-        results = await this.execProtocol(serialize.query(query));
+        results = await this.#execProtocolNoSync(serialize.query(query));
       } finally {
-        await this.execProtocol(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync());
+      }
+      if (!this.#inTransaction) {
+        this.#syncToFs();
       }
       return parseResults(
         results.map(([msg]) => msg),
@@ -398,6 +409,7 @@ export class PGlite implements PGliteInterface {
    */
   async execProtocol(
     message: Uint8Array,
+    { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       if (this.#resultAccumulator.length > 0) {
@@ -409,7 +421,10 @@ export class PGlite implements PGliteInterface {
       this.emp.HEAPU8.set(message, ptr);
       this.emp._ExecProtocolMsg(ptr);
 
-      await this.#syncToFs();
+      if (syncToFs) {
+        await this.#syncToFs();
+      }
+
       const resData = this.#resultAccumulator;
 
       const results: Array<[BackendMessage, Uint8Array]> = [];
@@ -423,6 +438,17 @@ export class PGlite implements PGliteInterface {
           } else if (msg instanceof NoticeMessage && this.debug > 0) {
             // Notice messages are warnings, we should log them
             console.warn(msg);
+          } else if (msg instanceof CommandCompleteMessage) {
+            // Keep track of the transaction state
+            switch (msg.text) {
+              case "BEGIN":
+                this.#inTransaction = true;
+                break;
+              case "COMMIT":
+              case "ROLLBACK":
+                this.#inTransaction = false;
+                break;
+            }
           }
           results.push([msg, data]);
         });
@@ -430,6 +456,12 @@ export class PGlite implements PGliteInterface {
 
       return results;
     });
+  }
+
+  async #execProtocolNoSync(
+    message: Uint8Array,
+  ): Promise<Array<[BackendMessage, Uint8Array]>> {
+    return await this.execProtocol(message, { syncToFs: false });
   }
 
   /**
