@@ -199,7 +199,6 @@ export class PGlite implements PGliteInterface {
       try {
         await this.execProtocol(serialize.end());
       } catch (e) {
-        console.log("PGlite close error", e)
         const err = e as { name: string; status: number };
         if (err.name === "ExitStatus" && err.status === 0) {
           resolve();
@@ -290,7 +289,7 @@ export class PGlite implements PGliteInterface {
         await this.#execProtocolNoSync(serialize.sync());
       }
       if (!this.#inTransaction) {
-        this.#syncToFs();
+        await this.#syncToFs();
       }
       return parseResults(
         results.map(([msg]) => msg),
@@ -322,7 +321,7 @@ export class PGlite implements PGliteInterface {
         await this.#execProtocolNoSync(serialize.sync());
       }
       if (!this.#inTransaction) {
-        this.#syncToFs();
+        await this.#syncToFs();
       }
       return parseResults(
         results.map(([msg]) => msg),
