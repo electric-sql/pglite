@@ -38,6 +38,7 @@ export class PGlite implements PGliteInterface {
   #closing = false;
   #closed = false;
   #inTransaction = false;
+  #relaxedDurability = false;
 
   #resultAccumulator: Uint8Array[] = [];
 
@@ -47,6 +48,7 @@ export class PGlite implements PGliteInterface {
   #queryMutex = new Mutex();
   #transactionMutex = new Mutex();
   #fsSyncMutex = new Mutex();
+  #fsSyncScheduled = false;
 
   readonly debug: DebugLevel = 0;
 
@@ -67,6 +69,11 @@ export class PGlite implements PGliteInterface {
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
       this.debug = options.debug;
+    }
+
+    // Enable relaxed durability if requested
+    if (options?.relaxedDurability !== undefined) {
+      this.#relaxedDurability = options.relaxedDurability;
     }
 
     // Create an event target to handle events from the emscripten module
@@ -474,8 +481,22 @@ export class PGlite implements PGliteInterface {
    * run after every query to ensure that the filesystem is synced.
    */
   async #syncToFs() {
-    await this.#fsSyncMutex.runExclusive(async () => {
-      await this.fs!.syncToFs(this.emp.FS);
-    });
+    if (this.#fsSyncScheduled) {
+      return;
+    }
+    this.#fsSyncScheduled = true;
+
+    const doSync = async () => {
+      await this.#fsSyncMutex.runExclusive(async () => {
+        this.#fsSyncScheduled = false;
+        await this.fs!.syncToFs(this.emp.FS);
+      });
+    };
+
+    if (this.#relaxedDurability) {
+      doSync();
+    } else {
+      await doSync();
+    }
   }
 }
