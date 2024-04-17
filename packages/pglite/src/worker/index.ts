@@ -23,11 +23,13 @@ export class PGliteWorker implements PGliteInterface {
   #closed = false;
 
   #worker: WorkerInterface;
+  #options: PGliteOptions;
 
   constructor(dataDir: string, options?: PGliteOptions) {
     const { dataDir: dir, fsType } = parseDataDir(dataDir);
     this.dataDir = dir;
     this.fsType = fsType;
+    this.#options = options ?? {};
     this.debug = options?.debug ?? 0;
 
     this.#worker = Comlink.wrap(new Worker(WORKER_URL, { type: "module" }));
@@ -37,7 +39,7 @@ export class PGliteWorker implements PGliteInterface {
   }
 
   async #init(dataDir: string) {
-    await this.#worker.init(dataDir, { debug: this.debug });
+    await this.#worker.init(dataDir, this.#options);
     this.#ready = true;
   }
 

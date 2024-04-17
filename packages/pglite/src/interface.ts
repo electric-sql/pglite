@@ -21,6 +21,7 @@ export interface ExecProtocolOptions {
 
 export interface PGliteOptions {
   debug?: DebugLevel;
+  relaxedDurability?: boolean;
 }
 
 export interface PGliteInterface {
