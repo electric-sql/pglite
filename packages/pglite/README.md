@@ -152,6 +152,7 @@ Path to the directory to store the Postgres database. You can provide a url sche
 ##### `options`:
 
 - `debug`: 1-5 - the Postgres debug level. Logs are sent to the console.
+- `relaxedDurability`: boolean - under relaxed durability mode PGlite will not wait for flushes to storage to complete when using the indexedDB file system.
 
 ### Methods:
 
