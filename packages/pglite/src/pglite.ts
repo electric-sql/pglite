@@ -415,6 +415,33 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
+   * Execute a postgres wire protocol message without parsing the results
+   * @param message The postgres wire protocol message to execute
+   * @returns The result of the query as an array of messages
+   */
+  async execProtocolRaw(
+    message: Uint8Array,
+    { syncToFs = true }: ExecProtocolOptions = {},
+  ): Promise<Array<Uint8Array>> {
+    return await this.#executeMutex.runExclusive(async () => {
+      if (this.#resultAccumulator.length > 0) {
+        this.#resultAccumulator = [];
+      }
+
+      var bytes = message.length;
+      var ptr = this.emp._malloc(bytes);
+      this.emp.HEAPU8.set(message, ptr);
+      this.emp._ExecProtocolMsg(ptr);
+
+      if (syncToFs) {
+        await this.#syncToFs();
+      }
+
+      return this.#resultAccumulator;
+    });
+  }
+
+  /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
