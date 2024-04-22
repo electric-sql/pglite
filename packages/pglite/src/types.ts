@@ -188,7 +188,7 @@ export function serializerFor(x: any): Serializer {
 }
 
 export function serializeType(x: any): [string | null, number] {
-  if (x === null) {
+  if (x === null || x === undefined) {
     return [null, 0];
   }
   return serializerFor(x)(x);
