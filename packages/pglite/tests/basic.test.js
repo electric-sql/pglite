@@ -90,14 +90,16 @@ test("basic types", async (t) => {
       blob BYTEA,
       array_text TEXT[],
       array_number INT[],
-      nested_array_float FLOAT[][]
+      nested_array_float FLOAT[][],
+      test_null INT,
+      test_undefined INT
     );
   `);
 
   await db.query(
     `
-    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob, array_text, array_number, nested_array_float)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob, array_text, array_number, nested_array_float, test_null, test_undefined)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
   `,
     [
       "test",
@@ -112,6 +114,8 @@ test("basic types", async (t) => {
       ["test1", "test2", "test,3"],
       [1, 2, 3],
       [[1.1, 2.2], [3.3, 4.4]],
+      null,
+      undefined
     ]
   );
 
@@ -134,6 +138,8 @@ test("basic types", async (t) => {
         array_text: ["test1", "test2", "test,3"],
         array_number: [1, 2, 3],
         nested_array_float: [[1.1, 2.2], [3.3, 4.4]],
+        test_null: null,
+        test_undefined: null,
       },
     ],
     fields: [
@@ -188,6 +194,14 @@ test("basic types", async (t) => {
       {
         name: "nested_array_float",
         dataTypeID: 1022,
+      },
+      {
+        name: "test_null",
+        dataTypeID: 23,
+      },
+      {
+        name: "test_undefined",
+        dataTypeID: 23,
       },
     ],
     affectedRows: 0,
