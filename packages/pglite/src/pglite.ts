@@ -275,7 +275,7 @@ export class PGlite implements PGliteInterface {
   ): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
-      if (this.debug > 1) {
+      if (1) { //(this.debug > 1) {
         console.log("runQuery", query, params, options);
       }
       const parsedParams = params?.map((p) => serializeType(p)) || [];
@@ -324,7 +324,7 @@ export class PGlite implements PGliteInterface {
   ): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
-      if (this.debug > 1) {
+      if (1) { //(this.debug > 1) {
         console.log("runExec", query, options);
       }
       let results;
@@ -430,30 +430,37 @@ export class PGlite implements PGliteInterface {
     { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
+/*
       if (this.#resultAccumulator.length > 0) {
         this.#resultAccumulator = [];
       }
+*/
+    const msg_len = message.length
+      console.log("MESSAGE:", msg_len);
+// >0 set buffer content type to wire protocol
+// set buffer size so answer will be at size+0x2 pointer addr
+      this.emp._interactive_write(msg_len);
+// copy whole buffer at addr 0x1
+      this.emp.HEAPU8.set(message, 1);
 
-      console.log("MESSAGE:", message.length);
-// set CMA buffer content type to wire protocol
-      this.emp.HEAP8[1]=1;
-// set buffer size
-      this.emp.setValue(5, message.length, "i32");
-// copy whole buffer
-      this.emp.HEAPU8.set(message, 10);
     console.log("----------------------");
       this.emp._interactive_one();
     console.log("----------------------");
       if (syncToFs) {
-        //await this.#syncToFs();
+        await this.#syncToFs();
       }
 
-      const resData = this.#resultAccumulator;
+//      const resData = this.#resultAccumulator;
 
-      const results: Array<[BackendMessage, Uint8Array]> = [];
+        const results: Array<[BackendMessage, Uint8Array]> = [];
 
-      resData.forEach((data) => {
-        this.#parser.parse(Buffer.from(data), (msg) => {
+        const msg_start = msg_len +2;
+        const msg_end = msg_start + this.emp._interactive_read();
+
+        const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
+        console.log("DATA", msg_start, msg_end, data)
+
+        this.#parser.parse( Buffer.from(data), (msg) => {
           if (msg instanceof DatabaseError) {
             this.#parser = new Parser(); // Reset the parser
             throw msg;
@@ -473,12 +480,13 @@ export class PGlite implements PGliteInterface {
                 break;
             }
           }
+console.log("RESULT", msg );
           results.push([msg, data]);
         });
-      });
 
       return results;
     });
+
   }
 
   async #execProtocolNoSync(
