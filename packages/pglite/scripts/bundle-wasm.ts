@@ -35,7 +35,9 @@ async function findAndReplaceInDir(
 
 async function main() {
   await fs.copyFile("./release/postgres.wasm", "./dist/postgres.wasm");
-  await fs.copyFile("./release/share.data", "./dist/share.data");
+  await fs.copyFile("./release/postgres.data", "./dist/postgres.data");
+  await fs.copyFile("./release/postgres.so", "./dist/postgres.so");
+  await fs.copyFile("./release/pgbuild.js", "./dist/pgbuild.js");
   await findAndReplaceInDir(
     "./dist",
     /new URL\('\.\.\/release\//g,

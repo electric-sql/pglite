@@ -93,6 +93,7 @@ export class PGlite implements PGliteInterface {
    * @returns A promise that resolves when the database is ready
    */
   async #init() {
+/*
     let firstRun = false;
     await new Promise<void>(async (resolve, reject) => {
       if (this.#initStarted) {
@@ -140,8 +141,11 @@ export class PGlite implements PGliteInterface {
       };
 
       emscriptenOpts = await this.fs.emscriptenOpts(emscriptenOpts);
+
       const emp = await EmPostgresFactory(emscriptenOpts);
       this.emp = emp;
+
+      this.emp = await EmPostgresFactory();
     });
 
     if (firstRun) {
@@ -150,6 +154,8 @@ export class PGlite implements PGliteInterface {
     await this.#runExec(`
       SET search_path TO public;
     `);
+*/
+      this.emp = await EmPostgresFactory();
   }
 
   /**
@@ -428,13 +434,18 @@ export class PGlite implements PGliteInterface {
         this.#resultAccumulator = [];
       }
 
-      var bytes = message.length;
-      var ptr = this.emp._malloc(bytes);
-      this.emp.HEAPU8.set(message, ptr);
-      this.emp._ExecProtocolMsg(ptr);
-
+      console.log("MESSAGE:", message.length);
+// set CMA buffer content type to wire protocol
+      this.emp.HEAP8[1]=1;
+// set buffer size
+      this.emp.setValue(5, message.length, "i32");
+// copy whole buffer
+      this.emp.HEAPU8.set(message, 10);
+    console.log("----------------------");
+      this.emp._interactive_one();
+    console.log("----------------------");
       if (syncToFs) {
-        await this.#syncToFs();
+        //await this.#syncToFs();
       }
 
       const resData = this.#resultAccumulator;
@@ -489,7 +500,7 @@ export class PGlite implements PGliteInterface {
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        await this.fs!.syncToFs(this.emp.FS);
+        console.log("await this.fs!.syncToFs(this.emp.FS);");
       });
     };
 
