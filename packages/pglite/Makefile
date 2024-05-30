@@ -8,7 +8,6 @@ build-configure:
 		--disable-thread-safety \
 		--disable-spinlocks \
 		--with-system-tzdata=/usr/share/zoneinfo
-		--with-system-tzdata=/usr/share/zoneinfo
 
 build:
 	EMCC_CFLAGS="-s SIDE_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
