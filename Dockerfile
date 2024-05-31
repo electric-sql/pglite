@@ -40,7 +40,8 @@ COPY patches/ /pglite/patches/
 
 WORKDIR /pglite/packages/pglite
 RUN pnpm install
-RUN pnpm exec playwright install --with-deps chromium firefox
+RUN pnpm exec playwright install
+RUN pnpm exec playwright install-deps
 
 
 # Copy Postgres Source Code
@@ -48,4 +49,7 @@ COPY --from=pg_src postgres/ /pglite/postgres/
 
 
 # Build
-RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build" ]
+RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:configure" ]
+# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:wasm" ]
+# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:sharedir" ]
+# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:js" ]
