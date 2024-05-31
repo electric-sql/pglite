@@ -8,7 +8,7 @@ RUN cd /postgres && find . -type f -exec sed -i 's/\r$//' {} +
 FROM debian:bookworm-slim as build
 
 # Apt Pkgs
-RUN apt update && apt install -y build-essential flex bison git python3 curl
+RUN apt update && apt install -y build-essential flex bison git python3 curl gawk
 
 
 # Node / pnpm
@@ -48,8 +48,6 @@ RUN pnpm exec playwright install-deps
 COPY --from=pg_src postgres/ /pglite/postgres/
 
 
-# Build
-RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:configure" ]
-# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:wasm" ]
-# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:sharedir" ]
-# RUN [ "/bin/bash", "-c", "source /emsdk/emsdk_env.sh && pnpm build:js" ]
+# Set up example entrypoint that builds and tests package
+COPY docker-entrypoint.sh .
+CMD ["/bin/bash", "docker-entrypoint.sh"]
