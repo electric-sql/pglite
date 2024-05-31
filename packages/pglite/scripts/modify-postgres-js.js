@@ -25,11 +25,8 @@ postgresJs = postgresJs
   // fix name collison between wasi 1.0 proc_exit and postgres specific proc_exit
   .replace(
     "var exitJS",
-    "var wasi_snapshot_preview1_proc_exit = (code) => process.exit(code); var exitJS"
+    "var __wasi_proc_exit = (code) => { throw new ExitStatus(code); }; var exitJS"
   )
-  .replace("_proc_exit(status)", "wasi_snapshot_preview1_proc_exit(status)")
-  .replace(
-    "proc_exit:_proc_exit,",
-    "proc_exit:wasi_snapshot_preview1_proc_exit,"
-  );
+  .replace("_proc_exit(status)", "__wasi_proc_exit(status)")
+  .replace("proc_exit:_proc_exit,", "proc_exit:__wasi_proc_exit,");
 fs.writeFileSync(postgresJsPath, postgresJs);
