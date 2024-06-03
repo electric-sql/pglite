@@ -1,4 +1,4 @@
-.PHONY: debug-build debug-datadir build datadir
+.PHONY: build-configure build sharedir
 
 NODE ?= node
 
@@ -10,6 +10,19 @@ build-configure:
 		--disable-thread-safety \
 		--disable-spinlocks \
 		--with-system-tzdata=/usr/share/zoneinfo
+	emmake make -C ./src/backend generated-headers
+	rm a.out
+	rm -rf ../pg_ext/tmp_install
+	mkdir -p ../pg_ext/tmp_install/usr/include/server
+	cp -Lr ./src/include/* ../pg_ext/tmp_install/usr/include/server
+
+# run from pg_ext/
+build-ext:
+	$(NODE) ./scripts/pg-v-num.js 15 14
+	$(NODE) ./scripts/remove-module-magic.js
+	EMCC_CFLAGS="-sSIDE_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
+		emmake make -C ./pgvector OPTFLAGS="" PG_CONFIG="$(abspath pg_config)"
+	$(NODE) ./scripts/pg-v-num.js 14 15
 
 build:
 	EMCC_CFLAGS="-s SIDE_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
@@ -33,6 +46,9 @@ sharedir:
 	DESTDIR="$(abspath tmp_install)" \
 	EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sTOTAL_MEMORY=65536000 -sEMULATE_FUNCTION_POINTER_CASTS=1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS='FS'" \
 		emmake make MAKELEVEL=0 -C src/pl/plpgsql install
+	
+	cp ../pg_ext/pgvector/sql/vector--0.7.1.sql tmp_install/usr/local/pgsql/share/extension/vector--0.7.1.sql
+	cp ../pg_ext/pgvector/vector.control tmp_install/usr/local/pgsql/share/extension/vector.control
 
 	rm tmp_install/usr/local/pgsql/share/*.sample
 	rm tmp_install/usr/local/pgsql/share/timezonesets/*.txt

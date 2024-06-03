@@ -1,3 +1,6 @@
 [submodule "postgres"]
 	path = postgres
 	url = https://github.com/e253/postgres-wasm.git
+[submodule "pg_ext/pgvector"]
+	path = pg_ext/pgvector
+	url = https://github.com/pgvector/pgvector.git
