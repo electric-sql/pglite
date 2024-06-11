@@ -48,7 +48,7 @@ END
     then
         npm run build:js
         mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
-        cp -r ${PGLITE}/{LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/pglite/
+        cp -r ${PGLITE}/{LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
         pushd ${WEBROOT}
         zip /tmp/sdk/pglite.zip -r node_modules
         popd
