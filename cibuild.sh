@@ -44,9 +44,13 @@ else
     export CDEBUG="-g0 -Os"
 fi
 
-# setup compiler+node
-. /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
-
+# setup compiler+node. emsdk provides node.
+if which emcc
+then
+    echo using provided emsdk
+else
+    . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
+fi
 
 
 # custom code for node/web builds that modify pg main/tools behaviour
@@ -176,7 +180,7 @@ then
     fi
 fi
 
-# run linkweb last because it will remove some wasm .so used by node from fs
+# run linkweb after node build because it will remove some wasm .so used by node from fs
 # they don't need to be in MEMFS as they are fetched.
 if echo "$*"|grep "linkweb"
 then
@@ -186,17 +190,18 @@ then
     pushd build/postgres
     . $GITHUB_WORKSPACE/cibuild/linkweb.sh
 
-    # upload all to gh pages, including node archive
+    # upload all to gh pages,
+    # TODO: include node archive and samples ?
     if $CI
     then
-        mkdir -p /tmp/sdk/
-        cp -r $WEBROOT/* /tmp/sdk/
+        mkdir -p /tmp/web/
+        cp -r $WEBROOT/* /tmp/web/
     fi
     popd
 fi
 
 
-# pglite use web build files.
+# pglite also use web build files, so make it last.
 
 if echo "$*"|grep "pglite$"
 then
