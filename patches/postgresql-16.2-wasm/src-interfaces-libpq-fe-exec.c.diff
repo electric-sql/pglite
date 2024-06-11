@@ -1,0 +1,18 @@
+--- postgresql-16.2/src/interfaces/libpq/fe-exec.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/interfaces/libpq/fe-exec.c	2024-05-16 18:55:34.858766029 +0200
+@@ -1694,8 +1694,15 @@
+ 	/* Don't try to send if we know there's no live connection. */
+ 	if (conn->status != CONNECTION_OK)
+ 	{
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++    puts("#1699 !!!");
++    conn->status = CONNECTION_OK;
++    conn->asyncStatus = PGASYNC_IDLE;
++    PQconnectPoll(conn);
++#else
+ 		libpq_append_conn_error(conn, "no connection to the server");
+ 		return false;
++#endif
+ 	}
+ 
+ 	/* Can't send while already busy, either, unless enqueuing for later */

@@ -1,0 +1,31 @@
+--- postgresql-16.2/src/include/utils/palloc.h	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/include/utils/palloc.h	2024-05-06 08:20:15.252406333 +0200
+@@ -56,7 +56,9 @@
+  * Avoid accessing it directly!  Instead, use MemoryContextSwitchTo()
+  * to change the setting.
+  */
++#if !defined(PG_EXTERN)
+ extern PGDLLIMPORT MemoryContext CurrentMemoryContext;
++#endif
+ 
+ /*
+  * Flags for MemoryContextAllocExtended.
+@@ -132,7 +134,7 @@
+  * it's necessary to hide the inline definition of MemoryContextSwitchTo in
+  * this scenario; hence the #ifndef FRONTEND.
+  */
+-
++#if !defined(PG_EXTERN)
+ #ifndef FRONTEND
+ static inline MemoryContext
+ MemoryContextSwitchTo(MemoryContext context)
+@@ -143,7 +145,8 @@
+ 	return old;
+ }
+ #endif							/* FRONTEND */
+-
++#else
++#endif
+ /* Registration of memory context reset/delete callbacks */
+ extern void MemoryContextRegisterResetCallback(MemoryContext context,
+ 											   MemoryContextCallback *cb);

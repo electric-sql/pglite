@@ -1,0 +1,22 @@
+--- postgresql-16.2/src/fe_utils/string_utils.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/fe_utils/string_utils.c	2024-05-16 10:26:34.343857054 +0200
+@@ -23,7 +23,9 @@
+ static PQExpBuffer defaultGetLocalPQExpBuffer(void);
+ 
+ /* Globals exported by this file */
+-int			quote_all_identifiers = 0;
++bool			fe_utils_quote_all_identifiers = false;
++
++
+ PQExpBuffer (*getLocalPQExpBuffer) (void) = defaultGetLocalPQExpBuffer;
+ 
+ 
+@@ -72,7 +74,7 @@
+ 	 * These checks need to match the identifier production in scan.l. Don't
+ 	 * use islower() etc.
+ 	 */
+-	if (quote_all_identifiers)
++	if (fe_utils_quote_all_identifiers)
+ 		need_quotes = true;
+ 	/* slightly different rules for first character */
+ 	else if (!((rawid[0] >= 'a' && rawid[0] <= 'z') || rawid[0] == '_'))

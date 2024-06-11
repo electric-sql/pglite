@@ -1,0 +1,53 @@
+--- postgresql-16.2/src/backend/utils/adt/jsonpath_scan.c	2024-02-05 22:52:21.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/utils/adt/jsonpath_scan.c	2024-05-06 08:21:22.004448925 +0200
+@@ -1,4 +1,4 @@
+-#line 2 "jsonpath_scan.c"
++#line 1 "jsonpath_scan.c"
+ /*-------------------------------------------------------------------------
+  *
+  * jsonpath_scan.l
+@@ -28,7 +28,7 @@
+ #include "nodes/miscnodes.h"
+ #include "nodes/pg_list.h"
+ 
+-#line 32 "jsonpath_scan.c"
++#line 31 "jsonpath_scan.c"
+ 
+ #define  YY_INT_ALIGNED short int
+ 
+@@ -4157,7 +4157,7 @@
+ 
+ /* LCOV_EXCL_START */
+ 
+-#line 4161 "jsonpath_scan.c"
++#line 4160 "jsonpath_scan.c"
+ #define YY_NO_INPUT 1
+ /*
+  * We use exclusive states for quoted and non-quoted strings,
+@@ -4173,7 +4173,7 @@
+ /* DecimalInteger in ECMAScript; must not start with 0 unless it's exactly 0 */
+ /* DecimalDigits in ECMAScript; only used as part of other rules */
+ /* Non-decimal integers; in ECMAScript, these must not have underscore after prefix */
+-#line 4177 "jsonpath_scan.c"
++#line 4176 "jsonpath_scan.c"
+ 
+ #define INITIAL 0
+ #define xq 1
+@@ -4405,7 +4405,7 @@
+ #line 120 "jsonpath_scan.l"
+ 
+ 
+-#line 4409 "jsonpath_scan.c"
++#line 4408 "jsonpath_scan.c"
+ 
+ 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
+ 		{
+@@ -4857,7 +4857,7 @@
+ #line 358 "jsonpath_scan.l"
+ YY_FATAL_ERROR( "flex scanner jammed" );
+ 	YY_BREAK
+-#line 4861 "jsonpath_scan.c"
++#line 4860 "jsonpath_scan.c"
+ 
+ 	case YY_END_OF_BUFFER:
+ 		{

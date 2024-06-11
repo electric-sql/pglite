@@ -1,0 +1,17 @@
+--- postgresql-16.2/src/template/emscripten	2024-04-30 08:02:57.613354880 +0200
++++ postgresql-16.2-wasm/src/template/emscripten	2024-05-06 08:20:15.254406305 +0200
+@@ -0,0 +1,14 @@
++# src/template/emscripten
++
++# Prefer unnamed POSIX semaphores if available, unless user overrides choice
++if test x"$PREFERRED_SEMAPHORES" = x"" ; then
++  PREFERRED_SEMAPHORES=UNNAMED_POSIX
++fi
++
++# Force _GNU_SOURCE on; plperl is broken with Perl 5.8.0 otherwise
++# This is also required for ppoll(2), and perhaps other things
++CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
++
++# Extra CFLAGS for code that will go into a shared library
++CFLAGS_SL="-fPIC"
++

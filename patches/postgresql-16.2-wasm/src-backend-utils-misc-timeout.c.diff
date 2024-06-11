@@ -1,0 +1,31 @@
+--- postgresql-16.2/src/backend/utils/misc/timeout.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/utils/misc/timeout.c	2024-05-06 08:20:15.246406419 +0200
+@@ -110,10 +110,20 @@
+  * Insert specified timeout reason into the list of active timeouts
+  * at the given index.
+  */
++
++bool insert_timeout_warned = false;
+ static void
+ insert_timeout(TimeoutId id, int index)
+ {
+ 	int			i;
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++    if (!insert_timeout_warned) //(index<0)
++    {
++        insert_timeout_warned = true;
++        fprintf(stderr, "# 117(FATAL): insert_timeout(TimeoutId id=%d, int index=%d): " __FILE__ "\n", id, index);
++    }
++    return;
++#endif
+ 
+ 	if (index < 0 || index > num_active_timeouts)
+ 		elog(FATAL, "timeout index %d out of range 0..%d", index,
+@@ -128,6 +138,7 @@
+ 	active_timeouts[index] = &all_timeouts[id];
+ 
+ 	num_active_timeouts++;
++
+ }
+ 
+ /*

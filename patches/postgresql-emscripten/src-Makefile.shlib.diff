@@ -1,0 +1,22 @@
+--- postgresql-16.2/src/Makefile.shlib	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/Makefile.shlib	2024-05-06 08:20:15.254406305 +0200
+@@ -233,6 +233,19 @@
+   override CXXFLAGS += $(CXXFLAGS_SL_MODULE)
+ endif
+ 
++ifeq ($(PORTNAME), emscripten)
++  LINK.shared       = wasm-shared
++  ifdef soname
++    # emscripten uses unversioned shared libraries
++    shlib     = $(shlib_bare)
++    soname        = $(shlib_bare)
++  endif
++  BUILD.exports     = ( echo '{ global:'; $(AWK) '/^[^\#]/ {printf "%s;\n",$$1}' $<; echo ' local: *; };' ) >$@
++  exports_file      = $(SHLIB_EXPORTS:%.txt=%.list)
++#  ifneq (,$(exports_file))
++#    LINK.shared     += -Wl,--version-script=$(exports_file)
++#  endif
++endif
+ 
+ ##
+ ## BUILD

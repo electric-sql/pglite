@@ -1,0 +1,31 @@
+--- postgresql-16.2/src/backend/access/transam/xact.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/access/transam/xact.c	2024-05-20 09:35:45.573224322 +0200
+@@ -1740,6 +1740,7 @@
+ 	if (TransactionIdDidCommit(xid))
+ 		elog(PANIC, "cannot abort transaction %u, it was already committed",
+ 			 xid);
++	else elog(WARNING, "# 1743: aborting transaction %u", xid);
+ 
+ 	/*
+ 	 * Are we using the replication origins feature?  Or, in other words, are
+@@ -2748,7 +2749,9 @@
+ 	 * handler.  We do this fairly early in the sequence so that the timeout
+ 	 * infrastructure will be functional if needed while aborting.
+ 	 */
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	sigprocmask(SIG_SETMASK, &UnBlockSig, NULL);
++#endif
+ 
+ 	/*
+ 	 * check the current transaction state
+@@ -5107,7 +5110,10 @@
+ 	 * handler.  We do this fairly early in the sequence so that the timeout
+ 	 * infrastructure will be functional if needed while aborting.
+ 	 */
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	sigprocmask(SIG_SETMASK, &UnBlockSig, NULL);
++#endif
++
+ 
+ 	/*
+ 	 * check the current transaction state

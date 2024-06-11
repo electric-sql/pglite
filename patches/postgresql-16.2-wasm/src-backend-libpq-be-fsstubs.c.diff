@@ -1,0 +1,66 @@
+--- postgresql-16.2/src/backend/libpq/be-fsstubs.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/libpq/be-fsstubs.c	2024-05-06 08:20:15.237406546 +0200
+@@ -150,8 +150,12 @@
+  *
+  *****************************************************************************/
+ 
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++static int
++#else
+ int
+-lo_read(int fd, char *buf, int len)
++#endif
++lo_read3(int fd, char *buf, int len)
+ {
+ 	int			status;
+ 	LargeObjectDesc *lobj;
+@@ -178,8 +182,12 @@
+ 	return status;
+ }
+ 
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++static int
++#else
+ int
+-lo_write(int fd, const char *buf, int len)
++#endif
++lo_write3(int fd, const char *buf, int len)
+ {
+ 	int			status;
+ 	LargeObjectDesc *lobj;
+@@ -190,7 +198,7 @@
+ 				 errmsg("invalid large-object descriptor: %d", fd)));
+ 	lobj = cookies[fd];
+ 
+-	/* see comment in lo_read() */
++	/* see comment in lo_read3() */
+ 	if ((lobj->flags & IFS_WRLOCK) == 0)
+ 		ereport(ERROR,
+ 				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+@@ -365,7 +373,7 @@
+ 		len = 0;
+ 
+ 	retval = (bytea *) palloc(VARHDRSZ + len);
+-	totalread = lo_read(fd, VARDATA(retval), len);
++	totalread = lo_read3(fd, VARDATA(retval), len);
+ 	SET_VARSIZE(retval, totalread + VARHDRSZ);
+ 
+ 	PG_RETURN_BYTEA_P(retval);
+@@ -382,7 +390,7 @@
+ 	PreventCommandIfReadOnly("lowrite()");
+ 
+ 	bytestowrite = VARSIZE_ANY_EXHDR(wbuf);
+-	totalwritten = lo_write(fd, VARDATA_ANY(wbuf), bytestowrite);
++	totalwritten = lo_write3(fd, VARDATA_ANY(wbuf), bytestowrite);
+ 	PG_RETURN_INT32(totalwritten);
+ }
+ 
+@@ -560,7 +568,7 @@
+ 				 errmsg("invalid large-object descriptor: %d", fd)));
+ 	lobj = cookies[fd];
+ 
+-	/* see comment in lo_read() */
++	/* see comment in lo_read3() */
+ 	if ((lobj->flags & IFS_WRLOCK) == 0)
+ 		ereport(ERROR,
+ 				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),

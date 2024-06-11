@@ -1,0 +1,15 @@
+--- postgresql-16.2/src/interfaces/libpq/legacy-pqsignal.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/interfaces/libpq/legacy-pqsignal.c	2024-05-06 08:20:15.254406305 +0200
+@@ -32,6 +32,7 @@
+  * non-ENABLE_THREAD_SAFETY builds), so the incompatibility isn't
+  * troublesome for internal references.
+  */
++#if !defined(__EMSCRIPTEN__)
+ pqsigfunc
+ pqsignal(int signo, pqsigfunc func)
+ {
+@@ -55,3 +56,4 @@
+ 	return signal(signo, func);
+ #endif
+ }
++#endif // __EMSCRIPTEN__

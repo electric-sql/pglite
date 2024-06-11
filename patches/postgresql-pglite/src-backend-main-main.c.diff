@@ -1,0 +1,35 @@
+--- postgresql-16.2/src/backend/main/main.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/main/main.c	2024-05-16 10:25:30.962773142 +0200
+@@ -41,20 +41,20 @@
+ #include "utils/pg_locale.h"
+ #include "utils/ps_status.h"
+ 
+-
+-const char *progname;
+ static bool reached_main = false;
+ 
+-
+ static void startup_hacks(const char *progname);
+ static void init_locale(const char *categoryname, int category, const char *locale);
+ static void help(const char *progname);
+ static void check_root(const char *progname);
+ 
+-
+ /*
+  * Any Postgres server process begins execution here.
+  */
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++#include PG_MAIN_INCLUDE
++#else
++const char* progname;
+ int
+ main(int argc, char *argv[])
+ {
+@@ -199,6 +199,7 @@
+ 	/* the functions above should not return */
+ 	abort();
+ }
++#endif /* wasm */
+ 
+ 
+ 

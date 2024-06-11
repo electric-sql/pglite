@@ -1,0 +1,36 @@
+--- postgresql-16.2/src/backend/bootstrap/bootstrap.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/bootstrap/bootstrap.c	2024-05-06 08:20:15.236406560 +0200
+@@ -199,7 +199,11 @@
+  *	 to shared memory sizing, options work (or at least do not cause an error
+  *	 up to shared memory creation).
+  */
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ void
++#else
++int
++#endif
+ BootstrapModeMain(int argc, char *argv[], bool check_only)
+ {
+ 	int			i;
+@@ -353,7 +357,7 @@
+ 	 */
+ 	if (pg_link_canary_is_frontend())
+ 		elog(ERROR, "backend is incorrectly linked to frontend functions");
+-
++puts("# 360: InitPostgres(boot): " __FILE__ );
+ 	InitPostgres(NULL, InvalidOid, NULL, InvalidOid, false, false, NULL);
+ 
+ 	/* Initialize stuff for bootstrap-file processing */
+@@ -378,7 +382,12 @@
+ 
+ 	/* Clean up and exit */
+ 	cleanup();
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	proc_exit(0);
++#else
++	puts("# 338 cleanup(boot): " __FILE__);
++	return 0;
++#endif
+ }
+ 
+ 

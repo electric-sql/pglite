@@ -1,0 +1,53 @@
+--- postgresql-16.2/src/interfaces/ecpg/preproc/pgc.c	2024-02-05 22:52:25.000000000 +0100
++++ postgresql-16.2-wasm/src/interfaces/ecpg/preproc/pgc.c	2024-05-06 08:21:44.265125198 +0200
+@@ -1,4 +1,4 @@
+-#line 2 "pgc.c"
++#line 1 "pgc.c"
+ /*-------------------------------------------------------------------------
+  *
+  * pgc.l
+@@ -28,7 +28,7 @@
+ #include "preproc_extern.h"
+ #include "preproc.h"
+ 
+-#line 32 "pgc.c"
++#line 31 "pgc.c"
+ 
+ #define  YY_INT_ALIGNED short int
+ 
+@@ -1831,7 +1831,7 @@
+ 	bool		else_branch;
+ } stacked_if_value[MAX_NESTED_IF];
+ 
+-#line 1835 "pgc.c"
++#line 1834 "pgc.c"
+ #define YY_NO_INPUT 1
+ /*
+  * OK, here is a short description of lex/flex rules behavior.
+@@ -1992,7 +1992,7 @@
+ /* and then the other commands starting with "i", we have to add these
+  * separately because the cppline production would match on "include" too
+  */
+-#line 1996 "pgc.c"
++#line 1995 "pgc.c"
+ 
+ #define INITIAL 0
+ #define xb 1
+@@ -2239,7 +2239,7 @@
+ 		token_start = NULL;
+ 
+ 
+-#line 2243 "pgc.c"
++#line 2242 "pgc.c"
+ 
+ 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
+ 		{
+@@ -4004,7 +4004,7 @@
+ #line 1532 "pgc.l"
+ YY_FATAL_ERROR( "flex scanner jammed" );
+ 	YY_BREAK
+-#line 4008 "pgc.c"
++#line 4007 "pgc.c"
+ 
+ 	case YY_END_OF_BUFFER:
+ 		{

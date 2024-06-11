@@ -1,0 +1,16 @@
+--- postgresql-16.2/src/include/fe_utils/string_utils.h	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/include/fe_utils/string_utils.h	2024-05-06 08:20:15.251406348 +0200
+@@ -19,8 +19,12 @@
+ #include "libpq-fe.h"
+ #include "pqexpbuffer.h"
+ 
++/*#include "../interfaces/libpq/libpq-fe.h"*/
++/*#include "../interfaces/libpq/pqexpbuffer.h"*/
++
++
+ /* Global variables controlling behavior of fmtId() and fmtQualifiedId() */
+-extern PGDLLIMPORT int quote_all_identifiers;
++extern PGDLLIMPORT bool quote_all_identifiers;
+ extern PQExpBuffer (*getLocalPQExpBuffer) (void);
+ 
+ /* Functions */

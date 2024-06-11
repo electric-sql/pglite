@@ -1,0 +1,20 @@
+--- postgresql-16.2/src/backend/commands/collationcmds.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/commands/collationcmds.c	2024-05-13 09:02:37.348732990 +0200
+@@ -828,14 +828,14 @@
+ 		maxaliases = 100;
+ 		aliases = (CollAliasData *) palloc(maxaliases * sizeof(CollAliasData));
+ 		naliases = 0;
+-
+ 		locale_a_handle = OpenPipeStream("locale -a", "r");
+-		if (locale_a_handle == NULL)
++		if (locale_a_handle == NULL) {
++            puts("======================== ERROR ================");
+ 			ereport(ERROR,
+ 					(errcode_for_file_access(),
+ 					 errmsg("could not execute command \"%s\": %m",
+ 							"locale -a")));
+-
++        }
+ 		while (fgets(localebuf, sizeof(localebuf), locale_a_handle))
+ 		{
+ 			size_t		len;

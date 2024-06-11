@@ -1,0 +1,11 @@
+--- postgresql-16.2/src/makefiles/Makefile.emscripten	2024-04-30 08:02:57.616354829 +0200
++++ postgresql-16.2-wasm/src/makefiles/Makefile.emscripten	2024-05-06 08:20:15.254406305 +0200
+@@ -0,0 +1,8 @@
++# Use --enable-new-dtags to generate DT_RUNPATH instead of DT_RPATH.
++# This allows LD_LIBRARY_PATH to still work when needed.
++rpath = 
++AROPT = crs
++
++# Rule for building a shared library from a single .o file
++%.so: %.o
++	$(CC) $(CFLAGS) $< $(LDFLAGS) $(LDFLAGS_SL) -shared -o $@

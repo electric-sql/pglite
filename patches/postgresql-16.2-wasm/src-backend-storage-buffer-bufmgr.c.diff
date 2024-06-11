@@ -1,0 +1,23 @@
+--- postgresql-16.2/src/backend/storage/buffer/bufmgr.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/storage/buffer/bufmgr.c	2024-05-06 08:20:15.239406518 +0200
+@@ -1134,16 +1134,16 @@
+ 			{
+ 				ereport(WARNING,
+ 						(errcode(ERRCODE_DATA_CORRUPTED),
+-						 errmsg("invalid page in block %u of relation %s; zeroing out page",
++						 errmsg("1137: invalid page in block %u of relation %s; zeroing out page",
+ 								blockNum,
+ 								relpath(smgr->smgr_rlocator, forkNum))));
+ 				MemSet((char *) bufBlock, 0, BLCKSZ);
+ 			}
+ 			else
+-				ereport(ERROR,
++				ereport(WARNING,
+ 						(errcode(ERRCODE_DATA_CORRUPTED),
+-						 errmsg("invalid page in block %u of relation %s",
+-								blockNum,
++						 errmsg("1145(FATAL): invalid page in block %u fork=%d p=%p sz=%d of relation %s",
++								blockNum,forkNum,bufBlock, BLCKSZ,
+ 								relpath(smgr->smgr_rlocator, forkNum))));
+ 		}
+ 	}

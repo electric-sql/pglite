@@ -1,0 +1,11 @@
+--- postgresql-16.2/src/backend/Makefile	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/Makefile	2024-05-16 12:50:07.600410775 +0200
+@@ -65,7 +65,7 @@
+ ifneq ($(PORTNAME), aix)
+ 
+ postgres: $(OBJS)
+-	$(CC) $(CFLAGS) $(call expand_subsys,$^) $(LDFLAGS) $(LIBS) -o $@
++	$(CC) -sMAIN_MODULE=1 $(CFLAGS) $(call expand_subsys,$^) $(LDFLAGS) $(LIBS) -o $@
+ 
+ endif
+ endif

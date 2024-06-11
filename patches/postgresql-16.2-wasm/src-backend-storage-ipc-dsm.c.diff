@@ -1,0 +1,12 @@
+--- postgresql-16.2/src/backend/storage/ipc/dsm.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/storage/ipc/dsm.c	2024-05-07 14:21:43.318977277 +0200
+@@ -294,7 +294,8 @@
+ {
+ 	DIR		   *dir;
+ 	struct dirent *dent;
+-
++puts("# why ? 298: " __FILE__) ;
++// return;
+ 	/* Scan the directory for something with a name of the correct format. */
+ 	dir = AllocateDir(PG_DYNSHMEM_DIR);
+ 

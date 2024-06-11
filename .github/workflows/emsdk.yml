@@ -1,0 +1,87 @@
+name: Full build
+
+on:
+  workflow_dispatch:
+
+  release:
+    # this runs CI only when a release is created at first (and not when it is
+    # edited or published)
+    types: [created]
+
+  push:
+    branches: main
+
+  pull_request:
+    branches: main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+        PGVERSION: 16.2
+        SDK_VERSION: 3.1.62.0bi
+        SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
+        SDKROOT: /opt/python-wasm-sdk
+        SYS_PYTHON: /usr/bin/python3
+        PGROOT: /tmp/pglite
+        DEBUG: false
+
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        fetch-depth: 1
+
+    - name: install python-wasm-sdk for emsdk/wasi+prebuilts
+      run: |
+        sudo apt-get install -y lz4 wget pv bash
+        echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
+        curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 24400 >/dev/null
+
+      working-directory: /
+
+
+    - name: Build postgres WASM via emsdk
+      run: |
+        bash ./cibuild.sh
+
+    - name: Build pgvector
+      run: |
+        bash ./cibuild.sh vector
+
+#    - name: Build duckdb+pg_quack
+#      run: |
+#        bash ./cibuild.sh quack
+
+    - name: pack node distribution
+      run: |
+        bash ./cibuild.sh node
+
+    - name: link postgres WASM for web
+      run: |
+        bash ./cibuild.sh linkweb
+
+#    - name: Build PGlite and pack extensions via npm
+#      run: |
+#        bash ./cibuild.sh pglite
+
+    - name: Upload sdk to Github artifacts
+      uses: actions/upload-artifact@v4.3.1
+      with:
+        path: /tmp/sdk
+
+    - name: Upload sdk to Github Releases
+      if: github.event_name == 'release'
+      uses: svenstaro/upload-release-action@2.9.0
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: /tmp/sdk/*
+        file_glob: true
+        tag: ${{ github.ref }}
+
+
+    - name : "Upload to GitHub pages"
+      uses: JamesIves/github-pages-deploy-action@v4.4.1
+      with:
+        branch: gh-pages
+        folder: /tmp/sdk
+

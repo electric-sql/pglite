@@ -1,0 +1,19 @@
+--- postgresql-16.2/src/backend/access/nbtree/nbtutils.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/access/nbtree/nbtutils.c	2024-05-07 17:21:13.146488170 +0200
+@@ -2732,7 +2732,7 @@
+ 			break;
+ 		}
+ 	}
+-
++#if !defined(__EMSCRIPTEN__)
+ 	if (debugmessage)
+ 	{
+ 		if (allequalimage)
+@@ -2742,6 +2742,6 @@
+ 			elog(DEBUG1, "index \"%s\" cannot use deduplication",
+ 				 RelationGetRelationName(rel));
+ 	}
+-
++#endif
+ 	return allequalimage;
+ }

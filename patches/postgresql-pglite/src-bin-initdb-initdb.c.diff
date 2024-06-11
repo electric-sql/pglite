@@ -1,0 +1,177 @@
+--- postgresql-16.2/src/bin/initdb/initdb.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/bin/initdb/initdb.c	2024-05-08 13:14:19.210889604 +0200
+@@ -45,7 +45,7 @@
+  *
+  *-------------------------------------------------------------------------
+  */
+-
++#define PG_INITDB
+ #include "postgres_fe.h"
+ 
+ #include <dirent.h>
+@@ -81,6 +81,23 @@
+ #include "mb/pg_wchar.h"
+ #include "miscadmin.h"
+ 
++#if defined(PG_INITDB_MAIN)
++
++// FIXME: get PGDATA from env.
++
++/*
++EMSCRIPTEN_KEEPALIVE void
++pg_logging_init(const char *argv0) {
++    puts("pg_logging_init");
++}
++
++EMSCRIPTEN_KEEPALIVE void
++pg_log_generic(enum pg_log_level level, enum pg_log_part part,
++			   const char *pg_restrict fmt,...) {
++    puts("pg_log_generic");
++}
++*/
++#endif
+ 
+ /* Ideally this would be in a .h file, but it hardly seems worth the trouble */
+ extern const char *select_default_timezone(const char *share_path);
+@@ -168,7 +185,11 @@
+ 
+ 
+ /* internal vars */
++#if !defined(PG_MAIN)
+ static const char *progname;
++#else
++#   define dynamic_shared_memory_type idb_dynamic_shared_memory_type
++#endif
+ static int	encodingid;
+ static char *bki_file;
+ static char *hba_file;
+@@ -747,6 +768,7 @@
+ static char *
+ get_id(void)
+ {
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	const char *username;
+ 
+ #ifndef WIN32
+@@ -757,10 +779,12 @@
+ 		exit(1);
+ 	}
+ #endif
+-
+ 	username = get_user_name_or_exit(progname);
+ 
+ 	return pg_strdup(username);
++#else
++	return pg_strdup(WASM_USERNAME);
++#endif /* wasm */
+ }
+ 
+ static char *
+@@ -2557,8 +2581,13 @@
+ 			strlcpy(full_path, progname, sizeof(full_path));
+ 
+ 		if (ret == -1)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++			printf("# WARNING: program \"%s\" is needed by %s but was not found in the same directory as \"%s\"\n",
++					 "postgres", progname, full_path);
++#else
+ 			pg_fatal("program \"%s\" is needed by %s but was not found in the same directory as \"%s\"",
+ 					 "postgres", progname, full_path);
++#endif // wasm
+ 		else
+ 			pg_fatal("program \"%s\" was found by \"%s\" but was not the same version as %s",
+ 					 "postgres", full_path, progname);
+@@ -2986,7 +3015,11 @@
+ 
+ 	/* Select suitable configuration settings */
+ 	set_null_conf();
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	test_config_settings();
++#else
++    dynamic_shared_memory_type = choose_dsm_implementation();
++#endif // wasm
+ 
+ 	/* Now create all the text config files */
+ 	setup_config();
+@@ -3051,9 +3084,30 @@
+ 	check_ok();
+ }
+ 
++#if defined(PG_INITDB_MAIN)
++
++extern void MemoryContextInit(void);
++
++// FIXME: get PGDATA from env.
++char *argv[] = {
++    WASM_PREFIX "/bin/initdb",
++//    "--no-clean",
++    "--wal-segsize=1",
++    "-g",
++    "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
++    "-U", WASM_USERNAME, "--pwfile=" WASM_PREFIX "/password",
++    "--pgdata=" WASM_PREFIX "/base",
++    NULL
++};
++
++int argc = sizeof(argv) / sizeof(char*) - 1;
+ 
++EMSCRIPTEN_KEEPALIVE int
++pg_initdb_main()
++#else
+ int
+ main(int argc, char *argv[])
++#endif
+ {
+ 	static struct option long_options[] = {
+ 		{"pgdata", required_argument, NULL, 'D'},
+@@ -3113,10 +3167,22 @@
+ 	 */
+ 	setvbuf(stdout, NULL, PG_IOLBF, 0);
+ 
+-	pg_logging_init(argv[0]);
++#if defined(PG_INITDB_MAIN)
+ 	progname = get_progname(argv[0]);
++    printf("calling pg_initdb_main for %s\n", progname);
++    MemoryContextInit();
++	pg_logging_init(progname);
++	//set_pglocale_pgservice(progname, PG_TEXTDOMAIN("postgres"));
+ 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("initdb"));
+ 
++//    int saved_stderr = dup(STDERR_FILENO);
++//    freopen(IDB_PIPE_FILE, "w", stderr);
++
++#else
++	pg_logging_init(argv[0]);
++	progname = get_progname(argv[0]);
++	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("initdb"));
++#endif
+ 	if (argc > 1)
+ 	{
+ 		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
+@@ -3390,7 +3456,15 @@
+ 	printf("\n");
+ 
+ 	initialize_data_directory();
+-
++#if defined(PG_INITDB_MAIN)
++/*
++    fflush(stderr);
++    fclose(stderr);
++    puts("# restoring stderr ?");
++    stderr = fdopen(saved_stderr, "w");
++    fprintf(stderr, "# stderr restored !\n");
++*/
++#else
+ 	if (do_sync)
+ 	{
+ 		fputs(_("syncing data to disk ... "), stdout);
+@@ -3443,8 +3517,7 @@
+ 
+ 		destroyPQExpBuffer(start_db_cmd);
+ 	}
+-
+-
++#endif
+ 	success = true;
+ 	return 0;
+ }

@@ -1,0 +1,67 @@
+--- postgresql-16.2/src/backend/storage/file/fd.c	2024-02-05 22:41:37.000000000 +0100
++++ postgresql-16.2-wasm/src/backend/storage/file/fd.c	2024-05-13 13:40:08.005727715 +0200
+@@ -69,7 +69,7 @@
+  *
+  *-------------------------------------------------------------------------
+  */
+-
++#define PG_FD
+ #include "postgres.h"
+ 
+ #include <dirent.h>
+@@ -478,6 +478,11 @@
+ void
+ pg_flush_data(int fd, off_t offset, off_t nbytes)
+ {
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++    //int res = sync_file_range(fd, offset, nbytes, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE | SYNC_FILE_RANGE_WAIT_AFTER);
++    (void)fsync(fd);
++    // fprintf(stderr, "# pg_flush_data(int fd=%d, off_t offset=%lld, off_t nbytes=%lld res=%d\n", fd,offset,nbytes, res);
++#else
+ 	/*
+ 	 * Right now file flushing is primarily used to avoid making later
+ 	 * fsync()/fdatasync() calls have less impact. Thus don't trigger flushes
+@@ -648,6 +653,7 @@
+ 		return;
+ 	}
+ #endif
++#endif /* wasm */
+ }
+ 
+ /*
+@@ -660,7 +666,7 @@
+ 
+ retry:
+ 	ret = ftruncate(fd, length);
+-
++printf("# 670 pg_ftruncate(int fd=%d, off_t length=%lld)=%d\n" __FILE__, fd, length, ret);
+ 	if (ret == -1 && errno == EINTR)
+ 		goto retry;
+ 
+@@ -692,7 +698,7 @@
+ 
+ retry:
+ 	ret = truncate(path, length);
+-
++printf("# 670 pg_truncate(path=%s, off_t length=%lld)=%d\n" __FILE__, path, length, ret);
+ 	if (ret == -1 && errno == EINTR)
+ 		goto retry;
+ #endif
+@@ -2619,7 +2625,7 @@
+ 
+ 	return -1;					/* failure */
+ }
+-
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ /*
+  * Routines that want to initiate a pipe stream should use OpenPipeStream
+  * rather than plain popen().  This lets fd.c deal with freeing FDs if
+@@ -2679,7 +2685,7 @@
+ 
+ 	return NULL;
+ }
+-
++#endif
+ /*
+  * Free an AllocateDesc of any type.
+  *
