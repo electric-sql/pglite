@@ -60,9 +60,9 @@ jobs:
       run: |
         bash ./cibuild.sh linkweb
 
-#    - name: Build PGlite and pack extensions via npm
-#      run: |
-#        bash ./cibuild.sh pglite
+    - name: Build PGlite and pack extensions via npm
+      run: |
+        bash ./cibuild.sh pglite
 
     - name: Upload sdk to Github artifacts
       uses: actions/upload-artifact@v4.3.1
