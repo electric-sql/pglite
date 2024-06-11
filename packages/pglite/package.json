@@ -40,10 +40,10 @@
   },
   "scripts": {
     "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\"",
-    "build:configure": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build-configure",
-    "build:wasm": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build",
+    "build:configure": "cd ../.. && bash ./cibuild.sh",
+    "build:wasm": "cd ../.. && bash ./cibuild vector node linkweb",
     "build:sharedir": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir",
-    "build:clean": "cd ../../postgres/ && make clean",
+    "build:clean": "cd ../../postgresql/ && make distclean",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build:all": "npm run build:wasm && npm run build:sharedir && npm run build:js",
     "build": "npm run build:configure && npm run build:all",

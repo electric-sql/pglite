@@ -201,7 +201,7 @@ fi
 if echo "$*"|grep "pglite$"
 then
     echo "================================================="
-    . cibuild/pglite.sh
+    . cibuild/pglite-ts.sh
 fi
 
 
