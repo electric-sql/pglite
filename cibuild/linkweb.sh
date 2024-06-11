@@ -116,8 +116,8 @@ mkdir -p ${WEBROOT}/repl
 
 mv index.html ${WEBROOT}/
 mv -v postgres.* ${WEBROOT}/repl/
-rm ${PGROOT}/lib/libecpg.so.? 2>/dev/null
 mv ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
+rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
 
 cp $GITHUB_WORKSPACE/tests/vtx.js ${WEBROOT}/repl/
 du -hs ${WEBROOT}/repl/*

@@ -23,13 +23,15 @@ END
     # TODO: get them from web for nosdk systems.
     if $CI
     then
-        cp /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
-        cp /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
+        cp -vf /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
+        cp -vf /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
     else
         cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
         cp ${WEBROOT}/libecpg.so ${PGLITE}/release/postgres.so
     fi
-    touch $PGLITE/release/share.data
+
+    # unused right now
+    # touch $PGLITE/release/share.data
 
 
     # this is the ES6 wasm module loader from emscripten.
@@ -48,9 +50,12 @@ END
     then
         npm run build:js
         mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
-        cp -r ${PGLITE}/{LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
+        echo "------------------------------"
+        #find ${PGLITE}/dist/
+        echo "------------------------------"
+        cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
         pushd ${WEBROOT}
-        zip /tmp/sdk/pglite.zip -r node_modules
+        zip /tmp/sdk/pglite.zip -q -r node_modules
         popd
     fi
 
