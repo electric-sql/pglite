@@ -19,12 +19,12 @@
     export default loadPgShare;
 END
 
-    # copy wasm prebuilt artifacts to release folder
+    # copy wasm web prebuilt artifacts to release folder
     # TODO: get them from web for nosdk systems.
     if $CI
     then
-        cp /tmp/sdk/repl/postgres.{js,data,wasm} $PGLITE/release/
-        cp /tmp/sdk/repl/libecpg.so $PGLITE/release/postgres.so
+        cp /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
+        cp /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
     else
         cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
         cp ${WEBROOT}/libecpg.so ${PGLITE}/release/postgres.so

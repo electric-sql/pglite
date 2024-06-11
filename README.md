@@ -49,9 +49,18 @@ Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux 
 
 It is being developed at [ElectricSQL](http://electric-sql.com) in collaboration with [Neon](http://neon.tech). We will continue to build on this experiment with the aim of creating a fully capable lightweight WASM Postgres with support for extensions such as pgvector.
 
-## Whats new in V0.1
+## Whats new in V0.2.0
 
-Version 0.1 (up from 0.0.2) includes significant changes to the Postgres build - it's about 1/3 smaller at 2.6mb gzipped, and up to 2-3 times faster. We have also found a way to statically compile Postgres extensions into the build - the first of these is pl/pgsql with more coming soon.
+Key changes in this release are:
+
+- Postgres release 16.2
+- Support Postgres dynamic extensions.
+- Running on node/bun
+
+
+## Whats new in V0.1.5
+
+Version 0.1.5 (up from 0.0.2) includes significant changes to the Postgres build - it's about 1/3 smaller at 2.6mb gzipped, and up to 2-3 times faster. We have also found a way to statically/dynamically compile Postgres extensions into the build - the first of these areis pl/pgsql with more coming soon.
 
 Key changes in this release are:
 
