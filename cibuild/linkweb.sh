@@ -93,10 +93,33 @@ MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB
 
 # closure -sSIMPLE_OPTIMIZATION
 
+
+# =======================================================
+# size optimisations
+# =======================================================
+
+rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
+
 touch placeholder
+# for ./bin
+
+rm ${PGROOT}/share/postgresql/*.sample
+
+# ./lib/lib*.a => ignored
+
+# ./include ignored
+
+# timezones ?
+
+# encodings ?
+# ./lib/postgresql/utf8_and*.so
+rm ${PGROOT}/lib/postgresql/utf8_and*.so
+
+# =========================================================
+
 emcc $EMCC_WEB -fPIC $CDEBUG -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
- -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=100MB \
+ -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap \
  -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read \
@@ -105,7 +128,7 @@ emcc $EMCC_WEB -fPIC $CDEBUG -sMAIN_MODULE=1 \
  --preload-file ${PGROOT}/password@${PGROOT}/password \
  --preload-file placeholder@${PGROOT}/bin/postgres \
  --preload-file placeholder@${PGROOT}/bin/initdb \
- -o postgres.html $PG_O $PG_L || exit 107
+ -o postgres.html $PG_O $PG_L || exit 122
 
 mkdir -p ${WEBROOT}/repl
 
@@ -118,7 +141,7 @@ mkdir -p ${WEBROOT}/repl
 mv index.html ${WEBROOT}/
 mv -v postgres.* ${WEBROOT}/repl/
 mv ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
-rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
+
 
 cp $GITHUB_WORKSPACE/tests/vtx.js ${WEBROOT}/repl/
 du -hs ${WEBROOT}/repl/*

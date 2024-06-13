@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # data transfer zone this is == (wire query size + result size ) + 2
-# expressed in MB
+# expressed in EMSDK MB
 export CMA_MB=${CMA_MB:-64}
 
 export PGVERSION=${PGVERSION:-16.2}
@@ -66,6 +66,9 @@ fi
 
 # custom code for node/web builds that modify pg main/tools behaviour
 # this used by both node/linkweb build stages
+
+# pass the "kernel" contiguous memory zone size to the C compiler.
+CC_PGLITE="-DCMA_MB=${CMA_MB}"
 if $CI
 then
     CC_PGLITE="-DPATCH_MAIN=${GITHUB_WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
@@ -177,12 +180,15 @@ fi
 # run this last so all extensions files can be packaged
 # those include  *.control *.sql and *.so
 # TODO: check if some versionned *.sql files can be omitted
+# TODO: for bigger extensions than pgvector make separate packaging.
 
+# include current pglite source for easy local rebuild with just npm run build:js.
 
 if echo "$*"|grep "node"
 then
     echo "================================================="
-    mkdir -p /tmp/sdk/
+    mkdir -p /tmp/sdk/packages/
+    cp -r packages/pglite /tmp/sdk/packages/
     # remove versionned symlinks
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
     if $CI
