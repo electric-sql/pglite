@@ -232,7 +232,7 @@ then
     fi
     popd
 
-    # copy neeeded files for a minimal js/ts/extension build
+    # copy needed files for a minimal js/ts/extension build
     # these don't use NODE FS !!!
 
     mkdir -p ${PGROOT}/sdk/packages/
@@ -245,7 +245,6 @@ then
 
 fi
 
-[ -f /tmp/sdk/pg.tar ] && gzip -9 /tmp/sdk/pg.tar
 
 # pglite also use web build files, so make it last.
 
@@ -253,6 +252,8 @@ if echo "$*"|grep "pglite$"
 then
     echo "================================================="
     . cibuild/pglite-ts.sh
+
+    [ -f /tmp/sdk/pg.tar ] && gzip -9 /tmp/sdk/pg.tar
 fi
 
 
