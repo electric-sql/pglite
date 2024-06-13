@@ -161,7 +161,7 @@ then
         # OPTFLAGS="" turns off arch optim (sse/neon).
         PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
         cp sql/vector.sql sql/vector--0.7.2.sql ${PGROOT}/share/postgresql/extension
-        rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql
+        rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
         read
         popd
 
