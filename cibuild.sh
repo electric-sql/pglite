@@ -191,7 +191,7 @@ then
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
     if $CI
     then
-        tar -cpR ${PGROOT} > /tmp/sdk/pg.tar
+        tar -cpRz ${PGROOT} > /tmp/sdk/pg.tar.gz
     fi
 fi
 
@@ -232,17 +232,6 @@ then
     fi
     popd
 
-    # copy needed files for a minimal js/ts/extension build
-    # these don't use NODE FS !!!
-
-    mkdir -p ${PGROOT}/sdk/packages/
-    cp -r $PGLITE ${PGROOT}/sdk/packages/
-
-    if $CI
-    then
-        tar -cpR ${PGROOT} > /tmp/sdk/pg.tar
-    fi
-
 fi
 
 
@@ -253,7 +242,18 @@ then
     echo "================================================="
     . cibuild/pglite-ts.sh
 
-    [ -f /tmp/sdk/pg.tar ] && gzip -9 /tmp/sdk/pg.tar
+    # copy needed files for a minimal js/ts/extension build
+    # these don't use NODE FS !!!
+
+    mkdir -p ${PGROOT}/sdk/packages/
+    cp -r $PGLITE ${PGROOT}/sdk/packages/
+
+
+    if $CI
+    then
+        tar -cpRz ${PGROOT} > /tmp/sdk/pg.tar.gz
+    fi
+
 fi
 
 

@@ -117,7 +117,7 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 # =========================================================
 
-emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
+emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 -sWASMFS \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
