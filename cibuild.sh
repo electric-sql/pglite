@@ -143,16 +143,28 @@ then
     echo "================================================="
 
     pushd build
-    [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
+
+    # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
+    # git clone --branch v0.7.2 https://github.com/pgvector/pgvector.git
+
+    if [ -d pgvector ]
+    then
+        echo using local pgvector
+    else
+        wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.2.tar.gz -Opgvector.tar.gz
+        tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
+        mv pgvector-?.?.? pgvector
+    fi
         pushd pgvector
         # path for wasm-shared already set to (pwd:pg build dir)/bin
         # OPTFLAGS="" turns off arch optim (sse/neon).
         PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
             pushd ${PGROOT}/share/postgresql/extension
-                mv vector--0.7.0--0.7.1.sql vector--0.7.1.sql
                 rm vector--*--*.sql
+                mv vector.sql > vector--0.7.2.sql
             popd
         popd
+
     popd
 fi
 
