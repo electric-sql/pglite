@@ -49,16 +49,17 @@ END
     if $CI
     then
         npm run build:js
-        npm pack
-        mv electric-sql-pglite-*.tgz /tmp/sdk/
-        mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
-        echo "------------------------------"
-        #find ${PGLITE}/dist/
-        echo "------------------------------"
-        cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
-        pushd ${WEBROOT}
-        zip /tmp/sdk/pglite.zip -q -r node_modules
-        popd
+        if $CI
+        then
+            npm pack
+            mv electric-sql-pglite-*.tgz /tmp/sdk/
+        else
+            mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
+            cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
+            pushd ${WEBROOT}
+            zip /tmp/sdk/pglite.zip -q -r node_modules
+            popd
+        fi
     fi
 
     popd

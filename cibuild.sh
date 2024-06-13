@@ -182,29 +182,42 @@ fi
 # TODO: check if some versionned *.sql files can be omitted
 # TODO: for bigger extensions than pgvector make separate packaging.
 
-# include current pglite source for easy local rebuild with just npm run build:js.
-
 if echo "$*"|grep "node"
 then
     echo "================================================="
-    mkdir -p /tmp/sdk/packages/
-    cp -r packages/pglite /tmp/sdk/packages/
-    cp -vf /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
-    cp -vf /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
+    mkdir -p /tmp/sdk/
 
     # remove versionned symlinks
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
     if $CI
     then
-        tar -cpRz ${PGROOT} > /tmp/sdk/pg.tar.gz
+        tar -cpR ${PGROOT} > /tmp/sdk/pg.tar
     fi
 fi
 
 # run linkweb after node build because it will remove some wasm .so used by node from fs
 # they don't need to be in MEMFS as they are fetched.
+
+
+# include current pglite source for easy local rebuild with just npm run build:js.
+
+
 if echo "$*"|grep "linkweb"
 then
     echo "================================================="
+    if [ -d pglite ]
+    then
+        # work tree
+        pushd pglite/packages/pglite
+        PGLITE=$(pwd)
+    else
+        # release tree
+        pushd packages/pglite
+        PGLITE=$(pwd)
+    fi
+    popd
+
+    export PGLITE
 
     # build web version
     pushd build/postgres
@@ -218,8 +231,21 @@ then
         cp -r $WEBROOT/* /tmp/web/
     fi
     popd
+
+    # copy neeeded files for a minimal js/ts/extension build
+    # these don't use NODE FS !!!
+
+    mkdir -p ${PGROOT}/sdk/packages/
+    cp -r $PGLITE ${PGROOT}/sdk/packages/
+
+    if $CI
+    then
+        tar -cpR ${PGROOT} > /tmp/sdk/pg.tar
+    fi
+
 fi
 
+[ -f /tmp/sdk/pg.tar ] && gzip -9 /tmp/sdk/pg.tar
 
 # pglite also use web build files, so make it last.
 
