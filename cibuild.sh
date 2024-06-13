@@ -1,18 +1,17 @@
 #!/bin/bash
+
+# data transfer zone this is == (wire query size + result size ) + 2
+# expressed in MB
+export CMA_MB=${CMA_MB:-64}
+
 export PGVERSION=${PGVERSION:-16.2}
 export CI=${CI:-false}
 export GITHUB_WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
 export PGROOT=${PGROOT:-/tmp/pglite}
 export WEBROOT=${WEBROOT:-${GITHUB_WORKSPACE}/postgres}
 export DEBUG=${DEBUG:-false}
-
-PGDATA=${PGROOT}/base
-
-PGUSER=postgres
-
-export PGPASS=${PGPASS:-password}
-export CRED="-U $PGUSER --pwfile=${PGROOT}/password"
-
+export PGDATA=${PGROOT}/base
+export PGUSER=postgres
 
 # exit on error
 EOE=false
@@ -26,28 +25,40 @@ else
     sudo chown $(whoami) ${PGROOT}
 fi
 
+#TODO handle PGPASSFILE hostname:port:database:username:password correctly instead
+# https://www.postgresql.org/docs/devel/libpq-pgpass.html
+export CRED="-U $PGUSER --pwfile=${PGROOT}/password"
+
 if [ -f ${PGROOT}/password ]
 then
     echo "not changing db password"
+    PGPASS=$(cat ${PGROOT}/password)
 else
+    PGPASS=${PGPASS:-password}
     echo ${PGPASS:-password} > ${PGROOT}/password
 fi
+
+export PGPASS
+
+
 
 
 # default to web/release size optim.
 if $DEBUG
 then
-    echo "debug not support on web build"
-    exit 80
+    echo "debug not supported on web build"
+    exit 51
 else
     export PGDEBUG=""
     export CDEBUG="-g0 -Os"
 fi
 
-# setup compiler+node. emsdk provides node.
+# setup compiler+node. emsdk provides node (18), recent enough for bun.
+# TODO: but may need to adjust $PATH with stock emsdk.
+
 if which emcc
 then
-    echo using provided emsdk
+    echo "Using provided emsdk from $(which emcc)"
 else
     . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
 fi

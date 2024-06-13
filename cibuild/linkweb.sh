@@ -93,6 +93,7 @@ MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB
 
 # closure -sSIMPLE_OPTIMIZATION
 
+touch placeholder
 emcc $EMCC_WEB -fPIC $CDEBUG -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=100MB \
@@ -100,10 +101,10 @@ emcc $EMCC_WEB -fPIC $CDEBUG -sMAIN_MODULE=1 \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap \
  -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
- --preload-file ${PGROOT}/lib@${PGROOT}/lib \
+ --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
  --preload-file ${PGROOT}/password@${PGROOT}/password \
- --preload-file ${PGROOT}/bin/postgres@${PGROOT}/bin/postgres \
- --preload-file ${PGROOT}/bin/initdb@${PGROOT}/bin/initdb \
+ --preload-file placeholder@${PGROOT}/bin/postgres \
+ --preload-file placeholder@${PGROOT}/bin/initdb \
  -o postgres.html $PG_O $PG_L || exit 107
 
 mkdir -p ${WEBROOT}/repl
