@@ -117,10 +117,10 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 # =========================================================
 
-emcc $EMCC_WEB -fPIC $CDEBUG -sMAIN_MODULE=1 \
+emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
-  $MODULE -sERROR_ON_UNDEFINED_SYMBOLS \
+  $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap \
  -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
