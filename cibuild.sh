@@ -189,6 +189,9 @@ then
     echo "================================================="
     mkdir -p /tmp/sdk/packages/
     cp -r packages/pglite /tmp/sdk/packages/
+    cp -vf /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
+    cp -vf /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
+
     # remove versionned symlinks
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
     if $CI
