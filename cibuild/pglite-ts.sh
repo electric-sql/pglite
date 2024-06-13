@@ -49,6 +49,8 @@ END
     if $CI
     then
         npm run build:js
+        npm pack
+        mv electric-sql-pglite-*.tgz /tmp/sdk/
         mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
         echo "------------------------------"
         #find ${PGLITE}/dist/
