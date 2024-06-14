@@ -2,10 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { FilesystemBase } from "./types.js";
 import { PGDATA } from "./index.js";
-import { initDb } from "../initdb.js";
-import loadPgShare from "../../release/share.js";
 import type { EmPostgres } from "../../release/postgres.js";
-import { nodeValues } from "../utils.js";
 import type { DebugLevel } from "../index.js";
 
 export class NodeFS extends FilesystemBase {
@@ -24,7 +21,6 @@ export class NodeFS extends FilesystemBase {
       return false;
     }
     fs.mkdirSync(this.dataDir);
-    await initDb(this.dataDir, debug);
     return true;
   }
 
@@ -39,8 +35,6 @@ export class NodeFS extends FilesystemBase {
         },
       ],
     };
-    const { require } = await nodeValues();
-    loadPgShare(options, require);
     return options;
   }
 }

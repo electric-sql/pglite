@@ -1,4 +1,5 @@
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
+import type { Filesystem } from "./fs/types.js";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
@@ -19,14 +20,21 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean;
 }
 
-export interface PGliteOptions {
-  debug?: DebugLevel;
-  relaxedDurability?: boolean;
+export interface Extension<T = any> {
+  name: string;
+  nameSpace?: string;
+  setup: (mod: any, pg: PGliteInterface) => T;
 }
 
-export interface PGliteInterface {
-  readonly dataDir?: string;
-  readonly fsType: FilesystemType;
+export interface PGliteOptions {
+  dataDir?: string;
+  fs?: Filesystem;
+  debug?: DebugLevel;
+  relaxedDurability?: boolean;
+  extensions?: Extension[];
+}
+
+export type PGliteInterface<E extends Extension[] = []> = {
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel;
   readonly ready: boolean;
@@ -36,17 +44,23 @@ export interface PGliteInterface {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
+    callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined>;
   execProtocol(
     message: Uint8Array,
-    options?: ExecProtocolOptions,
+    options?: ExecProtocolOptions
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
-}
+
+  // Extensions
+} & {
+  [K in E[number]["nameSpace"] extends string
+    ? E[number]["nameSpace"]
+    : never]: ReturnType<E[number]["setup"]>;
+};
 
 export type Row<T = { [key: string]: any }> = T;
 
@@ -60,7 +74,7 @@ export interface Transaction {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   rollback(): Promise<void>;

@@ -4,7 +4,7 @@
 
   console.log("Starting...");
   // In-memory database:
-  const pg = new PGlite();
+  const pg = new PGlite({ debug: 1 });
   // Or with IndexedDB:
   // const pg = new PGlite('idb://pgdata');
 
@@ -13,26 +13,34 @@
 
   console.log("Ready!");
 
-  console.log("Creating table...");
-  await pg.exec(`
-    CREATE TABLE IF NOT EXISTS test (
-      id SERIAL PRIMARY KEY,
-      name TEXT
-    );
-  `);
+  // check error
+  const ret = await pg.exec("SELECT * from test;");
+  console.log(ret);
 
-  console.log("Inserting data...");
-  await pg.exec("INSERT INTO test (name) VALUES ('test');");
+  // // check version
+  // const ret = await pg.exec("SELECT version();");
+  // console.log(ret);
 
-  console.log("Selecting data...");
-  const res = await pg.exec(`
-    SELECT * FROM test;
-  `);
+  // console.log("Creating table...");
+  // await pg.exec(`
+  //   CREATE TABLE IF NOT EXISTS test (
+  //     id SERIAL PRIMARY KEY,
+  //     name TEXT
+  //   );
+  // `);
 
-  console.log(res);
+  // console.log("Inserting data...");
+  // await pg.exec("INSERT INTO test (name) VALUES ('test');");
 
-  const res2 = await pg.exec(`
-    SELECT 1, 2, 3;
-  `);
-  console.log(res2);
+  // console.log("Selecting data...");
+  // const res = await pg.exec(`
+  //   SELECT * FROM test;
+  // `);
+
+  // console.log(res);
+
+  // const res2 = await pg.exec(`
+  //   SELECT 1, 2, 3;
+  // `);
+  // console.log(res2);
 </script>
