@@ -2,13 +2,11 @@ import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
-import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 import type {
   DebugLevel,
   PGliteOptions,
-  FilesystemType,
   PGliteInterface,
   Results,
   Transaction,
@@ -27,20 +25,14 @@ import {
 } from "pg-protocol/dist/messages.js";
 
 export class PGlite implements PGliteInterface {
-  readonly dataDir?: string;
-  readonly fsType: FilesystemType;
-  protected fs?: Filesystem;
+  fs?: Filesystem;
   protected emp?: any;
 
-  #initStarted = false;
   #ready = false;
-  #eventTarget: EventTarget;
   #closing = false;
   #closed = false;
   #inTransaction = false;
   #relaxedDurability = false;
-
-  #resultAccumulator: Uint8Array[] = [];
 
   readonly waitReady: Promise<void>;
 
@@ -61,10 +53,26 @@ export class PGlite implements PGliteInterface {
    *                Use memory:// to use in-memory filesystem
    * @param options Optional options
    */
-  constructor(dataDir?: string, options?: PGliteOptions) {
-    const { dataDir: dir, fsType } = parseDataDir(dataDir);
-    this.dataDir = dir;
-    this.fsType = fsType;
+  constructor(dataDir?: string, options?: PGliteOptions);
+
+  /**
+   * Create a new PGlite instance
+   * @param options PGlite options including the data directory
+   */
+  constructor(options?: PGliteOptions);
+
+  constructor(
+    dataDirOrPGliteOptions: string | PGliteOptions = {},
+    options: PGliteOptions = {}
+  ) {
+    if (typeof dataDirOrPGliteOptions === "string") {
+      options = {
+        dataDir: dataDirOrPGliteOptions,
+        ...options,
+      };
+    } else {
+      options = dataDirOrPGliteOptions;
+    }
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
@@ -76,115 +84,50 @@ export class PGlite implements PGliteInterface {
       this.#relaxedDurability = options.relaxedDurability;
     }
 
-    // Create an event target to handle events from the emscripten module
-    this.#eventTarget = new EventTarget();
-
-    // Listen for result events from the emscripten module and accumulate them
-    this.#eventTarget.addEventListener("result", async (e: any) => {
-      this.#resultAccumulator.push(e.detail);
-    });
-
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init();
+    this.waitReady = this.#init(options ?? {});
   }
 
   /**
    * Initialize the database
    * @returns A promise that resolves when the database is ready
    */
-  async #init() {
-/*
-    let firstRun = false;
-    await new Promise<void>(async (resolve, reject) => {
-      if (this.#initStarted) {
-        throw new Error("Already initializing");
-      }
-      this.#initStarted = true;
+  async #init(options: PGliteOptions) {
+    if (options.fs) {
+      this.fs = options.fs;
+    } else {
+      const { dataDir, fsType } = parseDataDir(options.dataDir);
+      this.fs = await loadFs(dataDir, fsType);
+    }
 
-      // Load a filesystem based on the type
-      this.fs = await loadFs(this.dataDir, this.fsType);
+    const args = [
+      "PGDATA=/tmp/pglite/base",
+      "PREFIX=/tmp/pglite",
+      "REPL=N",
+      // "-F", // Disable fsync (TODO: Only for in-memory mode?)
+      ...(this.debug ? ["-d", this.debug.toString()] : []),
+    ];
 
-      // Initialize the filesystem
-      // returns true if this is the first run, we then need to perform
-      // additional setup steps at the end of the init.
-      firstRun = await this.fs.init(this.debug);
-
+    this.emp = await new Promise<EmPostgres>(async (resolve, reject) => {
+      let modPromise: Promise<EmPostgres>;
       let emscriptenOpts: Partial<EmPostgres> = {
-        arguments: [
-          "--single", // Single user mode
-          "-F", // Disable fsync (TODO: Only for in-memory mode?)
-          "-O", // Allow the structure of system tables to be modified. This is used by initdb
-          "-j", // Single use mode - Use semicolon followed by two newlines, rather than just newline, as the command entry terminator.
-          "-c", // Set parameter
-          "search_path=pg_catalog",
-          "-c",
-          "dynamic_shared_memory_type=mmap",
-          "-c",
-          "max_prepared_transactions=10",
-          // Debug level
-          ...(this.debug ? ["-d", this.debug.toString()] : []),
-          "-D", // Data directory
-          "/pgdata",
-          "template1",
-        ],
-        locateFile: await makeLocateFile(),
+        arguments: args,
+        noInitialRun: true,
+        noExitRuntime: true,
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
           : { print: () => {}, printErr: () => {} }),
-        onRuntimeInitialized: async (Module: EmPostgres) => {
-          await this.fs!.initialSyncFs(Module.FS);
-          this.#ready = true;
-          resolve();
+        locateFile: await makeLocateFile(),
+        onRuntimeInitialized: async () => {
+          resolve(modPromise);
         },
-        eventTarget: this.#eventTarget,
-        Event: PGEvent,
       };
-
-      emscriptenOpts = await this.fs.emscriptenOpts(emscriptenOpts);
-
-      const emp = await EmPostgresFactory(emscriptenOpts);
-      this.emp = emp;
-
-      this.emp = await EmPostgresFactory();
+      emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
+      modPromise = EmPostgresFactory(emscriptenOpts);
     });
-
-    if (firstRun) {
-      await this.#firstRun();
-    }
-    await this.#runExec(`
-      SET search_path TO public;
-    `);
-*/
-      this.emp = await EmPostgresFactory();
-  }
-
-  /**
-   * Perform the first run initialization of the database
-   * This is only run when the database is first created
-   */
-  async #firstRun() {
-    const shareDir = "/usr/local/pgsql/share";
-    const sqlFiles = [
-      ["information_schema.sql"],
-      ["system_constraints.sql", "pg_catalog"],
-      ["system_functions.sql", "pg_catalog"],
-      ["system_views.sql", "pg_catalog"],
-    ];
-    // Load the sql files into the database
-    for (const [file, schema] of sqlFiles) {
-      const sql = await this.emp.FS.readFile(shareDir + "/" + file, {
-        encoding: "utf8",
-      });
-      if (schema) {
-        await this.#runExec(`SET search_path TO ${schema};\n ${sql}`);
-      } else {
-        await this.#runExec(sql);
-      }
-    }
-    await this.#runExec(`
-      SET search_path TO public;
-      CREATE EXTENSION IF NOT EXISTS plpgsql;
-    `);
+    await this.fs!.initialSyncFs(this.emp.FS);
+    this.emp.callMain(args);
+    this.#ready = true;
   }
 
   /**
@@ -234,7 +177,7 @@ export class PGlite implements PGliteInterface {
   async query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>> {
     await this.#checkReady();
     // We wrap the public query method in the transaction mutex to ensure that
@@ -271,11 +214,11 @@ export class PGlite implements PGliteInterface {
   async #runQuery<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
-      if (1) { //(this.debug > 1) {
+      if (this.debug > 1) {
         console.log("runQuery", query, params, options);
       }
       const parsedParams = params?.map((p) => serializeType(p)) || [];
@@ -286,15 +229,15 @@ export class PGlite implements PGliteInterface {
             serialize.parse({
               text: query,
               types: parsedParams.map(([, type]) => type),
-            }),
+            })
           )),
           ...(await this.#execProtocolNoSync(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
-            }),
+            })
           )),
           ...(await this.#execProtocolNoSync(
-            serialize.describe({ type: "P" }),
+            serialize.describe({ type: "P" })
           )),
           ...(await this.#execProtocolNoSync(serialize.execute({}))),
         ];
@@ -306,7 +249,7 @@ export class PGlite implements PGliteInterface {
       }
       return parseResults(
         results.map(([msg]) => msg),
-        options,
+        options
       )[0] as Results<T>;
     });
   }
@@ -320,11 +263,11 @@ export class PGlite implements PGliteInterface {
    */
   async #runExec(
     query: string,
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
-      if (1) { //(this.debug > 1) {
+      if (this.debug > 1) {
         console.log("runExec", query, options);
       }
       let results;
@@ -338,7 +281,7 @@ export class PGlite implements PGliteInterface {
       }
       return parseResults(
         results.map(([msg]) => msg),
-        options,
+        options
       ) as Array<Results>;
     });
   }
@@ -349,7 +292,7 @@ export class PGlite implements PGliteInterface {
    * @returns The result of the transaction
    */
   async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
+    callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined> {
     await this.#checkReady();
     return await this.#transactionMutex.runExclusive(async () => {
@@ -368,7 +311,7 @@ export class PGlite implements PGliteInterface {
           query: async (
             query: string,
             params?: any[],
-            options?: QueryOptions,
+            options?: QueryOptions
           ) => {
             checkClosed();
             return await this.#runQuery(query, params, options);
@@ -427,70 +370,61 @@ export class PGlite implements PGliteInterface {
    */
   async execProtocol(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true }: ExecProtocolOptions = {}
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
-/*
-      if (this.#resultAccumulator.length > 0) {
-        this.#resultAccumulator = [];
-      }
-*/
-    const msg_len = message.length
-      console.log("MESSAGE:", msg_len);
-// >0 set buffer content type to wire protocol
-// set buffer size so answer will be at size+0x2 pointer addr
+      const msg_len = message.length;
+
+      // >0 set buffer content type to wire protocol
+      // set buffer size so answer will be at size+0x2 pointer addr
       this.emp._interactive_write(msg_len);
-// copy whole buffer at addr 0x1
+
+      // copy whole buffer at addr 0x1
       this.emp.HEAPU8.set(message, 1);
 
-    console.log("----------------------");
+      // execute the message
       this.emp._interactive_one();
-    console.log("----------------------");
+
       if (syncToFs) {
         await this.#syncToFs();
       }
 
-//      const resData = this.#resultAccumulator;
+      const results: Array<[BackendMessage, Uint8Array]> = [];
 
-        const results: Array<[BackendMessage, Uint8Array]> = [];
+      // Read responses from the buffer
+      const msg_start = msg_len + 2;
+      const msg_end = msg_start + this.emp._interactive_read();
+      const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
 
-        const msg_start = msg_len +2;
-        const msg_end = msg_start + this.emp._interactive_read();
-
-        const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
-        console.log("DATA", msg_start, msg_end, data)
-
-        this.#parser.parse( Buffer.from(data), (msg) => {
-          if (msg instanceof DatabaseError) {
-            this.#parser = new Parser(); // Reset the parser
-            throw msg;
-            // TODO: Do we want to wrap the error in a custom error?
-          } else if (msg instanceof NoticeMessage && this.debug > 0) {
-            // Notice messages are warnings, we should log them
-            console.warn(msg);
-          } else if (msg instanceof CommandCompleteMessage) {
-            // Keep track of the transaction state
-            switch (msg.text) {
-              case "BEGIN":
-                this.#inTransaction = true;
-                break;
-              case "COMMIT":
-              case "ROLLBACK":
-                this.#inTransaction = false;
-                break;
-            }
+      this.#parser.parse(Buffer.from(data), (msg) => {
+        if (msg instanceof DatabaseError) {
+          this.#parser = new Parser(); // Reset the parser
+          throw msg;
+          // TODO: Do we want to wrap the error in a custom error?
+        } else if (msg instanceof NoticeMessage && this.debug > 0) {
+          // Notice messages are warnings, we should log them
+          console.warn(msg);
+        } else if (msg instanceof CommandCompleteMessage) {
+          // Keep track of the transaction state
+          switch (msg.text) {
+            case "BEGIN":
+              this.#inTransaction = true;
+              break;
+            case "COMMIT":
+            case "ROLLBACK":
+              this.#inTransaction = false;
+              break;
           }
-console.log("RESULT", msg );
-          results.push([msg, data]);
-        });
+        }
+        results.push([msg, data]);
+      });
 
       return results;
     });
-
   }
 
   async #execProtocolNoSync(
-    message: Uint8Array,
+    message: Uint8Array
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.execProtocol(message, { syncToFs: false });
   }
@@ -508,7 +442,7 @@ console.log("RESULT", msg );
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        console.log("await this.fs!.syncToFs(this.emp.FS);");
+        await this.fs!.syncToFs(this.emp.FS);
       });
     };
 

@@ -35,11 +35,11 @@ END
 
 
     # this is the ES6 wasm module loader from emscripten.
-    cp $PGLITE/release/postgres.js $PGLITE/release/pgbuild.js
+    # cp $PGLITE/release/postgres.js $PGLITE/release/pgbuild.js
 
 
     # use a javascript wasm module loader with a thin api for argv/env setup
-    cat ${GITHUB_WORKSPACE}/patches/pgbuild.js > $PGLITE/release/postgres.js
+    # cat ${GITHUB_WORKSPACE}/patches/pgbuild.js > $PGLITE/release/postgres.js
 
 
     npm install
