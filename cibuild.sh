@@ -127,8 +127,12 @@ END
     # to get same path for wasm-shared link tool in the path
     # for extensions building.
     # we always symlink in-tree build to "postgresql" folder
-    . cibuild/pg-$PGVERSION.sh
-
+    if echo $PGVERSION|grep -q ^16
+    then
+        . cibuild/pg-16.x.sh
+    else
+        . cibuild/pg-git.sh
+    fi
 fi
 
 # put wasm-shared the pg extension linker from build dir in the path
@@ -162,12 +166,16 @@ then
         PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
         cp sql/vector.sql sql/vector--0.7.2.sql ${PGROOT}/share/postgresql/extension
         rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
-        read
         popd
 
     popd
 fi
 
+if echo "$*"|grep " postgis"
+then
+    echo "================================================="
+    PG_LINK=em++ echo "WIP - requires latests python-wasm-sdk, not just emsdk"
+fi
 
 if echo "$*"|grep " quack"
 then

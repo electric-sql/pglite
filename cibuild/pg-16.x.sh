@@ -1,8 +1,8 @@
 ARCHIVE=postgresql-${PGVERSION}.tar.bz2
 
-if [ -f postgresql-${PGVERSION}/patched ]
+if [ -f postgresql/postgresql-${PGVERSION}.patched ]
 then
-    echo patch stage already done
+    echo version already selected and patch stage already done
 else
     [ -f ${ARCHIVE} ] || wget -q -c https://ftp.postgresql.org/pub/source/v${PGVERSION}/${ARCHIVE}
 
@@ -15,15 +15,16 @@ else
         > ./src/include/port/emscripten.h
         > ./src/makefiles/Makefile.emscripten
         for patchdir in \
-            postgresql-emscripten postgresql-${PGVERSION}-wasm \
-            postgresql-pglite postgresql-${PGVERSION}-pglite
+            postgresql-emscripten \
+            postgresql-wasm postgresql-wasm-${PGVERSION} \
+            postgresql-pglite postgresql-pglite-${PGVERSION}
         do
             if [ -d ../patches/$patchdir ]
             then
                 cat ../patches/$patchdir/*.diff | patch -p1 || exit 18
             fi
         done
-        touch patched
+        touch postgresql-${PGVERSION}.patched
         popd
     fi
 
@@ -32,7 +33,6 @@ else
 
     rm postgresql 2>/dev/null
     ln -s postgresql-${PGVERSION} postgresql
-
 
 fi
 

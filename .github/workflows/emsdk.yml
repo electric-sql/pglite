@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-        PGVERSION: 16.2
+        PGVERSION: 16.3
         SDK_VERSION: 3.1.62.0bi
         SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
         SDKROOT: /opt/python-wasm-sdk
