@@ -1,0 +1,12 @@
+#root {
+  padding: 1rem;
+  height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}

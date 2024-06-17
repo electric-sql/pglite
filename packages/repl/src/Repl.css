@@ -1,0 +1,145 @@
+.PGliteRepl-root {
+  --fg: var(--PGliteRepl-foreground-color);
+  --bg: var(--PGliteRepl-background-color);
+  --border: var(--PGliteRepl-border);
+  --border-color: var(--PGliteRepl-border-color);
+  --font-size: var(--PGliteRepl-font-size, 12px);
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  font-size: var(--font-size);
+  color: var(--fg);
+  background-color: var(--bg);
+}
+
+.PGliteRepl-root table {
+  font-size: var(--font-size);
+}
+
+.PGliteRepl-root-border {
+  border: var(--border);
+}
+
+.PGliteRepl-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5em 0 0.5em 0.5em;
+  border-bottom: var(--border);
+}
+
+.PGliteRepl-root hr {
+  margin: 0.5em 0;
+  border: none;
+  border-top: var(--border);
+}
+
+.PGliteRepl-input {
+  display: flex;
+  min-height: 60px;
+  max-height: 50%;
+  width: 100%;
+}
+
+.PGliteRepl-input .cm-editor.cm-focused {
+  outline: none;
+}
+
+.PGliteRepl-table-scroll {
+  overflow-x: auto;
+}
+
+.PGliteRepl-table {
+  border-collapse: collapse;
+}
+
+.PGliteRepl-line {
+  margin: 0 0 0 1em;
+  position: relative;
+}
+
+.PGliteRepl-line::before {
+  display: block;
+  width: 0.7em;
+  text-align: center;
+  content: "❮";
+  margin-right: 0.5em;
+  color: var(--border-color);
+  position: absolute;
+  left: -1em;
+}
+
+.PGliteRepl-line + .PGliteRepl-line {
+  margin-top: 0.25em;
+}
+
+.PGliteRepl-query {
+  margin: 0 0 0.25em 1em;
+}
+
+.PGliteRepl-query::before {
+  content: "❯";
+}
+
+.PGliteRepl-table th {
+  text-align: center;
+  font-weight: 600;
+}
+
+.PGliteRepl-table td {
+  text-align: left;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.PGliteRepl-table .PGliteRepl-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.PGliteRepl-table .PGliteRepl-boolean {
+  text-align: center;
+}
+
+.PGliteRepl-table .PGliteRepl-json {
+  font-family: monospace;
+}
+
+.PGliteRepl-table th,
+.PGliteRepl-table td {
+  padding: 0 0.2em;
+  border: var(--border);
+}
+
+.PGliteRepl-divider {
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  color: var(--border-color);
+  padding-right: 0.5em;
+}
+
+.PGliteRepl-divider hr {
+  margin: 0 0.5em 0 0;
+  flex-grow: 1;
+}
+
+.PGliteRepl-null {
+  color: var(--border-color);
+}
+
+.PGliteRepl-error {
+  color: #c33;
+}
+
+.PGliteRepl-error::before {
+  content: "!";
+  color: #c33;
+  font-weight: bold;
+}
+
+.PGliteRepl-table-row-count a {
+  text-decoration: none;
+}
