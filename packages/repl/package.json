@@ -1,0 +1,69 @@
+{
+  "name": "@electric-sql/pglite-repl",
+  "version": "0.0.0",
+  "author": "Electric DB Limited",
+  "license": "Apache-2.0",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "dist-webcomponent"
+  ],
+  "module": "dist/Repl.js",
+  "exports": {
+    ".": {
+      "import": "./dist/Repl.js"
+    },
+    "./webcomponent": {
+      "import": "./dist-webcomponent/Repl.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:react": "tsc && vite build",
+    "build:webcomp": "vite build --config vite.webcomp.config.ts",
+    "build": "npm run build:react && npm run build:webcomp",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "format": "prettier --write ./src && prettier --write ./src-webcomponent"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.16.2",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/lang-sql": "^6.6.4",
+    "@codemirror/language": "^6.10.2",
+    "@codemirror/view": "^6.28.1",
+    "@uiw/codemirror-theme-xcode": "^4.22.2",
+    "@uiw/react-codemirror": "^4.22.2",
+    "psql-describe": "^0.1.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "workspace:^",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "terser": "^5.31.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vite-plugin-dts": "^3.9.1",
+    "vite-plugin-libcss": "^1.1.1"
+  }
+}
