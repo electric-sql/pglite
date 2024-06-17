@@ -101,6 +101,8 @@ MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB
 rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
 
 touch placeholder
+chmod +x placeholder
+
 # for ./bin
 
 # share/postgresql/pg_hba.conf.sample REQUIRED
@@ -131,7 +133,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  --preload-file ${PGROOT}/password@${PGROOT}/password \
  --preload-file placeholder@${PGROOT}/bin/postgres \
  --preload-file placeholder@${PGROOT}/bin/initdb \
- -o postgres.html $PG_O $PG_L || exit 122
+ -o postgres.html $PG_O $PG_L || exit 136
 
 mkdir -p ${WEBROOT}/repl
 
