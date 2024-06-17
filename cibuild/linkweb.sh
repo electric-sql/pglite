@@ -17,7 +17,7 @@ mkdir -p $WEBROOT
 emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
      ./src/interfaces/libpq/libpq.a \
      ./src/port/libpgport.a \
-     ./src/common/libpgcommon.a || exit 18
+     ./src/common/libpgcommon.a || exit 20
 
 # this override completely pg server main loop for web use purpose
 pushd src
@@ -125,7 +125,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
  -lnodefs.js -lidbfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
- -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read \
+ -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
  --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
  --preload-file ${PGROOT}/password@${PGROOT}/password \

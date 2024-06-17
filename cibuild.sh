@@ -4,7 +4,7 @@
 # expressed in EMSDK MB
 export CMA_MB=${CMA_MB:-64}
 
-export PGVERSION=${PGVERSION:-16.2}
+export PGVERSION=${PGVERSION:-16.3}
 export CI=${CI:-false}
 export GITHUB_WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
 export PGROOT=${PGROOT:-/tmp/pglite}
@@ -268,10 +268,9 @@ then
     mkdir -p ${PGROOT}/sdk/packages/
     cp -r $PGLITE ${PGROOT}/sdk/packages/
 
-
     if $CI
     then
-        tar -cpRz ${PGROOT} > /tmp/sdk/pg.tar.gz
+        tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PGVERSION}.tar.gz
     fi
 
 fi

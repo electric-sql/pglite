@@ -21,7 +21,7 @@ else
         do
             if [ -d ../patches/$patchdir ]
             then
-                cat ../patches/$patchdir/*.diff | patch -p1 || exit 18
+                cat ../patches/$patchdir/*.diff | patch -p1 || exit 24
             fi
         done
         touch postgresql-${PGVERSION}.patched

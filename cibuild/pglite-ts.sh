@@ -19,6 +19,13 @@
     export default loadPgShare;
 END
 
+
+    npm install
+
+    mkdir $PGLITE/release || rm $PGLITE/release/*
+
+    cp ${GITHUB_WORKSPACE}/patches/postgres.d.ts ${PGLITE}/release/
+
     # copy wasm web prebuilt artifacts to release folder
     # TODO: get them from web for nosdk systems.
     if $CI
@@ -34,15 +41,32 @@ END
     # touch $PGLITE/release/share.data
 
 
-    # this is the ES6 wasm module loader from emscripten.
-    # cp $PGLITE/release/postgres.js $PGLITE/release/pgbuild.js
+
+    if ${DEV:-false}
+    then
+        echo "
 
 
-    # use a javascript wasm module loader with a thin api for argv/env setup
-    # cat ${GITHUB_WORKSPACE}/patches/pgbuild.js > $PGLITE/release/postgres.js
 
 
-    npm install
+        ===============================  dev test mode ===========================
+
+
+
+
+
+
+
+"
+        # this is the ES6 wasm module loader from emscripten.
+        cp $PGLITE/release/postgres.js $PGLITE/release/pgbuild.js
+        # use a javascript wasm module loader with a thin api for tests
+        cat ${GITHUB_WORKSPACE}/patches/pgbuild.js > $PGLITE/release/postgres.js
+    else
+        cp $PGLITE/release/postgres.js $PGLITE/release/
+        echo "using emscripten es6->ts interface"
+    fi
+
 
     # CI does not use npm for building pg, so call the typescript build
     # part from here
@@ -51,8 +75,10 @@ END
         npm run build:js
         if $CI
         then
+            mkdir /tmp/sdk -p
             npm pack
-            mv electric-sql-pglite-*.tgz /tmp/sdk/
+            packed=$(echo -n electric-sql-pglite-*.tgz)
+            mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
         else
             mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
             cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/

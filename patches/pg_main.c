@@ -335,17 +335,15 @@ puts("# 100");
             exit(0);
         }
 
-        // unreachable.
-
         puts("# 338: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
         {
             void (*npe)() = NULL;
             npe();
         }
-    } else {
-        puts("# no line-repl requested, exiting to keep runtime alive");
+        // unreachable.
     }
 
+    puts("# 346: no line-repl requested, exiting and keeping runtime alive");
 }
 
 
@@ -357,7 +355,7 @@ puts("# 100");
 
 EMSCRIPTEN_KEEPALIVE void
 pg_initdb_repl(const char* std_in, const char* std_out, const char* std_err, const char* js_handler) {
-    printf("in=%s out=%s err=%s js=%s\n", std_in, std_out, std_err, js_handler);
+    printf("# 358: in=%s out=%s err=%s js=%s\n", std_in, std_out, std_err, js_handler);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -552,7 +550,7 @@ PostgresSingleUserMain(int argc, char *argv[],
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-puts("# 488");
+
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -587,69 +585,10 @@ puts("# 488");
 
 // main
 	SetProcessingMode(InitProcessing);
-#if 0
-	/*
-	 * Set up signal handlers.  (InitPostmasterChild or InitStandaloneProcess
-	 * has already set up BlockSig and made that the active signal mask.)
-	 *
-	 * Note that postmaster blocked all signals before forking child process,
-	 * so there is no race condition whereby we might receive a signal before
-	 * we have set up the handler.
-	 *
-	 * Also note: it's best not to use any signals that are SIG_IGNored in the
-	 * postmaster.  If such a signal arrives before we are able to change the
-	 * handler to non-SIG_IGN, it'll get dropped.  Instead, make a dummy
-	 * handler in the postmaster to reserve the signal. (Of course, this isn't
-	 * an issue for signals that are locally generated, such as SIGALRM and
-	 * SIGPIPE.)
-	 */
-	if (am_walsender)
-		WalSndSignals();
-	else
-	{
-		pqsignal(SIGHUP, SignalHandlerForConfigReload);
-		pqsignal(SIGINT, StatementCancelHandler);	/* cancel current query */
-		pqsignal(SIGTERM, die); /* cancel current query and exit */
 
-		/*
-		 * In a postmaster child backend, replace SignalHandlerForCrashExit
-		 * with quickdie, so we can tell the client we're dying.
-		 *
-		 * In a standalone backend, SIGQUIT can be generated from the keyboard
-		 * easily, while SIGTERM cannot, so we make both signals do die()
-		 * rather than quickdie().
-		 */
-		if (IsUnderPostmaster)
-			pqsignal(SIGQUIT, quickdie);	/* hard crash time */
-		else
-			pqsignal(SIGQUIT, die); /* cancel current query and exit */
-		InitializeTimeouts();	/* establishes SIGALRM handler */
-
-		/*
-		 * Ignore failure to write to frontend. Note: if frontend closes
-		 * connection, we will notice it and exit cleanly when control next
-		 * returns to outer loop.  This seems safer than forcing exit in the
-		 * midst of output during who-knows-what operation...
-		 */
-		pqsignal(SIGPIPE, SIG_IGN);
-		pqsignal(SIGUSR1, procsignal_sigusr1_handler);
-		pqsignal(SIGUSR2, SIG_IGN);
-		pqsignal(SIGFPE, FloatExceptionHandler);
-
-		/*
-		 * Reset some signals that are accepted by postmaster but not by
-		 * backend
-		 */
-		pqsignal(SIGCHLD, SIG_DFL); /* system() requires this on some
-									 * platforms */
-	}
-#endif
 	/* Early initialization */
 	BaseInit();
-#if 0
-	/* We need to allow SIGINT, etc during the initial transaction */
-	sigprocmask(SIG_SETMASK, &UnBlockSig, NULL);
-#endif
+
 	/*
 	 * General initialization.
 	 *
@@ -849,6 +788,7 @@ extern void proc_exit(int code);
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
     puts("# 1145: pg_initdb()");
+    puts(getenv("PGDATA"));
 
     optind = 1;
     printf("pg_initdb_main result = %d\n", pg_initdb_main() );
@@ -866,7 +806,7 @@ pg_initdb() {
         char *boot_argv[] = {
             WASM_PREFIX "/bin/postgres",
             "--boot",
-            "-D", WASM_PREFIX "/base",
+            "-D", getenv("PGDATA"),
             "-d","3",
             WASM_PGOPTS,
             "-X", "1048576",
@@ -896,7 +836,7 @@ pg_initdb() {
             WASM_PREFIX "/bin/postgres",
             "--single",
             "-d", "1", "-B", "16", "-S", "512", "-f", "siobtnmh",
-            "-D", WASM_PREFIX "/base",
+            "-D", getenv("PGDATA"),
             "-F", "-O", "-j",
             WASM_PGOPTS,
             "template1",
@@ -923,6 +863,10 @@ pg_initdb() {
     puts("# exiting on initdb-single error");
     return true;
 }
+
+
+
+
 #endif
 
 #define PGDB WASM_PREFIX "/base"
@@ -932,7 +876,6 @@ EM_JS(int, is_web_env, (), {
         if (window) return 1;
     } catch(x) {return 0}
 });
-
 
 static void
 main_pre() {
@@ -1035,7 +978,6 @@ puts("# ============= env dump ==================");
     printf("# %s\n", drefp);
   }
 puts("# =========================================");
-puts("# unicode test : éèà");
 
 	mkdirp(WASM_PREFIX);
 }
@@ -1096,6 +1038,12 @@ extra_env:;
 	progname = get_progname(argv[0]);
 
 
+    is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
+    if (!is_repl) {
+        puts("exit with live runtime");
+        return 0;
+    }
+
     if (!mkdir(PGDB, 0700)) {
         /* no db : run initdb now. */
         fprintf(stderr, "db %s not found, running initdb with defaults\n", PGDB );
@@ -1111,7 +1059,7 @@ extra_env:;
         // download a db case ?
     	mkdirp(PGDB);
 
-        // db fixup because empty dirs are no packaged
+        // db fixup because empty dirs are not packaged
 	    /*
 	    mkdirp(WASM_PREFIX "/lib");
 	    mkdirp(WASM_PREFIX "/lib/postgresql");
@@ -1134,128 +1082,129 @@ extra_env:;
 
     }
 
-is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
 
-if (is_repl) {
-    if (!hadloop_error) {
+    if (is_repl) {
+        if (!hadloop_error) {
 
-	    /*
-	    PGDATESTYLE
-	    TZ
-	    PG_SHMEM_ADDR
+	        /*
+	        PGDATESTYLE
+	        TZ
+	        PG_SHMEM_ADDR
 
-	    PGCTLTIMEOUT
-	    PG_TEST_USE_UNIX_SOCKETS
-	    INITDB_TEMPLATE
-	    PSQL_HISTORY
-	    TMPDIR
-	    PGOPTIONS
-	    */
+	        PGCTLTIMEOUT
+	        PG_TEST_USE_UNIX_SOCKETS
+	        INITDB_TEMPLATE
+	        PSQL_HISTORY
+	        TMPDIR
+	        PGOPTIONS
+	        */
 
-	    //reached_main = true;
-
-
-	    /*
-	     * Platform-specific startup hacks
-	     */
-	    startup_hacks(progname);
-
-	    /*
-	     * Remember the physical location of the initially given argv[] array for
-	     * possible use by ps display.  On some platforms, the argv[] storage must
-	     * be overwritten in order to set the process title for ps. In such cases
-	     * save_ps_display_args makes and returns a new copy of the argv[] array.
-	     *
-	     * save_ps_display_args may also move the environment strings to make
-	     * extra room. Therefore this should be done as early as possible during
-	     * startup, to avoid entanglements with code that might save a getenv()
-	     * result pointer.
-	     */
-	    argv = save_ps_display_args(argc, argv);
-
-	    /*
-	     * Fire up essential subsystems: error and memory management
-	     *
-	     * Code after this point is allowed to use elog/ereport, though
-	     * localization of messages may not work right away, and messages won't go
-	     * anywhere but stderr until GUC settings get loaded.
-	     */
-	    MemoryContextInit();
-
-	    /*
-	     * Set up locale information
-	     */
-	    set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("postgres"));
-
-	    /*
-	     * In the postmaster, absorb the environment values for LC_COLLATE and
-	     * LC_CTYPE.  Individual backends will change these later to settings
-	     * taken from pg_database, but the postmaster cannot do that.  If we leave
-	     * these set to "C" then message localization might not work well in the
-	     * postmaster.
-	     */
-	    init_locale("LC_COLLATE", LC_COLLATE, "");
-	    init_locale("LC_CTYPE", LC_CTYPE, "");
-
-	    /*
-	     * LC_MESSAGES will get set later during GUC option processing, but we set
-	     * it here to allow startup error messages to be localized.
-	     */
-    #ifdef LC_MESSAGES
-	    init_locale("LC_MESSAGES", LC_MESSAGES, "");
-    #endif
-
-	    /*
-	     * We keep these set to "C" always, except transiently in pg_locale.c; see
-	     * that file for explanations.
-	     */
-	    init_locale("LC_MONETARY", LC_MONETARY, "C");
-	    init_locale("LC_NUMERIC", LC_NUMERIC, "C");
-	    init_locale("LC_TIME", LC_TIME, "C");
-
-	    /*
-	     * Now that we have absorbed as much as we wish to from the locale
-	     * environment, remove any LC_ALL setting, so that the environment
-	     * variables installed by pg_perm_setlocale have force.
-	     */
-	    unsetenv("LC_ALL");
-
-	    /*
-	     * Catch standard options before doing much else, in particular before we
-	     * insist on not being root.
-	     */
-	    if (argc > 1)
-	    {
-		    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-		    {
-			    help(progname);
-			    exit(0);
-		    }
-		    if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-V") == 0)
-		    {
-			    fputs(PG_BACKEND_VERSIONSTR, stdout);
-			    exit(0);
-		    }
-
-	    }
-
-	    if (argc > 1 && strcmp(argv[1], "--check") == 0)
-		    return BootstrapModeMain(argc, argv, true);
+	        //reached_main = true;
 
 
-        if (argc > 1 && strcmp(argv[1], "--boot") == 0) {
-            puts("1049: boot: " __FILE__ );
-            return BootstrapModeMain(argc, argv, false);
+	        /*
+	         * Platform-specific startup hacks
+	         */
+	        startup_hacks(progname);
+
+	        /*
+	         * Remember the physical location of the initially given argv[] array for
+	         * possible use by ps display.  On some platforms, the argv[] storage must
+	         * be overwritten in order to set the process title for ps. In such cases
+	         * save_ps_display_args makes and returns a new copy of the argv[] array.
+	         *
+	         * save_ps_display_args may also move the environment strings to make
+	         * extra room. Therefore this should be done as early as possible during
+	         * startup, to avoid entanglements with code that might save a getenv()
+	         * result pointer.
+	         */
+	        argv = save_ps_display_args(argc, argv);
+
+	        /*
+	         * Fire up essential subsystems: error and memory management
+	         *
+	         * Code after this point is allowed to use elog/ereport, though
+	         * localization of messages may not work right away, and messages won't go
+	         * anywhere but stderr until GUC settings get loaded.
+	         */
+	        MemoryContextInit();
+
+	        /*
+	         * Set up locale information
+	         */
+	        set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("postgres"));
+
+	        /*
+	         * In the postmaster, absorb the environment values for LC_COLLATE and
+	         * LC_CTYPE.  Individual backends will change these later to settings
+	         * taken from pg_database, but the postmaster cannot do that.  If we leave
+	         * these set to "C" then message localization might not work well in the
+	         * postmaster.
+	         */
+	        init_locale("LC_COLLATE", LC_COLLATE, "");
+	        init_locale("LC_CTYPE", LC_CTYPE, "");
+
+	        /*
+	         * LC_MESSAGES will get set later during GUC option processing, but we set
+	         * it here to allow startup error messages to be localized.
+	         */
+        #ifdef LC_MESSAGES
+	        init_locale("LC_MESSAGES", LC_MESSAGES, "");
+        #endif
+
+	        /*
+	         * We keep these set to "C" always, except transiently in pg_locale.c; see
+	         * that file for explanations.
+	         */
+	        init_locale("LC_MONETARY", LC_MONETARY, "C");
+	        init_locale("LC_NUMERIC", LC_NUMERIC, "C");
+	        init_locale("LC_TIME", LC_TIME, "C");
+
+	        /*
+	         * Now that we have absorbed as much as we wish to from the locale
+	         * environment, remove any LC_ALL setting, so that the environment
+	         * variables installed by pg_perm_setlocale have force.
+	         */
+	        unsetenv("LC_ALL");
+
+	        /*
+	         * Catch standard options before doing much else, in particular before we
+	         * insist on not being root.
+	         */
+	        if (argc > 1)
+	        {
+		        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
+		        {
+			        help(progname);
+			        exit(0);
+		        }
+		        if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-V") == 0)
+		        {
+			        fputs(PG_BACKEND_VERSIONSTR, stdout);
+			        exit(0);
+		        }
+
+	        }
+
+	        if (argc > 1 && strcmp(argv[1], "--check") == 0) {
+		        BootstrapModeMain(argc, argv, true);
+                return 0;
+            }
+
+            if (argc > 1 && strcmp(argv[1], "--boot") == 0) {
+                puts("1049: boot: " __FILE__ );
+                BootstrapModeMain(argc, argv, false);
+                return 0;
+            }
+
+            puts("# 1053: single: " __FILE__ );
+            PostgresSingleUserMain(argc, argv, strdup( getenv("PGUSER")));
         }
+        puts("# 1056: " __FILE__);
 
-        puts("# 1053: single: " __FILE__ );
-        PostgresSingleUserMain(argc, argv, strdup( getenv("PGUSER")));
-    }
-    puts("# 1056: " __FILE__);
-
-    emscripten_force_exit(ret);
-} else {
-    whereToSendOutput = DestNone;
+        emscripten_force_exit(ret);
+    } else {
+        whereToSendOutput = DestNone;
 }
 	return ret;
 }

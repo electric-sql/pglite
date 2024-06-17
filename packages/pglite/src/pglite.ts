@@ -108,27 +108,88 @@ export class PGlite implements PGliteInterface {
       ...(this.debug ? ["-d", this.debug.toString()] : []),
     ];
 
-    this.emp = await new Promise<EmPostgres>(async (resolve, reject) => {
-      let modPromise: Promise<EmPostgres>;
-      let emscriptenOpts: Partial<EmPostgres> = {
-        arguments: args,
-        noInitialRun: true,
-        noExitRuntime: true,
-        ...(this.debug > 0
-          ? { print: console.info, printErr: console.error }
-          : { print: () => {}, printErr: () => {} }),
-        locateFile: await makeLocateFile(),
-        onRuntimeInitialized: async () => {
-          resolve(modPromise);
-        },
-      };
-      emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
-      modPromise = EmPostgresFactory(emscriptenOpts);
-    });
+    let emscriptenOpts: Partial<EmPostgres> = {
+      arguments: args,
+      noExitRuntime: true,
+      ...(this.debug > 0
+        ? { print: console.info, printErr: console.error }
+        : { print: () => {}, printErr: () => {} }),
+      locateFile: await makeLocateFile(),
+    }
+
+    emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
+
+    // init pg core engine done only using MEMFS
+    this.emp = await EmPostgresFactory(emscriptenOpts);
+
+    // if ok, NOW:
+    //   all pg c-api is avail. including exported sym
+
+
+    // finalize FS states needed before initdb.
+    // maybe start extra FS/initdata async .
+
+    console.error("syncing fs ....");
     await this.fs!.initialSyncFs(this.emp.FS);
-    this.emp.callMain(args);
+
+    // start compiling dynamic extensions present in FS.
+
+    console.log("database engine is ready (but not yet system/user databases or extensions)");
+
+
+    // await async compilation dynamic extensions finished.
+
+    // await extra FS/fetches.
+
+    // await async compilation of fetched dynamic extensions.
+
+
+    // bad things that could happen here :
+    //  javascript host deny access to some FS
+    //  FS is full
+    //  FS is corrupted
+    //  wasm compilation failed (eg missing features).
+    //  a fetch has timeout.
+
+
+    // if ok, NOW:
+    // extensions used in user database are compiled (whatever their source).
+    // FS hosting system indexes and user named db default "postgres" must be ready
+
+    // -> if FS does not have a valid pgdata, initdb will run.
+
+    const idb = this.emp._pg_initdb();
+
+    if (!idb) {
+      console.error("TODO: meaning full initdb return/error code ?");
+    } else {
+      if (idb & 0b0001)
+        console.log(" #1");
+
+      if (idb & 0b0010)
+        console.log(" #2");
+
+      if (idb & 0b0100)
+        console.log(" #3");
+    }
+
+
+    console.log("database engine/system db are ready (maybe not user databases)");
+
+    // extra FS could go here, same for sql init data.
+
+    // eg custom SQL
+    // eg read only database
+
+
+    // bad things that could happen here :
+    //  FS is corrupted
+    //  something fetched is corrupted, not valid SQL.
+
+
     this.#ready = true;
   }
+
 
   /**
    * The ready state of the database

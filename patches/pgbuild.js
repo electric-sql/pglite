@@ -255,7 +255,7 @@ async function boot(opts) {
     };
 
 
-    Module.setStatus('Downloading...');
+    Module.setStatus('Downloading support files ...');
 
 
     window.onerror = () => {
@@ -273,15 +273,15 @@ import initModule from "./pgbuild.js";
 
 async function EmPostgresFactory(m){
 	globalThis.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
-
+/*
 	// stock loader calls initdb
 	if (m && m.arguments && (m.arguments[0] == "--boot")) {
 		console.log("EmPostgresFactory boot skip, worker==", is_worker)
 		return sleep(0)
 	}
-
-	console.log("EmPostgresFactory worker==", is_worker)
-	return boot()
+*/
+	console.log("EmPostgresFactory worker==", is_worker, m )
+    return boot();
 }
 
 
