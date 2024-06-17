@@ -1,3 +1,0 @@
-[submodule "postgres"]
-	path = postgres
-	url = git@github.com:electric-sql/postgres-wasm.git
