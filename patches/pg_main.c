@@ -992,7 +992,8 @@ TODO:
     int ret=0;
     bool hadloop_error = false;
     is_node = !is_web_env();
-    if (is_node) {
+
+    //if (is_node) {
         char key[256];
         int i=0;
 // extra env is always after normal args
@@ -1027,7 +1028,7 @@ extra_env:;
             }
         }
         puts("\n# =========================================");
-    }
+    //}
 
 	argv[0] = strdup(WASM_PREFIX "/bin/postgres");
 

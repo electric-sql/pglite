@@ -119,8 +119,8 @@ chmod +x placeholder
 rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 # =========================================================
-
-
+echo
+echo 'localhost:5432:postgres:postgres:password' > pgpass
 emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
@@ -131,6 +131,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
  --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
  --preload-file ${PGROOT}/password@${PGROOT}/password \
+ --preload-file pgpass@${PGROOT}/pgpass \
  --preload-file placeholder@${PGROOT}/bin/postgres \
  --preload-file placeholder@${PGROOT}/bin/initdb \
  -o postgres.html $PG_O $PG_L || exit 136
@@ -148,7 +149,7 @@ cp -v postgres.* ${WEBROOT}/repl/
 cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
 
 
-cp $GITHUB_WORKSPACE/tests/vtx.js ${WEBROOT}/repl/
+cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html} ${WEBROOT}/repl/
 du -hs ${WEBROOT}/repl/*
 du -hs ${WEBROOT}/*
 

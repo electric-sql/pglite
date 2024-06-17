@@ -63,7 +63,6 @@ END
         # use a javascript wasm module loader with a thin api for tests
         cat ${GITHUB_WORKSPACE}/patches/pgbuild.js > $PGLITE/release/postgres.js
     else
-        cp $PGLITE/release/postgres.js $PGLITE/release/
         echo "using emscripten es6->ts interface"
     fi
 

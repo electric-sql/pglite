@@ -118,6 +118,7 @@ export class PGlite implements PGliteInterface {
     }
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
+    console.log("emscriptenOpts:", emscriptenOpts);
 
     // init pg core engine done only using MEMFS
     this.emp = await EmPostgresFactory(emscriptenOpts);
