@@ -2,11 +2,13 @@ import { resolve } from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
+import libCss from 'vite-plugin-libcss';
 import packageJson from "./package.json";
 
 export default defineConfig({
   plugins: [
     react(),
+    libCss(),
     dts({
       include: [
         "./src/Repl.tsx",
