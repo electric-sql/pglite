@@ -16,6 +16,10 @@ import { xcodeDark, xcodeLight } from "@uiw/codemirror-theme-xcode";
 
 import "./Repl.css";
 
+// Filter out the Enter key from the default keymap, we entirely override its behavior
+// to run the query when the user presses Enter.
+// We keep the up and down arrow keys as we only override their behavior
+// when the cursor is on the first or last line.
 const baseKeymap = defaultKeymap.filter((key) => key.key !== "Enter");
 
 export type ReplTheme = "light" | "dark" | "auto";

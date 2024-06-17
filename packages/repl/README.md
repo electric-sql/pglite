@@ -2,6 +2,8 @@
 
 A REPL, or terminal, for use in the browser with PGlite, allowing you to have an interactive session with your WASM Postgres in the page.
 
+<img width="918" src="https://github.com/electric-sql/pglite/assets/31130/f7c9c2dd-4de8-4033-9905-9637ae998034">
+
 ## Features:
 
 - Available as both a React.js component and a Web Components

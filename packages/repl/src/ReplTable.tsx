@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Results } from "./types";
 
 const tableRowIncrement = 100;
@@ -41,6 +41,11 @@ function cellValue(value: any) {
 export function ReplTable({ result }: { result: Results }) {
   const [maxRows, setMaxRows] = useState(tableRowIncrement);
   const rows = result.rows.slice(0, maxRows);
+
+  useEffect(() => {
+    // Reset maxRows when the result changes
+    setMaxRows(tableRowIncrement);
+  }, [result]);
 
   const showMore = () => {
     setMaxRows((prev) => prev + tableRowIncrement);
