@@ -8,12 +8,14 @@ import { serializeType } from "./types.js";
 import type {
   DebugLevel,
   PGliteOptions,
-  FilesystemType,
   PGliteInterface,
   Results,
   Transaction,
   QueryOptions,
   ExecProtocolOptions,
+  PGliteInterfaceExtensions,
+  Extensions,
+  Extension,
 } from "./interface.js";
 
 // Importing the source as the built version is not ESM compatible
@@ -28,11 +30,10 @@ import {
 } from "pg-protocol/dist/messages.js";
 
 export class PGlite implements PGliteInterface {
-  readonly dataDir?: string;
-  readonly fsType: FilesystemType;
-  protected fs?: Filesystem;
+  fs?: Filesystem;
   protected emp?: any;
 
+  #extensions: Extensions;
   #initStarted = false;
   #ready = false;
   #eventTarget: EventTarget;
@@ -40,6 +41,7 @@ export class PGlite implements PGliteInterface {
   #closed = false;
   #inTransaction = false;
   #relaxedDurability = false;
+  #extensionsClose: Array<() => Promise<void>> = [];
 
   #resultAccumulator: Uint8Array[] = [];
 
@@ -72,10 +74,26 @@ export class PGlite implements PGliteInterface {
    *                Use memory:// to use in-memory filesystem
    * @param options Optional options
    */
-  constructor(dataDir?: string, options?: PGliteOptions) {
-    const { dataDir: dir, fsType } = parseDataDir(dataDir);
-    this.dataDir = dir;
-    this.fsType = fsType;
+  constructor(dataDir?: string, options?: PGliteOptions);
+
+  /**
+   * Create a new PGlite instance
+   * @param options PGlite options including the data directory
+   */
+  constructor(options?: PGliteOptions);
+
+  constructor(
+    dataDirOrPGliteOptions: string | PGliteOptions = {},
+    options: PGliteOptions = {},
+  ) {
+    if (typeof dataDirOrPGliteOptions === "string") {
+      options = {
+        dataDir: dataDirOrPGliteOptions,
+        ...options,
+      };
+    } else {
+      options = dataDirOrPGliteOptions;
+    }
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
@@ -95,15 +113,26 @@ export class PGlite implements PGliteInterface {
       this.#resultAccumulator.push(e.detail);
     });
 
+    // Save the extensions for later use
+    this.#extensions = options.extensions ?? {};
+
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init();
+    this.waitReady = this.#init(options ?? {});
   }
 
   /**
    * Initialize the database
    * @returns A promise that resolves when the database is ready
    */
-  async #init() {
+  async #init(options: PGliteOptions) {
+    if (options.fs) {
+      this.fs = options.fs;
+    } else {
+      const { dataDir, fsType } = parseDataDir(options.dataDir);
+      this.fs = await loadFs(dataDir, fsType);
+    }
+
+    const extensionInitFns: Array<() => Promise<void>> = [];
     let firstRun = false;
     await new Promise<void>(async (resolve, reject) => {
       if (this.#initStarted) {
@@ -111,13 +140,10 @@ export class PGlite implements PGliteInterface {
       }
       this.#initStarted = true;
 
-      // Load a filesystem based on the type
-      this.fs = await loadFs(this.dataDir, this.fsType);
-
       // Initialize the filesystem
       // returns true if this is the first run, we then need to perform
       // additional setup steps at the end of the init.
-      firstRun = await this.fs.init(this.debug);
+      firstRun = await this.fs!.init(this.debug);
 
       let emscriptenOpts: Partial<EmPostgres> = {
         arguments: [
@@ -202,7 +228,24 @@ export class PGlite implements PGliteInterface {
         Event: PGEvent,
       };
 
-      emscriptenOpts = await this.fs.emscriptenOpts(emscriptenOpts);
+      // Setup extensions
+      for (const [extName, ext] of Object.entries(this.#extensions)) {
+        const extRet = await ext.setup(this, emscriptenOpts);
+        if (extRet.emscriptenOpts) {
+          emscriptenOpts = extRet.emscriptenOpts;
+        }
+        if (extRet.namespaceObj) {
+          (this as any)[extName] = extRet.namespaceObj;
+        }
+        if (extRet.init) {
+          extensionInitFns.push(extRet.init);
+        }
+        if (extRet.close) {
+          this.#extensionsClose.push(extRet.close);
+        }
+      }
+
+      emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
       const emp = await EmPostgresFactory(emscriptenOpts);
       this.emp = emp;
     });
@@ -213,6 +256,11 @@ export class PGlite implements PGliteInterface {
     await this.#runExec(`
       SET search_path TO public;
     `);
+
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn();
+    }
   }
 
   /**
@@ -265,6 +313,13 @@ export class PGlite implements PGliteInterface {
   async close() {
     await this.#checkReady();
     this.#closing = true;
+
+    // Close all extensions
+    for (const closeFn of this.#extensionsClose) {
+      await closeFn();
+    }
+
+    // Close the database
     await new Promise<void>(async (resolve, reject) => {
       try {
         await this.execProtocol(serialize.end());
@@ -665,5 +720,21 @@ export class PGlite implements PGliteInterface {
    */
   offNotification(callback: (channel: string, payload: string) => void) {
     this.#globalNotifyListeners.delete(callback);
+  }
+
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
+   * @param dataDir The directory to store the database files
+   *                Prefix with idb:// to use indexeddb filesystem in the browser
+   *                Use memory:// to use in-memory filesystem
+   * @param options Optional options
+   * @returns A new PGlite instance with extensions
+   */
+  static withExtensions<O extends PGliteOptions>(
+    options?: O,
+  ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
+    return new PGlite(options) as any;
   }
 }

@@ -1,4 +1,5 @@
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
+import type { Filesystem } from "./fs/types.js";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
@@ -20,14 +21,36 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean;
 }
 
-export interface PGliteOptions {
-  debug?: DebugLevel;
-  relaxedDurability?: boolean;
+export interface ExtensionSetupResult {
+  emscriptenOpts?: any;
+  namespaceObj?: any;
+  init?: () => Promise<void>;
+  close?: () => Promise<void>;
 }
 
-export interface PGliteInterface {
-  readonly dataDir?: string;
-  readonly fsType: FilesystemType;
+export type ExtensionSetup = (
+  pg: PGliteInterface,
+  emscriptenOpts: any,
+) => Promise<ExtensionSetupResult>;
+
+export interface Extension {
+  name?: string;
+  setup: ExtensionSetup;
+}
+
+export type Extensions = {
+  [namespace: string]: Extension;
+};
+
+export interface PGliteOptions {
+  dataDir?: string;
+  fs?: Filesystem;
+  debug?: DebugLevel;
+  relaxedDurability?: boolean;
+  extensions?: Extensions;
+}
+
+export type PGliteInterface = {
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel;
   readonly ready: boolean;
@@ -59,7 +82,19 @@ export interface PGliteInterface {
     callback: (channel: string, payload: string) => void,
   ): () => void;
   offNotification(callback: (channel: string, payload: string) => void): void;
-}
+};
+
+export type PGliteInterfaceExtensions<E> = E extends Extensions
+  ? {
+      [K in keyof E]: Awaited<
+        ReturnType<E[K]["setup"]>
+      >["namespaceObj"] extends infer N
+        ? N extends undefined | null | void
+          ? never
+          : N
+        : never;
+    }
+  : {};
 
 export type Row<T = { [key: string]: any }> = T;
 
