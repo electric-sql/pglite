@@ -80,6 +80,7 @@ END
             mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
             # for repl demo
             cp -r ${PGLITE}/dist ${WEBROOT}/repl/
+            echo '<html></html>' > ${WEBROOT}/repl/dist/index.html
         else
             mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
             cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
