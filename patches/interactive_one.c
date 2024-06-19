@@ -461,7 +461,27 @@ incoming:
             ereport(FATAL,
 	                (errcode(ERRCODE_PROTOCOL_VIOLATION),
 	                 errmsg("terminating connection because protocol synchronization was lost")));
-        pg_prompt();
+        if (!is_wire) {
+            pg_prompt();
+        } else {
+            goto wire_flush;
+/*
+            cma_wsize = SOCKET_DATA;
+            printf("# exec[%d]\n", SOCKET_DATA);
+            if (SOCKET_DATA>0) {
+                puts("# 518: adding RFQ");
+                ReadyForQuery(DestRemote);
+                cma_wsize = SOCKET_DATA;
+                if (SOCKET_FILE) {
+                    fclose(SOCKET_FILE);
+                    printf("# fd[%d] done\n", SOCKET_DATA);
+
+                    SOCKET_FILE = NULL;
+                    SOCKET_DATA = 0;
+                }
+            }
+*/
+        }
         RESUME_INTERRUPTS();
         return;
     }
@@ -512,6 +532,7 @@ incoming:
     #include "pg_proto.c"
 
     if (is_wire) { //whereToSendOutput == DestRemote) {
+wire_flush:
         cma_wsize = SOCKET_DATA;
         printf("# exec[%d]\n", SOCKET_DATA);
         if (SOCKET_DATA>0) {
