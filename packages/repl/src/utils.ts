@@ -28,7 +28,7 @@ export async function runQuery(query: string, pg: PGlite): Promise<Response> {
 
 export async function runDescribe(
   query: string,
-  pg: PGlite
+  pg: PGlite,
 ): Promise<Response> {
   const start = performance.now();
   let out: any;
@@ -46,7 +46,7 @@ export async function runDescribe(
     },
     (output) => {
       out = output;
-    }
+    },
   );
   await promise;
   const elapsed = performance.now() - start;

@@ -13,7 +13,13 @@ function OutLine({ result }: { result: Results }) {
   );
 }
 
-export function ReplResponse({ response }: { response: Response }) {
+export function ReplResponse({
+  response,
+  showTime,
+}: {
+  response: Response;
+  showTime: boolean;
+}) {
   let out;
   if (response.error) {
     out = (
@@ -37,7 +43,9 @@ export function ReplResponse({ response }: { response: Response }) {
       {out}
       <div className="PGliteRepl-divider">
         <hr />
-        <div className="PGliteRepl-time">{response.time.toFixed(1)}ms</div>
+        {showTime && (
+          <div className="PGliteRepl-time">{response.time.toFixed(1)}ms</div>
+        )}
       </div>
     </>
   );

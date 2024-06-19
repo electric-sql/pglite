@@ -289,7 +289,7 @@ const describeCompletions = [
 ];
 
 function describeCompletionsAutoComplete(
-  context: CompletionContext
+  context: CompletionContext,
 ): CompletionResult | null {
   const word = context.matchBefore(/\\\w*/);
   if (!word || word.from === word.to) return null;
