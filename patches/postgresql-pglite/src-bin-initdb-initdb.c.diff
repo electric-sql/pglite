@@ -1,5 +1,5 @@
---- postgresql-16.2/src/bin/initdb/initdb.c	2024-02-05 22:41:37.000000000 +0100
-+++ postgresql-16.2-wasm/src/bin/initdb/initdb.c	2024-05-08 13:14:19.210889604 +0200
+--- postgresql-16.3/src/bin/initdb/initdb.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/bin/initdb/initdb.c	2024-06-19 09:25:59.187129181 +0200
 @@ -45,7 +45,7 @@
   *
   *-------------------------------------------------------------------------
@@ -45,7 +45,7 @@
  static int	encodingid;
  static char *bki_file;
  static char *hba_file;
-@@ -747,6 +768,7 @@
+@@ -752,6 +773,7 @@
  static char *
  get_id(void)
  {
@@ -53,7 +53,7 @@
  	const char *username;
  
  #ifndef WIN32
-@@ -757,10 +779,12 @@
+@@ -762,10 +784,12 @@
  		exit(1);
  	}
  #endif
@@ -67,7 +67,21 @@
  }
  
  static char *
-@@ -2557,8 +2581,13 @@
+@@ -1615,9 +1639,11 @@
+ 			if (ferror(pwf))
+ 				pg_fatal("could not read password from file \"%s\": %m",
+ 						 pwfilename);
+-			else
+-				pg_fatal("password file \"%s\" is empty",
++			else {
++				printf("password file \"%s\" is empty\n",
+ 						 pwfilename);
++                pwd1 = strdup("password");
++            }
+ 		}
+ 		fclose(pwf);
+ 
+@@ -2562,8 +2588,13 @@
  			strlcpy(full_path, progname, sizeof(full_path));
  
  		if (ret == -1)
@@ -81,7 +95,7 @@
  		else
  			pg_fatal("program \"%s\" was found by \"%s\" but was not the same version as %s",
  					 "postgres", full_path, progname);
-@@ -2986,7 +3015,11 @@
+@@ -2991,7 +3022,11 @@
  
  	/* Select suitable configuration settings */
  	set_null_conf();
@@ -93,12 +107,12 @@
  
  	/* Now create all the text config files */
  	setup_config();
-@@ -3051,9 +3084,30 @@
+@@ -3056,9 +3091,30 @@
  	check_ok();
  }
  
 +#if defined(PG_INITDB_MAIN)
-+
+ 
 +extern void MemoryContextInit(void);
 +
 +// FIXME: get PGDATA from env.
@@ -114,7 +128,7 @@
 +};
 +
 +int argc = sizeof(argv) / sizeof(char*) - 1;
- 
++
 +EMSCRIPTEN_KEEPALIVE int
 +pg_initdb_main()
 +#else
@@ -124,7 +138,7 @@
  {
  	static struct option long_options[] = {
  		{"pgdata", required_argument, NULL, 'D'},
-@@ -3113,10 +3167,22 @@
+@@ -3118,10 +3174,22 @@
  	 */
  	setvbuf(stdout, NULL, PG_IOLBF, 0);
  
@@ -148,7 +162,7 @@
  	if (argc > 1)
  	{
  		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-@@ -3390,7 +3456,15 @@
+@@ -3395,7 +3463,15 @@
  	printf("\n");
  
  	initialize_data_directory();
@@ -165,7 +179,7 @@
  	if (do_sync)
  	{
  		fputs(_("syncing data to disk ... "), stdout);
-@@ -3443,8 +3517,7 @@
+@@ -3448,8 +3524,7 @@
  
  		destroyPQExpBuffer(start_db_cmd);
  	}

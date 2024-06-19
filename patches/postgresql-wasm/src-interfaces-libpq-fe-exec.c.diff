@@ -1,5 +1,5 @@
---- postgresql-16.2/src/interfaces/libpq/fe-exec.c	2024-02-05 22:41:37.000000000 +0100
-+++ postgresql-16.2-wasm/src/interfaces/libpq/fe-exec.c	2024-05-16 18:55:34.858766029 +0200
+--- postgresql-16.3/src/interfaces/libpq/fe-exec.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/interfaces/libpq/fe-exec.c	2024-06-19 09:25:58.886135660 +0200
 @@ -1694,8 +1694,15 @@
  	/* Don't try to send if we know there's no live connection. */
  	if (conn->status != CONNECTION_OK)

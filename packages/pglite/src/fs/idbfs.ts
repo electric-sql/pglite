@@ -10,12 +10,9 @@ export class IdbFs extends FilesystemBase {
       preRun: [
         (mod: any) => {
           const idbfs = mod.FS.filesystems.IDBFS;
-          // Mount the idbfs to the users dataDir
-          // then symlink the PGDATA to the idbfs mount
-          mod.FS.mkdir(`/pglite`);
-          mod.FS.mkdir(`/pglite${this.dataDir}`);
-          mod.FS.mount(idbfs, {}, `/pglite${this.dataDir}`);
-          mod.FS.symlink(`/pglite${this.dataDir}`, `/tmp/pglite/base`);
+          // Mount the idbfs to PGDATA in auto commit mode
+          mod.FS.mkdir(`/tmp/pglite/${this.dataDir}`);
+          mod.FS.mount(idbfs, {autoPersist: true}, `/tmp/pglite/${this.dataDir}`);
         },
       ],
     };
@@ -40,7 +37,7 @@ export class IdbFs extends FilesystemBase {
 
   syncToFs(fs: FS) {
     return new Promise<void>((resolve, reject) => {
-      fs.syncfs((err: any) => {
+      fs.syncfs(false, (err: any) => {
         if (err) {
           reject(err);
         } else {

@@ -68,6 +68,9 @@ PG_L="-L../../src/port -L../../src/common \
  ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
 
 PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
+
+# /tmp/pglite/lib/postgresql/libduckdb.so"
+
 ## \
 # /opt/python-wasm-sdk/devices/emsdk/usr/lib/libxml2.a \
 # /opt/python-wasm-sdk/devices/emsdk/usr/lib/libgeos.a \
@@ -127,7 +130,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
  -lnodefs.js -lidbfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
- -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb \
+ -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
  --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
  --preload-file ${PGROOT}/password@${PGROOT}/password \

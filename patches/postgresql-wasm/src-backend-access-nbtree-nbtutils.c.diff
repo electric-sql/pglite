@@ -1,5 +1,5 @@
---- postgresql-16.2/src/backend/access/nbtree/nbtutils.c	2024-02-05 22:41:37.000000000 +0100
-+++ postgresql-16.2-wasm/src/backend/access/nbtree/nbtutils.c	2024-05-07 17:21:13.146488170 +0200
+--- postgresql-16.3/src/backend/access/nbtree/nbtutils.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/backend/access/nbtree/nbtutils.c	2024-06-19 09:25:59.118130666 +0200
 @@ -2732,7 +2732,7 @@
  			break;
  		}

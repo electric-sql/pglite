@@ -48,6 +48,179 @@ extern void ReInitPostgres(const char *in_dbname, Oid dboid,
 			 bool override_allow_connections,
 			 char *out_dbname);
 
+
+void
+AsyncPostgresSingleUserMain(int argc, char *argv[],
+					   const char *username)
+{
+	const char *dbname = NULL;
+
+	/* Initialize startup process environment. */
+	InitStandaloneProcess(argv[0]);
+
+	/* Set default values for command-line options.	 */
+	InitializeGUCOptions();
+puts("520");
+	/* Parse command-line options. */
+	process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
+puts("523");
+	/* Must have gotten a database name, or have a default (the username) */
+	if (dbname == NULL)
+	{
+		dbname = username;
+		if (dbname == NULL)
+			ereport(FATAL,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: no database nor user name specified",
+							progname)));
+	}
+puts("534");
+	/* Acquire configuration parameters */
+	if (!SelectConfigFiles(userDoption, progname))
+		proc_exit(1);
+
+	checkDataDir();
+	ChangeToDataDir();
+
+	/*
+	 * Create lockfile for data directory.
+	 */
+	CreateDataDirLockFile(false);
+
+	/* read control file (error checking and contains config ) */
+	LocalProcessControlFile(false);
+
+	/*
+	 * process any libraries that should be preloaded at postmaster start
+	 */
+	process_shared_preload_libraries();
+
+	/* Initialize MaxBackends */
+	InitializeMaxBackends();
+puts("557");
+	/*
+	 * Give preloaded libraries a chance to request additional shared memory.
+	 */
+	process_shmem_requests();
+
+	/*
+	 * Now that loadable modules have had their chance to request additional
+	 * shared memory, determine the value of any runtime-computed GUCs that
+	 * depend on the amount of shared memory required.
+	 */
+	InitializeShmemGUCs();
+
+	/*
+	 * Now that modules have been loaded, we can process any custom resource
+	 * managers specified in the wal_consistency_checking GUC.
+	 */
+	InitializeWalConsistencyChecking();
+
+	CreateSharedMemoryAndSemaphores();
+
+	/*
+	 * Remember stand-alone backend startup time,roughly at the same point
+	 * during startup that postmaster does so.
+	 */
+	PgStartTime = GetCurrentTimestamp();
+
+	/*
+	 * Create a per-backend PGPROC struct in shared memory. We must do this
+	 * before we can use LWLocks.
+	 */
+	InitProcess();
+
+// main
+	SetProcessingMode(InitProcessing);
+
+	/* Early initialization */
+	BaseInit();
+
+	/*
+	 * General initialization.
+	 *
+	 * NOTE: if you are tempted to add code in this vicinity, consider putting
+	 * it inside InitPostgres() instead.  In particular, anything that
+	 * involves database access should be there, not here.
+	 */
+	InitPostgres(dbname, InvalidOid,	/* database to connect to */
+				 username, InvalidOid,	/* role to connect as */
+				 !am_walsender, /* honor session_preload_libraries? */
+				 false,			/* don't ignore datallowconn */
+				 NULL);			/* no out_dbname */
+
+	/*
+	 * If the PostmasterContext is still around, recycle the space; we don't
+	 * need it anymore after InitPostgres completes.  Note this does not trash
+	 * *MyProcPort, because ConnCreate() allocated that space with malloc()
+	 * ... else we'd need to copy the Port data first.  Also, subsidiary data
+	 * such as the username isn't lost either; see ProcessStartupPacket().
+	 */
+	if (PostmasterContext)
+	{
+		MemoryContextDelete(PostmasterContext);
+		PostmasterContext = NULL;
+	}
+
+	SetProcessingMode(NormalProcessing);
+
+	/*
+	 * Now all GUC states are fully set up.  Report them to client if
+	 * appropriate.
+	 */
+	BeginReportingGUCOptions();
+
+	/*
+	 * Also set up handler to log session end; we have to wait till now to be
+	 * sure Log_disconnections has its final value.
+	 */
+	if (IsUnderPostmaster && Log_disconnections)
+		on_proc_exit(log_disconnections, 0);
+
+	pgstat_report_connect(MyDatabaseId);
+
+	/* Perform initialization specific to a WAL sender process. */
+	if (am_walsender)
+		InitWalSender();
+
+	/*
+	 * Send this backend's cancellation info to the frontend.
+	 */
+	if (whereToSendOutput == DestRemote)
+	{
+		StringInfoData buf;
+
+		pq_beginmessage(&buf, 'K');
+		pq_sendint32(&buf, (int32) MyProcPid);
+		pq_sendint32(&buf, (int32) MyCancelKey);
+		pq_endmessage(&buf);
+		/* Need not flush since ReadyForQuery will do it. */
+	}
+
+	/* Welcome banner for standalone case */
+	if (whereToSendOutput == DestDebug)
+		printf("\nPostgreSQL stand-alone backend %s\n", PG_VERSION);
+
+	/*
+	 * Create the memory context we will use in the main loop.
+	 *
+	 * MessageContext is reset once per iteration of the main loop, ie, upon
+	 * completion of processing of each command message from the client.
+	 */
+	MessageContext = AllocSetContextCreate(TopMemoryContext, "MessageContext", ALLOCSET_DEFAULT_SIZES);
+
+	/*
+	 * Create memory context and buffer used for RowDescription messages. As
+	 * SendRowDescriptionMessage(), via exec_describe_statement_message(), is
+	 * frequently executed for ever single statement, we don't want to
+	 * allocate a separate buffer every time.
+	 */
+	row_description_context = AllocSetContextCreate(TopMemoryContext, "RowDescriptionContext", ALLOCSET_DEFAULT_SIZES);
+	MemoryContextSwitchTo(row_description_context);
+	initStringInfo(&row_description_buf);
+	MemoryContextSwitchTo(TopMemoryContext);
+}
+
 void
 RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username)
 {
@@ -363,6 +536,13 @@ pg_initdb_start() {
     pg_idb_status++;
 }
 
+
+EMSCRIPTEN_KEEPALIVE void
+pg_shutdown() {
+    puts("pg_shutdown");
+    proc_exit(66);
+}
+
 EMSCRIPTEN_KEEPALIVE int
 pg_isready() {
     return pg_idb_status;
@@ -498,6 +678,9 @@ interactive_file() {
 
 #include "./interactive_one.c"
 
+
+
+
 void
 PostgresSingleUserMain(int argc, char *argv[],
 					   const char *username)
@@ -550,7 +733,7 @@ PostgresSingleUserMain(int argc, char *argv[],
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-
+puts("560");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -781,16 +964,43 @@ void mkdirp(const char *p) {
 extern int pg_initdb_main();
 
 extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
-
+extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
+extern void main_post();
 extern void proc_exit(int code);
 
 
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
     puts("# 1145: pg_initdb()");
-    puts(getenv("PGDATA"));
-
     optind = 1;
+
+    if (!chdir(getenv("PGDATA"))){
+        if (access("PG_VERSION", F_OK) == 0) {
+        	chdir("/");
+            printf("pg_initdb: db exists at : %s\n", getenv("PGDATA") );
+            main_post();
+            puts("pg_initdb: main paused");
+            {
+                char *single_argv[] = {
+                    WASM_PREFIX "/bin/postgres",
+                    "--single",
+                    "-d", "1", "-B", "16", "-S", "512", "-f", "siobtnmh",
+                    "-D", getenv("PGDATA"),
+                    "-F", "-O", "-j",
+                    WASM_PGOPTS,
+                    "template1",
+                    NULL
+                };
+                int single_argc = sizeof(single_argv) / sizeof(char*) - 1;
+                optind = 1;
+                AsyncPostgresSingleUserMain(single_argc, single_argv, strdup(getenv("PGUSER")));
+            }
+            return true;
+        }
+    	chdir("/");
+        printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
+    }
+
     printf("pg_initdb_main result = %d\n", pg_initdb_main() );
 
 
@@ -827,10 +1037,13 @@ pg_initdb() {
 
 
     /* use previous initdb output to feed single mode */
+
+
+    /* or resume a previous db */
+
+
     {
         puts("# restarting in single mode for initdb");
-        //freopen(IDB_PIPE_SINGLE, "r", stdin);
-
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -846,13 +1059,7 @@ pg_initdb() {
         optind = 1;
 
         RePostgresSingleUserMain(single_argc, single_argv, strdup( getenv("PGUSER")));
-
-        //fclose(stdin);
-        //remove(IDB_PIPE_SINGLE);
     }
-
-    // stdin = fdopen(saved_stdin, "r");
-
 
     if (optind>0) {
         /* RESET getopt */
@@ -878,7 +1085,47 @@ EM_JS(int, is_web_env, (), {
 });
 
 static void
-main_pre() {
+main_pre(int argc, char *argv[]) {
+
+
+    char key[256];
+    int i=0;
+// extra env is always after normal args
+    puts("# ============= extra argv dump ==================");
+    {
+        for (;i<argc;i++) {
+            const char *kv = argv[i];
+            for (int sk=0;sk<strlen(kv);sk++)
+                if(kv[sk]=='=')
+                    goto extra_env;
+            printf("%s ", kv);
+        }
+    }
+extra_env:;
+    puts("\n# ============= arg->env dump ==================");
+    {
+        for (;i<argc;i++) {
+            const char *kv = argv[i];
+            for (int sk=0;sk<strlen(kv);sk++) {
+                if (sk>255) {
+                    puts("buffer overrun on extra env at:");
+                    puts(kv);
+                    continue;
+                }
+                if (kv[sk]=='=') {
+                    memcpy(key, kv, sk);
+                    key[sk] = 0;
+                    printf("%s='%s'\n", &key, &kv[sk+1]);
+                    setenv(key, &kv[sk+1], 1);
+                }
+            }
+        }
+    }
+    puts("\n# =========================================");
+
+	argv[0] = strdup(WASM_PREFIX "/bin/postgres");
+
+
 #if defined(__EMSCRIPTEN__)
     EM_ASM({
         globalThis.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
@@ -942,12 +1189,11 @@ main_pre() {
     if (access("/etc/fstab", F_OK) == 0) {
         puts("WARNING: Node with real filesystem access");
     } else {
-        mkdirp("/data");
-        mkdirp("/data/data");
-        mkdirp("/data/data/pg");
+        mkdirp("/tmp");
+        mkdirp("/tmp/pgdata");
+        mkdirp("/tmp/pglite");
         mkdirp(WASM_PREFIX);
     }
-
 
 	// postgres does not know where to find the server configuration file.
     // also we store the fake locale file there.
@@ -982,8 +1228,60 @@ puts("# =========================================");
 	mkdirp(WASM_PREFIX);
 }
 
+
+char **g_argv;
+
+void main_post() {
+        /*
+         * Fire up essential subsystems: error and memory management
+         *
+         * Code after this point is allowed to use elog/ereport, though
+         * localization of messages may not work right away, and messages won't go
+         * anywhere but stderr until GUC settings get loaded.
+         */
+        MemoryContextInit();
+
+        /*
+         * Set up locale information
+         */
+        set_pglocale_pgservice(g_argv[0], PG_TEXTDOMAIN("postgres"));
+
+        /*
+         * In the postmaster, absorb the environment values for LC_COLLATE and
+         * LC_CTYPE.  Individual backends will change these later to settings
+         * taken from pg_database, but the postmaster cannot do that.  If we leave
+         * these set to "C" then message localization might not work well in the
+         * postmaster.
+         */
+        init_locale("LC_COLLATE", LC_COLLATE, "");
+        init_locale("LC_CTYPE", LC_CTYPE, "");
+
+        /*
+         * LC_MESSAGES will get set later during GUC option processing, but we set
+         * it here to allow startup error messages to be localized.
+         */
+    #ifdef LC_MESSAGES
+        init_locale("LC_MESSAGES", LC_MESSAGES, "");
+    #endif
+
+        /*
+         * We keep these set to "C" always, except transiently in pg_locale.c; see
+         * that file for explanations.
+         */
+        init_locale("LC_MONETARY", LC_MONETARY, "C");
+        init_locale("LC_NUMERIC", LC_NUMERIC, "C");
+        init_locale("LC_TIME", LC_TIME, "C");
+
+        /*
+         * Now that we have absorbed as much as we wish to from the locale
+         * environment, remove any LC_ALL setting, so that the environment
+         * variables installed by pg_perm_setlocale have force.
+         */
+        unsetenv("LC_ALL");
+}
+
 int
-main(int argc, char *argv[])
+main(int argc, char **argv) // [])
 {
 /*
 TODO:
@@ -993,55 +1291,15 @@ TODO:
     bool hadloop_error = false;
     is_node = !is_web_env();
 
-    //if (is_node) {
-        char key[256];
-        int i=0;
-// extra env is always after normal args
-        puts("# ============= extra argv dump ==================");
-        {
-            for (;i<argc;i++) {
-                const char *kv = argv[i];
-                for (int sk=0;sk<strlen(kv);sk++)
-                    if(kv[sk]=='=')
-                        goto extra_env;
-                printf("%s ", kv);
-            }
-        }
-extra_env:;
-        puts("\n# ============= arg->env dump ==================");
-        {
-            for (;i<argc;i++) {
-                const char *kv = argv[i];
-                for (int sk=0;sk<strlen(kv);sk++) {
-                    if (sk>255) {
-                        puts("buffer overrun on extra env at:");
-                        puts(kv);
-                        continue;
-                    }
-                    if (kv[sk]=='=') {
-                        memcpy(key, kv, sk);
-                        key[sk] = 0;
-                        printf("%s='%s'\n", &key, &kv[sk+1]);
-                        setenv(key, &kv[sk+1], 1);
-                    }
-                }
-            }
-        }
-        puts("\n# =========================================");
-    //}
-
-	argv[0] = strdup(WASM_PREFIX "/bin/postgres");
-
-    main_pre();
+    main_pre(argc, argv);
 
     printf("# argv0 (%s) PGUSER=%s PGDATA=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"));
 
 	progname = get_progname(argv[0]);
 
-
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (!is_repl) {
-        puts("exit with live runtime");
+        puts("exit with live runtime (nodb)");
         return 0;
     }
 
@@ -1120,53 +1378,10 @@ extra_env:;
 	         * result pointer.
 	         */
 	        argv = save_ps_display_args(argc, argv);
+            g_argv = argv;
 
-	        /*
-	         * Fire up essential subsystems: error and memory management
-	         *
-	         * Code after this point is allowed to use elog/ereport, though
-	         * localization of messages may not work right away, and messages won't go
-	         * anywhere but stderr until GUC settings get loaded.
-	         */
-	        MemoryContextInit();
+            main_post();
 
-	        /*
-	         * Set up locale information
-	         */
-	        set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("postgres"));
-
-	        /*
-	         * In the postmaster, absorb the environment values for LC_COLLATE and
-	         * LC_CTYPE.  Individual backends will change these later to settings
-	         * taken from pg_database, but the postmaster cannot do that.  If we leave
-	         * these set to "C" then message localization might not work well in the
-	         * postmaster.
-	         */
-	        init_locale("LC_COLLATE", LC_COLLATE, "");
-	        init_locale("LC_CTYPE", LC_CTYPE, "");
-
-	        /*
-	         * LC_MESSAGES will get set later during GUC option processing, but we set
-	         * it here to allow startup error messages to be localized.
-	         */
-        #ifdef LC_MESSAGES
-	        init_locale("LC_MESSAGES", LC_MESSAGES, "");
-        #endif
-
-	        /*
-	         * We keep these set to "C" always, except transiently in pg_locale.c; see
-	         * that file for explanations.
-	         */
-	        init_locale("LC_MONETARY", LC_MONETARY, "C");
-	        init_locale("LC_NUMERIC", LC_NUMERIC, "C");
-	        init_locale("LC_TIME", LC_TIME, "C");
-
-	        /*
-	         * Now that we have absorbed as much as we wish to from the locale
-	         * environment, remove any LC_ALL setting, so that the environment
-	         * variables installed by pg_perm_setlocale have force.
-	         */
-	        unsetenv("LC_ALL");
 
 	        /*
 	         * Catch standard options before doing much else, in particular before we

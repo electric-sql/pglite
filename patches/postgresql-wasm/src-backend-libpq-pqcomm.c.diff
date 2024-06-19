@@ -1,5 +1,5 @@
---- postgresql-16.2/src/backend/libpq/pqcomm.c	2024-02-05 22:41:37.000000000 +0100
-+++ postgresql-16.2-wasm/src/backend/libpq/pqcomm.c	2024-06-10 08:39:12.811204017 +0200
+--- postgresql-16.3/src/backend/libpq/pqcomm.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/backend/libpq/pqcomm.c	2024-06-19 09:25:58.926134799 +0200
 @@ -123,8 +123,12 @@
  static int	PqSendBufferSize;	/* Size send buffer */
  static int	PqSendPointer;		/* Next index to store a byte in PqSendBuffer */
@@ -22,7 +22,7 @@
  static void socket_comm_reset(void);
  static void socket_close(int code, Datum arg);
  static void socket_set_nonblocking(bool nonblocking);
-@@ -146,10 +151,43 @@
+@@ -146,11 +151,44 @@
  static void socket_putmessage_noblock(char msgtype, const char *s, size_t len);
  static int	internal_putbytes(const char *s, size_t len);
  static int	internal_flush(void);
@@ -47,7 +47,7 @@
 +    puts(" ******************************** wasm_putmessage");
 +    return 0;
 +}
- 
++
 +static bool wasm_is_send_pending(void) {
 +    puts(" ******************************** wasm_is_send_pending");
 +    return false;
@@ -55,8 +55,8 @@
 +static void wasm_putmessage_noblock(char msgtype, const char *s, size_t len) {
 +    puts(" ******************************** wasm_putmessage_noblock");
 +}
-+
-+static const PQcommMethods PqCommSocketMethods = {
+ 
+ static const PQcommMethods PqCommSocketMethods = {
 +	wasm_comm_reset,
 +	wasm_flush,
 +	wasm_flush_if_writable,
@@ -65,9 +65,10 @@
 +    wasm_putmessage_noblock
 +};
 +#else
- static const PQcommMethods PqCommSocketMethods = {
++static const PQcommMethods PqCommSocketMethods = {
  	socket_comm_reset,
  	socket_flush,
+ 	socket_flush_if_writable,
 @@ -158,6 +196,10 @@
  	socket_putmessage,
  	socket_putmessage_noblock
@@ -88,7 +89,7 @@
  	/* set up process-exit hook to close the socket */
  	on_proc_exit(socket_close, 0);
  
-@@ -214,7 +256,9 @@
+@@ -210,7 +252,9 @@
  								  MyLatch, NULL);
  	AddWaitEventToSet(FeBeWaitSet, WL_POSTMASTER_DEATH, PGINVALID_SOCKET,
  					  NULL, NULL);
@@ -99,7 +100,7 @@
  	/*
  	 * The event positions match the order we added them, but let's sanity
  	 * check them to be sure.
-@@ -1152,6 +1196,16 @@
+@@ -1148,6 +1192,16 @@
   *		This must be called before any of the pq_get* functions.
   * --------------------------------
   */
@@ -116,7 +117,7 @@
  void
  pq_startmsgread(void)
  {
-@@ -1163,7 +1217,24 @@
+@@ -1159,7 +1213,24 @@
  		ereport(FATAL,
  				(errcode(ERRCODE_PROTOCOL_VIOLATION),
  				 errmsg("terminating connection because protocol synchronization was lost")));
@@ -142,7 +143,7 @@
  	PqCommReadingMsg = true;
  }
  
-@@ -1286,9 +1357,64 @@
+@@ -1282,9 +1353,62 @@
  
  	return 0;
  }
@@ -157,7 +158,7 @@
 +	{
 +        puts("# 1336: overflow");
 +    }
- 
++
 +    if (!cma_rsize) {
 +        int wc=      fwrite(s, 1, len, SOCKET_FILE);
 +        fprintf(stderr,"# sockfile %d +%d top=%p %d/%d\n", SOCKET_DATA, wc, PqSendBuffer, PqSendPointer,PqSendBufferSize);
@@ -182,24 +183,22 @@
 +		    len -= amount;
 +            SOCKET_DATA+=amount;
 +	    }
-+        fprintf(stderr,"# raw wire: %d +%zu top=%p %d/%d\n", SOCKET_DATA, amount, PqSendBuffer, PqSendPointer,PqSendBufferSize);
++//        fprintf(stderr,"# raw wire: %d +%zu top=%p %d/%d\n", SOCKET_DATA, amount, PqSendBuffer, PqSendPointer,PqSendBufferSize);
 +    }
 +    return 0;
 +}
  
- static int
++static int
 +socket_flush(void) {
 +    return internal_flush();
 +}
-+
-+static int
+ 
+ static int
 +internal_flush(void) {
-+if (cma_rsize) {
-+    puts("#1406: no flush for raw wire");
-+} else {
-+    puts("# 1408: flush");
-+	PqSendStart = PqSendPointer = 0;
-+}
++    /*  no flush for raw wire */
++    if (!cma_rsize) {
++    	PqSendStart = PqSendPointer = 0;
++    }
 +	return 0;
 +}
 +#else
@@ -207,7 +206,7 @@
  internal_putbytes(const char *s, size_t len)
  {
  	size_t		amount;
-@@ -1407,7 +1533,7 @@
+@@ -1403,7 +1527,7 @@
  	PqSendStart = PqSendPointer = 0;
  	return 0;
  }

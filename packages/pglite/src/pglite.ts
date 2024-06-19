@@ -93,6 +93,9 @@ export class PGlite implements PGliteInterface {
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
+
+    console.log("options :", options)
+
     if (options.fs) {
       this.fs = options.fs;
     } else {
@@ -118,7 +121,7 @@ export class PGlite implements PGliteInterface {
     }
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
-    console.log("emscriptenOpts:", emscriptenOpts);
+    //console.log("emscriptenOpts:", emscriptenOpts);
 
     // init pg core engine done only using MEMFS
     this.emp = await EmPostgresFactory(emscriptenOpts);
@@ -126,12 +129,20 @@ export class PGlite implements PGliteInterface {
     // if ok, NOW:
     //   all pg c-api is avail. including exported sym
 
+    console.warn("idbfs: mounting");
+/*          this.emp.FS.mkdir("/tmp/pglite/base");
+          this.emp.FS.mount(this.emp.FS.filesystems.IDBFS, {autoPersist: false}, '/tmp/pglite/base');
+*/
+
 
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
 
-    console.error("syncing fs ....");
+    console.error("syncing fs (idbfs->memfs)");
     await this.fs!.initialSyncFs(this.emp.FS);
+
+    console.warn("idbfs: mounted");
+
 
     // start compiling dynamic extensions present in FS.
 
@@ -505,6 +516,7 @@ export class PGlite implements PGliteInterface {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
         await this.fs!.syncToFs(this.emp.FS);
+        console.warn("FS synced");
       });
     };
 

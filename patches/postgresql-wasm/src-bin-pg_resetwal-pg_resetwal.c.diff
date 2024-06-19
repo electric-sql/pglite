@@ -1,5 +1,5 @@
---- postgresql-16.2/src/bin/pg_resetwal/pg_resetwal.c	2024-02-05 22:41:37.000000000 +0100
-+++ postgresql-16.2-wasm/src/bin/pg_resetwal/pg_resetwal.c	2024-05-06 08:20:15.250406362 +0200
+--- postgresql-16.3/src/bin/pg_resetwal/pg_resetwal.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/bin/pg_resetwal/pg_resetwal.c	2024-06-19 09:25:59.154129891 +0200
 @@ -330,7 +330,7 @@
  	 * -- any other user won't have sufficient permissions to modify files in
  	 * the data directory.

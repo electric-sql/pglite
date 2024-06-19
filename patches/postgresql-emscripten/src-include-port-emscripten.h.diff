@@ -1,6 +1,6 @@
---- postgresql-16.2/src/include/port/emscripten.h	2024-04-30 08:02:57.615354846 +0200
-+++ postgresql-16.2-wasm/src/include/port/emscripten.h	2024-06-03 16:06:04.667488222 +0200
-@@ -0,0 +1,333 @@
+--- postgresql-16.3/src/include/port/emscripten.h	2024-06-19 09:25:58.459144853 +0200
++++ postgresql-16.3-wasm/src/include/port/emscripten.h	2024-06-19 09:25:58.735138911 +0200
+@@ -0,0 +1,328 @@
 +/* src/include/port/emscripten.h */
 +
 +#ifndef I_EMSCRIPTEN
@@ -63,11 +63,11 @@
 +
 +
 +#if defined(PREFIX)
-+#define xstr(s) str(s)
-+#define str(s) #s
-+#   define WASM_PREFIX xstr(PREFIX)
-+#   define PG_MAIN_INCLUDE  xstr(PATCH_MAIN)
-+#   define PG_PLUGIN_INCLUDE  xstr(PATCH_PLUGIN)
++#define em_xstr(s) em_str(s)
++#define em_str(s) #s
++#   define WASM_PREFIX em_xstr(PREFIX)
++#   define PG_MAIN_INCLUDE  em_xstr(PATCH_MAIN)
++#   define PG_PLUGIN_INCLUDE  em_xstr(PATCH_PLUGIN)
 +#else
 +#   define WASM_PREFIX "/pgdata"
 +#   define PG_MAIN_INCLUDE "/data/git/pg/pg_main.c"
@@ -128,11 +128,6 @@
 +
 +#define ioctl(fd, request, ...) em_ioctl(fd, request, __VA_ARGS__)
 +*/
-+
-+// only needed for preloading of plugins.
-+// #define lowerstr(str) pg_lowerstr(str)
-+
-+
 +
 +
 +

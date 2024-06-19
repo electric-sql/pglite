@@ -1,0 +1,28 @@
+<html>
+
+<head>
+    <script src="Repl.js" type="module"></script>
+</head>
+
+
+<body>
+
+<!-- Include the Repl web component in your page -->
+<pglite-repl id="repl"></pglite-repl>
+
+<script type="module">
+  import { PGlite } from "./dist/index.js";
+
+  // Create a PGlite instance
+  const pg = new PGlite({dataDir:'idb://base'});
+
+  // Retrieve the Repl element
+  const repl = document.getElementById('repl');
+
+  // REPL to your PGlite instance
+  repl.pg = pg;
+</script>
+</body>
+
+</html>
+

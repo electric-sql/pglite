@@ -181,6 +181,7 @@ if echo "$*"|grep " quack"
 then
     echo "================================================="
     PG_LINK=em++ echo WIP
+    ./quack.sh
 fi
 
 # in pg git test mode we pull pglite instead
