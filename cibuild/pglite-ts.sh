@@ -66,29 +66,30 @@ END
         echo "using emscripten es6->ts interface"
     fi
 
-
     # CI does not use npm for building pg, so call the typescript build
     # part from here
     if $CI
     then
         npm run build:js
-        if $CI
-        then
-            mkdir /tmp/sdk -p
-            npm pack
-            packed=$(echo -n electric-sql-pglite-*.tgz)
-            mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
-            # for repl demo
-            cp -r ${PGLITE}/dist ${WEBROOT}/repl/
-            #ln ${WEBROOT}/repl/dist/postgres.* ${WEBROOT}/repl/
-            echo '<html></html>' > ${WEBROOT}/repl/dist/index.html
-        else
-            mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
-            cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
-            pushd ${WEBROOT}
-            zip /tmp/sdk/pglite.zip -q -r node_modules
-            popd
-        fi
+        mkdir /tmp/sdk -p
+        npm pack
+        packed=$(echo -n electric-sql-pglite-*.tgz)
+        mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
+
+        # for repl demo
+        mkdir -p /tmp/web/repl/
+        cp -r ${PGLITE}/dist /tmp/web/repl/
+        # link files for xterm based repl
+        ln ${WEBROOT}/repl/dist/postgres.* ${WEBROOT}/repl/ || echo pass
+        echo '<html></html>' > ${WEBROOT}/repl/dist/index.html
+
+
+    else
+        mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
+        cp -r ${PGLITE}/{../../LICENSE,package.json,README.md} ${PGLITE}/dist ${WEBROOT}/node_modules/@electric-sql/pglite/
+        pushd ${WEBROOT}
+        zip /tmp/sdk/pglite.zip -q -r node_modules
+        popd
     fi
 
     popd

@@ -67,9 +67,7 @@ PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
 PG_L="-L../../src/port -L../../src/common \
  ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
 
-PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
-
-# /tmp/pglite/lib/postgresql/libduckdb.so"
+PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
 
 ## \
 # /opt/python-wasm-sdk/devices/emsdk/usr/lib/libxml2.a \
@@ -143,7 +141,9 @@ mkdir -p ${WEBROOT}/repl
 
 [ -f "index.html" ] || echo "<html>
 <body>
-    <a href=repl/postgres.html>TEST REPL</a>
+    <a href=repl/postgres.html>TEST REPL (xterm)</a>
+    <hr/>
+    <a href=repl/repl.html>TEST REPL (react+idbfs)</a>
 </body>
 </html>" > index.html
 
