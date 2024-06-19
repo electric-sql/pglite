@@ -67,7 +67,13 @@ PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
 PG_L="-L../../src/port -L../../src/common \
  ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
 
-PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+if [ -f /tmp/pglite/lib/postgresql/libduckdb.so ]
+then
+    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+else
+    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
+fi
+
 
 ## \
 # /opt/python-wasm-sdk/devices/emsdk/usr/lib/libxml2.a \
