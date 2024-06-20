@@ -44,15 +44,15 @@ export type PGliteInterface<E extends Extension[] = []> = {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   transaction<T>(
-    callback: (tx: Transaction) => Promise<T>
+    callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined>;
   execProtocol(
     message: Uint8Array,
-    options?: ExecProtocolOptions
+    options?: ExecProtocolOptions,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
 
   // Extensions
@@ -74,7 +74,7 @@ export interface Transaction {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   rollback(): Promise<void>;

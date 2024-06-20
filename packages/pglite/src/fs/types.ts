@@ -7,8 +7,6 @@ export interface FilesystemFactory {
 }
 
 export interface Filesystem {
-  dataDir?: string;
-
   /**
    * Returns the options to pass to the emscripten module.
    */
@@ -26,7 +24,7 @@ export interface Filesystem {
 }
 
 export abstract class FilesystemBase implements Filesystem {
-  dataDir?: string;
+  protected dataDir?: string;
   constructor(dataDir?: string) {
     this.dataDir = dataDir;
   }
