@@ -126,13 +126,25 @@ chmod +x placeholder
 rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 # =========================================================
-echo
+
+# --js-library
+
+
+#if [ -f ${EMSDK}/upstream/emscripten/src/library_pgfs.js ]
+#then
+#    echo custom FS support already added
+#else
+    cp ${GITHUB_WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
+#fi
+
+
 echo 'localhost:5432:postgres:postgres:password' > pgpass
+
 emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
- -lnodefs.js -lidbfs.js \
+ -lnodefs.js -lpgfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
  -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \

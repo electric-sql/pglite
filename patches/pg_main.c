@@ -988,7 +988,7 @@ pg_initdb() {
                     "-D", getenv("PGDATA"),
                     "-F", "-O", "-j",
                     WASM_PGOPTS,
-                    "template1",
+                    "postgres",
                     NULL
                 };
                 int single_argc = sizeof(single_argv) / sizeof(char*) - 1;
@@ -1297,6 +1297,39 @@ TODO:
 
 	progname = get_progname(argv[0]);
 
+    /*
+    PGDATESTYLE
+    TZ
+    PG_SHMEM_ADDR
+
+    PGCTLTIMEOUT
+    PG_TEST_USE_UNIX_SOCKETS
+    INITDB_TEMPLATE
+    PSQL_HISTORY
+    TMPDIR
+    PGOPTIONS
+    */
+
+    /*
+     * Platform-specific startup hacks
+     */
+    startup_hacks(progname);
+
+    /*
+     * Remember the physical location of the initially given argv[] array for
+     * possible use by ps display.  On some platforms, the argv[] storage must
+     * be overwritten in order to set the process title for ps. In such cases
+     * save_ps_display_args makes and returns a new copy of the argv[] array.
+     *
+     * save_ps_display_args may also move the environment strings to make
+     * extra room. Therefore this should be done as early as possible during
+     * startup, to avoid entanglements with code that might save a getenv()
+     * result pointer.
+     */
+    argv = save_ps_display_args(argc, argv);
+    g_argv = argv;
+
+
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (!is_repl) {
         puts("exit with live runtime (nodb)");
@@ -1345,43 +1378,7 @@ TODO:
     if (is_repl) {
         if (!hadloop_error) {
 
-	        /*
-	        PGDATESTYLE
-	        TZ
-	        PG_SHMEM_ADDR
-
-	        PGCTLTIMEOUT
-	        PG_TEST_USE_UNIX_SOCKETS
-	        INITDB_TEMPLATE
-	        PSQL_HISTORY
-	        TMPDIR
-	        PGOPTIONS
-	        */
-
-	        //reached_main = true;
-
-
-	        /*
-	         * Platform-specific startup hacks
-	         */
-	        startup_hacks(progname);
-
-	        /*
-	         * Remember the physical location of the initially given argv[] array for
-	         * possible use by ps display.  On some platforms, the argv[] storage must
-	         * be overwritten in order to set the process title for ps. In such cases
-	         * save_ps_display_args makes and returns a new copy of the argv[] array.
-	         *
-	         * save_ps_display_args may also move the environment strings to make
-	         * extra room. Therefore this should be done as early as possible during
-	         * startup, to avoid entanglements with code that might save a getenv()
-	         * result pointer.
-	         */
-	        argv = save_ps_display_args(argc, argv);
-            g_argv = argv;
-
             main_post();
-
 
 	        /*
 	         * Catch standard options before doing much else, in particular before we

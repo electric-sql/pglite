@@ -4,8 +4,9 @@ import { MemoryFS } from "./memoryfs.js";
 
 export type * from "./types.js";
 
-export const PGDATA = "/tmp/pglite/base";
-export const PREFIX = "/tmp/pglite";
+export const WASM_PREFIX = "/tmp/pglite";
+// default for non web runtimes is /tmp/pglite/base
+export var PGDATA = "WASM_PREFIX" + "/" + "base";
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType;

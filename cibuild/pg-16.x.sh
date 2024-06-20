@@ -38,7 +38,11 @@ fi
 
 export PGSRC=$(realpath postgresql-${PGVERSION})
 
-echo "Building $ARCHIVE (patched) from $PGSRC"
-
-. cibuild/pgbuild.sh
+if [ -f ${PGROOT}/pg.installed ]
+then
+    echo "skipping pg build, using previous install from ${PGROOT}"
+else
+    echo "Building $ARCHIVE (patched) from $PGSRC"
+    . cibuild/pgbuild.sh
+fi
 

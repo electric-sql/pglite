@@ -131,6 +131,10 @@ END
         if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make install 2>&1 > /tmp/install.log
         then
             echo install ok
+            pushd ${PGROOT}
+            #find ./lib/postgresql ./share/postgresql/extension -type f > ${PGROOT}/pg.installed
+            find . -type f > ${PGROOT}/pg.installed
+            popd
         else
             cat /tmp/install.log
             echo "install failed"

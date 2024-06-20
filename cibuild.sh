@@ -169,6 +169,15 @@ then
         popd
 
     popd
+
+    python3 cibuild/pack_extension.py
+
+
+
+
+
+
+
 fi
 
 if echo "$*"|grep " postgis"
@@ -182,6 +191,8 @@ then
     echo "================================================="
     PG_LINK=em++ echo WIP
     ./quack.sh
+
+    python3 cibuild/pack_extension.py
 fi
 
 # in pg git test mode we pull pglite instead
