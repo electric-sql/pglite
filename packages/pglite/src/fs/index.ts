@@ -4,7 +4,8 @@ import { MemoryFS } from "./memoryfs.js";
 
 export type * from "./types.js";
 
-export const PGDATA = "/tmp/pglite";
+export const PGDATA = "/tmp/pglite/base";
+export const PREFIX = "/tmp/pglite";
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType;
@@ -21,7 +22,6 @@ export function parseDataDir(dataDir?: string) {
     if (dataDir.length <= 1) {
       throw new Error("Invalid dataDir, path required for idbfs");
     }
-    console.warn
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem

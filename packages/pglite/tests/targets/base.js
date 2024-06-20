@@ -112,6 +112,10 @@ export function tests(env, dbFilename, target) {
   }
 
   test.serial(`targets ${target} persisted`, async (t) => {
+    if (!browser) {
+      // TODO: Remove this!
+      delete globalThis.window;
+    }
     await page?.reload(); // Refresh the page
     page?.evaluate(`window.dbFilename = "${dbFilename}";`);
 

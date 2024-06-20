@@ -14,6 +14,8 @@ import type {
   ExecProtocolOptions,
 } from "./interface.js";
 
+import { PGDATA, PREFIX } from "./fs/index.js";
+
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/dist/index.js";
 import { Parser } from "pg-protocol/dist/parser.js";
@@ -63,7 +65,7 @@ export class PGlite implements PGliteInterface {
 
   constructor(
     dataDirOrPGliteOptions: string | PGliteOptions = {},
-    options: PGliteOptions = {}
+    options: PGliteOptions = {},
   ) {
     if (typeof dataDirOrPGliteOptions === "string") {
       options = {
@@ -93,8 +95,7 @@ export class PGlite implements PGliteInterface {
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
-
-    console.log("options :", options)
+    console.log("options :", options);
 
     if (options.fs) {
       this.fs = options.fs;
@@ -104,8 +105,8 @@ export class PGlite implements PGliteInterface {
     }
 
     const args = [
-      "PGDATA=/tmp/pglite/base",
-      "PREFIX=/tmp/pglite",
+      `PGDATA=${PGDATA}`,
+      `PREFIX=${PREFIX}`,
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ["-d", this.debug.toString()] : []),
@@ -118,7 +119,7 @@ export class PGlite implements PGliteInterface {
         ? { print: console.info, printErr: console.error }
         : { print: () => {}, printErr: () => {} }),
       locateFile: await makeLocateFile(),
-    }
+    };
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
     //console.log("emscriptenOpts:", emscriptenOpts);
@@ -130,10 +131,9 @@ export class PGlite implements PGliteInterface {
     //   all pg c-api is avail. including exported sym
 
     console.warn("idbfs: mounting");
-/*          this.emp.FS.mkdir("/tmp/pglite/base");
+    /*          this.emp.FS.mkdir("/tmp/pglite/base");
           this.emp.FS.mount(this.emp.FS.filesystems.IDBFS, {autoPersist: false}, '/tmp/pglite/base');
 */
-
 
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
@@ -143,11 +143,11 @@ export class PGlite implements PGliteInterface {
 
     console.warn("idbfs: mounted");
 
-
     // start compiling dynamic extensions present in FS.
 
-    console.log("database engine is ready (but not yet system/user databases or extensions)");
-
+    console.log(
+      "database engine is ready (but not yet system/user databases or extensions)",
+    );
 
     // await async compilation dynamic extensions finished.
 
@@ -155,14 +155,12 @@ export class PGlite implements PGliteInterface {
 
     // await async compilation of fetched dynamic extensions.
 
-
     // bad things that could happen here :
     //  javascript host deny access to some FS
     //  FS is full
     //  FS is corrupted
     //  wasm compilation failed (eg missing features).
     //  a fetch has timeout.
-
 
     // if ok, NOW:
     // extensions used in user database are compiled (whatever their source).
@@ -175,33 +173,30 @@ export class PGlite implements PGliteInterface {
     if (!idb) {
       console.error("TODO: meaning full initdb return/error code ?");
     } else {
-      if (idb & 0b0001)
-        console.log(" #1");
+      if (idb & 0b0001) console.log(" #1");
 
-      if (idb & 0b0010)
-        console.log(" #2");
+      if (idb & 0b0010) console.log(" #2");
 
-      if (idb & 0b0100)
-        console.log(" #3");
+      if (idb & 0b0100) console.log(" #3");
     }
 
-
-    console.log("database engine/system db are ready (maybe not user databases)");
+    console.log(
+      "database engine/system db are ready (maybe not user databases)",
+    );
 
     // extra FS could go here, same for sql init data.
 
     // eg custom SQL
     // eg read only database
 
-
     // bad things that could happen here :
     //  FS is corrupted
     //  something fetched is corrupted, not valid SQL.
 
-
+    await this.#syncToFs();
+    await this.#runExec("SET search_path TO public;");
     this.#ready = true;
   }
-
 
   /**
    * The ready state of the database
@@ -250,7 +245,7 @@ export class PGlite implements PGliteInterface {
   async query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>> {
     await this.#checkReady();
     // We wrap the public query method in the transaction mutex to ensure that
@@ -287,7 +282,7 @@ export class PGlite implements PGliteInterface {
   async #runQuery<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
@@ -302,15 +297,15 @@ export class PGlite implements PGliteInterface {
             serialize.parse({
               text: query,
               types: parsedParams.map(([, type]) => type),
-            })
+            }),
           )),
           ...(await this.#execProtocolNoSync(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
-            })
+            }),
           )),
           ...(await this.#execProtocolNoSync(
-            serialize.describe({ type: "P" })
+            serialize.describe({ type: "P" }),
           )),
           ...(await this.#execProtocolNoSync(serialize.execute({}))),
         ];
@@ -322,7 +317,7 @@ export class PGlite implements PGliteInterface {
       }
       return parseResults(
         results.map(([msg]) => msg),
-        options
+        options,
       )[0] as Results<T>;
     });
   }
@@ -336,7 +331,7 @@ export class PGlite implements PGliteInterface {
    */
   async #runExec(
     query: string,
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
@@ -354,7 +349,7 @@ export class PGlite implements PGliteInterface {
       }
       return parseResults(
         results.map(([msg]) => msg),
-        options
+        options,
       ) as Array<Results>;
     });
   }
@@ -365,7 +360,7 @@ export class PGlite implements PGliteInterface {
    * @returns The result of the transaction
    */
   async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>
+    callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined> {
     await this.#checkReady();
     return await this.#transactionMutex.runExclusive(async () => {
@@ -384,7 +379,7 @@ export class PGlite implements PGliteInterface {
           query: async (
             query: string,
             params?: any[],
-            options?: QueryOptions
+            options?: QueryOptions,
           ) => {
             checkClosed();
             return await this.#runQuery(query, params, options);
@@ -443,7 +438,7 @@ export class PGlite implements PGliteInterface {
    */
   async execProtocol(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {}
+    { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       const msg_len = message.length;
@@ -497,7 +492,7 @@ export class PGlite implements PGliteInterface {
   }
 
   async #execProtocolNoSync(
-    message: Uint8Array
+    message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.execProtocol(message, { syncToFs: false });
   }
@@ -516,7 +511,6 @@ export class PGlite implements PGliteInterface {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
         await this.fs!.syncToFs(this.emp.FS);
-        console.warn("FS synced");
       });
     };
 
