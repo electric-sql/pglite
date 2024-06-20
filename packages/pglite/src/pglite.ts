@@ -104,7 +104,7 @@ export class PGlite implements PGliteInterface {
     }
 
     const args = [
-      "PGDATA=/tmp/pglite/base",
+      `PGDATA=/tmp/pglite/${this.fs.dataDir}`,
       "PREFIX=/tmp/pglite",
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -470,6 +470,7 @@ export class PGlite implements PGliteInterface {
       const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
 
       this.#parser.parse(Buffer.from(data), (msg) => {
+        console.log(msg)
         if (msg instanceof DatabaseError) {
           this.#parser = new Parser(); // Reset the parser
           throw msg;
