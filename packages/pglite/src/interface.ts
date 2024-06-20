@@ -1,5 +1,4 @@
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
-import { off } from "process";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
