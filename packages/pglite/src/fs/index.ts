@@ -17,6 +17,15 @@ export function parseDataDir(dataDir?: string) {
       throw new Error("Invalid dataDir, must be a valid path");
     }
     fsType = "nodefs";
+  } else if (dataDir?.startsWith("pg://")) {
+    // Remove the pg:// prefix, no / allowed in dbname, and use custom filesystem
+    dataDir = dataDir.slice(5);
+    if (dataDir.length <= 1) {
+      throw new Error("Invalid dataDir, only a namespace required for pgfs and not a path");
+    }
+    dataDir = dataDir.split("/").pop()
+    PGDATA = WASM_PREFIX + "/" + dataDir
+    fsType = "pgfs";
   } else if (dataDir?.startsWith("idb://")) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = dataDir.slice(6);
