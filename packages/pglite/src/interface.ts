@@ -1,4 +1,5 @@
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
+import { off } from "process";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
 
@@ -47,6 +48,18 @@ export interface PGliteInterface {
     message: Uint8Array,
     options?: ExecProtocolOptions,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
+  listen(
+    channel: string,
+    callback: (payload: string) => void,
+  ): Promise<() => Promise<void>>;
+  unlisten(
+    channel: string,
+    callback?: (payload: string) => void,
+  ): Promise<void>;
+  onNotification(
+    callback: (channel: string, payload: string) => void,
+  ): () => void;
+  offNotification(callback: (channel: string, payload: string) => void): void;
 }
 
 export type Row<T = { [key: string]: any }> = T;

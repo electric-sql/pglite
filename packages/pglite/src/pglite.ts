@@ -24,6 +24,7 @@ import {
   DatabaseError,
   NoticeMessage,
   CommandCompleteMessage,
+  NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
 export class PGlite implements PGliteInterface {
@@ -58,6 +59,11 @@ export class PGlite implements PGliteInterface {
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
+  
+  #notifyListeners = new Map<string, Set<(payload: string) => void>>();
+  #globalNotifyListeners = new Set<
+    (channel: string, payload: string) => void
+  >();
 
   /**
    * Create a new PGlite instance
@@ -545,6 +551,19 @@ export class PGlite implements PGliteInterface {
                 this.#inTransaction = false;
                 break;
             }
+          } else if (msg instanceof NotificationResponseMessage) {
+            // We've received a notification, call the listeners
+            const listeners = this.#notifyListeners.get(msg.channel);
+            if (listeners) {
+              listeners.forEach((cb) => {
+                // We use queueMicrotask so that the callback is called after any
+                // synchronous code has finished running.
+                queueMicrotask(() => cb(msg.payload));
+              });
+            }
+            this.#globalNotifyListeners.forEach((cb) => {
+              queueMicrotask(() => cb(msg.channel, msg.payload));
+            });
           }
           results.push([msg, data]);
         });
@@ -591,5 +610,59 @@ export class PGlite implements PGliteInterface {
     if (this.debug > 0) {
       console.log(...args);
     }
+  }
+
+  /**
+   * Listen for a notification
+   * @param channel The channel to listen on
+   * @param callback The callback to call when a notification is received
+   */
+  async listen(channel: string, callback: (payload: string) => void) {
+    if (!this.#notifyListeners.has(channel)) {
+      this.#notifyListeners.set(channel, new Set());
+    }
+    this.#notifyListeners.get(channel)!.add(callback);
+    await this.exec(`LISTEN ${channel}`);
+    return async () => {
+      await this.unlisten(channel, callback);
+    };
+  }
+
+  /**
+   * Stop listening for a notification
+   * @param channel The channel to stop listening on
+   * @param callback The callback to remove
+   */
+  async unlisten(channel: string, callback?: (payload: string) => void) {
+    await this.exec(`UNLISTEN ${channel}`);
+    if (callback) {
+      this.#notifyListeners.get(channel)?.delete(callback);
+      if (this.#notifyListeners.get(channel)!.size === 0) {
+        this.#notifyListeners.delete(channel);
+      }
+    } else {
+      this.#notifyListeners.delete(channel);
+    }
+  }
+
+  /**
+   * Listen to notifications
+   * @param callback The callback to call when a notification is received
+   */
+  onNotification(
+    callback: (channel: string, payload: string) => void,
+  ): () => void {
+    this.#globalNotifyListeners.add(callback);
+    return () => {
+      this.#globalNotifyListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Stop listening to notifications
+   * @param callback The callback to remove
+   */
+  offNotification(callback: (channel: string, payload: string) => void) {
+    this.#globalNotifyListeners.delete(callback);
   }
 }
