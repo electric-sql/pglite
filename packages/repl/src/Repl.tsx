@@ -31,6 +31,7 @@ export interface ReplProps {
   darkTheme?: Extension;
   theme?: ReplTheme;
   showTime?: boolean;
+  disableUpdateSchema?: boolean;
 }
 
 export function Repl({
@@ -40,6 +41,7 @@ export function Repl({
   darkTheme = xcodeDark,
   theme = "auto",
   showTime = false,
+  disableUpdateSchema = false,
 }: ReplProps) {
   const [value, setValue] = useState("");
   const valueNoHistory = useRef("");
@@ -122,7 +124,9 @@ export function Repl({
                 }, 0);
               }
               // Update the schema for any new tables to be used in autocompletion
-              getSchema(pg).then(setSchema);
+              if (!disableUpdateSchema) {
+                getSchema(pg).then(setSchema);
+              }
             });
             historyPos.current = -1;
             valueNoHistory.current = "";
