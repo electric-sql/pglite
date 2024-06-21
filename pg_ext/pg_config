@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+
+import sys
+
+if len(sys.argv) == 2:
+    if (
+        sys.argv[1] == "--includedir"
+        or sys.argv[1] == "--pkgincludedir"
+        or sys.argv[1] == "--includedir-server"
+    ):
+        print("../tmp_install/usr/include")
+    if sys.argv[1] == "--pgxs":
+        print("../../postgres/src/makefiles/pgxs.mk")
