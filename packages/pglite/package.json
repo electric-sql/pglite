@@ -19,6 +19,7 @@
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./live": "./dist/live/index.js",
     "./worker": "./dist/worker/index.js",
     "./vector": "./dist/vector/index.js"
   },
