@@ -32,11 +32,16 @@
 
   startBtn.addEventListener("click", async () => {
     lastClicked = performance.now();
-    pg.live.query("SELECT * FROM test ORDER BY rand;", null, (res) => {
-      const time = performance.now() - lastClicked;
-      console.log(`Update took ${time}ms`);
-      output.textContent = res.rows.map((row) => row.id).join(", ");
-    });
+    pg.live.incrementalQuery(
+      "SELECT * FROM test ORDER BY rand;",
+      null,
+      "id",
+      (res) => {
+        const time = performance.now() - lastClicked;
+        console.log(`Update took ${time}ms`);
+        output.textContent = res.rows.map((row) => row.id).join(", ");
+      }
+    );
   });
 
   addBtn.addEventListener("click", async () => {
