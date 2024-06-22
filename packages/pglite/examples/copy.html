@@ -1,0 +1,48 @@
+<script type="module">
+  import { PGlite } from "../dist/index.js";
+  
+  const pg = new PGlite();
+  
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+
+  // add 1000 rows:
+  await pg.exec("INSERT INTO test (name) SELECT 'name' || i FROM generate_series(1, 1000) i;");
+
+  // Copy the date to a file:
+  console.log('Copying data to file...') // 'test.csv
+  const ret = await pg.query("COPY test TO '/dev/blob' WITH (FORMAT binary);");
+
+  console.log('Data copied to blob:')
+  const blob = ret.blob;
+  console.log(blob);
+
+  // Download the file:
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new File([blob], 'test.csv', { type: 'text/csv' }));
+  a.download = 'test.csv';
+  a.click();
+
+  // Other table
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test2 (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+
+  // import the data from the file:
+  console.log('Importing data from file...')
+  const ret2 = await pg.query("COPY test2 FROM '/dev/blob' WITH (FORMAT binary);", [], {
+    blob: blob
+  });
+
+  console.log('Data imported from file:')
+  const ret3 = await pg.query("SELECT * FROM test2;", []);
+  console.log(ret3.rows);
+
+</script>

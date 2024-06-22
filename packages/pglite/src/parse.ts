@@ -14,6 +14,7 @@ import { parseType } from "./types.js";
 export function parseResults(
   messages: Array<BackendMessage>,
   options?: QueryOptions,
+  blob?: Blob,
 ): Array<Results> {
   const resultSets: Results[] = [];
   let currentResultSet: Results = { rows: [], fields: [] };
@@ -62,7 +63,7 @@ export function parseResults(
       affectedRows += retrieveRowCount(msg);
 
       if (index === filteredMessages.length - 1)
-        resultSets.push({ ...currentResultSet, affectedRows });
+        resultSets.push({ ...currentResultSet, affectedRows, blob });
       else resultSets.push(currentResultSet);
 
       currentResultSet = { rows: [], fields: [] };

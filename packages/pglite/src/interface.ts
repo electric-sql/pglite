@@ -13,6 +13,7 @@ export interface ParserOptions {
 export interface QueryOptions {
   rowMode?: RowMode;
   parsers?: ParserOptions;
+  blob?: Blob | File;
 }
 
 export interface ExecProtocolOptions {
@@ -54,6 +55,7 @@ export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[];
   affectedRows?: number;
   fields: { name: string; dataTypeID: number }[];
+  blob?: Blob; // Only set when a file is returned, such as from a COPY command
 };
 
 export interface Transaction {

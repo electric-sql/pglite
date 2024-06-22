@@ -54,6 +54,11 @@ export class PGlite implements PGliteInterface {
 
   #parser = new Parser();
 
+  // These are the current ArrayBuffer that is being read or written to
+  // during a query, such as COPY FROM or COPY TO.
+  #queryReadBuffer?: ArrayBuffer;
+  #queryWriteChunks?: Uint8Array[];
+
   /**
    * Create a new PGlite instance
    * @param dataDir The directory to store the database files
@@ -130,6 +135,58 @@ export class PGlite implements PGliteInterface {
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
           : { print: () => {}, printErr: () => {} }),
+        preRun: [
+          (mod: any) => {
+            // Register /dev/blob device
+            // This is used to read and write blobs when used in COPY TO/FROM
+            // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
+            // The data is returned by the query as a `blob` property in the results
+            const devId = mod.FS.makedev(64, 0);
+            let callCounter = 0;
+            const devOpt = {
+              open: (stream: any) => {},
+              close: (stream: any) => {},
+              read: (
+                stream: any,
+                buffer: Uint8Array,
+                offset: number,
+                length: number,
+                position: number,
+              ) => {
+                const buf = this.#queryReadBuffer;
+                if (!buf) {
+                  throw new Error("No File or Blob provided to read from");
+                }
+                const contents = new Uint8Array(buf);
+                if (position >= contents.length) return 0;
+                const size = Math.min(contents.length - position, length);
+                for (let i = 0; i < size; i++) {
+                  buffer[offset + i] = contents[position + i];
+                }
+                return size;
+              },
+              write: (
+                stream: any,
+                buffer: Uint8Array,
+                offset: number,
+                length: number,
+                position: number,
+              ) => {
+                callCounter++;
+                this.#queryWriteChunks ??= [];
+                this.#queryWriteChunks.push(
+                  buffer.slice(offset, offset + length),
+                );
+                return length;
+              },
+              llseek: (stream: any, offset: number, whence: number) => {
+                throw new Error("Cannot seek /dev/blob");
+              },
+            };
+            mod.FS.registerDevice(devId, devOpt);
+            mod.FS.mkdev("/dev/blob", devId);
+          },
+        ],
         onRuntimeInitialized: async (Module: EmPostgres) => {
           await this.fs!.initialSyncFs(Module.FS);
           this.#ready = true;
@@ -269,9 +326,8 @@ export class PGlite implements PGliteInterface {
   ): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
-      if (this.debug > 1) {
-        console.log("runQuery", query, params, options);
-      }
+      this.#log("runQuery", query, params, options);
+      await this.#handleBlob(options?.blob);
       const parsedParams = params?.map((p) => serializeType(p)) || [];
       let results;
       try {
@@ -295,12 +351,19 @@ export class PGlite implements PGliteInterface {
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
+      this.#cleanupBlob();
       if (!this.#inTransaction) {
         await this.#syncToFs();
+      }
+      let blob: Blob | undefined;
+      if (this.#queryWriteChunks) {
+        blob = new Blob(this.#queryWriteChunks);
+        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
+        blob,
       )[0] as Results<T>;
     });
   }
@@ -318,21 +381,27 @@ export class PGlite implements PGliteInterface {
   ): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
-      if (this.debug > 1) {
-        console.log("runExec", query, options);
-      }
+      this.#log("runExec", query, options);
+      await this.#handleBlob(options?.blob);
       let results;
       try {
         results = await this.#execProtocolNoSync(serialize.query(query));
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
+      this.#cleanupBlob();
       if (!this.#inTransaction) {
         await this.#syncToFs();
+      }
+      let blob: Blob | undefined;
+      if (this.#queryWriteChunks) {
+        blob = new Blob(this.#queryWriteChunks);
+        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
+        blob,
       ) as Array<Results>;
     });
   }
@@ -395,6 +464,21 @@ export class PGlite implements PGliteInterface {
         throw e;
       }
     });
+  }
+
+  /**
+   * Handle a file attached to the current query
+   * @param file The file to handle
+   */
+  async #handleBlob(blob?: File | Blob) {
+    this.#queryReadBuffer = blob ? await blob.arrayBuffer() : undefined;
+  }
+
+  /**
+   * Cleanup the current file
+   */
+  #cleanupBlob() {
+    this.#queryReadBuffer = undefined;
   }
 
   /**
@@ -497,6 +581,15 @@ export class PGlite implements PGliteInterface {
       doSync();
     } else {
       await doSync();
+    }
+  }
+
+  /**
+   * Internal log function
+   */
+  #log(...args: any[]) {
+    if (this.debug > 0) {
+      console.log(...args);
     }
   }
 }

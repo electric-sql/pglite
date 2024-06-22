@@ -32,6 +32,7 @@ export class NodeFS extends FilesystemBase {
     const options: Partial<EmPostgres> = {
       ...opts,
       preRun: [
+        ...(opts.preRun || []),
         (mod: any) => {
           const nodefs = mod.FS.filesystems.NODEFS;
           mod.FS.mkdir(PGDATA);

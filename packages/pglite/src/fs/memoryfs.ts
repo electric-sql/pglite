@@ -19,6 +19,7 @@ export class MemoryFS extends FilesystemBase {
     const options: Partial<EmPostgres> = {
       ...opts,
       preRun: [
+        ...(opts.preRun || []),
         (mod: any) => {
           /**
            * There is an issue with just mounting the filesystem, Postgres stalls...
