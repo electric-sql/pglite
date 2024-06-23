@@ -5,6 +5,7 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "types": [ "@types/wicg-file-system-access"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

@@ -143,3 +143,9 @@
 .PGliteRepl-table-row-count a {
   text-decoration: none;
 }
+
+.PGliteRepl-file {
+  display: flex;
+  border-top: var(--border);
+  padding: 0.25em;
+}

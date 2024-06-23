@@ -54,6 +54,7 @@
     "@electric-sql/pglite": "workspace:^",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/wicg-file-system-access": "^2023.10.5",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",

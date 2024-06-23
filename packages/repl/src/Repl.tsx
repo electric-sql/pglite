@@ -50,6 +50,8 @@ export function Repl({
     theme === "dark" ? darkTheme : lightTheme
   );
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({});
+  const [showFile, setShowFile] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (theme === "auto") {
@@ -83,8 +85,18 @@ export function Repl({
   const onChange = useCallback((val: string, _viewUpdate: ViewUpdate) => {
     extractStyles();
     setValue(val);
+    checkShowFile(val);
     if (historyPos.current === -1) {
       valueNoHistory.current = val;
+    }
+  }, []);
+
+  const checkShowFile = useCallback((val: string) => {
+    const regex = /from\s*'\/dev\/blob'/i;
+    if (val.match(regex)) {
+      setShowFile(true);
+    } else {
+      setShowFile(false);
     }
   }, []);
 
@@ -96,7 +108,11 @@ export function Repl({
           preventDefault: true,
           run: () => {
             if (value.trim() === "") return false; // Do nothing if the input is empty
-            runQuery(value, pg).then((response) => {
+            let file;
+            if (fileInput.current && showFile) {
+              file = fileInput.current.files?.[0];
+            }
+            runQuery(value, pg, file).then((response) => {
               setOutput((prev) => [...prev, response]);
               if (outputRef.current) {
                 setTimeout(() => {
@@ -110,6 +126,7 @@ export function Repl({
             historyPos.current = -1;
             valueNoHistory.current = "";
             setValue("");
+            setShowFile(false);
             return true;
           },
         },
@@ -249,6 +266,11 @@ export function Repl({
           getSchema(pg).then(setSchema);
         }}
       />
+      {showFile && (
+        <div className="PGliteRepl-file">
+          <input type="file" ref={fileInput} />
+        </div>
+      )}
     </div>
   );
 }

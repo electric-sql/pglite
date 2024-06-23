@@ -2,7 +2,7 @@ import { type PGlite } from "@electric-sql/pglite";
 import { describe } from "psql-describe";
 import type { Results, Response } from "./types";
 
-export async function runQuery(query: string, pg: PGlite): Promise<Response> {
+export async function runQuery(query: string, pg: PGlite, file?: File): Promise<Response> {
   if (query.trim().toLowerCase().startsWith("\\")) {
     return runDescribe(query, pg);
   }
@@ -10,8 +10,12 @@ export async function runQuery(query: string, pg: PGlite): Promise<Response> {
   try {
     const result = await pg.exec(query, {
       rowMode: "array",
+      blob: file,
     });
     const elapsed = performance.now() - start;
+    result
+      .filter((res) => res.blob)
+      .forEach((res) => handleSaveFile(res.blob!));
     return {
       query,
       results: result as any[],
@@ -105,4 +109,19 @@ export async function getSchema(pg: PGlite): Promise<Record<string, string[]>> {
       : row.columns.slice(1, -1).split(",");
   }
   return schema;
+}
+
+async function handleSaveFile(blob: Blob) {
+  if ((window as any).showSaveFilePicker) {
+    const handle = await showSaveFilePicker();
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    writable.close();
+  } else {
+    const saveImg = document.createElement("a");
+    saveImg.href = URL.createObjectURL(blob);
+    saveImg.download = "pglite.out";
+    saveImg.click();
+    setTimeout(() => URL.revokeObjectURL(saveImg.href), 60000);
+  }
 }
