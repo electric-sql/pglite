@@ -93,10 +93,14 @@ print(f"""
 """)
 
 swd = os.getcwd()
-os.chdir(PGROOT)
-with tarfile.open(PGROOT / "sdk" / f"{EXTNAME}.tar" , "w:") as tar:
-    for fp, fn in PACKLIST:
-        print(f"{EXTNAME} : {fp} => {fn}")
-        tar.add(fn.as_posix()[1:])
 
-os.chdir(swd)
+if len(PACKLIST):
+    os.chdir(PGROOT)
+    with tarfile.open(PGROOT / "sdk" / f"{EXTNAME}.tar" , "w:") as tar:
+        for fp, fn in PACKLIST:
+            print(f"{EXTNAME} : {fp} => {fn}")
+            tar.add(fn.as_posix()[1:])
+            os.remove(fp)
+    os.chdir(swd)
+else:
+    print("Nothing to pack for", EXTNAME)
