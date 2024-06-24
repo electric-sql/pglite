@@ -30,11 +30,20 @@ addToLibrary({
 
     load_extension: async (ext) => {
         console.warn("pgfs ext:begin", ext);
-        const response = await fetch(ext+".tar");
-        const buffer = await response.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        console.log("bindata", bytes.length);
+        const response = await fetch(ext+".tar.gz");
+        var bytes;
+        if (0) {
+            const buffer = await response.arrayBuffer();
+            bytes = new Uint8Array(buffer);
+        } else {
+           const ds = new DecompressionStream("gzip");
+           const gzbytes = await response.blob();
+             console.log("gzdata", gzbytes.size);
+             const stream_in = gzbytes.stream().pipeThrough(ds);
+             bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
 
+        }
+        console.log("tardata", bytes.length);
         var data = tinyTar.untar(bytes)
         data.forEach(function(file) {
           if (!file.name.startsWith(".")) {
