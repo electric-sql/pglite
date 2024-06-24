@@ -29,8 +29,22 @@ addToLibrary({
     },
 
     load_extension: async (ext) => {
-        await fetch(ext+".tar");
-        console.warn("pgfs ext:", ext);
+        console.warn("pgfs ext:begin", ext);
+        const response = await fetch(ext+".tar");
+        const buffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        console.log("bindata", bytes.length);
+
+        var data = tinyTar.untar(bytes)
+        data.forEach(function(file) {
+          if (!file.name.startsWith(".")) {
+              if (file.name.endsWith(".so"))
+                console.warn(file.name,"scheduled for wasm streaming compilation");
+              file.data = Object.prototype.toString.call(file.data);
+              console.log(file.name);
+          }
+        });
+        console.warn("pgfs ext:end", ext);
     },
 
     // Queues a new VFS -> PGFS synchronization operation
@@ -111,11 +125,12 @@ addToLibrary({
 
     syncfs: (mount, populate, callback) => {
         if (populate) {
-           console.warn("pgfs", "init cb=", callback );
+           console.warn("pgfs", "init cb=", callback);
             const save_cb = callback;
             callback = async function load_xt(arg) {
                 console.warn("pgfs","await ext");
                 await PGFS.load_extension("vector");
+
                 console.warn("pgfs","cb arg=", arg);
                 return save_cb(arg);
             }
