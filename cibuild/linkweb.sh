@@ -140,7 +140,7 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 echo 'localhost:5432:postgres:postgres:password' > pgpass
 
-emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
+emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
@@ -171,11 +171,11 @@ mkdir -p ${WEBROOT}/repl
 mv index.html ${WEBROOT}/
 cp -v postgres.* ${WEBROOT}/repl/
 cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
-
+cp ${PGROOT}/*.tar ${WEBROOT}/repl/
 
 cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html} ${WEBROOT}/repl/
-du -hs ${WEBROOT}/repl/*
-du -hs ${WEBROOT}/*
+#du -hs ${WEBROOT}/repl/*
+#du -hs ${WEBROOT}/*
 
 popd
 

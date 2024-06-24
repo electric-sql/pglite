@@ -37,6 +37,14 @@ export class IdbFs extends FilesystemBase {
     });
   }
 
+/*
+    on_mount() {
+    }
+
+    load_extension(ext) {
+    }
+
+*/
   syncToFs(fs: FS) {
     return new Promise<void>((resolve, reject) => {
       fs.syncfs(false, (err: any) => {

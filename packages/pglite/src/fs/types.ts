@@ -21,6 +21,11 @@ export interface Filesystem {
    * Sync the emscripten filesystem to the filesystem.
    */
   initialSyncFs(mod: FS): Promise<void>;
+
+
+//  on_mount(): Function<void>;
+  // load_extension(ext: string): Promise<void>;
+
 }
 
 export abstract class FilesystemBase implements Filesystem {

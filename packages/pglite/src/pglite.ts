@@ -138,10 +138,11 @@ export class PGlite implements PGliteInterface {
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
 
-    console.error("syncing fs (idbfs->memfs)");
+    console.warn("syncing fs (fs->memfs)");
     await this.fs!.initialSyncFs(this.emp.FS);
 
-    console.warn("fs: mounted", this.fs);
+    console.warn("fs: mounted");
+
 
     // start compiling dynamic extensions present in FS.
 

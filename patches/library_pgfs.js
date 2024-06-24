@@ -24,8 +24,13 @@ addToLibrary({
     DB_VERSION: 163,
     DB_STORE_NAME: 'PG',
 
-    test: (echo) => {
-        return echo;
+    on_mount: () => {
+        console.warn("pgfs", "mounted")
+    },
+
+    load_extension: async (ext) => {
+        await fetch(ext+".tar");
+        console.warn("pgfs ext:", ext);
     },
 
     // Queues a new VFS -> PGFS synchronization operation
@@ -105,6 +110,19 @@ addToLibrary({
     },
 
     syncfs: (mount, populate, callback) => {
+        if (!callback && populate) {
+            console.warn("pgfs", "init!" );
+        } else {
+           console.warn("pgfs", "init", callback );
+            const save_cb = callback;
+            callback = async function load_xt(arg) {
+                console.warn("pgfs","await ext");
+                await PGFS.load_extension("vector");
+                console.warn("pgfs","cb", arg);
+                return save_cb(arg);
+            }
+        }
+
       PGFS.getLocalSet(mount, (err, local) => {
         if (err) return callback(err);
 
