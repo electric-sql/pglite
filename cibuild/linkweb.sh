@@ -171,7 +171,7 @@ mkdir -p ${WEBROOT}/repl
 mv index.html ${WEBROOT}/
 cp -v postgres.* ${WEBROOT}/repl/
 cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
-cp ${PGROOT}/*.tar ${WEBROOT}/repl/
+cp ${PGROOT}/sdk/*.tar ${WEBROOT}/repl/
 
 cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html} ${WEBROOT}/repl/
 #du -hs ${WEBROOT}/repl/*

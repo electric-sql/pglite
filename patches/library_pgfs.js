@@ -110,15 +110,13 @@ addToLibrary({
     },
 
     syncfs: (mount, populate, callback) => {
-        if (!callback && populate) {
-            console.warn("pgfs", "init!" );
-        } else {
-           console.warn("pgfs", "init", callback );
+        if (populate) {
+           console.warn("pgfs", "init cb=", callback );
             const save_cb = callback;
             callback = async function load_xt(arg) {
                 console.warn("pgfs","await ext");
                 await PGFS.load_extension("vector");
-                console.warn("pgfs","cb", arg);
+                console.warn("pgfs","cb arg=", arg);
                 return save_cb(arg);
             }
         }
