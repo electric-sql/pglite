@@ -1,6 +1,8 @@
 import type { FsType } from "./types.js";
 import { IdbFs } from "./idbfs.js";
+import { PgFs } from "./pgfs.js";
 import { MemoryFS } from "./memoryfs.js";
+
 
 export type * from "./types.js";
 
@@ -50,6 +52,8 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     return new NodeFS(dataDir);
   } else if (dataDir && fsType === "idbfs") {
     return new IdbFs(dataDir);
+  } else if (dataDir && fsType === "pgfs") {
+    return new PgFs(dataDir);
   } else {
     return new MemoryFS();
   }

@@ -17,15 +17,15 @@ export PGUSER=postgres
 EOE=false
 
 # the default is a user writeable path.
-if mkdir -p ${PGROOT}
+if mkdir -p ${PGROOT}/sdk
 then
     echo "checking for valid prefix ${PGROOT}"
 else
-    sudo mkdir -p ${PGROOT}
-    sudo chown $(whoami) ${PGROOT}
+    sudo mkdir -p ${PGROOT}/sdk
+    sudo chown $(whoami) -R ${PGROOT}
 fi
 
-#TODO handle PGPASSFILE hostname:port:database:username:password correctly instead
+# TODO: also handle PGPASSFILE hostname:port:database:username:password
 # https://www.postgresql.org/docs/devel/libpq-pgpass.html
 export CRED="-U $PGUSER --pwfile=${PGROOT}/password"
 

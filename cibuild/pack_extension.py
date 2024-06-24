@@ -6,7 +6,7 @@
 
 
 import asyncio
-
+import tarfile
 import os
 from pathlib import Path
 
@@ -92,6 +92,11 @@ print(f"""
 
 """)
 
-for fp, fn in PACKLIST:
-    print(f"{EXTNAME} : {fp} => {fn}")
+swd = os.getcwd()
+os.chdir(PGROOT)
+with tarfile.open(PGROOT / "sdk" / f"{EXTNAME}.tar" , "w:") as tar:
+    for fp, fn in PACKLIST:
+        print(f"{EXTNAME} : {fp} => {fn}")
+        tar.add(fn.as_posix()[1:])
 
+os.chdir(swd)

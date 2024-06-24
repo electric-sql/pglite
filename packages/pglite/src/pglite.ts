@@ -14,7 +14,7 @@ import type {
   ExecProtocolOptions,
 } from "./interface.js";
 
-import { PGDATA, PREFIX } from "./fs/index.js";
+import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/dist/index.js";
@@ -106,7 +106,7 @@ export class PGlite implements PGliteInterface {
 
     const args = [
       `PGDATA=${PGDATA}`,
-      `PREFIX=${PREFIX}`,
+      `PREFIX=${WASM_PREFIX}`,
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ["-d", this.debug.toString()] : []),
@@ -130,7 +130,7 @@ export class PGlite implements PGliteInterface {
     // if ok, NOW:
     //   all pg c-api is avail. including exported sym
 
-    console.warn("idbfs: mounting");
+    console.warn("fs: mounting"); // , this.fs.fsType );
     /*          this.emp.FS.mkdir("/tmp/pglite/base");
           this.emp.FS.mount(this.emp.FS.filesystems.IDBFS, {autoPersist: false}, '/tmp/pglite/base');
 */
@@ -141,7 +141,7 @@ export class PGlite implements PGliteInterface {
     console.error("syncing fs (idbfs->memfs)");
     await this.fs!.initialSyncFs(this.emp.FS);
 
-    console.warn("idbfs: mounted");
+    console.warn("fs: mounted", this.fs);
 
     // start compiling dynamic extensions present in FS.
 

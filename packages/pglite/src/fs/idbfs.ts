@@ -8,7 +8,8 @@ export class IdbFs extends FilesystemBase {
       ...opts,
       preRun: [
         (mod: any) => {
-          const idbfs = mod.FS.filesystems.IDBFS;
+          //const idbfs = mod.FS.filesystems.IDBFS;
+          const idbfs = mod.FS.filesystems.PGFS;
           // Mount the idbfs to the users dataDir then symlink the PGDATA to the
           // idbfs mount point.
           // We specifically use /pglite as the root directory for the idbfs

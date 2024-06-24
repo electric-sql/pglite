@@ -7,7 +7,7 @@
 addToLibrary({
   $PGFS__deps: ['$FS', '$MEMFS', '$PATH'],
   $PGFS__postset: () => {
-    addAtExit('IDBFS.quit();');
+    addAtExit('PGFS.quit();');
     return '';
   },
   $PGFS: {
@@ -17,14 +17,18 @@ addToLibrary({
       var ret = null;
       if (typeof window == 'object') ret = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 #if ASSERTIONS
-      assert(ret, 'IDBFS used, but indexedDB not supported');
+      assert(ret, 'PGFS used, but indexedDB not supported');
 #endif
       return ret;
     },
     DB_VERSION: 163,
     DB_STORE_NAME: 'PG',
 
-    // Queues a new VFS -> IDBFS synchronization operation
+    test: (echo) => {
+        return echo;
+    },
+
+    // Queues a new VFS -> PGFS synchronization operation
     queuePersist: (mount) => {
       function onPersistComplete() {
         if (mount.idbPersistState === 'again') startPersist(); // If a new sync request has appeared in between, kick off a new sync
@@ -32,7 +36,7 @@ addToLibrary({
       }
       function startPersist() {
         mount.idbPersistState = 'idb'; // Mark that we are currently running a sync operation
-        IDBFS.syncfs(mount, /*populate:*/false, onPersistComplete);
+        PGFS.syncfs(mount, /*populate:*/false, onPersistComplete);
       }
 
       if (!mount.idbPersistState) {
@@ -54,7 +58,7 @@ addToLibrary({
     mount: (mount) => {
       // reuse core MEMFS functionality
       var mnt = MEMFS.mount(mount);
-      // If the automatic IDBFS persistence option has been selected, then automatically persist
+      // If the automatic PGFS persistence option has been selected, then automatically persist
       // all modifications to the filesystem as they occur.
       if (mount?.opts?.autoPersist) {
         mnt.idbPersistState = 0; // IndexedDB sync starts in idle state
@@ -64,8 +68,8 @@ addToLibrary({
           var node = memfs_node_ops.mknod(parent, name, mode, dev);
           // Propagate injected node_ops to the newly created child node
           node.node_ops = mnt.node_ops;
-          // Remember for each IDBFS node which IDBFS mount point they came from so we know which mount to persist on modification.
-          node.idbfs_mount = mnt.mount;
+          // Remember for each PGFS node which PGFS mount point they came from so we know which mount to persist on modification.
+          node.PGFS_mount = mnt.mount;
           // Remember original MEMFS stream_ops for this node
           node.memfs_stream_ops = node.stream_ops;
           // Clone stream_ops to inject write tracking
@@ -82,7 +86,7 @@ addToLibrary({
           node.stream_ops.close = (stream) => {
             var n = stream.node;
             if (n.isModified) {
-              IDBFS.queuePersist(n.idbfs_mount);
+              PGFS.queuePersist(n.PGFS_mount);
               n.isModified = false;
             }
             if (n.memfs_stream_ops.close) return n.memfs_stream_ops.close(stream);
@@ -91,44 +95,44 @@ addToLibrary({
           return node;
         };
         // Also kick off persisting the filesystem on other operations that modify the filesystem.
-        mnt.node_ops.mkdir   = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.mkdir(...args));
-        mnt.node_ops.rmdir   = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rmdir(...args));
-        mnt.node_ops.symlink = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.symlink(...args));
-        mnt.node_ops.unlink  = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.unlink(...args));
-        mnt.node_ops.rename  = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rename(...args));
+        mnt.node_ops.mkdir   = (...args) => (PGFS.queuePersist(mnt.mount), memfs_node_ops.mkdir(...args));
+        mnt.node_ops.rmdir   = (...args) => (PGFS.queuePersist(mnt.mount), memfs_node_ops.rmdir(...args));
+        mnt.node_ops.symlink = (...args) => (PGFS.queuePersist(mnt.mount), memfs_node_ops.symlink(...args));
+        mnt.node_ops.unlink  = (...args) => (PGFS.queuePersist(mnt.mount), memfs_node_ops.unlink(...args));
+        mnt.node_ops.rename  = (...args) => (PGFS.queuePersist(mnt.mount), memfs_node_ops.rename(...args));
       }
       return mnt;
     },
 
     syncfs: (mount, populate, callback) => {
-      IDBFS.getLocalSet(mount, (err, local) => {
+      PGFS.getLocalSet(mount, (err, local) => {
         if (err) return callback(err);
 
-        IDBFS.getRemoteSet(mount, (err, remote) => {
+        PGFS.getRemoteSet(mount, (err, remote) => {
           if (err) return callback(err);
 
           var src = populate ? remote : local;
           var dst = populate ? local : remote;
 
-          IDBFS.reconcile(src, dst, callback);
+          PGFS.reconcile(src, dst, callback);
         });
       });
     },
     quit: () => {
-      Object.values(IDBFS.dbs).forEach((value) => value.close());
-      IDBFS.dbs = {};
+      Object.values(PGFS.dbs).forEach((value) => value.close());
+      PGFS.dbs = {};
     },
     getDB: (name, callback) => {
       // check the cache first
         name = name.split("/").pop() + "@⌁PGLite v16.3⌁";
-      var db = IDBFS.dbs[name];
+      var db = PGFS.dbs[name];
       if (db) {
         return callback(null, db);
       }
 
       var req;
       try {
-        req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        req = PGFS.indexedDB().open(name, PGFS.DB_VERSION);
       } catch (e) {
         return callback(e);
       }
@@ -141,10 +145,10 @@ addToLibrary({
 
         var fileStore;
 
-        if (db.objectStoreNames.contains(IDBFS.DB_STORE_NAME)) {
-          fileStore = transaction.objectStore(IDBFS.DB_STORE_NAME);
+        if (db.objectStoreNames.contains(PGFS.DB_STORE_NAME)) {
+          fileStore = transaction.objectStore(PGFS.DB_STORE_NAME);
         } else {
-          fileStore = db.createObjectStore(IDBFS.DB_STORE_NAME);
+          fileStore = db.createObjectStore(PGFS.DB_STORE_NAME);
         }
 
         if (!fileStore.indexNames.contains('timestamp')) {
@@ -155,7 +159,7 @@ addToLibrary({
         db = /** @type {IDBDatabase} */ (req.result);
 
         // add to the cache
-        IDBFS.dbs[name] = db;
+        PGFS.dbs[name] = db;
         callback(null, db);
       };
       req.onerror = (e) => {
@@ -197,17 +201,17 @@ addToLibrary({
     getRemoteSet: (mount, callback) => {
       var entries = {};
 
-      IDBFS.getDB(mount.mountpoint, (err, db) => {
+      PGFS.getDB(mount.mountpoint, (err, db) => {
         if (err) return callback(err);
 
         try {
-          var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+          var transaction = db.transaction([PGFS.DB_STORE_NAME], 'readonly');
           transaction.onerror = (e) => {
             callback(e.target.error);
             e.preventDefault();
           };
 
-          var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          var store = transaction.objectStore(PGFS.DB_STORE_NAME);
           var index = store.index('timestamp');
 
           index.openKeyCursor().onsuccess = (event) => {
@@ -337,8 +341,8 @@ addToLibrary({
 
       var errored = false;
       var db = src.type === 'remote' ? src.db : dst.db;
-      var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
-      var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+      var transaction = db.transaction([PGFS.DB_STORE_NAME], 'readwrite');
+      var store = transaction.objectStore(PGFS.DB_STORE_NAME);
 
       function done(err) {
         if (err && !errored) {
@@ -363,14 +367,14 @@ addToLibrary({
       // before the files inside them
       create.sort().forEach((path) => {
         if (dst.type === 'local') {
-          IDBFS.loadRemoteEntry(store, path, (err, entry) => {
+          PGFS.loadRemoteEntry(store, path, (err, entry) => {
             if (err) return done(err);
-            IDBFS.storeLocalEntry(path, entry, done);
+            PGFS.storeLocalEntry(path, entry, done);
           });
         } else {
-          IDBFS.loadLocalEntry(path, (err, entry) => {
+          PGFS.loadLocalEntry(path, (err, entry) => {
             if (err) return done(err);
-            IDBFS.storeRemoteEntry(store, path, entry, done);
+            PGFS.storeRemoteEntry(store, path, entry, done);
           });
         }
       });
@@ -379,9 +383,9 @@ addToLibrary({
       // parent directories
       remove.sort().reverse().forEach((path) => {
         if (dst.type === 'local') {
-          IDBFS.removeLocalEntry(path, done);
+          PGFS.removeLocalEntry(path, done);
         } else {
-          IDBFS.removeRemoteEntry(store, path, done);
+          PGFS.removeRemoteEntry(store, path, done);
         }
       });
     }

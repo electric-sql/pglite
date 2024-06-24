@@ -162,6 +162,9 @@ mkdir -p ${WEBROOT}/repl
     <a href=repl/postgres.html>TEST REPL (xterm)</a>
     <hr/>
     <a href=repl/repl.html>TEST REPL (react+idbfs)</a>
+    <hr/>
+    <a href=repl/pgfs.html>TEST REPL (react+pgfs)</a>
+
 </body>
 </html>" > index.html
 
@@ -170,7 +173,7 @@ cp -v postgres.* ${WEBROOT}/repl/
 cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
 
 
-cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html} ${WEBROOT}/repl/
+cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html} ${WEBROOT}/repl/
 du -hs ${WEBROOT}/repl/*
 du -hs ${WEBROOT}/*
 

@@ -15,7 +15,7 @@ const WORKER_URL = new URL("./process.js", import.meta.url);
 
 export class PGliteWorker implements PGliteInterface {
   readonly dataDir?: string;
-  readonly fsType: FilesystemType;
+//  readonly fsType: FilesystemType;
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel = 0;
 
@@ -28,7 +28,7 @@ export class PGliteWorker implements PGliteInterface {
   constructor(dataDir: string, options?: PGliteOptions) {
     const { dataDir: dir, fsType } = parseDataDir(dataDir);
     this.dataDir = dir;
-    this.fsType = fsType;
+//    this.fsType = fsType;
     this.#options = options ?? {};
     this.debug = options?.debug ?? 0;
 

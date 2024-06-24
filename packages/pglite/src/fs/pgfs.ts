@@ -3,7 +3,7 @@ import type { FS, EmPostgres } from "../../release/postgres.js";
 import { PGDATA } from "./index.js";
 
 export class PgFs extends FilesystemBase {
-  initModule?: any;
+  //initModule?: any;
 
   async emscriptenOpts(opts: Partial<EmPostgres>) {
     const options: Partial<EmPostgres> = {
@@ -21,19 +21,15 @@ export class PgFs extends FilesystemBase {
   }
 
   initialSyncFs(fs: FS) {
-    if (this.initModule) {
-      return this.syncToFs(fs);
-    } else {
-      return new Promise<void>((resolve, reject) => {
-        fs.syncfs(true, (err: any) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
+    return new Promise<void>((resolve, reject) => {
+      fs.syncfs(true, (err: any) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
       });
-    }
+    });
   }
 
   syncToFs(fs: FS) {
