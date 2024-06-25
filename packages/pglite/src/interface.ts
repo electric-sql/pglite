@@ -20,21 +20,37 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean;
 }
 
+export interface ExtensionSetupResult {
+  emscriptenOpts?: any;
+  namespaceObj?: any;
+  bundlePath?: URL;
+  init?: () => Promise<void>;
+  close?: () => Promise<void>;
+}
+
+export type ExtensionSetup = (
+  pg: PGliteInterface,
+  emscriptenOpts: any,
+) => Promise<ExtensionSetupResult>;
+
 export interface Extension<T = any> {
   name: string;
-  nameSpace?: string;
-  setup: (mod: any, pg: PGliteInterface) => T;
+  setup: ExtensionSetup;
 }
+
+export type Extensions = {
+  [namespace: string]: Extension;
+};
 
 export interface PGliteOptions {
   dataDir?: string;
   fs?: Filesystem;
   debug?: DebugLevel;
   relaxedDurability?: boolean;
-  extensions?: Extension[];
+  extensions?: Extensions;
 }
 
-export type PGliteInterface<E extends Extension[] = []> = {
+export type PGliteInterface = {
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel;
   readonly ready: boolean;
@@ -54,12 +70,6 @@ export type PGliteInterface<E extends Extension[] = []> = {
     message: Uint8Array,
     options?: ExecProtocolOptions,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
-
-  // Extensions
-} & {
-  [K in E[number]["nameSpace"] extends string
-    ? E[number]["nameSpace"]
-    : never]: ReturnType<E[number]["setup"]>;
 };
 
 export type Row<T = { [key: string]: any }> = T;
