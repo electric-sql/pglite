@@ -45,6 +45,7 @@ export class IdbFs extends FilesystemBase {
     const options: Partial<EmPostgres> = {
       ...opts,
       preRun: [
+        ...(opts.preRun || []),
         (mod: any) => {
           const idbfs = mod.FS.filesystems.IDBFS;
           // Mount the idbfs to the users dataDir
