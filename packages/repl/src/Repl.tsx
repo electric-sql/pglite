@@ -30,6 +30,8 @@ export interface ReplProps {
   lightTheme?: Extension;
   darkTheme?: Extension;
   theme?: ReplTheme;
+  showTime?: boolean;
+  disableUpdateSchema?: boolean;
 }
 
 export function Repl({
@@ -38,18 +40,35 @@ export function Repl({
   lightTheme = xcodeLight,
   darkTheme = xcodeDark,
   theme = "auto",
+  showTime = false,
+  disableUpdateSchema = false,
 }: ReplProps) {
   const [value, setValue] = useState("");
   const valueNoHistory = useRef("");
+  const [loading, setLoading] = useState(true);
   const [output, setOutput] = useState<Response[]>([]);
   const outputRef = useRef<HTMLDivElement | null>(null);
   const [schema, setSchema] = useState<Record<string, string[]>>({});
   const historyPos = useRef(-1);
   const rcm = useRef<ReactCodeMirrorRef | null>(null);
   const [themeToUse, setThemeToUse] = useState<Extension>(
-    theme === "dark" ? darkTheme : lightTheme
+    theme === "dark" ? darkTheme : lightTheme,
   );
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({});
+
+  useEffect(() => {
+    let ignore = false;
+    const init = async () => {
+      await pg.waitReady;
+      if (ignore) return;
+      setLoading(false);
+    };
+    setLoading(true);
+    init();
+    return () => {
+      ignore = true;
+    };
+  }, [pg]);
 
   useEffect(() => {
     if (theme === "auto") {
@@ -105,7 +124,9 @@ export function Repl({
                 }, 0);
               }
               // Update the schema for any new tables to be used in autocompletion
-              getSchema(pg).then(setSchema);
+              if (!disableUpdateSchema) {
+                getSchema(pg).then(setSchema);
+              }
             });
             historyPos.current = -1;
             valueNoHistory.current = "";
@@ -118,7 +139,7 @@ export function Repl({
           run: (view) => {
             const state = view.state;
             const cursorLine = state.doc.lineAt(
-              state.selection.main.head
+              state.selection.main.head,
             ).number;
             if (cursorLine === 1) {
               // If the cursor is on the first line, go back in history
@@ -146,7 +167,7 @@ export function Repl({
           run: (view) => {
             const state = view.state;
             const cursorLine = state.doc.lineAt(
-              state.selection.main.head
+              state.selection.main.head,
             ).number;
             const lastLine = state.doc.lines;
             if (cursorLine === lastLine) {
@@ -184,7 +205,7 @@ export function Repl({
         defaultSchema: "public",
       }),
     ],
-    [pg, schema, value, output]
+    [pg, schema, value, output],
   );
 
   const extractStyles = () => {
@@ -226,15 +247,16 @@ export function Repl({
         className="PGliteRepl-output"
         ref={(ref) => (outputRef.current = ref)}
       >
+        {loading && <div className="PGliteRepl-loading-msg">Loading...</div>}
         {output.map((response, i) => (
           <div key={i}>
-            <ReplResponse response={response || []} />
+            <ReplResponse response={response || []} showTime={showTime} />
           </div>
         ))}
       </div>
       <CodeMirror
         ref={rcm}
-        className="PGliteRepl-input"
+        className={`PGliteRepl-input ${loading ? "PGliteRepl-input-loading" : ""}`}
         width="100%"
         value={value}
         basicSetup={{
@@ -243,6 +265,7 @@ export function Repl({
         extensions={extensions}
         theme={themeToUse}
         onChange={onChange}
+        editable={!loading}
         onCreateEditor={() => {
           extractStyles();
           setTimeout(extractStyles, 0);
