@@ -1,0 +1,49 @@
+<button id="start">start</button><button id="add">Add</button>
+<div id="output"></div>
+<script type="module">
+  import { PGlite } from "../dist/index.js";
+  import { live } from "../dist/live/index.js";
+
+  const output = document.getElementById("output");
+  const startBtn = document.getElementById("start");
+  const addBtn = document.getElementById("add");
+  let counter = 1000;
+  let lastClicked = 0;
+  const nameLength = 10000;
+  const nameSuffix = "-".repeat(nameLength);
+
+  const pg = new PGlite({
+    extensions: {
+      live,
+    },
+  });
+  window.pg = pg;
+
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      rand FLOAT,
+      name TEXT
+    );
+    INSERT INTO test (name, rand)
+    SELECT 'test' || i || '${nameSuffix}', random()
+    FROM generate_series(1, ${counter}) AS i;
+  `);
+
+  startBtn.addEventListener("click", async () => {
+    lastClicked = performance.now();
+    pg.live.query("SELECT * FROM test ORDER BY rand;", null, (res) => {
+      const time = performance.now() - lastClicked;
+      console.log(`Update took ${time}ms`);
+      output.textContent = res.rows.map((row) => row.id).join(", ");
+    });
+  });
+
+  addBtn.addEventListener("click", async () => {
+    lastClicked = performance.now();
+    await pg.query(
+      "INSERT INTO test (name, rand) VALUES ($1, random());",
+      [`test${++counter}${nameSuffix}`]
+    );
+  });
+</script>
