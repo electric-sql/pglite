@@ -644,13 +644,3 @@ export class PGlite implements PGliteInterface {
     return new PGlite(options) as any;
   }
 }
-
-import { live } from "./live/index.js";
-
-const pg = PGlite.withExtensions({
-  extensions: {
-    live,
-  },
-});
-
-pg.live.query();
