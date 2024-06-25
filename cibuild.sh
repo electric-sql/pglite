@@ -176,30 +176,27 @@ then
 
     python3 cibuild/pack_extension.py
 
-
-
-
-
-
-
 fi
 
 if echo "$*"|grep " postgis"
 then
     echo "================================================="
     PG_LINK=em++ echo "WIP - requires latests python-wasm-sdk, not just emsdk"
+
+    python3 cibuild/pack_extension.py
 fi
+
+
 
 if echo "$*"|grep " quack"
 then
     echo "================================================="
-    PG_LINK=em++ echo WIP
-    ./quack.sh
-
+    ./cibuild/pg_quack.sh
+    cp $PGROOT/lib/libduckdb.so /tmp/
     python3 cibuild/pack_extension.py
-
-    cibuild/symtab.sh
 fi
+
+
 
 # in pg git test mode we pull pglite instead
 if [ -d pglite ]

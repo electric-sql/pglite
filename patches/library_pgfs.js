@@ -144,7 +144,16 @@ addToLibrary({
               console.log("ext: + ", _file);
               if (file.name.endsWith(".so")) {
                 console.warn(_file, "scheduled for wasm streaming compilation");
-                FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, PGFS.ext_ok, PGFS.ext_fail, false);
+
+    const ext_ok = (...args) => {
+      console.log("pgfs:ext OK", _file, args);
+    };
+
+    const ext_fail = (...args) => {
+        console.log("pgfs:ext FAIL", _file, args);
+    };
+
+                FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, ext_ok, ext_fail, false);
                 console.log("createPreloadedFile called for :", _file);
               } else {
                 FS.writeFile(_file, file.data);
@@ -159,6 +168,7 @@ addToLibrary({
             const save_cb = callback;
             callback = async function load_xt(arg) {
                 await PGFS.load_extension("vector", "vector.tar.gz");
+                await PGFS.load_extension("quack", "quack.tar.gz");
                 return save_cb(arg);
             }
         }

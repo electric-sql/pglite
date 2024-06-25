@@ -39,6 +39,10 @@ def is_extension(path:Path, fullpath:Path):
 
         return True
 
+    # rpath
+    if asp.startswith('/lib/'):
+        return True
+
     if asp.startswith('/share/postgresql/extension'):
         return True
 

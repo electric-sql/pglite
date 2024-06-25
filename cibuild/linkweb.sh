@@ -67,9 +67,12 @@ PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
 PG_L="-L../../src/port -L../../src/common \
  ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
 
-if [ -f /tmp/pglite/lib/postgresql/libduckdb.so ]
+
+
+if false
 then
-    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+    # PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/libduckdb.so -lstdc++"
 else
     PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
 fi
@@ -145,6 +148,7 @@ if [ -f ${PGROOT}/symbols ]
 then
     # _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
     cat > exports <<END
+___cxa_throw
 _main
 _getenv
 _setenv
@@ -156,14 +160,19 @@ _pg_shutdown
 _lowerstr
 END
     cat ${PGROOT}/symbols | sort | uniq \
-     | grep -v halfvec_l2_normalize \
-     | grep -v l2_normalize \
+     | grep -v _plpgsql_ \
+     | grep -v duckdb \
+     | grep -v ^_halfvec_l2_normalize \
+     | grep -v ^_l2_normalize \
+     | grep -v ^_sparsevec_l2_normalize \
+     | grep -v ^_1 \
+     | grep -v ^_\< \
+     | grep -v ^_env$ \
      >> exports
     cat exports > ${GITHUB_WORKSPACE}/patches/exports
 else
     cat ${GITHUB_WORKSPACE}/patches/exports >> exports
 fi
-
 
 emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
@@ -216,5 +225,7 @@ linkweb:end
 
 
 "
+
+
 
 

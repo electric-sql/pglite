@@ -1280,6 +1280,9 @@ void main_post() {
         unsetenv("LC_ALL");
 }
 
+EMSCRIPTEN_KEEPALIVE void
+__cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
+
 int
 main(int argc, char **argv) // [])
 {
