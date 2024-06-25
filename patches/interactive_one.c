@@ -338,7 +338,7 @@ interactive_one() {
     } // is_node
 
     if (cma_rsize) {
-        puts("wire message !");
+//        puts("wire message !");
         is_wire = true;
         is_socket = false;
         whereToSendOutput = DestRemote;
@@ -498,7 +498,8 @@ incoming:
         } else {
             whereToSendOutput = DestRemote;
             firstchar = SocketBackend(&input_message);
-            fprintf(stdout, "RAW WIRE: %d [%c]/%d:[%s]\n", cma_rsize, firstchar, inBuf->len, inBuf->data);
+//            fprintf(stdout, "RAW WIRE: %d [%c]/%d:[%s]\n", cma_rsize, firstchar, inBuf->len, inBuf->data);
+
 /*
             if (cma_rsize==24) {
         puts("dump!");
@@ -534,14 +535,14 @@ incoming:
     if (is_wire) { //whereToSendOutput == DestRemote) {
 wire_flush:
         cma_wsize = SOCKET_DATA;
-        printf("# exec[%d]\n", SOCKET_DATA);
+//        printf("# exec[%d]\n", SOCKET_DATA);
         if (SOCKET_DATA>0) {
-            puts("# 518: adding RFQ");
+//            puts("# 518: adding RFQ");
             ReadyForQuery(DestRemote);
             cma_wsize = SOCKET_DATA;
             if (SOCKET_FILE) {
                 fclose(SOCKET_FILE);
-                printf("# fd[%d] done\n", SOCKET_DATA);
+//                printf("# fd[%d] done\n", SOCKET_DATA);
 
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
