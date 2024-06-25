@@ -28,41 +28,6 @@ addToLibrary({
         console.warn("pgfs", "mounted")
     },
 
-    load_extension: async (ext) => {
-        console.warn("pgfs ext:begin", ext);
-        const response = await fetch(ext+".tar.gz");
-        var bytes;
-        if (0) {
-            const buffer = await response.arrayBuffer();
-            bytes = new Uint8Array(buffer);
-        } else {
-           const ds = new DecompressionStream("gzip");
-           const gzbytes = await response.blob();
-             console.log("gzdata", gzbytes.size);
-             const stream_in = gzbytes.stream().pipeThrough(ds);
-             bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
-
-        }
-        console.log("tardata", bytes.length);
-        var data = tinyTar.untar(bytes)
-        data.forEach(function(file) {
-          if (!file.name.startsWith(".")) {
-              const _file = "/tmp/pglite/" + file.name;
-              console.log("ext: + ", _file);
-              if (file.name.endsWith(".so")) {
-                console.warn(_file, "scheduled for wasm streaming compilation");
-                const status = (args) => {
-                    console.log("status", _file, args)
-                }
-                FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, status, status);
-              } else {
-                FS.writeFile(_file, file.data);
-              }
-          }
-        });
-        console.warn("pgfs ext:end", ext);
-    },
-
     // Queues a new VFS -> PGFS synchronization operation
     queuePersist: (mount) => {
       function onPersistComplete() {
@@ -139,15 +104,61 @@ addToLibrary({
       return mnt;
     },
 
+    ext_ok : (...args) => {
+      console.log("pgfs:ext OK", args);
+    },
+
+    ext_fail : (...args) => {
+        console.log("pgfs:ext FAIL", args);
+    },
+
+
+    load_extension: async (ext, url) => {
+        var bytes;
+        var response;
+        if (FS.analyzePath(url).exists) {
+            console.error("PGFS TODO: handle local archives", url)
+        } else {
+            console.error("PGFS Fetching:", url)
+            response = await fetch(url);
+        }
+
+        if (url.endsWith(".tar")) {
+            const buffer = await response.arrayBuffer();
+            bytes = new Uint8Array(buffer);
+        } else {
+           const ds = new DecompressionStream("gzip");
+           const gzbytes = await response.blob();
+             console.log("gzdata", gzbytes.size);
+             const stream_in = gzbytes.stream().pipeThrough(ds);
+             bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
+
+        }
+
+
+        console.log("tardata", bytes.length);
+        var data = tinyTar.untar(bytes)
+        data.forEach(function(file) {
+          if (!file.name.startsWith(".")) {
+              const _file = "/tmp/pglite/" + file.name;
+              console.log("ext: + ", _file);
+              if (file.name.endsWith(".so")) {
+                console.warn(_file, "scheduled for wasm streaming compilation");
+                FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, PGFS.ext_ok, PGFS.ext_fail, false);
+                console.log("createPreloadedFile called for :", _file);
+              } else {
+                FS.writeFile(_file, file.data);
+              }
+          }
+        });
+        console.warn("pgfs ext:end", ext);
+    },
+
     syncfs: (mount, populate, callback) => {
         if (populate) {
-           console.warn("pgfs", "init cb=", callback);
             const save_cb = callback;
             callback = async function load_xt(arg) {
-                console.warn("pgfs","await ext");
-                await PGFS.load_extension("vector");
-
-                console.warn("pgfs","cb arg=", arg);
+                await PGFS.load_extension("vector", "vector.tar.gz");
                 return save_cb(arg);
             }
         }

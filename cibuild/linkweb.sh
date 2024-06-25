@@ -141,8 +141,10 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 echo 'localhost:5432:postgres:postgres:password' > pgpass
 
 
-# _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
-cat > exports <<END
+if [ -f ${PGROOT}/symbols ]
+then
+    # _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
+    cat > exports <<END
 _main
 _getenv
 _setenv
@@ -153,13 +155,11 @@ _pg_initdb
 _pg_shutdown
 _lowerstr
 END
-
-if [ -f ${PGROOT}/symbols ]
-then
     cat ${PGROOT}/symbols | sort | uniq \
      | grep -v halfvec_l2_normalize \
      | grep -v l2_normalize \
      >> exports
+    cat exports > ${GITHUB_WORKSPACE}/patches/exports
 else
     cat ${GITHUB_WORKSPACE}/patches/exports >> exports
 fi
