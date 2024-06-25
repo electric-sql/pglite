@@ -25,7 +25,7 @@ END
     mkdir $PGLITE/release || rm $PGLITE/release/*
 
     # copy packed extensions
-    cp /tmp/sdk/*.tar.gz ${PGLITE}/release/
+    cp ${WEBROOT}/repl/*.tar.gz ${PGLITE}/release/
 
     cp ${GITHUB_WORKSPACE}/patches/postgres.d.ts ${PGLITE}/release/
 

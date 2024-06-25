@@ -138,6 +138,7 @@ export interface FS {
     NODEFS: Emscripten.FileSystemType;
     MEMFS: Emscripten.FileSystemType;
     IDBFS: Emscripten.FileSystemType;
+    PGFS: Emscripten.FileSystemType;
   };
 
   //
@@ -284,6 +285,7 @@ export interface FS {
 declare var MEMFS: Emscripten.FileSystemType;
 declare var NODEFS: Emscripten.FileSystemType;
 declare var IDBFS: Emscripten.FileSystemType;
+declare var PGFS: Emscripten.FileSystemType;
 
 // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
 type StringToType<R extends any> = R extends Emscripten.JSType
