@@ -39,7 +39,7 @@ export interface Extension<T = any> {
 }
 
 export type Extensions = {
-  [namespace: string]: Extension;
+  [namespace: string]: Extension | URL;
 };
 
 export interface PGliteOptions {

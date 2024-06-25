@@ -148,21 +148,27 @@ export class PGlite implements PGliteInterface {
     // - init: A function to initialize the extension/plugin after the database is ready
     // - close: A function to close/tidy-up the extension/plugin when the database is closed
     for (const [extName, ext] of Object.entries(this.#extensions)) {
-      const extRet = await ext.setup(this, emscriptenOpts);
-      if (extRet.emscriptenOpts) {
-        emscriptenOpts = extRet.emscriptenOpts;
-      }
-      if (extRet.namespaceObj) {
-        (this as any)[extName] = extRet.namespaceObj;
-      }
-      if (extRet.bundlePath) {
-        extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
-      }
-      if (extRet.init) {
-        extensionInitFns.push(extRet.init);
-      }
-      if (extRet.close) {
-        this.#extensionsClose.push(extRet.close);
+      if (ext instanceof URL) {
+        // Extension with only a URL to a bundle
+        extensionBundlePromises[extName] = loadExtensionBundle(ext);
+      } else {
+        // Extension with JS setup function
+        const extRet = await ext.setup(this, emscriptenOpts);
+        if (extRet.emscriptenOpts) {
+          emscriptenOpts = extRet.emscriptenOpts;
+        }
+        if (extRet.namespaceObj) {
+          (this as any)[extName] = extRet.namespaceObj;
+        }
+        if (extRet.bundlePath) {
+          extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
+        }
+        if (extRet.init) {
+          extensionInitFns.push(extRet.init);
+        }
+        if (extRet.close) {
+          this.#extensionsClose.push(extRet.close);
+        }
       }
     }
     emscriptenOpts['pg_extensions'] = extensionBundlePromises;

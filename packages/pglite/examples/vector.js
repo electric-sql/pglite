@@ -4,6 +4,8 @@ import { vector } from "../dist/vector/index.js";
 const pg = new PGlite({
   extensions: {
     vector,
+    // Alternatively, you can specify the path to the extension tarball
+    // vector: new URL("../dist/vector.tar.gz", import.meta.url),
   }
 });
 
