@@ -634,13 +634,14 @@ export class PGlite implements PGliteInterface {
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
-    await this.exec(`UNLISTEN ${channel}`);
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback);
       if (this.#notifyListeners.get(channel)!.size === 0) {
+        await this.exec(`UNLISTEN ${channel}`);
         this.#notifyListeners.delete(channel);
       }
     } else {
+      await this.exec(`UNLISTEN ${channel}`);
       this.#notifyListeners.delete(channel);
     }
   }

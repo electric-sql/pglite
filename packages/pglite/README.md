@@ -265,6 +265,35 @@ await pg.transaction(async (tx) => {
 
 Close the database, ensuring it is shut down cleanly.
 
+#### `.listen(channel: string, callback: (payload: string) => void): Promise<void>`
+
+Subscribe to a [pg_notify](https://www.postgresql.org/docs/current/sql-notify.html) channel. The callback will receive the payload from the notification.
+
+Returns an unsubscribe function to unsubscribe from the channel.
+
+##### Example:
+
+```ts
+const unsub = await pg.listen('test', (payload) => {
+  console.log('Received:', payload);
+});
+await pg.query("NOTIFY test, 'Hello, world!'");
+```
+
+#### `.unlisten(channel: string, callback?: (payload: string) => void): Promise<void>`
+
+Unsubscribe from the channel. If a callback is provided it removes only that callback from the subscription, when no callback is provided is unsubscribes all callbacks for the channel.
+
+#### `onNotification(callback: (channel: string, payload: string) => void): () => void`
+
+Add an event handler for all notifications received from Postgres.
+
+**Note:** This does not subscribe to the notification, you will have to manually subscribe with `LISTEN channel_name`.
+
+#### `offNotification(callback: (channel: string, payload: string) => void): void`
+
+Remove an event handler for all notifications received from Postgres.
+
 ### Properties:
 
 - `.ready` *boolean (read only)*: Whether the database is ready to accept queries.
