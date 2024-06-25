@@ -91,6 +91,9 @@ importers:
       '@codemirror/language':
         specifier: ^6.10.2
         version: 6.10.2
+      '@codemirror/state':
+        specifier: ^6.4.1
+        version: 6.4.1
       '@codemirror/view':
         specifier: ^6.28.1
         version: 6.28.2

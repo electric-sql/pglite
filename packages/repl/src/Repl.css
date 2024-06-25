@@ -16,6 +16,7 @@
 
 .PGliteRepl-root table {
   font-size: var(--font-size);
+  color: var(--fg);
 }
 
 .PGliteRepl-root-border {
@@ -145,7 +146,37 @@
 }
 
 .PGliteRepl-file {
-  display: flex;
-  border-top: var(--border);
-  padding: 0.25em;
+  position: absolute;
+  top: -1000px;
+  left: -1000px;
+}
+
+.PGliteRepl-upload-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 1em;
+  background: transparent;
+  padding: 0 0.2em 0 0.2em;
+  height: 1.2em;
+  margin: -0.5em 0.1em 0 0.1em;
+  position: relative;
+  top: 0.3em;
+
+}
+
+.PGliteRepl-upload-button svg {
+  display: block;
+  height: 1.1em;
+  width: 1.1em;
+}
+
+.PGliteRepl-upload-label {
+  display: block;
+  opacity: 0.7;
+  margin: 1px 0.5em 0 0.5em;
+  font-style: italic;
+  font-size: 0.8em;
+
 }

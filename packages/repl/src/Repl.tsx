@@ -13,6 +13,7 @@ import type { Response } from "./types";
 import { runQuery, getSchema } from "./utils";
 import { ReplResponse } from "./ReplResponse";
 import { xcodeDark, xcodeLight } from "@uiw/codemirror-theme-xcode";
+import { uploadButtonPlugin } from "./uploadButton";
 
 import "./Repl.css";
 
@@ -21,6 +22,7 @@ import "./Repl.css";
 // We keep the up and down arrow keys as we only override their behavior
 // when the cursor is on the first or last line.
 const baseKeymap = defaultKeymap.filter((key) => key.key !== "Enter");
+const originalEnterKey = defaultKeymap.find((key) => key.key === "Enter");
 
 export type ReplTheme = "light" | "dark" | "auto";
 
@@ -52,6 +54,7 @@ export function Repl({
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({});
   const [showFile, setShowFile] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const [file, setFile] = useState<File>();
 
   useEffect(() => {
     if (theme === "auto") {
@@ -102,6 +105,7 @@ export function Repl({
 
   const extensions = useMemo(
     () => [
+      uploadButtonPlugin(fileInput),
       keymap.of([
         {
           key: "Enter",
@@ -129,6 +133,10 @@ export function Repl({
             setShowFile(false);
             return true;
           },
+        },
+        {
+          ...originalEnterKey!,
+          key: "Shift-Enter",
         },
         {
           key: "ArrowUp",
@@ -201,7 +209,7 @@ export function Repl({
         defaultSchema: "public",
       }),
     ],
-    [pg, schema, value, output]
+    [pg, schema, value, output, fileInput.current, file]
   );
 
   const extractStyles = () => {
@@ -268,7 +276,7 @@ export function Repl({
       />
       {showFile && (
         <div className="PGliteRepl-file">
-          <input type="file" ref={fileInput} />
+          <input type="file" ref={fileInput} onChange={() => setFile(fileInput.current?.files?.[0])} />
         </div>
       )}
     </div>
