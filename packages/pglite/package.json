@@ -19,12 +19,16 @@
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./worker": "./dist/worker/index.js"
+    "./worker": "./dist/worker/index.js",
+    "./vector": "./dist/vector/index.js"
   },
   "typesVersions": {
     "*": {
       "worker": [
         "./dist/worker/index.d.ts"
+      ],
+      "vector": [
+        "./dist/vector/index.d.ts"
       ]
     }
   },
@@ -46,6 +50,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.18",
+    "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",

@@ -5,6 +5,7 @@ import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 import type {
+  Extensions,
   DebugLevel,
   PGliteOptions,
   PGliteInterface,
@@ -13,6 +14,7 @@ import type {
   QueryOptions,
   ExecProtocolOptions,
 } from "./interface.js";
+import { loadExtensionBundle } from "./extensionUtils.js";
 
 import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
@@ -45,6 +47,9 @@ export class PGlite implements PGliteInterface {
   #fsSyncScheduled = false;
 
   readonly debug: DebugLevel = 0;
+
+  #extensions: Extensions;
+  #extensionsClose: Array<() => Promise<void>> = [];
 
   #parser = new Parser();
 
@@ -86,6 +91,9 @@ export class PGlite implements PGliteInterface {
       this.#relaxedDurability = options.relaxedDurability;
     }
 
+    // Save the extensions for later use
+    this.#extensions = options.extensions ?? {};
+
     // Initialize the database, and store the promise so we can wait for it to be ready
     this.waitReady = this.#init(options ?? {});
   }
@@ -103,6 +111,9 @@ export class PGlite implements PGliteInterface {
       const { dataDir, fsType } = parseDataDir(options.dataDir);
       this.fs = await loadFs(dataDir, fsType);
     }
+    
+    const extensionBundlePromises: Record<string, Promise<Blob>> = {};
+    const extensionInitFns: Array<() => Promise<void>> = [];
 
     const args = [
       `PGDATA=${PGDATA}`,
@@ -112,7 +123,11 @@ export class PGlite implements PGliteInterface {
       ...(this.debug ? ["-d", this.debug.toString()] : []),
     ];
 
-    let emscriptenOpts: Partial<EmPostgres> = {
+    let emscriptenOpts: Partial<EmPostgres & {
+      WASM_PREFIX: string;
+      pg_extensions: Record<string, Promise<Blob>>;
+    }> = {
+      WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
       ...(this.debug > 0
@@ -123,6 +138,40 @@ export class PGlite implements PGliteInterface {
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
     //console.log("emscriptenOpts:", emscriptenOpts);
+
+    // # Setup extensions
+    // This is the first step of loading PGlite extensions
+    // We loop through each extension and call the setup function
+    // This amends the emscriptenOpts and can return:
+    // - emscriptenOpts: The updated emscripten options
+    // - namespaceObj: The namespace object to attach to the PGlite instance
+    // - init: A function to initialize the extension/plugin after the database is ready
+    // - close: A function to close/tidy-up the extension/plugin when the database is closed
+    for (const [extName, ext] of Object.entries(this.#extensions)) {
+      if (ext instanceof URL) {
+        // Extension with only a URL to a bundle
+        extensionBundlePromises[extName] = loadExtensionBundle(ext);
+      } else {
+        // Extension with JS setup function
+        const extRet = await ext.setup(this, emscriptenOpts);
+        if (extRet.emscriptenOpts) {
+          emscriptenOpts = extRet.emscriptenOpts;
+        }
+        if (extRet.namespaceObj) {
+          (this as any)[extName] = extRet.namespaceObj;
+        }
+        if (extRet.bundlePath) {
+          extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
+        }
+        if (extRet.init) {
+          extensionInitFns.push(extRet.init);
+        }
+        if (extRet.close) {
+          this.#extensionsClose.push(extRet.close);
+        }
+      }
+    }
+    emscriptenOpts['pg_extensions'] = extensionBundlePromises;
 
     // init pg core engine done only using MEMFS
     this.emp = await EmPostgresFactory(emscriptenOpts);
@@ -142,7 +191,6 @@ export class PGlite implements PGliteInterface {
     await this.fs!.initialSyncFs(this.emp.FS);
 
     console.warn("fs: mounted");
-
 
     // start compiling dynamic extensions present in FS.
 
@@ -197,6 +245,11 @@ export class PGlite implements PGliteInterface {
     await this.#syncToFs();
     await this.#runExec("SET search_path TO public;");
     this.#ready = true;
+
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn();
+    }
   }
 
   /**

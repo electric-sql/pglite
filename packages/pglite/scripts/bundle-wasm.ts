@@ -37,6 +37,7 @@ async function main() {
   await fs.copyFile("./release/postgres.wasm", "./dist/postgres.wasm");
   await fs.copyFile("./release/postgres.data", "./dist/postgres.data");
   await fs.copyFile("./release/postgres.so", "./dist/postgres.so");
+  await fs.copyFile("./release/vector.tar.gz", "./dist/vector.tar.gz");
   await findAndReplaceInDir(
     "./dist",
     /new URL\('\.\.\/release\//g,
@@ -47,6 +48,12 @@ async function main() {
     "./dist",
     /new URL\("\.\.\/release\//g,
     'new URL("./',
+    [".js"]
+  );
+  await findAndReplaceInDir(
+    "./dist/vector",
+    /new URL\("\.\.\/\.\.\/release\//g,
+    'new URL("\.\.\/',
     [".js"]
   );
 }
