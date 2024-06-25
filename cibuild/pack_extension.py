@@ -23,15 +23,19 @@ def gather(root: Path, *kw):
 
 
 
-def is_extension(path:Path):
-    global EXTNAME
+def is_extension(path:Path, fullpath:Path):
+    global EXTNAME, SYMBOLS
     asp = path.as_posix()
 
     # check .so
     if asp.startswith('/lib/postgresql/'):
         if path.suffix == ".so":
             EXTNAME = path.stem
-
+            if os.path.isfile('/opt/sdk/wasisdk/wabt/bin/wasm-objdump'):
+                # TODO use popen and sort/merge
+                os.system(f"./cibuild/symtab.sh {fullpath} >> {PGROOT}/symbols")
+                with open(f"{PGROOT}/symbols","r") as f:
+                    SYMBOLS=f.readlines()
 
         return True
 
@@ -62,7 +66,7 @@ async def archive(target_folder):
                 fp = PGROOT / asp[1:]
                 if fp.is_symlink():
                     continue
-                if is_extension(test):
+                if is_extension(test, fp):
                     #print(f"{EXTNAME=}", test )
                     PACKLIST.append( [fp, test] )
                 else:
@@ -75,6 +79,8 @@ INSTALLED = []
 
 EXTNAME = ""
 PACKLIST = []
+SYMBOLS=[]
+
 
 for line in open(PGROOT / "pg.installed" ).readlines():
     INSTALLED.append( Path(line[1:].strip()).as_posix() )
@@ -86,7 +92,7 @@ print(f"""
 
 
 
-    {EXTNAME =}
+    {EXTNAME =} ({len(SYMBOLS)} imports)
 
 
 

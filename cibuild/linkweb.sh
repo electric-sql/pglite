@@ -140,13 +140,38 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 echo 'localhost:5432:postgres:postgres:password' > pgpass
 
-emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
+
+# _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
+cat > exports <<END
+_main
+_getenv
+_setenv
+_interactive_one
+_interactive_write
+_interactive_read
+_pg_initdb
+_pg_shutdown
+_lowerstr
+END
+
+if [ -f ${PGROOT}/symbols ]
+then
+    cat ${PGROOT}/symbols | sort | uniq \
+     | grep -v halfvec_l2_normalize \
+     | grep -v l2_normalize \
+     >> exports
+else
+    cat ${GITHUB_WORKSPACE}/patches/exports >> exports
+fi
+
+
+emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
  -lnodefs.js -lpgfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
- -sEXPORTED_FUNCTIONS=_main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown \
+ -sEXPORTED_FUNCTIONS=@exports \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
  --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
  --preload-file ${PGROOT}/password@${PGROOT}/password \

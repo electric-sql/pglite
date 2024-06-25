@@ -42,7 +42,6 @@ export PGPASS
 
 
 
-
 # default to web/release size optim.
 if $DEBUG
 then
@@ -133,6 +132,11 @@ END
     else
         . cibuild/pg-git.sh
     fi
+
+    if [ -f /opt/sdk/wasisdk/wabt/bin/wasm-objdump ]
+    then
+        ./cibuild/symtab.sh ${PGROOT}/lib/postgresql/plpgsql.so > ${PGROOT}/symbols
+    fi
 fi
 
 # put wasm-shared the pg extension linker from build dir in the path
@@ -193,6 +197,8 @@ then
     ./quack.sh
 
     python3 cibuild/pack_extension.py
+
+    cibuild/symtab.sh
 fi
 
 # in pg git test mode we pull pglite instead
