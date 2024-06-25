@@ -24,6 +24,9 @@ END
 
     mkdir $PGLITE/release || rm $PGLITE/release/*
 
+    # copy packed extensions
+    cp /tmp/sdk/*.tar.gz ${PGLITE}/release/
+
     cp ${GITHUB_WORKSPACE}/patches/postgres.d.ts ${PGLITE}/release/
 
     # copy wasm web prebuilt artifacts to release folder
@@ -71,7 +74,7 @@ END
     if $CI
     then
         npm run build:js
-        mkdir /tmp/sdk -p
+        mkdir -p /tmp/sdk
         npm pack
         packed=$(echo -n electric-sql-pglite-*.tgz)
         mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
