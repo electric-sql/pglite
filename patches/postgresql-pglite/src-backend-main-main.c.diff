@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/main/main.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/main/main.c	2024-06-19 09:25:59.044132259 +0200
++++ postgresql-16.3-wasm/src/backend/main/main.c	2024-06-25 06:37:06.740798652 +0200
 @@ -41,20 +41,20 @@
  #include "utils/pg_locale.h"
  #include "utils/ps_status.h"

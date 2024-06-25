@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/port/posix_sema.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/port/posix_sema.c	2024-06-19 09:25:59.098131096 +0200
++++ postgresql-16.3-wasm/src/backend/port/posix_sema.c	2024-06-25 06:37:06.790797922 +0200
 @@ -298,10 +298,16 @@
  	 * There's no direct API for this in POSIX, so we have to ratchet the
  	 * semaphore down to 0 with repeated trywait's.

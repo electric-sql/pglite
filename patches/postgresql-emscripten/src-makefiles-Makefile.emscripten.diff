@@ -1,5 +1,5 @@
---- postgresql-16.3/src/makefiles/Makefile.emscripten	2024-06-19 09:25:58.459144853 +0200
-+++ postgresql-16.3-wasm/src/makefiles/Makefile.emscripten	2024-06-19 09:25:58.855136328 +0200
+--- postgresql-16.3/src/makefiles/Makefile.emscripten	2024-06-25 06:37:06.167807016 +0200
++++ postgresql-16.3-wasm/src/makefiles/Makefile.emscripten	2024-06-25 06:37:06.552801396 +0200
 @@ -0,0 +1,8 @@
 +# Use --enable-new-dtags to generate DT_RUNPATH instead of DT_RPATH.
 +# This allows LD_LIBRARY_PATH to still work when needed.

@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/utils/misc/timeout.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/misc/timeout.c	2024-06-19 09:25:58.980133637 +0200
++++ postgresql-16.3-wasm/src/backend/utils/misc/timeout.c	2024-06-25 06:37:06.679799543 +0200
 @@ -110,10 +110,20 @@
   * Insert specified timeout reason into the list of active timeouts
   * at the given index.

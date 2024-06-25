@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/utils/elog.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/utils/elog.h	2024-06-19 09:25:58.721139213 +0200
++++ postgresql-16.3-wasm/src/include/utils/elog.h	2024-06-25 06:37:06.423803279 +0200
 @@ -137,6 +137,19 @@
   * prevents gcc from making the unreachability deduction at optlevel -O0.
   *----------

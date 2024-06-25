@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/port/emscripten.h	2024-06-19 09:25:58.459144853 +0200
-+++ postgresql-16.3-wasm/src/include/port/emscripten.h	2024-06-19 09:25:58.735138911 +0200
+--- postgresql-16.3/src/include/port/emscripten.h	2024-06-25 06:37:06.167807016 +0200
++++ postgresql-16.3-wasm/src/include/port/emscripten.h	2024-06-25 06:37:06.438803060 +0200
 @@ -0,0 +1,328 @@
 +/* src/include/port/emscripten.h */
 +
