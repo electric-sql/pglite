@@ -14,6 +14,7 @@ export interface ParserOptions {
 export interface QueryOptions {
   rowMode?: RowMode;
   parsers?: ParserOptions;
+  blob?: Blob | File;
 }
 
 export interface ExecProtocolOptions {
@@ -30,10 +31,10 @@ export interface ExtensionSetupResult {
 
 export type ExtensionSetup = (
   pg: PGliteInterface,
-  emscriptenOpts: any,
+  emscriptenOpts: any
 ) => Promise<ExtensionSetupResult>;
 
-export interface Extension<T = any> {
+export interface Extension {
   name: string;
   setup: ExtensionSetup;
 }
@@ -60,17 +61,41 @@ export type PGliteInterface = {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
+    callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined>;
   execProtocol(
     message: Uint8Array,
-    options?: ExecProtocolOptions,
+    options?: ExecProtocolOptions
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
+  listen(
+    channel: string,
+    callback: (payload: string) => void
+  ): Promise<() => Promise<void>>;
+  unlisten(
+    channel: string,
+    callback?: (payload: string) => void
+  ): Promise<void>;
+  onNotification(
+    callback: (channel: string, payload: string) => void
+  ): () => void;
+  offNotification(callback: (channel: string, payload: string) => void): void;
 };
+
+export type PGliteInterfaceExtensions<E> = E extends Extensions
+  ? {
+      [K in keyof E]: E[K] extends Extension
+        ? Awaited<ReturnType<E[K]["setup"]>>["namespaceObj"] extends infer N
+          ? N extends undefined | null | void
+            ? never
+            : N
+          : never
+        : never;
+    }
+  : {};
 
 export type Row<T = { [key: string]: any }> = T;
 
@@ -78,13 +103,14 @@ export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[];
   affectedRows?: number;
   fields: { name: string; dataTypeID: number }[];
+  blob?: Blob; // Only set when a file is returned, such as from a COPY command
 };
 
 export interface Transaction {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   rollback(): Promise<void>;

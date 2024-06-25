@@ -7,6 +7,7 @@ export class IdbFs extends FilesystemBase {
     const options: Partial<EmPostgres> = {
       ...opts,
       preRun: [
+        ...(opts.preRun || []),
         (mod: any) => {
           //const idbfs = mod.FS.filesystems.IDBFS;
           const idbfs = mod.FS.filesystems.PGFS;
