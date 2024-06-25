@@ -5,9 +5,16 @@ import type { PGliteOptions, QueryOptions } from "../interface.js";
 let db: PGlite;
 
 const worker = {
-  async init(dataDir?: string, options?: PGliteOptions) {
+  async init(
+    dataDir?: string,
+    options?: PGliteOptions,
+    onNotification?: (channel: string, payload: string) => void,
+  ) {
     db = new PGlite(dataDir, options);
     await db.waitReady;
+    if (onNotification) {
+      db.onNotification(onNotification);
+    }
     return true;
   },
   async close() {

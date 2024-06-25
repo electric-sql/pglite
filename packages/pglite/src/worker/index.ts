@@ -23,6 +23,11 @@ export class PGliteWorker implements PGliteInterface {
   #worker: WorkerInterface;
   #options: PGliteOptions;
 
+  #notifyListeners = new Map<string, Set<(payload: string) => void>>();
+  #globalNotifyListeners = new Set<
+    (channel: string, payload: string) => void
+  >();
+
   constructor(dataDir: string, options?: PGliteOptions) {
     const { dataDir: dir, fsType } = parseDataDir(dataDir);
     this.dataDir = dir;
@@ -42,7 +47,11 @@ export class PGliteWorker implements PGliteInterface {
   }
 
   async #init(dataDir: string) {
-    await this.#worker.init(dataDir, this.#options);
+    await this.#worker.init(
+      dataDir,
+      this.#options,
+      Comlink.proxy(this.receiveNotification.bind(this)),
+    );
     this.#ready = true;
   }
 
@@ -80,5 +89,57 @@ export class PGliteWorker implements PGliteInterface {
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return this.#worker.execProtocol(message);
+  }
+
+  async listen(
+    channel: string,
+    callback: (payload: string) => void,
+  ): Promise<() => Promise<void>> {
+    if (!this.#notifyListeners.has(channel)) {
+      this.#notifyListeners.set(channel, new Set());
+    }
+    this.#notifyListeners.get(channel)?.add(callback);
+    await this.exec(`LISTEN ${channel}`);
+    return async () => {
+      await this.unlisten(channel, callback);
+    };
+  }
+
+  async unlisten(
+    channel: string,
+    callback?: (payload: string) => void,
+  ): Promise<void> {
+    if (callback) {
+      this.#notifyListeners.get(channel)?.delete(callback);
+    } else {
+      this.#notifyListeners.delete(channel);
+    }
+    if (this.#notifyListeners.get(channel)?.size === 0) {
+      // As we currently have a dedicated worker we can just unlisten
+      await this.exec(`UNLISTEN ${channel}`);
+    }
+  }
+
+  onNotification(callback: (channel: string, payload: string) => void) {
+    this.#globalNotifyListeners.add(callback);
+    return () => {
+      this.#globalNotifyListeners.delete(callback);
+    };
+  }
+
+  offNotification(callback: (channel: string, payload: string) => void) {
+    this.#globalNotifyListeners.delete(callback);
+  }
+
+  receiveNotification(channel: string, payload: string) {
+    const listeners = this.#notifyListeners.get(channel);
+    if (listeners) {
+      for (const listener of listeners) {
+        queueMicrotask(() => listener(payload));
+      }
+    }
+    for (const listener of this.#globalNotifyListeners) {
+      queueMicrotask(() => listener(channel, payload));
+    }
   }
 }
