@@ -28,7 +28,7 @@ export class PGliteREPL extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["border", "theme"];
+    return ["border", "theme", "show-time", "disable-update-schema"];
   }
 
   connectedCallback() {
@@ -74,9 +74,15 @@ export class PGliteREPL extends HTMLElement {
 
   render() {
     const border = this.hasAttribute("border")
-      ? this.getAttribute("border") === "true"
+      ? this.getAttribute("border") !== "false"
       : undefined;
     const theme = this.getAttribute("theme");
+    const showTime = this.hasAttribute("show-time")
+      ? this.getAttribute("show-time") !== "false"
+      : undefined;
+    const disableUpdateSchema = this.hasAttribute("disable-update-schema")
+      ? this.getAttribute("disable-update-schema") !== "false"
+      : undefined;
 
     const props: ReplProps = {
       pg: this.#pg!,
@@ -84,6 +90,8 @@ export class PGliteREPL extends HTMLElement {
       lightTheme: this.#lightTheme,
       darkTheme: this.#darkTheme,
       theme: (theme as ReplTheme | null) || "auto",
+      showTime,
+      disableUpdateSchema,
     };
 
     this.#root.render(

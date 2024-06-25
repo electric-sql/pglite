@@ -11,11 +11,9 @@ import type { BackendMessage } from "pg-protocol/dist/messages.js";
 import { parseDataDir } from "../fs/index.js";
 import type { Worker as WorkerInterface } from "./process.js";
 
-const WORKER_URL = new URL("./process.js", import.meta.url);
-
 export class PGliteWorker implements PGliteInterface {
   readonly dataDir?: string;
-//  readonly fsType: FilesystemType;
+  readonly fsType: FilesystemType;
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel = 0;
 
@@ -28,11 +26,16 @@ export class PGliteWorker implements PGliteInterface {
   constructor(dataDir: string, options?: PGliteOptions) {
     const { dataDir: dir, fsType } = parseDataDir(dataDir);
     this.dataDir = dir;
-//    this.fsType = fsType;
+    this.fsType = fsType;
     this.#options = options ?? {};
     this.debug = options?.debug ?? 0;
 
-    this.#worker = Comlink.wrap(new Worker(WORKER_URL, { type: "module" }));
+    this.#worker = Comlink.wrap(
+      // the below syntax is required by webpack in order to
+      // identify the worker properly during static analysis
+      // see: https://webpack.js.org/guides/web-workers/
+      new Worker(new URL("./process.js", import.meta.url), { type: "module" }),
+    );
 
     // pass unparsed dataDir value
     this.waitReady = this.#init(dataDir);

@@ -168,7 +168,7 @@ addToLibrary({
             const save_cb = callback;
             callback = async function load_xt(arg) {
                 await PGFS.load_extension("vector", "vector.tar.gz");
-                await PGFS.load_extension("quack", "quack.tar.gz");
+                //await PGFS.load_extension("quack", "quack.tar.gz");
                 return save_cb(arg);
             }
         }
