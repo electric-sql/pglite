@@ -7,7 +7,7 @@ import type {
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
   return {
     emscriptenOpts,
-    bundlePath: new URL("../release/vector.tar", import.meta.url),
+    bundlePath: new URL("../../release/vector.tar.gz", import.meta.url),
   } satisfies ExtensionSetupResult;
 }
 

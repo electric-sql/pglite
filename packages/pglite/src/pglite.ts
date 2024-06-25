@@ -112,8 +112,7 @@ export class PGlite implements PGliteInterface {
       this.fs = await loadFs(dataDir, fsType);
     }
     
-    const extensionBundlePaths: Array<URL> = [];
-    const bundledExtensions: string[] = [];
+    const extensionBundlePromises: Record<string, Promise<Blob>> = {};
     const extensionInitFns: Array<() => Promise<void>> = [];
 
     const args = [
@@ -124,7 +123,11 @@ export class PGlite implements PGliteInterface {
       ...(this.debug ? ["-d", this.debug.toString()] : []),
     ];
 
-    let emscriptenOpts: Partial<EmPostgres> = {
+    let emscriptenOpts: Partial<EmPostgres & {
+      WASM_PREFIX: string;
+      pg_extensions: Record<string, Promise<Blob>>;
+    }> = {
+      WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
       ...(this.debug > 0
@@ -142,7 +145,6 @@ export class PGlite implements PGliteInterface {
     // This amends the emscriptenOpts and can return:
     // - emscriptenOpts: The updated emscripten options
     // - namespaceObj: The namespace object to attach to the PGlite instance
-    // - load: A function to load the extension files into the VFS
     // - init: A function to initialize the extension/plugin after the database is ready
     // - close: A function to close/tidy-up the extension/plugin when the database is closed
     for (const [extName, ext] of Object.entries(this.#extensions)) {
@@ -154,8 +156,7 @@ export class PGlite implements PGliteInterface {
         (this as any)[extName] = extRet.namespaceObj;
       }
       if (extRet.bundlePath) {
-        extensionBundlePaths.push(extRet.bundlePath);
-        bundledExtensions.push(extName);
+        extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
       }
       if (extRet.init) {
         extensionInitFns.push(extRet.init);
@@ -164,6 +165,7 @@ export class PGlite implements PGliteInterface {
         this.#extensionsClose.push(extRet.close);
       }
     }
+    emscriptenOpts['pg_extensions'] = extensionBundlePromises;
 
     // init pg core engine done only using MEMFS
     this.emp = await EmPostgresFactory(emscriptenOpts);
@@ -175,13 +177,6 @@ export class PGlite implements PGliteInterface {
     /*          this.emp.FS.mkdir("/tmp/pglite/base");
           this.emp.FS.mount(this.emp.FS.filesystems.IDBFS, {autoPersist: false}, '/tmp/pglite/base');
 */
-
-    // Load the extensions into the VFS
-    for (const bundlePath of extensionBundlePaths) {
-      await loadExtensionBundle(this.emp, bundlePath);
-    }
-    // TODO: add /tmp/extensions.json
-    // its the list from bundledExtensions
 
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
