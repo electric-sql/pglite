@@ -37,6 +37,9 @@ importers:
 
   packages/pglite:
     devDependencies:
+      '@types/emscripten':
+        specifier: ^1.39.13
+        version: 1.39.13
       '@types/node':
         specifier: ^20.11.18
         version: 20.11.19
@@ -1543,6 +1546,10 @@ packages:
     resolution: {integrity: sha512-FvktcujPDj9XKMJQWFcl2vVl7OdRIqsSRX9b0acWwTmwLK9CF2eqo/FRcmMLNpugKoX/avA6pb7TorDLmpgTnQ==}
     dependencies:
       '@types/node': 20.11.19
+    dev: true
+
+  /@types/emscripten@1.39.13:
+    resolution: {integrity: sha512-cFq+fO/isvhvmuP/+Sl4K4jtU6E23DoivtbO4r50e3odaxAiVdbfSYRDdJ4gCdxx+3aRjhphS5ZMwIH4hFy/Cw==}
     dev: true
 
   /@types/estree@1.0.5:

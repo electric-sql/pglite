@@ -1,5 +1,5 @@
 import { Mutex } from "async-mutex";
-import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
+import EmPostgresFactory, { type EmPostgres } from "./postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";

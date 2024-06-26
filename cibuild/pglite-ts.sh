@@ -27,8 +27,6 @@ END
     # copy packed extensions
     cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
-    cp ${GITHUB_WORKSPACE}/patches/postgres.d.ts ${PGLITE}/release/
-
     # copy wasm web prebuilt artifacts to release folder
     # TODO: get them from web for nosdk systems.
     if $CI

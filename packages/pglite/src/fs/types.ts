@@ -1,4 +1,4 @@
-import type { EmPostgres, FS } from "../../release/postgres.js";
+import type { EmPostgres, FS } from "../postgres.js";
 
 export type FsType = "nodefs" | "idbfs" | "memoryfs" | "pgfs";
 
