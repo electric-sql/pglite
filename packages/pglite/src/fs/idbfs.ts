@@ -1,5 +1,5 @@
 import { FilesystemBase } from "./types.js";
-import type { FS, EmPostgres } from "../../release/postgres.js";
+import type { FS, EmPostgres } from "../postgres.js";
 import { PGDATA } from "./index.js";
 
 export class IdbFs extends FilesystemBase {
@@ -7,7 +7,7 @@ export class IdbFs extends FilesystemBase {
     const options: Partial<EmPostgres> = {
       ...opts,
       preRun: [
-        (mod: any) => {
+        (mod) => {
           //const idbfs = mod.FS.filesystems.IDBFS;
           const idbfs = mod.FS.filesystems.PGFS;
           // Mount the idbfs to the users dataDir then symlink the PGDATA to the

@@ -49,6 +49,7 @@
     "format": "prettier --write ./src"
   },
   "devDependencies": {
+    "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
     "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",
