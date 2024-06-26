@@ -25,7 +25,7 @@ END
     mkdir $PGLITE/release || rm $PGLITE/release/*
 
     # copy packed extensions
-    cp ${WEBROOT}/repl/*.tar.gz ${PGLITE}/release/
+    cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
     cp ${GITHUB_WORKSPACE}/patches/postgres.d.ts ${PGLITE}/release/
 
@@ -33,8 +33,8 @@ END
     # TODO: get them from web for nosdk systems.
     if $CI
     then
-        cp -vf /tmp/web/repl/postgres.{js,data,wasm} $PGLITE/release/
-        cp -vf /tmp/web/repl/libecpg.so $PGLITE/release/postgres.so
+        cp -vf /tmp/web/postgres.{js,data,wasm} $PGLITE/release/
+        cp -vf /tmp/web/libecpg.so $PGLITE/release/postgres.so
     else
         cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
         cp ${WEBROOT}/libecpg.so ${PGLITE}/release/postgres.so
@@ -80,11 +80,11 @@ END
         mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
 
         # for repl demo
-        mkdir -p /tmp/web/repl/
-        cp -r ${PGLITE}/dist /tmp/web/repl/
+        mkdir -p /tmp/web/
+        cp -r ${PGLITE}/dist /tmp/web/
         # link files for xterm based repl
-        ln ${WEBROOT}/repl/dist/postgres.* ${WEBROOT}/repl/ || echo pass
-        echo '<html></html>' > ${WEBROOT}/repl/dist/index.html
+        ln ${WEBROOT}/dist/postgres.* ${WEBROOT}/ || echo pass
+        echo '<html></html>' > ${WEBROOT}/dist/index.html
 
 
     else

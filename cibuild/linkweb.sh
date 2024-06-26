@@ -189,32 +189,29 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  --preload-file placeholder@${PGROOT}/bin/initdb \
  -o postgres.html $PG_O $PG_L || exit 136
 
-mkdir -p ${WEBROOT}/repl
+mkdir -p ${WEBROOT}
 
-[ -f "index.html" ] || echo "<html>
+echo "<html>
 <body>
-    <a href=repl/postgres.html>TEST REPL (xterm)</a>
+    <a href=postgres.html>TEST REPL (xterm)</a>
     <hr/>
-    <a href=repl/repl.html>TEST REPL (react+idbfs)</a>
+    <a href=repl.html>TEST REPL (react+idbfs)</a>
     <hr/>
-    <a href=repl/pgfs.html>TEST REPL (react+pgfs)</a>
+    <a href=pgfs.html>TEST REPL (react+pgfs)</a>
 
 </body>
-</html>" > index.html
+</html>" > ${WEBROOT}/index.html
 
-mv index.html ${WEBROOT}/
-cp -v postgres.* ${WEBROOT}/repl/
-cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/repl/
-cp ${PGROOT}/sdk/*.tar ${WEBROOT}/repl/
-for tarf in ${WEBROOT}/repl/*.tar
+cp -v postgres.* ${WEBROOT}/
+cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
+cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
+for tarf in ${WEBROOT}/*.tar
 do
     gzip -9 $tarf
 done
 
 
-cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html,patches/tinytar.min.js} ${WEBROOT}/repl/
-#du -hs ${WEBROOT}/repl/*
-#du -hs ${WEBROOT}/*
+cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html,patches/tinytar.min.js} ${WEBROOT}/
 
 popd
 

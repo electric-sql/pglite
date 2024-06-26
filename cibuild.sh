@@ -288,7 +288,7 @@ then
         tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PGVERSION}.tar.gz
     fi
 
-    du -hs ${WEBROOT}/repl/*
+    du -hs ${WEBROOT}/*
 fi
 
 
