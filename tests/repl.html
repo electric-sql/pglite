@@ -50,6 +50,8 @@
     <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/vt/xterm.js">
     <link rel="prefetch" href="https://pygame-web.github.io/archives/0.9/vt/xterm-addon-image.js">
 
+    <script src="tinytar.min.js"></script>
+
   </head>
   <body>
     <hr/>
@@ -207,18 +209,39 @@
 
         }
 
+        const PGDATA="/tmp/pglite/base"
+
 
         function prerun(vm) {
             console.log("prerun(js)")
-            vm.FS.mkdir("/tmp/pglite/base")
-            vm.FS.mount(vm.FS.filesystems.PGFS, {autoPersist: true}, "/tmp/pglite/base")
+            vm.FS.mkdir(PGDATA)
+            vm.FS.mount(vm.FS.filesystems.PGFS, {autoPersist: true}, PGDATA)
+        }
+
+        async function delay_init(err) {
+
+            if (!err) {
+                console.log("delayed init")
+                vm.FS.filesystems.PGFS.load_package("vector","vector.tar.gz")
+                if (vm.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
+                    console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
+                    console.log( vm.FS.readdir(PGDATA));
+                    console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                } else {
+                    console.warn("@@@@ no db @@@@");
+                }
+                vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
+                vm._pg_initdb()
+                setTimeout(vm._pg_repl_raf, 2000)
+                setTimeout(test_drive, 3000)
+            } else
+                console.error("FS error", err)
         }
 
         function postrun(vm) {
             console.log("postrun")
-            //vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
-            vm._pg_initdb()
-            setTimeout(test_drive, 3000)
+            vm.FS.syncfs(true, delay_init)
+            //setTimeout(delay_init, 100, vm)
         }
 
 
@@ -326,9 +349,9 @@
 
         const { WasmTerminal } = await /**/ import("./vtx.js")
 
-        window.vm.vt = new WasmTerminal("repl",132,32,12)
+        Module.vt = new WasmTerminal("repl",132,32,12)
 
-        window.Module = await initModule(vm)
+        window.Module = await initModule(Module)
     }
 
     window.addEventListener("load", boot )

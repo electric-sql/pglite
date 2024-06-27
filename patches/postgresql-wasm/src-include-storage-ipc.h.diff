@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/storage/ipc.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/storage/ipc.h	2024-06-25 06:37:06.412803440 +0200
++++ postgresql-16.3-wasm/src/include/storage/ipc.h	2024-06-27 08:14:26.064056280 +0200
 @@ -64,8 +64,11 @@
  /* ipc.c */
  extern PGDLLIMPORT bool proc_exit_inprogress;

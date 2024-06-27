@@ -113,35 +113,12 @@ addToLibrary({
     },
 
 
-    load_extension: async (ext, url) => {
-        var bytes;
-        var response;
-        if (FS.analyzePath(url).exists) {
-            console.error("PGFS TODO: handle local archives", url)
-        } else {
-            console.error("PGFS Fetching:", url)
-            response = await fetch(url);
-        }
-
-        if (url.endsWith(".tar")) {
-            const buffer = await response.arrayBuffer();
-            bytes = new Uint8Array(buffer);
-        } else {
-           const ds = new DecompressionStream("gzip");
-           const gzbytes = await response.blob();
-             console.log("gzdata", gzbytes.size);
-             const stream_in = gzbytes.stream().pipeThrough(ds);
-             bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
-
-        }
-
-
-        console.log("tardata", bytes.length);
-        var data = tinyTar.untar(bytes)
+    load_pg_extension: (ext, bytes) => {
+        var data = tinyTar.untar(bytes);
         data.forEach(function(file) {
           if (!file.name.startsWith(".")) {
               const _file = "/tmp/pglite/" + file.name;
-              console.log("ext: + ", _file);
+              console.log("    + ", _file);
               if (file.name.endsWith(".so")) {
                 console.warn(_file, "scheduled for wasm streaming compilation");
 
@@ -163,12 +140,46 @@ addToLibrary({
         console.warn("pgfs ext:end", ext);
     },
 
+
+    load_package: async (ext, url) => {
+        var bytes;
+        var response;
+        if (FS.analyzePath(url).exists) {
+            console.error("PGFS TODO: handle local archives", url)
+        } else {
+            console.error("PGFS Fetching:", url)
+            response = await fetch(url);
+        }
+
+        if (url.endsWith(".tar")) {
+            const buffer = await response.arrayBuffer();
+            bytes = new Uint8Array(buffer);
+        } else {
+           const ds = new DecompressionStream("gzip");
+           const gzbytes = await response.blob();
+             console.log("gzdata", gzbytes.size);
+             const stream_in = gzbytes.stream().pipeThrough(ds);
+             bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
+        }
+        PGFS.load_pg_extension(ext, bytes);
+    },
+
+
     syncfs: (mount, populate, callback) => {
         if (populate) {
             const save_cb = callback;
-            callback = async function load_xt(arg) {
-                await PGFS.load_extension("vector", "vector.tar.gz");
-                //await PGFS.load_extension("quack", "quack.tar.gz");
+            console.log("ext ?", Module.pg_extensions )
+
+            callback = async function load_pg_extensions(arg) {
+                for (const ext in Module.pg_extensions) {
+                    const blob = await Module.pg_extensions[ext]
+                    const bytes = new Uint8Array(await blob.arrayBuffer())
+                    console.log("  +", ext,"tardata:", bytes.length )
+                    if (ext=="quack")
+                        console.warn(ext,"skipped !")
+                    else
+                        PGFS.load_pg_extension(ext, bytes)
+                }
                 return save_cb(arg);
             }
         }

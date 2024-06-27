@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/access/transam/xact.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/access/transam/xact.c	2024-06-25 06:37:06.798797806 +0200
++++ postgresql-16.3-wasm/src/backend/access/transam/xact.c	2024-06-27 08:14:26.537052399 +0200
 @@ -1740,6 +1740,7 @@
  	if (TransactionIdDidCommit(xid))
  		elog(PANIC, "cannot abort transaction %u, it was already committed",

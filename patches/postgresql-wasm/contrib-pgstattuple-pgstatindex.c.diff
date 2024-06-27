@@ -1,5 +1,5 @@
 --- postgresql-16.3/contrib/pgstattuple/pgstatindex.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/contrib/pgstattuple/pgstatindex.c	2024-06-25 06:37:06.196806593 +0200
++++ postgresql-16.3-wasm/contrib/pgstattuple/pgstatindex.c	2024-06-27 08:14:24.900065801 +0200
 @@ -656,9 +656,9 @@
  			stats.unused_pages++;
  		else if (PageGetSpecialSize(page) !=

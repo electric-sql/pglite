@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/utils/error/elog.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/error/elog.c	2024-06-25 06:37:06.722798915 +0200
++++ postgresql-16.3-wasm/src/backend/utils/error/elog.c	2024-06-27 08:14:26.461053023 +0200
 @@ -355,6 +355,9 @@
  	 * Check some cases in which we want to promote an error into a more
  	 * severe error.  None of this logic applies for non-error messages.

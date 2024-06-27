@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/bin/initdb/initdb.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/bin/initdb/initdb.c	2024-06-25 06:37:06.879796623 +0200
++++ postgresql-16.3-wasm/src/bin/initdb/initdb.c	2024-06-27 08:14:26.627051661 +0200
 @@ -45,7 +45,7 @@
   *
   *-------------------------------------------------------------------------
@@ -138,48 +138,36 @@
  {
  	static struct option long_options[] = {
  		{"pgdata", required_argument, NULL, 'D'},
-@@ -3118,10 +3174,22 @@
+@@ -3118,10 +3174,16 @@
  	 */
  	setvbuf(stdout, NULL, PG_IOLBF, 0);
  
--	pg_logging_init(argv[0]);
 +#if defined(PG_INITDB_MAIN)
- 	progname = get_progname(argv[0]);
-+    printf("calling pg_initdb_main for %s\n", progname);
++	progname = get_progname(argv[0]);
++//    printf("calling pg_initdb_main for %s\n", progname);
 +    MemoryContextInit();
 +	pg_logging_init(progname);
-+	//set_pglocale_pgservice(progname, PG_TEXTDOMAIN("postgres"));
- 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("initdb"));
- 
-+//    int saved_stderr = dup(STDERR_FILENO);
-+//    freopen(IDB_PIPE_FILE, "w", stderr);
-+
 +#else
-+	pg_logging_init(argv[0]);
-+	progname = get_progname(argv[0]);
-+	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("initdb"));
+ 	pg_logging_init(argv[0]);
+ 	progname = get_progname(argv[0]);
 +#endif
+ 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("initdb"));
+-
  	if (argc > 1)
  	{
  		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-@@ -3395,7 +3463,15 @@
+@@ -3395,7 +3457,9 @@
  	printf("\n");
  
  	initialize_data_directory();
 -
 +#if defined(PG_INITDB_MAIN)
-+/*
-+    fflush(stderr);
-+    fclose(stderr);
-+    puts("# restoring stderr ?");
-+    stderr = fdopen(saved_stderr, "w");
-+    fprintf(stderr, "# stderr restored !\n");
-+*/
++    puts("# 3461: TODO: fsync_pgdata ?");
 +#else
  	if (do_sync)
  	{
  		fputs(_("syncing data to disk ... "), stdout);
-@@ -3448,8 +3524,7 @@
+@@ -3448,8 +3512,7 @@
  
  		destroyPQExpBuffer(start_db_cmd);
  	}

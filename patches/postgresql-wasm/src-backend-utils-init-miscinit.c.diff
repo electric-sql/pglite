@@ -1,18 +1,5 @@
 --- postgresql-16.3/src/backend/utils/init/miscinit.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c	2024-06-25 06:37:06.712799061 +0200
-@@ -195,9 +195,9 @@
- 
- 	/* Initialize process-local latch support */
- 	InitializeLatchSupport();
--	InitProcessLocalLatch();
--	InitializeLatchWaitSet();
--
-+	InitProcessLocalLatch();puts("198 PATCH: -InitializeLatchWaitSet()");
-+	InitializeLatchWaitSet();puts("199");
-+puts("200");
- 	/*
- 	 * For consistency with InitPostmasterChild, initialize signal mask here.
- 	 * But we don't unblock SIGQUIT or provide a default handler for it.
++++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c	2024-06-27 08:14:26.452053097 +0200
 @@ -209,7 +209,7 @@
  	if (my_exec_path[0] == '\0')
  	{

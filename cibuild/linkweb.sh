@@ -110,7 +110,7 @@ MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB
 
 rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
 
-touch placeholder
+echo "#!/bin/true" > placeholder
 chmod +x placeholder
 
 # for ./bin
@@ -151,6 +151,7 @@ then
 ___cxa_throw
 _main
 _main_repl
+_pg_repl_raf
 _getenv
 _setenv
 _interactive_one
@@ -188,7 +189,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  --preload-file pgpass@${PGROOT}/pgpass \
  --preload-file placeholder@${PGROOT}/bin/postgres \
  --preload-file placeholder@${PGROOT}/bin/initdb \
- -o postgres.html $PG_O $PG_L || exit 136
+ -o postgres.html $PG_O $PG_L || exit 191
 
 mkdir -p ${WEBROOT}
 

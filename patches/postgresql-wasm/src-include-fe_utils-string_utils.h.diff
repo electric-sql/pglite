@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/fe_utils/string_utils.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/fe_utils/string_utils.h	2024-06-25 06:37:06.429803192 +0200
++++ postgresql-16.3-wasm/src/include/fe_utils/string_utils.h	2024-06-27 08:14:26.080056149 +0200
 @@ -19,8 +19,12 @@
  #include "libpq-fe.h"
  #include "pqexpbuffer.h"

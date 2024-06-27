@@ -60,7 +60,7 @@ export class PGlite implements PGliteInterface {
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
-  
+
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
@@ -127,13 +127,14 @@ export class PGlite implements PGliteInterface {
       const { dataDir, fsType } = parseDataDir(options.dataDir);
       this.fs = await loadFs(dataDir, fsType);
     }
-    
+
     const extensionBundlePromises: Record<string, Promise<Blob>> = {};
     const extensionInitFns: Array<() => Promise<void>> = [];
 
     const args = [
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
+      "MODE=REACT",
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ["-d", this.debug.toString()] : []),
@@ -207,7 +208,13 @@ export class PGlite implements PGliteInterface {
     await this.fs!.initialSyncFs(this.emp.FS);
 
     console.warn("fs: mounted");
-
+    if (this.emp.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
+        console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
+        console.log( this.emp.FS.readdir(PGDATA));
+        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    } else {
+        console.warn("@@@@ no db @@@@");
+    }
     // start compiling dynamic extensions present in FS.
 
     console.log(

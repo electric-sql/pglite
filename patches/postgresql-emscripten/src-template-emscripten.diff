@@ -1,5 +1,5 @@
---- postgresql-16.3/src/template/emscripten	2024-06-25 06:37:06.167807016 +0200
-+++ postgresql-16.3-wasm/src/template/emscripten	2024-06-25 06:37:06.408803498 +0200
+--- postgresql-16.3/src/template/emscripten	2024-06-27 08:14:24.838066306 +0200
++++ postgresql-16.3-wasm/src/template/emscripten	2024-06-27 08:14:26.059056321 +0200
 @@ -0,0 +1,14 @@
 +# src/template/emscripten
 +

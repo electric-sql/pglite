@@ -51,7 +51,7 @@ extern void ReInitPostgres(const char *in_dbname, Oid dboid,
 
 void
 AsyncPostgresSingleUserMain(int argc, char *argv[],
-					   const char *username)
+					   const char *username, int async_restart)
 {
 	const char *dbname = NULL;
 
@@ -74,7 +74,7 @@ puts("523");
 					 errmsg("%s: no database nor user name specified",
 							progname)));
 	}
-puts("534");
+if (async_restart) goto async_db_change;
 	/* Acquire configuration parameters */
 	if (!SelectConfigFiles(userDoption, progname))
 		proc_exit(1);
@@ -135,7 +135,7 @@ puts("557");
 
 	/* Early initialization */
 	BaseInit();
-
+async_db_change:;
 	/*
 	 * General initialization.
 	 *
@@ -527,8 +527,21 @@ puts("# 100");
 /* ================================================================================ */
 
 EMSCRIPTEN_KEEPALIVE void
-pg_initdb_repl(const char* std_in, const char* std_out, const char* std_err, const char* js_handler) {
-    printf("# 358: in=%s out=%s err=%s js=%s\n", std_in, std_out, std_err, js_handler);
+pg_repl_raf(){ // const char* std_in, const char* std_out, const char* std_err, const char* js_handler) {
+    //printf("# 531: in=%s out=%s err=%s js=%s\n", std_in, std_out, std_err, js_handler);
+
+    is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
+
+    if (is_repl) {
+        puts("# 536: switching to REPL mode (raf)");
+        repl = true;
+        single_mode_feed = NULL;
+        force_echo = true;
+        whereToSendOutput = DestNone;
+        emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 1);
+    } else {
+        puts("# 543: wire mode");
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -964,22 +977,24 @@ void mkdirp(const char *p) {
 extern int pg_initdb_main();
 
 extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
-extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
+extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
 extern void main_post();
 extern void proc_exit(int code);
 
 
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-    puts("# 1145: pg_initdb()");
+//    puts("# 1145: pg_initdb()");
     optind = 1;
+    int async_restart = 1;
+
 
     if (!chdir(getenv("PGDATA"))){
         if (access("PG_VERSION", F_OK) == 0) {
         	chdir("/");
             printf("pg_initdb: db exists at : %s\n", getenv("PGDATA") );
             main_post();
-            puts("pg_initdb: main paused");
+            async_restart = 0;
             {
                 char *single_argv[] = {
                     WASM_PREFIX "/bin/postgres",
@@ -988,14 +1003,15 @@ pg_initdb() {
                     "-D", getenv("PGDATA"),
                     "-F", "-O", "-j",
                     WASM_PGOPTS,
-                    "postgres",
+                    "template1",
                     NULL
                 };
                 int single_argc = sizeof(single_argv) / sizeof(char*) - 1;
                 optind = 1;
-                AsyncPostgresSingleUserMain(single_argc, single_argv, strdup(getenv("PGUSER")));
+                AsyncPostgresSingleUserMain(single_argc, single_argv, strdup(getenv("PGUSER")), async_restart);
             }
-            return true;
+
+            goto initdb_done;
         }
     	chdir("/");
         printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
@@ -1057,14 +1073,21 @@ pg_initdb() {
         };
         int single_argc = sizeof(single_argv) / sizeof(char*) - 1;
         optind = 1;
-
         RePostgresSingleUserMain(single_argc, single_argv, strdup( getenv("PGUSER")));
     }
+
+initdb_done:;
+    {
+        if (async_restart)
+            puts("# FIXME: restart in server mode on 'postgres' db");
+        else
+            puts("# FIXME:  start server on 'postgres' db");
+    }
+
 
     if (optind>0) {
         /* RESET getopt */
         optind = 1;
-
         return false;
     }
     puts("# exiting on initdb-single error");
@@ -1128,15 +1151,15 @@ extra_env:;
 
 #if defined(__EMSCRIPTEN__)
     EM_ASM({
-        globalThis.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
-        globalThis.FD_BUFFER_MAX = $0;
+        Module.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
+        Module.FD_BUFFER_MAX = $0;
     }, FD_BUFFER_MAX);  /* ( global mem start / num fd max ) */
 
     if (is_node) {
     	setenv("ENVIRONMENT", "node" , 1);
         EM_ASM({
-            console.warn("prerun(C-node) worker=", is_worker);
-            globalThis.window = { };
+            console.warn("prerun(C-node) worker=", Module.is_worker);
+            //globalThis.window = { };
             Module['postMessage'] = function custom_postMessage(event) {
                 console.log("onCustomMessage:", event);
             };
@@ -1145,13 +1168,13 @@ extra_env:;
     } else {
     	setenv("ENVIRONMENT", "web" , 1);
         EM_ASM({
-            console.warn("prerun(C-web) worker=", is_worker);
+            console.warn("prerun(C-web) worker=", Module.is_worker);
         });
         is_repl = true;
     }
 
     EM_ASM({
-        if (is_worker) {
+        if (Module.is_worker) {
             console.log("Main: running in a worker, setting onCustomMessage");
             function onCustomMessage(event) {
                 console.log("onCustomMessage:", event);
@@ -1164,23 +1187,23 @@ extra_env:;
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
                     case "raw" :  {
-                        stringToUTF8( event.data, shm_rawinput, FD_BUFFER_MAX);
+                        stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
                         break;
                     }
 
                     case "stdin" :  {
-                        stringToUTF8( event.data, 1, FD_BUFFER_MAX);
+                        stringToUTF8( event.data, 1, Module.FD_BUFFER_MAX);
                         break;
                     }
                     case "rcon" :  {
-                        stringToUTF8( event.data, shm_rcon, FD_BUFFER_MAX);
+                        stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
                         break;
                     }
                     default : console.warn("custom_postMessage?", event);
                 }
             };
-            if (!window.vm)
-                window.vm = Module;
+            //if (!window.vm)
+              //  window.vm = Module;
         };
     });
 
@@ -1283,7 +1306,7 @@ void main_post() {
 EMSCRIPTEN_KEEPALIVE void
 __cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
 
-extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
+extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
 
 EMSCRIPTEN_KEEPALIVE int
 main_repl(int async) {
@@ -1363,7 +1386,7 @@ main_repl(int async) {
 
         puts("# 1362: single: " __FILE__ );
         if (async)
-            AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")));
+            AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
         else
             PostgresSingleUserMain(g_argc, g_argv, strdup( getenv("PGUSER")));
     }
