@@ -172,7 +172,13 @@ addToLibrary({
 
             callback = async function load_pg_extensions(arg) {
                 for (const ext in Module.pg_extensions) {
-                    const blob = await Module.pg_extensions[ext]
+                    var blob;
+                    try {
+                        blob = await Module.pg_extensions[ext]
+                    } catch (x) {
+                        console.error("failed to fetch extension :", ext)
+                        continue
+                    }
                     const bytes = new Uint8Array(await blob.arrayBuffer())
                     console.log("  +", ext,"tardata:", bytes.length )
                     if (ext=="quack")
