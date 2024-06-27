@@ -20,11 +20,15 @@
   import { PGlite } from "./dist/index.js";
   import { vector } from "./dist/vector/index.js";
 
-  // Create a PGlite instance
+  // Create a PGlite instance with a custom PG filesystem
   const pg = new PGlite({
-    dataDir:'idb://base',
-    extensions : { vector }
-  });
+    dataDir:'pg://base',
+    extensions : {
+      vector,
+      quack: new URL("./dist/quack.tar.gz", import.meta.url),
+    }
+
+});
 
   // Retrieve the Repl element
   const repl = document.getElementById('repl');
