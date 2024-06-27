@@ -1,5 +1,5 @@
 import { FilesystemBase } from "./types.js";
-import type { FS, EmPostgres } from "../../release/postgres.js";
+import type { FS, EmPostgres } from "../postgres.js";
 import { PGDATA } from "./index.js";
 
 export class IdbFs extends FilesystemBase {

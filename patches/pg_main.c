@@ -1228,7 +1228,7 @@ puts("# =========================================");
 	mkdirp(WASM_PREFIX);
 }
 
-
+int g_argc;
 char **g_argv;
 
 void main_post() {
@@ -1283,61 +1283,13 @@ void main_post() {
 EMSCRIPTEN_KEEPALIVE void
 __cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
 
-int
-main(int argc, char **argv) // [])
-{
-/*
-TODO:
-	postgres.js:6382 warning: unsupported syscall: __syscall_prlimit64
-*/
-    int ret=0;
+extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
+
+EMSCRIPTEN_KEEPALIVE int
+main_repl(int async) {
     bool hadloop_error = false;
-    is_node = !is_web_env();
 
-    main_pre(argc, argv);
-
-    printf("# argv0 (%s) PGUSER=%s PGDATA=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"));
-
-	progname = get_progname(argv[0]);
-
-    /*
-    PGDATESTYLE
-    TZ
-    PG_SHMEM_ADDR
-
-    PGCTLTIMEOUT
-    PG_TEST_USE_UNIX_SOCKETS
-    INITDB_TEMPLATE
-    PSQL_HISTORY
-    TMPDIR
-    PGOPTIONS
-    */
-
-    /*
-     * Platform-specific startup hacks
-     */
-    startup_hacks(progname);
-
-    /*
-     * Remember the physical location of the initially given argv[] array for
-     * possible use by ps display.  On some platforms, the argv[] storage must
-     * be overwritten in order to set the process title for ps. In such cases
-     * save_ps_display_args makes and returns a new copy of the argv[] array.
-     *
-     * save_ps_display_args may also move the environment strings to make
-     * extra room. Therefore this should be done as early as possible during
-     * startup, to avoid entanglements with code that might save a getenv()
-     * result pointer.
-     */
-    argv = save_ps_display_args(argc, argv);
-    g_argv = argv;
-
-
-    is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
-    if (!is_repl) {
-        puts("exit with live runtime (nodb)");
-        return 0;
-    }
+    whereToSendOutput = DestNone;
 
     if (!mkdir(PGDB, 0700)) {
         /* no db : run initdb now. */
@@ -1377,51 +1329,108 @@ TODO:
 
     }
 
+    if (!hadloop_error) {
+        main_post();
 
-    if (is_repl) {
-        if (!hadloop_error) {
-
-            main_post();
-
-	        /*
-	         * Catch standard options before doing much else, in particular before we
-	         * insist on not being root.
-	         */
-	        if (argc > 1)
+        /*
+         * Catch standard options before doing much else, in particular before we
+         * insist on not being root.
+         */
+        if (g_argc > 1) {
+	        if (strcmp(g_argv[1], "--help") == 0 || strcmp(g_argv[1], "-?") == 0)
 	        {
-		        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-		        {
-			        help(progname);
-			        exit(0);
-		        }
-		        if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-V") == 0)
-		        {
-			        fputs(PG_BACKEND_VERSIONSTR, stdout);
-			        exit(0);
-		        }
-
+		        help(progname);
+		        exit(0);
+	        }
+	        if (strcmp(g_argv[1], "--version") == 0 || strcmp(g_argv[1], "-V") == 0)
+	        {
+		        fputs(PG_BACKEND_VERSIONSTR, stdout);
+		        exit(0);
 	        }
 
-	        if (argc > 1 && strcmp(argv[1], "--check") == 0) {
-		        BootstrapModeMain(argc, argv, true);
-                return 0;
-            }
-
-            if (argc > 1 && strcmp(argv[1], "--boot") == 0) {
-                puts("1049: boot: " __FILE__ );
-                BootstrapModeMain(argc, argv, false);
-                return 0;
-            }
-
-            puts("# 1053: single: " __FILE__ );
-            PostgresSingleUserMain(argc, argv, strdup( getenv("PGUSER")));
         }
-        puts("# 1056: " __FILE__);
 
-        emscripten_force_exit(ret);
-    } else {
-        whereToSendOutput = DestNone;
+        if (g_argc > 1 && strcmp(g_argv[1], "--check") == 0) {
+	        BootstrapModeMain(g_argc, g_argv, true);
+            return 0;
+        }
+
+        if (g_argc > 1 && strcmp(g_argv[1], "--boot") == 0) {
+            puts("# 1356: boot: " __FILE__ );
+            BootstrapModeMain(g_argc, g_argv, false);
+            return 0;
+        }
+
+        puts("# 1362: single: " __FILE__ );
+        if (async)
+            AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")));
+        else
+            PostgresSingleUserMain(g_argc, g_argv, strdup( getenv("PGUSER")));
+    }
+
 }
+
+
+
+int
+main(int argc, char **argv) // [])
+{
+/*
+TODO:
+	postgres.js:6382 warning: unsupported syscall: __syscall_prlimit64
+*/
+    int ret=0;
+    is_node = !is_web_env();
+
+    main_pre(argc, argv);
+
+    printf("# argv0 (%s) PGUSER=%s PGDATA=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"));
+
+	progname = get_progname(argv[0]);
+
+    /*
+    PGDATESTYLE
+    TZ
+    PG_SHMEM_ADDR
+
+    PGCTLTIMEOUT
+    PG_TEST_USE_UNIX_SOCKETS
+    INITDB_TEMPLATE
+    PSQL_HISTORY
+    TMPDIR
+    PGOPTIONS
+    */
+
+    /*
+     * Platform-specific startup hacks
+     */
+    startup_hacks(progname);
+
+    /*
+     * Remember the physical location of the initially given argv[] array for
+     * possible use by ps display.  On some platforms, the argv[] storage must
+     * be overwritten in order to set the process title for ps. In such cases
+     * save_ps_display_args makes and returns a new copy of the argv[] array.
+     *
+     * save_ps_display_args may also move the environment strings to make
+     * extra room. Therefore this should be done as early as possible during
+     * startup, to avoid entanglements with code that might save a getenv()
+     * result pointer.
+     */
+    argv = save_ps_display_args(argc, argv);
+    g_argv = argv;
+    g_argc = argc;
+
+    is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
+    if (!is_repl) {
+        puts("exit with live runtime (nodb)");
+        return 0;
+    }
+
+    // so it is repl
+    main_repl(1);
+    puts("# 1428: " __FILE__);
+    emscripten_force_exit(ret);
 	return ret;
 }
 
