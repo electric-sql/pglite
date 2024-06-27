@@ -319,3 +319,55 @@ test("basic transaction", async (t) => {
     affectedRows: 0,
   });
 });
+
+test("basic copy to/from blob", async (t) => {
+  const db = new PGlite();
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      test TEXT
+    );
+    INSERT INTO test (test) VALUES ('test'), ('test2');
+  `);
+
+  // copy to
+  const ret = await db.query("COPY test TO '/dev/blob' WITH (FORMAT csv);");
+  const csv = await ret.blob.text();
+  t.is(csv, "1,test\n2,test2\n");
+  
+  // copy from
+  const blob2 = new Blob([csv]);
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS test2 (
+      id SERIAL PRIMARY KEY,
+      test TEXT
+    );
+  `);
+  await db.query("COPY test2 FROM '/dev/blob' WITH (FORMAT csv);", [], { blob: blob2 });
+  const res = await db.query(`
+    SELECT * FROM test2;
+  `);
+  t.deepEqual(res, {
+    rows: [
+      {
+        id: 1,
+        test: "test",
+      },
+      {
+        id: 2,
+        test: "test2",
+      },
+    ],
+    fields: [
+      {
+        name: "id",
+        dataTypeID: 23,
+      },
+      {
+        name: "test",
+        dataTypeID: 25,
+      },
+    ],
+    affectedRows: 0,
+  });
+});

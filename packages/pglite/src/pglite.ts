@@ -5,7 +5,6 @@ import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 import type {
-  Extensions,
   DebugLevel,
   PGliteOptions,
   PGliteInterface,
@@ -13,6 +12,9 @@ import type {
   Transaction,
   QueryOptions,
   ExecProtocolOptions,
+  PGliteInterfaceExtensions,
+  Extensions,
+  Extension,
 } from "./interface.js";
 import { loadExtensionBundle } from "./extensionUtils.js";
 
@@ -26,6 +28,7 @@ import {
   DatabaseError,
   NoticeMessage,
   CommandCompleteMessage,
+  NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
 export class PGlite implements PGliteInterface {
@@ -52,6 +55,16 @@ export class PGlite implements PGliteInterface {
   #extensionsClose: Array<() => Promise<void>> = [];
 
   #parser = new Parser();
+
+  // These are the current ArrayBuffer that is being read or written to
+  // during a query, such as COPY FROM or COPY TO.
+  #queryReadBuffer?: ArrayBuffer;
+  #queryWriteChunks?: Uint8Array[];
+  
+  #notifyListeners = new Map<string, Set<(payload: string) => void>>();
+  #globalNotifyListeners = new Set<
+    (channel: string, payload: string) => void
+  >();
 
   /**
    * Create a new PGlite instance
@@ -90,6 +103,9 @@ export class PGlite implements PGliteInterface {
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability;
     }
+
+    // Save the extensions for later use
+    this.#extensions = options.extensions ?? {};
 
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {};
@@ -273,6 +289,13 @@ export class PGlite implements PGliteInterface {
   async close() {
     await this.#checkReady();
     this.#closing = true;
+
+    // Close all extensions
+    for (const closeFn of this.#extensionsClose) {
+      await closeFn();
+    }
+
+    // Close the database
     await new Promise<void>(async (resolve, reject) => {
       try {
         await this.execProtocol(serialize.end());
@@ -340,9 +363,8 @@ export class PGlite implements PGliteInterface {
   ): Promise<Results<T>> {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
-      if (this.debug > 1) {
-        console.log("runQuery", query, params, options);
-      }
+      this.#log("runQuery", query, params, options);
+      await this.#handleBlob(options?.blob);
       const parsedParams = params?.map((p) => serializeType(p)) || [];
       let results;
       try {
@@ -366,12 +388,19 @@ export class PGlite implements PGliteInterface {
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
+      this.#cleanupBlob();
       if (!this.#inTransaction) {
         await this.#syncToFs();
+      }
+      let blob: Blob | undefined;
+      if (this.#queryWriteChunks) {
+        blob = new Blob(this.#queryWriteChunks);
+        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
+        blob,
       )[0] as Results<T>;
     });
   }
@@ -389,21 +418,27 @@ export class PGlite implements PGliteInterface {
   ): Promise<Array<Results>> {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
-      if (this.debug > 1) {
-        console.log("runExec", query, options);
-      }
+      this.#log("runExec", query, options);
+      await this.#handleBlob(options?.blob);
       let results;
       try {
         results = await this.#execProtocolNoSync(serialize.query(query));
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
+      this.#cleanupBlob();
       if (!this.#inTransaction) {
         await this.#syncToFs();
+      }
+      let blob: Blob | undefined;
+      if (this.#queryWriteChunks) {
+        blob = new Blob(this.#queryWriteChunks);
+        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
+        blob,
       ) as Array<Results>;
     });
   }
@@ -466,6 +501,21 @@ export class PGlite implements PGliteInterface {
         throw e;
       }
     });
+  }
+
+  /**
+   * Handle a file attached to the current query
+   * @param file The file to handle
+   */
+  async #handleBlob(blob?: File | Blob) {
+    this.#queryReadBuffer = blob ? await blob.arrayBuffer() : undefined;
+  }
+
+  /**
+   * Cleanup the current file
+   */
+  #cleanupBlob() {
+    this.#queryReadBuffer = undefined;
   }
 
   /**
@@ -537,6 +587,19 @@ export class PGlite implements PGliteInterface {
               this.#inTransaction = false;
               break;
           }
+        } else if (msg instanceof NotificationResponseMessage) {
+          // We've received a notification, call the listeners
+          const listeners = this.#notifyListeners.get(msg.channel);
+          if (listeners) {
+            listeners.forEach((cb) => {
+              // We use queueMicrotask so that the callback is called after any
+              // synchronous code has finished running.
+              queueMicrotask(() => cb(msg.payload));
+            });
+          }
+          this.#globalNotifyListeners.forEach((cb) => {
+            queueMicrotask(() => cb(msg.channel, msg.payload));
+          });
         }
         results.push([msg, data]);
       });
@@ -573,5 +636,85 @@ export class PGlite implements PGliteInterface {
     } else {
       await doSync();
     }
+  }
+
+  /**
+   * Internal log function
+   */
+  #log(...args: any[]) {
+    if (this.debug > 0) {
+      console.log(...args);
+    }
+  }
+
+  /**
+   * Listen for a notification
+   * @param channel The channel to listen on
+   * @param callback The callback to call when a notification is received
+   */
+  async listen(channel: string, callback: (payload: string) => void) {
+    if (!this.#notifyListeners.has(channel)) {
+      this.#notifyListeners.set(channel, new Set());
+    }
+    this.#notifyListeners.get(channel)!.add(callback);
+    await this.exec(`LISTEN ${channel}`);
+    return async () => {
+      await this.unlisten(channel, callback);
+    };
+  }
+
+  /**
+   * Stop listening for a notification
+   * @param channel The channel to stop listening on
+   * @param callback The callback to remove
+   */
+  async unlisten(channel: string, callback?: (payload: string) => void) {
+    if (callback) {
+      this.#notifyListeners.get(channel)?.delete(callback);
+      if (this.#notifyListeners.get(channel)!.size === 0) {
+        await this.exec(`UNLISTEN ${channel}`);
+        this.#notifyListeners.delete(channel);
+      }
+    } else {
+      await this.exec(`UNLISTEN ${channel}`);
+      this.#notifyListeners.delete(channel);
+    }
+  }
+
+  /**
+   * Listen to notifications
+   * @param callback The callback to call when a notification is received
+   */
+  onNotification(
+    callback: (channel: string, payload: string) => void,
+  ): () => void {
+    this.#globalNotifyListeners.add(callback);
+    return () => {
+      this.#globalNotifyListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Stop listening to notifications
+   * @param callback The callback to remove
+   */
+  offNotification(callback: (channel: string, payload: string) => void) {
+    this.#globalNotifyListeners.delete(callback);
+  }
+
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
+   * @param dataDir The directory to store the database files
+   *                Prefix with idb:// to use indexeddb filesystem in the browser
+   *                Use memory:// to use in-memory filesystem
+   * @param options Optional options
+   * @returns A new PGlite instance with extensions
+   */
+  static withExtensions<O extends PGliteOptions>(
+    options?: O,
+  ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
+    return new PGlite(options) as any;
   }
 }

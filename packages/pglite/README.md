@@ -196,6 +196,9 @@ The `query` and `exec` methods take an optional `options` objects with the follo
   });
   ```
 
+- `blob: Blob | File`
+  Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#importing-and-exporting-with-copy-tofrom).
+
 #### `.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`
 
 Execute one or more statements. *(note that parameters are not supported)*
@@ -262,6 +265,35 @@ await pg.transaction(async (tx) => {
 
 Close the database, ensuring it is shut down cleanly.
 
+#### `.listen(channel: string, callback: (payload: string) => void): Promise<void>`
+
+Subscribe to a [pg_notify](https://www.postgresql.org/docs/current/sql-notify.html) channel. The callback will receive the payload from the notification.
+
+Returns an unsubscribe function to unsubscribe from the channel.
+
+##### Example:
+
+```ts
+const unsub = await pg.listen('test', (payload) => {
+  console.log('Received:', payload);
+});
+await pg.query("NOTIFY test, 'Hello, world!'");
+```
+
+#### `.unlisten(channel: string, callback?: (payload: string) => void): Promise<void>`
+
+Unsubscribe from the channel. If a callback is provided it removes only that callback from the subscription, when no callback is provided is unsubscribes all callbacks for the channel.
+
+#### `onNotification(callback: (channel: string, payload: string) => void): () => void`
+
+Add an event handler for all notifications received from Postgres.
+
+**Note:** This does not subscribe to the notification, you will have to manually subscribe with `LISTEN channel_name`.
+
+#### `offNotification(callback: (channel: string, payload: string) => void): void`
+
+Remove an event handler for all notifications received from Postgres.
+
 ### Properties:
 
 - `.ready` *boolean (read only)*: Whether the database is ready to accept queries.
@@ -274,7 +306,8 @@ Result objects have the following properties:
 
 - `rows: Row<T>[]` - The rows retuned by the query
 - `affectedRows?: number` - Count of the rows affected by the query. Note this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
--  `fields: { name: string; dataTypeID: number }[]` - Field name and Postgres data type ID for each field returned.
+- `fields: { name: string; dataTypeID: number }[]` - Field name and Postgres data type ID for each field returned.
+- `blob: Blob` - A `Blob` containing the data written to the virtual `/dev/blob/` device by a `COPY TO` command. See [importing and exporting](#importing-and-exporting-with-copy-tofrom).
 
 
 ### Row<T> Objects:
@@ -300,6 +333,25 @@ await pg.exec(`
 ```
 
 *Work in progress: We plan to expand this API to allow sharing of the worker PGlite across browser tabs.*
+
+### Importing and exporting with `COPY TO/FROM`
+
+PGlite has support importing and exporting via `COPY TO/FROM` by using a virtual `/dev/blob` device.
+
+To import a file pass the `File` or `Blob` in the query options as `blob`, and copy from the `/dev/blob` device.
+
+```ts
+await pg.query("COPY my_table FROM '/dev/blob';", [], {
+  blob: MyBlob
+})
+```
+
+To export a table or query to a file you just have to write to the `/dev/blob` device, the file will be retied as `blob` on the query results:
+
+```ts
+const ret = await pg.query("COPY my_table TO '/dev/blob';")
+// ret.blob is a `Blob` object with the data from the copy.
+```
 
 ## Extensions
 
