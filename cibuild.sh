@@ -13,6 +13,7 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=postgres
 
+
 # exit on error
 EOE=false
 
@@ -86,6 +87,9 @@ export CC_PGLITE
 if [ -f ${WEBROOT}/postgres.js ]
 then
     echo using current from ${WEBROOT}
+
+    . ${PGROOT}/pgopts.sh
+
 else
 
     # store all pg options that have impact on cmd line initdb/boot
@@ -123,6 +127,7 @@ POSIX
 UTF-8
 END
 
+
     # to get same path for wasm-shared link tool in the path
     # for extensions building.
     # we always symlink in-tree build to "postgresql" folder
@@ -133,11 +138,18 @@ END
         . cibuild/pg-git.sh
     fi
 
+    export PGLITE=$(pwd)/packages/pglite
+
+    echo "export PGSRC=${PGSRC}" >> ${PGROOT}/pgopts.sh
+    echo "export PGLITE=${PGLITE}" >> ${PGROOT}/pgopts.sh
+
     if [ -f /opt/sdk/wasisdk/wabt/bin/wasm-objdump ]
     then
         ./cibuild/symtab.sh ${PGROOT}/lib/postgresql/plpgsql.so > ${PGROOT}/symbols
     fi
 fi
+
+
 
 # put wasm-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
@@ -165,11 +177,11 @@ then
         fi
 
         pushd pgvector
-        # path for wasm-shared already set to (pwd:pg build dir)/bin
-        # OPTFLAGS="" turns off arch optim (sse/neon).
-        PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
-        cp sql/vector.sql sql/vector--0.7.2.sql ${PGROOT}/share/postgresql/extension
-        rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
+            # path for wasm-shared already set to (pwd:pg build dir)/bin
+            # OPTFLAGS="" turns off arch optim (sse/neon).
+            PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
+            cp sql/vector.sql sql/vector--0.7.2.sql ${PGROOT}/share/postgresql/extension
+            rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
         popd
 
     popd
@@ -239,108 +251,90 @@ fi
 
 if echo "$*"|grep "linkweb"
 then
-    echo "================================================="
-    if [ -d pglite ]
-    then
-        # work tree
-        pushd pglite/packages/pglite
-        PGLITE=$(pwd)
-    else
-        # release tree
-        pushd packages/pglite
-        PGLITE=$(pwd)
-    fi
-    popd
-
-    export PGLITE
 
     # build web version
     pushd build/postgres
+    echo "=================== $(pwd) ========================="
+
     . $GITHUB_WORKSPACE/cibuild/linkweb.sh
 
     # upload all to gh pages,
     # TODO: include node archive and samples ?
     if $CI
     then
-        mkdir -p /tmp/web/xterm-demo
-        cp -r $WEBROOT/* /tmp/web/xterm-demo
+        mkdir -p /tmp/web/
+        cp -r $WEBROOT/* /tmp/web/
     fi
     popd
-
 fi
 
 
 # pglite also use web build files, so make it last.
 
-# TODO: SAMs NOTE - Not using this in GitHub action as it doesnt resolve pnpm correctly
-# replaced with pglite-prep and pglite-bundle-sdk
-if echo "$*"|grep "pglite$"
-then
-    echo "================================================="
-    . cibuild/pglite-ts.sh
 
-    # copy needed files for a minimal js/ts/extension build
-    # these don't use NODE FS !!!
+while test $# -gt 0
+do
+    case "$1" in
+        pglite) echo "=================== pglite ======================="
+            # TODO: SAMs NOTE - Not using this in GitHub action as it doesnt resolve pnpm correctly
+            # replaced with pglite-prep and pglite-bundle-sdk
 
-    mkdir -p ${PGROOT}/sdk/packages/
-    cp -r $PGLITE ${PGROOT}/sdk/packages/
+            . cibuild/pglite-ts.sh
 
-    if $CI
-    then
-        tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PGVERSION}.tar.gz
-    fi
+            # copy needed files for a minimal js/ts/extension build
+            # these don't use NODE FS !!!
 
-    du -hs ${WEBROOT}/*
-fi
+            mkdir -p ${PGROOT}/sdk/packages/
+            cp -r $PGLITE ${PGROOT}/sdk/packages/
 
-if echo "$*"|grep "pglite-prep$"
-then
-    echo "================================================="
+            if $CI
+            then
+                tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PGVERSION}.tar.gz
+            fi
 
-    PGLITE=$(pwd)/packages/pglite
+            du -hs ${WEBROOT}/*
+        ;;
 
-    mkdir $PGLITE/release || rm $PGLITE/release/*
+        pglite-prep) echo "==================== pglite-prep =========================="
+            mkdir $PGLITE/release || rm $PGLITE/release/*
+            # copy packed extensions
+            cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
-    # copy packed extensions
-    cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
-    cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
-    cp -vf ${WEBROOT}/libecpg.so $PGLITE/release/postgres.so
+            cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
+            cp -vf ${WEBROOT}/libecpg.so $PGLITE/release/postgres.so
 
-fi
+            ;;
 
-if echo "$*"|grep "pglite-bundle-interim$"
-then
-    echo "================================================="
-    
-    PGLITE=$(pwd)/packages/pglite
+        pglite-bundle-interim) echo "================== pglite-bundle-interim ======================"
+            tar -cpRz ${PGLITE}/release > /tmp/sdk/pglite-interim-${PGVERSION}.tar.gz
+            ;;
 
-    tar -cpRz ${PGLITE}/release > /tmp/sdk/pglite-interim-${PGVERSION}.tar.gz
+        demo-site) echo "==================== demo-site =========================="
 
-fi
+            echo "<html>
+            <body>
+                <ul>
+                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+                    <li><a href=./xterm-demo/postgres.html>Postgres xterm REPL</a></li>
+                    <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
+                </ul>
+            </body>
+            </html>" > /tmp/web/index.html
 
-if echo "$*"|grep "demo-site$"
-then
-    echo "================================================="
-    
-    echo "<html>
-    <body>
-        <ul>
-            <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-            <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-            <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-            <li><a href=./xterm-demo/postgres.html>Postgres xterm REPL</a></li>
-            <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
-        </ul>
-    </body>
-    </html>" > /tmp/web/index.html
+            mkdir -p /tmp/web/pglite
+            mkdir -p /tmp/web/repl
 
-    mkdir -p /tmp/web/pglite
-    mkdir -p /tmp/web/repl
+            PGLITE=$(pwd)/packages/pglite
+            cp -r ${PGLITE}/dist /tmp/web/pglite/
+            cp -r ${PGLITE}/examples /tmp/web/pglite/
+            cp -r ${GITHUB_WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
+            cp -r ${GITHUB_WORKSPACE}/packages/benchmark /tmp/web/
+        ;;
+    esac
+    shift
+done
 
-    PGLITE=$(pwd)/packages/pglite
-    cp -r ${PGLITE}/dist /tmp/web/pglite/
-    cp -r ${PGLITE}/examples /tmp/web/pglite/
-    cp -r $(pwd)/packages/repl/dist-webcomponent /tmp/web/repl/
-    cp -r $(pwd)/packages/benchmark /tmp/web/
-fi
+

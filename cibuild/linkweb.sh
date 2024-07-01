@@ -1,17 +1,22 @@
 #!/bin/bash
 
+WEBROOT=${WEBROOT:-/tmp/sdk}
 echo "
 
 
 
 linkweb:begin
 
-CC_PGLITE=$CC_PGLITE
+    $(pwd)
+
+    WEBROOT=${WEBROOT}
+
+    CC_PGLITE=$CC_PGLITE
 
 "
 
-WEBROOT=${WEBROOT:-/tmp/sdk}
 mkdir -p $WEBROOT
+
 
 # client lib ( eg psycopg ) for websocketed pg server
 emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
@@ -49,22 +54,21 @@ pushd src/backend
 # https://github.com/llvm/llvm-project/issues/50623
 
 
+    echo " ---------- building web test PREFIX=$PGROOT ------------"
+    du -hs ${WEBROOT}/libpg?.*
 
-echo " ---------- building web test PREFIX=$PGROOT ------------"
-du -hs ${WEBROOT}/libpg?.*
-
-PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
+    PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
  $(find . -type f -name "*.o" \
-    | grep -v ./utils/mb/conversion_procs \
-    | grep -v ./replication/pgoutput \
-    | grep -v  src/bin/ \
-    | grep -v ./snowball/dict_snowball.o ) \
+ | grep -v ./utils/mb/conversion_procs \
+ | grep -v ./replication/pgoutput \
+ | grep -v  src/bin/ \
+ | grep -v ./snowball/dict_snowball.o ) \
  ../../src/timezone/localtime.o \
  ../../src/timezone/pgtz.o \
  ../../src/timezone/strftime.o \
  ../../pg_initdb.o"
 
-PG_L="-L../../src/port -L../../src/common \
+    PG_L="-L../../src/port -L../../src/common \
  ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
 
 
@@ -192,13 +196,13 @@ cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
 cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
 for tarf in ${WEBROOT}/*.tar
 do
-    gzip -9 $tarf
+    gzip -f -9 $tarf
 done
 
 
-cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
+    cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
 
-popd
+    popd
 
 echo "
 linkweb:end
