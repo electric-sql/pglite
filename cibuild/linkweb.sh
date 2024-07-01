@@ -193,17 +193,6 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
 
 mkdir -p ${WEBROOT}
 
-echo "<html>
-<body>
-    <a href=postgres.html>TEST REPL (xterm)</a>
-    <hr/>
-    <a href=idbfs.html>TEST REPL (react+idbfs)</a>
-    <hr/>
-    <a href=pgfs.html>TEST REPL (react+pgfs)</a>
-
-</body>
-</html>" > ${WEBROOT}/index.html
-
 cp -v postgres.* ${WEBROOT}/
 cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
 cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
@@ -213,7 +202,7 @@ do
 done
 
 
-cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/idbfs.html,patches/pgfs.html,patches/tinytar.min.js} ${WEBROOT}/
+cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
 
 popd
 

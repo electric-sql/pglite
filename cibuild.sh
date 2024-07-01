@@ -226,7 +226,7 @@ then
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
     if $CI
     then
-        tar -cpRz ${PGROOT} > /tmp/sdk/pg.tar.gz
+        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PGVERSION}.tar.gz
     fi
 fi
 
@@ -262,8 +262,8 @@ then
     # TODO: include node archive and samples ?
     if $CI
     then
-        mkdir -p /tmp/web/
-        cp -r $WEBROOT/* /tmp/web/
+        mkdir -p /tmp/web/xterm-demo
+        cp -r $WEBROOT/* /tmp/web/xterm-demo
     fi
     popd
 
@@ -272,6 +272,8 @@ fi
 
 # pglite also use web build files, so make it last.
 
+# TODO: SAMs NOTE - Not using this in GitHub action as it doesnt resolve pnpm correctly
+# replaced with pglite-prep and pglite-bundle-sdk
 if echo "$*"|grep "pglite$"
 then
     echo "================================================="
@@ -291,8 +293,54 @@ then
     du -hs ${WEBROOT}/*
 fi
 
+if echo "$*"|grep "pglite-prep$"
+then
+    echo "================================================="
 
+    PGLITE=$(pwd)/packages/pglite
 
+    mkdir $PGLITE/release || rm $PGLITE/release/*
 
+    # copy packed extensions
+    cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
+    cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
+    cp -vf ${WEBROOT}/libecpg.so $PGLITE/release/postgres.so
 
+fi
+
+if echo "$*"|grep "pglite-bundle-interim$"
+then
+    echo "================================================="
+    
+    PGLITE=$(pwd)/packages/pglite
+
+    tar -cpRz ${PGLITE}/release > /tmp/sdk/pglite-interim-${PGVERSION}.tar.gz
+
+fi
+
+if echo "$*"|grep "demo-site$"
+then
+    echo "================================================="
+    
+    echo "<html>
+    <body>
+        <ul>
+            <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+            <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+            <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+            <li><a href=./xterm-demo/postgres.html>Postgres xterm REPL</a></li>
+            <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
+        </ul>
+    </body>
+    </html>" > /tmp/web/index.html
+
+    mkdir -p /tmp/web/pglite
+    mkdir -p /tmp/web/repl
+
+    PGLITE=$(pwd)/packages/pglite
+    cp -r ${PGLITE}/dist /tmp/web/pglite/
+    cp -r ${PGLITE}/examples /tmp/web/pglite/
+    cp -r $(pwd)/packages/repl/dist-webcomponent /tmp/web/repl/
+    cp -r $(pwd)/packages/benchmark /tmp/web/
+fi
