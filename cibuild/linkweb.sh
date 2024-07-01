@@ -132,13 +132,7 @@ rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 # --js-library
 
-
-#if [ -f ${EMSDK}/upstream/emscripten/src/library_pgfs.js ]
-#then
-#    echo custom FS support already added
-#else
-    cp ${GITHUB_WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
-#fi
+cp ${GITHUB_WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
 
 
 echo 'localhost:5432:postgres:postgres:password' > pgpass
@@ -189,7 +183,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  --preload-file pgpass@${PGROOT}/pgpass \
  --preload-file placeholder@${PGROOT}/bin/postgres \
  --preload-file placeholder@${PGROOT}/bin/initdb \
- -o postgres.html $PG_O $PG_L || exit 191
+ -o postgres.html $PG_O $PG_L || exit 186
 
 mkdir -p ${WEBROOT}
 

@@ -22,7 +22,8 @@ END
 
     npm install
 
-    mkdir $PGLITE/release || rm $PGLITE/release/*
+    mkdir -p $PGLITE/release
+    rm $PGLITE/release/* 2>/dev/null
 
     # copy packed extensions
     cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
@@ -49,10 +50,7 @@ END
 
 
 
-
         ===============================  dev test mode ===========================
-
-
 
 
 
