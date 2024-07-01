@@ -179,12 +179,16 @@ addToLibrary({
                         console.error("failed to fetch extension :", ext)
                         continue
                     }
-                    const bytes = new Uint8Array(await blob.arrayBuffer())
-                    console.log("  +", ext,"tardata:", bytes.length )
-                    if (ext=="quack")
-                        console.warn(ext,"skipped !")
-                    else
-                        PGFS.load_pg_extension(ext, bytes)
+                    if (blob) {
+                        const bytes = new Uint8Array(await blob.arrayBuffer())
+                        console.log("  +", ext,"tardata:", bytes.length )
+                        if (ext=="quack")
+                           console.warn(ext,"skipped !")
+                        else
+                           PGFS.load_pg_extension(ext, bytes)
+                    } else {
+                       console.error("could not get binary data for extension :", ext);
+                    }
                 }
                 return save_cb(arg);
             }
@@ -478,6 +482,6 @@ addToLibrary({
 });
 
 if (WASMFS) {
-  error("using -lpglitefs is not currently supported in WasmFS.");
+  error("using -lpgfs is not currently supported in WasmFS.");
 }
 

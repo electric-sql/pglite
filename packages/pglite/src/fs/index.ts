@@ -1,4 +1,5 @@
 import type { FsType } from "./types.js";
+import type { FS } from "../postgres.js";
 import { IdbFs } from "./idbfs.js";
 import { PgFs } from "./pgfs.js";
 import { MemoryFS } from "./memoryfs.js";
@@ -30,6 +31,7 @@ export function parseDataDir(dataDir?: string) {
     fsType = "nodefs";
   } else if (dataDir?.startsWith("pg://")) {
     // Remove the pg:// prefix, no / allowed in dbname, and use custom filesystem
+    console.log("using pgfs FS");
     dataDir = getBase( dataDir.slice(5) )
     fsType = "pgfs";
   } else if (dataDir?.startsWith("idb://")) {
@@ -58,4 +60,10 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
   } else {
     return new MemoryFS();
   }
+}
+
+
+export async function loadExtensions(fsType: FsType, fs: FS) {
+    console.warn("index.ts: loadExtensions", fsType, fs);
+
 }

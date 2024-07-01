@@ -30,9 +30,7 @@ export async function loadExtensionBundle(bundlePath: URL): Promise<Blob> {
   } else {
     const response = await fetch(bundlePath.toString());
     if (!response.ok || !response.body) {
-      throw new Error(
-        `Failed to fetch extension bundle: ${response.statusText}`
-      );
+      return null;
     }
     const decompressionStream = new DecompressionStream("gzip");
     const decompressedStream = new Response(
