@@ -14,7 +14,11 @@ export interface ParserOptions {
 export interface QueryOptions {
   rowMode?: RowMode;
   parsers?: ParserOptions;
-  blob?: Blob | File;
+  blobs?: QueryBlobs;
+}
+
+export interface QueryBlobs {
+  [name: string]: Blob | File;
 }
 
 export interface ExecProtocolOptions {
@@ -98,11 +102,15 @@ export type PGliteInterfaceExtensions<E> = E extends Extensions
 
 export type Row<T = { [key: string]: any }> = T;
 
+export type ResultBlobs = {
+  [name: string]: Blob | File;
+};
+
 export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[];
   affectedRows?: number;
   fields: { name: string; dataTypeID: number }[];
-  blob?: Blob; // Only set when a file is returned, such as from a COPY command
+  blobs?: ResultBlobs;
 };
 
 export interface Transaction {

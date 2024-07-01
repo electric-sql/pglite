@@ -331,9 +331,14 @@ test("basic copy to/from blob", async (t) => {
   `);
 
   // copy to
-  const ret = await db.query("COPY test TO '/dev/blob' WITH (FORMAT csv);");
-  const csv = await ret.blob.text();
+  const ret = await db.exec(`
+    COPY test TO 'blob:test.csv' WITH (FORMAT csv);
+    COPY (SELECT 1) TO 'blob:test2.csv' WITH (FORMAT csv);
+  `);
+  const csv = await ret[1].blobs['test.csv'].text();
+  const csv2 = await ret[1].blobs['test2.csv'].text();
   t.is(csv, "1,test\n2,test2\n");
+  t.is(csv2, "1\n");
   
   // copy from
   const blob2 = new Blob([csv]);
@@ -343,7 +348,9 @@ test("basic copy to/from blob", async (t) => {
       test TEXT
     );
   `);
-  await db.query("COPY test2 FROM '/dev/blob' WITH (FORMAT csv);", [], { blob: blob2 });
+  await db.query("COPY test2 FROM 'blob:test.csv' WITH (FORMAT csv);", [], {
+    blobs: { "test.csv": blob2 },
+  });
   const res = await db.query(`
     SELECT * FROM test2;
   `);

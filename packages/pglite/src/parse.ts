@@ -4,7 +4,7 @@ import {
   DataRowMessage,
   CommandCompleteMessage,
 } from "pg-protocol/dist/messages.js";
-import type { Results, QueryOptions } from "./interface.js";
+import type { Results, QueryOptions, ResultBlobs } from "./interface.js";
 import { parseType } from "./types.js";
 
 /**
@@ -14,7 +14,7 @@ import { parseType } from "./types.js";
 export function parseResults(
   messages: Array<BackendMessage>,
   options?: QueryOptions,
-  blob?: Blob
+  blobs?: ResultBlobs,
 ): Array<Results> {
   const resultSets: Results[] = [];
   let currentResultSet: Results = { rows: [], fields: [] };
@@ -24,7 +24,7 @@ export function parseResults(
     (msg) =>
       msg instanceof RowDescriptionMessage ||
       msg instanceof DataRowMessage ||
-      msg instanceof CommandCompleteMessage
+      msg instanceof CommandCompleteMessage,
   );
 
   filteredMessages.forEach((msg, index) => {
@@ -40,9 +40,9 @@ export function parseResults(
             parseType(
               field,
               currentResultSet!.fields[i].dataTypeID,
-              options?.parsers
-            )
-          )
+              options?.parsers,
+            ),
+          ),
         );
       } else {
         // rowMode === "object"
@@ -53,10 +53,10 @@ export function parseResults(
               parseType(
                 field,
                 currentResultSet!.fields[i].dataTypeID,
-                options?.parsers
+                options?.parsers,
               ),
-            ])
-          )
+            ]),
+          ),
         );
       }
     } else if (msg instanceof CommandCompleteMessage) {
@@ -66,7 +66,7 @@ export function parseResults(
         resultSets.push({
           ...currentResultSet,
           affectedRows,
-          ...(blob ? { blob } : {}),
+          ...(blobs ? { blobs } : {}),
         });
       else resultSets.push(currentResultSet);
 

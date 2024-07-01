@@ -15,10 +15,10 @@
 
   // Copy the date to a file:
   console.log('Copying data to file...') // 'test.csv
-  const ret = await pg.query("COPY test TO '/dev/blob' WITH (FORMAT binary);");
+  const ret = await pg.query("COPY test TO 'blob:test.csv' WITH (FORMAT binary);");
 
   console.log('Data copied to blob:')
-  const blob = ret.blob;
+  const blob = ret.blobs['test.csv'];
   console.log(blob);
 
   // Download the file:
@@ -37,8 +37,8 @@
 
   // import the data from the file:
   console.log('Importing data from file...')
-  const ret2 = await pg.query("COPY test2 FROM '/dev/blob' WITH (FORMAT binary);", [], {
-    blob: blob
+  const ret2 = await pg.query("COPY test2 FROM 'blob:test.csv' WITH (FORMAT binary);", [], {
+    blobs: {'test.csv': blob}
   });
 
   console.log('Data imported from file:')
