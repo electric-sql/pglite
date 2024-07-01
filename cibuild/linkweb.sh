@@ -180,7 +180,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
- -lnodefs.js -lpgfs.js \
+ -lnodefs.js -lidbfs.js -lpgfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
  -sEXPORTED_FUNCTIONS=@exports \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
@@ -197,7 +197,7 @@ echo "<html>
 <body>
     <a href=postgres.html>TEST REPL (xterm)</a>
     <hr/>
-    <a href=repl.html>TEST REPL (react+idbfs)</a>
+    <a href=idbfs.html>TEST REPL (react+idbfs)</a>
     <hr/>
     <a href=pgfs.html>TEST REPL (react+pgfs)</a>
 
@@ -213,7 +213,7 @@ do
 done
 
 
-cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/repl.html,patches/pgfs.html,patches/tinytar.min.js} ${WEBROOT}/
+cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/Repl.js,patches/idbfs.html,patches/pgfs.html,patches/tinytar.min.js} ${WEBROOT}/
 
 popd
 

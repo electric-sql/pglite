@@ -9,8 +9,7 @@ export class IdbFs extends FilesystemBase {
       preRun: [
         ...(opts.preRun || []),
         (mod: any) => {
-          //const idbfs = mod.FS.filesystems.IDBFS;
-          const idbfs = mod.FS.filesystems.PGFS;
+          const idbfs = mod.FS.filesystems.IDBFS;
           // Mount the idbfs to the users dataDir then symlink the PGDATA to the
           // idbfs mount point.
           // We specifically use /pglite as the root directory for the idbfs
@@ -38,14 +37,6 @@ export class IdbFs extends FilesystemBase {
     });
   }
 
-/*
-    on_mount() {
-    }
-
-    load_extension(ext) {
-    }
-
-*/
   syncToFs(fs: FS) {
     return new Promise<void>((resolve, reject) => {
       fs.syncfs(false, (err: any) => {

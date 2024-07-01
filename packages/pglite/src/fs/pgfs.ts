@@ -13,7 +13,7 @@ export class PgFs extends FilesystemBase {
           const pgfs = mod.FS.filesystems.PGFS;
           // Mount the pgfs to PGDATA in auto commit mode
           mod.FS.mkdir(PGDATA);
-          mod.FS.mount(pgfs, {autoPersist: true}, `/tmp/pglite/${this.dataDir}`);
+          mod.FS.mount(pgfs, {autoPersist: false}, `/tmp/pglite/${this.dataDir}`);
         },
       ],
     };

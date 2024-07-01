@@ -31,6 +31,10 @@ import {
   NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
+
+const sleep = (s: number) => new Promise((r) => setTimeout(r, s/1000));
+
+
 export class PGlite implements PGliteInterface {
   fs?: Filesystem;
   protected emp?: any;
@@ -213,7 +217,7 @@ export class PGlite implements PGliteInterface {
         console.log( this.emp.FS.readdir(PGDATA));
         console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     } else {
-        console.warn("@@@@ no db @@@@");
+        console.warn("@@@@@@@@@@@@@@ no db @@@@@@@@@@@@@@@@@@@@@à");
     }
     // start compiling dynamic extensions present in FS.
 
@@ -222,6 +226,9 @@ export class PGlite implements PGliteInterface {
     );
 
     // await async compilation dynamic extensions finished.
+    await sleep(5);
+
+    console.log("ext loaded");
 
     // await extra FS/fetches.
 

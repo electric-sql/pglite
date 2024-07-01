@@ -984,7 +984,7 @@ extern void proc_exit(int code);
 
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-//    puts("# 1145: pg_initdb()");
+    puts("# 987: pg_initdb()");
     optind = 1;
     int async_restart = 1;
 
@@ -1018,9 +1018,6 @@ pg_initdb() {
     }
 
     printf("pg_initdb_main result = %d\n", pg_initdb_main() );
-
-
-    fopen(WASM_PREFIX "/locale","r");
 
 
     /* save stdin and use previous initdb output to feed boot mode */

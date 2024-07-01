@@ -10,6 +10,15 @@ export const WASM_PREFIX = "/tmp/pglite";
 // default for non web runtimes is /tmp/pglite/base
 export var PGDATA = "WASM_PREFIX" + "/" + "base";
 
+function getBase(dataDir : string | undefined) {
+    if (!dataDir || (dataDir.length <= 1)) {
+      throw new Error("Invalid dataDir, only a namespace required for pgfs and not a path");
+    }
+    dataDir = dataDir.split("/").pop()
+    PGDATA = WASM_PREFIX + "/" + dataDir
+    return dataDir
+}
+
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType;
   if (dataDir?.startsWith("file://")) {
@@ -21,19 +30,11 @@ export function parseDataDir(dataDir?: string) {
     fsType = "nodefs";
   } else if (dataDir?.startsWith("pg://")) {
     // Remove the pg:// prefix, no / allowed in dbname, and use custom filesystem
-    dataDir = dataDir.slice(5);
-    if (dataDir.length <= 1) {
-      throw new Error("Invalid dataDir, only a namespace required for pgfs and not a path");
-    }
-    dataDir = dataDir.split("/").pop()
-    PGDATA = WASM_PREFIX + "/" + dataDir
+    dataDir = getBase( dataDir.slice(5) )
     fsType = "pgfs";
   } else if (dataDir?.startsWith("idb://")) {
     // Remove the idb:// prefix, and use indexeddb filesystem
-    dataDir = dataDir.slice(6);
-    if (dataDir.length <= 1) {
-      throw new Error("Invalid dataDir, path required for idbfs");
-    }
+    dataDir = getBase( dataDir.slice(6) )
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
