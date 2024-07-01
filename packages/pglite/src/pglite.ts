@@ -12,6 +12,7 @@ import type {
   Results,
   Transaction,
   QueryOptions,
+  QueryBlobs,
   ExecProtocolOptions,
   PGliteInterfaceExtensions,
   Extensions,
@@ -59,9 +60,13 @@ export class PGlite implements PGliteInterface {
 
   // These are the current ArrayBuffer that is being read or written to
   // during a query, such as COPY FROM or COPY TO.
+  #queryBlobBuffers?: { [name: string]: ArrayBuffer };
+  #queryResultBlobs?: { [name: string]: Blob };
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
-  
+  #queryWriteCurrentName?: string;
+  #queryWriteCurrentIsProgram?: boolean;
+
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
@@ -148,7 +153,7 @@ export class PGlite implements PGliteInterface {
       let emscriptenOpts: Partial<EmPostgres> = {
         arguments: [
           "--single", // Single user mode
-          "-F", // Disable fsync (TODO: Only for in-memory mode?)
+          // "-F", // Disable fsync (TODO: Only for in-memory mode?)
           "-O", // Allow the structure of system tables to be modified. This is used by initdb
           "-j", // Single use mode - Use semicolon followed by two newlines, rather than just newline, as the command entry terminator.
           "-c", // Set parameter
@@ -174,7 +179,6 @@ export class PGlite implements PGliteInterface {
             // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
             // The data is returned by the query as a `blob` property in the results
             const devId = mod.FS.makedev(64, 0);
-            let callCounter = 0;
             const devOpt = {
               open: (stream: any) => {},
               close: (stream: any) => {},
@@ -204,7 +208,6 @@ export class PGlite implements PGliteInterface {
                 length: number,
                 position: number,
               ) => {
-                callCounter++;
                 this.#queryWriteChunks ??= [];
                 this.#queryWriteChunks.push(
                   buffer.slice(offset, offset + length),
@@ -226,6 +229,15 @@ export class PGlite implements PGliteInterface {
         },
         eventTarget: this.#eventTarget,
         Event: PGEvent,
+        copyFrom: (args, isProgram) => {
+          return this.#copyFrom(args, isProgram);
+        },
+        copyTo: (args, isProgram) => {
+          return this.#copyTo(args, isProgram);
+        },
+        copyToEnd: () => {
+          return this.#copyToFinalize();
+        },
       };
 
       // Setup extensions
@@ -388,7 +400,7 @@ export class PGlite implements PGliteInterface {
     return await this.#queryMutex.runExclusive(async () => {
       // We need to parse, bind and execute a query with parameters
       this.#log("runQuery", query, params, options);
-      await this.#handleBlob(options?.blob);
+      await this.#handleBlobs(options?.blobs);
       const parsedParams = params?.map((p) => serializeType(p)) || [];
       let results;
       try {
@@ -412,19 +424,15 @@ export class PGlite implements PGliteInterface {
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
-      this.#cleanupBlob();
+      const blobs = this.#queryResultBlobs;
+      this.#cleanupBlobs();
       if (!this.#inTransaction) {
         await this.#syncToFs();
-      }
-      let blob: Blob | undefined;
-      if (this.#queryWriteChunks) {
-        blob = new Blob(this.#queryWriteChunks);
-        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
-        blob,
+        blobs,
       )[0] as Results<T>;
     });
   }
@@ -443,26 +451,22 @@ export class PGlite implements PGliteInterface {
     return await this.#queryMutex.runExclusive(async () => {
       // No params so we can just send the query
       this.#log("runExec", query, options);
-      await this.#handleBlob(options?.blob);
+      await this.#handleBlobs(options?.blobs);
       let results;
       try {
         results = await this.#execProtocolNoSync(serialize.query(query));
       } finally {
         await this.#execProtocolNoSync(serialize.sync());
       }
-      this.#cleanupBlob();
+      const blobs = this.#queryResultBlobs;
+      this.#cleanupBlobs();
       if (!this.#inTransaction) {
         await this.#syncToFs();
-      }
-      let blob: Blob | undefined;
-      if (this.#queryWriteChunks) {
-        blob = new Blob(this.#queryWriteChunks);
-        this.#queryWriteChunks = undefined;
       }
       return parseResults(
         results.map(([msg]) => msg),
         options,
-        blob,
+        blobs,
       ) as Array<Results>;
     });
   }
@@ -531,15 +535,130 @@ export class PGlite implements PGliteInterface {
    * Handle a file attached to the current query
    * @param file The file to handle
    */
-  async #handleBlob(blob?: File | Blob) {
-    this.#queryReadBuffer = blob ? await blob.arrayBuffer() : undefined;
+  async #handleBlobs(blobs?: QueryBlobs) {
+    const buffers: { [name: string]: ArrayBuffer } = {};
+    const promises = Object.entries(blobs ?? {}).map(async ([name, blob]) => {
+      buffers[name] = await blob.arrayBuffer();
+    });
+    await Promise.all(promises);
+    this.#queryBlobBuffers = buffers;
   }
 
   /**
    * Cleanup the current file
    */
-  #cleanupBlob() {
+  #cleanupBlobs() {
+    this.#queryBlobBuffers = undefined;
+    this.#queryResultBlobs = undefined;
     this.#queryReadBuffer = undefined;
+    this.#queryWriteChunks = undefined;
+    this.#queryWriteCurrentName = undefined;
+    this.#queryWriteCurrentIsProgram = undefined;
+  }
+
+  /**
+   * Copy data from a file, blob or url
+   * The data is made available at /dev/blob
+   * @param args The copy arguments
+   */
+  #copyFrom(args: string, isProgram = false): string | null {
+    if (args.startsWith("blob:")) {
+      const blobName = args.slice(5);
+      this.#queryReadBuffer = this.#queryBlobBuffers?.[blobName];
+      if (!this.#queryReadBuffer) {
+        return "Blob not found";
+      }
+    } else if (args.startsWith("http://") || args.startsWith("https://")) {
+      const xhr = new XMLHttpRequest();
+      xhr.overrideMimeType("text/plain; charset=x-user-defined");
+      xhr.open("GET", args, false); // Synchronous request
+      xhr.send();
+      if (xhr.status !== 200) {
+        return `Failed to fetch url: ${xhr.status}`;
+      }
+      // Convert the response to an ArrayBuffer
+      const buffer = new ArrayBuffer(xhr.response.length);
+      const view = new Uint8Array(buffer);
+      for (let i = 0; i < xhr.response.length; i++) {
+        view[i] = xhr.response.charCodeAt(i);
+      }
+      this.#queryReadBuffer = buffer;
+    } else if (isProgram) {
+      // User provided a function to read from
+      return "Not implemented";
+    } else {
+      // Should not happen - file read is handled by the emscripten FS
+      return "Not implemented";
+    }
+    return null;
+  }
+
+  /**
+   * Copy data to a file, blob or url
+   * The data is written to /dev/blob during the query
+   * and available as this.#queryWriteChunks
+   * @param args The copy arguments
+   */
+  #copyTo(args: string, isProgram = false): string | null {
+    if (args.startsWith("blob:")) {
+      // Save to a blob on the result object
+      this.#queryWriteCurrentName = args;
+      this.#queryWriteCurrentIsProgram = false;
+      this.#queryWriteChunks = [];
+    } else if (args.startsWith("http://") || args.startsWith("https://")) {
+      // PUT the data to the url
+      this.#queryWriteCurrentName = args;
+      this.#queryWriteCurrentIsProgram = false;
+      this.#queryWriteChunks = [];
+    } else if (isProgram) {
+      // User provided a function to write to
+      this.#queryWriteCurrentName = args;
+      this.#queryWriteCurrentIsProgram = true;
+      return "Not implemented";
+    } else {
+      // Should not happen - file write is handled by the emscripten FS
+      return "Not implemented";
+    }
+    return null;
+  }
+
+  /**
+   * Finalize the copy operation
+   * @returns An error message if the copy operation failed
+   */
+  #copyToFinalize() {
+    if (!this.#queryWriteChunks) {
+      return "No data to write";
+    }
+    try {
+      const blobName = this.#queryWriteCurrentName!;
+      const blob = new Blob(this.#queryWriteChunks);
+      this.#queryWriteChunks = undefined;
+      if (blobName.startsWith("blob:")) {
+        this.#queryResultBlobs ??= {};
+        this.#queryResultBlobs[blobName.slice(5)] = blob;
+        return null;
+      } else if (
+        blobName.startsWith("http://") ||
+        blobName.startsWith("https://")
+      ) {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", blobName, false); // Synchronous request
+        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.send(blob);
+        if (xhr.status !== 200) {
+          return `Failed to PUT to url: ${xhr.status}`;
+        }
+        return null;
+      } else if (this.#queryWriteCurrentIsProgram) {
+        return "Not implemented";
+      } else {
+        // Should not happen - file write is handled by the emscripten FS
+        return "Not implemented";
+      }
+    } catch (e) {
+      return (e as Error).toString();
+    }
   }
 
   /**

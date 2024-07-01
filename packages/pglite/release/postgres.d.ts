@@ -426,6 +426,9 @@ export interface EmPostgres extends EmscriptenModule {
   FS: FS;
   eventTarget: EventTarget;
   Event: typeof CustomEvent;
+  copyFrom: (fileName: string, isProgram: boolean) => string | null;
+  copyTo: (fileName: string, isProgram: boolean) => string | null;
+  copyToEnd: () => string | null;
   onRuntimeInitialized: (Module: EmPostgres) => Promise<void>;
 }
 
