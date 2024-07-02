@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/common/logging.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/common/logging.h	2024-06-27 08:14:26.093056042 +0200
++++ postgresql-16.3-wasm/src/include/common/logging.h	2024-07-02 08:00:53.888355114 +0200
 @@ -85,16 +85,21 @@
   */
  #define PG_LOG_FLAG_TERSE	1
