@@ -19,4 +19,6 @@ postgresJs = postgresJs
     'Module["onRuntimeInitialized"]()',
     'await Module["onRuntimeInitialized"](Module)'
   )
+  // Show errors thrown from dlopen_js function
+  .replace(`.catch(()=>wakeUp(0))`, `.catch((e)=>{ console.error('dlopen error', e); return wakeUp(0); })`)
 fs.writeFileSync(postgresJsPath, postgresJs);

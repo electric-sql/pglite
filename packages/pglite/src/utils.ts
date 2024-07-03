@@ -1,7 +1,69 @@
+import { FS } from "../release/postgres";
+import { Extension } from "./interface";
+
 export const IN_NODE =
   typeof process === "object" &&
   typeof process.versions === "object" &&
   typeof process.versions.node === "string";
+
+export function isValidUrl(urlString: string): boolean {
+  try {
+    return Boolean(new URL(urlString));
+  } catch (_) {
+    return false;
+  }
+}
+
+export function getExtensionVersionFromControlFile(controlFileContent: string): string {
+  const matches = controlFileContent.match(/default_version = '(.*)'/);
+  return matches ? matches[1] : '';
+}
+
+export function fileExists(fs: FS, path: string): boolean {
+  try {
+    fs.stat(path);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function getExtensionControlFile(extension: Extension, extName: string) {
+  let controlFileContent = '';
+  const controlFilePath = `${extension.pathOrUrl}/${extName}.control`;
+  try {
+    if (isValidUrl(extension.pathOrUrl || '')) {
+      controlFileContent = await (await fetch(controlFilePath)).text();
+    } else if (IN_NODE) {
+      const fs = await import('fs');
+      controlFileContent = fs.readFileSync(controlFilePath).toString();
+    } else {
+      throw new Error('Extensions from filesystem can only be used in Node environment. Please provide URL if you are running in browser environment');
+    }
+  } catch (err) {
+    throw new Error(`Error happened while trying to read control file for extension ${extName}: ${err}`);
+  }
+
+  return controlFileContent;
+}
+
+export async function getExtensionSqlScript(extension: Extension, extName: string, sqlFilePath: string) {
+  let sqlFileContent = '';
+  try {
+    if (isValidUrl(extension.pathOrUrl || '')) {
+      sqlFileContent = await (await fetch(sqlFilePath)).text();
+    } else if (IN_NODE) {
+      const fs = await import('fs');
+      sqlFileContent = fs.readFileSync(sqlFilePath).toString();
+    } else {
+      throw new Error('Extensions from filesystem can only be used in Node environment. Please provide URL if you are running in browser environment');
+    }
+  } catch (err) {
+    throw new Error(`Error happened while trying to read sql file for extension ${extName}: ${err}`);
+  }
+
+  return sqlFileContent;
+}
 
 export async function nodeValues() {
   let dirname: string | undefined = undefined;
@@ -44,6 +106,12 @@ export async function makeLocateFile() {
     if (url?.protocol === "file:") {
       return fileURLToPath(url);
     }
-    return url?.toString() ?? "";
+
+    if (base.match(/^https?:\//)) {
+      // The url is being sanitized "Path.normalize" from dlopeninternal and // is replaced with /
+      return base.replace(':/', '://');
+    }
+
+    return url?.toString() ?? base;
   };
 }
