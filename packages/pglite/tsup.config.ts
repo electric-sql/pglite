@@ -20,7 +20,6 @@ const entryPoints = [
   'src/worker/index.ts',
   'src/worker/process.ts',
   'src/vector/index.ts',
-  'release/pgbuild.js',
 ]
 
 export default defineConfig({
