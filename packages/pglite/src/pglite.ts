@@ -61,7 +61,7 @@ export class PGlite implements PGliteInterface {
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
-  
+
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
@@ -166,7 +166,7 @@ export class PGlite implements PGliteInterface {
         locateFile: await makeLocateFile(),
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
-          : { print: () => {}, printErr: () => {} }),
+          : { print: () => { }, printErr: () => { } }),
         preRun: [
           (mod: any) => {
             // Register /dev/blob device
@@ -176,8 +176,8 @@ export class PGlite implements PGliteInterface {
             const devId = mod.FS.makedev(64, 0);
             let callCounter = 0;
             const devOpt = {
-              open: (stream: any) => {},
-              close: (stream: any) => {},
+              open: (stream: any) => { },
+              close: (stream: any) => { },
               read: (
                 stream: any,
                 buffer: Uint8Array,
@@ -574,7 +574,7 @@ export class PGlite implements PGliteInterface {
       }
 
       var bytes = message.length;
-      var ptr = this.emp._malloc(bytes);
+      var ptr = this.emp.___libc_malloc(bytes);
       this.emp.HEAPU8.set(message, ptr);
       this.emp._ExecProtocolMsg(ptr);
 
