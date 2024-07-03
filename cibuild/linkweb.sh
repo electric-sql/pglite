@@ -98,14 +98,15 @@ fi
 # -sENVIRONMENT=web => XHR
 EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 
-# classic
-MODULE="-sINVOKE_RUN=0 --shell-file /data/git/pglite-build/repl-nomod.html"
+if $CI
+then
+    # es6
+    MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
+else
+    # local debug fast build
+    MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
+fi
 
-MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file /data/git/pglite-build/repl-nomod.html"
-MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
-
-# es6
-# MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
 
 # closure -sSIMPLE_OPTIMIZATION
 

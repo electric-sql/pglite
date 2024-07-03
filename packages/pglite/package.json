@@ -44,7 +44,7 @@
   },
   "scripts": {
     "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\"",
-    "build:js": "tsup && tsx scripts/bundle-wasm.ts",
+    "build:js": "tsup-node && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
     "format": "prettier --write ./src"
   },
