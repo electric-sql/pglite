@@ -102,6 +102,8 @@ if $CI
 then
     # es6
     MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
+    # unused debug module.
+    touch ${GITHUB_WORKSPACE}/packages/pglite/release/pgbuild.js
 else
     # local debug fast build
     MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
