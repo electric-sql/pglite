@@ -538,7 +538,7 @@ pg_repl_raf(){ // const char* std_in, const char* std_out, const char* std_err, 
         single_mode_feed = NULL;
         force_echo = true;
         whereToSendOutput = DestNone;
-        emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 1);
+        emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
     } else {
         puts("# 543: wire mode");
     }
@@ -898,9 +898,7 @@ puts("560");
 exception_handler:
 
 #if 1
-#if 1
 	if (sigsetjmp(local_sigjmp_buf, 1) != 0)
-#endif
 	{
 		error_context_stack = NULL;
 		HOLD_INTERRUPTS();
@@ -942,12 +940,12 @@ exception_handler:
 	 * Non-error queries loop here.
 	 */
 
-printf("# 821: hybrid loop:Begin CI=%s\n", getenv("CI") );
+printf("# 943: hybrid loop:Begin CI=%s\n", getenv("CI") );
     fprintf(stdout,"pg> %c\n", 4);
 	while (repl && !proc_exit_inprogress) {
         interactive_one();
 	}
-    puts("\n\n# 827: REPL:End " __FILE__);
+    puts("\n\n# 948: REPL:End " __FILE__);
     abort();
 #if !defined(PG_INITDB_MAIN)
     proc_exit(0);
@@ -984,7 +982,7 @@ extern void proc_exit(int code);
 
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-    puts("# 987: pg_initdb()");
+    puts("# 985: pg_initdb()");
     optind = 1;
     int async_restart = 1;
 
@@ -1016,8 +1014,8 @@ pg_initdb() {
     	chdir("/");
         printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
     }
-
-    printf("pg_initdb_main result = %d\n", pg_initdb_main() );
+    puts("# 1019");
+    printf("# pg_initdb_main result = %d\n", pg_initdb_main() );
 
 
     /* save stdin and use previous initdb output to feed boot mode */
@@ -1048,7 +1046,7 @@ pg_initdb() {
         proc_exit(66);
     }
 
-
+    puts("# 1051");
     /* use previous initdb output to feed single mode */
 
 
@@ -1150,6 +1148,7 @@ extra_env:;
     EM_ASM({
         Module.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
         Module.FD_BUFFER_MAX = $0;
+        Module.emscripten_copy_to = console.warn;
     }, FD_BUFFER_MAX);  /* ( global mem start / num fd max ) */
 
     if (is_node) {
@@ -1228,6 +1227,8 @@ extra_env:;
  * we cannot run "locale -a" either from web or node. the file getenv("PGSYSCONFDIR") / "locale"
  * serves as popen output
  */
+
+	setenv("LC_CTYPE", "C" , 1);
 
 	/* default username */
 	setenv("PGUSER", WASM_USERNAME , 0);
@@ -1449,7 +1450,7 @@ TODO:
 
     // so it is repl
     main_repl(1);
-    puts("# 1428: " __FILE__);
+    puts("# 1453: " __FILE__);
     emscripten_force_exit(ret);
 	return ret;
 }

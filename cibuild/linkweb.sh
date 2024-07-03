@@ -18,6 +18,7 @@ linkweb:begin
 mkdir -p $WEBROOT
 
 
+
 # client lib ( eg psycopg ) for websocketed pg server
 emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
      ./src/interfaces/libpq/libpq.a \
@@ -101,9 +102,10 @@ EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 MODULE="-sINVOKE_RUN=0 --shell-file /data/git/pglite-build/repl-nomod.html"
 
 MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file /data/git/pglite-build/repl-nomod.html"
+MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
 
 # es6
-MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
+# MODULE="-sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
 
 # closure -sSIMPLE_OPTIMIZATION
 

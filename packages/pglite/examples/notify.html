@@ -1,18 +1,20 @@
 <script type="module">
-  import { PGlite } from "../dist/index.js";
+  console.log("notify.html");
+
+  import { PGlite } from "./dist/index.js";
 
   const pg = new PGlite();
-  
+
   const unsub = await pg.listen('test', (payload) => {
     console.log('Received:', payload);
   });
-  
+
   await new Promise((resolve) => setTimeout(resolve, 500));
-  
+
   await pg.query('NOTIFY test, \'Hello, world!\'');
-  
+
   await new Promise((resolve) => setTimeout(resolve, 500));
-  
+
   await pg.query('NOTIFY test, \'Hello, world again!\'');
 
   await unsub();

@@ -201,9 +201,6 @@ export class PGlite implements PGliteInterface {
     //   all pg c-api is avail. including exported sym
 
     console.warn("fs: mounting"); // , this.fs.fsType );
-    /*          this.emp.FS.mkdir("/tmp/pglite/base");
-          this.emp.FS.mount(this.emp.FS.filesystems.IDBFS, {autoPersist: false}, '/tmp/pglite/base');
-*/
 
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
@@ -213,11 +210,10 @@ export class PGlite implements PGliteInterface {
 
     console.warn("fs: mounted");
     if (this.emp.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
-        console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
-        console.log( this.emp.FS.readdir(PGDATA));
-        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        console.log("pglite: found DB, resuming")
+        //console.log(this.emp.FS.readdir(PGDATA));
     } else {
-        console.warn("@@@@@@@@@@@@@@ no db @@@@@@@@@@@@@@@@@@@@@à");
+        console.warn("pglite: no db");
     }
     // start compiling dynamic extensions present in FS.
 

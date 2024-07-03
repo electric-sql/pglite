@@ -190,11 +190,14 @@
                     break
 
                 case 2:
-                    data = "CREATE EXTENSION vector;"
+                    //data = "CREATE EXTENSION vector;"
+                    data = "LISTEN template1;"
                     break
 
                 case 3:
-                    data = "SELECT * FROM pg_extension;"
+                    // data = "SELECT * FROM pg_extension;"
+                    data = "NOTIFY template1, 'hello';"
+
                     break
             }
 
@@ -202,7 +205,7 @@
                 test_step++
                 console.log("SQL:", data)
                 vm.readline(data+"\n\n")
-                setTimeout(test_drive, 2000);
+                setTimeout(test_drive, 1500);
             } else {
                 console.log("SQL:End")
             }
@@ -211,41 +214,129 @@
 
         const PGDATA="/tmp/pglite/base"
 
-
+        // []
         function prerun(vm) {
             console.log("prerun(js)")
             vm.FS.mkdir(PGDATA)
-            vm.FS.mount(vm.FS.filesystems.PGFS, {autoPersist: true}, PGDATA)
+            vm.FS.mount(vm.FS.filesystems.IDBFS, {autoPersist: true}, PGDATA)
         }
 
-        async function delay_init(err) {
 
+        function fs_callback(err) {
             if (!err) {
-                console.log("delayed init")
-                vm.FS.filesystems.PGFS.load_package("vector","vector.tar.gz")
-                if (vm.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
-                    console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
-                    console.log( vm.FS.readdir(PGDATA));
-                    console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-                } else {
-                    console.warn("@@@@ no db @@@@");
+                if (vm.FS.filesystems.PGFS && vm.FS.filesystems.PGFS.load_package) {
+                    vm.FS.filesystems.PGFS.load_package("vector","vector.tar.gz")
+                    if (vm.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
+                        console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
+                        console.log( vm.FS.readdir(PGDATA));
+                        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                    } else {
+                        console.warn("@@@@ no db @@@@");
+                    }
                 }
-                vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
-                vm._pg_initdb()
-                setTimeout(vm._pg_repl_raf, 2000)
-                setTimeout(test_drive, 3000)
+                setTimeout(delayed_init, 0)
             } else
-                console.error("FS error", err)
+                console.error("fs callback : FS error", err)
         }
 
+        async function delayed_init() {
+            /*
+            Module.pg_extensions = {"vector": some_tar_as_a_blob }
+            for (const ext in Module.pg_extensions) {
+                var blob;
+                try {
+                    blob = await Module.pg_extensions[ext]
+                } catch (x) {
+                    console.error("failed to fetch extension :", ext)
+                    continue
+                }
+                if (blob) {
+                    const bytes = new Uint8Array(await blob.arrayBuffer())
+                    console.log("  +", ext,"tardata:", bytes.length )
+                    if (ext=="quack")
+                       console.warn(ext,"skipped !")
+                    else
+                       PGFS.load_pg_extension(ext, bytes)
+                } else {
+                   console.error("could not get binary data for extension :", ext);
+                }
+            }
+            */
+            await Module.load_package("vector", "vector.tar.gz")
+
+            vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
+
+            vm._pg_initdb()
+
+            vm._pg_repl_raf()
+
+            setTimeout(test_drive, 2400)
+        }
+
+        // []
         function postrun(vm) {
-            console.log("postrun")
-            vm.FS.syncfs(true, delay_init)
-            //setTimeout(delay_init, 100, vm)
+            console.log("postrun(js)")
+            vm.FS.syncfs(true, fs_callback)
         }
 
+
+        // Module.load_package
+        async function load_package(ext, url) {
+                var bytes;
+                var response;
+                if (Module.FS.analyzePath(url).exists) {
+                    console.error("PGFS TODO: handle local archives", url)
+                } else {
+                    console.warn("PGFS Fetching:", url)
+                    response = await fetch(url);
+                }
+
+                if (url.endsWith(".tar")) {
+                    const buffer = await response.arrayBuffer();
+                    bytes = new Uint8Array(buffer);
+                } else {
+                   const ds = new DecompressionStream("gzip");
+                   const gzbytes = await response.blob();
+                     console.log("gzdata", gzbytes.size);
+                     const stream_in = gzbytes.stream().pipeThrough(ds);
+                     bytes = new Uint8Array(await new Response(stream_in).arrayBuffer());
+                }
+                Module.load_pg_extension(ext, bytes);
+        }
+
+        // Module.load_pg_extension
+        function load_pg_extension(ext, bytes) {
+            var data = tinyTar.untar(bytes);
+            data.forEach(function(file) {
+              if (!file.name.startsWith(".")) {
+                  const _file = "/tmp/pglite/" + file.name;
+                  console.log("    + ", _file);
+                  if (file.name.endsWith(".so")) {
+                    console.warn(_file, "scheduled for wasm streaming compilation");
+
+                    const ext_ok = (...args) => {
+                      console.log("pgfs:ext OK", _file, args);
+                    };
+
+                    const ext_fail = (...args) => {
+                        console.log("pgfs:ext FAIL", _file, args);
+                    };
+
+                    Module.FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, ext_ok, ext_fail, false);
+                    console.log("createPreloadedFile called for :", _file);
+                  } else {
+                    Module.FS.writeFile(_file, file.data);
+                  }
+              }
+            });
+            console.warn("pgfs ext:end", ext);
+        }
 
         var Module = {
+
+            load_pg_extension: load_pg_extension,
+
+            load_package: load_package,
 
             arguments : ["PGDATA=/tmp/pglite/base", "PREFIX=/tmp/pglite", "REPL=N"],
 
@@ -345,13 +436,38 @@
             };
           };
 
+        try {
+            console.log(initModule)
+            globalThis.window.is_es6 = true
+        } catch (x) {
+            globalThis.window.is_es6 = false
+            console.warn("Not ES6", globalThis.window.is_es6)
+
+        }
+
+        function jsimport(url, sync) {
+            const jsloader=document.createElement('script')
+            jsloader.setAttribute("type","text/javascript")
+            jsloader.setAttribute("src", url)
+            if (!sync)
+                jsloader.setAttribute('async', true);
+            document.head.appendChild(jsloader)
+        }
+
+        jsimport("tinytar.min.js")
+
         window.vm = Module
 
         const { WasmTerminal } = await /**/ import("./vtx.js")
 
         Module.vt = new WasmTerminal("repl",132,32,12)
-
-        window.Module = await initModule(Module)
+        if (is_es6)
+            window.Module = await initModule(Module)
+        else {
+            window.Module = Module
+            jsimport("postgres.js")
+            console.log("main:", Module )
+        }
     }
 
     window.addEventListener("load", boot )
@@ -359,8 +475,12 @@
     </script>
 
     <script type=module>
-        import initModule from "./postgres.js";
-        window.initModule = initModule //(Module)
+        try {
+            import initModule from "./postgres.js";
+            window.initModule = initModule //(Module)
+        } catch (x) {
+
+        }
     </script>
 
 <!--

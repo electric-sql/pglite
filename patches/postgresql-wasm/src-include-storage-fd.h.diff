@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/storage/fd.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/storage/fd.h	2024-07-02 08:00:53.852355609 +0200
++++ postgresql-16.3-wasm/src/include/storage/fd.h	2024-07-02 11:07:55.357485911 +0200
 @@ -188,13 +188,17 @@
  extern int	pg_fdatasync(int fd);
  extern void pg_flush_data(int fd, off_t offset, off_t nbytes);

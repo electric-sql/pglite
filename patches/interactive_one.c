@@ -532,6 +532,8 @@ incoming:
 
     #include "pg_proto.c"
 
+    ProcessClientReadInterrupt(true);
+
     if (is_wire) { //whereToSendOutput == DestRemote) {
 wire_flush:
         cma_wsize = SOCKET_DATA;

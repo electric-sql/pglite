@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { FsType } from "./types.js";
 import type { FS } from "../postgres.js";
 import { IdbFs } from "./idbfs.js";
@@ -65,5 +67,7 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
 
 export async function loadExtensions(fsType: FsType, fs: FS) {
     console.warn("index.ts: loadExtensions", fsType, fs);
+
+
 
 }

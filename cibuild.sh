@@ -8,7 +8,7 @@ export PGVERSION=${PGVERSION:-16.3}
 export CI=${CI:-false}
 export GITHUB_WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
 export PGROOT=${PGROOT:-/tmp/pglite}
-export WEBROOT=${WEBROOT:-${GITHUB_WORKSPACE}/postgres}
+export WEBROOT=${WEBROOT:-/tmp/web}
 export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=postgres
@@ -149,13 +149,23 @@ END
     fi
 fi
 
-
-
 # put wasm-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
 export PATH=${GITHUB_WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 
+
+# At this stage, PG should be installed to PREFIX and ready for linking
+# or building ext.
+
+
+
+
+# ===========================================================================
+# ===========================================================================
+#                             EXTENSIONS
+# ===========================================================================
+# ===========================================================================
 
 
 if echo "$*"|grep -q vector
@@ -207,6 +217,14 @@ then
     cp $PGROOT/lib/libduckdb.so /tmp/
     python3 cibuild/pack_extension.py
 fi
+
+
+# ===========================================================================
+# ===========================================================================
+#                               PGLite
+# ===========================================================================
+# ===========================================================================
+
 
 
 
@@ -269,7 +287,7 @@ then
 fi
 
 
-# pglite also use web build files, so make it last.
+# pglite* also use web build files, so order them last.
 
 
 while test $# -gt 0
@@ -282,10 +300,11 @@ do
             . cibuild/pglite-ts.sh
 
             # copy needed files for a minimal js/ts/extension build
-            # these don't use NODE FS !!!
+            # NB: these don't use NODE FS
 
             mkdir -p ${PGROOT}/sdk/packages/
             cp -r $PGLITE ${PGROOT}/sdk/packages/
+            cp -r ${GITHUB_WORKSPACE}/packages/pglite/examples/* /tmp/web/
 
             if $CI
             then

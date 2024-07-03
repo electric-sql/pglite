@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/bin/initdb/initdb.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/bin/initdb/initdb.c	2024-07-02 08:00:54.355348681 +0200
++++ postgresql-16.3-wasm/src/bin/initdb/initdb.c	2024-07-02 11:07:55.886478330 +0200
 @@ -45,7 +45,7 @@
   *
   *-------------------------------------------------------------------------
@@ -95,7 +95,65 @@
  		else
  			pg_fatal("program \"%s\" was found by \"%s\" but was not the same version as %s",
  					 "postgres", full_path, progname);
-@@ -2991,7 +3022,11 @@
+@@ -2617,22 +2648,22 @@
+ 			   lc_numeric,
+ 			   lc_time);
+ 	}
+-
++puts("# 2651");
+ 	if (!encoding)
+-	{
++	{ puts("# 2653");
+ 		int			ctype_enc;
+ 
+ 		ctype_enc = pg_get_encoding_from_locale(lc_ctype, true);
+-
++puts("# 2657");
+ 		/*
+ 		 * If ctype_enc=SQL_ASCII, it's compatible with any encoding. ICU does
+ 		 * not support SQL_ASCII, so select UTF-8 instead.
+ 		 */
+ 		if (locale_provider == COLLPROVIDER_ICU && ctype_enc == PG_SQL_ASCII)
+ 			ctype_enc = PG_UTF8;
+-
++puts("# 2664");
+ 		if (ctype_enc == -1)
+-		{
++		{ puts("# 2666");
+ 			/* Couldn't recognize the locale's codeset */
+ 			pg_log_error("could not find suitable encoding for locale \"%s\"",
+ 						 lc_ctype);
+@@ -2641,7 +2672,7 @@
+ 			exit(1);
+ 		}
+ 		else if (!pg_valid_server_encoding_id(ctype_enc))
+-		{
++		{ puts("# 2675");
+ 			/*
+ 			 * We recognized it, but it's not a legal server encoding. On
+ 			 * Windows, UTF-8 works with any locale, so we can fall back to
+@@ -2664,15 +2695,17 @@
+ #endif
+ 		}
+ 		else
+-		{
++		{ puts("# 2698");
+ 			encodingid = ctype_enc;
+ 			printf(_("The default database encoding has accordingly been set to \"%s\".\n"),
+ 				   pg_encoding_to_char(encodingid));
+ 		}
+ 	}
+-	else
++	else {
++   puts("# 2705");
+ 		encodingid = get_encoding_id(encoding);
+-
++    }
++   puts("# 2706");
+ 	if (!check_locale_encoding(lc_ctype, encodingid) ||
+ 		!check_locale_encoding(lc_collate, encodingid))
+ 		exit(1);				/* check_locale_encoding printed the error */
+@@ -2991,7 +3024,11 @@
  
  	/* Select suitable configuration settings */
  	set_null_conf();
@@ -107,12 +165,12 @@
  
  	/* Now create all the text config files */
  	setup_config();
-@@ -3056,9 +3091,30 @@
+@@ -3056,9 +3093,30 @@
  	check_ok();
  }
  
 +#if defined(PG_INITDB_MAIN)
- 
++
 +extern void MemoryContextInit(void);
 +
 +// FIXME: get PGDATA from env.
@@ -128,7 +186,7 @@
 +};
 +
 +int argc = sizeof(argv) / sizeof(char*) - 1;
-+
+ 
 +EMSCRIPTEN_KEEPALIVE int
 +pg_initdb_main()
 +#else
@@ -138,7 +196,7 @@
  {
  	static struct option long_options[] = {
  		{"pgdata", required_argument, NULL, 'D'},
-@@ -3118,10 +3174,16 @@
+@@ -3118,10 +3176,16 @@
  	 */
  	setvbuf(stdout, NULL, PG_IOLBF, 0);
  
@@ -156,9 +214,27 @@
  	if (argc > 1)
  	{
  		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-@@ -3395,7 +3457,9 @@
+@@ -3377,11 +3441,11 @@
+ 	set_info_version();
+ 
+ 	setup_data_file_paths();
+-
++puts("# 3442");
+ 	setup_locale_encoding();
+-
++puts("# 3444");
+ 	setup_text_search();
+-
++puts("# 3446");
  	printf("\n");
  
+ 	if (data_checksums)
+@@ -3393,9 +3457,11 @@
+ 		get_su_pwd();
+ 
+ 	printf("\n");
+-
++puts("# 3458");
  	initialize_data_directory();
 -
 +#if defined(PG_INITDB_MAIN)
@@ -167,7 +243,16 @@
  	if (do_sync)
  	{
  		fputs(_("syncing data to disk ... "), stdout);
-@@ -3448,8 +3512,7 @@
+@@ -3413,7 +3479,7 @@
+ 		pg_log_warning_hint("You can change this by editing pg_hba.conf or using the option -A, or "
+ 							"--auth-local and --auth-host, the next time you run initdb.");
+ 	}
+-
++puts("# 3480");
+ 	if (!noinstructions)
+ 	{
+ 		/*
+@@ -3448,8 +3514,7 @@
  
  		destroyPQExpBuffer(start_db_cmd);
  	}
