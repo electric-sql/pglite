@@ -576,7 +576,7 @@ export class PGlite implements PGliteInterface {
       var bytes = message.length;
       var ptr = this.emp.___libc_malloc(bytes);
       this.emp.HEAPU8.set(message, ptr);
-      this.emp._ExecProtocolMsg(ptr);
+      await this.emp.ccall("ExecProtocolMsg", "void", ["pointer"], [ptr], { async: true })
 
       if (syncToFs) {
         await this.#syncToFs();
