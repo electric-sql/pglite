@@ -150,14 +150,18 @@ echo 'localhost:5432:postgres:postgres:password' > pgpass
 if [ -f ${PGROOT}/symbols ]
 then
     # _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
+
+#not yet
+#_emscripten_copy_from
+#_emscripten_copy_to
+#_emscripten_copy_to_end
+
+
     cat > exports <<END
 ___cxa_throw
 _main
 _main_repl
 _pg_repl_raf
-_emscripten_copy_from
-_emscripten_copy_to
-_emscripten_copy_to_end
 _getenv
 _setenv
 _interactive_one
