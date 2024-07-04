@@ -69,16 +69,13 @@ fi
 
 # pass the "kernel" contiguous memory zone size to the C compiler.
 CC_PGLITE="-DCMA_MB=${CMA_MB}"
-if $CI
-then
-    CC_PGLITE="-DPATCH_MAIN=${GITHUB_WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_LOOP=${GITHUB_WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_PLUGIN=${GITHUB_WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
-else
-    CC_PGLITE="-DPATCH_MAIN=/data/git/pg/pg_main.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_LOOP=/data/git/pg/interactive_one.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_PLUGIN=/data/git/pg/pg_plugin.h ${CC_PGLITE}"
-fi
+
+# these are files that shadow original portion of pg core, with minimal changes
+# to original code
+# some may be included multiple time
+CC_PGLITE="-DPATCH_MAIN=${GITHUB_WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
+CC_PGLITE="-DPATCH_LOOP=${GITHUB_WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
+CC_PGLITE="-DPATCH_PLUGIN=${GITHUB_WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
 
 export CC_PGLITE
 

@@ -19,6 +19,7 @@ void
 PostgresMain(const char *dbname, const char *username)
 {
     puts("# 22: ERROR: PostgresMain should not be called anymore" __FILE__ );
+    while (1){};
 }
 
 
@@ -1133,7 +1134,7 @@ extra_env:;
                 if (kv[sk]=='=') {
                     memcpy(key, kv, sk);
                     key[sk] = 0;
-                    printf("%s='%s'\n", &key, &kv[sk+1]);
+                    printf("%s='%s'\n", &(key[0]), &(kv[sk+1]));
                     setenv(key, &kv[sk+1], 1);
                 }
             }
@@ -1388,7 +1389,7 @@ main_repl(int async) {
         else
             PostgresSingleUserMain(g_argc, g_argv, strdup( getenv("PGUSER")));
     }
-
+    return 0;
 }
 
 

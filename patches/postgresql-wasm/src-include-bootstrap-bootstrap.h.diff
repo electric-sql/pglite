@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/bootstrap/bootstrap.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/bootstrap/bootstrap.h	2024-07-02 11:07:55.354485954 +0200
++++ postgresql-16.3-wasm/src/include/bootstrap/bootstrap.h	2024-07-04 08:22:33.976334736 +0200
 @@ -31,8 +31,11 @@
  extern PGDLLIMPORT Form_pg_attribute attrtypes[MAXATTR];
  extern PGDLLIMPORT int numattr;

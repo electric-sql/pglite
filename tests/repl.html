@@ -332,7 +332,21 @@
             console.warn("pgfs ext:end", ext);
         }
 
+        function copyFrom(filename, is_program) {
+            console.warn("copyFrom:", filename, is_program);
+        }
+        function copyTo(filename, is_program) {
+            console.warn("copyTo:", filename, is_program);
+        }
+
+        function copyToEnd() {
+            console.warn("copyToEnd");
+        }
+
         var Module = {
+
+            copyFrom : copyFrom,
+            copyTo  : copyTo,
 
             load_pg_extension: load_pg_extension,
 
@@ -461,19 +475,23 @@
         const { WasmTerminal } = await /**/ import("./vtx.js")
 
         Module.vt = new WasmTerminal("repl",132,32,12)
+#if MODULARIZE
         if (is_es6)
             window.Module = await initModule(Module)
-        else {
+        else
+#endif
+        {
             window.Module = Module
             jsimport("postgres.js")
             console.log("main:", Module )
         }
+
     }
 
     window.addEventListener("load", boot )
 
     </script>
-
+#if MODULARIZE
     <script type=module>
         try {
             import initModule from "./postgres.js";
@@ -482,7 +500,7 @@
 
         }
     </script>
-
+#endif
 <!--
     {{{ SCRIPT }}}
 -->

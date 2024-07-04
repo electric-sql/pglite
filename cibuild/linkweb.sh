@@ -17,13 +17,13 @@ linkweb:begin
 
 mkdir -p $WEBROOT
 
-
+NOWARN="-Wno-missing-prototypes -Wno-unused-function -Wno-declaration-after-statement -Wno-incompatible-pointer-types-discards-qualifiers"
 
 # client lib ( eg psycopg ) for websocketed pg server
 emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
      ./src/interfaces/libpq/libpq.a \
      ./src/port/libpgport.a \
-     ./src/common/libpgcommon.a || exit 20
+     ./src/common/libpgcommon.a || exit 26
 
 # this override completely pg server main loop for web use purpose
 pushd src
@@ -31,14 +31,14 @@ pushd src
 
     emcc -DPG_INITDB_MAIN=1 -sFORCE_FILESYSTEM -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
-     -c -o ../pg_initdb.o ${PGSRC}/src/bin/initdb/initdb.c || exit 28
+     -c -o ../pg_initdb.o ${PGSRC}/src/bin/initdb/initdb.c $NOWARN || exit 34
 
     #
     emcc -DPG_LINK_MAIN=1 -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
-     -c -o ./backend/tcop/postgres.o ${PGSRC}/src/backend/tcop/postgres.c || exit 33
+     -c -o ./backend/tcop/postgres.o ${PGSRC}/src/backend/tcop/postgres.c $NOWARN|| exit 39
 
-    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_INITDB_MAIN=1" emmake make backend/main/main.o backend/utils/init/postinit.o || exit 35
+    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_INITDB_MAIN=1 $NOWARN" emmake make backend/main/main.o backend/utils/init/postinit.o || exit 41
 popd
 
 
@@ -155,6 +155,9 @@ ___cxa_throw
 _main
 _main_repl
 _pg_repl_raf
+_emscripten_copy_from
+_emscripten_copy_to
+_emscripten_copy_to_end
 _getenv
 _setenv
 _interactive_one
@@ -178,6 +181,8 @@ END
 else
     cat ${GITHUB_WORKSPACE}/patches/exports >> exports
 fi
+
+# copyFrom,copyTo,copyToEnd
 
 emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \

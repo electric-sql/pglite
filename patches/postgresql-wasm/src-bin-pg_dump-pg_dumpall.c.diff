@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/bin/pg_dump/pg_dumpall.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/bin/pg_dump/pg_dumpall.c	2024-07-02 11:07:55.876478473 +0200
++++ postgresql-16.3-wasm/src/bin/pg_dump/pg_dumpall.c	2024-07-04 08:22:35.059318013 +0200
 @@ -14,7 +14,13 @@
   */
  

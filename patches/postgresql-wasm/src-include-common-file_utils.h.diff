@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/common/file_utils.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/common/file_utils.h	2024-07-02 11:07:55.385485510 +0200
++++ postgresql-16.3-wasm/src/include/common/file_utils.h	2024-07-04 08:22:34.039333764 +0200
 @@ -27,10 +27,14 @@
  struct iovec;					/* avoid including port/pg_iovec.h here */
  
