@@ -2,9 +2,6 @@ ___cxa_throw
 _main
 _main_repl
 _pg_repl_raf
-_emscripten_copy_from
-_emscripten_copy_to
-_emscripten_copy_to_end
 _getenv
 _setenv
 _interactive_one
