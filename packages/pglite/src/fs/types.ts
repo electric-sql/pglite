@@ -1,6 +1,6 @@
 import type { EmPostgres, FS } from "../postgres.js";
 
-export type FsType = "nodefs" | "idbfs" | "memoryfs" | "pgfs";
+export type FsType = "nodefs" | "idbfs" | "memoryfs";
 
 export interface FilesystemFactory {
   new (dataDir: string): Filesystem;

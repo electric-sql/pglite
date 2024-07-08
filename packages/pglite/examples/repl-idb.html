@@ -5,13 +5,14 @@
     padding: 0;
   }
 </style>
+<script src="../../tinytar.min.js"></script>
 <script src="../../repl/dist-webcomponent/Repl.js" type="module"></script>
 <pglite-repl id="repl" show-time></pglite-repl>
 <script type="module">
   import { PGlite } from "../dist/index.js";
   import { vector } from "../dist/vector/index.js";
 
-  const pg = new PGlite('idb://test-repl', {
+  const pg = new PGlite('idb://base', {
     relaxedDurability: true,
     extensions: {
       vector,

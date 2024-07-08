@@ -65,7 +65,7 @@ END
         echo "using emscripten es6->ts interface"
     fi
 
-    # CI does not use npm for building pg, so call the typescript build
+    # debug CI does not use pnpm/npm for building pg, so call the typescript build
     # part from here
     if $CI
     then
@@ -76,12 +76,27 @@ END
         mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
 
         # for repl demo
-        mkdir -p /tmp/web/
-        cp -r ${PGLITE}/dist /tmp/web/
+        mkdir -p /tmp/web/pglite
+        cp -r ${PGLITE}/dist /tmp/web/pglite/
+        cp -r ${PGLITE}/examples /tmp/web/pglite/
+        pushd /tmp/web/
+        ln -s ../dist/postgres.data
+        popd
         # link files for xterm based repl
         ln ${WEBROOT}/dist/postgres.* ${WEBROOT}/ || echo pass
-        echo '<html></html>' > ${WEBROOT}/dist/index.html
 
+            echo "<html>
+            <body>
+                <ul>
+                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
+                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+                    <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
+                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
+                </ul>
+            </body>
+            </html>" > ${WEBROOT}/index.html
 
     else
         mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
@@ -92,5 +107,4 @@ END
     fi
 
     popd
-
 

@@ -206,6 +206,7 @@ export class PGlite implements PGliteInterface {
     // maybe start extra FS/initdata async .
 
 //console.warn("syncing fs (fs->memfs)");
+    this.emp.FS.Module = this.emp
     await this.fs!.initialSyncFs(this.emp.FS);
 
     //console.warn("fs: mounted");

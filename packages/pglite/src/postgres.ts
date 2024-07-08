@@ -8,7 +8,7 @@ export type FS = typeof FS & {
     MEMFS: Emscripten.FileSystemType,
     NODEFS: Emscripten.FileSystemType,
     IDBFS: Emscripten.FileSystemType,
-    PGFS: Emscripten.FileSystemType,
+//    PGFS: Emscripten.FileSystemType,
   };
 }
 

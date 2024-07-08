@@ -299,9 +299,15 @@ do
             # copy needed files for a minimal js/ts/extension build
             # NB: these don't use NODE FS
 
-            mkdir -p ${PGROOT}/sdk/packages/
+            mkdir -p ${PGROOT}/sdk/packages/ /tmp/web/pglite /tmp/web/repl/
             cp -r $PGLITE ${PGROOT}/sdk/packages/
-            cp -r ${GITHUB_WORKSPACE}/packages/pglite/examples/* /tmp/web/
+
+            mkdir /tmp/web/repl/dist-webcomponent -p
+            cp -r ${GITHUB_WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
+
+            pushd /tmp/web/pglite/examples
+            ln -s ../dist/postgres.data
+            popd
 
             if $CI
             then
@@ -333,9 +339,10 @@ do
                 <ul>
                     <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
                     <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
                     <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-                    <li><a href=./xterm-demo/postgres.html>Postgres xterm REPL</a></li>
-                    <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
+                    <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
+                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
                 </ul>
             </body>
             </html>" > /tmp/web/index.html
@@ -347,7 +354,7 @@ do
             cp -r ${PGLITE}/dist /tmp/web/pglite/
             cp -r ${PGLITE}/examples /tmp/web/pglite/
             cp -r ${GITHUB_WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
-            cp -r ${GITHUB_WORKSPACE}/packages/benchmark /tmp/web/
+            cp -r ${GITHUB_WORKSPACE}/packages/benchmark /tmp/web/pglite/
         ;;
     esac
     shift
