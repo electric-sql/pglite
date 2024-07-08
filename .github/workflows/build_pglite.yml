@@ -98,9 +98,9 @@ jobs:
     - name: Build PGlite
       working-directory: ./packages/pglite
       run: |
-        pnpm install
-        pnpm run build
-        pnpm pack
+        npm install
+        npm run build
+        npm pack
 
     - name: Build REPL for Example deployment
       working-directory: ./packages/repl
@@ -143,7 +143,7 @@ jobs:
         name: pglite-demos
         path: /tmp/web/**
         retention-days: 90
-  
+
     - name: Deploy to Netlify
       uses: nwtgck/actions-netlify@v3.0
       with:
