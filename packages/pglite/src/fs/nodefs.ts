@@ -22,7 +22,11 @@ export class NodeFS extends FilesystemBase {
         ...(opts.preRun || []),
         (mod: any) => {
           const nodefs = mod.FS.filesystems.NODEFS;
-          mod.FS.mkdir(PGDATA);
+          try {
+             mod.FS.mkdir(PGDATA);
+          } catch (x) {
+            console.warn("Path exists :", PGDATA);
+          }
           mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA);
         },
       ],
