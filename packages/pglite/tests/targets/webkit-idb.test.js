@@ -1,3 +1,3 @@
 import { tests } from "./base.js";
 
-tests("webkit", "idb://pgdata-test", "webkit.idb");
+tests("webkit", "idb://base", "webkit.idb");

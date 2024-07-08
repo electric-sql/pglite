@@ -183,4 +183,4 @@ jobs:
       working-directory: ./packages/pglite
       run: |
         npx playwright install --with-deps
-#        npm run test
+        npm run test
