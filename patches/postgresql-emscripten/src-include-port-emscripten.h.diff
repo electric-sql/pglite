@@ -1,12 +1,13 @@
---- postgresql-16.3/src/include/port/emscripten.h	2024-07-04 08:22:33.064348819 +0200
-+++ postgresql-16.3-wasm/src/include/port/emscripten.h	2024-07-04 08:22:34.034333841 +0200
-@@ -0,0 +1,328 @@
+--- postgresql-16.3/src/include/port/emscripten.h	2024-07-08 10:11:51.169287883 +0200
++++ postgresql-16.3-wasm/src/include/port/emscripten.h	2024-07-08 10:11:52.025267363 +0200
+@@ -0,0 +1,329 @@
 +/* src/include/port/emscripten.h */
 +
 +#ifndef I_EMSCRIPTEN
 +#define I_EMSCRIPTEN
 +#define PGDLLIMPORT
-+
++// #define COPY_INTERNAL
++#define COPY_OFF
 +#include <stdbool.h>
 +extern PGDLLIMPORT bool fe_utils_quote_all_identifiers;
 +

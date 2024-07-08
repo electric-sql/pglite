@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/fe_utils/string_utils.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/fe_utils/string_utils.c	2024-07-04 08:22:35.205315759 +0200
++++ postgresql-16.3-wasm/src/fe_utils/string_utils.c	2024-07-08 10:11:53.451233177 +0200
 @@ -23,7 +23,9 @@
  static PQExpBuffer defaultGetLocalPQExpBuffer(void);
  

@@ -98,7 +98,7 @@ fi
 # -sENVIRONMENT=web => XHR
 EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 
-if $CI
+if ${PGES6:-true}
 then
     # es6
     MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"

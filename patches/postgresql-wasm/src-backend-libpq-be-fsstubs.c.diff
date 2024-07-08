@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/libpq/be-fsstubs.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/libpq/be-fsstubs.c	2024-07-04 08:22:34.581325394 +0200
++++ postgresql-16.3-wasm/src/backend/libpq/be-fsstubs.c	2024-07-08 10:11:52.587253890 +0200
 @@ -150,8 +150,12 @@
   *
   *****************************************************************************/

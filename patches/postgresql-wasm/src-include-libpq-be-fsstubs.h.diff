@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/include/libpq/be-fsstubs.h	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/include/libpq/be-fsstubs.h	2024-07-04 08:22:33.986334582 +0200
++++ postgresql-16.3-wasm/src/include/libpq/be-fsstubs.h	2024-07-08 10:11:51.981268417 +0200
 @@ -19,8 +19,10 @@
   * Probably these should have had the underscore-free names,
   * but too late now...

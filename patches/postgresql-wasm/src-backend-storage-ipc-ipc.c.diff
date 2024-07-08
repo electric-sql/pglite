@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/storage/ipc/ipc.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/storage/ipc/ipc.c	2024-07-04 08:22:34.558325750 +0200
++++ postgresql-16.3-wasm/src/backend/storage/ipc/ipc.c	2024-07-08 10:11:52.537255088 +0200
 @@ -103,6 +103,48 @@
  void
  proc_exit(int code)

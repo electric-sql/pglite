@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/utils/init/miscinit.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c	2024-07-04 08:22:34.702323526 +0200
++++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c	2024-07-08 10:11:52.843247753 +0200
 @@ -209,7 +209,7 @@
  	if (my_exec_path[0] == '\0')
  	{

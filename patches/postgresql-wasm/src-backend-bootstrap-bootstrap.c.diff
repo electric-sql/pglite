@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/backend/bootstrap/bootstrap.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/bootstrap/bootstrap.c	2024-07-04 08:22:34.544325966 +0200
++++ postgresql-16.3-wasm/src/backend/bootstrap/bootstrap.c	2024-07-08 10:11:52.502255928 +0200
 @@ -199,7 +199,11 @@
   *	 to shared memory sizing, options work (or at least do not cause an error
   *	 up to shared memory creation).

@@ -493,29 +493,14 @@ incoming:
         /* wire on a socket */
         if (is_socket) {
             firstchar = SocketBackend(&input_message);
-            fprintf(stdout, "SOCKET[%c]: %s", firstchar, inBuf->data);
-
         } else {
             whereToSendOutput = DestRemote;
             firstchar = SocketBackend(&input_message);
-//            fprintf(stdout, "RAW WIRE: %d [%c]/%d:[%s]\n", cma_rsize, firstchar, inBuf->len, inBuf->data);
-
-/*
-            if (cma_rsize==24) {
-        puts("dump!");
-            {
-                #include "pg_proto.c"
-            }
-            fprintf(stdout, "RAW DBG : %d [%c]/%d:[%s]\n", cma_rsize, firstchar, inBuf->len, inBuf->data);
-            whereToSendOutput = DestDebug;
-            }
-*/
         }
 
     } else {
         /* nowire */
         if (c == EOF && inBuf->len == 0) {
-            fprintf(stderr, "858-EOF !!!\n");
             firstchar = EOF;
 
         } else {

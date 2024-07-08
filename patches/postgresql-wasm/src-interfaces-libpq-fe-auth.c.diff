@@ -1,5 +1,5 @@
 --- postgresql-16.3/src/interfaces/libpq/fe-auth.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/interfaces/libpq/fe-auth.c	2024-07-04 08:22:34.532326151 +0200
++++ postgresql-16.3-wasm/src/interfaces/libpq/fe-auth.c	2024-07-08 10:11:52.466256791 +0200
 @@ -1170,6 +1170,7 @@
  pg_fe_getusername(uid_t user_id, PQExpBuffer errorMessage)
  {

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+
+<head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>PG SHELL TEST</title>
@@ -52,8 +53,16 @@
 
     <script src="tinytar.min.js"></script>
 
-  </head>
-  <body>
+<script type=module>
+#if MODULARIZE
+    console.log(" ============= ES6 MODULE ============= ");
+    import initModule from "./postgres.js";
+    window.initModule = initModule //(Module)
+#endif
+</script>
+</head>
+
+<body>
     <hr/>
     <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
     <div class="emscripten" id="status">Downloading...</div>
@@ -80,7 +89,7 @@
     <textarea class="emscripten" id="output" rows="25" ></textarea>
     <hr>
 
-    <script type='text/javascript' defer>
+<script type='text/javascript' defer>
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
     var spinnerElement = document.getElementById('spinner');
@@ -309,7 +318,7 @@
             var data = tinyTar.untar(bytes);
             data.forEach(function(file) {
               if (!file.name.startsWith(".")) {
-                  const _file = "/tmp/pglite/" + file.name;
+                  const _file = Module.WASM_PREFIX + "/" + file.name;
                   console.log("    + ", _file);
                   if (file.name.endsWith(".so")) {
                     console.warn(_file, "scheduled for wasm streaming compilation");
@@ -321,8 +330,13 @@
                     const ext_fail = (...args) => {
                         console.log("pgfs:ext FAIL", _file, args);
                     };
-
-                    Module.FS.createPreloadedFile(PATH.dirname(_file), PATH.basename(_file), file.data, true, true, ext_ok, ext_fail, false);
+                    function dirname(p) {
+                        const last = p.lastIndexOf("/");
+                        if (last>0)
+                            return p.substr(0,last)
+                        return p;
+                    }
+                    Module.FS.createPreloadedFile(dirname(_file), file.name.split("/").pop(), file.data, true, true, ext_ok, ext_fail, false);
                     console.log("createPreloadedFile called for :", _file);
                   } else {
                     Module.FS.writeFile(_file, file.data);
@@ -344,6 +358,9 @@
         }
 
         var Module = {
+
+            WASM_PREFIX : "/tmp/pglite",
+            PGDATA : "/tmp/pglite/base",
 
             copyFrom : copyFrom,
             copyTo  : copyTo,
@@ -455,9 +472,9 @@
             globalThis.window.is_es6 = true
         } catch (x) {
             globalThis.window.is_es6 = false
-            console.warn("Not ES6", globalThis.window.is_es6)
 
         }
+        console.warn("ES6 ?", globalThis.window.is_es6)
 
         function jsimport(url, sync) {
             const jsloader=document.createElement('script')
@@ -490,17 +507,8 @@
 
     window.addEventListener("load", boot )
 
-    </script>
-#if MODULARIZE
-    <script type=module>
-        try {
-            import initModule from "./postgres.js";
-            window.initModule = initModule //(Module)
-        } catch (x) {
+</script>
 
-        }
-    </script>
-#endif
 <!--
     {{{ SCRIPT }}}
 -->
