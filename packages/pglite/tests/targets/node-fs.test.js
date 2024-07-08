@@ -1,3 +1,3 @@
 import { tests } from "./base.js";
 
-tests("node", "./pgdata-test", "node.fs");
+tests("node", "/tmp/pglite/base", "node.fs");

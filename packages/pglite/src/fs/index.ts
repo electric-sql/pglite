@@ -47,9 +47,6 @@ export function parseDataDir(dataDir?: string) {
     fsType = "memoryfs";
   } else {
     // No prefix, use node filesystem
-    // TODO: mount node FS path on PGDATA ( like idfs would do ).
-    console.warn("NODEFS TODO: mount correctly in /tmp", dataDir);
-    dataDir = "base";
     fsType = "nodefs";
   }
   return { dataDir, fsType };

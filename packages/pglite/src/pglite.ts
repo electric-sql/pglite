@@ -200,15 +200,15 @@ export class PGlite implements PGliteInterface {
     // if ok, NOW:
     //   all pg c-api is avail. including exported sym
 
-    console.warn("fs: mounting"); // , this.fs.fsType );
+//console.warn("fs: mounting");
 
     // finalize FS states needed before initdb.
     // maybe start extra FS/initdata async .
 
-    console.warn("syncing fs (fs->memfs)");
+//console.warn("syncing fs (fs->memfs)");
     await this.fs!.initialSyncFs(this.emp.FS);
 
-    console.warn("fs: mounted");
+    //console.warn("fs: mounted");
     if (this.emp.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
         console.log("pglite: found DB, resuming")
         //console.log(this.emp.FS.readdir(PGDATA));
@@ -217,14 +217,14 @@ export class PGlite implements PGliteInterface {
     }
     // start compiling dynamic extensions present in FS.
 
+/*
     console.log(
       "database engine is ready (but not yet system/user databases or extensions)",
     );
+*/
 
     // await async compilation dynamic extensions finished.
-    await sleep(5);
 
-    console.log("ext loaded");
 
     // await extra FS/fetches.
 
@@ -246,7 +246,7 @@ export class PGlite implements PGliteInterface {
     const idb = this.emp._pg_initdb();
 
     if (!idb) {
-      console.error("TODO: meaning full initdb return/error code ?");
+      console.warn("TODO: meaning full initdb return/error code ?");
     } else {
       if (idb & 0b0001) console.log(" #1");
 
@@ -254,11 +254,11 @@ export class PGlite implements PGliteInterface {
 
       if (idb & 0b0100) console.log(" #3");
     }
-
+/*
     console.log(
       "database engine/system db are ready (maybe not user databases)",
     );
-
+*/
     // extra FS could go here, same for sql init data.
 
     // eg custom SQL
@@ -268,8 +268,14 @@ export class PGlite implements PGliteInterface {
     //  FS is corrupted
     //  something fetched is corrupted, not valid SQL.
 
+console.warn("pglite: ext and FS loaded, db is ready");
+
+// TODO: only sync here if initdb did init db.
     await this.#syncToFs();
+
+// TODO: add that to initdb ?
     await this.#runExec("SET search_path TO public;");
+
     this.#ready = true;
 
     // Init extensions
