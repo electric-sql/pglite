@@ -102,11 +102,11 @@ jobs:
         npm run build
         npm pack
 
-    - name: Build REPL for Example deployment
-      working-directory: ./packages/repl
-      run: |
-        pnpm install
-        pnpm run build
+#    - name: Build REPL for Example deployment
+#      working-directory: ./packages/repl
+#      run: |
+#        pnpm install
+#        pnpm run build
 
     - name: Build demo site
       run: |
