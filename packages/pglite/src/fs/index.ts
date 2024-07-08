@@ -42,9 +42,14 @@ export function parseDataDir(dataDir?: string) {
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
+    console.warn("MEMFS TODO: link correctly in /tmp", dataDir);
+    dataDir = getBase("base");
     fsType = "memoryfs";
   } else {
     // No prefix, use node filesystem
+    // TODO: mount node FS path on PGDATA ( like idfs would do ).
+    console.warn("NODEFS TODO: mount correctly in /tmp", dataDir);
+    dataDir = "base";
     fsType = "nodefs";
   }
   return { dataDir, fsType };
