@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/postmaster/postmaster.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/postmaster/postmaster.c	2024-07-08 10:11:53.184239578 +0200
+--- postgresql-16.3/src/backend/postmaster/postmaster.c
++++ postgresql-16.3-wasm/src/backend/postmaster/postmaster.c
 @@ -422,7 +422,8 @@
  static void ExitPostmaster(int status) pg_attribute_noreturn();
  static int	ServerLoop(void);

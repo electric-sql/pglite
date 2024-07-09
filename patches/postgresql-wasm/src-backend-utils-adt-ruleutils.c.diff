@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/utils/adt/ruleutils.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/adt/ruleutils.c	2024-07-08 10:11:52.748250030 +0200
+--- postgresql-16.3/src/backend/utils/adt/ruleutils.c
++++ postgresql-16.3-wasm/src/backend/utils/adt/ruleutils.c
 @@ -321,8 +321,9 @@
  static const char *query_getviewrule = "SELECT * FROM pg_catalog.pg_rewrite WHERE ev_class = $1 AND rulename = $2";
  

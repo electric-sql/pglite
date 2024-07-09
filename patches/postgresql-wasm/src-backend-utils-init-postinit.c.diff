@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/utils/init/postinit.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/utils/init/postinit.c	2024-07-08 10:11:52.843247753 +0200
+--- postgresql-16.3/src/backend/utils/init/postinit.c
++++ postgresql-16.3-wasm/src/backend/utils/init/postinit.c
 @@ -714,6 +714,7 @@
   *		Be very careful with the order of calls in the InitPostgres function.
   * --------------------------------

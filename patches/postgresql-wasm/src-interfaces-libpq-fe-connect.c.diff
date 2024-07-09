@@ -1,5 +1,5 @@
---- postgresql-16.3/src/interfaces/libpq/fe-connect.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/interfaces/libpq/fe-connect.c	2024-07-08 10:11:52.467256767 +0200
+--- postgresql-16.3/src/interfaces/libpq/fe-connect.c
++++ postgresql-16.3-wasm/src/interfaces/libpq/fe-connect.c
 @@ -1932,6 +1932,7 @@
  static int
  connectNoDelay(PGconn *conn)

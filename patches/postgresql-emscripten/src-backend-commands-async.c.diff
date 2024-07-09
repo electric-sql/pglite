@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/commands/async.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/commands/async.c	2024-07-09 16:02:21.973916750 +0200
+--- postgresql-16.3/src/backend/commands/async.c
++++ postgresql-16.3-wasm/src/backend/commands/async.c
 @@ -1700,8 +1700,12 @@
  		 * NotifyQueueLock; which is unlikely but certainly possible. So we
  		 * just log a low-level debug message if it happens.

@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/Makefile	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/Makefile	2024-07-08 10:11:53.185239554 +0200
+--- postgresql-16.3/src/backend/Makefile
++++ postgresql-16.3-wasm/src/backend/Makefile
 @@ -65,7 +65,7 @@
  ifneq ($(PORTNAME), aix)
  

@@ -1,5 +1,5 @@
---- postgresql-16.3/src/common/exec.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/common/exec.c	2024-07-08 10:11:53.583230012 +0200
+--- postgresql-16.3/src/common/exec.c
++++ postgresql-16.3-wasm/src/common/exec.c
 @@ -22,7 +22,7 @@
   * This should be harmless everywhere else.
   */

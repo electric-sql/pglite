@@ -1,5 +1,5 @@
---- postgresql-16.3/src/interfaces/libpq/legacy-pqsignal.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/interfaces/libpq/legacy-pqsignal.c	2024-07-08 10:11:52.469256719 +0200
+--- postgresql-16.3/src/interfaces/libpq/legacy-pqsignal.c
++++ postgresql-16.3-wasm/src/interfaces/libpq/legacy-pqsignal.c
 @@ -32,6 +32,7 @@
   * non-ENABLE_THREAD_SAFETY builds), so the incompatibility isn't
   * troublesome for internal references.

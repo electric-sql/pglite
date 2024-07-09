@@ -1,5 +1,5 @@
---- postgresql-16.3/src/Makefile.shlib	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/Makefile.shlib	2024-07-08 10:11:53.583230012 +0200
+--- postgresql-16.3/src/Makefile.shlib
++++ postgresql-16.3-wasm/src/Makefile.shlib
 @@ -233,6 +233,19 @@
    override CXXFLAGS += $(CXXFLAGS_SL_MODULE)
  endif

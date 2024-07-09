@@ -36,8 +36,8 @@ export function parseDataDir(dataDir?: string) {
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
-    console.warn("MEMFS TODO: link correctly in",WASM_PREFIX, dataDir);
     dataDir = getBase("base");
+    console.warn("MEMFS TODO: link", dataDir, "correctly in", WASM_PREFIX);
     fsType = "memoryfs";
   } else {
     // No prefix, use node filesystem
@@ -52,7 +52,7 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     // Lazy load the nodefs to avoid bundling it in the browser
     const { NodeFS } = await import("./nodefs.js");
     fs = new NodeFS(dataDir);
-    console.warn("NODEFS TODO: link correctly in", WASM_PREFIX, dataDir);
+    console.warn("NODEFS TODO: link", dataDir,"correctly in", WASM_PREFIX);
     dataDir = getBase( dataDir );
   } else if (dataDir && (fsType === "idbfs")) {
     fs = new IdbFs(dataDir);

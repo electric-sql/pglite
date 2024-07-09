@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/catalog/index.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/catalog/index.c	2024-07-08 10:11:53.043242958 +0200
+--- postgresql-16.3/src/backend/catalog/index.c
++++ postgresql-16.3-wasm/src/backend/catalog/index.c
 @@ -2994,7 +2994,7 @@
  		indexInfo->ii_ParallelWorkers =
  			plan_create_index_workers(RelationGetRelid(heapRelation),

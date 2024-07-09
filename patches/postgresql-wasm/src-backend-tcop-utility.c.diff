@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/tcop/utility.c	2024-05-06 22:21:25.000000000 +0200
-+++ postgresql-16.3-wasm/src/backend/tcop/utility.c	2024-07-08 10:11:53.136240729 +0200
+--- postgresql-16.3/src/backend/tcop/utility.c
++++ postgresql-16.3-wasm/src/backend/tcop/utility.c
 @@ -811,7 +811,7 @@
  				ListenStmt *stmt = (ListenStmt *) parsetree;
  
