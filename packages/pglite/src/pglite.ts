@@ -1,6 +1,6 @@
 import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "./postgres.js";
-import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
+import { type Filesystem, parseDataDir, loadFs, loadExtensions } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
@@ -35,9 +35,11 @@ import {
 const sleep = (s: number) => new Promise((r) => setTimeout(r, s/1000));
 
 
+
 export class PGlite implements PGliteInterface {
   fs?: Filesystem;
   protected emp?: any;
+  fsType : any;
 
   #ready = false;
   #closing = false;
@@ -130,6 +132,8 @@ export class PGlite implements PGliteInterface {
     } else {
       const { dataDir, fsType } = parseDataDir(options.dataDir);
       this.fs = await loadFs(dataDir, fsType);
+      // @ts-ignore
+      this.fs.fsType = fsType;
     }
 
     const extensionBundlePromises: Record<string, Promise<Blob>> = {};
@@ -197,6 +201,9 @@ export class PGlite implements PGliteInterface {
     // init pg core engine done only using MEMFS
     this.emp = await EmPostgresFactory(emscriptenOpts);
 
+    // just for loadExtensions
+    this.emp.FS['Module'] = this.emp;
+
     // if ok, NOW:
     //   all pg c-api is avail. including exported sym
 
@@ -206,7 +213,6 @@ export class PGlite implements PGliteInterface {
     // maybe start extra FS/initdata async .
 
 //console.warn("syncing fs (fs->memfs)");
-    this.emp.FS.Module = this.emp
     await this.fs!.initialSyncFs(this.emp.FS);
 
     //console.warn("fs: mounted");
@@ -217,6 +223,8 @@ export class PGlite implements PGliteInterface {
         console.warn("pglite: no db");
     }
     // start compiling dynamic extensions present in FS.
+    // @ts-ignore
+    if (this.fs.fsType !== "idbfs") loadExtensions(this.fs.fsType, this.emp.FS);
 
 /*
     console.log(

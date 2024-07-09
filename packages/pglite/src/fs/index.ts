@@ -30,20 +30,13 @@ export function parseDataDir(dataDir?: string) {
       throw new Error("Invalid dataDir, must be a valid path");
     }
     fsType = "nodefs";
-/*
-  } else if (dataDir?.startsWith("pg://")) {
-    // Remove the pg:// prefix, no / allowed in dbname, and use custom filesystem
-    console.log("using pgfs FS");
-    dataDir = getBase( dataDir.slice(5) )
-    fsType = "pgfs";
-*/
   } else if (dataDir?.startsWith("idb://")) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = getBase( dataDir.slice(6) )
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
-    console.warn("MEMFS TODO: link correctly in /tmp", dataDir);
+    console.warn("MEMFS TODO: link correctly in",WASM_PREFIX, dataDir);
     dataDir = getBase("base");
     fsType = "memoryfs";
   } else {
@@ -54,19 +47,24 @@ export function parseDataDir(dataDir?: string) {
 }
 
 export async function loadFs(dataDir?: string, fsType?: FsType) {
-  if (dataDir && fsType === "nodefs") {
+  let fs : Filesystem;
+  if (dataDir && (fsType === "nodefs")) {
     // Lazy load the nodefs to avoid bundling it in the browser
     const { NodeFS } = await import("./nodefs.js");
-    return new NodeFS(dataDir);
-  } else if (dataDir && fsType === "idbfs") {
-    return new IdbFs(dataDir);
-/*
-  } else if (dataDir && fsType === "pgfs") {
-    return new PgFs(dataDir);
-*/
+    fs = new NodeFS(dataDir);
+    console.warn("NODEFS TODO: link correctly in", WASM_PREFIX, dataDir);
+    dataDir = getBase( dataDir );
+  } else if (dataDir && (fsType === "idbfs")) {
+    fs = new IdbFs(dataDir);
   } else {
-    return new MemoryFS();
+    fs = new MemoryFS();
   }
+
+  // idbfs is delayed so will use a callback for loading extensions.
+  //if (fsType !== "idbfs") {
+    //  await loadExtensions(fsType, fs);
+  fs.fsType = fsType;
+  return fs;
 }
 
 
@@ -106,7 +104,8 @@ function load_pg_extension(Module, ext, bytes) {
 
 export async function loadExtensions(fsType: FsType, fs: FS) {
     const Module = fs.Module;
-    console.warn("fs/index.ts: loadExtensions", fsType);
+    console.warn("fs/index.ts: loadExtensions for FS :", fsType);
+
     for (const ext in Module.pg_extensions) {
         var blob;
         try {
