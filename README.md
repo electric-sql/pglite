@@ -49,9 +49,18 @@ Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux 
 
 It is being developed at [ElectricSQL](http://electric-sql.com) in collaboration with [Neon](http://neon.tech). We will continue to build on this experiment with the aim of creating a fully capable lightweight WASM Postgres with support for extensions such as pgvector.
 
-## Whats new in V0.1
+## Whats new in V0.2.0
 
-Version 0.1 (up from 0.0.2) includes significant changes to the Postgres build - it's about 1/3 smaller at 2.6mb gzipped, and up to 2-3 times faster. We have also found a way to statically compile Postgres extensions into the build - the first of these is pl/pgsql with more coming soon.
+Key changes in this release are:
+
+- Postgres release 16.3
+- Support Postgres dynamic extensions.
+- Running on node/bun.
+
+
+## Whats new in V0.1.5
+
+Version 0.1.5 (up from 0.0.2) includes significant changes to the Postgres build - it's about 1/3 smaller at 2.6mb gzipped, and up to 2-3 times faster. We have also found a way to statically/dynamically compile Postgres extensions into the build - the first of these is pl/pgsql with more coming soon.
 
 Key changes in this release are:
 
@@ -133,7 +142,7 @@ Deno.serve(async (_request: Request) => {
 
 Then run the file with `deno run --allow-net --allow-read server.ts`.
 
-## API Reference  
+## API Reference
 
 ### Main Constructor:
 
@@ -305,6 +314,8 @@ await pg.exec(`
 
 PGlite supports the pl/pgsql procedural language extension, this is included and enabled by default.
 
+PGlite supports the [vector](https://github.com/pgvector/pgvector) language extension, this is included but not enabled by default.
+
 In future we plan to support additional extensions, see the [roadmap](#roadmap).
 
 ## ORM support.
@@ -325,13 +336,11 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 
 PGlite is *Alpha* and under active development, the current roadmap is:
 
-- CI builds [#19](https://github.com/electric-sql/pglite/issues/19)
-- Support Postgres extensions, starting with:
-  - pgvector [#18](https://github.com/electric-sql/pglite/issues/18)
+- Support Postgres more extensions, starting with:
   - PostGIS [#11](https://github.com/electric-sql/pglite/issues/11)
 - OPFS support in browser [#9](https://github.com/electric-sql/pglite/issues/9)
 - Muti-tab support in browser [#32](https://github.com/electric-sql/pglite/issues/32)
-- Syncing via [ElectricSQL](https://electric-sql.com) with a Postgres server [electric/#1058](https://github.com/electric-sql/electric/pull/1058) 
+- Syncing via [ElectricSQL](https://electric-sql.com) with a Postgres server [electric/#1058](https://github.com/electric-sql/electric/pull/1058)
 
 ## Repository Structure
 
@@ -339,9 +348,9 @@ The PGlite project is split into two parts:
 
 - `/packages/pglite`
   The TypeScript package for PGlite
-- `/postgres` _(git submodule)_
-  A fork of Postgres with changes to enable compiling to WASM:
-  [/electric-sql/postgres-wasm](https://github.com/electric-sql/postgres-wasm)
+- `/patches`
+  All patches required to enable compiling Postgres releases to WASM and pglite patches to enable web operations:
+
 
 Please use the [issues](https://github.com/electric-sql/pglite/issues/) in this main repository for filing issues related to either part of PGlite. Changes that affect both the TypeScript package and the Postgres source should be filed as two pull requests - one for each repository, and they should reference each other.
 
@@ -349,18 +358,13 @@ Please use the [issues](https://github.com/electric-sql/pglite/issues/) in this 
 
 There are a couple of prerequisites:
 
-- the Postgres build toolchain - https://www.postgresql.org/download/
-- emscripten version 3.1.56 - https://emscripten.org/docs/getting_started/downloads.html
+- Linux/Mac/Windows-WSL with git/wget/patch tools. Tested version is Ubuntu 22.04
+- emscripten's emsdk version 3.1.61 - https://emscripten.org/docs/getting_started/index.html
 
 To build, checkout the repo, then:
 
 ```
-git submodule update --init
-cd ./pglite/packages/pglite
-emsdk install 3.1.56
-emsdk activate 3.1.56
-pnpm install
-pnpm build
+./localbuild.sh
 ```
 
 ## Acknowledgments

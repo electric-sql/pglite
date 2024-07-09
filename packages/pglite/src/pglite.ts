@@ -1,8 +1,7 @@
 import { Mutex } from "async-mutex";
-import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
+import EmPostgresFactory, { type EmPostgres } from "./postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
-import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
 import type {
@@ -17,6 +16,9 @@ import type {
   Extensions,
   Extension,
 } from "./interface.js";
+import { loadExtensionBundle } from "./extensionUtils.js";
+
+import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
 // Importing the source as the built version is not ESM compatible
 import { serialize } from "pg-protocol/dist/index.js";
@@ -29,21 +31,19 @@ import {
   NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
+
+const sleep = (s: number) => new Promise((r) => setTimeout(r, s/1000));
+
+
 export class PGlite implements PGliteInterface {
   fs?: Filesystem;
   protected emp?: any;
 
-  #extensions: Extensions;
-  #initStarted = false;
   #ready = false;
-  #eventTarget: EventTarget;
   #closing = false;
   #closed = false;
   #inTransaction = false;
   #relaxedDurability = false;
-  #extensionsClose: Array<() => Promise<void>> = [];
-
-  #resultAccumulator: Uint8Array[] = [];
 
   readonly waitReady: Promise<void>;
 
@@ -55,13 +55,16 @@ export class PGlite implements PGliteInterface {
 
   readonly debug: DebugLevel = 0;
 
+  #extensions: Extensions;
+  #extensionsClose: Array<() => Promise<void>> = [];
+
   #parser = new Parser();
 
   // These are the current ArrayBuffer that is being read or written to
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
-  
+
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
@@ -105,13 +108,8 @@ export class PGlite implements PGliteInterface {
       this.#relaxedDurability = options.relaxedDurability;
     }
 
-    // Create an event target to handle events from the emscripten module
-    this.#eventTarget = new EventTarget();
-
-    // Listen for result events from the emscripten module and accumulate them
-    this.#eventTarget.addEventListener("result", async (e: any) => {
-      this.#resultAccumulator.push(e.detail);
-    });
+    // Save the extensions for later use
+    this.#extensions = options.extensions ?? {};
 
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {};
@@ -125,6 +123,8 @@ export class PGlite implements PGliteInterface {
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
+    console.log("options :", options);
+
     if (options.fs) {
       this.fs = options.fs;
     } else {
@@ -132,110 +132,57 @@ export class PGlite implements PGliteInterface {
       this.fs = await loadFs(dataDir, fsType);
     }
 
+    const extensionBundlePromises: Record<string, Promise<Blob>> = {};
     const extensionInitFns: Array<() => Promise<void>> = [];
-    let firstRun = false;
-    await new Promise<void>(async (resolve, reject) => {
-      if (this.#initStarted) {
-        throw new Error("Already initializing");
-      }
-      this.#initStarted = true;
 
-      // Initialize the filesystem
-      // returns true if this is the first run, we then need to perform
-      // additional setup steps at the end of the init.
-      firstRun = await this.fs!.init(this.debug);
+    const args = [
+      `PGDATA=${PGDATA}`,
+      `PREFIX=${WASM_PREFIX}`,
+      "MODE=REACT",
+      "REPL=N",
+      // "-F", // Disable fsync (TODO: Only for in-memory mode?)
+      ...(this.debug ? ["-d", this.debug.toString()] : []),
+    ];
 
-      let emscriptenOpts: Partial<EmPostgres> = {
-        arguments: [
-          "--single", // Single user mode
-          "-F", // Disable fsync (TODO: Only for in-memory mode?)
-          "-O", // Allow the structure of system tables to be modified. This is used by initdb
-          "-j", // Single use mode - Use semicolon followed by two newlines, rather than just newline, as the command entry terminator.
-          "-c", // Set parameter
-          "search_path=pg_catalog",
-          "-c",
-          "dynamic_shared_memory_type=mmap",
-          "-c",
-          "max_prepared_transactions=10",
-          // Debug level
-          ...(this.debug ? ["-d", this.debug.toString()] : []),
-          "-D", // Data directory
-          "/pgdata",
-          "template1",
-        ],
-        locateFile: await makeLocateFile(),
-        ...(this.debug > 0
-          ? { print: console.info, printErr: console.error }
-          : { print: () => {}, printErr: () => {} }),
-        preRun: [
-          (mod: any) => {
-            // Register /dev/blob device
-            // This is used to read and write blobs when used in COPY TO/FROM
-            // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
-            // The data is returned by the query as a `blob` property in the results
-            const devId = mod.FS.makedev(64, 0);
-            let callCounter = 0;
-            const devOpt = {
-              open: (stream: any) => {},
-              close: (stream: any) => {},
-              read: (
-                stream: any,
-                buffer: Uint8Array,
-                offset: number,
-                length: number,
-                position: number,
-              ) => {
-                const buf = this.#queryReadBuffer;
-                if (!buf) {
-                  throw new Error("No File or Blob provided to read from");
-                }
-                const contents = new Uint8Array(buf);
-                if (position >= contents.length) return 0;
-                const size = Math.min(contents.length - position, length);
-                for (let i = 0; i < size; i++) {
-                  buffer[offset + i] = contents[position + i];
-                }
-                return size;
-              },
-              write: (
-                stream: any,
-                buffer: Uint8Array,
-                offset: number,
-                length: number,
-                position: number,
-              ) => {
-                callCounter++;
-                this.#queryWriteChunks ??= [];
-                this.#queryWriteChunks.push(
-                  buffer.slice(offset, offset + length),
-                );
-                return length;
-              },
-              llseek: (stream: any, offset: number, whence: number) => {
-                throw new Error("Cannot seek /dev/blob");
-              },
-            };
-            mod.FS.registerDevice(devId, devOpt);
-            mod.FS.mkdev("/dev/blob", devId);
-          },
-        ],
-        onRuntimeInitialized: async (Module: EmPostgres) => {
-          await this.fs!.initialSyncFs(Module.FS);
-          this.#ready = true;
-          resolve();
-        },
-        eventTarget: this.#eventTarget,
-        Event: PGEvent,
-      };
+    let emscriptenOpts: Partial<EmPostgres & {
+      WASM_PREFIX: string;
+      pg_extensions: Record<string, Promise<Blob>>;
+    }> = {
+      WASM_PREFIX,
+      arguments: args,
+      noExitRuntime: true,
+      ...(this.debug > 0
+        ? { print: console.info, printErr: console.error }
+        : { print: () => {}, printErr: () => {} }),
+      locateFile: await makeLocateFile(),
+    };
 
-      // Setup extensions
-      for (const [extName, ext] of Object.entries(this.#extensions)) {
+    emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
+    //console.log("emscriptenOpts:", emscriptenOpts);
+
+    // # Setup extensions
+    // This is the first step of loading PGlite extensions
+    // We loop through each extension and call the setup function
+    // This amends the emscriptenOpts and can return:
+    // - emscriptenOpts: The updated emscripten options
+    // - namespaceObj: The namespace object to attach to the PGlite instance
+    // - init: A function to initialize the extension/plugin after the database is ready
+    // - close: A function to close/tidy-up the extension/plugin when the database is closed
+    for (const [extName, ext] of Object.entries(this.#extensions)) {
+      if (ext instanceof URL) {
+        // Extension with only a URL to a bundle
+        extensionBundlePromises[extName] = loadExtensionBundle(ext);
+      } else {
+        // Extension with JS setup function
         const extRet = await ext.setup(this, emscriptenOpts);
         if (extRet.emscriptenOpts) {
           emscriptenOpts = extRet.emscriptenOpts;
         }
         if (extRet.namespaceObj) {
           (this as any)[extName] = extRet.namespaceObj;
+        }
+        if (extRet.bundlePath) {
+          extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
         }
         if (extRet.init) {
           extensionInitFns.push(extRet.init);
@@ -244,52 +191,98 @@ export class PGlite implements PGliteInterface {
           this.#extensionsClose.push(extRet.close);
         }
       }
-
-      emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
-      const emp = await EmPostgresFactory(emscriptenOpts);
-      this.emp = emp;
-    });
-
-    if (firstRun) {
-      await this.#firstRun();
     }
-    await this.#runExec(`
-      SET search_path TO public;
-    `);
+    emscriptenOpts['pg_extensions'] = extensionBundlePromises;
+
+    // init pg core engine done only using MEMFS
+    this.emp = await EmPostgresFactory(emscriptenOpts);
+
+    // if ok, NOW:
+    //   all pg c-api is avail. including exported sym
+
+//console.warn("fs: mounting");
+
+    // finalize FS states needed before initdb.
+    // maybe start extra FS/initdata async .
+
+//console.warn("syncing fs (fs->memfs)");
+    this.emp.FS.Module = this.emp
+    await this.fs!.initialSyncFs(this.emp.FS);
+
+    //console.warn("fs: mounted");
+    if (this.emp.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
+        console.log("pglite: found DB, resuming")
+        //console.log(this.emp.FS.readdir(PGDATA));
+    } else {
+        console.warn("pglite: no db");
+    }
+    // start compiling dynamic extensions present in FS.
+
+/*
+    console.log(
+      "database engine is ready (but not yet system/user databases or extensions)",
+    );
+*/
+
+    // await async compilation dynamic extensions finished.
+
+
+    // await extra FS/fetches.
+
+    // await async compilation of fetched dynamic extensions.
+
+    // bad things that could happen here :
+    //  javascript host deny access to some FS
+    //  FS is full
+    //  FS is corrupted
+    //  wasm compilation failed (eg missing features).
+    //  a fetch has timeout.
+
+    // if ok, NOW:
+    // extensions used in user database are compiled (whatever their source).
+    // FS hosting system indexes and user named db default "postgres" must be ready
+
+    // -> if FS does not have a valid pgdata, initdb will run.
+
+    const idb = this.emp._pg_initdb();
+
+    if (!idb) {
+      console.warn("TODO: meaning full initdb return/error code ?");
+    } else {
+      if (idb & 0b0001) console.log(" #1");
+
+      if (idb & 0b0010) console.log(" #2");
+
+      if (idb & 0b0100) console.log(" #3");
+    }
+/*
+    console.log(
+      "database engine/system db are ready (maybe not user databases)",
+    );
+*/
+    // extra FS could go here, same for sql init data.
+
+    // eg custom SQL
+    // eg read only database
+
+    // bad things that could happen here :
+    //  FS is corrupted
+    //  something fetched is corrupted, not valid SQL.
+
+console.warn("pglite: ext and FS loaded, db is ready");
+
+// TODO: only sync here if initdb did init db.
+    await this.#syncToFs();
+
+// TODO: add that to initdb ?
+    await this.#runExec("SET search_path TO public;");
+
+    this.#ready = true;
 
     // Init extensions
     for (const initFn of extensionInitFns) {
       await initFn();
     }
-  }
-
-  /**
-   * Perform the first run initialization of the database
-   * This is only run when the database is first created
-   */
-  async #firstRun() {
-    const shareDir = "/usr/local/pgsql/share";
-    const sqlFiles = [
-      ["information_schema.sql"],
-      ["system_constraints.sql", "pg_catalog"],
-      ["system_functions.sql", "pg_catalog"],
-      ["system_views.sql", "pg_catalog"],
-    ];
-    // Load the sql files into the database
-    for (const [file, schema] of sqlFiles) {
-      const sql = await this.emp.FS.readFile(shareDir + "/" + file, {
-        encoding: "utf8",
-      });
-      if (schema) {
-        await this.#runExec(`SET search_path TO ${schema};\n ${sql}`);
-      } else {
-        await this.#runExec(sql);
-      }
-    }
-    await this.#runExec(`
-      SET search_path TO public;
-      CREATE EXTENSION IF NOT EXISTS plpgsql;
-    `);
   }
 
   /**
@@ -569,59 +562,63 @@ export class PGlite implements PGliteInterface {
     { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
-      if (this.#resultAccumulator.length > 0) {
-        this.#resultAccumulator = [];
-      }
+      const msg_len = message.length;
 
-      var bytes = message.length;
-      var ptr = this.emp._malloc(bytes);
-      this.emp.HEAPU8.set(message, ptr);
-      this.emp._ExecProtocolMsg(ptr);
+      // >0 set buffer content type to wire protocol
+      // set buffer size so answer will be at size+0x2 pointer addr
+      this.emp._interactive_write(msg_len);
+
+      // copy whole buffer at addr 0x1
+      this.emp.HEAPU8.set(message, 1);
+
+      // execute the message
+      this.emp._interactive_one();
 
       if (syncToFs) {
         await this.#syncToFs();
       }
 
-      const resData = this.#resultAccumulator;
-
       const results: Array<[BackendMessage, Uint8Array]> = [];
 
-      resData.forEach((data) => {
-        this.#parser.parse(Buffer.from(data), (msg) => {
-          if (msg instanceof DatabaseError) {
-            this.#parser = new Parser(); // Reset the parser
-            throw msg;
-            // TODO: Do we want to wrap the error in a custom error?
-          } else if (msg instanceof NoticeMessage && this.debug > 0) {
-            // Notice messages are warnings, we should log them
-            console.warn(msg);
-          } else if (msg instanceof CommandCompleteMessage) {
-            // Keep track of the transaction state
-            switch (msg.text) {
-              case "BEGIN":
-                this.#inTransaction = true;
-                break;
-              case "COMMIT":
-              case "ROLLBACK":
-                this.#inTransaction = false;
-                break;
-            }
-          } else if (msg instanceof NotificationResponseMessage) {
-            // We've received a notification, call the listeners
-            const listeners = this.#notifyListeners.get(msg.channel);
-            if (listeners) {
-              listeners.forEach((cb) => {
-                // We use queueMicrotask so that the callback is called after any
-                // synchronous code has finished running.
-                queueMicrotask(() => cb(msg.payload));
-              });
-            }
-            this.#globalNotifyListeners.forEach((cb) => {
-              queueMicrotask(() => cb(msg.channel, msg.payload));
+      // Read responses from the buffer
+      const msg_start = msg_len + 2;
+      const msg_end = msg_start + this.emp._interactive_read();
+      const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
+
+      this.#parser.parse(Buffer.from(data), (msg) => {
+        if (msg instanceof DatabaseError) {
+          this.#parser = new Parser(); // Reset the parser
+          throw msg;
+          // TODO: Do we want to wrap the error in a custom error?
+        } else if (msg instanceof NoticeMessage && this.debug > 0) {
+          // Notice messages are warnings, we should log them
+          console.warn(msg);
+        } else if (msg instanceof CommandCompleteMessage) {
+          // Keep track of the transaction state
+          switch (msg.text) {
+            case "BEGIN":
+              this.#inTransaction = true;
+              break;
+            case "COMMIT":
+            case "ROLLBACK":
+              this.#inTransaction = false;
+              break;
+          }
+        } else if (msg instanceof NotificationResponseMessage) {
+          // We've received a notification, call the listeners
+          const listeners = this.#notifyListeners.get(msg.channel);
+          if (listeners) {
+            listeners.forEach((cb) => {
+              // We use queueMicrotask so that the callback is called after any
+              // synchronous code has finished running.
+              queueMicrotask(() => cb(msg.payload));
             });
           }
-          results.push([msg, data]);
-        });
+          this.#globalNotifyListeners.forEach((cb) => {
+            queueMicrotask(() => cb(msg.channel, msg.payload));
+          });
+        }
+        results.push([msg, data]);
       });
 
       return results;

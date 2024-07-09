@@ -1,0 +1,20 @@
+--- postgresql-16.3/src/backend/tcop/utility.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/backend/tcop/utility.c	2024-07-08 10:11:53.136240729 +0200
+@@ -811,7 +811,7 @@
+ 				ListenStmt *stmt = (ListenStmt *) parsetree;
+ 
+ 				CheckRestrictedOperation("LISTEN");
+-
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 				/*
+ 				 * We don't allow LISTEN in background processes, as there is
+ 				 * no mechanism for them to collect NOTIFY messages, so they'd
+@@ -827,7 +827,7 @@
+ 					/* translator: %s is name of a SQL command, eg LISTEN */
+ 							 errmsg("cannot execute %s within a background process",
+ 									"LISTEN")));
+-
++#endif
+ 				Async_Listen(stmt->conditionname);
+ 			}
+ 			break;

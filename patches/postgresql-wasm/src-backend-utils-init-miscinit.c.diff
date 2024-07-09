@@ -1,0 +1,38 @@
+--- postgresql-16.3/src/backend/utils/init/miscinit.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c	2024-07-08 10:11:52.843247753 +0200
+@@ -209,7 +209,7 @@
+ 	if (my_exec_path[0] == '\0')
+ 	{
+ 		if (find_my_exec(argv0, my_exec_path) < 0)
+-			elog(FATAL, "%s: could not locate my own executable path",
++			elog(WARNING, "%s:212: could not locate my own executable path",
+ 				 argv0);
+ 	}
+ 
+@@ -368,7 +368,7 @@
+ 	 *
+ 	 * XXX can we safely enable this check on Windows?
+ 	 */
+-#if !defined(WIN32) && !defined(__CYGWIN__)
++#if !defined(WIN32) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	if (stat_buf.st_uid != geteuid())
+ 		ereport(FATAL,
+ 				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+@@ -388,7 +388,7 @@
+ 	 * be proper support for Unix-y file permissions.  Need to think of a
+ 	 * reasonable check to apply on Windows.
+ 	 */
+-#if !defined(WIN32) && !defined(__CYGWIN__)
++#if !defined(WIN32) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	if (stat_buf.st_mode & PG_MODE_MASK_GROUP)
+ 		ereport(FATAL,
+ 				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+@@ -409,7 +409,7 @@
+ 	 * Suppress when on Windows, because there may not be proper support for
+ 	 * Unix-y file permissions.
+ 	 */
+-#if !defined(WIN32) && !defined(__CYGWIN__)
++#if !defined(WIN32) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__) && !defined(__wasi__)
+ 	SetDataDirectoryCreatePerm(stat_buf.st_mode);
+ 
+ 	umask(pg_mode_mask);

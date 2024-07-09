@@ -1,0 +1,24 @@
+--- postgresql-16.3/src/backend/tcop/postgres.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/backend/tcop/postgres.c	2024-07-08 10:11:53.135240753 +0200
+@@ -3988,7 +3988,11 @@
+ #endif
+ }
+ 
+-
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++#define PG_MAIN
++#include PG_MAIN_INCLUDE
++#undef PG_MAIN
++#else
+ /*
+  * PostgresSingleUserMain
+  *     Entry point for single user mode. argc/argv are the command line
+@@ -4884,7 +4888,7 @@
+ 		}
+ 	}							/* end of input-reading loop */
+ }
+-
++#endif /* wasm */
+ /*
+  * Throw an error if we're a WAL sender process.
+  *

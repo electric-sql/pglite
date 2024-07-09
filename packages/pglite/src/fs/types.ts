@@ -1,5 +1,4 @@
-import type { EmPostgres, FS } from "../../release/postgres.js";
-import type { DebugLevel } from "../index.js";
+import type { EmPostgres, FS } from "../postgres.js";
 
 export type FsType = "nodefs" | "idbfs" | "memoryfs";
 
@@ -8,11 +7,6 @@ export interface FilesystemFactory {
 }
 
 export interface Filesystem {
-  /**
-   * Returns true if the filesystem was initialized and this is the fun run.
-   */
-  init(debug?: DebugLevel): Promise<boolean>;
-
   /**
    * Returns the options to pass to the emscripten module.
    */
@@ -27,6 +21,11 @@ export interface Filesystem {
    * Sync the emscripten filesystem to the filesystem.
    */
   initialSyncFs(mod: FS): Promise<void>;
+
+
+//  on_mount(): Function<void>;
+  // load_extension(ext: string): Promise<void>;
+
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -34,7 +33,6 @@ export abstract class FilesystemBase implements Filesystem {
   constructor(dataDir?: string) {
     this.dataDir = dataDir;
   }
-  abstract init(): Promise<boolean>;
   abstract emscriptenOpts(
     opts: Partial<EmPostgres>,
   ): Promise<Partial<EmPostgres>>;

@@ -1,0 +1,21 @@
+--- postgresql-16.3/src/interfaces/libpq/fe-auth.c	2024-05-06 22:21:25.000000000 +0200
++++ postgresql-16.3-wasm/src/interfaces/libpq/fe-auth.c	2024-07-08 10:11:52.466256791 +0200
+@@ -1170,6 +1170,7 @@
+ pg_fe_getusername(uid_t user_id, PQExpBuffer errorMessage)
+ {
+ 	char	   *result = NULL;
++#if !defined(__EMSCRIPTEN__)
+ 	const char *name = NULL;
+ 
+ #ifdef WIN32
+@@ -1202,7 +1203,9 @@
+ 	else if (errorMessage)
+ 		appendPQExpBuffer(errorMessage, "%s\n", pwdbuf);
+ #endif
+-
++#else
++	const char *name = WASM_USERNAME;
++#endif
+ 	if (name)
+ 	{
+ 		result = strdup(name);

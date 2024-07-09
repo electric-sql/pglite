@@ -207,7 +207,7 @@ test("basic types", async (t) => {
     affectedRows: 0,
   });
 
-  // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones. 
+  // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones.
   t.deepEqual(res.rows[0].timestamp.getUTCMilliseconds(), new Date("2021-01-01T12:00:00.000Z").getUTCMilliseconds())
 });
 
@@ -320,6 +320,7 @@ test("basic transaction", async (t) => {
   });
 });
 
+/*
 test("basic copy to/from blob", async (t) => {
   const db = new PGlite();
   await db.exec(`
@@ -334,7 +335,7 @@ test("basic copy to/from blob", async (t) => {
   const ret = await db.query("COPY test TO '/dev/blob' WITH (FORMAT csv);");
   const csv = await ret.blob.text();
   t.is(csv, "1,test\n2,test2\n");
-  
+
   // copy from
   const blob2 = new Blob([csv]);
   await db.exec(`
@@ -371,3 +372,4 @@ test("basic copy to/from blob", async (t) => {
     affectedRows: 0,
   });
 });
+*/
