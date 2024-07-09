@@ -21,166 +21,166 @@ jobs:
     name: Build and Test PGlite
     runs-on: ubuntu-22.04
     env:
-        PGVERSION: 16.3
-        SDK_VERSION: 3.1.63.0bi
-        SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
-        SDKROOT: /opt/python-wasm-sdk
-        SYS_PYTHON: /usr/bin/python3
-        PGROOT: /tmp/pglite
-        DEBUG: false
+      PGVERSION: 16.3
+      SDK_VERSION: 3.1.63.0bi
+      SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
+      SDKROOT: /opt/python-wasm-sdk
+      SYS_PYTHON: /usr/bin/python3
+      PGROOT: /tmp/pglite
+      DEBUG: false
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-    - name: Restore cached
-      id: cache-restore
-      uses: actions/cache/restore@v4
-      with:
-        path: |
-          /tmp/web
-          /tmp/pglite
-          /tmp/sdk/postgres-*.tar.gz
-          postgres
-          postgresql-*
-        key: build-cache-${{ hashFiles('cibuild/**', 'patches/**') }}
+      - name: Restore cached
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/web
+            /tmp/pglite
+            /tmp/sdk/postgres-*.tar.gz
+            postgres
+            postgresql-*
+          key: build-cache-${{ hashFiles('cibuild/**', 'patches/**') }}
 
-    - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      working-directory: /
-      run: |
-        sudo apt-get install -y lz4 wget pv bash
-        echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
-        curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 24400 >/dev/null
+      - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        working-directory: /
+        run: |
+          sudo apt-get install -y lz4 wget pv bash
+          echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
+          curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 24400 >/dev/null
 
-    - name: Build postgres WASM via emsdk
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      run: |
-        bash ./cibuild.sh
+      - name: Build postgres WASM via emsdk
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh
 
-    - name: Build pgvector
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      run: |
-        bash ./cibuild.sh vector
+      - name: Build pgvector
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh vector
 
-    - name: Pack node distribution
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      run: |
-        bash ./cibuild.sh node
+      - name: Pack node distribution
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh node
 
-    - name: Link postgres WASM for web
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      run: |
-        bash ./cibuild.sh linkweb
+      - name: Link postgres WASM for web
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh linkweb
 
-    - name: Cached intermediate
-      if: steps.cache-restore.outputs.cache-hit != 'true'
-      id: cache-intermediate
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          /tmp/web
-          /tmp/pglite
-          /tmp/sdk/postgres-*.tar.gz
-          postgres
-          postgresql-*
-        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+      - name: Cached intermediate
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        id: cache-intermediate
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /tmp/web
+            /tmp/pglite
+            /tmp/sdk/postgres-*.tar.gz
+            postgres
+            postgresql-*
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-    - uses: pnpm/action-setup@v4
-      with:
-        version: 8
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
-    - name: Copy release for PGlite build
-      run: |
-        bash ./cibuild.sh pglite-prep
+      - name: Copy release for PGlite build
+        run: |
+          bash ./cibuild.sh pglite-prep
 
-    - name: Build PGlite
-      working-directory: ./packages/pglite
-      run: |
-        npm install
-        npm run build
-        npm pack
+      - name: Build PGlite
+        working-directory: ./packages/pglite
+        run: |
+          pnpm install
+          pnpm run build
+          pnpm pack
 
-#    - name: Build REPL for Example deployment
-#      working-directory: ./packages/repl
-#      run: |
-#        pnpm install
-#        pnpm run build
+      - name: Build REPL for Example deployment
+        working-directory: ./packages/repl
+        run: |
+          pnpm install
+          pnpm run build
 
-    - name: Build demo site
-      run: |
-        bash ./cibuild.sh demo-site
+      - name: Build demo site
+        run: |
+          bash ./cibuild.sh demo-site
 
-    - name: Upload Postgres to Github artifacts
-      id: upload-postgres-wasm
-      uses: actions/upload-artifact@v4
-      with:
-        name: postgres-wasm
-        path: /tmp/sdk/postgres-*.tar.gz
-        retention-days: 90
+      - name: Upload Postgres to Github artifacts
+        id: upload-postgres-wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-wasm
+          path: /tmp/sdk/postgres-*.tar.gz
+          retention-days: 90
 
-    - name: Upload PGlite Interim to Github artifacts
-      id: upload-pglite-interim-build-files
-      uses: actions/upload-artifact@v4
-      with:
-        name: pglite-interim-build-files
-        path: ./packages/pglite/release/**
-        retention-days: 90
+      - name: Upload PGlite Interim to Github artifacts
+        id: upload-pglite-interim-build-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-interim-build-files
+          path: ./packages/pglite/release/**
+          retention-days: 90
 
-    - name: Upload PGlite to Github artifacts
-      id: upload-pglite
-      uses: actions/upload-artifact@v4
-      with:
-        name: pglite
-        path: ./packages/pglite/electric-sql-pglite-*.tgz
-        retention-days: 90
+      - name: Upload PGlite to Github artifacts
+        id: upload-pglite
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite
+          path: ./packages/pglite/electric-sql-pglite-*.tgz
+          retention-days: 90
 
-    - name: Upload Demos to Github artifacts
-      id: upload-demos
-      uses: actions/upload-artifact@v4
-      with:
-        name: pglite-demos
-        path: /tmp/web/**
-        retention-days: 90
+      - name: Upload Demos to Github artifacts
+        id: upload-demos
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-demos
+          path: /tmp/web/**
+          retention-days: 90
 
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v3.0
-      with:
-        publish-dir: '/tmp/web'
-        production-branch: master
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy PR${{ github.event.pull_request.id }}: ${{ github.event.pull_request.title }}"
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      timeout-minutes: 1
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: '/tmp/web'
+          production-branch: master
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy PR${{ github.event.pull_request.id }}: ${{ github.event.pull_request.title }}'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
 
-    - name: Find Comment
-      uses: peter-evans/find-comment@v3
-      id: fc
-      if: github.event_name == 'pull_request'
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        comment-author: 'github-actions[bot]'
-        body-includes: Built bundles
+      - name: Find Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        if: github.event_name == 'pull_request'
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Built bundles
 
-    - name: Create or update comment
-      uses: peter-evans/create-or-update-comment@v4
-      if: github.event_name == 'pull_request'
-      with:
-        comment-id: ${{ steps.fc.outputs.comment-id }}
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          Built bundles:
-          - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
-          - PGlite: ${{ steps.upload-pglite.outputs.artifact-url }}
-          - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
-          - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
-        edit-mode: replace
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: github.event_name == 'pull_request'
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Built bundles:
+            - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
+            - PGlite: ${{ steps.upload-pglite.outputs.artifact-url }}
+            - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
+            - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
+          edit-mode: replace
 
-    - name: Test pglite
-      working-directory: ./packages/pglite
-      run: |
-        npx playwright install --with-deps
-        npm run test
+      - name: Test pglite
+        working-directory: ./packages/pglite
+        run: |
+          pnpm exec playwright install --with-deps
+          pnpm run test
