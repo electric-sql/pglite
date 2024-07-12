@@ -55,6 +55,9 @@ importers:
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
+      bun:
+        specifier: ^1.1.18
+        version: 1.1.18
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -1200,6 +1203,70 @@ packages:
       fastq: 1.17.1
     dev: true
 
+  /@oven/bun-darwin-aarch64@1.1.18:
+    resolution: {integrity: sha512-2YMh1G+S5AxDqOEDh9i+9kc17887mkP/yzK/d5DQ0NyPt5uR2w5FKGaalPLDiu5w139y3LKBi+1eGba1oEJnyw==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-darwin-x64-baseline@1.1.18:
+    resolution: {integrity: sha512-shwwfe9Yugpyr490FdjQ90O3JtETbszyUk4PBXQrbz3babPfhXGuVGewis8ORNYeb8zoWGo/adk4biby6kKwHA==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-darwin-x64@1.1.18:
+    resolution: {integrity: sha512-ppeJpQqEXO6nfCneq2TXYFO/l1S/KYKTt3cintTiQxW0ISvj36vQcP/l0ln8BxEu46EnqulVKDrkTBAttv9sww==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-linux-aarch64@1.1.18:
+    resolution: {integrity: sha512-cDwqcGA/PiiqM8pQkZSRW0HbSh3r1hMsS2ew61d6FjjEI7HP+bwTuu0n0rGdzQKWTtb3PzzXvOkiFZywKS5Gzg==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-linux-x64-baseline@1.1.18:
+    resolution: {integrity: sha512-hxnFwssve6M9i4phusIn9swFvQKwLI+9i2taWSotshp1axLXQ5ruIIE9WPKJGR0i+yuw5Q8HBCnUDDh5ZMp9rA==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-linux-x64@1.1.18:
+    resolution: {integrity: sha512-oce0pELxlVhRO7clQGAkbo8vfxaCmRpf7Tu/Swn+T/wqeA5tew02HmsZAnDQqgYx8Z2/QpCOfF1SvLsdg7hR+A==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-windows-x64-baseline@1.1.18:
+    resolution: {integrity: sha512-Wlb55q9QbayO+7NvfYMnU8oaTPz1k2xMr7mm9+JOnG/I6q82HMvIQEG181bAhU1kcm5YcZZ5E0WMp2gX3NFsEw==}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-windows-x64@1.1.18:
+    resolution: {integrity: sha512-d639p5g8hrXyvFX3FK9EpsaoVEhMRThftmkueljjpYnYjMvIiMQ2crHtI2zwZ6yLEHvecaFXVXlocu2+jxia7g==}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -2204,6 +2271,23 @@ packages:
     dependencies:
       base64-js: 1.5.1
       ieee754: 1.2.1
+    dev: true
+
+  /bun@1.1.18:
+    resolution: {integrity: sha512-bv1wLYtmkn6GCqYFsVO9xZzPvNaDlA3xHbtePGHMtXMqq8N/vo+L6b19LB4+I5RKXFAsSmgzonyh2oMExaaWcQ==}
+    cpu: [arm64, x64]
+    os: [darwin, linux, win32]
+    hasBin: true
+    requiresBuild: true
+    optionalDependencies:
+      '@oven/bun-darwin-aarch64': 1.1.18
+      '@oven/bun-darwin-x64': 1.1.18
+      '@oven/bun-darwin-x64-baseline': 1.1.18
+      '@oven/bun-linux-aarch64': 1.1.18
+      '@oven/bun-linux-x64': 1.1.18
+      '@oven/bun-linux-x64-baseline': 1.1.18
+      '@oven/bun-windows-x64': 1.1.18
+      '@oven/bun-windows-x64-baseline': 1.1.18
     dev: true
 
   /bundle-require@4.0.2(esbuild@0.19.12):

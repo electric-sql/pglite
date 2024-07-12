@@ -1,4 +1,4 @@
-import test from "ava";
+import test from "../polytest.js";
 import playwright from "playwright";
 
 const wsPort = process.env.WS_PORT || 3334;

@@ -43,7 +43,9 @@
     "directory": "packages/pglite"
   },
   "scripts": {
-    "test": "rm -rf ./pgdata-test && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\" \"npx http-server --port 3334 ./\"",
+    "test": "rm -rf ./pgdata-test && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && ava tests/**/*.test.js\" \"npx http-server --port 3334 ./\"",
+    "test:quick": "rm -rf ./pgdata-bun-test && ava tests/*.test.js tests/target/node-*.test.js",
+    "test:bun": "rm -rf ./pgdata-test && npx bun test tests/basic.test.js && npx bun test tests/pgvector.test.js && npx bun test tests/targets/node-fs.test.js",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
     "format": "prettier --write ./src"
@@ -55,6 +57,7 @@
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
+    "bun": "^1.1.18",
     "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",

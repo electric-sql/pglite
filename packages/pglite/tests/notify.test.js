@@ -1,4 +1,4 @@
-import test from "ava";
+import test from "./polytest.js";
 import { PGlite } from "../dist/index.js";
 
 test("notify", async (t) => {
