@@ -1,9 +1,6 @@
+import tinyTar from "tinytar";
 import { IN_NODE } from "./utils.js";
 import type { PostgresMod } from "./postgres.js";
-import type { PGliteInterface } from "./interface.js";
-
-// @ts-ignore - tinytar has no types, we will probably replace this with another library
-import tinyTar from "tinytar";
 
 export async function loadExtensionBundle(
   bundlePath: URL,
@@ -68,18 +65,13 @@ export async function loadExtensions(
   }
 }
 
-interface UntarFile {
-  name: string;
-  data: Uint8Array;
-}
-
 function loadExtension(
   mod: PostgresMod,
   ext: string,
   bytes: Uint8Array,
   log: (...args: any[]) => void,
 ) {
-  const data: UntarFile[] = tinyTar.untar(bytes);
+  const data = tinyTar.untar(bytes);
   data.forEach((file) => {
     if (!file.name.startsWith(".")) {
       const filePath = mod.WASM_PREFIX + "/" + file.name;
