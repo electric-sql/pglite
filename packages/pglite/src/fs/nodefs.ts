@@ -10,7 +10,7 @@ export class NodeFS extends FilesystemBase {
   constructor(dataDir: string) {
     super(dataDir);
     this.rootDir = path.resolve(dataDir);
-    if (!fs.existsSync(path.join(this.rootDir, "PG_VERSION"))) {
+    if (!fs.existsSync(path.join(this.rootDir))) {
       fs.mkdirSync(this.rootDir);
     }
   }
@@ -22,11 +22,7 @@ export class NodeFS extends FilesystemBase {
         ...(opts.preRun || []),
         (mod: any) => {
           const nodefs = mod.FS.filesystems.NODEFS;
-          try {
-             mod.FS.mkdir(PGDATA);
-          } catch (x) {
-            console.warn("Path exists :", PGDATA);
-          }
+          mod.FS.mkdir(PGDATA);
           mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA);
         },
       ],
