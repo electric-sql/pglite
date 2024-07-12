@@ -145,6 +145,58 @@ export class PGlite implements PGliteInterface {
         ? { print: console.info, printErr: console.error }
         : { print: () => {}, printErr: () => {} }),
       locateFile: await makeLocateFile(),
+      preRun: [
+        (mod: any) => {
+          // Register /dev/blob device
+          // This is used to read and write blobs when used in COPY TO/FROM
+          // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
+          // The data is returned by the query as a `blob` property in the results
+          const devId = mod.FS.makedev(64, 0);
+          let callCounter = 0;
+          const devOpt = {
+            open: (stream: any) => {},
+            close: (stream: any) => {},
+            read: (
+              stream: any,
+              buffer: Uint8Array,
+              offset: number,
+              length: number,
+              position: number,
+            ) => {
+              const buf = this.#queryReadBuffer;
+              if (!buf) {
+                throw new Error("No File or Blob provided to read from");
+              }
+              const contents = new Uint8Array(buf);
+              if (position >= contents.length) return 0;
+              const size = Math.min(contents.length - position, length);
+              for (let i = 0; i < size; i++) {
+                buffer[offset + i] = contents[position + i];
+              }
+              return size;
+            },
+            write: (
+              stream: any,
+              buffer: Uint8Array,
+              offset: number,
+              length: number,
+              position: number,
+            ) => {
+              callCounter++;
+              this.#queryWriteChunks ??= [];
+              this.#queryWriteChunks.push(
+                buffer.slice(offset, offset + length),
+              );
+              return length;
+            },
+            llseek: (stream: any, offset: number, whence: number) => {
+              throw new Error("Cannot seek /dev/blob");
+            },
+          };
+          mod.FS.registerDevice(devId, devOpt);
+          mod.FS.mkdev("/dev/blob", devId);
+        },
+      ],
     };
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
