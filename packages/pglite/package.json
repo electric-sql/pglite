@@ -43,7 +43,7 @@
     "directory": "packages/pglite"
   },
   "scripts": {
-    "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\"",
+    "test": "rm -rf ./pgdata-test && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\" \"npx http-server --port 3334 ./\"",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
     "format": "prettier --write ./src"
