@@ -1,41 +1,42 @@
-import { defineConfig } from 'tsup'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { defineConfig } from "tsup";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const thisFile = fileURLToPath(new URL(import.meta.url))
-const root = path.dirname(thisFile)
+const thisFile = fileURLToPath(new URL(import.meta.url));
+const root = path.dirname(thisFile);
 
 let replaceAssertPlugin = {
-  name: 'replace-assert',
+  name: "replace-assert",
   setup(build: any) {
     // Resolve `assert` to a blank file
     build.onResolve({ filter: /^assert$/ }, (args: any) => {
-      return { path: path.join(root, 'src', 'polyfills', 'blank.ts') }
-    })
+      return { path: path.join(root, "src", "polyfills", "blank.ts") };
+    });
   },
-}
+};
 
 const entryPoints = [
-  'src/index.ts',
-  'src/worker/index.ts',
-  'src/worker/process.ts',
-  'src/vector/index.ts',
-]
+  "src/index.ts",
+  "src/worker/index.ts",
+  "src/worker/process.ts",
+  "src/vector/index.ts",
+];
 
 export default defineConfig({
   entry: entryPoints,
   sourcemap: true,
   dts: {
     entry: entryPoints,
-    resolve: true
+    resolve: true,
   },
   clean: true,
-  format: ['esm'],
+  format: ["esm"],
   esbuildOptions(options, context) {
-    options.inject = ['src/polyfills/buffer.ts']
+    options.inject = [
+      "src/polyfills/buffer.ts",
+      "src/polyfills/indirectEval.ts",
+    ];
   },
-  esbuildPlugins: [
-    replaceAssertPlugin,
-  ],
+  esbuildPlugins: [replaceAssertPlugin],
   minify: true,
-})
+});
