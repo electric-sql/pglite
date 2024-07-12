@@ -224,7 +224,7 @@ export class PGlite implements PGliteInterface {
     }
     // start compiling dynamic extensions present in FS.
     // @ts-ignore
-    if (this.fs.fsType !== "idbfs") loadExtensions(this.fs.fsType, this.emp.FS);
+    if (this.fs.fsType !== "idbfs") await loadExtensions(this.fs.fsType, this.emp.FS);
 
 /*
     console.log(

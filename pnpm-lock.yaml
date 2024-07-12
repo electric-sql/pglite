@@ -17,7 +17,7 @@ importers:
     dependencies:
       wa-sqlite:
         specifier: github:rhashimoto/wa-sqlite
-        version: github.com/rhashimoto/wa-sqlite/5c3691569c150ca884314aa1a0d7e2760c48e873
+        version: github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.9
@@ -73,6 +73,9 @@ importers:
       prettier:
         specifier: 3.2.5
         version: 3.2.5
+      tinytar:
+        specifier: ^0.1.0
+        version: 0.1.0
       tsup:
         specifier: ^8.0.2
         version: 8.0.2(typescript@5.3.3)
@@ -4707,6 +4710,11 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
+  /tinytar@0.1.0:
+    resolution: {integrity: sha512-Ko2BT2VtuszvlWz3fC1y5EJu2pTZ1bf4HvDRh9RhVJbeXXRtoSrWj7ml1RrWp5dA+JRKSlTcYDwFXlm/0fqDuw==}
+    engines: {node: ^4.0.0, npm: ^2.0.0}
+    dev: true
+
   /to-fast-properties@2.0.0:
     resolution: {integrity: sha512-/OaKK0xYrs3DmxRYqL/yDc+FxFUVYhDlXMhRmv3z915w2HF1tnN1omB354j8VUGO/hbRzyD6Y3sA7v7GS/ceog==}
     engines: {node: '>=4'}
@@ -5122,8 +5130,8 @@ packages:
       commander: 9.5.0
     dev: true
 
-  github.com/rhashimoto/wa-sqlite/5c3691569c150ca884314aa1a0d7e2760c48e873:
-    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/5c3691569c150ca884314aa1a0d7e2760c48e873}
+  github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/55bf0b6646ac1bb81b00b9c25636b59a87e4a918}
     name: wa-sqlite
-    version: 1.0.0-beta.2
+    version: 1.0.0
     dev: false

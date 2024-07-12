@@ -4,6 +4,7 @@ import type { FsType, Filesystem } from "./types.js";
 import type { FS } from "../postgres.js";
 import { IdbFs } from "./idbfs.js";
 import { MemoryFS } from "./memoryfs.js";
+import tinyTar from "tinytar";
 
 
 export type * from "./types.js";
@@ -71,7 +72,7 @@ function load_pg_extension(Module, ext, bytes) {
                     return p;
                 }
 
-                Module.FS.createPreloadedFile(dirname(_file), file.name.split("/").pop(), file.data, true, true, ext_ok, ext_fail, false);
+                Module.FS.createPreloadedFile(dirname(_file), file.name.split("/").pop().slice(0, -3), file.data, true, true, ext_ok, ext_fail, false);
                 console.log("createPreloadedFile called for :", _file);
               } else {
                 Module.FS.writeFile(_file, file.data);
