@@ -2,7 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { FilesystemBase } from "./types.js";
 import { PGDATA } from "./index.js";
-import type { PostgresMod } from "../postgres.js";
+import type { PostgresMod, FS } from "../postgres.js";
+import { dumpTar } from "./tarUtils.js";
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;
@@ -28,5 +29,9 @@ export class NodeFS extends FilesystemBase {
       ],
     };
     return options;
+  }
+
+  async dumpTar(mod: FS) {
+    return dumpTar(mod);
   }
 }

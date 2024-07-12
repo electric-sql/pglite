@@ -34,6 +34,8 @@ export class PGlite implements PGliteInterface {
   fs?: Filesystem;
   protected mod?: PostgresMod;
 
+  readonly dataDir?: string;
+
   #ready = false;
   #closing = false;
   #closed = false;
@@ -92,6 +94,7 @@ export class PGlite implements PGliteInterface {
     } else {
       options = dataDirOrPGliteOptions;
     }
+    this.dataDir = options.dataDir;
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
@@ -676,5 +679,15 @@ export class PGlite implements PGliteInterface {
     options?: O,
   ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
     return new PGlite(options) as any;
+  }
+
+  /**
+   * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   */
+  async dumpDataDir() {
+    const { tarball, extension } = await this.fs!.dumpTar(this.mod!.FS);
+    let filename = this.dataDir ? this.dataDir.split("/").pop() : "pgdata";
+    filename = `${filename}${extension}`;
+    return { tarball, extension, filename };
   }
 }
