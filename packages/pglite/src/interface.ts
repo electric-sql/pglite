@@ -36,6 +36,7 @@ export type ExtensionSetup = (
 export interface Extension {
   name?: string;
   setup: ExtensionSetup;
+  pathOrUrl?: string;
 }
 
 export type Extensions = {
@@ -86,14 +87,14 @@ export type PGliteInterface = {
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions
   ? {
-      [K in keyof E]: Awaited<
-        ReturnType<E[K]["setup"]>
-      >["namespaceObj"] extends infer N
-        ? N extends undefined | null | void
-          ? never
-          : N
-        : never;
-    }
+    [K in keyof E]: Awaited<
+      ReturnType<E[K]["setup"]>
+    >["namespaceObj"] extends infer N
+    ? N extends undefined | null | void
+    ? never
+    : N
+    : never;
+  }
   : {};
 
 export type Row<T = { [key: string]: any }> = T;

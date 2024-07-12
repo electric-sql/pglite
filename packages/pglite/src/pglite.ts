@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import EmPostgresFactory, { type EmPostgres } from "../release/postgres.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
-import { makeLocateFile } from "./utils.js";
+import { fileExists, getExtensionControlFile, getExtensionSqlScript, getExtensionVersionFromControlFile, makeLocateFile } from "./utils.js";
 import { PGEvent } from "./event.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
@@ -61,7 +61,7 @@ export class PGlite implements PGliteInterface {
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer;
   #queryWriteChunks?: Uint8Array[];
-  
+
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
@@ -166,7 +166,7 @@ export class PGlite implements PGliteInterface {
         locateFile: await makeLocateFile(),
         ...(this.debug > 0
           ? { print: console.info, printErr: console.error }
-          : { print: () => {}, printErr: () => {} }),
+          : { print: () => { }, printErr: () => { } }),
         preRun: [
           (mod: any) => {
             // Register /dev/blob device
@@ -176,8 +176,8 @@ export class PGlite implements PGliteInterface {
             const devId = mod.FS.makedev(64, 0);
             let callCounter = 0;
             const devOpt = {
-              open: (stream: any) => {},
-              close: (stream: any) => {},
+              open: (stream: any) => { },
+              close: (stream: any) => { },
               read: (
                 stream: any,
                 buffer: Uint8Array,
@@ -220,6 +220,11 @@ export class PGlite implements PGliteInterface {
           },
         ],
         onRuntimeInitialized: async (Module: EmPostgres) => {
+          // handle extensions that shuould be opened with dlopen
+          await Promise.all(Object.entries(this.#extensions).map(([extName, ext]) => {
+            if (!ext.pathOrUrl) return;
+            return this.#_addExtension(Module, extName, ext);
+          }));
           await this.fs!.initialSyncFs(Module.FS);
           this.#ready = true;
           resolve();
@@ -230,6 +235,7 @@ export class PGlite implements PGliteInterface {
 
       // Setup extensions
       for (const [extName, ext] of Object.entries(this.#extensions)) {
+        if (ext.pathOrUrl) continue;
         const extRet = await ext.setup(this, emscriptenOpts);
         if (extRet.emscriptenOpts) {
           emscriptenOpts = extRet.emscriptenOpts;
@@ -261,6 +267,42 @@ export class PGlite implements PGliteInterface {
     for (const initFn of extensionInitFns) {
       await initFn();
     }
+  }
+
+  async addExtension(extName: string, extension: Extension) {
+    if (!this.emp) {
+      throw new Error('Can not add extensions before wasm module initialization');
+    }
+
+    return this.#_addExtension(this.emp, extName, extension);
+  }
+
+  async #_addExtension(module: EmPostgres, extName: string, extension: Extension) {
+
+    const pgControlPath = `/usr/local/pgsql/share/extension/${extName}.control`;
+
+    if (fileExists(module.FS, pgControlPath)) {
+      return;
+    }
+
+    const controlFileContent = await getExtensionControlFile(extension, extName);
+
+    const extensionVersion = getExtensionVersionFromControlFile(controlFileContent);
+    if (!extensionVersion) {
+      throw new Error(`Invalid control file for extension ${extName}`);
+    }
+
+    const sqlFileName = `${extName}--${extensionVersion}.sql`;
+    const sqlFilePath = `${extension.pathOrUrl}/${sqlFileName}`;
+
+    const sqlFileContent = await getExtensionSqlScript(extension, extName, sqlFilePath);
+
+    if (!sqlFileContent) {
+      throw new Error(`Invalid SQL file for extension ${extName}`);
+    }
+
+    module.FS.writeFile(pgControlPath, controlFileContent);
+    module.FS.writeFile(`/usr/local/pgsql/share/extension/${sqlFileName}`, sqlFileContent);
   }
 
   /**
@@ -574,9 +616,9 @@ export class PGlite implements PGliteInterface {
       }
 
       var bytes = message.length;
-      var ptr = this.emp._malloc(bytes);
+      var ptr = this.emp.___libc_malloc(bytes);
       this.emp.HEAPU8.set(message, ptr);
-      this.emp._ExecProtocolMsg(ptr);
+      await this.emp.ccall("ExecProtocolMsg", "void", ["pointer"], [ptr], { async: true })
 
       if (syncToFs) {
         await this.#syncToFs();
