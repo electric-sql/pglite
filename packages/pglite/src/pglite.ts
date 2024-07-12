@@ -1,6 +1,6 @@
 import { Mutex } from "async-mutex";
-import EmPostgresFactory, { type EmPostgres } from "./postgres.js";
-import { type Filesystem, parseDataDir, loadFs, loadExtensions } from "./fs/index.js";
+import PostgresModFactory, { type PostgresMod } from "./postgres.js";
+import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";
 import { serializeType } from "./types.js";
@@ -14,9 +14,8 @@ import type {
   ExecProtocolOptions,
   PGliteInterfaceExtensions,
   Extensions,
-  Extension,
 } from "./interface.js";
-import { loadExtensionBundle } from "./extensionUtils.js";
+import { loadExtensionBundle, loadExtensions } from "./extensionUtils.js";
 
 import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
@@ -31,15 +30,9 @@ import {
   NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
-
-const sleep = (s: number) => new Promise((r) => setTimeout(r, s/1000));
-
-
-
 export class PGlite implements PGliteInterface {
   fs?: Filesystem;
-  protected emp?: any;
-  fsType : any;
+  protected mod?: PostgresMod;
 
   #ready = false;
   #closing = false;
@@ -125,18 +118,14 @@ export class PGlite implements PGliteInterface {
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
-    console.log("options :", options);
-
     if (options.fs) {
       this.fs = options.fs;
     } else {
       const { dataDir, fsType } = parseDataDir(options.dataDir);
       this.fs = await loadFs(dataDir, fsType);
-      // @ts-ignore
-      this.fs.fsType = fsType;
     }
 
-    const extensionBundlePromises: Record<string, Promise<Blob>> = {};
+    const extensionBundlePromises: Record<string, Promise<Blob | null>> = {};
     const extensionInitFns: Array<() => Promise<void>> = [];
 
     const args = [
@@ -148,10 +137,7 @@ export class PGlite implements PGliteInterface {
       ...(this.debug ? ["-d", this.debug.toString()] : []),
     ];
 
-    let emscriptenOpts: Partial<EmPostgres & {
-      WASM_PREFIX: string;
-      pg_extensions: Record<string, Promise<Blob>>;
-    }> = {
+    let emscriptenOpts: Partial<PostgresMod> = {
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
@@ -162,7 +148,6 @@ export class PGlite implements PGliteInterface {
     };
 
     emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts);
-    //console.log("emscriptenOpts:", emscriptenOpts);
 
     // # Setup extensions
     // This is the first step of loading PGlite extensions
@@ -186,7 +171,9 @@ export class PGlite implements PGliteInterface {
           (this as any)[extName] = extRet.namespaceObj;
         }
         if (extRet.bundlePath) {
-          extensionBundlePromises[extName] = loadExtensionBundle(extRet.bundlePath); // Don't await here, this is parallel
+          extensionBundlePromises[extName] = loadExtensionBundle(
+            extRet.bundlePath,
+          ); // Don't await here, this is parallel
         }
         if (extRet.init) {
           extensionInitFns.push(extRet.init);
@@ -196,93 +183,40 @@ export class PGlite implements PGliteInterface {
         }
       }
     }
-    emscriptenOpts['pg_extensions'] = extensionBundlePromises;
+    emscriptenOpts["pg_extensions"] = extensionBundlePromises;
 
-    // init pg core engine done only using MEMFS
-    this.emp = await EmPostgresFactory(emscriptenOpts);
+    // Load the database engine
+    this.mod = await PostgresModFactory(emscriptenOpts);
 
-    // just for loadExtensions
-    this.emp.FS['Module'] = this.emp;
+    // Sync the filesystem from any previous store
+    await this.fs!.initialSyncFs(this.mod.FS);
 
-    // if ok, NOW:
-    //   all pg c-api is avail. including exported sym
-
-//console.warn("fs: mounting");
-
-    // finalize FS states needed before initdb.
-    // maybe start extra FS/initdata async .
-
-//console.warn("syncing fs (fs->memfs)");
-    await this.fs!.initialSyncFs(this.emp.FS);
-
-    //console.warn("fs: mounted");
-    if (this.emp.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
-        console.log("pglite: found DB, resuming")
-        //console.log(this.emp.FS.readdir(PGDATA));
+    // Check and log if the database exists
+    if (this.mod.FS.analyzePath(PGDATA + "/PG_VERSION").exists) {
+      this.#log("pglite: found DB, resuming");
     } else {
-        console.warn("pglite: no db");
+      this.#log("pglite: no db");
     }
-    // start compiling dynamic extensions present in FS.
-    // @ts-ignore
-    if (this.fs.fsType !== "idbfs") await loadExtensions(this.fs.fsType, this.emp.FS);
 
-/*
-    console.log(
-      "database engine is ready (but not yet system/user databases or extensions)",
-    );
-*/
+    // Start compiling dynamic extensions present in FS.
+    await loadExtensions(this.mod, (...args) => this.#log(...args));
 
-    // await async compilation dynamic extensions finished.
-
-
-    // await extra FS/fetches.
-
-    // await async compilation of fetched dynamic extensions.
-
-    // bad things that could happen here :
-    //  javascript host deny access to some FS
-    //  FS is full
-    //  FS is corrupted
-    //  wasm compilation failed (eg missing features).
-    //  a fetch has timeout.
-
-    // if ok, NOW:
-    // extensions used in user database are compiled (whatever their source).
-    // FS hosting system indexes and user named db default "postgres" must be ready
-
-    // -> if FS does not have a valid pgdata, initdb will run.
-
-    const idb = this.emp._pg_initdb();
+    // Initialize the database
+    const idb = this.mod._pg_initdb();
 
     if (!idb) {
-      console.warn("TODO: meaning full initdb return/error code ?");
+      // TODO: meaning full initdb return/error code?
     } else {
       if (idb & 0b0001) console.log(" #1");
-
       if (idb & 0b0010) console.log(" #2");
-
       if (idb & 0b0100) console.log(" #3");
     }
-/*
-    console.log(
-      "database engine/system db are ready (maybe not user databases)",
-    );
-*/
-    // extra FS could go here, same for sql init data.
 
-    // eg custom SQL
-    // eg read only database
-
-    // bad things that could happen here :
-    //  FS is corrupted
-    //  something fetched is corrupted, not valid SQL.
-
-console.warn("pglite: ext and FS loaded, db is ready");
-
-// TODO: only sync here if initdb did init db.
+    // Sync any changes back to the persisted store (if there is one)
+    // TODO: only sync here if initdb did init db.
     await this.#syncToFs();
 
-// TODO: add that to initdb ?
+    // Set the search path to public for this connection
     await this.#runExec("SET search_path TO public;");
 
     this.#ready = true;
@@ -571,16 +505,17 @@ console.warn("pglite: ext and FS loaded, db is ready");
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     return await this.#executeMutex.runExclusive(async () => {
       const msg_len = message.length;
+      const mod = this.mod!;
 
       // >0 set buffer content type to wire protocol
       // set buffer size so answer will be at size+0x2 pointer addr
-      this.emp._interactive_write(msg_len);
+      mod._interactive_write(msg_len);
 
       // copy whole buffer at addr 0x1
-      this.emp.HEAPU8.set(message, 1);
+      mod.HEAPU8.set(message, 1);
 
       // execute the message
-      this.emp._interactive_one();
+      mod._interactive_one();
 
       if (syncToFs) {
         await this.#syncToFs();
@@ -590,8 +525,8 @@ console.warn("pglite: ext and FS loaded, db is ready");
 
       // Read responses from the buffer
       const msg_start = msg_len + 2;
-      const msg_end = msg_start + this.emp._interactive_read();
-      const data = this.emp.HEAPU8.subarray(msg_start, msg_end);
+      const msg_end = msg_start + mod._interactive_read();
+      const data = mod.HEAPU8.subarray(msg_start, msg_end);
 
       this.#parser.parse(Buffer.from(data), (msg) => {
         if (msg instanceof DatabaseError) {
@@ -652,7 +587,7 @@ console.warn("pglite: ext and FS loaded, db is ready");
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        await this.fs!.syncToFs(this.emp.FS);
+        await this.fs!.syncToFs(this.mod!.FS);
       });
     };
 

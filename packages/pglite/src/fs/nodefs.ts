@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { FilesystemBase } from "./types.js";
 import { PGDATA } from "./index.js";
-import type { EmPostgres } from "../postgres.js";
+import type { PostgresMod } from "../postgres.js";
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string;
@@ -15,8 +15,8 @@ export class NodeFS extends FilesystemBase {
     }
   }
 
-  async emscriptenOpts(opts: Partial<EmPostgres>) {
-    const options: Partial<EmPostgres> = {
+  async emscriptenOpts(opts: Partial<PostgresMod>) {
+    const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
         ...(opts.preRun || []),

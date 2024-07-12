@@ -9,7 +9,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
     emscriptenOpts,
     bundlePath: new URL("../../release/vector.tar.gz", import.meta.url),
   } satisfies ExtensionSetupResult;
-}
+};
 
 export const vector = {
   name: "pgvector",

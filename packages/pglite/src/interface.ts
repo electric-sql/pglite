@@ -31,7 +31,7 @@ export interface ExtensionSetupResult {
 
 export type ExtensionSetup = (
   pg: PGliteInterface,
-  emscriptenOpts: any
+  emscriptenOpts: any,
 ) => Promise<ExtensionSetupResult>;
 
 export interface Extension {
@@ -61,26 +61,26 @@ export type PGliteInterface = {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   transaction<T>(
-    callback: (tx: Transaction) => Promise<T>
+    callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined>;
   execProtocol(
     message: Uint8Array,
-    options?: ExecProtocolOptions
+    options?: ExecProtocolOptions,
   ): Promise<Array<[BackendMessage, Uint8Array]>>;
   listen(
     channel: string,
-    callback: (payload: string) => void
+    callback: (payload: string) => void,
   ): Promise<() => Promise<void>>;
   unlisten(
     channel: string,
-    callback?: (payload: string) => void
+    callback?: (payload: string) => void,
   ): Promise<void>;
   onNotification(
-    callback: (channel: string, payload: string) => void
+    callback: (channel: string, payload: string) => void,
   ): () => void;
   offNotification(callback: (channel: string, payload: string) => void): void;
 };
@@ -110,7 +110,7 @@ export interface Transaction {
   query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<Results<T>>;
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>;
   rollback(): Promise<void>;

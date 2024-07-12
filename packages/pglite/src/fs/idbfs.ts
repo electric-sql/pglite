@@ -1,10 +1,10 @@
 import { FilesystemBase } from "./types.js";
-import type { FS, EmPostgres } from "../postgres.js";
-import { PGDATA, loadExtensions } from "./index.js";
+import type { FS, PostgresMod } from "../postgres.js";
+import { PGDATA } from "./index.js";
 
 export class IdbFs extends FilesystemBase {
-  async emscriptenOpts(opts: Partial<EmPostgres>) {
-    const options: Partial<EmPostgres> = {
+  async emscriptenOpts(opts: Partial<PostgresMod>) {
+    const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
         ...(opts.preRun || []),
@@ -31,7 +31,6 @@ export class IdbFs extends FilesystemBase {
         if (err) {
           reject(err);
         } else {
-          loadExtensions("idbfs", fs);
           resolve();
         }
       });
