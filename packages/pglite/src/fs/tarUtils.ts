@@ -2,24 +2,30 @@ import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from "tinytar";
 import { FS } from "../postgres.js";
 import { PGDATA } from "./index.js";
 
-export interface DumpedTar {
-  tarball: Uint8Array;
-  extension: ".tar" | ".tgz";
-}
-
-export async function dumpTar(FS: FS): Promise<DumpedTar> {
+export async function dumpTar(FS: FS, dbname?: string): Promise<File> {
   const tarball = createTarball(FS, PGDATA);
   const [compressed, zipped] = await maybeZip(tarball);
-  return {
-    tarball: compressed,
-    extension: zipped ? ".tgz" : ".tar",
-  };
+  const filename = (dbname || "pgdata") + (zipped ? ".tar.gz" : ".tar");
+  return new File([compressed], filename, {
+    type: zipped ? "application/x-gtar" : "application/x-tar",
+  });
 }
 
-export async function loadTar(FS: FS, dump: DumpedTar): Promise<void> {
-  let tarball = dump.tarball;
-  console.log("loading tarball");
-  if (dump.extension === ".tgz") {
+const compressedMimeTypes = [
+  "application/x-gtar",
+  "application/x-tar+gzip",
+  "application/x-gzip",
+  "application/gzip",
+];
+
+export async function loadTar(FS: FS, file: File | Blob): Promise<void> {
+  let tarball = new Uint8Array(await file.arrayBuffer());
+  const filename = file instanceof File ? file.name : undefined;
+  const compressed =
+    compressedMimeTypes.includes(file.type) ||
+    filename?.endsWith(".tgz") ||
+    filename?.endsWith(".tar.gz");
+  if (compressed) {
     tarball = await unzip(tarball);
   }
 

@@ -203,11 +203,7 @@ export class PGlite implements PGliteInterface {
         throw new Error("Database already exists, cannot load from tarball");
       }
       this.#log("pglite: loading data from tarball");
-      const { tarball, extension } = options.loadDataDir;
-      await loadTar(this.mod.FS, {
-        tarball,
-        extension: extension === ".tar.gz" ? ".tgz" : extension,
-      });
+      await loadTar(this.mod.FS, options.loadDataDir);
     }
 
     // Check and log if the database exists
@@ -701,9 +697,7 @@ export class PGlite implements PGliteInterface {
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
   async dumpDataDir() {
-    const { tarball, extension } = await this.fs!.dumpTar(this.mod!.FS);
-    let filename = this.dataDir ? this.dataDir.split("/").pop() : "pgdata";
-    filename = `${filename}${extension}`;
-    return { tarball, extension, filename };
+    let dbname = this.dataDir?.split("/").pop() ?? "pgdata";
+    return this.fs!.dumpTar(this.mod!.FS, dbname);
   }
 }

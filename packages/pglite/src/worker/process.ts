@@ -35,12 +35,8 @@ const worker = {
     return await db.execProtocol(message);
   },
   async dumpDataDir() {
-    const ret = await db.dumpDataDir();
-    return {
-      tarball: Comlink.transfer(ret.tarball, [ret.tarball.buffer]),
-      extension: ret.extension,
-      filename: ret.filename,
-    };
+    const file = await db.dumpDataDir();
+    return Comlink.transfer(file, [await file.arrayBuffer()]);
   },
 };
 

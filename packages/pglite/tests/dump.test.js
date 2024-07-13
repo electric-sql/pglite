@@ -13,15 +13,12 @@ test("dump data dir and load it", async (t) => {
 
   const ret1 = await pg1.query("SELECT * FROM test;");
   
-  const { tarball, filename, extension } = await pg1.dumpDataDir();
+  const file = await pg1.dumpDataDir();
 
-  t.is(typeof tarball, "object");
-  t.is(typeof filename, "string");
-  t.is(typeof extension, "string");
+  t.is(typeof file, "object");
   
   const pg2 = new PGlite({
-    // debug: 1,
-    loadDataDir: { tarball, extension },
+    loadDataDir: file,
   });
   
   const ret2 = await pg2.query("SELECT * FROM test;");

@@ -8,7 +8,7 @@ export class MemoryFS extends FilesystemBase {
     return opts;
   }
 
-  async dumpTar(mod: FS) {
-    return dumpTar(mod);
+  async dumpTar(mod: FS, dbname: string) {
+    return dumpTar(mod, dbname);
   }
 }

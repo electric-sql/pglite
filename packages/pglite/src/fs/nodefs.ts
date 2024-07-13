@@ -31,7 +31,7 @@ export class NodeFS extends FilesystemBase {
     return options;
   }
 
-  async dumpTar(mod: FS) {
-    return dumpTar(mod);
+  async dumpTar(mod: FS, dbname: string) {
+    return dumpTar(mod, dbname);
   }
 }
