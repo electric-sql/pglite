@@ -34,6 +34,8 @@ declare module "tinytar" {
   const NULL_CHAR: string;
   const TMAGIC: string;
   const OLDGNU_MAGIC: string;
+
+  // Values used in typeflag field
   const REGTYPE: number;
   const LNKTYPE: number;
   const SYMTYPE: number;
@@ -42,6 +44,8 @@ declare module "tinytar" {
   const DIRTYPE: number;
   const FIFOTYPE: number;
   const CONTTYPE: number;
+
+  // Bits used in the mode field, values in octal
   const TSUID: number;
   const TSGID: number;
   const TSVTX: number;
@@ -54,6 +58,7 @@ declare module "tinytar" {
   const TOREAD: number;
   const TOWRITE: number;
   const TOEXEC: number;
+
   const TPERMALL: number;
   const TPERMMASK: number;
 }

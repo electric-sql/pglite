@@ -1,5 +1,5 @@
 import type { PostgresMod, FS } from "../postgres.js";
-import type { DumpTarResult } from "./tarUtils.js";
+import type { DumpedTar } from "./tarUtils.js";
 
 export type FsType = "nodefs" | "idbfs" | "memoryfs";
 
@@ -26,7 +26,7 @@ export interface Filesystem {
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
-  dumpTar(FS: FS): Promise<DumpTarResult>;
+  dumpTar(FS: FS): Promise<DumpedTar>;
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -39,5 +39,5 @@ export abstract class FilesystemBase implements Filesystem {
   ): Promise<Partial<PostgresMod>>;
   async syncToFs(FS: FS) {}
   async initialSyncFs(mod: FS) {}
-  abstract dumpTar(mod: FS): Promise<DumpTarResult>;
+  abstract dumpTar(mod: FS): Promise<DumpedTar>;
 }

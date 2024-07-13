@@ -49,12 +49,19 @@ export interface DumpDataDirResult {
   filename: string;
 }
 
+export interface LoadDataDir {
+  tarball: Uint8Array;
+  extension: ".tar" | ".tgz" | ".tar.gz";
+  filename?: string;
+}
+
 export interface PGliteOptions {
   dataDir?: string;
   fs?: Filesystem;
   debug?: DebugLevel;
   relaxedDurability?: boolean;
   extensions?: Extensions;
+  loadDataDir?: LoadDataDir;
 }
 
 export type PGliteInterface = {

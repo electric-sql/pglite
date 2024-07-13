@@ -9,9 +9,9 @@ await pg.exec(`
 `);
 await pg.exec("INSERT INTO test (name) VALUES ('test');");
 
-const { tarball, filename } = await pg.dumpDataDir();
+const { tarball, filename, extension } = await pg.dumpDataDir();
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   // Download the dump
   const blob = new Blob([tarball], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
@@ -24,3 +24,11 @@ if (typeof window !== 'undefined') {
   const fs = await import("fs");
   fs.writeFileSync(filename, tarball);
 }
+
+const pg2 = new PGlite({
+  // debug: 1,
+  loadDataDir: { tarball, extension },
+});
+
+const rows = await pg2.query("SELECT * FROM test;");
+console.log(rows);

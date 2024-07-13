@@ -16,6 +16,7 @@ import type {
   Extensions,
 } from "./interface.js";
 import { loadExtensionBundle, loadExtensions } from "./extensionUtils.js";
+import { loadTar } from "./fs/tarUtils.js";
 
 import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
@@ -193,6 +194,21 @@ export class PGlite implements PGliteInterface {
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs(this.mod.FS);
+
+    // If the user has provided a tarball to load the database from, do that now.
+    // We do this after the initial sync so that we can throw if the database
+    // already exists.
+    if (options.loadDataDir) {
+      if (this.mod.FS.analyzePath(PGDATA + "/PG_VERSION").exists) {
+        throw new Error("Database already exists, cannot load from tarball");
+      }
+      this.#log("pglite: loading data from tarball");
+      const { tarball, extension } = options.loadDataDir;
+      await loadTar(this.mod.FS, {
+        tarball,
+        extension: extension === ".tar.gz" ? ".tgz" : extension,
+      });
+    }
 
     // Check and log if the database exists
     if (this.mod.FS.analyzePath(PGDATA + "/PG_VERSION").exists) {
