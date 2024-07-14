@@ -1,3 +1,4 @@
+import { buffer } from "stream/consumers";
 
 export const states = {
   IDLE: 0,
@@ -34,23 +35,23 @@ export type FsStats = {
   atime: number;
   mtime: number;
   ctime: number;
-}
+};
 
 export interface CallMsg {
-  type: string;
+  method: string;
   args: any[];
 }
 
 export type ResponseJsonOk = {
   value: any;
-}
+};
 
 export type ResponseJsonError = {
   error: {
-    code: string;
+    code: number;
     message: string;
   };
-}
+};
 
 export type ResponseJson = ResponseJsonOk | ResponseJsonError;
 
@@ -69,4 +70,36 @@ export interface FileSystemSyncAccessHandle {
   read(buffer: ArrayBuffer, options: { at: number }): number;
   truncate(newSize: number): void;
   write(buffer: ArrayBuffer, options: { at: number }): number;
+}
+
+export function waitFor(
+  typedArray: Int32Array,
+  index: number,
+  value: number,
+): void {
+  while (true) {
+    const state = Atomics.load(typedArray, index);
+    if (state === value) {
+      return;
+    }
+    Atomics.wait(typedArray, index, state);
+  }
+}
+
+export const ERRNO_CODES = {
+  ENODEV: 43,
+  ENOENT: 44,
+  EINVAL: 28,
+} as const;
+
+export class FsError extends Error {
+  code?: number;
+  constructor(code: number | keyof typeof ERRNO_CODES | null, message: string) {
+    super(message);
+    if (typeof code === "number") {
+      this.code = code;
+    } else if (typeof code === "string") {
+      this.code = ERRNO_CODES[code];
+    }
+  }
 }

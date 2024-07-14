@@ -20,6 +20,7 @@ const entryPoints = [
   "src/worker/index.ts",
   "src/worker/process.ts",
   "src/vector/index.ts",
+  "src/fs/opfs/syncOPFS/index.ts",
   "src/fs/opfs/syncOPFS/worker.ts",
 ];
 

@@ -1,4 +1,5 @@
-import { states, slot, type FsStats, type ResponseJson } from "./types";
+import { states, slot, waitFor, FsError } from "./shared.js";
+import type { FsStats, ResponseJson, CallMsg } from "./shared.js";
 
 interface SyncOpfsOptions {
   sharedBuffers?: Array<SharedArrayBuffer>;
@@ -43,16 +44,21 @@ export class SyncOPFS {
     this.readyPromise = this.#init();
   }
 
-  static async create(options: SyncOpfsOptions) {
-    const instance = new SyncOPFS(options);
+  static async create(options?: SyncOpfsOptions) {
+    const instance = new SyncOPFS(options || {});
     await instance.readyPromise;
     return instance;
   }
 
   async #init() {
-    this.#worker = new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
+    // Due to a quirk in tsup/esbuild we have to specify the worker url relative to
+    // the root of the dist directory
+    this.#worker = new Worker(
+      new URL("./fs/opfs/syncOPFS/worker.js", import.meta.url),
+      {
+        type: "module",
+      },
+    );
 
     // Wait for the worker to send a message to indicate that it is ready
     await new Promise<void>((resolve) => {
@@ -65,26 +71,18 @@ export class SyncOPFS {
             throw new Error("Unexpected message from worker");
           }
         },
-        { once: true }
+        { once: true },
       );
     });
 
     // Send the buffers to the worker
-    this.#worker.postMessage(
-      {
-        type: "init",
-        controlBuffer: this.#controlBuffer,
-        callBuffer: this.#callBuffer,
-        responseBuffer: this.#responseBuffer,
-        sharedBuffers: this.#sharedBuffers,
-      },
-      [
-        this.#controlBuffer,
-        this.#callBuffer,
-        this.#responseBuffer,
-        ...this.#sharedBuffers,
-      ]
-    );
+    this.#worker.postMessage({
+      type: "init",
+      controlBuffer: this.#controlBuffer,
+      callBuffer: this.#callBuffer,
+      responseBuffer: this.#responseBuffer,
+      sharedBuffers: this.#sharedBuffers,
+    });
 
     // Wait for the worker to send a message to indicate that it is ready
     await new Promise<void>((resolve) => {
@@ -97,7 +95,7 @@ export class SyncOPFS {
             throw new Error("Unexpected message from worker");
           }
         },
-        { once: true }
+        { once: true },
       );
     });
 
@@ -120,12 +118,22 @@ export class SyncOPFS {
       JSON.stringify({
         method,
         args: convertedArgs,
-      })
+      } satisfies CallMsg),
     );
+  }
+
+  #waitForState(state: number) {
+    waitFor(this.#controlArray, slot.STATE, state);
+  }
+
+  #setState(state: number) {
+    this.#controlArray[slot.STATE] = state;
+    Atomics.notify(this.#controlArray, slot.STATE);
   }
 
   #callSync(method: string, args: any[]) {
     // Serialize the arguments
+    console.log("calling:", method, args);
     const argsBuffer = this.#encodeArgs(method, args);
     if (argsBuffer.byteLength > this.#callArray.byteLength) {
       throw new Error("Arguments too large");
@@ -134,21 +142,27 @@ export class SyncOPFS {
     this.#controlArray[slot.CALL_LENGTH] = argsBuffer.byteLength;
 
     // Set the state to CALL
-    this.#controlArray[slot.STATE] = states.CALL;
+    this.#setState(states.CALL);
 
     // Wait for the worker to set the state to RESPONSE using Atomics.wait
-    Atomics.wait(this.#controlArray, slot.STATE, states.RESPONSE);
+    this.#waitForState(states.RESPONSE);
 
     // Deserialize the response
-    const responseBuffer = this.#responseArray.slice(0, this.#controlArray[2]);
-    const response: ResponseJson = JSON.parse(
-      new TextDecoder().decode(responseBuffer)
+    const responseBuffer = this.#responseArray.slice(
+      0,
+      this.#controlArray[slot.RESPONSE_LENGTH],
     );
+    const response: ResponseJson = JSON.parse(
+      new TextDecoder().decode(responseBuffer),
+    );
+    console.log("response:", JSON.stringify(response, null, 2));
     if ("error" in response) {
-      throw new Error(
-        response.error.message + response.error.code !== undefined
-          ? ` (${response.error.code})`
-          : ""
+      throw new FsError(
+        response.error.code,
+        response.error.message +
+          (response.error.code !== undefined
+            ? ` (${response.error.code})`
+            : ""),
       );
     }
     return response.value;
@@ -166,7 +180,7 @@ export class SyncOPFS {
     return this.#callSync("lstat", [path]);
   }
 
-  mkdir(path: string, options?: { recursive: boolean; mode: number }): void {
+  mkdir(path: string, options?: { recursive?: boolean; mode?: number }): void {
     return this.#callSync("mkdir", [path, options]);
   }
 
@@ -180,15 +194,16 @@ export class SyncOPFS {
 
   read(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer,
-    offset: number,
-    length: number,
-    position: number
+    buffer: SharedArrayBuffer | ArrayBuffer,  // Buffer to read into
+    offset: number, // Offset in buffer to start writing to
+    length: number, // Number of bytes to read
+    position: number, // Position in file to read from
   ): number {
     if (buffer instanceof SharedArrayBuffer) {
       return this.#callSync("read", [fd, buffer, offset, length, position]);
     } else {
-      // TODO
+      console.log(fd, buffer, offset, length, position);
+      throw new Error("Not implemented");
     }
   }
 
@@ -211,22 +226,23 @@ export class SyncOPFS {
   writeFile(
     path: string,
     data: string,
-    options?: { encoding: string; mode: number; flag: string }
+    options?: { encoding: string; mode: number; flag: string },
   ): void {
     return this.#callSync("writeFile", [path, data, options]);
   }
 
   write(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer,
-    offset: number,
-    length: number,
-    position: number
+    buffer: SharedArrayBuffer | ArrayBuffer,  // Buffer to read from
+    offset: number, // Offset in buffer to start reading from
+    length: number, // Number of bytes to write
+    position: number, // Position in file to write to
   ): number {
     if (buffer instanceof SharedArrayBuffer) {
       return this.#callSync("write", [fd, buffer, offset, length, position]);
     } else {
-      // TODO
+      console.log(fd, buffer, offset, length, position);
+      throw new Error("Not implemented");
     }
   }
 

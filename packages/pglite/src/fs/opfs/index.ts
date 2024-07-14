@@ -2,6 +2,7 @@ import { FilesystemBase } from "../types.js";
 import { PGDATA } from "../index.js";
 import type { PostgresMod } from "../../postgres.js";
 import { createOPFS } from "./OPFS.js";
+import { SyncOPFS } from "./syncOPFS/index.js";
 
 export class Opfs extends FilesystemBase {
   #initialHandles: number = 500;
@@ -12,19 +13,21 @@ export class Opfs extends FilesystemBase {
   }
 
   async emscriptenOpts(opts: Partial<PostgresMod>) {
+    const syncOPFS = await SyncOPFS.create();
     const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
         ...(opts.preRun || []),
         (mod: PostgresMod) => {
-          const OPFS = createOPFS(mod);
+          syncOPFS.mkdir(this.dataDir!, { recursive: true });
+          const OPFS = createOPFS(mod, syncOPFS);
           mod.FS.mkdir(PGDATA);
           mod.FS.mount(
             OPFS,
             {
-              root: this.dataDir,
+              root: this.dataDir!,
             },
-            PGDATA
+            PGDATA,
           );
         },
       ],

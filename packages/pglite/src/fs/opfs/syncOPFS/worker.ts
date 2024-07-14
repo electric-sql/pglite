@@ -1,4 +1,4 @@
-import { states, slot } from "./types";
+import { states, slot, waitFor, FsError } from "./shared.js";
 import type {
   FsStats,
   ResponseJson,
@@ -6,14 +6,33 @@ import type {
   ResponseJsonError,
   OpenFd,
   FileSystemSyncAccessHandle,
-} from "./types";
+  CallMsg,
+} from "./shared.js";
 
-// send 'here' message to indicate that the worker is ready
-self.postMessage({ type: "here" });
+// State
+let fdCounter = 10;
+const openFd = new Map<number, OpenFd>();
 
-// Wait for the main thread to send the buffers
-const { controlBuffer, callBuffer, responseBuffer, sharedBuffers } =
-  await new Promise<{
+let controlBuffer: SharedArrayBuffer;
+let callBuffer: SharedArrayBuffer;
+let responseBuffer: SharedArrayBuffer;
+let sharedBuffers: SharedArrayBuffer[];
+
+let controlArray: Int32Array;
+let callArray: Uint8Array;
+let responseArray: Uint8Array;
+
+let root: FileSystemDirectoryHandle;
+
+async function init() {
+  // Root OPFS
+  root = await navigator.storage.getDirectory();
+
+  // send 'here' message to indicate that the worker is ready
+  self.postMessage({ type: "here" });
+
+  // Wait for the main thread to send the buffers
+  const msg = await new Promise<{
     controlBuffer: SharedArrayBuffer;
     callBuffer: SharedArrayBuffer;
     responseBuffer: SharedArrayBuffer;
@@ -28,45 +47,44 @@ const { controlBuffer, callBuffer, responseBuffer, sharedBuffers } =
           throw new Error("Unexpected message from main thread");
         }
       },
-      { once: true }
+      { once: true },
     );
   });
 
-// Create the arrays
-const controlArray = new Int32Array(controlBuffer);
-const callArray = new Uint8Array(callBuffer);
-const responseArray = new Uint8Array(responseBuffer);
+  controlBuffer = msg.controlBuffer;
+  callBuffer = msg.callBuffer;
+  responseBuffer = msg.responseBuffer;
+  sharedBuffers = msg.sharedBuffers;
 
-// State
-let fdCounter = 0;
-const openFd = new Map<number, OpenFd>();
+  controlArray = new Int32Array(controlBuffer);
+  callArray = new Uint8Array(callBuffer);
+  responseArray = new Uint8Array(responseBuffer);
 
-// Root OPFS
-const root = await navigator.storage.getDirectory();
-
-// Send the 'ready' message to the main thread
-self.postMessage({ type: "ready" });
-mainLoop();
+  // Send the 'ready' message to the main thread
+  self.postMessage({ type: "ready" });
+  mainLoop();
+}
 
 async function mainLoop() {
   while (true) {
-    Atomics.wait(controlArray, slot.STATE, states.CALL);
-    Atomics.store(controlArray, slot.STATE, states.PROCESS);
+    waitForState(states.CALL);
+    setState(states.PROCESS);
     const callLength = Atomics.load(controlArray, slot.CALL_LENGTH);
-    const callMsg = JSON.parse(
-      new TextDecoder().decode(callArray.slice(0, callLength))
+    const callMsg: CallMsg = JSON.parse(
+      new TextDecoder().decode(callArray.slice(0, callLength)),
     );
     let responseJson: ResponseJson;
     try {
-      if (!methods[callMsg.type]) {
-        throw new Error(`Method not found: ${callMsg.type}`);
+      if (!methods[callMsg.method]) {
+        throw new Error(`Method not found: ${callMsg.method}`);
       }
-      const result = await methods[callMsg.type](...callMsg.args);
+      const result = await methods[callMsg.method](...callMsg.args);
       responseJson = { value: result } as ResponseJsonOk;
     } catch (error) {
       responseJson = {
         error: {
-          message: (error as Error).message,
+          message: (error as FsError).message,
+          code: (error as FsError).code,
         },
       } as ResponseJsonError;
     }
@@ -76,9 +94,9 @@ async function mainLoop() {
     Atomics.store(
       controlArray,
       slot.RESPONSE_LENGTH,
-      responseJsonStrBytes.length
+      responseJsonStrBytes.length,
     );
-    Atomics.store(controlArray, slot.STATE, states.RESPONSE);
+    setState(states.RESPONSE);
   }
 }
 
@@ -107,15 +125,19 @@ const methods: Record<string, (...args: any[]) => any> = {
 
   async mkdir(
     path: string,
-    options?: { recursive: boolean; mode: number }
+    options?: { recursive: boolean; mode: number },
   ): Promise<void> {
     const parts = path.split("/");
     const tip = parts.pop()!;
     let currentDir = root;
-    for (const part of parts) {
-      currentDir = await currentDir.getDirectoryHandle(part, {
-        create: options?.recursive,
-      });
+    try {
+      for (const part of parts) {
+        currentDir = await currentDir.getDirectoryHandle(part, {
+          create: options?.recursive,
+        });
+      }
+    } catch (error) {
+      throw new FsError("ENOENT", `Dir not found: ${path}`);
     }
     currentDir.getDirectoryHandle(tip, { create: true });
   },
@@ -146,7 +168,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     buffer: number, // number of sharedBuffer or -1 for copy via responseBuffer
     offset: number,
     length: number,
-    position: number
+    position: number,
   ): Promise<number> {
     const fdEntry = openFd.get(fd);
     if (!fdEntry) {
@@ -162,6 +184,7 @@ const methods: Record<string, (...args: any[]) => any> = {
       return bytesRead;
     } else {
       // TODO
+      return 0;
     }
   },
 
@@ -174,7 +197,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     const newPathParts = newPath.split("/");
     const newEntryName = newPathParts.pop()!;
     const newDirHandle = await resolveDirectoryHandle(
-      newPathParts.slice(0, -1)
+      newPathParts.slice(0, -1),
     );
     if (type === "file") {
       const oldFile = await handle.getFile();
@@ -210,7 +233,7 @@ const methods: Record<string, (...args: any[]) => any> = {
   async writeFile(
     path: string,
     data: string,
-    _options?: { encoding: string; mode: number; flag: string }
+    _options?: { encoding: string; mode: number; flag: string },
   ): Promise<void> {
     const handle = await resolveFileHandle(path, true);
     const writable = await handle.createWritable();
@@ -223,7 +246,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     buffer: number, // number of sharedBuffer or -1 for copy via responseBuffer
     offset: number,
     length: number,
-    position: number
+    position: number,
   ): Promise<number> {
     const fdEntry = openFd.get(fd);
     if (!fdEntry) {
@@ -239,58 +262,75 @@ const methods: Record<string, (...args: any[]) => any> = {
       return bytesWritten;
     } else {
       // TODO
+      return 0;
     }
   },
 };
 
 async function resolveDirectoryHandle(
   path: string | string[],
-  create = false
+  create = false,
 ): Promise<FileSystemDirectoryHandle> {
-  const pathParts = Array.isArray(path) ? path : path.split("/");
-  let handle = root;
-  for (const part of pathParts) {
-    if (!part) {
-      continue;
+  try {
+    const pathParts = Array.isArray(path) ? path : path.split("/");
+    let handle = root;
+    for (const part of pathParts) {
+      if (!part) {
+        continue;
+      }
+      handle = await handle.getDirectoryHandle(part, { create });
     }
-    handle = await handle.getDirectoryHandle(part, { create });
+    return handle;
+  } catch (error) {
+    throw new FsError("ENOENT", `Dir not found: ${path}`);
   }
-  return handle;
 }
 
 async function resolveFileHandle(
   path: string,
   create = false,
-  createDirs = false
+  createDirs = false,
 ): Promise<FileSystemFileHandle> {
-  const pathParts = path.split("/");
-  const fileName = pathParts.pop()!;
-  const dirHandle = await resolveDirectoryHandle(pathParts, createDirs);
-  return dirHandle.getFileHandle(fileName, { create });
+  try {
+    const pathParts = path.split("/");
+    const fileName = pathParts.pop()!;
+    const dirHandle = await resolveDirectoryHandle(pathParts, createDirs);
+    return dirHandle.getFileHandle(fileName, { create });
+  } catch (error) {
+    throw new FsError("ENOENT", `File not found: ${path}`);
+  }
 }
 
 async function resolveHandle(
-  path: string
+  path: string,
 ): Promise<FileSystemFileHandle | FileSystemDirectoryHandle> {
   const pathParts = Array.isArray(path) ? path : path.split("/");
   const tip = pathParts.pop()!;
   let handle = root;
-  for (const part of pathParts) {
-    if (!part) {
-      continue;
+  try {
+    for (const part of pathParts) {
+      if (!part) {
+        continue;
+      }
+      handle = await handle.getDirectoryHandle(part);
     }
-    handle = await handle.getDirectoryHandle(part);
+  } catch {
+    throw new FsError("ENOENT", `Path not found: ${path}`);
   }
   try {
     return await handle.getFileHandle(tip);
   } catch {
-    return await handle.getDirectoryHandle(tip);
+    try {
+      return await handle.getDirectoryHandle(tip);
+    } catch {
+      throw new FsError("ENOENT", `Path not found: ${path}`);
+    }
   }
 }
 
 async function statForHandle(
   handle: FileSystemHandle,
-  syncHandle?: FileSystemSyncAccessHandle
+  syncHandle?: FileSystemSyncAccessHandle,
 ): Promise<FsStats> {
   const kind = handle.kind;
   if (!syncHandle && kind === "file") {
@@ -315,3 +355,14 @@ async function statForHandle(
     blocks,
   };
 }
+
+function waitForState(state: number) {
+  waitFor(controlArray, slot.STATE, state);
+}
+
+function setState(state: number) {
+  controlArray[slot.STATE] = state;
+  Atomics.notify(controlArray, slot.STATE);
+}
+
+init();
