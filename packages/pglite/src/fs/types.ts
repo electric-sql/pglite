@@ -1,6 +1,6 @@
 import type { PostgresMod, FS } from "../postgresMod.js";
 
-export type FsType = "nodefs" | "idbfs" | "memoryfs";
+export type FsType = "nodefs" | "idbfs" | "memoryfs" | "opfs";
 
 export interface FilesystemFactory {
   new (dataDir: string): Filesystem;

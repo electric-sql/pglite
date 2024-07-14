@@ -1,6 +1,7 @@
 import type { FsType, Filesystem } from "./types.js";
 import { IdbFs } from "./idbfs.js";
 import { MemoryFS } from "./memoryfs.js";
+import { Opfs } from "./opfs/index.js";
 
 export type * from "./types.js";
 
@@ -20,6 +21,10 @@ export function parseDataDir(dataDir?: string) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = dataDir.slice(6);
     fsType = "idbfs";
+  } else if (dataDir?.startsWith("opfs://")) {
+    // Remove the opfs:// prefix, and use opfs filesystem
+    dataDir = dataDir.slice(7);
+    fsType = "opfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
     fsType = "memoryfs";
@@ -38,6 +43,8 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     fs = new NodeFS(dataDir);
   } else if (dataDir && fsType === "idbfs") {
     fs = new IdbFs(dataDir);
+  } else if (dataDir && fsType === "opfs") {
+    fs = new Opfs(dataDir);
   } else {
     fs = new MemoryFS();
   }
