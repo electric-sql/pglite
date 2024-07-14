@@ -145,12 +145,15 @@ const methods: Record<string, (...args: any[]) => any> = {
   async open(path: string, _flags?: string, _mode?: number): Promise<number> {
     const handle = await resolveFileHandle(path);
     const id = fdCounter++;
+    console.log("--------1");
+    console.log(openFd);
     openFd.set(id, {
       id,
       path,
       handle,
       syncHandle: await (handle as any).createSyncAccessHandle(),
     });
+    console.log("--------2");
     return id;
   },
 
@@ -183,8 +186,21 @@ const methods: Record<string, (...args: any[]) => any> = {
       const bytesRead = fdEntry.syncHandle.read(view, { at: position });
       return bytesRead;
     } else {
-      // TODO
-      return 0;
+      // Read chunks from the file in chunks the size of the responseBuffer
+      // and write them to the responseBuffer
+      let read = 0;
+      while (read < length) {
+        const bytesRead = fdEntry.syncHandle.read(responseArray, {
+          at: position + read,
+        });
+        read += bytesRead;
+        setState(states.ASK_NEXT);
+        waitForState(states.SEND_NEXT);
+        if (read >= length) {
+          break;
+        }
+      }
+      return read;
     }
   },
 
@@ -223,6 +239,7 @@ const methods: Record<string, (...args: any[]) => any> = {
       handle as any
     ).createSyncAccessHandle();
     syncHandle.truncate(len);
+    syncHandle.close();
   },
 
   async unlink(path: string): Promise<void> {
@@ -261,8 +278,23 @@ const methods: Record<string, (...args: any[]) => any> = {
       const bytesWritten = fdEntry.syncHandle.write(view, { at: position });
       return bytesWritten;
     } else {
-      // TODO
-      return 0;
+      // Read chunks from the callBuffer in chunks the size of the callBuffer
+      // and write them to the file
+      let written = 0;
+      while (written < length) {
+        setState(states.ASK_NEXT);
+        waitForState(states.SEND_NEXT);
+        const chunkLength = Math.min(callArray.byteLength, length - written);
+        const chunk = callArray.slice(0, chunkLength);
+        const bytesWritten = fdEntry.syncHandle.write(chunk, {
+          at: position + written,
+        });
+        written += bytesWritten;
+        if (written >= length) {
+          break;
+        }
+      }
+      return written;
     }
   },
 };
@@ -337,6 +369,7 @@ async function statForHandle(
     syncHandle = await (handle as any).createSyncAccessHandle();
   }
   const size = syncHandle?.getSize() ?? 0;
+  syncHandle?.close();
   const blksize = 4096;
   const blocks = Math.ceil(size / blksize);
   return {
@@ -356,8 +389,8 @@ async function statForHandle(
   };
 }
 
-function waitForState(state: number) {
-  waitFor(controlArray, slot.STATE, state);
+function waitForState(state: number | number[]) {
+  return waitFor(controlArray, slot.STATE, state);
 }
 
 function setState(state: number) {

@@ -5,14 +5,8 @@ export const states = {
   CALL: 1,
   PROCESS: 2,
   RESPONSE: 3,
-  // States for reading from a buffer via copy:
-  READ_NEXT: 4,
-  READ_READY: 5,
-  READ_DONE: 6,
-  // States for writing to a buffer via copy:
-  WRITE_NEXT: 7,
-  WRITE_READY: 8,
-  WRITE_DONE: 9,
+  ASK_NEXT: 4,
+  SEND_NEXT: 5,
 } as const;
 
 export const slot = {
@@ -75,12 +69,12 @@ export interface FileSystemSyncAccessHandle {
 export function waitFor(
   typedArray: Int32Array,
   index: number,
-  value: number,
-): void {
+  value: number | number[],
+): number {
   while (true) {
     const state = Atomics.load(typedArray, index);
-    if (state === value) {
-      return;
+    if (state === value || (Array.isArray(value) && value.includes(state))) {
+      return state;
     }
     Atomics.wait(typedArray, index, state);
   }

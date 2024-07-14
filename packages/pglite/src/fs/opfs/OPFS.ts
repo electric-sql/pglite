@@ -7,7 +7,7 @@ export type FileSystemType = Emscripten.FileSystemType & {
     parent: FSNode | null,
     name: string,
     mode: number,
-    dev?: any
+    dev?: any,
   ) => FSNode;
   node_ops: FS.NodeOps;
   stream_ops: FS.StreamOps & {
@@ -17,14 +17,14 @@ export type FileSystemType = Emscripten.FileSystemType & {
       length: number,
       position: number,
       prot: any,
-      flags: any
+      flags: any,
     ) => { ptr: number; allocated: boolean };
     msync: (
       stream: FSStream,
       buffer: Uint8Array,
       offset: number,
       length: number,
-      mmapFlags: any
+      mmapFlags: any,
     ) => number;
   };
 } & { [key: string]: any };
@@ -54,7 +54,7 @@ type EmscriptenFS = PostgresMod["FS"] & {
     parent: FSNode | null,
     name: string,
     mode: number,
-    dev?: any
+    dev?: any,
   ) => FSNode;
 };
 
@@ -66,7 +66,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         "PGlite with OPFS requires SharedArrayBuffer support.",
         "It requires HTTPS or localhost and specific CORS headers to work.",
         "See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements for more details.",
-      ].join("\n")
+      ].join("\n"),
     );
   }
   const FS = Module.FS as EmscriptenFS;
@@ -86,7 +86,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
     syncfs(
       mount: FS.Mount,
       populate: () => unknown,
-      done: (err?: number | null) => unknown
+      done: (err?: number | null) => unknown,
     ): void {
       // NOOP
     },
@@ -94,7 +94,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
       parent: FSNode | null,
       name: string,
       mode: number,
-      dev?: any
+      dev?: any,
     ): OpfsNode {
       if (!FS.isDir(mode) && !FS.isFile(mode)) {
         throw new FS.ErrnoError(28);
@@ -152,7 +152,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         parent: FSNode,
         name: string,
         mode: number,
-        dev: unknown
+        dev: unknown,
       ): OpfsNode {
         const node = OPFS.createNode(parent, name, mode, dev);
         // create the backing node for this in the fs root as well
@@ -229,7 +229,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         buffer: Uint8Array | Int8Array,
         offset: number,
         length: number,
-        position: number
+        position: number,
       ): number {
         if (length === 0) return 0;
         return OPFS.tryFSOperation(() =>
@@ -238,8 +238,8 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
             new Int8Array(buffer.buffer, offset, length),
             0,
             length,
-            position
-          )
+            position,
+          ),
         );
       },
       write(
@@ -247,7 +247,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         buffer: Uint8Array | Int8Array, // Buffer to read from
         offset: number, //
         length: number,
-        position: number
+        position: number,
       ): number {
         return OPFS.tryFSOperation(() =>
           syncOPFS.write(
@@ -255,8 +255,8 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
             new Int8Array(buffer.buffer, offset, length),
             0,
             length,
-            position
-          )
+            position,
+          ),
         );
       },
       llseek(stream: FSStream, offset: number, whence: number): number {
@@ -285,7 +285,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         length: number,
         position: number,
         prot: any,
-        flags: any
+        flags: any,
       ) {
         if (!FS.isFile(stream.node.mode)) {
           throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
@@ -301,7 +301,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         buffer: Uint8Array,
         offset: number,
         length: number,
-        mmapFlags: any
+        mmapFlags: any,
       ) {
         OPFS.stream_ops.write(stream, buffer, 0, length, offset);
         return 0;

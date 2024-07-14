@@ -122,8 +122,8 @@ export class SyncOPFS {
     );
   }
 
-  #waitForState(state: number) {
-    waitFor(this.#controlArray, slot.STATE, state);
+  #waitForState(state: number | number[]) {
+    return waitFor(this.#controlArray, slot.STATE, state);
   }
 
   #setState(state: number) {
@@ -131,7 +131,7 @@ export class SyncOPFS {
     Atomics.notify(this.#controlArray, slot.STATE);
   }
 
-  #callSync(method: string, args: any[]) {
+  #callSync(method: string, args: any[], next?: () => void) {
     // Serialize the arguments
     console.log("calling:", method, args);
     const argsBuffer = this.#encodeArgs(method, args);
@@ -145,7 +145,15 @@ export class SyncOPFS {
     this.#setState(states.CALL);
 
     // Wait for the worker to set the state to RESPONSE using Atomics.wait
-    this.#waitForState(states.RESPONSE);
+    while (true) {
+      const state = this.#waitForState([states.RESPONSE, states.ASK_NEXT]);
+      if (state === states.RESPONSE) {
+        break;
+      }
+      // Perform the next operation, this could be a chunked read/write
+      next?.();
+      this.#setState(states.SEND_NEXT);
+    }
 
     // Deserialize the response
     const responseBuffer = this.#responseArray.slice(
@@ -194,16 +202,39 @@ export class SyncOPFS {
 
   read(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer,  // Buffer to read into
+    buffer: SharedArrayBuffer | ArrayBuffer, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
   ): number {
-    if (buffer instanceof SharedArrayBuffer) {
+    if (buffer instanceof SharedArrayBuffer && this.#sharedBuffers.includes(buffer)) {
+      console.log("shared buffer");
       return this.#callSync("read", [fd, buffer, offset, length, position]);
     } else {
-      console.log(fd, buffer, offset, length, position);
-      throw new Error("Not implemented");
+      console.log("non-shared buffer");
+      let read = 0;
+      const ret = this.#callSync("read", [fd, -1, offset, length, position], () => {
+        // Read the chunk from the responseBuffer in chunks the size of the responseBuffer
+        const chunkLength = Math.min(
+          this.#responseBuffer.byteLength,
+          length - read,
+        );
+        console.log('chunkLength', chunkLength)
+        const sourceArray = new Uint8Array(this.#responseArray.buffer, 0, chunkLength);
+        const targetArray = new Uint8Array(buffer, offset + read, chunkLength);
+        targetArray.set(sourceArray);
+        read += chunkLength;
+  
+        // DEBUG - print text in this.#responseBuffer
+        console.log(
+          new TextDecoder().decode(this.#responseArray.slice(0, chunkLength)),
+        );
+      });
+  
+      // DEBUG - print text in buffer
+      console.log(new TextDecoder().decode(new Uint8Array(buffer, offset, length)));
+  
+      return ret;
     }
   }
 
@@ -233,16 +264,26 @@ export class SyncOPFS {
 
   write(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer,  // Buffer to read from
+    buffer: SharedArrayBuffer | ArrayBuffer, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
   ): number {
-    if (buffer instanceof SharedArrayBuffer) {
+    if (buffer instanceof SharedArrayBuffer && this.#sharedBuffers.includes(buffer)) {
       return this.#callSync("write", [fd, buffer, offset, length, position]);
     } else {
-      console.log(fd, buffer, offset, length, position);
-      throw new Error("Not implemented");
+      // Write the chunk to the callBuffer in chunks the size of the callBuffer
+      let written = 0;
+      return this.#callSync("write", [fd, -1, offset, length, position], () => {
+        const chunkLength = Math.min(
+          this.#callArray.byteLength,
+          length - written,
+        );
+        this.#callArray.set(
+          new Uint8Array(buffer, offset + written, chunkLength),
+        );
+        written += chunkLength;
+      });
     }
   }
 
