@@ -48,6 +48,8 @@
     "test:bun": "rm -rf ./pgdata-test && npx bun test tests/basic.test.js && npx bun test tests/pgvector.test.js && npx bun test tests/targets/node-fs.test.js",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
+    "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
+    "dev-server": "pnpm serve",
     "format": "prettier --write ./src"
   },
   "devDependencies": {
@@ -60,12 +62,12 @@
     "bun": "^1.1.18",
     "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
-    "http-server": "^14.1.1",
     "pg-protocol": "^1.6.0",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
+    "serve": "^14.2.3",
     "tinytar": "^0.1.0",
-    "tsup": "^8.0.2",
+    "tsup": "^8.1.0",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   }
