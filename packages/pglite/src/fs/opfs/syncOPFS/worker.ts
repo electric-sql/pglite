@@ -12,6 +12,7 @@ import type {
 // State
 let fdCounter = 10;
 const openFd = new Map<number, OpenFd>();
+const fdMap = new Map<string, number>(); // OPFS only allows a file to be opend once, so we keep a map of path to Fd for things such as lstat
 
 let controlBuffer: SharedArrayBuffer;
 let callBuffer: SharedArrayBuffer;
@@ -107,6 +108,7 @@ const methods: Record<string, (...args: any[]) => any> = {
       throw new Error(`File descriptor not found: ${fd}`);
     }
     fdEntry.syncHandle.close();
+    fdMap.delete(fdEntry.path);
     openFd.delete(fd);
   },
 
@@ -115,7 +117,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     if (!fdEntry) {
       throw new Error(`File descriptor not found: ${fd}`);
     }
-    return await statForHandle(fdEntry.handle, fdEntry.syncHandle);
+    return await statForHandle(fdEntry.handle);
   },
 
   async lstat(path: string): Promise<FsStats> {
@@ -145,15 +147,13 @@ const methods: Record<string, (...args: any[]) => any> = {
   async open(path: string, _flags?: string, _mode?: number): Promise<number> {
     const handle = await resolveFileHandle(path);
     const id = fdCounter++;
-    console.log("--------1");
-    console.log(openFd);
     openFd.set(id, {
       id,
       path,
       handle,
       syncHandle: await (handle as any).createSyncAccessHandle(),
     });
-    console.log("--------2");
+    fdMap.set(path, id);
     return id;
   },
 
@@ -190,35 +190,25 @@ const methods: Record<string, (...args: any[]) => any> = {
       // and write them to the responseBuffer
       let read = 0;
       while (read < length) {
-        const chunkLength = Math.min(
-          responseBuffer.byteLength,
-          length - read,
-        );
-        console.log('worker reading', read, chunkLength);
+        const chunkLength = Math.min(responseBuffer.byteLength, length - read);
         const view = new Uint8Array(responseBuffer, 0, chunkLength);
         const bytesRead = fdEntry.syncHandle.read(view, {
           at: position + read,
         });
         controlArray[slot.RESPONSE_LENGTH] = bytesRead;
-        // if (bytesRead !== chunkLength) {
-        //   console.warn(`worker read ${bytesRead} bytes, expected ${chunkLength}`);
-        //   throw new Error("Read less than expected");
-        // }
-        console.log('worker bytesRead', bytesRead);
         read += bytesRead;
-        console.log('worker total read', read, length, read >= length);
         setState(states.ASK_NEXT);
         waitForState(states.SEND_NEXT);
         if (read >= length || bytesRead <= chunkLength) {
           break;
         }
       }
-      console.log('HERE')
       return read;
     }
   },
 
   async rename(oldPath: string, newPath: string): Promise<void> {
+    // OPFS does not have a rename method, so we have to copy and delete
     let exists = false;
     try {
       if (await resolveHandle(newPath)) {
@@ -232,9 +222,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     const type = handle.kind;
     const newPathParts = newPath.split("/");
     const newEntryName = newPathParts.pop()!;
-    const newDirHandle = await resolveDirectoryHandle(
-      newPathParts,
-    );
+    const newDirHandle = await resolveDirectoryHandle(newPathParts);
     if (type === "file") {
       const oldFile = await handle.getFile();
       const newFileHandle = await newDirHandle.getFileHandle(newEntryName, {
@@ -242,6 +230,7 @@ const methods: Record<string, (...args: any[]) => any> = {
       });
       const newFile = await newFileHandle.createWritable();
       await newFile.write(oldFile);
+      await newFile.close();
       await (handle as any).remove();
     } else {
       throw new Error("Rename directory not implemented");
@@ -255,16 +244,16 @@ const methods: Record<string, (...args: any[]) => any> = {
 
   async truncate(path: string, len: number): Promise<void> {
     const handle = await resolveFileHandle(path);
-    const syncHandle: FileSystemSyncAccessHandle = await (
-      handle as any
-    ).createSyncAccessHandle();
-    syncHandle.truncate(len);
-    syncHandle.close();
+    const file = await handle.createWritable();
+    await file.truncate(len);
+    await file.close();
   },
 
   async unlink(path: string): Promise<void> {
+    // try {
     const handle = await resolveFileHandle(path);
     await (handle as any).remove();
+    // } catch (error) {}
   },
 
   async writeFile(
@@ -380,16 +369,13 @@ async function resolveHandle(
   }
 }
 
-async function statForHandle(
-  handle: FileSystemHandle,
-  syncHandle?: FileSystemSyncAccessHandle,
-): Promise<FsStats> {
+async function statForHandle(handle: FileSystemHandle): Promise<FsStats> {
   const kind = handle.kind;
-  if (!syncHandle && kind === "file") {
-    syncHandle = await (handle as any).createSyncAccessHandle();
+  let size = 0;
+  if (kind === "file") {
+    const file = await (handle as FileSystemFileHandle).getFile();
+    size = file.size;
   }
-  const size = syncHandle?.getSize() ?? 0;
-  syncHandle?.close();
   const blksize = 4096;
   const blocks = Math.ceil(size / blksize);
   return {

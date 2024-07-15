@@ -133,7 +133,6 @@ export class SyncOPFS {
 
   #callSync(method: string, args: any[], next?: () => void) {
     // Serialize the arguments
-    console.log("calling:", method, args);
     const argsBuffer = this.#encodeArgs(method, args);
     if (argsBuffer.byteLength > this.#callArray.byteLength) {
       throw new Error("Arguments too large");
@@ -163,7 +162,6 @@ export class SyncOPFS {
     const response: ResponseJson = JSON.parse(
       new TextDecoder().decode(responseBuffer),
     );
-    console.log("response:", JSON.stringify(response, null, 2));
     if ("error" in response) {
       throw new FsError(
         response.error.code,
@@ -207,39 +205,31 @@ export class SyncOPFS {
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
   ): number {
-    console.log('read', fd, `offset: ${offset}, length: ${length}, position: ${position}`);
-    if (buffer instanceof SharedArrayBuffer && this.#sharedBuffers.includes(buffer)) {
-      // console.log("shared buffer");
+    if (
+      buffer instanceof SharedArrayBuffer &&
+      this.#sharedBuffers.includes(buffer)
+    ) {
       return this.#callSync("read", [fd, buffer, offset, length, position]);
     } else {
-      // console.log("non-shared buffer");
-      // debugger;
       let read = 0;
-      const ret = this.#callSync("read", [fd, -1, offset, length, position], () => {
-        // Read the chunk from the responseBuffer in chunks the size of the responseBuffer
-        const chunkLength = Math.min(
-          this.#responseBuffer.byteLength,
-          length - read,
-        );
-        console.log('read chunk', read, chunkLength);
-        // console.log('chunkLength', chunkLength)
-        const sourceArray = new Int8Array(this.#responseArray.buffer, 0, chunkLength);
-        buffer.set(sourceArray, offset + read);
-        read += this.#controlArray[slot.RESPONSE_LENGTH];
-  
-        // DEBUG - print text in this.#responseBuffer
-        // console.log('#responseBuffer',
-        //   new TextDecoder().decode(this.#responseArray.slice(0, chunkLength)),
-        // );
-        // console.log('sourceArray',
-        //   new TextDecoder().decode(sourceArray),
-        // );
-        // console.log('buffer', offset, offset + read);
-        // console.log('buffer',
-        //   new TextDecoder().decode(buffer.slice(offset, offset + read)),
-        // )
-      });
-      console.log('read ret', ret);
+      const ret = this.#callSync(
+        "read",
+        [fd, -1, offset, length, position],
+        () => {
+          // Read the chunk from the responseBuffer in chunks the size of the responseBuffer
+          const chunkLength = Math.min(
+            this.#responseBuffer.byteLength,
+            length - read,
+          );
+          const sourceArray = new Int8Array(
+            this.#responseArray.buffer,
+            0,
+            chunkLength,
+          );
+          buffer.set(sourceArray, offset + read);
+          read += this.#controlArray[slot.RESPONSE_LENGTH];
+        },
+      );
       return ret;
     }
   }
@@ -275,7 +265,10 @@ export class SyncOPFS {
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
   ): number {
-    if (buffer instanceof SharedArrayBuffer && this.#sharedBuffers.includes(buffer)) {
+    if (
+      buffer instanceof SharedArrayBuffer &&
+      this.#sharedBuffers.includes(buffer)
+    ) {
       return this.#callSync("write", [fd, buffer, offset, length, position]);
     } else {
       // Write the chunk to the callBuffer in chunks the size of the callBuffer
