@@ -1,6 +1,7 @@
 import { FilesystemBase } from "./types.js";
 import type { FS, PostgresMod } from "../postgres.js";
 import { PGDATA } from "./index.js";
+import { dumpTar } from "./tarUtils.js";
 
 export class IdbFs extends FilesystemBase {
   async emscriptenOpts(opts: Partial<PostgresMod>) {
@@ -47,5 +48,9 @@ export class IdbFs extends FilesystemBase {
         }
       });
     });
+  }
+
+  async dumpTar(mod: FS, dbname: string) {
+    return dumpTar(mod, dbname);
   }
 }

@@ -144,4 +144,8 @@ export class PGliteWorker implements PGliteInterface {
       queueMicrotask(() => listener(channel, payload));
     }
   }
+
+  async dumpDataDir() {
+    return this.#worker.dumpDataDir();
+  }
 }

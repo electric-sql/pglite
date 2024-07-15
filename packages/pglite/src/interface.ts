@@ -43,12 +43,19 @@ export type Extensions = {
   [namespace: string]: Extension | URL;
 };
 
+export interface DumpDataDirResult {
+  tarball: Uint8Array;
+  extension: ".tar" | ".tgz";
+  filename: string;
+}
+
 export interface PGliteOptions {
   dataDir?: string;
   fs?: Filesystem;
   debug?: DebugLevel;
   relaxedDurability?: boolean;
   extensions?: Extensions;
+  loadDataDir?: Blob | File;
 }
 
 export type PGliteInterface = {
@@ -83,6 +90,7 @@ export type PGliteInterface = {
     callback: (channel: string, payload: string) => void,
   ): () => void;
   offNotification(callback: (channel: string, payload: string) => void): void;
+  dumpDataDir(): Promise<File>;
 };
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions

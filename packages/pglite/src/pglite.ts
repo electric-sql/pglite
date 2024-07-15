@@ -16,6 +16,7 @@ import type {
   Extensions,
 } from "./interface.js";
 import { loadExtensionBundle, loadExtensions } from "./extensionUtils.js";
+import { loadTar } from "./fs/tarUtils.js";
 
 import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
@@ -33,6 +34,8 @@ import {
 export class PGlite implements PGliteInterface {
   fs?: Filesystem;
   protected mod?: PostgresMod;
+
+  readonly dataDir?: string;
 
   #ready = false;
   #closing = false;
@@ -92,6 +95,7 @@ export class PGlite implements PGliteInterface {
     } else {
       options = dataDirOrPGliteOptions;
     }
+    this.dataDir = options.dataDir;
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
@@ -242,6 +246,17 @@ export class PGlite implements PGliteInterface {
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs(this.mod.FS);
+
+    // If the user has provided a tarball to load the database from, do that now.
+    // We do this after the initial sync so that we can throw if the database
+    // already exists.
+    if (options.loadDataDir) {
+      if (this.mod.FS.analyzePath(PGDATA + "/PG_VERSION").exists) {
+        throw new Error("Database already exists, cannot load from tarball");
+      }
+      this.#log("pglite: loading data from tarball");
+      await loadTar(this.mod.FS, options.loadDataDir);
+    }
 
     // Check and log if the database exists
     if (this.mod.FS.analyzePath(PGDATA + "/PG_VERSION").exists) {
@@ -728,5 +743,13 @@ export class PGlite implements PGliteInterface {
     options?: O,
   ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
     return new PGlite(options) as any;
+  }
+
+  /**
+   * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   */
+  async dumpDataDir() {
+    let dbname = this.dataDir?.split("/").pop() ?? "pgdata";
+    return this.fs!.dumpTar(this.mod!.FS, dbname);
   }
 }
