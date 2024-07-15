@@ -34,11 +34,12 @@ pushd src
      -c -o ../pg_initdb.o ${PGSRC}/src/bin/initdb/initdb.c $NOWARN || exit 34
 
     #
-    emcc -DPG_LINK_MAIN=1 -DPREFIX=${PGROOT} ${CC_PGLITE} \
+    emcc -DPG_LINK_MAIN=1 -DPREFIX=${PGROOT} ${CC_PGLITE} -DPG_EC_STATIC \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
      -c -o ./backend/tcop/postgres.o ${PGSRC}/src/backend/tcop/postgres.c $NOWARN|| exit 39
 
-    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_INITDB_MAIN=1 $NOWARN" emmake make backend/main/main.o backend/utils/init/postinit.o || exit 41
+    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_INITDB_MAIN=1 $NOWARN" \
+     emmake make backend/main/main.o backend/utils/init/postinit.o || exit 41
 popd
 
 
@@ -80,7 +81,20 @@ then
     PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/libduckdb.so -lstdc++"
 else
     PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
+    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a"
+
 fi
+
+# ../../src/common/libpgcommon_shlib.a"
+# ./src/common/libpgcommon.a: binary file matches
+# ./src/common/libpgcommon_shlib.a: binary file matches
+# error: undefined symbol: fsync_pgdata (referenced by root reference (e.g. compiled C/C++ code))
+# error: undefined symbol: get_restricted_token (referenced by root reference (e.g. compiled C/C++ code))
+# error: undefined symbol: pg_malloc_extended (referenced by root reference (e.g. compiled C/C++ code))
+# error: undefined symbol: pg_realloc (referenced by root reference (e.g. compiled C/C++ code))
+# error: undefined symbol: pg_strdup (referenced by root reference (e.g. compiled C/C++ code))
+# error: undefined symbol: simple_prompt (referenced by root reference (e.g. compiled C/C++ code))
+
 
 
 ## \
@@ -206,7 +220,7 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
 mkdir -p ${WEBROOT}
 
 cp -v postgres.* ${WEBROOT}/
-cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
+#cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
 cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
 for tarf in ${WEBROOT}/*.tar
 do

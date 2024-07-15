@@ -1,6 +1,63 @@
 
 #if defined(PG_MAIN)
 
+#if defined(PG_EC_STATIC)
+#warning "PG_EC_STATIC"
+
+EMSCRIPTEN_KEEPALIVE void
+fsync_pgdata(const char *pg_data, int serverVersion) {
+    // stub
+}
+
+EMSCRIPTEN_KEEPALIVE void
+get_restricted_token(void) {
+    // stub
+}
+
+EMSCRIPTEN_KEEPALIVE void *
+pg_malloc(size_t size)
+{
+	return malloc(size);
+}
+EMSCRIPTEN_KEEPALIVE void *
+pg_malloc_extended(size_t size, int flags) {
+    return malloc(size);
+}
+
+EMSCRIPTEN_KEEPALIVE void *
+pg_realloc(void *ptr, size_t size) {
+    return realloc(ptr, size);
+}
+
+EMSCRIPTEN_KEEPALIVE char *
+pg_strdup(const char *in) {
+	char	   *tmp;
+
+	if (!in)
+	{
+		fprintf(stderr,
+				_("cannot duplicate null pointer (internal error)\n"));
+		exit(EXIT_FAILURE);
+	}
+	tmp = strdup(in);
+	if (!tmp)
+	{
+		fprintf(stderr, _("out of memory\n"));
+		exit(EXIT_FAILURE);
+	}
+	return tmp;
+}
+
+EMSCRIPTEN_KEEPALIVE char *
+simple_prompt(const char *prompt, bool echo) {
+    return pg_strdup("");
+}
+
+
+
+#endif
+
+
 bool is_node = false;
 bool is_repl = true;
 
