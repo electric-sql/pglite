@@ -2,7 +2,7 @@ import { PGlite } from "../dist/index.js";
 
 console.log("Starting...");
 // In-memory database:
-const pg = new PGlite({debug:1});
+const pg = new PGlite();
 // Or, on-disk database:
 // const pg = new PGlite('pgdata');
 

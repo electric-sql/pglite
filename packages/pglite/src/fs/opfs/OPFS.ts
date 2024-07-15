@@ -295,10 +295,8 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         log("llseek stream", OPFS.realPath(stream.node), offset, whence);
         var position = offset;
         if (whence === 1) {
-          // SEEK_CUR.
           position += stream.position;
         } else if (whence === 2) {
-          // SEEK_END.
           if (FS.isFile(stream.node.mode)) {
             OPFS.tryFSOperation(() => {
               var stat = syncOPFS.fstat(stream.nfd!);
@@ -306,11 +304,9 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
             });
           }
         }
-
         if (position < 0) {
           throw new FS.ErrnoError(28);
         }
-
         return position;
       },
       mmap(

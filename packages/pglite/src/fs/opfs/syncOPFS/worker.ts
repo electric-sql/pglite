@@ -107,9 +107,12 @@ const methods: Record<string, (...args: any[]) => any> = {
     if (!fdEntry) {
       throw new Error(`File descriptor not found: ${fd}`);
     }
-    fdEntry.syncHandle.close();
-    fdMap.delete(fdEntry.path);
-    openFd.delete(fd);
+    fdEntry.ref--;
+    if (fdEntry.ref == 0) {
+      fdEntry.syncHandle.close();
+      fdMap.delete(fdEntry.path);
+      openFd.delete(fd);
+    }
   },
 
   async fstat(fd: number): Promise<FsStats> {
@@ -145,6 +148,12 @@ const methods: Record<string, (...args: any[]) => any> = {
   },
 
   async open(path: string, _flags?: string, _mode?: number): Promise<number> {
+    if (fdMap.has(path)) {
+      const id = fdMap.get(path)!;
+      const fdEntry = openFd.get(id)!;
+      fdEntry.ref++;
+      return id;
+    }
     const handle = await resolveFileHandle(path);
     const id = fdCounter++;
     openFd.set(id, {
@@ -152,6 +161,7 @@ const methods: Record<string, (...args: any[]) => any> = {
       path,
       handle,
       syncHandle: await (handle as any).createSyncAccessHandle(),
+      ref: 1,
     });
     fdMap.set(path, id);
     return id;
@@ -216,7 +226,8 @@ const methods: Record<string, (...args: any[]) => any> = {
       }
     } catch {}
     if (exists) {
-      throw new Error(`File already exists: ${newPath}`);
+      // delete the file if it exists
+      await methods.unlink(newPath);
     }
     const handle = await resolveHandle(oldPath);
     const type = handle.kind;
@@ -372,24 +383,27 @@ async function resolveHandle(
 async function statForHandle(handle: FileSystemHandle): Promise<FsStats> {
   const kind = handle.kind;
   let size = 0;
+  let lastModified = 0;
   if (kind === "file") {
     const file = await (handle as FileSystemFileHandle).getFile();
     size = file.size;
+    lastModified = file.lastModified
+    file
   }
   const blksize = 4096;
   const blocks = Math.ceil(size / blksize);
   return {
     dev: 0,
     ino: 0,
-    mode: kind === "file" ? 32768 : 16384,
+    mode: kind === "file" ? 33279 : 16872, // 32768 : 16384,
     nlink: 0,
     uid: 0,
     gid: 0,
     rdev: 0,
     size,
-    atime: 0,
-    mtime: 0,
-    ctime: 0,
+    atime: lastModified,
+    mtime: lastModified,
+    ctime: lastModified,
     blksize,
     blocks,
   };

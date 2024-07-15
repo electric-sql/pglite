@@ -54,6 +54,7 @@ export interface OpenFd {
   path: string;
   handle: FileSystemFileHandle;
   syncHandle: FileSystemSyncAccessHandle;
+  ref: number; // reference count
 }
 
 // TypeScript doesn't have a built-in type for FileSystemSyncAccessHandle

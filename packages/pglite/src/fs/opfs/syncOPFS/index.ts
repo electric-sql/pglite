@@ -183,7 +183,11 @@ export class SyncOPFS {
   }
 
   lstat(path: string): FsStats {
-    return this.#callSync("lstat", [path]);
+    const ret: FsStats = this.#callSync("lstat", [path]);
+    if (path.endsWith("/global/pg_control")) {
+      ret.mode = 33184; // HACK!
+    }
+    return ret;
   }
 
   mkdir(path: string, options?: { recursive?: boolean; mode?: number }): void {
@@ -260,7 +264,7 @@ export class SyncOPFS {
 
   write(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer, // Buffer to read from
+    buffer: Int8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
@@ -278,9 +282,12 @@ export class SyncOPFS {
           this.#callArray.byteLength,
           length - written,
         );
-        this.#callArray.set(
-          new Uint8Array(buffer, offset + written, chunkLength),
-        );
+        let view = new Uint8Array(buffer, offset + written, chunkLength);
+        if (view.length !== chunkLength) {
+          // TODO: I don't know why this is needed, sometimes the view is a different length
+          view = new Uint8Array(view.buffer, view.byteOffset, chunkLength);
+        }
+        this.#callArray.set(view, 0);
         written += chunkLength;
       });
     }
