@@ -226,29 +226,37 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
       },
       read(
         stream: FS.FSStream,
-        buffer: Uint8Array | Int8Array,
+        buffer: Uint8Array, // Wrong type in @types/emscripten
         offset: number,
         length: number,
         position: number,
       ): number {
+        console.log("-- read", stream.nfd, offset, length, position);
         if (length === 0) return 0;
-        return OPFS.tryFSOperation(() =>
+        const ret = OPFS.tryFSOperation(() =>
           syncOPFS.read(
             stream.nfd!,
-            new Int8Array(buffer.buffer, offset, length),
-            0,
+            buffer as unknown as Int8Array,
+            offset,
             length,
             position,
           ),
         );
+        // DEBUG - print text in buffer that was read
+        // console.log(new TextDecoder().decode(buffer.slice(offset, offset + length)));
+        // console.log(offset, length);
+        // console.log('main buffer',
+        //   new TextDecoder().decode(new Int8Array(buffer.buffer, offset, length)));  
+        return ret;
       },
       write(
         stream: FS.FSStream,
-        buffer: Uint8Array | Int8Array, // Buffer to read from
-        offset: number, //
+        buffer: Uint8Array, // Wrong type in @types/emscripten
+        offset: number,
         length: number,
         position: number,
       ): number {
+        console.log("write", stream, buffer, offset, length, position);
         return OPFS.tryFSOperation(() =>
           syncOPFS.write(
             stream.nfd!,
@@ -293,7 +301,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
 
         var ptr = (Module as any).mmapAlloc(length); // TODO: Fix type and check this is exported
 
-        OPFS.stream_ops.read(stream, Module.HEAP8, ptr, length, position);
+        OPFS.stream_ops.read(stream, Module.HEAP8 as unknown as Uint8Array, ptr, length, position);
         return { ptr, allocated: true };
       },
       msync(

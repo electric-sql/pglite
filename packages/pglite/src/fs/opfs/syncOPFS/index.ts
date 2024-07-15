@@ -202,16 +202,18 @@ export class SyncOPFS {
 
   read(
     fd: number,
-    buffer: SharedArrayBuffer | ArrayBuffer, // Buffer to read into
+    buffer: Int8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
   ): number {
+    console.log('read', fd, `offset: ${offset}, length: ${length}, position: ${position}`);
     if (buffer instanceof SharedArrayBuffer && this.#sharedBuffers.includes(buffer)) {
-      console.log("shared buffer");
+      // console.log("shared buffer");
       return this.#callSync("read", [fd, buffer, offset, length, position]);
     } else {
-      console.log("non-shared buffer");
+      // console.log("non-shared buffer");
+      // debugger;
       let read = 0;
       const ret = this.#callSync("read", [fd, -1, offset, length, position], () => {
         // Read the chunk from the responseBuffer in chunks the size of the responseBuffer
@@ -219,21 +221,25 @@ export class SyncOPFS {
           this.#responseBuffer.byteLength,
           length - read,
         );
-        console.log('chunkLength', chunkLength)
-        const sourceArray = new Uint8Array(this.#responseArray.buffer, 0, chunkLength);
-        const targetArray = new Uint8Array(buffer, offset + read, chunkLength);
-        targetArray.set(sourceArray);
-        read += chunkLength;
+        console.log('read chunk', read, chunkLength);
+        // console.log('chunkLength', chunkLength)
+        const sourceArray = new Int8Array(this.#responseArray.buffer, 0, chunkLength);
+        buffer.set(sourceArray, offset + read);
+        read += this.#controlArray[slot.RESPONSE_LENGTH];
   
         // DEBUG - print text in this.#responseBuffer
-        console.log(
-          new TextDecoder().decode(this.#responseArray.slice(0, chunkLength)),
-        );
+        // console.log('#responseBuffer',
+        //   new TextDecoder().decode(this.#responseArray.slice(0, chunkLength)),
+        // );
+        // console.log('sourceArray',
+        //   new TextDecoder().decode(sourceArray),
+        // );
+        // console.log('buffer', offset, offset + read);
+        // console.log('buffer',
+        //   new TextDecoder().decode(buffer.slice(offset, offset + read)),
+        // )
       });
-  
-      // DEBUG - print text in buffer
-      console.log(new TextDecoder().decode(new Uint8Array(buffer, offset, length)));
-  
+      console.log('read ret', ret);
       return ret;
     }
   }

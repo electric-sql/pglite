@@ -190,22 +190,42 @@ const methods: Record<string, (...args: any[]) => any> = {
       // and write them to the responseBuffer
       let read = 0;
       while (read < length) {
-        const bytesRead = fdEntry.syncHandle.read(responseArray, {
+        const chunkLength = Math.min(
+          responseBuffer.byteLength,
+          length - read,
+        );
+        console.log('worker reading', read, chunkLength);
+        const view = new Uint8Array(responseBuffer, 0, chunkLength);
+        const bytesRead = fdEntry.syncHandle.read(view, {
           at: position + read,
         });
+        controlArray[slot.RESPONSE_LENGTH] = bytesRead;
+        // if (bytesRead !== chunkLength) {
+        //   console.warn(`worker read ${bytesRead} bytes, expected ${chunkLength}`);
+        //   throw new Error("Read less than expected");
+        // }
+        console.log('worker bytesRead', bytesRead);
         read += bytesRead;
+        console.log('worker total read', read, length, read >= length);
         setState(states.ASK_NEXT);
         waitForState(states.SEND_NEXT);
-        if (read >= length) {
+        if (read >= length || bytesRead <= chunkLength) {
           break;
         }
       }
+      console.log('HERE')
       return read;
     }
   },
 
   async rename(oldPath: string, newPath: string): Promise<void> {
-    if (await resolveHandle(newPath)) {
+    let exists = false;
+    try {
+      if (await resolveHandle(newPath)) {
+        exists = true;
+      }
+    } catch {}
+    if (exists) {
       throw new Error(`File already exists: ${newPath}`);
     }
     const handle = await resolveHandle(oldPath);
@@ -213,7 +233,7 @@ const methods: Record<string, (...args: any[]) => any> = {
     const newPathParts = newPath.split("/");
     const newEntryName = newPathParts.pop()!;
     const newDirHandle = await resolveDirectoryHandle(
-      newPathParts.slice(0, -1),
+      newPathParts,
     );
     if (type === "file") {
       const oldFile = await handle.getFile();
