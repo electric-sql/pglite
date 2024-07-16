@@ -1,6 +1,8 @@
 import { states, slot, waitFor, FsError } from "./shared.js";
 import type { FsStats, ResponseJson, CallMsg } from "./shared.js";
 
+const DEFAULT_BUFFER_SIZE = 8192; // 8KB - Postgres default page size
+
 interface SyncOpfsOptions {
   sharedBuffers?: Array<SharedArrayBuffer>;
   callBufferSize?: number;
@@ -30,10 +32,14 @@ export class SyncOPFS {
   }: SyncOpfsOptions) {
     this.#sharedBuffers = sharedBuffers || [];
 
-    this.#callBuffer = new SharedArrayBuffer(callBufferSize || 8192); // Default: 8KB
+    this.#callBuffer = new SharedArrayBuffer(
+      callBufferSize || DEFAULT_BUFFER_SIZE,
+    );
     this.#callArray = new Uint8Array(this.#callBuffer);
 
-    this.#responseBuffer = new SharedArrayBuffer(responseBufferSize || 8192); // Default: 8KB
+    this.#responseBuffer = new SharedArrayBuffer(
+      responseBufferSize || DEFAULT_BUFFER_SIZE,
+    );
     this.#responseArray = new Uint8Array(this.#responseBuffer);
 
     // Set up the control array
@@ -260,6 +266,10 @@ export class SyncOPFS {
     options?: { encoding: string; mode: number; flag: string },
   ): void {
     return this.#callSync("writeFile", [path, data, options]);
+    // const fd = this.open(path, "w");
+    // const bin = new TextEncoder().encode(data) as any as Int8Array
+    // this.write(fd, bin, 0, bin.length, 0);
+    // this.close(fd);
   }
 
   write(

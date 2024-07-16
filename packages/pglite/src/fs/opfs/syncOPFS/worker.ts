@@ -1,3 +1,4 @@
+import path from "path";
 import { states, slot, waitFor, FsError } from "./shared.js";
 import type {
   FsStats,
@@ -108,11 +109,11 @@ const methods: Record<string, (...args: any[]) => any> = {
       throw new Error(`File descriptor not found: ${fd}`);
     }
     fdEntry.ref--;
-    if (fdEntry.ref == 0) {
-      fdEntry.syncHandle.close();
-      fdMap.delete(fdEntry.path);
-      openFd.delete(fd);
-    }
+    // if (fdEntry.ref == 0) {
+    //   fdEntry.syncHandle.close();
+    //   fdMap.delete(fdEntry.path);
+    //   openFd.delete(fd);
+    // }
   },
 
   async fstat(fd: number): Promise<FsStats> {
@@ -147,14 +148,14 @@ const methods: Record<string, (...args: any[]) => any> = {
     currentDir.getDirectoryHandle(tip, { create: true });
   },
 
-  async open(path: string, _flags?: string, _mode?: number): Promise<number> {
+  async open(path: string, flags?: string, _mode?: number): Promise<number> {
     if (fdMap.has(path)) {
       const id = fdMap.get(path)!;
       const fdEntry = openFd.get(id)!;
       fdEntry.ref++;
       return id;
     }
-    const handle = await resolveFileHandle(path);
+    const handle = await resolveFileHandle(path, flags?.includes("w"));
     const id = fdCounter++;
     openFd.set(id, {
       id,
@@ -219,6 +220,8 @@ const methods: Record<string, (...args: any[]) => any> = {
 
   async rename(oldPath: string, newPath: string): Promise<void> {
     // OPFS does not have a rename method, so we have to copy and delete
+    tryCloseIfOpen(oldPath);
+    tryCloseIfOpen(newPath);
     let exists = false;
     try {
       if (await resolveHandle(newPath)) {
@@ -254,6 +257,7 @@ const methods: Record<string, (...args: any[]) => any> = {
   },
 
   async truncate(path: string, len: number): Promise<void> {
+    tryCloseIfOpen(path);
     const handle = await resolveFileHandle(path);
     const file = await handle.createWritable();
     await file.truncate(len);
@@ -262,6 +266,7 @@ const methods: Record<string, (...args: any[]) => any> = {
 
   async unlink(path: string): Promise<void> {
     // try {
+    tryCloseIfOpen(path);
     const handle = await resolveFileHandle(path);
     await (handle as any).remove();
     // } catch (error) {}
@@ -272,10 +277,9 @@ const methods: Record<string, (...args: any[]) => any> = {
     data: string,
     _options?: { encoding: string; mode: number; flag: string },
   ): Promise<void> {
-    const handle = await resolveFileHandle(path, true);
-    const writable = await handle.createWritable();
-    await writable.write(data);
-    await writable.close();
+    const fd = await methods.open(path, "w");
+    openFd.get(fd)!.syncHandle.write(new TextEncoder().encode(data), { at: 0 });
+    methods.close(fd);
   },
 
   async write(
@@ -318,6 +322,18 @@ const methods: Record<string, (...args: any[]) => any> = {
     }
   },
 };
+
+async function tryCloseIfOpen(path: string) {
+  if (fdMap.has(path)) {
+    const id = fdMap.get(path)!;
+    const fdEntry = openFd.get(id)!;
+    if (fdEntry.ref == 0) {
+      fdEntry.syncHandle.close();
+      fdMap.delete(path);
+      openFd.delete(id);
+    }
+  }
+}
 
 async function resolveDirectoryHandle(
   path: string | string[],
@@ -387,8 +403,8 @@ async function statForHandle(handle: FileSystemHandle): Promise<FsStats> {
   if (kind === "file") {
     const file = await (handle as FileSystemFileHandle).getFile();
     size = file.size;
-    lastModified = file.lastModified
-    file
+    lastModified = file.lastModified;
+    file;
   }
   const blksize = 4096;
   const blocks = Math.ceil(size / blksize);
