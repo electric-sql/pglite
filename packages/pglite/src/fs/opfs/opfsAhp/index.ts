@@ -49,6 +49,8 @@ export class OpfsAhp {
   checkpointInterval = 1000 * 60; // 1 minute
   poolCounter = 0;
 
+  #unsyncedSH = new Set<FileSystemSyncAccessHandle>();
+
   constructor({ root, initialPoolSize, maintainedPoolSize }: OpfsAhpOptions) {
     this.root = root;
     this.initialPoolSize = initialPoolSize || 1000;
@@ -247,7 +249,15 @@ export class OpfsAhp {
     const stateAB = new TextEncoder().encode(JSON.stringify(this.state));
     this.#stateSH.truncate(0);
     this.#stateSH.write(stateAB, { at: 0 });
+    this.#stateSH.flush();
     this.lastCheckpoint = Date.now();
+  }
+
+  flush() {
+    for (const sh of this.#unsyncedSH) {
+      sh.flush();
+    }
+    this.#unsyncedSH.clear();
   }
 
   exit(): void {
@@ -445,6 +455,7 @@ export class OpfsAhp {
       throw new FsError("ENOENT", "No such file or directory");
     }
     sh.truncate(len);
+    this.#unsyncedSH.add(sh);
   }
 
   unlink(path: string): void {
@@ -469,6 +480,7 @@ export class OpfsAhp {
       const sh = this.#sh.get(node.backingFilename)!;
       // We don't delete the file, it's truncated and returned to the pool
       sh?.truncate(0);
+      this.#unsyncedSH.add(sh);
       if (this.#openHandleIds.has(path)) {
         this.#openHandlePaths.delete(this.#openHandleIds.get(path)!);
         this.#openHandleIds.delete(path);
@@ -530,6 +542,7 @@ export class OpfsAhp {
           : new Int8Array(data),
         { at: 0 }
       );
+      this.#unsyncedSH.add(sh);
     }
   }
 
@@ -570,6 +583,7 @@ export class OpfsAhp {
     const ret = sh.write(new Int8Array(buffer, offset, length), {
       at: position,
     });
+    this.#unsyncedSH.add(sh);
     return ret;
   }
 
@@ -591,6 +605,7 @@ export class OpfsAhp {
     const stateAB = new TextEncoder().encode(`\n${entryJSON}`);
     const offset = this.#stateSH.getSize();
     this.#stateSH.write(stateAB, { at: offset });
+    this.#unsyncedSH.add(this.#stateSH);
     return offset;
   }
 

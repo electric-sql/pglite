@@ -18,6 +18,14 @@ const CONFIGURATIONS = new Map(
       label: "Emscripten IndexedDB FS",
       dataDir: "idb://benchmark",
     },
+    {
+      label: "OPFS Access Handle Pool",
+      dataDir: "opfs-ahp://benchmark-ahp",
+    },
+    {
+      label: "OPFS Worker",
+      dataDir: "opfs-worker://benchmark-worker",
+    },
   ].map((obj) => [obj.label, obj])
 );
 

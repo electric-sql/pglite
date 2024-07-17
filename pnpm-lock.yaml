@@ -16,8 +16,8 @@ importers:
   packages/benchmark:
     dependencies:
       wa-sqlite:
-        specifier: github:rhashimoto/wa-sqlite
-        version: github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918
+        specifier: github:rhashimoto/wa-sqlite#v0.9.14
+        version: github.com/rhashimoto/wa-sqlite/6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.9
@@ -5088,8 +5088,8 @@ packages:
       commander: 9.5.0
     dev: true
 
-  github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918:
-    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/55bf0b6646ac1bb81b00b9c25636b59a87e4a918}
+  github.com/rhashimoto/wa-sqlite/6dbe4f044502a7a285e815896f56304a808fe25b:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b}
     name: wa-sqlite
-    version: 1.0.0
+    version: 0.9.14
     dev: false

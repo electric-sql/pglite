@@ -44,6 +44,14 @@ const CONFIGURATIONS = new Map(
       vfsClass: 'OriginPrivateFileSystemVFS',
       vfsArgs: []
     },
+    {
+      label: 'SQLite OPFS AHP',
+      db: 'wa-sqlite',
+      isAsync: false,
+      vfsModule: './node_modules/wa-sqlite/src/examples/AccessHandlePoolVFS.js',
+      vfsClass: 'AccessHandlePoolVFS',
+      vfsArgs: ['/benchmark-rtt-sqlite-ahp']
+    },
   ].map((obj) => [obj.label, obj])
 );
 
@@ -112,7 +120,11 @@ document.getElementById("start").addEventListener("click", async (event) => {
   // Remove OPFS
   const root = await navigator.storage.getDirectory();
   for await (const handle of root.values()) {
-    await root.removeEntry(handle.name, { recursive: true });
+    try {
+      await root.removeEntry(handle.name, { recursive: true });
+    } catch (e) {
+      // ignore
+    }
   }
 
   const Comlink = await ComlinkReady;
