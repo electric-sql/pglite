@@ -1,15 +1,17 @@
 import { PGlite } from "../dist/index.js";
 
 console.log("Starting...");
+const start = performance.now();
 // In-memory database:
-const pg = new PGlite();
+// const pg = new PGlite();
 // Or, on-disk database:
 // const pg = new PGlite('pgdata');
+const pg = new PGlite('idb://pgdata');
 
 console.log("Waiting for ready...");
 await pg.waitReady;
 
-console.log("Ready!");
+console.log("Ready! Took", performance.now() - start, "ms");
 
 console.log("Creating table...");
 await pg.exec(`

@@ -1,6 +1,11 @@
 import type { PostgresMod, FS } from "../postgres.js";
 
-export type FsType = "nodefs" | "idbfs" | "memoryfs" | "opfs";
+export type FsType =
+  | "nodefs"
+  | "idbfs"
+  | "memoryfs"
+  | "opfs-worker"
+  | "opfs-ahp";
 
 export interface FilesystemFactory {
   new (dataDir: string): Filesystem;
@@ -22,8 +27,10 @@ export interface Filesystem {
    */
   initialSyncFs(mod: FS): Promise<void>;
 
-  //  on_mount(): Function<void>;
-  // load_extension(ext: string): Promise<void>;
+  /**
+   * Close the filesystem.
+   */
+  close(): Promise<void>;
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -36,4 +43,5 @@ export abstract class FilesystemBase implements Filesystem {
   ): Promise<Partial<PostgresMod>>;
   async syncToFs(mod: FS) {}
   async initialSyncFs(mod: FS) {}
+  async close() {}
 }

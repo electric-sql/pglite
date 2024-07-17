@@ -1,13 +1,12 @@
 import { FilesystemBase } from "../types.js";
 import { PGDATA } from "../index.js";
-import type { PostgresMod } from "../../postgres.js";
-import { createOPFS } from "./OPFS.js";
-import { SyncOPFS } from "./syncOPFS/index.js";
+import type { PostgresMod, FS } from "../../postgres.js";
+import { createOPFS } from "./opfs-worker.js";
+import { SyncOPFS } from "./syncOpfs/index.js";
+import { createOPFSAHP } from "./opfs-ahp.js";
+import { OpfsAhp } from "./opfsAhp/index.js";
 
 export class Opfs extends FilesystemBase {
-  #initialHandles: number = 500;
-  #maintainedPoolSize: number = 100;
-
   constructor(dataDir: string) {
     super(dataDir);
   }
@@ -33,5 +32,54 @@ export class Opfs extends FilesystemBase {
       ],
     };
     return options;
+  }
+}
+
+export interface OpfsAhpFSOptions {
+  initialPoolSize?: number;
+  maintainedPoolSize?: number;
+}
+
+export class OpfsAhpFS extends FilesystemBase {
+  #initialPoolSize: number;
+  #maintainedPoolSize: number;
+  opfsAhp?: OpfsAhp;
+
+  constructor(
+    dataDir: string,
+    { initialPoolSize, maintainedPoolSize }: OpfsAhpFSOptions = {},
+  ) {
+    super(dataDir);
+    this.#initialPoolSize = initialPoolSize ?? 1000;
+    this.#maintainedPoolSize = maintainedPoolSize ?? 100;
+  }
+
+  async emscriptenOpts(opts: Partial<PostgresMod>) {
+    this.opfsAhp = await OpfsAhp.create({
+      root: this.dataDir!,
+      initialPoolSize: this.#initialPoolSize,
+      maintainedPoolSize: this.#maintainedPoolSize,
+    });
+    const options: Partial<PostgresMod> = {
+      ...opts,
+      preRun: [
+        ...(opts.preRun || []),
+        (mod: PostgresMod) => {
+          const OPFS = createOPFSAHP(mod, this.opfsAhp!);
+          mod.FS.mkdir(PGDATA);
+          mod.FS.mount(OPFS, {}, PGDATA);
+        },
+      ],
+    };
+    return options;
+  }
+
+  async syncToFs(fs: FS) {
+    await this.opfsAhp?.maintainPool();
+    await this.opfsAhp?.maybeCheckpointState();
+  }
+
+  async close(): Promise<void> {
+    await this.opfsAhp?.exit();
   }
 }

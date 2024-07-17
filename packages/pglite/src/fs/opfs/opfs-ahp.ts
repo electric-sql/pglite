@@ -1,6 +1,6 @@
 import type { PostgresMod } from "../../postgres.js";
-import type { SyncOPFS } from "./syncOPFS/index.js";
-import { FsError, ERRNO_CODES } from "./syncOPFS/shared.js";
+import type { OpfsAhp } from "./opfsAhp/index.js";
+import { FsError, ERRNO_CODES } from "./opfsAhp/types.js";
 
 export type FileSystemType = Emscripten.FileSystemType & {
   createNode: (
@@ -58,17 +58,7 @@ type EmscriptenFS = PostgresMod["FS"] & {
   ) => FSNode;
 };
 
-export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
-  log("createOPFS");
-  if (typeof SharedArrayBuffer === "undefined") {
-    throw new Error(
-      [
-        "PGlite with OPFS requires SharedArrayBuffer support.",
-        "It requires HTTPS or localhost and specific CORS headers to work.",
-        "See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements for more details.",
-      ].join("\n"),
-    );
-  }
+export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
   const FS = Module.FS as EmscriptenFS;
   const OPFS = {
     tryFSOperation<T>(f: () => T): T {
@@ -85,10 +75,20 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
     },
     syncfs(
       mount: FS.Mount,
-      populate: () => unknown,
+      populate: any, // This has the wrong type in @types/emscripten
       done: (err?: number | null) => unknown,
     ): void {
-      // NOOP
+      console.log("HERE!!!");
+      const run = async () => {
+        if (!populate) {
+          await opfsAhp.maintainPool();
+          await opfsAhp.maybeCheckpointState();
+        }
+      };
+      run().then(
+        () => done(null),
+        (err) => done(err),
+      );
     },
     createNode(
       parent: FSNode | null,
@@ -107,7 +107,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
     getMode: function (path: string): number {
       log("getMode", path);
       return OPFS.tryFSOperation(() => {
-        const stats = syncOPFS.lstat(path);
+        const stats = opfsAhp.lstat(path);
         return stats.mode;
       });
     },
@@ -126,7 +126,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         log("getattr", OPFS.realPath(node));
         const path = OPFS.realPath(node);
         return OPFS.tryFSOperation(() => {
-          const stats = syncOPFS.lstat(path);
+          const stats = opfsAhp.lstat(path);
           return {
             ...stats,
             dev: 0,
@@ -143,8 +143,17 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         log("setattr", OPFS.realPath(node), attr);
         var path = OPFS.realPath(node);
         OPFS.tryFSOperation(() => {
+          if (attr.mode !== undefined) {
+            opfsAhp.chmod(path, attr.mode);
+          }
           if (attr.size !== undefined) {
-            syncOPFS.truncate(path, attr.size);
+            opfsAhp.truncate(path, attr.size);
+          }
+          if (attr.timestamp !== undefined) {
+            opfsAhp.utimes(path, attr.timestamp, attr.timestamp);
+          }
+          if (attr.size !== undefined) {
+            opfsAhp.truncate(path, attr.size);
           }
         });
       },
@@ -166,9 +175,9 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         const path = OPFS.realPath(node);
         return OPFS.tryFSOperation(() => {
           if (FS.isDir(node.mode)) {
-            syncOPFS.mkdir(path);
+            opfsAhp.mkdir(path, { mode });
           } else {
-            syncOPFS.writeFile(path, "");
+            opfsAhp.writeFile(path, "", { mode });
           }
           return node;
         });
@@ -178,7 +187,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         const oldPath = OPFS.realPath(oldNode);
         const newPath = [OPFS.realPath(newDir), newName].join("/");
         OPFS.tryFSOperation(() => {
-          syncOPFS.rename(oldPath, newPath);
+          opfsAhp.rename(oldPath, newPath);
         });
         oldNode.name = newName;
       },
@@ -186,21 +195,21 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         log("unlink", OPFS.realPath(parent), name);
         const path = [OPFS.realPath(parent), name].join("/");
         try {
-          syncOPFS.unlink(path);
+          opfsAhp.unlink(path);
         } catch (e: any) {}
       },
       rmdir(parent: OpfsNode, name: string): void {
         log("rmdir", OPFS.realPath(parent), name);
         const path = [OPFS.realPath(parent), name].join("/");
         return OPFS.tryFSOperation(() => {
-          syncOPFS.rmdir(path);
+          opfsAhp.rmdir(path);
         });
       },
       readdir(node: OpfsNode): string[] {
         log("readdir", OPFS.realPath(node));
         const path = OPFS.realPath(node);
         return OPFS.tryFSOperation(() => {
-          return syncOPFS.readdir(path);
+          return opfsAhp.readdir(path);
         });
       },
       symlink(parent: FSNode, newName: string, oldPath: string): void {
@@ -221,7 +230,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         return OPFS.tryFSOperation(() => {
           if (FS.isFile(stream.node.mode)) {
             stream.shared.refcount = 1;
-            stream.nfd = syncOPFS.open(path);
+            stream.nfd = opfsAhp.open(path);
           }
         });
       },
@@ -233,7 +242,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
             stream.nfd &&
             --stream.shared.refcount === 0
           ) {
-            syncOPFS.close(stream.nfd);
+            opfsAhp.close(stream.nfd);
           }
         });
       },
@@ -257,7 +266,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         );
         if (length === 0) return 0;
         const ret = OPFS.tryFSOperation(() =>
-          syncOPFS.read(
+          opfsAhp.read(
             stream.nfd!,
             buffer as unknown as Int8Array,
             offset,
@@ -282,10 +291,10 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
           position,
         );
         return OPFS.tryFSOperation(() =>
-          syncOPFS.write(
+          opfsAhp.write(
             stream.nfd!,
-            new Int8Array(buffer.buffer, offset, length),
-            0,
+            buffer.buffer as unknown as Int8Array,
+            offset,
             length,
             position,
           ),
@@ -299,7 +308,7 @@ export const createOPFS = (Module: PostgresMod, syncOPFS: SyncOPFS) => {
         } else if (whence === 2) {
           if (FS.isFile(stream.node.mode)) {
             OPFS.tryFSOperation(() => {
-              var stat = syncOPFS.fstat(stream.nfd!);
+              var stat = opfsAhp.fstat(stream.nfd!);
               position += stat.size;
             });
           }

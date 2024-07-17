@@ -60,7 +60,7 @@ export class SyncOPFS {
     // Due to a quirk in tsup/esbuild we have to specify the worker url relative to
     // the root of the dist directory
     this.#worker = new Worker(
-      new URL("./fs/opfs/syncOPFS/worker.js", import.meta.url),
+      new URL("./fs/opfs/syncOpfs/worker.js", import.meta.url),
       {
         type: "module",
       },
