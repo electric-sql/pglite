@@ -1,6 +1,11 @@
 import type { PostgresMod, FS } from "../postgresMod.js";
 
-export type FsType = "nodefs" | "idbfs" | "memoryfs" | "opfs";
+export type FsType =
+  | "nodefs"
+  | "idbfs"
+  | "memoryfs"
+  | "opfs-worker"
+  | "opfs-ahp";
 
 export interface FilesystemFactory {
   new (dataDir: string): Filesystem;
@@ -15,7 +20,7 @@ export interface Filesystem {
   /**
    * Sync the filesystem to the emscripten filesystem.
    */
-  syncToFs(FS: FS): Promise<void>;
+  syncToFs(mod: FS, relaxedDurability?: boolean): Promise<void>;
 
   /**
    * Sync the emscripten filesystem to the filesystem.
@@ -26,6 +31,11 @@ export interface Filesystem {
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
   dumpTar(FS: FS, dbname: string): Promise<File | Blob>;
+
+  /**
+   * Close the filesystem.
+   */
+  close(): Promise<void>;
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -36,7 +46,8 @@ export abstract class FilesystemBase implements Filesystem {
   abstract emscriptenOpts(
     opts: Partial<PostgresMod>,
   ): Promise<Partial<PostgresMod>>;
-  async syncToFs(FS: FS) {}
+  async syncToFs(mod: FS, relaxedDurability?: boolean) {}
   async initialSyncFs(mod: FS) {}
   abstract dumpTar(mod: FS, dbname: string): Promise<File | Blob>;
+  async close() {}
 }

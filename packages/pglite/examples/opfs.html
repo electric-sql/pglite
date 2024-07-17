@@ -2,14 +2,15 @@
   import { PGliteWorker } from "../dist/worker/index.js";
 
   console.log("Starting...");
-  const pg = new PGliteWorker('opfs://pgdata', {
+  const start = performance.now();
+  const pg = new PGliteWorker('opfs-ahp://pgdata', {
     // debug: 1,
   });
 
   console.log("Waiting for ready...");
   await pg.waitReady;
 
-  console.log("Ready!");
+  console.log("Ready! Took", performance.now() - start, "ms");
 
   console.log("Creating table...");
   await pg.exec(`

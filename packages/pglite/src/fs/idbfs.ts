@@ -38,7 +38,7 @@ export class IdbFs extends FilesystemBase {
     });
   }
 
-  syncToFs(fs: FS) {
+  syncToFs(fs: FS, relaxedDurability?: boolean) {
     return new Promise<void>((resolve, reject) => {
       fs.syncfs(false, (err: any) => {
         if (err) {

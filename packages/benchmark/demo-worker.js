@@ -14,7 +14,20 @@ import { PGlite } from "../pglite/dist/index.js";
    * @returns {Promise<Function>}
    */
   async function open(config) {
-    const pg = new PGlite(config.dataDir);
+    if (config.dataDir.startsWith("opfs-")) {
+      // delete the existing database
+      const root = await navigator.storage.getDirectory();
+      const dirName = config.dataDir.slice(config.dataDir.indexOf("://") + 3);
+      try {
+        const dir = await root.getDirectoryHandle(dirName, { create: false });
+        await dir.remove();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    console.log("Opening PGLite database:", JSON.stringify(config, null, 2));
+    const pg = new PGlite(config.dataDir, config.options);
     await pg.waitReady;
 
     // Create the query interface.

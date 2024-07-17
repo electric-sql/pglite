@@ -1,7 +1,7 @@
 import type { FsType, Filesystem } from "./types.js";
 import { IdbFs } from "./idbfs.js";
 import { MemoryFS } from "./memoryfs.js";
-import { Opfs } from "./opfs/index.js";
+import { Opfs, OpfsAhpFS } from "./opfs/index.js";
 
 export type * from "./types.js";
 
@@ -21,10 +21,14 @@ export function parseDataDir(dataDir?: string) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = dataDir.slice(6);
     fsType = "idbfs";
-  } else if (dataDir?.startsWith("opfs://")) {
+  } else if (dataDir?.startsWith("opfs-worker://")) {
     // Remove the opfs:// prefix, and use opfs filesystem
-    dataDir = dataDir.slice(7);
-    fsType = "opfs";
+    dataDir = dataDir.slice(14);
+    fsType = "opfs-worker";
+  } else if (dataDir?.startsWith("opfs-ahp://")) {
+    // Remove the opfsahp:// prefix, and use opfs access handle pool filesystem
+    dataDir = dataDir.slice(11);
+    fsType = "opfs-ahp";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
     fsType = "memoryfs";
@@ -43,8 +47,10 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     fs = new NodeFS(dataDir);
   } else if (dataDir && fsType === "idbfs") {
     fs = new IdbFs(dataDir);
-  } else if (dataDir && fsType === "opfs") {
+  } else if (dataDir && fsType === "opfs-worker") {
     fs = new Opfs(dataDir);
+  } else if (dataDir && fsType === "opfs-ahp") {
+    fs = new OpfsAhpFS(dataDir);
   } else {
     fs = new MemoryFS();
   }
