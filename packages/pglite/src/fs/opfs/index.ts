@@ -26,7 +26,7 @@ export class Opfs extends FilesystemBase {
             {
               root: this.dataDir!,
             },
-            PGDATA,
+            PGDATA
           );
         },
       ],
@@ -47,7 +47,7 @@ export class OpfsAhpFS extends FilesystemBase {
 
   constructor(
     dataDir: string,
-    { initialPoolSize, maintainedPoolSize }: OpfsAhpFSOptions = {},
+    { initialPoolSize, maintainedPoolSize }: OpfsAhpFSOptions = {}
   ) {
     super(dataDir);
     this.#initialPoolSize = initialPoolSize ?? 1000;
@@ -74,9 +74,13 @@ export class OpfsAhpFS extends FilesystemBase {
     return options;
   }
 
-  async syncToFs(fs: FS) {
+  async syncToFs(fs: FS, relaxedDurability = false) {
     await this.opfsAhp?.maybeCheckpointState();
     await this.opfsAhp?.maintainPool();
+    // console.log("syncToFs", relaxedDurability);
+    if (!relaxedDurability) {
+      this.opfsAhp?.flush();
+    }
   }
 
   async close(): Promise<void> {

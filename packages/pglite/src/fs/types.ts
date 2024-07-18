@@ -20,7 +20,7 @@ export interface Filesystem {
   /**
    * Sync the filesystem to the emscripten filesystem.
    */
-  syncToFs(mod: FS): Promise<void>;
+  syncToFs(mod: FS, relaxedDurability?: boolean): Promise<void>;
 
   /**
    * Sync the emscripten filesystem to the filesystem.
@@ -41,7 +41,7 @@ export abstract class FilesystemBase implements Filesystem {
   abstract emscriptenOpts(
     opts: Partial<PostgresMod>,
   ): Promise<Partial<PostgresMod>>;
-  async syncToFs(mod: FS) {}
+  async syncToFs(mod: FS, relaxedDurability?: boolean) {}
   async initialSyncFs(mod: FS) {}
   async close() {}
 }

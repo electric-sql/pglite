@@ -4,7 +4,7 @@
 
 import * as SQLite from './node_modules/wa-sqlite/src/sqlite-api.js';
 import { createTag } from "./node_modules/wa-sqlite/src/examples/tag.js";
-import { PGlite } from "../pglite/dist/index.js";
+import { PGlite } from "../pglite/dist/index.js?1";
 
 const WA_SQLITE = './node_modules/wa-sqlite/dist/wa-sqlite.mjs';
 const WA_SQLITE_ASYNC = './node_modules/wa-sqlite/dist/wa-sqlite-async.mjs';
@@ -15,18 +15,17 @@ const WA_SQLITE_ASYNC = './node_modules/wa-sqlite/dist/wa-sqlite-async.mjs';
   );
   
   async function open(config) {
-    console.log('Opening database:', config)
     if (config.db === 'wa-sqlite') {
-      console.log('Opening SQLite database:', config)
+      console.log('Opening SQLite database:', JSON.stringify(config, null, 2))
       return openSQLite(config);
     } else if (config.db === 'pglite') {
-      console.log('Opening PGLite database:', config)
+      console.log('Opening PGLite database:', JSON.stringify(config, null, 2))
       return openPGlite(config);
     }
   }
   
   async function openPGlite(config) {
-    const pg = new PGlite(config.dataDir);
+    const pg = new PGlite(config.dataDir, config.options);
     await pg.waitReady;
 
     // Create the query interface.

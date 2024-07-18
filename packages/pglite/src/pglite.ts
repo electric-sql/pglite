@@ -84,6 +84,7 @@ export class PGlite implements PGliteInterface {
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
+    console.log(options);
     if (typeof dataDirOrPGliteOptions === "string") {
       options = {
         dataDir: dataDirOrPGliteOptions,
@@ -92,6 +93,8 @@ export class PGlite implements PGliteInterface {
     } else {
       options = dataDirOrPGliteOptions;
     }
+    
+    console.log(options);
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
@@ -639,7 +642,7 @@ export class PGlite implements PGliteInterface {
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        await this.fs!.syncToFs(this.mod!.FS);
+        await this.fs!.syncToFs(this.mod!.FS, this.#relaxedDurability);
       });
     };
 

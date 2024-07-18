@@ -542,7 +542,9 @@ export class OpfsAhp {
           : new Int8Array(data),
         { at: 0 }
       );
-      this.#unsyncedSH.add(sh);
+      if (path.startsWith('/pg_wal')) {
+        this.#unsyncedSH.add(sh);
+      }
     }
   }
 
@@ -583,7 +585,9 @@ export class OpfsAhp {
     const ret = sh.write(new Int8Array(buffer, offset, length), {
       at: position,
     });
-    this.#unsyncedSH.add(sh);
+    if (path.startsWith('/pg_wal')) {
+      this.#unsyncedSH.add(sh);
+    }
     return ret;
   }
 

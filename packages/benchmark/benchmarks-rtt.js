@@ -16,9 +16,21 @@ const CONFIGURATIONS = new Map(
       dataDir: "idb://benchmark-rtt",
     },
     {
+      label: "PGlite IDB<br> <i>relaxed durability</i>",
+      db: "pglite",
+      dataDir: "idb://benchmark-rtt-rd",
+      options: { relaxedDurability: true },
+    },
+    {
       label: "PGlite OPFS AHP",
       db: "pglite",
       dataDir: "opfs-ahp://benchmark-rtt",
+    },
+    {
+      label: "PGlite OPFS AHP<br> <i>relaxed durability</i>",
+      db: "pglite",
+      dataDir: "opfs-ahp://benchmark-rtt-rd",
+      options: { relaxedDurability: true },
     },
     {
       label: 'SQLite Memory',
@@ -187,6 +199,6 @@ document.getElementById("start").addEventListener("click", async (event) => {
 function addEntry(parent, text) {
   const tag = parent.parentElement.tagName === "TBODY" ? "td" : "th";
   const child = document.createElement(tag);
-  child.textContent = text;
+  child.innerHTML = text;
   parent.appendChild(child);
 }
