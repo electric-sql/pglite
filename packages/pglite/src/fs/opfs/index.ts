@@ -75,11 +75,11 @@ export class OpfsAhpFS extends FilesystemBase {
   }
 
   async syncToFs(fs: FS) {
-    await this.opfsAhp?.maintainPool();
     await this.opfsAhp?.maybeCheckpointState();
+    await this.opfsAhp?.maintainPool();
   }
 
   async close(): Promise<void> {
-    await this.opfsAhp?.exit();
+    this.opfsAhp?.exit();
   }
 }

@@ -16,6 +16,11 @@ const CONFIGURATIONS = new Map(
       dataDir: "idb://benchmark-rtt",
     },
     {
+      label: "PGlite OPFS AHP",
+      db: "pglite",
+      dataDir: "opfs-ahp://benchmark-rtt",
+    },
+    {
       label: 'SQLite Memory',
       db: 'wa-sqlite',
       isAsync: false,

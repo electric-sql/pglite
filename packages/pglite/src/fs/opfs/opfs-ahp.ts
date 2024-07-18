@@ -78,17 +78,7 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
       populate: any, // This has the wrong type in @types/emscripten
       done: (err?: number | null) => unknown,
     ): void {
-      console.log("HERE!!!");
-      const run = async () => {
-        if (!populate) {
-          await opfsAhp.maintainPool();
-          await opfsAhp.maybeCheckpointState();
-        }
-      };
-      run().then(
-        () => done(null),
-        (err) => done(err),
-      );
+      // noop
     },
     createNode(
       parent: FSNode | null,
