@@ -1,6 +1,7 @@
 <script type="module">
   import { PGliteWorker } from "../dist/worker/index.js";
 
+  console.log("Creating worker...");
   const pg = new PGliteWorker(
     new Worker(new URL("./worker-process.js", import.meta.url), {
       type: "module",

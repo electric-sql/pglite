@@ -9,17 +9,29 @@ import type {
   Results,
   Transaction,
 } from "../interface.js";
+import { uuid } from "../utils.js";
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
 
 export class PGliteWorker implements PGliteInterface {
-  readonly waitReady: Promise<void>;
+  #initPromise: Promise<void>;
   #debug: DebugLevel = 0;
 
   #ready = false;
   #closed = false;
 
-  #worker: WorkerApi;
+  #eventTarget = new EventTarget();
+
+  #tabId: string;
+
+  #leader?: WorkerApi;
+  #connected = false;
+
   #workerProcess: Worker;
+  #workerID?: string;
+
+  #broadcastChannel?: BroadcastChannel;
+  #tabChannel?: BroadcastChannel;
+  #releaseTabCloseLock?: () => void;
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
@@ -27,9 +39,9 @@ export class PGliteWorker implements PGliteInterface {
   >();
 
   constructor(worker: Worker, options?: Pick<PGliteOptions, "extensions">) {
-    this.#worker = Comlink.wrap(worker);
     this.#workerProcess = worker;
-    this.waitReady = this.#init();
+    this.#tabId = uuid();
+    this.#initPromise = this.#init();
   }
 
   /**
@@ -42,30 +54,106 @@ export class PGliteWorker implements PGliteInterface {
    */
   static async create<O extends PGliteOptions>(
     worker: Worker,
-    options?: O,
+    options?: O
   ): Promise<PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>> {
     const pg = new PGliteWorker(worker, options);
-    await pg.waitReady;
+    await pg.#initPromise;
     return pg as any;
   }
 
   async #init() {
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       this.#workerProcess.addEventListener(
         "message",
         (event) => {
-          if (event.data === "here") {
-            resolve(undefined);
+          if (event.data.type === "here") {
+            this.#workerID = event.data.id;
+            resolve();
           }
         },
-        { once: true },
+        { once: true }
       );
     });
-    await this.#worker.init(
-      Comlink.proxy(this.#receiveNotification.bind(this)),
-    );
-    this.#debug = await this.#worker.getDebugLevel();
-    this.#ready = true;
+    console.log("Worker ID", this.#workerID);
+
+    // Start the broadcast channel used to communicate with tabs and leader election
+    const broadcastChannelId = `pglite-broadcast:${this.#workerID}`;
+    this.#broadcastChannel = new BroadcastChannel(broadcastChannelId);
+
+    // Start the tab channel used to communicate with the leader directly
+    const tabChannelId = `pglite-tab:${this.#tabId}`;
+    this.#tabChannel = new BroadcastChannel(tabChannelId);
+
+    console.log(0);
+
+    // Acquire the tab close lock, this is released then the tab is closed, or this
+    // PGliteWorker instance is closed
+    const tabCloseLockId = `pglite-tab-close:${this.#tabId}`;
+    await new Promise<void>((resolve) => {
+      navigator.locks.request(tabCloseLockId, () => {
+        console.log("A");
+        return new Promise<void>((release) => {
+          resolve();
+          console.log("B");
+          this.#releaseTabCloseLock = release;
+        });
+      });
+    });
+    console.log(1);
+
+    this.#leader = Comlink.wrap(this.#tabChannel);
+
+    this.#broadcastChannel.addEventListener("message", async (event) => {
+      if (event.data.type === "leader-here") {
+        console.log("+ leader here", event.data.id);
+        this.#connected = false;
+        this.#leaderNotifyLoop();
+      }
+    });
+
+    this.#tabChannel.addEventListener("message", async (event) => {
+      if (event.data.type === "connected") {
+        console.log("+ connected");
+        this.#connected = true;
+        this.#eventTarget.dispatchEvent(new Event("connected"));
+        this.#debug = await this.#leader!.getDebugLevel();
+        this.#ready = true;
+        console.log("ready", this.#initPromise, this.waitReady);
+      }
+    });
+
+    console.log(2);
+
+    this.#leaderNotifyLoop();
+  }
+
+  async #leaderNotifyLoop() {
+    if (!this.#connected) {
+      console.log("+ notify leader tab-here");
+      this.#broadcastChannel!.postMessage({
+        type: "tab-here",
+        id: this.#tabId,
+      });
+      setTimeout(() => this.#leaderNotifyLoop(), 16);
+    }
+  }
+
+  get waitReady() {
+    return new Promise<void>(async (resolve) => {
+      console.log("-a");
+      await this.#initPromise;
+      if (!this.#connected) {
+        console.log("-b");
+        resolve(new Promise<void>((resolve) => {
+          this.#eventTarget.addEventListener("connected", () => {
+            console.log("connected!!!!");
+            resolve();
+          });
+        }));
+      } else {
+        resolve();
+      }
+    });
   }
 
   get debug() {
@@ -91,9 +179,14 @@ export class PGliteWorker implements PGliteInterface {
    * @returns A promise that resolves when the database is closed
    */
   async close() {
-    await this.waitReady;
-    await this.#worker.close();
+    if (this.#closed) {
+      return;
+    }
     this.#closed = true;
+    this.#broadcastChannel?.close();
+    this.#tabChannel?.close();
+    this.#releaseTabCloseLock?.();
+    this.#workerProcess.terminate();
   }
 
   /**
@@ -106,10 +199,10 @@ export class PGliteWorker implements PGliteInterface {
   async query<T>(
     query: string,
     params?: any[],
-    options?: QueryOptions,
+    options?: QueryOptions
   ): Promise<Results<T>> {
     await this.waitReady;
-    return this.#worker.query(query, params, options) as Promise<Results<T>>;
+    return this.#leader!.query(query, params, options) as Promise<Results<T>>;
   }
 
   /**
@@ -119,8 +212,10 @@ export class PGliteWorker implements PGliteInterface {
    * @returns The result of the query
    */
   async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+    console.log('+++++', this.waitReady);
     await this.waitReady;
-    return this.#worker.exec(query, options);
+    console.log("exec", query);
+    return this.#leader!.exec(query, options);
   }
 
   /**
@@ -129,11 +224,11 @@ export class PGliteWorker implements PGliteInterface {
    * @returns The result of the transaction
    */
   async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
+    callback: (tx: Transaction) => Promise<T>
   ): Promise<T | undefined> {
     await this.waitReady;
     const callbackProxy = Comlink.proxy(callback);
-    return this.#worker.transaction(callbackProxy);
+    return this.#leader!.transaction(callbackProxy);
   }
 
   /**
@@ -157,10 +252,10 @@ export class PGliteWorker implements PGliteInterface {
    * @returns The result of the query
    */
   async execProtocol(
-    message: Uint8Array,
+    message: Uint8Array
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     await this.waitReady;
-    return this.#worker.execProtocol(message);
+    return this.#leader!.execProtocol(message);
   }
 
   /**
@@ -170,7 +265,7 @@ export class PGliteWorker implements PGliteInterface {
    */
   async listen(
     channel: string,
-    callback: (payload: string) => void,
+    callback: (payload: string) => void
   ): Promise<() => Promise<void>> {
     await this.waitReady;
     if (!this.#notifyListeners.has(channel)) {
@@ -190,7 +285,7 @@ export class PGliteWorker implements PGliteInterface {
    */
   async unlisten(
     channel: string,
-    callback?: (payload: string) => void,
+    callback?: (payload: string) => void
   ): Promise<void> {
     await this.waitReady;
     if (callback) {
@@ -240,28 +335,90 @@ export class PGliteWorker implements PGliteInterface {
   }
 }
 
-export const worker = {
-  name: "PGliteWebWorker",
-  setup: async (db: PGliteInterface, emscriptenOpts: any) => {
-    return {
-      namespaceObj: {
-        start: async () => {
-          const workerApi = makeWorkerApi(db);
-          Comlink.expose(workerApi);
-        },
-      },
-    };
-  },
-} satisfies Extension;
+export interface WorkerOptions {
+  id?: string;
+  init: () => Promise<PGliteInterface>;
+}
+
+export async function worker({ id, init }: WorkerOptions) {
+  id = id ?? import.meta.url;
+
+  const electionLockId = `pglite-election-lock:${id}`;
+  const broadcastChannelId = `pglite-broadcast:${id}`;
+  const broadcastChannel = new BroadcastChannel(broadcastChannelId);
+  const connectedTabs = new Set<string>();
+
+  // Send a message to the main thread to let it know we are here
+  postMessage({ type: "here", id });
+
+  // Await the main lock which is used to elect the leader
+  await new Promise<void>((resolve) => {
+    navigator.locks.request(electionLockId, () => {
+      return new Promise((_releaseLock) => {
+        // This is now the leader!
+        // We don't release the load by resolving the promise
+        // It will be released when the worker is closed
+        resolve();
+      });
+    });
+  });
+
+  console.log("- leader here");
+
+  // Now we are the leader, start the worker
+  const dbPromise = init();
+
+  // Start listening for messages from tabs
+  broadcastChannel.onmessage = async (event) => {
+    const msg = event.data;
+    switch (msg.type) {
+      case "tab-here":
+        // A new tab has joined,
+        console.log("- tab here", msg.id);
+        connectTab(msg.id, await dbPromise, connectedTabs);
+        break;
+    }
+  };
+
+  // Notify the other tabs that we are the leader
+  broadcastChannel.postMessage({ type: "leader-here", id });
+}
+
+function connectTab(
+  tabId: string,
+  pg: PGliteInterface,
+  connectedTabs: Set<string>
+) {
+  console.log(0)
+  if (connectedTabs.has(tabId)) {
+    return;
+  }
+  connectedTabs.add(tabId);
+  console.log(1)
+  const tabChannelId = `pglite-tab:${tabId}`;
+  const tabCloseLockId = `pglite-tab-close:${tabId}`;
+  const tabChannel = new BroadcastChannel(tabChannelId);
+  Comlink.expose(makeWorkerApi(pg), tabChannel);
+  console.log(2)
+
+  // Use a tab close lock to unsubscribe the tab
+  navigator.locks.request(tabCloseLockId, () => {
+    return new Promise<void>((resolve) => {
+      // The tab has been closed, unsubscribe the tab broadcast channel
+      tabChannel.close();
+      connectedTabs.delete(tabId);
+      resolve();
+    });
+  });
+
+  console.log("- let tab know its connected", tabId);
+  // Send a message to the tab to let it know it's connected
+  tabChannel.postMessage({ type: "connected" });
+}
 
 function makeWorkerApi(db: PGliteInterface) {
-  const hereInterval = setInterval(() => {
-    postMessage("here");
-  }, 16);
-
   return {
     async init(onNotification?: (channel: string, payload: string) => void) {
-      clearInterval(hereInterval);
       await db.waitReady;
       if (onNotification) {
         db.onNotification(onNotification);
