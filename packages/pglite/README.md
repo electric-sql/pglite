@@ -318,12 +318,35 @@ The `.query<T>()` method can take a TypeScript type describing the expected shap
 
 ### Web Workers:
 
-It's likely that you will want to run PGlite in a Web Worker so that it doesn't block the main thread. To aid in this we provide a `PGliteWorker` with the same API as the core `PGlite` but it runs Postgres in a dedicated Web Worker. To use, import from the `/worker` export:
+It's likely that you will want to run PGlite in a Web Worker so that it doesn't block the main thread. To aid in this we provide a `PGliteWorker` with the same API as the core `PGlite` but it runs Postgres in a dedicated Web Worker.
+
+First you need to create a js file for your worker instance, initiate PGlite with the worker extension, and start it:
+
+```js
+// my-pglite-worker.js
+import { PGlite } from "@electric-sql/pglite";
+import { worker } from "@electric-sql/pglite/worker";
+
+const pg = await PGlite.create({
+  extensions: {
+    worker
+  }
+});
+
+pg.worker.start();
+```
+
+Then connect the `PGliteWorker` to your new worker process:
 
 ```js
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 
-const pg = new PGliteWorker('idb://my-database');
+const pg = new PGliteWorker(
+  new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
+    type: "module",
+  })
+);
+
 await pg.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
