@@ -1,106 +1,178 @@
 import * as Comlink from "comlink";
 import type {
-  PGliteInterface,
-  PGliteOptions,
-  FilesystemType,
   DebugLevel,
-  Results,
+  Extension,
+  PGliteInterface,
+  PGliteInterfaceExtensions,
+  PGliteOptions,
   QueryOptions,
+  Results,
+  Transaction,
 } from "../interface.js";
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
-import { parseDataDir } from "../fs/index.js";
-import type { Worker as WorkerInterface } from "./process.js";
 
 export class PGliteWorker implements PGliteInterface {
-  readonly dataDir?: string;
-  // @ts-ignore
-  readonly fsType: FilesystemType;
   readonly waitReady: Promise<void>;
-  readonly debug: DebugLevel = 0;
+  #debug: DebugLevel = 0;
 
   #ready = false;
   #closed = false;
 
-  #worker: WorkerInterface;
-  #options: PGliteOptions;
+  #worker: WorkerApi;
+  #workerProcess: Worker;
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>();
   #globalNotifyListeners = new Set<
     (channel: string, payload: string) => void
   >();
 
-  constructor(dataDir: string, options?: PGliteOptions) {
-    const { dataDir: dir, fsType } = parseDataDir(dataDir);
-    this.dataDir = dir;
-    // @ts-ignore
-    this.fsType = fsType;
-    this.#options = options ?? {};
-    this.debug = options?.debug ?? 0;
-
-    this.#worker = Comlink.wrap(
-      // the below syntax is required by webpack in order to
-      // identify the worker properly during static analysis
-      // see: https://webpack.js.org/guides/web-workers/
-      new Worker(new URL("./process.js", import.meta.url), { type: "module" }),
-    );
-
-    // pass unparsed dataDir value
-    this.waitReady = this.#init(dataDir);
+  constructor(worker: Worker, options?: Pick<PGliteOptions, "extensions">) {
+    this.#worker = Comlink.wrap(worker);
+    this.#workerProcess = worker;
+    this.waitReady = this.#init();
   }
 
-  async #init(dataDir: string) {
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
+   * @param worker The worker to use
+   * @param options Optional options
+   * @returns A promise that resolves to the PGlite instance when it's ready.
+   */
+  static async create<O extends PGliteOptions>(
+    worker: Worker,
+    options?: O,
+  ): Promise<PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>> {
+    const pg = new PGliteWorker(worker, options);
+    await pg.waitReady;
+    return pg as any;
+  }
+
+  async #init() {
+    await new Promise((resolve) => {
+      this.#workerProcess.addEventListener(
+        "message",
+        (event) => {
+          if (event.data === "here") {
+            resolve(undefined);
+          }
+        },
+        { once: true },
+      );
+    });
     await this.#worker.init(
-      dataDir,
-      this.#options,
-      Comlink.proxy(this.receiveNotification.bind(this)),
+      Comlink.proxy(this.#receiveNotification.bind(this)),
     );
+    this.#debug = await this.#worker.getDebugLevel();
     this.#ready = true;
   }
 
+  get debug() {
+    return this.#debug;
+  }
+
+  /**
+   * The ready state of the database
+   */
   get ready() {
     return this.#ready;
   }
 
+  /**
+   * The closed state of the database
+   */
   get closed() {
     return this.#closed;
   }
 
+  /**
+   * Close the database
+   * @returns A promise that resolves when the database is closed
+   */
   async close() {
+    await this.waitReady;
     await this.#worker.close();
     this.#closed = true;
   }
 
+  /**
+   * Execute a single SQL statement
+   * This uses the "Extended Query" postgres wire protocol message.
+   * @param query The query to execute
+   * @param params Optional parameters for the query
+   * @returns The result of the query
+   */
   async query<T>(
     query: string,
     params?: any[],
     options?: QueryOptions,
   ): Promise<Results<T>> {
+    await this.waitReady;
     return this.#worker.query(query, params, options) as Promise<Results<T>>;
   }
 
+  /**
+   * Execute a SQL query, this can have multiple statements.
+   * This uses the "Simple Query" postgres wire protocol message.
+   * @param query The query to execute
+   * @returns The result of the query
+   */
   async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+    await this.waitReady;
     return this.#worker.exec(query, options);
   }
 
-  async transaction<T>(callback: (tx: any) => Promise<T>) {
+  /**
+   * Execute a transaction
+   * @param callback A callback function that takes a transaction object
+   * @returns The result of the transaction
+   */
+  async transaction<T>(
+    callback: (tx: Transaction) => Promise<T>,
+  ): Promise<T | undefined> {
+    await this.waitReady;
     const callbackProxy = Comlink.proxy(callback);
     return this.#worker.transaction(callbackProxy);
   }
 
+  /**
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
+   * @param message The postgres wire protocol message to execute
+   * @returns The direct message data response produced by Postgres
+   */
   async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
     return this.#worker.execProtocolRaw(message);
   }
 
+  /**
+   * Execute a postgres wire protocol message
+   * @param message The postgres wire protocol message to execute
+   * @returns The result of the query
+   */
   async execProtocol(
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
+    await this.waitReady;
     return this.#worker.execProtocol(message);
   }
 
+  /**
+   * Listen for a notification
+   * @param channel The channel to listen on
+   * @param callback The callback to call when a notification is received
+   */
   async listen(
     channel: string,
     callback: (payload: string) => void,
   ): Promise<() => Promise<void>> {
+    await this.waitReady;
     if (!this.#notifyListeners.has(channel)) {
       this.#notifyListeners.set(channel, new Set());
     }
@@ -111,10 +183,16 @@ export class PGliteWorker implements PGliteInterface {
     };
   }
 
+  /**
+   * Stop listening for a notification
+   * @param channel The channel to stop listening on
+   * @param callback The callback to remove
+   */
   async unlisten(
     channel: string,
     callback?: (payload: string) => void,
   ): Promise<void> {
+    await this.waitReady;
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback);
     } else {
@@ -126,6 +204,10 @@ export class PGliteWorker implements PGliteInterface {
     }
   }
 
+  /**
+   * Listen to notifications
+   * @param callback The callback to call when a notification is received
+   */
   onNotification(callback: (channel: string, payload: string) => void) {
     this.#globalNotifyListeners.add(callback);
     return () => {
@@ -133,11 +215,15 @@ export class PGliteWorker implements PGliteInterface {
     };
   }
 
+  /**
+   * Stop listening to notifications
+   * @param callback The callback to remove
+   */
   offNotification(callback: (channel: string, payload: string) => void) {
     this.#globalNotifyListeners.delete(callback);
   }
 
-  receiveNotification(channel: string, payload: string) {
+  #receiveNotification(channel: string, payload: string) {
     const listeners = this.#notifyListeners.get(channel);
     if (listeners) {
       for (const listener of listeners) {
@@ -153,3 +239,62 @@ export class PGliteWorker implements PGliteInterface {
     return this.#worker.dumpDataDir();
   }
 }
+
+export const worker = {
+  name: "PGliteWebWorker",
+  setup: async (db: PGliteInterface, emscriptenOpts: any) => {
+    return {
+      namespaceObj: {
+        start: async () => {
+          const workerApi = makeWorkerApi(db);
+          Comlink.expose(workerApi);
+        },
+      },
+    };
+  },
+} satisfies Extension;
+
+function makeWorkerApi(db: PGliteInterface) {
+  const hereInterval = setInterval(() => {
+    postMessage("here");
+  }, 16);
+
+  return {
+    async init(onNotification?: (channel: string, payload: string) => void) {
+      clearInterval(hereInterval);
+      await db.waitReady;
+      if (onNotification) {
+        db.onNotification(onNotification);
+      }
+      return true;
+    },
+    async getDebugLevel() {
+      return db.debug;
+    },
+    async close() {
+      await db.close();
+    },
+    async query(query: string, params?: any[], options?: QueryOptions) {
+      return await db.query(query, params, options);
+    },
+    async exec(query: string, options?: QueryOptions) {
+      return await db.exec(query, options);
+    },
+    async transaction(callback: (tx: any) => Promise<any>) {
+      return await db.transaction((tx) => {
+        return callback(Comlink.proxy(tx));
+      });
+    },
+    async execProtocol(message: Uint8Array) {
+      return await db.execProtocol(message);
+    },
+    async execProtocolRaw(message: Uint8Array) {
+      return await db.execProtocolRaw(message);
+    },
+    async dumpDataDir() {
+      return await db.dumpDataDir();
+    }
+  };
+}
+
+type WorkerApi = ReturnType<typeof makeWorkerApi>;

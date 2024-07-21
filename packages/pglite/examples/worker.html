@@ -1,16 +1,11 @@
 <script type="module">
   import { PGliteWorker } from "../dist/worker/index.js";
 
-  console.log("Starting...");
-  // In-memory database:
-  const pg = new PGliteWorker();
-  // Or with IndexedDB:
-  // const pg = new PGliteWorker('idb://pgdata');
-
-  console.log("Waiting for ready...");
-  await pg.waitReady;
-
-  console.log("Ready!");
+  const pg = new PGliteWorker(
+    new Worker(new URL("./worker-process.js", import.meta.url), {
+      type: "module",
+    })
+  );
 
   console.log("Creating table...");
   await pg.exec(`
@@ -29,7 +24,7 @@
   `);
 
   console.log(res);
-  
+
   // Transaction example:
   console.log("Transaction example...");
   await pg.transaction(async (tx) => {
@@ -43,5 +38,4 @@
   `);
 
   console.log(res2);
-
 </script>
