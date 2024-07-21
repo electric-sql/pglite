@@ -327,13 +327,11 @@ First you need to create a js file for your worker instance, initiate PGlite wit
 import { PGlite } from "@electric-sql/pglite";
 import { worker } from "@electric-sql/pglite/worker";
 
-const pg = await PGlite.create({
-  extensions: {
-    worker
-  }
+worker({
+  async init() {
+    return new PGlite();
+  },
 });
-
-pg.worker.start();
 ```
 
 Then connect the `PGliteWorker` to your new worker process:

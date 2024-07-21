@@ -58,9 +58,6 @@ importers:
       bun:
         specifier: ^1.1.18
         version: 1.1.18
-      comlink:
-        specifier: ^4.4.1
-        version: 4.4.1
       concurrently:
         specifier: ^8.2.2
         version: 8.2.2
@@ -2465,10 +2462,6 @@ packages:
     engines: {node: '>= 0.8'}
     dependencies:
       delayed-stream: 1.0.0
-    dev: true
-
-  /comlink@4.4.1:
-    resolution: {integrity: sha512-+1dlx0aY5Jo1vHy/tSsIGpSkN4tS9rZSW8FIhG0JH/crs9wwweswIo/POr451r7bZww3hFbPAKnTpimzL/mm4Q==}
     dev: true
 
   /commander@2.20.3:
