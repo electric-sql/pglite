@@ -1197,7 +1197,6 @@ extra_env:;
     	setenv("ENVIRONMENT", "node" , 1);
         EM_ASM({
             console.warn("prerun(C-node) worker=", Module.is_worker);
-            //globalThis.window = { };
             Module['postMessage'] = function custom_postMessage(event) {
                 console.log("onCustomMessage:", event);
             };
@@ -1213,7 +1212,7 @@ extra_env:;
 
     EM_ASM({
         if (Module.is_worker) {
-            console.log("Main: running in a worker, setting onCustomMessage");
+            //console.log("Main: running in a worker, setting onCustomMessage");
             function onCustomMessage(event) {
                 console.log("onCustomMessage:", event);
                 // PUT SHM HERE
@@ -1221,7 +1220,7 @@ extra_env:;
             };
             Module['onCustomMessage'] = onCustomMessage;
         } else {
-            console.log("Running in main thread, faking onCustomMessage");
+            //console.log("Running in main thread, faking onCustomMessage");
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
                     case "raw" :  {
