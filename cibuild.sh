@@ -384,17 +384,17 @@ do
         demo-site) echo "==================== demo-site =========================="
 
             echo "<html>
-<body>
-    <ul>
-        <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-        <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-        <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
-        <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-        <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
-        <li><a href=./postgres.html>Postgres xterm REPL</a></li>
-    </ul>
-</body>
-</html>" > /tmp/web/index.html
+            <body>
+                <ul>
+                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
+                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+                    <li><a href=./benchmarks/index.html>Benchmarks</a> / <a href=./benchmarks/rtt.html>RTT Benchmarks</a></li>
+                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
+                </ul>
+            </body>
+            </html>" > /tmp/web/demos.html
 
             mkdir -p /tmp/web/pglite
             mkdir -p /tmp/web/repl

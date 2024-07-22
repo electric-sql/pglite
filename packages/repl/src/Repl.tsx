@@ -4,6 +4,7 @@ import CodeMirror, {
   type ReactCodeMirrorRef,
   type Extension,
 } from '@uiw/react-codemirror'
+import { type CreateThemeOptions } from '@uiw/codemirror-themes'
 import { defaultKeymap } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import { PostgreSQL } from '@codemirror/lang-sql'
@@ -12,7 +13,12 @@ import { makeSqlExt } from './sqlSupport'
 import type { Response } from './types'
 import { runQuery, getSchema } from './utils'
 import { ReplResponse } from './ReplResponse'
-import { xcodeDark, xcodeLight } from '@uiw/codemirror-theme-xcode'
+import {
+  githubDark,
+  githubDarkInit,
+  githubLight,
+  githubLightInit,
+} from '@uiw/codemirror-theme-github'
 
 import './Repl.css'
 
@@ -23,6 +29,13 @@ import './Repl.css'
 const baseKeymap = defaultKeymap.filter((key) => key.key !== 'Enter')
 
 export type ReplTheme = 'light' | 'dark' | 'auto'
+
+type ThemeInit = (options?: Partial<CreateThemeOptions>) => Extension
+
+export const defaultLightThemeInit: ThemeInit = githubLightInit
+export const defaultLightTheme = githubLight
+export const defaultDarkThemeInit: ThemeInit = githubDarkInit
+export const defaultDarkTheme = githubDark
 
 export interface ReplProps {
   pg: PGlite
@@ -37,8 +50,8 @@ export interface ReplProps {
 export function Repl({
   pg,
   border = false,
-  lightTheme = xcodeLight,
-  darkTheme = xcodeDark,
+  lightTheme = defaultLightTheme,
+  darkTheme = defaultDarkTheme,
   theme = 'auto',
   showTime = false,
   disableUpdateSchema = false,

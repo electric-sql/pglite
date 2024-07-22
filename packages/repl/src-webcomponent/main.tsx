@@ -1,5 +1,11 @@
 import { createRoot } from 'react-dom/client'
-import { Repl } from '../src/Repl'
+import {
+  Repl,
+  defaultLightThemeInit,
+  defaultLightTheme,
+  defaultDarkThemeInit,
+  defaultDarkTheme,
+} from '../src/Repl'
 import type { ReplProps, ReplTheme } from '../src/Repl'
 import type { PGlite } from '@electric-sql/pglite'
 import type { Extension } from '@uiw/react-codemirror'
@@ -8,6 +14,13 @@ import type { Extension } from '@uiw/react-codemirror'
 import css from '../src/Repl.css?raw'
 
 export type { ReplProps, ReplTheme }
+
+export {
+  defaultLightThemeInit,
+  defaultLightTheme,
+  defaultDarkThemeInit,
+  defaultDarkTheme,
+}
 
 export class PGliteREPL extends HTMLElement {
   #mountPoint: HTMLDivElement
@@ -19,6 +32,7 @@ export class PGliteREPL extends HTMLElement {
   constructor() {
     super()
     this.#mountPoint = document.createElement('div')
+    this.#mountPoint.classList.add('PGliteRepl-root')
     const shadowRoot = this.attachShadow({ mode: 'open' })
     const style = document.createElement('style')
     style.textContent = css
