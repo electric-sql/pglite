@@ -90,7 +90,7 @@ export type PGliteInterface = {
     callback: (channel: string, payload: string) => void,
   ): () => void;
   offNotification(callback: (channel: string, payload: string) => void): void;
-  dumpDataDir(): Promise<File>;
+  dumpDataDir(): Promise<File | Blob>;
 };
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions

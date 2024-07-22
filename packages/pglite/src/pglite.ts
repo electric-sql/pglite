@@ -747,6 +747,7 @@ export class PGlite implements PGliteInterface {
 
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   * @returns The tarball as a File object where available, and fallback to a Blob
    */
   async dumpDataDir() {
     let dbname = this.dataDir?.split("/").pop() ?? "pgdata";

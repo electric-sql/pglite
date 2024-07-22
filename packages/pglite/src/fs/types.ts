@@ -25,7 +25,7 @@ export interface Filesystem {
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
-  dumpTar(FS: FS, dbname: string): Promise<File>;
+  dumpTar(FS: FS, dbname: string): Promise<File | Blob>;
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -38,5 +38,5 @@ export abstract class FilesystemBase implements Filesystem {
   ): Promise<Partial<PostgresMod>>;
   async syncToFs(FS: FS) {}
   async initialSyncFs(mod: FS) {}
-  abstract dumpTar(mod: FS, dbname: string): Promise<File>;
+  abstract dumpTar(mod: FS, dbname: string): Promise<File | Blob>;
 }

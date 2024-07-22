@@ -2,13 +2,20 @@ import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from "tinytar";
 import { FS } from "../postgres.js";
 import { PGDATA } from "./index.js";
 
-export async function dumpTar(FS: FS, dbname?: string): Promise<File> {
+export async function dumpTar(FS: FS, dbname?: string): Promise<File | Blob> {
   const tarball = createTarball(FS, PGDATA);
   const [compressed, zipped] = await maybeZip(tarball);
   const filename = (dbname || "pgdata") + (zipped ? ".tar.gz" : ".tar");
-  return new File([compressed], filename, {
-    type: zipped ? "application/x-gtar" : "application/x-tar",
-  });
+  const type = zipped ? "application/x-gzip" : "application/x-tar";
+  if (typeof File !== "undefined") {
+    return new File([compressed], filename, {
+      type,
+    });
+  } else {
+    return new Blob([compressed], {
+      type,
+    });
+  }
 }
 
 const compressedMimeTypes = [
@@ -20,7 +27,8 @@ const compressedMimeTypes = [
 
 export async function loadTar(FS: FS, file: File | Blob): Promise<void> {
   let tarball = new Uint8Array(await file.arrayBuffer());
-  const filename = file instanceof File ? file.name : undefined;
+  const filename =
+    typeof File !== "undefined" && file instanceof File ? file.name : undefined;
   const compressed =
     compressedMimeTypes.includes(file.type) ||
     filename?.endsWith(".tgz") ||
