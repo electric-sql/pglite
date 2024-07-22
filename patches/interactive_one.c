@@ -1,3 +1,4 @@
+#define PDEBUG(...)
 #include <unistd.h>  // access, unlink
 
 static void pg_prompt() {
@@ -53,8 +54,7 @@ extern void pq_recvbuf_fill(FILE* fp, int packetlen);
 
 #define PG_MAX_AUTH_TOKEN_LENGTH	65535
 static char *
-recv_password_packet(Port *port)
-{
+recv_password_packet(Port *port) {
 	StringInfoData buf;
 	int			mtype;
 
@@ -128,14 +128,14 @@ static void io_init() {
     	whereToSendOutput = DestRemote; /* now safe to ereport to client */
         MyProcPort = (Port *) calloc(1, sizeof(Port));
         if (!MyProcPort) {
-            puts("      --------- NO CLIENT (oom) ---------");
+            PDEBUG("      --------- NO CLIENT (oom) ---------");
             abort();
         }
         MyProcPort->canAcceptConnections = CAC_OK;
 
         SOCKET_FILE = NULL;
         SOCKET_DATA = 0;
-        puts("      --------- CLIENT (ready) ---------");
+        PDEBUG("      --------- CLIENT (ready) ---------");
 }
 
 static void wait_unlock() {
@@ -186,25 +186,19 @@ interactive_one() {
     // this could be pg_flush in sync mode.
         if (SOCKET_DATA>0) {
 
-            puts("end packet");
+            PDEBUG("end packet");
             ReadyForQuery(DestRemote);
 
-            puts("flushing data");
+            PDEBUG("flushing data");
             if (SOCKET_FILE)
                 fclose(SOCKET_FILE);
 
-            puts("setting lock");
+            PDEBUG("setting lock");
             FILE *c_lock;
             c_lock = fopen(PGS_OLOCK, "w");
             fclose(c_lock);
             SOCKET_FILE = NULL;
             SOCKET_DATA = 0;
-    /*
-        while (access(PGS_OLOCK, F_OK) == 0) {
-            if (!(busy++ % 6553600))
-                printf("FIXME: busy wait lock removed %d\n", busy);
-        }
-    */
             return;
         }
 
@@ -249,9 +243,9 @@ interactive_one() {
                         if (!firstchar) {
                             pq_recvbuf_fill(fp, packetlen);
                             if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
-                                puts("ProcessStartupPacket !OK");
+                                PDEBUG("ProcessStartupPacket !OK");
                             } else {
-                                puts("auth request");
+                                PDEBUG("auth request");
                                 //ClientAuthentication(MyProcPort);
     ClientAuthInProgress = true;
                                 md5Salt[0]=0x01;
@@ -299,7 +293,7 @@ interactive_one() {
 	                            pq_sendint32(&buf, (int32) MyCancelKey);
 	                            pq_endmessage(&buf);
                             }
-                            puts("TODO: pg_main start flag");
+                            PDEBUG("TODO: pg_main start flag");
 
 
 
@@ -323,7 +317,7 @@ interactive_one() {
                 unlink(PGS_IN);
                 if (packetlen) {
                     if (!firstchar || (firstchar==112)) {
-                        puts("auth/nego skip");
+                        PDEBUG("auth/nego skip");
                         return;
                     }
 
@@ -338,7 +332,7 @@ interactive_one() {
     } // is_node
 
     if (cma_rsize) {
-//        puts("wire message !");
+//        PDEBUG("wire message !");
         is_wire = true;
         is_socket = false;
         whereToSendOutput = DestRemote;
@@ -348,7 +342,7 @@ interactive_one() {
             pq_init();
             MyProcPort = (Port *) calloc(1, sizeof(Port));
             if (!MyProcPort) {
-                puts("      --------- NO CLIENT (oom) ---------");
+                PDEBUG("      --------- NO CLIENT (oom) ---------");
                 abort();
             }
             MyProcPort->canAcceptConnections = CAC_OK;
@@ -386,7 +380,7 @@ interactive_one() {
             pq_init();
             MyProcPort = (Port *) calloc(1, sizeof(Port));
             if (!MyProcPort) {
-                puts("      --------- NO CLIENT (oom) ---------");
+                PDEBUG("      --------- NO CLIENT (oom) ---------");
                 abort();
             }
             MyProcPort->canAcceptConnections = CAC_OK;
@@ -438,12 +432,12 @@ incoming:
         EmitErrorReport();
         debug_query_string = NULL;
 
-        AbortCurrentTransaction(); // <- hang here
+        AbortCurrentTransaction();
 
         if (am_walsender)
             WalSndErrorCleanup();
 
-        PortalErrorCleanup();  // <- inf loop.
+        PortalErrorCleanup();
         if (MyReplicationSlot != NULL)
             ReplicationSlotRelease();
 
@@ -465,22 +459,6 @@ incoming:
             pg_prompt();
         } else {
             goto wire_flush;
-/*
-            cma_wsize = SOCKET_DATA;
-            printf("# exec[%d]\n", SOCKET_DATA);
-            if (SOCKET_DATA>0) {
-                puts("# 518: adding RFQ");
-                ReadyForQuery(DestRemote);
-                cma_wsize = SOCKET_DATA;
-                if (SOCKET_FILE) {
-                    fclose(SOCKET_FILE);
-                    printf("# fd[%d] done\n", SOCKET_DATA);
-
-                    SOCKET_FILE = NULL;
-                    SOCKET_DATA = 0;
-                }
-            }
-*/
         }
         RESUME_INTERRUPTS();
         return;
@@ -517,20 +495,17 @@ incoming:
 
     #include "pg_proto.c"
 
+    /* process notifications */
     ProcessClientReadInterrupt(true);
 
-    if (is_wire) { //whereToSendOutput == DestRemote) {
+    if (is_wire) {
 wire_flush:
         cma_wsize = SOCKET_DATA;
-//        printf("# exec[%d]\n", SOCKET_DATA);
         if (SOCKET_DATA>0) {
-//            puts("# 518: adding RFQ");
             ReadyForQuery(DestRemote);
             cma_wsize = SOCKET_DATA;
             if (SOCKET_FILE) {
                 fclose(SOCKET_FILE);
-//                printf("# fd[%d] done\n", SOCKET_DATA);
-
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
             }

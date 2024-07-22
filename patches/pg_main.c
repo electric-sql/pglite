@@ -1,4 +1,4 @@
-
+#define PDEBUG(...)
 #if defined(PG_MAIN)
 
 #if defined(PG_EC_STATIC)
@@ -75,7 +75,7 @@ progname;
 void
 PostgresMain(const char *dbname, const char *username)
 {
-    puts("# 22: ERROR: PostgresMain should not be called anymore" __FILE__ );
+    PDEBUG("# 22: ERROR: PostgresMain should not be called anymore" __FILE__ );
     while (1){};
 }
 
@@ -118,10 +118,10 @@ AsyncPostgresSingleUserMain(int argc, char *argv[],
 
 	/* Set default values for command-line options.	 */
 	InitializeGUCOptions();
-puts("520");
+PDEBUG("520");
 	/* Parse command-line options. */
 	process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
-puts("523");
+PDEBUG("523");
 	/* Must have gotten a database name, or have a default (the username) */
 	if (dbname == NULL)
 	{
@@ -155,7 +155,7 @@ if (async_restart) goto async_db_change;
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-puts("557");
+PDEBUG("557");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -289,9 +289,6 @@ printf("# 54: RePostgresSingleUserMain progname=%s for %s\n", progname, single_a
     // should be template1.
     const char *dbname = NULL;
 
-//  leak progname = get_progname(single_argv[0]);
-//	InitStandaloneProcess(single_argv[0]);
-//	InitializeGUCOptions();
 
     /* Parse command-line options. */
     process_postgres_switches(single_argc, single_argv, PGC_POSTMASTER, &dbname);
@@ -303,7 +300,7 @@ printf("# 67: dbname=%s\n", dbname);
     process_shared_preload_libraries();
 
 //	                InitializeMaxBackends();
-puts("# 76 ?");
+PDEBUG("# 76 ?");
 // ? IgnoreSystemIndexes = true;
 IgnoreSystemIndexes = false;
     process_shmem_requests();
@@ -311,16 +308,16 @@ IgnoreSystemIndexes = false;
     InitializeShmemGUCs();
 
     InitializeWalConsistencyChecking();
-//puts("# NO CreateSharedMemoryAndSemaphores");
+//PDEBUG("# NO CreateSharedMemoryAndSemaphores");
 //      CreateSharedMemoryAndSemaphores();
 
     PgStartTime = GetCurrentTimestamp();
 
-//puts("# NO InitProcess 'FATAL:  you already exist'");
+//PDEBUG("# NO InitProcess 'FATAL:  you already exist'");
 //    InitProcess();
 
     SetProcessingMode(InitProcessing);
-puts("# 91: Re-InitPostgres");
+PDEBUG("# 91: Re-InitPostgres");
 //      BaseInit();
 
     InitPostgres(dbname, InvalidOid,	/* database to connect to */
@@ -329,10 +326,10 @@ puts("# 91: Re-InitPostgres");
                  false,			/* don't ignore datallowconn */
                  NULL);			/* no out_dbname */
 /*
-puts("# 100");
+PDEBUG("# 100");
     if (PostmasterContext)
     {
-        puts("# 103");
+        PDEBUG("# 103");
         MemoryContextDelete(PostmasterContext);
         PostmasterContext = NULL;
     }
@@ -539,7 +536,7 @@ puts("# 100");
 
     if (!inloop) {
         inloop = true;
-        puts("# 311: REPL(initdb-single):Begin " __FILE__ );
+        PDEBUG("# 311: REPL(initdb-single):Begin " __FILE__ );
 
         while (repl) { interactive_file(); }
     } else {
@@ -550,7 +547,7 @@ puts("# 100");
     fclose(single_mode_feed);
 
     if (strlen(getenv("REPL")) && getenv("REPL")[0]=='Y') {
-        puts("# 321: REPL(initdb-single):End " __FILE__ );
+        PDEBUG("# 321: REPL(initdb-single):End " __FILE__ );
 
         /* now use stdin as source */
         repl = true;
@@ -561,12 +558,12 @@ puts("# 100");
             fprintf(stdout,"# now in webloop(RAF)\npg> %c\n", 4);
             emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 1);
         } else {
-            puts("# 331: REPL(single after initdb):Begin(NORETURN)");
+            PDEBUG("# 331: REPL(single after initdb):Begin(NORETURN)");
             while (repl) { interactive_file(); }
             exit(0);
         }
 
-        puts("# 338: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+        PDEBUG("# 338: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
         {
             void (*npe)() = NULL;
             npe();
@@ -574,7 +571,7 @@ puts("# 100");
         // unreachable.
     }
 
-    puts("# 346: no line-repl requested, exiting and keeping runtime alive");
+    PDEBUG("# 346: no line-repl requested, exiting and keeping runtime alive");
 }
 
 
@@ -591,14 +588,14 @@ pg_repl_raf(){ // const char* std_in, const char* std_out, const char* std_err, 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
 
     if (is_repl) {
-        puts("# 536: switching to REPL mode (raf)");
+        PDEBUG("# 536: switching to REPL mode (raf)");
         repl = true;
         single_mode_feed = NULL;
         force_echo = true;
         whereToSendOutput = DestNone;
         emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
     } else {
-        puts("# 543: wire mode");
+        PDEBUG("# 543: wire mode");
     }
 }
 
@@ -610,7 +607,7 @@ pg_initdb_start() {
 
 EMSCRIPTEN_KEEPALIVE void
 pg_shutdown() {
-    puts("pg_shutdown");
+    PDEBUG("pg_shutdown");
     proc_exit(66);
 }
 
@@ -646,14 +643,6 @@ interactive_file() {
 	 * errors encountered in "idle" state don't provoke skip.
 	 */
 	doing_extended_query_message = false;
-#if 0
-	/*
-	 * For valgrind reporting purposes, the "current query" begins here.
-	 */
-#ifdef USE_VALGRIND
-	old_valgrind_error_count = VALGRIND_COUNT_ERRORS;
-#endif
-#endif
 
 	/*
 	 * Release storage left over from prior query cycle, and create a new
@@ -670,75 +659,71 @@ interactive_file() {
 	if (whereToSendOutput == DestRemote)
 		firstchar = SocketBackend(&input_message);
 	else {
-// ============== firstchar = InteractiveBackend(&input_message); ========
-	/*
-	 * display a prompt and obtain input from the user
-	 */
-    if (!single_mode_feed) {
-	    printf("pg> %c\n", 4);
-    	fflush(stdout);
-        stream = stdin;
-    } else {
-        stream = single_mode_feed;
-    }
 
-	resetStringInfo(inBuf);
-	while ((c = getc(stream)) != EOF)
-	{
-		if (c == '\n')
-		{
-			if (UseSemiNewlineNewline)
-			{
-				/*
-				 * In -j mode, semicolon followed by two newlines ends the
-				 * command; otherwise treat newline as regular character.
-				 */
-				if (inBuf->len > 1 &&
-					inBuf->data[inBuf->len - 1] == '\n' &&
-					inBuf->data[inBuf->len - 2] == ';')
-				{
-					/* might as well drop the second newline */
-					break;
-				}
-			}
-			else
-			{
-				/*
-				 * In plain mode, newline ends the command unless preceded by
-				 * backslash.
-				 */
-				if (inBuf->len > 0 &&
-					inBuf->data[inBuf->len - 1] == '\\')
-				{
-					/* discard backslash from inBuf */
-					inBuf->data[--inBuf->len] = '\0';
-					/* discard newline too */
-					continue;
-				}
-				else
-				{
-					/* keep the newline character, but end the command */
-					appendStringInfoChar(inBuf, '\n');
-					break;
-				}
-			}
-		}
+	    /*
+	     * display a prompt and obtain input from the user
+	     */
+        if (!single_mode_feed) {
+	        printf("pg> %c\n", 4);
+        	fflush(stdout);
+            stream = stdin;
+        } else {
+            stream = single_mode_feed;
+        }
 
-		/* Not newline, or newline treated as regular character */
-		appendStringInfoChar(inBuf, (char) c);
-	}
+	    resetStringInfo(inBuf);
+	    while ((c = getc(stream)) != EOF)
+	    {
+		    if (c == '\n')
+		    {
+			    if (UseSemiNewlineNewline)
+			    {
+				    /*
+				     * In -j mode, semicolon followed by two newlines ends the
+				     * command; otherwise treat newline as regular character.
+				     */
+				    if (inBuf->len > 1 &&
+					    inBuf->data[inBuf->len - 1] == '\n' &&
+					    inBuf->data[inBuf->len - 2] == ';')
+				    {
+					    /* might as well drop the second newline */
+					    break;
+				    }
+			    }
+			    else
+			    {
+				    /*
+				     * In plain mode, newline ends the command unless preceded by
+				     * backslash.
+				     */
+				    if (inBuf->len > 0 &&
+					    inBuf->data[inBuf->len - 1] == '\\')
+				    {
+					    /* discard backslash from inBuf */
+					    inBuf->data[--inBuf->len] = '\0';
+					    /* discard newline too */
+					    continue;
+				    }
+				    else
+				    {
+					    /* keep the newline character, but end the command */
+					    appendStringInfoChar(inBuf, '\n');
+					    break;
+				    }
+			    }
+		    }
 
-	if (c == EOF && inBuf->len == 0) {
-		firstchar = EOF;
-    } else {
-    	/* Add '\0' to make it look the same as message case. */
-	    appendStringInfoChar(inBuf, (char) '\0');
-// beware SPAM !
-       // if (single_mode_feed)
-          //  fprintf(stderr, "#446:[%s]", inBuf->data);
-    	firstchar = 'Q';
-    }
-// =======================================================================
+		    /* Not newline, or newline treated as regular character */
+		    appendStringInfoChar(inBuf, (char) c);
+	    }
+
+	    if (c == EOF && inBuf->len == 0) {
+		    firstchar = EOF;
+        } else {
+        	/* Add '\0' to make it look the same as message case. */
+	        appendStringInfoChar(inBuf, (char) '\0');
+        	firstchar = 'Q';
+        }
     }
 
 	if (ignore_till_sync && firstchar != EOF)
@@ -748,7 +733,6 @@ interactive_file() {
 }
 
 #include "./interactive_one.c"
-
 
 
 
@@ -804,7 +788,7 @@ PostgresSingleUserMain(int argc, char *argv[],
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-puts("560");
+PDEBUG("560");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -1003,7 +987,7 @@ printf("# 943: hybrid loop:Begin CI=%s\n", getenv("CI") );
 	while (repl && !proc_exit_inprogress) {
         interactive_one();
 	}
-    puts("\n\n# 948: REPL:End " __FILE__);
+    PDEBUG("\n\n# 948: REPL:End " __FILE__);
     abort();
 #if !defined(PG_INITDB_MAIN)
     proc_exit(0);
@@ -1040,7 +1024,7 @@ extern void proc_exit(int code);
 
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-    puts("# 985: pg_initdb()");
+    PDEBUG("# 985: pg_initdb()");
     optind = 1;
     int async_restart = 1;
 
@@ -1072,14 +1056,14 @@ pg_initdb() {
     	chdir("/");
         printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
     }
-    puts("# 1019");
+    PDEBUG("# 1019");
     printf("# pg_initdb_main result = %d\n", pg_initdb_main() );
 
 
     /* save stdin and use previous initdb output to feed boot mode */
     int saved_stdin = dup(STDIN_FILENO);
     {
-        puts("# restarting in boot mode for initdb");
+        PDEBUG("# restarting in boot mode for initdb");
         freopen(IDB_PIPE_BOOT, "r", stdin);
 
         char *boot_argv[] = {
@@ -1104,7 +1088,7 @@ pg_initdb() {
         proc_exit(66);
     }
 
-    puts("# 1051");
+    PDEBUG("# 1051");
     /* use previous initdb output to feed single mode */
 
 
@@ -1112,7 +1096,7 @@ pg_initdb() {
 
 
     {
-        puts("# restarting in single mode for initdb");
+        PDEBUG("# restarting in single mode for initdb");
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -1132,9 +1116,9 @@ pg_initdb() {
 initdb_done:;
     {
         if (async_restart)
-            puts("# FIXME: restart in server mode on 'postgres' db");
+            PDEBUG("# FIXME: restart in server mode on 'postgres' db");
         else
-            puts("# FIXME:  start server on 'postgres' db");
+            PDEBUG("# FIXME:  start server on 'postgres' db");
     }
 
 
@@ -1143,7 +1127,7 @@ initdb_done:;
         optind = 1;
         return false;
     }
-    puts("# exiting on initdb-single error");
+    PDEBUG("# exiting on initdb-single error");
     return true;
 }
 
@@ -1167,7 +1151,7 @@ main_pre(int argc, char *argv[]) {
     char key[256];
     int i=0;
 // extra env is always after normal args
-    puts("# ============= extra argv dump ==================");
+    PDEBUG("# ============= extra argv dump ==================");
     {
         for (;i<argc;i++) {
             const char *kv = argv[i];
@@ -1178,14 +1162,14 @@ main_pre(int argc, char *argv[]) {
         }
     }
 extra_env:;
-    puts("\n# ============= arg->env dump ==================");
+    PDEBUG("\n# ============= arg->env dump ==================");
     {
         for (;i<argc;i++) {
             const char *kv = argv[i];
             for (int sk=0;sk<strlen(kv);sk++) {
                 if (sk>255) {
-                    puts("buffer overrun on extra env at:");
-                    puts(kv);
+                    PDEBUG("buffer overrun on extra env at:");
+                    PDEBUG(kv);
                     continue;
                 }
                 if (kv[sk]=='=') {
@@ -1197,7 +1181,7 @@ extra_env:;
             }
         }
     }
-    puts("\n# =========================================");
+    PDEBUG("\n# =========================================");
 
 	argv[0] = strdup(WASM_PREFIX "/bin/postgres");
 
@@ -1264,7 +1248,7 @@ extra_env:;
 #endif
 	chdir("/");
     if (access("/etc/fstab", F_OK) == 0) {
-        puts("WARNING: Node with real filesystem access");
+        PDEBUG("WARNING: Node with real filesystem access");
     } else {
         mkdirp("/tmp");
         mkdirp("/tmp/pgdata");
@@ -1296,13 +1280,13 @@ extra_env:;
 
     setenv("PG_COLOR", "always", 0);
 
-puts("# ============= env dump ==================");
+PDEBUG("# ============= env dump ==================");
   for (char **env = environ; *env != 0; env++)
   {
     char *drefp = *env;
     printf("# %s\n", drefp);
   }
-puts("# =========================================");
+PDEBUG("# =========================================");
 
 	mkdirp(WASM_PREFIX);
 }
@@ -1435,12 +1419,12 @@ main_repl(int async) {
         }
 
         if (g_argc > 1 && strcmp(g_argv[1], "--boot") == 0) {
-            puts("# 1356: boot: " __FILE__ );
+            PDEBUG("# 1356: boot: " __FILE__ );
             BootstrapModeMain(g_argc, g_argv, false);
             return 0;
         }
 
-        puts("# 1362: single: " __FILE__ );
+        PDEBUG("# 1362: single: " __FILE__ );
         if (async)
             AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
         else
@@ -1502,13 +1486,13 @@ TODO:
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (!is_repl) {
-        puts("exit with live runtime (nodb)");
+        PDEBUG("exit with live runtime (nodb)");
         return 0;
     }
 
     // so it is repl
     main_repl(1);
-    puts("# 1453: " __FILE__);
+    PDEBUG("# 1453: " __FILE__);
     emscripten_force_exit(ret);
 	return ret;
 }
