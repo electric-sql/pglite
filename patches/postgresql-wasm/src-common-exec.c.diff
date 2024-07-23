@@ -1,0 +1,11 @@
+--- postgresql-16.3/src/common/exec.c
++++ postgresql-16.3-wasm/src/common/exec.c
+@@ -22,7 +22,7 @@
+  * This should be harmless everywhere else.
+  */
+ #define _DARWIN_BETTER_REALPATH
+-
++#define PG_EXEC
+ #ifndef FRONTEND
+ #include "postgres.h"
+ #else

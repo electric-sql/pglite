@@ -1,0 +1,55 @@
+--- postgresql-16.3/src/backend/utils/error/elog.c
++++ postgresql-16.3-wasm/src/backend/utils/error/elog.c
+@@ -355,6 +355,9 @@
+ 	 * Check some cases in which we want to promote an error into a more
+ 	 * severe error.  None of this logic applies for non-error messages.
+ 	 */
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++
++#else
+ 	if (elevel >= ERROR)
+ 	{
+ 		/*
+@@ -395,7 +398,7 @@
+ 		for (i = 0; i <= errordata_stack_depth; i++)
+ 			elevel = Max(elevel, errordata[i].elevel);
+ 	}
+-
++#endif
+ 	/*
+ 	 * Now decide whether we need to process this report at all; if it's
+ 	 * warning or less and not enabled for logging, just return false without
+@@ -540,7 +543,13 @@
+ 		 */
+ 
+ 		recursion_depth--;
++#if 0 //defined(__EMSCRIPTEN__) || defined(__wasi__)
++        fprintf(stderr, "# 547: PG_RE_THROW(ERROR : %d) ignored\n", recursion_depth);
++        trap();
++#else
++        fprintf(stderr, "# 549: PG_RE_THROW(ERROR : %d)\n", recursion_depth);
+ 		PG_RE_THROW();
++#endif
+ 	}
+ 
+ 	/* Emit the message to the right places */
+@@ -588,7 +597,11 @@
+ 		 * FATAL termination.  The postmaster may or may not consider this
+ 		 * worthy of panic, depending on which subprocess returns it.
+ 		 */
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++        puts("# 599: proc_exit(FATAL) ignored");
++#else
+ 		proc_exit(1);
++#endif
+ 	}
+ 
+ 	if (elevel >= PANIC)
+@@ -698,6 +711,7 @@
+ 	 */
+ 	if (edata->elevel >= ERROR)
+ 	{
++puts("#712");
+ 		errfinish(filename, lineno, funcname);
+ 		pg_unreachable();
+ 	}

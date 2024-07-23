@@ -24,6 +24,7 @@ export interface ExecProtocolOptions {
 export interface ExtensionSetupResult {
   emscriptenOpts?: any;
   namespaceObj?: any;
+  bundlePath?: URL;
   init?: () => Promise<void>;
   close?: () => Promise<void>;
 }
@@ -34,13 +35,19 @@ export type ExtensionSetup = (
 ) => Promise<ExtensionSetupResult>;
 
 export interface Extension {
-  name?: string;
+  name: string;
   setup: ExtensionSetup;
 }
 
 export type Extensions = {
-  [namespace: string]: Extension;
+  [namespace: string]: Extension | URL;
 };
+
+export interface DumpDataDirResult {
+  tarball: Uint8Array;
+  extension: ".tar" | ".tgz";
+  filename: string;
+}
 
 export interface PGliteOptions {
   dataDir?: string;
@@ -48,6 +55,7 @@ export interface PGliteOptions {
   debug?: DebugLevel;
   relaxedDurability?: boolean;
   extensions?: Extensions;
+  loadDataDir?: Blob | File;
 }
 
 export type PGliteInterface = {
@@ -82,16 +90,17 @@ export type PGliteInterface = {
     callback: (channel: string, payload: string) => void,
   ): () => void;
   offNotification(callback: (channel: string, payload: string) => void): void;
+  dumpDataDir(): Promise<File | Blob>;
 };
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions
   ? {
-      [K in keyof E]: Awaited<
-        ReturnType<E[K]["setup"]>
-      >["namespaceObj"] extends infer N
-        ? N extends undefined | null | void
-          ? never
-          : N
+      [K in keyof E]: E[K] extends Extension
+        ? Awaited<ReturnType<E[K]["setup"]>>["namespaceObj"] extends infer N
+          ? N extends undefined | null | void
+            ? never
+            : N
+          : never
         : never;
     }
   : {};

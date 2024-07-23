@@ -1,0 +1,11 @@
+--- postgresql-16.3/src/backend/Makefile
++++ postgresql-16.3-wasm/src/backend/Makefile
+@@ -65,7 +65,7 @@
+ ifneq ($(PORTNAME), aix)
+ 
+ postgres: $(OBJS)
+-	$(CC) $(CFLAGS) $(call expand_subsys,$^) $(LDFLAGS) $(LIBS) -o $@
++	$(CC) -sMAIN_MODULE=1 $(CFLAGS) $(call expand_subsys,$^) $(LDFLAGS) $(LIBS) -o $@
+ 
+ endif
+ endif

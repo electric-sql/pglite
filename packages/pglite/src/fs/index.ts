@@ -1,10 +1,11 @@
-import type { FsType } from "./types.js";
+import type { FsType, Filesystem } from "./types.js";
 import { IdbFs } from "./idbfs.js";
 import { MemoryFS } from "./memoryfs.js";
 
 export type * from "./types.js";
 
-export const PGDATA = "/pgdata";
+export const WASM_PREFIX = "/tmp/pglite";
+export const PGDATA = WASM_PREFIX + "/" + "base";
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType;
@@ -18,12 +19,6 @@ export function parseDataDir(dataDir?: string) {
   } else if (dataDir?.startsWith("idb://")) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = dataDir.slice(6);
-    if (!dataDir.startsWith("/")) {
-      dataDir = "/" + dataDir;
-    }
-    if (dataDir.length <= 1) {
-      throw new Error("Invalid dataDir, path required for idbfs");
-    }
     fsType = "idbfs";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
@@ -36,13 +31,15 @@ export function parseDataDir(dataDir?: string) {
 }
 
 export async function loadFs(dataDir?: string, fsType?: FsType) {
+  let fs: Filesystem;
   if (dataDir && fsType === "nodefs") {
     // Lazy load the nodefs to avoid bundling it in the browser
     const { NodeFS } = await import("./nodefs.js");
-    return new NodeFS(dataDir);
+    fs = new NodeFS(dataDir);
   } else if (dataDir && fsType === "idbfs") {
-    return new IdbFs(dataDir);
+    fs = new IdbFs(dataDir);
   } else {
-    return new MemoryFS();
+    fs = new MemoryFS();
   }
+  return fs;
 }

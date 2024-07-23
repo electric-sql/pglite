@@ -1,4 +1,4 @@
-import test from "ava";
+import test from "./polytest.js";
 import { types } from "../dist/index.js";
 
 // Parse type tests

@@ -25,7 +25,7 @@
     "dev": "vite",
     "build:react": "tsc && vite build",
     "build:webcomp": "vite build --config vite.webcomp.config.ts",
-    "build": "npm run build:react && npm run build:webcomp",
+    "build": "pnpm run build:react && pnpm run build:webcomp",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "format": "prettier --write ./src && prettier --write ./src-webcomponent"

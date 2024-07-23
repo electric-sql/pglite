@@ -1,4 +1,12 @@
-node_modules
-dist
 .DS_Store
-pgdata-test
+
+/node_modules
+/packages/pglite/dist
+/packages/pglite/pgdata-test
+/packages/pglite/package-lock.json
+/build
+/postgresql-16.2.tar.bz2
+/postgresql-16.2
+/postgresql-16.3.tar.bz2
+/postgresql-16.3
+/postgresql

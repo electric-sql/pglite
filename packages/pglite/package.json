@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -19,12 +19,16 @@
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./worker": "./dist/worker/index.js"
+    "./worker": "./dist/worker/index.js",
+    "./vector": "./dist/vector/index.js"
   },
   "typesVersions": {
     "*": {
       "worker": [
         "./dist/worker/index.d.ts"
+      ],
+      "vector": [
+        "./dist/vector/index.d.ts"
       ]
     }
   },
@@ -39,27 +43,28 @@
     "directory": "packages/pglite"
   },
   "scripts": {
-    "test": "rm -rf ./pgdata-test && concurrently --hide 0 --prefix none -k \"npx http-server --port 3334 ./\" \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\"",
-    "build:configure": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build-configure",
-    "build:wasm": "cd ../../postgres/ && make -f ../packages/pglite/Makefile build",
-    "build:sharedir": "cd ../../postgres/ && make -f ../packages/pglite/Makefile sharedir",
-    "build:clean": "cd ../../postgres/ && make clean",
+    "test": "rm -rf ./pgdata-test && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && ava tests/*.test.js tests/**/*.test.js\" \"npx http-server --port 3334 ./\"",
+    "test:quick": "rm -rf ./pgdata-bun-test && ava tests/*.test.js tests/target/node-*.test.js",
+    "test:bun": "rm -rf ./pgdata-test && npx bun test tests/basic.test.js && npx bun test tests/pgvector.test.js && npx bun test tests/targets/node-fs.test.js",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
-    "build:all": "npm run build:wasm && npm run build:sharedir && npm run build:js",
-    "build": "npm run build:configure && npm run build:all",
+    "build": "npm run build:js",
     "format": "prettier --write ./src"
   },
   "devDependencies": {
+    "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
+    "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
+    "bun": "^1.1.18",
     "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "pg-protocol": "^1.6.0",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
+    "tinytar": "^0.1.0",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"

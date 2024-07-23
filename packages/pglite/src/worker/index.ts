@@ -13,6 +13,7 @@ import type { Worker as WorkerInterface } from "./process.js";
 
 export class PGliteWorker implements PGliteInterface {
   readonly dataDir?: string;
+  // @ts-ignore
   readonly fsType: FilesystemType;
   readonly waitReady: Promise<void>;
   readonly debug: DebugLevel = 0;
@@ -31,6 +32,7 @@ export class PGliteWorker implements PGliteInterface {
   constructor(dataDir: string, options?: PGliteOptions) {
     const { dataDir: dir, fsType } = parseDataDir(dataDir);
     this.dataDir = dir;
+    // @ts-ignore
     this.fsType = fsType;
     this.#options = options ?? {};
     this.debug = options?.debug ?? 0;
@@ -141,5 +143,9 @@ export class PGliteWorker implements PGliteInterface {
     for (const listener of this.#globalNotifyListeners) {
       queueMicrotask(() => listener(channel, payload));
     }
+  }
+
+  async dumpDataDir() {
+    return this.#worker.dumpDataDir();
   }
 }

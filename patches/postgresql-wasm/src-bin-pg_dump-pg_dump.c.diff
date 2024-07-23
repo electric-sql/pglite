@@ -1,0 +1,36 @@
+--- postgresql-16.3/src/bin/pg_dump/pg_dump.c
++++ postgresql-16.3-wasm/src/bin/pg_dump/pg_dump.c
+@@ -30,6 +30,13 @@
+  *-------------------------------------------------------------------------
+  */
+ #include "postgres_fe.h"
++#if !defined(__EMSCRIPTEN__) && !defined(__wasi__)
++#ifdef quote_all_identifiers
++#undef quote_all_identifiers
++#endif
++#define fe_utils_quote_all_identifiers quote_all_identifiers
++static bool quote_all_identifiers;
++#endif
+ 
+ #include <unistd.h>
+ #include <ctype.h>
+@@ -410,7 +417,7 @@
+ 		{"lock-wait-timeout", required_argument, NULL, 2},
+ 		{"no-table-access-method", no_argument, &dopt.outputNoTableAm, 1},
+ 		{"no-tablespaces", no_argument, &dopt.outputNoTablespaces, 1},
+-		{"quote-all-identifiers", no_argument, &quote_all_identifiers, 1},
++		{"quote-all-identifiers", no_argument, &fe_utils_quote_all_identifiers, true},
+ 		{"load-via-partition-root", no_argument, &dopt.load_via_partition_root, 1},
+ 		{"role", required_argument, NULL, 3},
+ 		{"section", required_argument, NULL, 5},
+@@ -1238,8 +1245,8 @@
+ 	/*
+ 	 * Quote all identifiers, if requested.
+ 	 */
+-	if (quote_all_identifiers)
+-		ExecuteSqlStatement(AH, "SET quote_all_identifiers = true");
++	if (fe_utils_quote_all_identifiers)
++		ExecuteSqlStatement(AH, "SET fe_utils_quote_all_identifiers = true");
+ 
+ 	/*
+ 	 * Adjust row-security mode, if supported.

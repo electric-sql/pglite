@@ -1,3 +1,3 @@
 import { tests } from "./base.js";
 
-tests("chromium", "idb://pgdata-test", "chromium.idb");
+tests("chromium", "idb://base", "chromium.idb");
