@@ -52,6 +52,11 @@
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs",
       "types": "./dist/contrib/*.d.ts"
+    },
+    "./sync/*": {
+      "import": "./dist/sync/*.js",
+      "require": "./dist/sync/*.cjs",
+      "types": "./dist/sync/*.d.ts"
     }
   },
   "type": "module",
@@ -78,6 +83,7 @@
     "stylecheck": "pnpm lint && prettier --check ./src ./tests"
   },
   "devDependencies": {
+    "@electric-sql/next": "^0.0.7",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
     "@types/node-fetch": "^2.6.11",

@@ -75,6 +75,9 @@ importers:
 
   packages/pglite:
     devDependencies:
+      '@electric-sql/next':
+        specifier: ^0.0.7
+        version: 0.0.7
       '@types/emscripten':
         specifier: ^1.39.13
         version: 1.39.13
@@ -149,7 +152,7 @@ importers:
         version: 18.3.0
       '@vitejs/plugin-react':
         specifier: ^4.2.1
-        version: 4.3.1(vite@5.3.1)
+        version: 4.3.1(vite@5.4.0)
       eslint-plugin-react-compiler:
         specifier: 0.0.0-experimental-9ed098e-20240725
         version: 0.0.0-experimental-9ed098e-20240725(eslint@8.57.0)
@@ -896,6 +899,12 @@ packages:
       search-insights: 2.16.0
     transitivePeerDependencies:
       - '@algolia/client-search'
+    dev: true
+
+  /@electric-sql/next@0.0.7:
+    resolution: {integrity: sha512-FyBrk2usyy3j8dq7GYR1ZdGIG4NqUCVmXR1XlC2V19LQ/WFimwOie9nd3Uy/Uex6hsqN9/objH7z1ff1J2Ey8Q==}
+    optionalDependencies:
+      '@rollup/rollup-darwin-arm64': 4.19.1
     dev: true
 
   /@embedded-postgres/darwin-arm64@15.5.1-beta.11:
@@ -2858,6 +2867,22 @@ packages:
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.2
       vite: 5.3.1(@types/node@20.11.19)(terser@5.31.1)
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /@vitejs/plugin-react@4.3.1(vite@5.4.0):
+    resolution: {integrity: sha512-m/V2syj5CuVnaxcUJOQRel/Wr31FFXRFlnOoq1TVtkCxsY5veGMTEmpWHndrhB2U8ScHtCQB1e+4hWYExQc6Lg==}
+    engines: {node: ^14.18.0 || >=16.0.0}
+    peerDependencies:
+      vite: ^4.2.0 || ^5.0.0
+    dependencies:
+      '@babel/core': 7.24.7
+      '@babel/plugin-transform-react-jsx-self': 7.24.7(@babel/core@7.24.7)
+      '@babel/plugin-transform-react-jsx-source': 7.24.7(@babel/core@7.24.7)
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.14.2
+      vite: 5.4.0
     transitivePeerDependencies:
       - supports-color
     dev: true

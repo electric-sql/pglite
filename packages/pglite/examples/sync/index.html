@@ -1,0 +1,43 @@
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+</style>
+
+<script src="../../../repl/dist-webcomponent/Repl.js" type="module"></script>
+
+<script type="module">
+  import { PGlite } from "../../dist/index.js";
+  import { electricSync } from "../../dist/sync/index.js";
+
+  const pg = new PGlite({
+    debug: 1,
+    extensions: {
+      electric: electricSync({
+        baseUrl: "http://localhost:3000",
+      }),
+    }
+  });
+
+  await pg.waitReady;
+  
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+
+  console.log(pg)
+  
+  await pg.electric.sync({
+    table: "test",
+  });
+
+  const repl = document.getElementById('repl');
+  repl.pg = pg;
+</script>
+
+<pglite-repl id="repl" show-time></pglite-repl>
