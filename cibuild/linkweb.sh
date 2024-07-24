@@ -85,28 +85,6 @@ else
 
 fi
 
-# ../../src/common/libpgcommon_shlib.a"
-# ./src/common/libpgcommon.a: binary file matches
-# ./src/common/libpgcommon_shlib.a: binary file matches
-# error: undefined symbol: fsync_pgdata (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: get_restricted_token (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_malloc_extended (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_realloc (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_strdup (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: simple_prompt (referenced by root reference (e.g. compiled C/C++ code))
-
-
-
-## \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libxml2.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libgeos.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libgeos_c.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libproj.a"
-
-# /data/git/pglite-build/pglite/postgres/libgeosall.so
-# /data/git/pglite-build/pglite/postgres/libduckdb.so"
-
-
 # ? -sLZ4=1  -sENVIRONMENT=web
 # -sSINGLE_FILE  => Uncaught SyntaxError: Cannot use 'import.meta' outside a module (at postgres.html:1:6033)
 # -sENVIRONMENT=web => XHR
@@ -115,7 +93,7 @@ EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 if ${PGES6:-true}
 then
     # es6
-    MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
+    MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
 else
     # local debug fast build
     MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
@@ -214,7 +192,6 @@ emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
 mkdir -p ${WEBROOT}
 
 cp -v postgres.* ${WEBROOT}/
-#cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
 cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
 for tarf in ${WEBROOT}/*.tar
 do
