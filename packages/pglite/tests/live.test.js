@@ -81,6 +81,21 @@ test.serial("basic live query", async (t) => {
     { id: 4, number: 40 },
     { id: 5, number: 50 },
   ]);
+
+  unsubscribe();
+
+  db.exec("INSERT INTO test (number) VALUES (35);");
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
+  ]);
+
 });
 
 test.serial("basic live incremental query", async (t) => {
@@ -155,6 +170,20 @@ test.serial("basic live incremental query", async (t) => {
   await new Promise((resolve) =>
     eventTarget.addEventListener("change", resolve, { once: true })
   );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10, __after__: null },
+    { id: 3, number: 15, __after__: 1 },
+    { id: 2, number: 20, __after__: 3 },
+    { id: 4, number: 40, __after__: 2 },
+    { id: 5, number: 50, __after__: 4 },
+  ]);
+
+  unsubscribe();
+
+  await db.exec("INSERT INTO test (number) VALUES (35);");
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   t.deepEqual(updatedResults.rows, [
     { id: 1, number: 10, __after__: null },
@@ -284,6 +313,36 @@ test.serial("basic live changes", async (t) => {
   await new Promise((resolve) =>
     eventTarget.addEventListener("change", resolve, { once: true })
   );
+
+  t.deepEqual(updatedChanges, [
+    {
+      id: 2,
+      __after__: 3,
+      __changed_columns__: ["__after__"],
+      __op__: "UPDATE",
+      number: null,
+    },
+    {
+      id: 3,
+      __after__: 1,
+      __changed_columns__: ["number", "__after__"],
+      __op__: "UPDATE",
+      number: 15,
+    },
+    {
+      id: 4,
+      __after__: 2,
+      __changed_columns__: ["__after__"],
+      __op__: "UPDATE",
+      number: null,
+    },
+  ]);
+
+  unsubscribe();
+
+  db.exec("INSERT INTO test (number) VALUES (35);");
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   t.deepEqual(updatedChanges, [
     {
