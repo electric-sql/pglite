@@ -178,11 +178,11 @@ _________________________________________________________
     LINKER="-sMAIN_MODULE=2"
 
     # FULL
-    # LINKER="-sMAIN_MODULE=1"
+    LINKER="-sMAIN_MODULE=1"
 
 
     # tailored
-    LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
+    # LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
 
 
     emcc $EMCC_WEB $LINKER $MODULE  \
