@@ -8,7 +8,7 @@ echo "============= link imports : begin ==============="
 #_emscripten_copy_to_end
 
 # copyFrom,copyTo,copyToEnd
-    cat $PGROOT/imports.* | sort | uniq > /tmp/symbols
+    cat ${WORKSPACE}/patches/imports.* | sort | uniq > /tmp/symbols
 
     echo "Requesting $(wc -l /tmp/symbols) symbols from PGlite"
 

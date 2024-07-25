@@ -143,6 +143,23 @@ pushd src/backend
     then
         # link with MAIN_MODULE=1 ( ie export all ) and extract all sym.
         . ${WORKSPACE}/cibuild/linkexport.sh
+
+        if [ -f ${WORKSPACE}/patches/exports.pglite ]
+        then
+            echo "PGLite can export $(wc -l ${WORKSPACE}/patchesexports.pglite) symbols"
+            . ${WORKSPACE}/cibuild/linkimports.sh
+
+        else
+            echo "
+
+    _________________________________________________________
+        WARNING: using cached/provided imported symbol list
+    _________________________________________________________
+
+
+    "
+        fi
+
     else
         echo "
 
@@ -152,25 +169,8 @@ _________________________________________________________
 
 
 "
-        cp patches/exports.pglite $PGROOT/
     fi
 
-
-    if [ -f ${PGROOT}/exports.pglite ]
-    then
-        echo "PGLite can export $(wc -l $PGROOT/exports.pglite) symbols"
-        . ${WORKSPACE}/cibuild/linkimports.sh
-
-    else
-        echo "
-
-_________________________________________________________
-    WARNING: using cached/provided imported symbol list
-_________________________________________________________
-
-
-"
-    fi
 
     cat ${WORKSPACE}/patches/exports > exports
 

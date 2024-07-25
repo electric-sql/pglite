@@ -35,7 +35,7 @@ def is_extension(path:Path, fullpath:Path):
             EXTNAME = path.stem
             if os.environ.get('OBJDUMP',''):
                 os.system(f"wasm-objdump -x {fullpath} > {PGROOT}/dump.{EXTNAME}")
-                os.system(f"OBJDUMP={PGROOT}/dump.{EXTNAME} python3 cibuild/getsyms.py imports > {PGROOT}/imports.{EXTNAME}")
+                os.system(f"OBJDUMP={PGROOT}/dump.{EXTNAME} python3 cibuild/getsyms.py imports > {PGPATCH}/imports.{EXTNAME}")
                 with open(f"{PGROOT}/imports.{EXTNAME}","r") as f:
                     SYMBOLS=f.readlines()
 
@@ -83,6 +83,7 @@ async def archive(target_folder):
                     print("custom:", test)
 
 
+PGPATCH=Path(os.environ.get('PGPATCH', PGROOT)
 PGROOT=Path(os.environ.get('PGROOT',"/tmp/pglite"))
 
 INSTALLED = []

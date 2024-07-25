@@ -30,7 +30,6 @@ pushd ${WORKSPACE}
 
     OBJDUMP=patches/dump.wasm-objdump PGDUMP=patches/dump.postgres \
      python3 cibuild/getsyms.py exports > patches/exports.pglite
-    cp patches/exports.pglite $PGROOT/
 popd
 
 echo "============= link export : end ==============="

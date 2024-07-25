@@ -12,6 +12,7 @@ export WEBROOT=${WEBROOT:-/tmp/web}
 export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=postgres
+export PGPATCH=${WORKSPACE}/patches
 
 
 # exit on error
