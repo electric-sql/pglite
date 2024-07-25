@@ -1,5 +1,5 @@
 import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from "tinytar";
-import { FS } from "../postgres.js";
+import { FS } from "../postgresMod.js";
 import { PGDATA } from "./index.js";
 
 export async function dumpTar(FS: FS, dbname?: string): Promise<File | Blob> {

@@ -1,5 +1,5 @@
 import { Mutex } from "async-mutex";
-import PostgresModFactory, { type PostgresMod } from "./postgres.js";
+import PostgresModFactory, { type PostgresMod } from "./postgresMod.js";
 import { type Filesystem, parseDataDir, loadFs } from "./fs/index.js";
 import { makeLocateFile } from "./utils.js";
 import { parseResults } from "./parse.js";

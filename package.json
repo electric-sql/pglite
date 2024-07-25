@@ -1,1 +1,1 @@
-{"pnpm":{"patchedDependencies":{"pg-protocol@1.6.0":"patches/pg-protocol@1.6.0.patch"}}}
+{"pnpm":{"patchedDependencies":{"pg-protocol@1.6.1":"patches/pg-protocol@1.6.1.patch"}}}

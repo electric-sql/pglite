@@ -1,5 +1,5 @@
 import { FilesystemBase } from "./types.js";
-import type { PostgresMod, FS } from "../postgres.js";
+import type { PostgresMod, FS } from "../postgresMod.js";
 import { dumpTar } from "./tarUtils.js";
 
 export class MemoryFS extends FilesystemBase {

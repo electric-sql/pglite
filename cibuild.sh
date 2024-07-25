@@ -117,7 +117,8 @@ END
 
     # workaround no "locale -a" for Node.
     # this is simply the minimal result a popen call would give.
-    cat > ${PGROOT}/locale <<END
+    mkdir -p ${PGROOT}/etc/postgresql
+    cat > ${PGROOT}/etc/postgresql/locale <<END
 C
 C.UTF-8
 POSIX
