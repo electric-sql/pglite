@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "============= link web : begin ==============="
 
 WEBROOT=${WEBROOT:-/tmp/sdk}
 echo "
@@ -51,184 +52,177 @@ echo "========================================================"
 
 pushd src/backend
 
-# https://github.com/emscripten-core/emscripten/issues/12167
-# --localize-hidden
-# https://github.com/llvm/llvm-project/issues/50623
+    # https://github.com/emscripten-core/emscripten/issues/12167
+    # --localize-hidden
+    # https://github.com/llvm/llvm-project/issues/50623
 
 
     echo " ---------- building web test PREFIX=$PGROOT ------------"
     du -hs ${WEBROOT}/libpg?.*
 
     PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
- $(find . -type f -name "*.o" \
- | grep -v ./utils/mb/conversion_procs \
- | grep -v ./replication/pgoutput \
- | grep -v  src/bin/ \
- | grep -v ./snowball/dict_snowball.o ) \
- ../../src/timezone/localtime.o \
- ../../src/timezone/pgtz.o \
- ../../src/timezone/strftime.o \
- ../../pg_initdb.o"
+     $(find . -type f -name "*.o" \
+     | grep -v ./utils/mb/conversion_procs \
+     | grep -v ./replication/pgoutput \
+     | grep -v  src/bin/ \
+     | grep -v ./snowball/dict_snowball.o ) \
+     ../../src/timezone/localtime.o \
+     ../../src/timezone/pgtz.o \
+     ../../src/timezone/strftime.o \
+     ../../pg_initdb.o"
 
-    PG_L="-L../../src/port -L../../src/common \
- ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a"
-
-
-
-if false
-then
-    # PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
-    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/libduckdb.so -lstdc++"
-else
-    PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so"
     PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a"
 
-fi
+    if ${DEV:-false}
+    then
+        # PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+        # PG_L="$PG_L /tmp/libduckdb.so -lstdc++"
+        echo -n
+    fi
 
-# ../../src/common/libpgcommon_shlib.a"
-# ./src/common/libpgcommon.a: binary file matches
-# ./src/common/libpgcommon_shlib.a: binary file matches
-# error: undefined symbol: fsync_pgdata (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: get_restricted_token (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_malloc_extended (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_realloc (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: pg_strdup (referenced by root reference (e.g. compiled C/C++ code))
-# error: undefined symbol: simple_prompt (referenced by root reference (e.g. compiled C/C++ code))
-
-
-
-## \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libxml2.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libgeos.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libgeos_c.a \
-# /opt/python-wasm-sdk/devices/emsdk/usr/lib/libproj.a"
-
-# /data/git/pglite-build/pglite/postgres/libgeosall.so
-# /data/git/pglite-build/pglite/postgres/libduckdb.so"
+    export PG_L
 
 
 # ? -sLZ4=1  -sENVIRONMENT=web
 # -sSINGLE_FILE  => Uncaught SyntaxError: Cannot use 'import.meta' outside a module (at postgres.html:1:6033)
 # -sENVIRONMENT=web => XHR
-EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 
-if ${PGES6:-true}
-then
-    # es6
-    MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
-else
-    # local debug fast build
-    MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0 --shell-file ${GITHUB_WORKSPACE}/tests/repl.html"
-fi
+    export EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 
-# =======================================================
-# size optimisations
-# =======================================================
+    if ${PGES6:-true}
+    then
+        # es6
+        MODULE="-g3 -O0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK
+        MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # no plpgsql 7.2M
+        MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
+        #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
+        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
+    else
+        # local debug fast build
+        MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
+    fi
 
-rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
+    MODULE="$MODULE  --shell-file ${WORKSPACE}/tests/repl.html"
+    # closure -sSIMPLE_OPTIMIZATION ?
 
-echo "#!/bin/true" > placeholder
-chmod +x placeholder
+    # =======================================================
+    # size optimisations
+    # =======================================================
 
-# for ./bin
+    rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
 
-# share/postgresql/pg_hba.conf.sample REQUIRED
-# rm ${PGROOT}/share/postgresql/*.sample
+    echo "#!/bin/true" > placeholder
+    chmod +x placeholder
 
-# ./lib/lib*.a => ignored
+    # for ./bin
 
-# ./include ignored
+    # share/postgresql/pg_hba.conf.sample REQUIRED
+    # rm ${PGROOT}/share/postgresql/*.sample
 
-# timezones ?
+    # ./lib/lib*.a => ignored
 
-# encodings ?
-# ./lib/postgresql/utf8_and*.so
-rm ${PGROOT}/lib/postgresql/utf8_and*.so
+    # ./include ignored
 
-# =========================================================
+    # timezones ?
 
-# --js-library
-
-# cp ${GITHUB_WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
-
-
-echo 'localhost:5432:postgres:postgres:password' > pgpass
-
-
-if [ -f ${PGROOT}/symbols ]
-then
-    # _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
-
-#not yet
-#_emscripten_copy_from
-#_emscripten_copy_to
-#_emscripten_copy_to_end
+    # encodings ?
+    # ./lib/postgresql/utf8_and*.so
+    rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 
-    cat > exports <<END
-___cxa_throw
-_main
-_main_repl
-_pg_repl_raf
-_getenv
-_setenv
-_interactive_one
-_interactive_write
-_interactive_read
-_pg_initdb
-_pg_shutdown
-_lowerstr
-END
-    cat ${PGROOT}/symbols | sort | uniq \
-     | grep -v _plpgsql_ \
-     | grep -v duckdb \
-     | grep -v ^_halfvec_l2_normalize \
-     | grep -v ^_l2_normalize \
-     | grep -v ^_sparsevec_l2_normalize \
-     | grep -v ^_1 \
-     | grep -v ^_\< \
-     | grep -v ^_env$ \
-     >> exports
-    cat exports > ${GITHUB_WORKSPACE}/patches/exports
-else
-    cat ${GITHUB_WORKSPACE}/patches/exports >> exports
-fi
+    # =========================================================
 
-# copyFrom,copyTo,copyToEnd
-
-emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
- -D__PYDK__=1 -DPREFIX=${PGROOT} \
- -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
-  $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
- -lnodefs.js -lidbfs.js \
- -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
- -sEXPORTED_FUNCTIONS=@exports \
- --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
- --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
- --preload-file ${PGROOT}/password@${PGROOT}/password \
- --preload-file pgpass@${PGROOT}/pgpass \
- --preload-file placeholder@${PGROOT}/bin/postgres \
- --preload-file placeholder@${PGROOT}/bin/initdb \
- -o postgres.html $PG_O $PG_L || exit 186
-
-mkdir -p ${WEBROOT}
-
-cp -v postgres.* ${WEBROOT}/
-#cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
-cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
-for tarf in ${WEBROOT}/*.tar
-do
-    gzip -f -9 $tarf
-done
+    # --js-library
+    # cp ${WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
 
 
-    cp $GITHUB_WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
+    echo 'localhost:5432:postgres:postgres:password' > pgpass
 
-    popd
+
+    if $OBJDUMP
+    then
+        # link with MAIN_MODULE=1 ( ie export all ) and extract all sym.
+        . ${WORKSPACE}/cibuild/linkexport.sh
+
+        if [ -f ${WORKSPACE}/patches/exports.pglite ]
+        then
+            echo "PGLite can export $(wc -l ${WORKSPACE}/patchesexports.pglite) symbols"
+            . ${WORKSPACE}/cibuild/linkimports.sh
+
+        else
+            echo "
+
+    _________________________________________________________
+        WARNING: using cached/provided imported symbol list
+    _________________________________________________________
+
+
+    "
+        fi
+
+    else
+        echo "
+
+_________________________________________________________
+    WARNING: using cached/provided exported symbol list
+_________________________________________________________
+
+
+"
+    fi
+
+
+    cat ${WORKSPACE}/patches/exports > exports
+
+    # min
+    LINKER="-sMAIN_MODULE=2"
+
+    # tailored
+    LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
+
+    # FULL
+    # LINKER="-sMAIN_MODULE=1"
+
+
+    emcc $EMCC_WEB $LINKER $MODULE  \
+     -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
+     -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
+     -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
+     -lnodefs.js -lidbfs.js \
+     -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
+     --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
+     --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
+     --preload-file ${PGROOT}/password@${PGROOT}/password \
+     --preload-file pgpass@${PGROOT}/pgpass \
+     --preload-file placeholder@${PGROOT}/bin/postgres \
+     --preload-file placeholder@${PGROOT}/bin/initdb \
+     -o postgres.html $PG_O $PG_L || exit 200
+
+    cp postgres.js /tmp/
+
+    echo "TAILORED:" >> ${WORKSPACE}/build/sizes.log
+    du -hs postgres.wasm >> ${WORKSPACE}/build/sizes.log
+    echo >> ${WORKSPACE}/build/sizes.log
+
+
+    mkdir -p ${WEBROOT}
+
+    cp -v postgres.* ${WEBROOT}/
+    #cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
+    cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
+    for tarf in ${WEBROOT}/*.tar
+    do
+        gzip -f -9 $tarf
+    done
+
+
+    cp $WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
+
+popd
+
 
 echo "
-linkweb:end
-
+============= link web : end ===============
 
 
 

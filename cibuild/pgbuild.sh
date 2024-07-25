@@ -60,9 +60,6 @@ CC_PGLITE=$CC_PGLITE
         exit 262
     fi
 
-    sed -i 's|ZIC= ./zic|ZIC= zic|g' ${PGSRC}/src/timezone/Makefile
-
-
     if grep -q MAIN_MODULE ${PGSRC}/src/backend/Makefile
     then
         echo "dyld server patch ok"
@@ -91,10 +88,7 @@ END
 
     # FIXME: workaround for /conversion_procs/ make
     # cp bin/wasm-shared bin/o
-    if which zic
-    then
-        cp $(which zic) zic.native bin/zic
-    fi
+    ZIC=${ZIC:-$(realpath bin/zic)}
     chmod +x bin/zic bin/wasm-shared
 
     # for zic and wasm-shared
@@ -123,27 +117,37 @@ END
     export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
 
 
-	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make -j $(nproc) 2>&1 > /tmp/build.log
+	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make ZIC=$ZIC -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
         # for 32bits zic
         unset LD_PRELOAD
-        if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make install 2>&1 > /tmp/install.log
+        if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make ZIC=$ZIC install 2>&1 > /tmp/install.log
         then
             echo install ok
             pushd ${PGROOT}
             #find ./lib/postgresql ./share/postgresql/extension -type f > ${PGROOT}/pg.installed
-            find . -type f > ${PGROOT}/pg.installed
+            find . -type f | grep -v plpgsql > ${PGROOT}/pg.installed
             popd
+
+            goback=$(pwd)
+            popd
+            python3 cibuild/pack_extension.py builtin
+            pushd $goback
+
+            pushd ${PGROOT}
+            find . -type f  > ${PGROOT}/pg.installed
+            popd
+
         else
             cat /tmp/install.log
             echo "install failed"
-            exit 368
+            exit 143
         fi
     else
         cat /tmp/build.log
         echo "build failed"
-        exit 373
+        exit 148
 	fi
 
     # wip

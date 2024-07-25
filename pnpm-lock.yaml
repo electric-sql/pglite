@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  pg-protocol@1.6.0:
+  pg-protocol@1.6.1:
     hash: m6gmuhkj45op6ok66bc7av7i4y
-    path: patches/pg-protocol@1.6.0.patch
+    path: patches/pg-protocol@1.6.1.patch
 
 importers:
 
@@ -17,7 +17,7 @@ importers:
     dependencies:
       wa-sqlite:
         specifier: github:rhashimoto/wa-sqlite
-        version: github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918
+        version: github.com/rhashimoto/wa-sqlite/f1ab3d5d795fb4156e0b8e20ce2f58c05dfee74a
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.9
@@ -68,8 +68,8 @@ importers:
         specifier: ^14.1.1
         version: 14.1.1
       pg-protocol:
-        specifier: ^1.6.0
-        version: 1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
+        specifier: ^1.6.1
+        version: 1.6.1(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
       playwright:
         specifier: ^1.42.1
         version: 1.42.1
@@ -4048,8 +4048,12 @@ packages:
       pg: 8.11.3
     dev: true
 
-  /pg-protocol@1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
+  /pg-protocol@1.6.0:
     resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
+    dev: true
+
+  /pg-protocol@1.6.1(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
+    resolution: {integrity: sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==}
     dev: true
     patched: true
 
@@ -4077,7 +4081,7 @@ packages:
       packet-reader: 1.0.0
       pg-connection-string: 2.6.2
       pg-pool: 3.6.1(pg@8.11.3)
-      pg-protocol: 1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
+      pg-protocol: 1.6.0
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:
@@ -5214,8 +5218,8 @@ packages:
       commander: 9.5.0
     dev: true
 
-  github.com/rhashimoto/wa-sqlite/55bf0b6646ac1bb81b00b9c25636b59a87e4a918:
-    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/55bf0b6646ac1bb81b00b9c25636b59a87e4a918}
+  github.com/rhashimoto/wa-sqlite/f1ab3d5d795fb4156e0b8e20ce2f58c05dfee74a:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/f1ab3d5d795fb4156e0b8e20ce2f58c05dfee74a}
     name: wa-sqlite
     version: 1.0.0
     dev: false

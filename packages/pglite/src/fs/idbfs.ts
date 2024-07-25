@@ -1,5 +1,5 @@
 import { FilesystemBase } from "./types.js";
-import type { FS, PostgresMod } from "../postgres.js";
+import type { FS, PostgresMod } from "../postgresMod.js";
 import { PGDATA } from "./index.js";
 import { dumpTar } from "./tarUtils.js";
 

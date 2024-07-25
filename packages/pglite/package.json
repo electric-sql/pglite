@@ -61,7 +61,7 @@
     "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
-    "pg-protocol": "^1.6.0",
+    "pg-protocol": "^1.6.1",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
     "tinytar": "^0.1.0",

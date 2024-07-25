@@ -21,6 +21,10 @@ END
 
 
     pnpm install
+    pushd  $PGLITE/../repl
+        pnpm install
+        pnpm run build:react && pnpm run build:webcomp
+    popd
 
     mkdir -p $PGLITE/release
     rm $PGLITE/release/* 2>/dev/null
@@ -30,18 +34,11 @@ END
 
     # copy wasm web prebuilt artifacts to release folder
     # TODO: get them from web for nosdk systems.
-    if $CI
-    then
-        cp -vf /tmp/web/postgres.{js,data,wasm} $PGLITE/release/
-        cp -vf /tmp/web/libecpg.so $PGLITE/release/postgres.so
-    else
-        cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
-        cp ${WEBROOT}/libecpg.so ${PGLITE}/release/postgres.so
-    fi
+
+    cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
 
     # unused right now
     # touch $PGLITE/release/share.data
-
 
 
     if ${DEV:-false}
@@ -79,24 +76,26 @@ END
         mkdir -p /tmp/web/pglite
         cp -r ${PGLITE}/dist /tmp/web/pglite/
         cp -r ${PGLITE}/examples /tmp/web/pglite/
-        pushd /tmp/web/
-        ln -s ../dist/postgres.data
-        popd
-        # link files for xterm based repl
-        ln ${WEBROOT}/dist/postgres.* ${WEBROOT}/ || echo pass
 
-            echo "<html>
-            <body>
-                <ul>
-                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
-                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-                    <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
-                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
-                </ul>
-            </body>
-            </html>" > ${WEBROOT}/index.html
+        for dir in /tmp/web /tmp/web/pglite/examples
+        do
+            pushd "$dir"
+            cp ${PGLITE}/dist/postgres.data ./
+            popd
+        done
+
+        echo "<html>
+        <body>
+            <ul>
+                <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+                <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+                <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
+                <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+                <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
+                <li><a href=./postgres.html>Postgres xterm REPL</a></li>
+            </ul>
+        </body>
+        </html>" > ${WEBROOT}/index.html
 
     else
         mkdir -p ${WEBROOT}/node_modules/@electric-sql/pglite
