@@ -26,7 +26,7 @@ def gather(root: Path, *kw):
 
 
 def is_extension(path:Path, fullpath:Path):
-    global EXTNAME, SYMBOLS
+    global EXTNAME, SYMBOLS, PGPATCH, PGROOT
     asp = path.as_posix()
 
     # check .so
@@ -83,7 +83,7 @@ async def archive(target_folder):
                     print("custom:", test)
 
 
-PGPATCH=Path(os.environ.get('PGPATCH', PGROOT)
+PGPATCH=Path(os.environ.get('PGPATCH', PGROOT))
 PGROOT=Path(os.environ.get('PGROOT',"/tmp/pglite"))
 
 INSTALLED = []
