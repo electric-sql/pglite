@@ -83,8 +83,8 @@ async def archive(target_folder):
                     print("custom:", test)
 
 
-PGPATCH=Path(os.environ.get('PGPATCH', PGROOT))
 PGROOT=Path(os.environ.get('PGROOT',"/tmp/pglite"))
+PGPATCH=Path(os.environ.get('PGPATCH', PGROOT))
 
 INSTALLED = []
 
