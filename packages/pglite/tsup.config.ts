@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const thisFile = fileURLToPath(new URL(import.meta.url));
 const root = path.dirname(thisFile);
 
-let replaceAssertPlugin = {
+const replaceAssertPlugin = {
   name: "replace-assert",
   setup(build: any) {
     // Resolve `assert` to a blank file
@@ -31,6 +31,7 @@ export default defineConfig({
   },
   clean: true,
   format: ["esm"],
+  external: ["./postgres.js"],
   esbuildOptions(options, context) {
     options.inject = [
       "src/polyfills/buffer.ts",

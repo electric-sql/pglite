@@ -5,9 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  pg-protocol@1.6.0:
-    hash: m6gmuhkj45op6ok66bc7av7i4y
-    path: patches/pg-protocol@1.6.0.patch
   pg-protocol@1.6.1:
     hash: m6gmuhkj45op6ok66bc7av7i4y
     path: patches/pg-protocol@1.6.1.patch
@@ -4051,10 +4048,9 @@ packages:
       pg: 8.11.3
     dev: true
 
-  /pg-protocol@1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
+  /pg-protocol@1.6.0:
     resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
     dev: true
-    patched: true
 
   /pg-protocol@1.6.1(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
     resolution: {integrity: sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==}
@@ -4085,7 +4081,7 @@ packages:
       packet-reader: 1.0.0
       pg-connection-string: 2.6.2
       pg-pool: 3.6.1(pg@8.11.3)
-      pg-protocol: 1.6.0(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
+      pg-protocol: 1.6.0
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:

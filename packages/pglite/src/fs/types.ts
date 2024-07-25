@@ -1,4 +1,4 @@
-import type { PostgresMod, FS } from "../postgres.js";
+import type { PostgresMod, FS } from "../postgresMod.js";
 
 export type FsType = "nodefs" | "idbfs" | "memoryfs";
 

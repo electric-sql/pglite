@@ -1,6 +1,6 @@
 import tinyTar from "tinytar";
 import { IN_NODE } from "./utils.js";
-import type { PostgresMod } from "./postgres.js";
+import type { PostgresMod } from "./postgresMod.js";
 
 export async function loadExtensionBundle(
   bundlePath: URL,
