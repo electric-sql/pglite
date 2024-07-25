@@ -1,13 +1,15 @@
 # cibuild/pack_extension.py
 
+# TODO: use this file for merging symbols too.
+
 # use recorded file list in ${PGROOT}/pg.installed
 # get other files into a tarball, find a .so and named everything after it
-
 
 
 import asyncio
 import tarfile
 import os
+import sys
 from pathlib import Path
 
 class Error(Exception):
@@ -31,10 +33,10 @@ def is_extension(path:Path, fullpath:Path):
     if asp.startswith('/lib/postgresql/'):
         if path.suffix == ".so":
             EXTNAME = path.stem
-            if os.path.isfile('/opt/sdk/wasisdk/wabt/bin/wasm-objdump'):
-                # TODO use popen and sort/merge
-                os.system(f"./cibuild/symtab.sh {fullpath} >> {PGROOT}/symbols")
-                with open(f"{PGROOT}/symbols","r") as f:
+            if os.environ.get('OBJDUMP',''):
+                os.system(f"wasm-objdump -x {fullpath} > {PGROOT}/dump.{EXTNAME}")
+                os.system(f"OBJDUMP={PGROOT}/dump.{EXTNAME} python3 cibuild/getsyms.py imports > {PGROOT}/imports.{EXTNAME}")
+                with open(f"{PGROOT}/imports.{EXTNAME}","r") as f:
                     SYMBOLS=f.readlines()
 
         return True
@@ -64,9 +66,13 @@ async def archive(target_folder):
             if (PGROOT/test).is_symlink():
                 print("SYMLINK:", test)
                 continue
-            if test.as_posix() not in INSTALLED:
+            if asp not in INSTALLED:
                 if asp.startswith('/sdk/'):
                     continue
+
+                if asp.startswith('/base/'):
+                    continue
+
                 fp = PGROOT / asp[1:]
                 if fp.is_symlink():
                     continue
@@ -77,7 +83,7 @@ async def archive(target_folder):
                     print("custom:", test)
 
 
-PGROOT=Path(os.environ['PGROOT'])
+PGROOT=Path(os.environ.get('PGROOT',"/tmp/pglite"))
 
 INSTALLED = []
 
@@ -85,15 +91,26 @@ EXTNAME = ""
 PACKLIST = []
 SYMBOLS=[]
 
-
+PREINST = "/plpgsql"
+IS_PREINST = PREINST in sys.argv
 for line in open(PGROOT / "pg.installed" ).readlines():
-    INSTALLED.append( Path(line[1:].strip()).as_posix() )
+    asp = Path(line[1:].strip()).as_posix()
+    if IS_PREINST:
+        if asp.find(PREINST)>0:
+            continue
+    INSTALLED.append( asp )
+
 
 print("="*80)
 asyncio.run( archive(PGROOT) )
 print("="*80)
-print(f"""
 
+if not EXTNAME:
+    print("ERROR: no new installed extension found, is it builtin ?")
+    sys.exit(105)
+
+print(f"""
+PG installed in : {PGROOT=}
 
 
     {EXTNAME =} ({len(SYMBOLS)} imports)
@@ -104,13 +121,18 @@ print(f"""
 
 swd = os.getcwd()
 
-if len(PACKLIST):
-    os.chdir(PGROOT)
-    with tarfile.open(PGROOT / "sdk" / f"{EXTNAME}.tar" , "w:") as tar:
-        for fp, fn in PACKLIST:
-            print(f"{EXTNAME} : {fp} => {fn}")
-            tar.add(fn.as_posix()[1:])
-            os.remove(fp)
-    os.chdir(swd)
+if (not IS_PREINST) and ("builtin" not in sys.argv):
+    if len(PACKLIST):
+        os.chdir(PGROOT)
+        with tarfile.open(PGROOT / "sdk" / f"{EXTNAME}.tar" , "w:") as tar:
+            for fp, fn in PACKLIST:
+                print(f"{EXTNAME} : {fp} => {fn}")
+                tar.add(fn.as_posix()[1:])
+                #if "builtin" not in sys.argv:
+                os.remove(fp)
+        os.chdir(swd)
+    else:
+        print(f"Nothing found to pack for {EXTNAME}, did you 'make install' ?")
 else:
-    print("Nothing to pack for", EXTNAME)
+        print("Nothing to pack for builtin extension :", EXTNAME)
+

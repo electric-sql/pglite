@@ -6,7 +6,7 @@ export CMA_MB=${CMA_MB:-64}
 
 export PGVERSION=${PGVERSION:-16.3}
 export CI=${CI:-false}
-export GITHUB_WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
+export WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
 export PGROOT=${PGROOT:-/tmp/pglite}
 export WEBROOT=${WEBROOT:-/tmp/web}
 export DEBUG=${DEBUG:-false}
@@ -22,7 +22,7 @@ if mkdir -p ${PGROOT}/sdk
 then
     echo "checking for valid prefix ${PGROOT}"
 else
-    sudo mkdir -p ${PGROOT}/sdk
+    sudo mkdir -p ${PGROOT}/sdk ${PGROOT}/bin
     sudo chown $(whoami) -R ${PGROOT}
 fi
 
@@ -41,7 +41,10 @@ fi
 
 export PGPASS
 
-
+if which wasm-objdump
+then
+    cp $(which wasm-objdump) $PGROOT/bin/
+fi
 
 # default to web/release size optim.
 if $DEBUG
@@ -55,30 +58,34 @@ fi
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
 # TODO: but may need to adjust $PATH with stock emsdk.
-
-if which emcc
+if ${WASI:-false}
 then
-    echo "Using provided emsdk from $(which emcc)"
+    echo "Wasi build (experimental)"
+    . /opt/python-wasm-sdk/wasm32-wasi-shell.sh
 else
-    . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
+    if which emcc
+    then
+        echo "Using provided emsdk from $(which emcc)"
+    else
+        . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
+    fi
+
+    # custom code for node/web builds that modify pg main/tools behaviour
+    # this used by both node/linkweb build stages
+
+    # pass the "kernel" contiguous memory zone size to the C compiler.
+    CC_PGLITE="-DCMA_MB=${CMA_MB}"
+
+    # these are files that shadow original portion of pg core, with minimal changes
+    # to original code
+    # some may be included multiple time
+    CC_PGLITE="-DPATCH_MAIN=${WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
+    CC_PGLITE="-DPATCH_LOOP=${WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
+    CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
+
 fi
 
-
-# custom code for node/web builds that modify pg main/tools behaviour
-# this used by both node/linkweb build stages
-
-# pass the "kernel" contiguous memory zone size to the C compiler.
-CC_PGLITE="-DCMA_MB=${CMA_MB}"
-
-# these are files that shadow original portion of pg core, with minimal changes
-# to original code
-# some may be included multiple time
-CC_PGLITE="-DPATCH_MAIN=${GITHUB_WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
-CC_PGLITE="-DPATCH_LOOP=${GITHUB_WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
-CC_PGLITE="-DPATCH_PLUGIN=${GITHUB_WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
-
 export CC_PGLITE
-
 
 
 if [ -f ${WEBROOT}/postgres.js ]
@@ -136,20 +143,21 @@ END
         . cibuild/pg-git.sh
     fi
 
+    # install wasm-shared along with pg config  tool
+    # for building user ext.
+    cp build/postgres/bin/wasm-shared $PGROOT/bin/
+
     export PGLITE=$(pwd)/packages/pglite
 
     echo "export PGSRC=${PGSRC}" >> ${PGROOT}/pgopts.sh
     echo "export PGLITE=${PGLITE}" >> ${PGROOT}/pgopts.sh
 
-    if [ -f /opt/sdk/wasisdk/wabt/bin/wasm-objdump ]
-    then
-        ./cibuild/symtab.sh ${PGROOT}/lib/postgresql/plpgsql.so > ${PGROOT}/symbols
-    fi
+
 fi
 
 # put wasm-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
-export PATH=${GITHUB_WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
+export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 
 
@@ -168,18 +176,17 @@ export PATH=${GITHUB_WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 if echo "$*"|grep -q vector
 then
-    echo "================================================="
+    echo "====================== vector : $(pwd) ================="
 
     pushd build
 
         # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
-        # git clone --branch v0.7.2 https://github.com/pgvector/pgvector.git
 
         if [ -d pgvector ]
         then
             echo using local pgvector
         else
-            wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.2.tar.gz -Opgvector.tar.gz
+            wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
             tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
             mv pgvector-?.?.? pgvector
         fi
@@ -188,7 +195,7 @@ then
             # path for wasm-shared already set to (pwd:pg build dir)/bin
             # OPTFLAGS="" turns off arch optim (sse/neon).
             PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
-            cp sql/vector.sql sql/vector--0.7.2.sql ${PGROOT}/share/postgresql/extension
+            cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
             rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
         popd
 
@@ -198,15 +205,23 @@ then
 
 fi
 
-if echo "$*"|grep " postgis"
+if echo "$*"|grep " pg_stat_statements"
 then
-    echo "================================================="
-    PG_LINK=em++ echo "WIP - requires latests python-wasm-sdk, not just emsdk"
-
+    pushd build/postgres/contrib/pg_stat_statements
+        emmake make install
+    popd
     python3 cibuild/pack_extension.py
 fi
 
 
+if echo "$*"|grep " postgis"
+then
+    echo "======================= postgis : $(pwd) ==================="
+
+    ./cibuild/postgis.sh
+
+    python3 cibuild/pack_extension.py
+fi
 
 if echo "$*"|grep " quack"
 then
@@ -247,7 +262,7 @@ fi
 
 if echo "$*"|grep "node"
 then
-    echo "================================================="
+    echo "====================== node : $(pwd) ========================"
     mkdir -p /tmp/sdk/
 
     # remove versionned symlinks
@@ -261,18 +276,16 @@ fi
 # run linkweb after node build because it will remove some wasm .so used by node from fs
 # they don't need to be in MEMFS as they are fetched.
 
-
 # include current pglite source for easy local rebuild with just npm run build:js.
-
 
 if echo "$*"|grep "linkweb"
 then
 
     # build web version
+    echo "========== linkweb : $(pwd) =================="
     pushd build/postgres
-    echo "=================== $(pwd) ========================="
 
-    . $GITHUB_WORKSPACE/cibuild/linkweb.sh
+    . $WORKSPACE/cibuild/linkweb.sh
 
     # upload all to gh pages,
     # TODO: include node archive and samples ?
@@ -291,7 +304,7 @@ fi
 while test $# -gt 0
 do
     case "$1" in
-        pglite) echo "=================== pglite ======================="
+        pglite) echo "=================== pglite : $(pwd) ======================="
             # TODO: SAMs NOTE - Not using this in GitHub action as it doesnt resolve pnpm correctly
             # replaced with pglite-prep and pglite-bundle-sdk
 
@@ -304,11 +317,7 @@ do
             cp -r $PGLITE ${PGROOT}/sdk/packages/
 
             mkdir /tmp/web/repl/dist-webcomponent -p
-            cp -r ${GITHUB_WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
-
-            pushd /tmp/web/pglite/examples
-            ln -s ../dist/postgres.data
-            popd
+            cp -r ${WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
 
             if $CI
             then
@@ -318,35 +327,33 @@ do
             du -hs ${WEBROOT}/*
         ;;
 
-        pglite-prep) echo "==================== pglite-prep =========================="
-            mkdir $PGLITE/release || rm $PGLITE/release/*
+        pglite-prep) echo "==================== pglite-prep  =========================="
+            mkdir -p $PGLITE/release
+            rm $PGLITE/release/*
+
             # copy packed extensions
             cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
-
-
             cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
-            cp -vf ${WEBROOT}/libecpg.so $PGLITE/release/postgres.so
-
-            ;;
+        ;;
 
         pglite-bundle-interim) echo "================== pglite-bundle-interim ======================"
             tar -cpRz ${PGLITE}/release > /tmp/sdk/pglite-interim-${PGVERSION}.tar.gz
-            ;;
+        ;;
 
         demo-site) echo "==================== demo-site =========================="
 
             echo "<html>
-            <body>
-                <ul>
-                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
-                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-                    <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
-                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
-                </ul>
-            </body>
-            </html>" > /tmp/web/index.html
+<body>
+    <ul>
+        <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+        <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+        <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
+        <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+        <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
+        <li><a href=./postgres.html>Postgres xterm REPL</a></li>
+    </ul>
+</body>
+</html>" > /tmp/web/index.html
 
             mkdir -p /tmp/web/pglite
             mkdir -p /tmp/web/repl
@@ -354,8 +361,8 @@ do
             PGLITE=$(pwd)/packages/pglite
             cp -r ${PGLITE}/dist /tmp/web/pglite/
             cp -r ${PGLITE}/examples /tmp/web/pglite/
-            cp -r ${GITHUB_WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
-            cp -r ${GITHUB_WORKSPACE}/packages/benchmark /tmp/web/pglite/
+            cp -r ${WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
+            cp -r ${WORKSPACE}/packages/benchmark /tmp/web/pglite/
         ;;
     esac
     shift
