@@ -163,13 +163,12 @@ echo 'localhost:5432:postgres:postgres:password' > pgpass
 
 # copyFrom,copyTo,copyToEnd
 
-emcc $EMCC_WEB -fPIC -sMAIN_MODULE=2 \
+emcc $EMCC_WEB -fPIC -sMAIN_MODULE=1 \
  -D__PYDK__=1 -DPREFIX=${PGROOT} \
  -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB \
   $MODULE -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
  -lnodefs.js -lidbfs.js \
  -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
- -sEXPORTED_FUNCTIONS=@exports \
  --preload-file ${PGROOT}/etc/postgresql/locale@${PGROOT}/etc/postgresql/locale \
  --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
  --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
