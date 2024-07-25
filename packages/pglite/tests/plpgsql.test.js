@@ -4,6 +4,7 @@ import { PGlite } from "../dist/index.js";
 test("can create and call function", async (t) => {
   const db = new PGlite();
   await db.exec(`
+    CREATE EXTENSION IF NOT EXISTS plpgsql;
     CREATE OR REPLACE FUNCTION test_func()
     RETURNS TEXT AS $$
     BEGIN
@@ -19,6 +20,7 @@ test("can create and call function", async (t) => {
 test("can create and call complex function", async (t) => {
   const db = new PGlite();
   await db.exec(`
+    CREATE EXTENSION IF NOT EXISTS plpgsql;
     CREATE OR REPLACE FUNCTION calculate_factorial(n INT) RETURNS INT AS $$
     DECLARE
         result INT := 1;
