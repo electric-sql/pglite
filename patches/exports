@@ -1419,3 +1419,4 @@ __ZNSt3__23cinE
 _cstring_to_text_with_len
 __ZNSt3__24__fs10filesystem4pathdVB8nn180100ERKS2_
 __ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE
+_main
