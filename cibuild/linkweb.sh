@@ -96,7 +96,7 @@ pushd src/backend
         MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # no plpgsql 7.2M
         MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
         #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
-        MODULE="-g0 -Os --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
+        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
     else
         # local debug fast build
         MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
@@ -177,12 +177,11 @@ _________________________________________________________
     # min
     LINKER="-sMAIN_MODULE=2"
 
-    # FULL
-    LINKER="-sMAIN_MODULE=1"
-
-
     # tailored
-    # LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
+    LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
+
+    # FULL
+    # LINKER="-sMAIN_MODULE=1"
 
 
     emcc $EMCC_WEB $LINKER $MODULE  \
