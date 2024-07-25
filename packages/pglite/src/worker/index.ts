@@ -281,7 +281,8 @@ export class PGliteWorker implements PGliteInterface {
    * @returns The direct message data response produced by Postgres
    */
   async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
-    return this.#worker.execProtocolRaw(message);
+    await this.waitReady;
+    return (await this.#rpc("execProtocolRaw", message)) as Uint8Array;
   }
 
   /**
@@ -370,8 +371,8 @@ export class PGliteWorker implements PGliteInterface {
     }
   }
 
-  async dumpDataDir() {
-    return this.#worker.dumpDataDir();
+  async dumpDataDir(): Promise<File | Blob> {
+    return (await this.#rpc("dumpDataDir")) as File | Blob;
   }
 }
 
@@ -544,7 +545,7 @@ function makeWorkerApi(db: PGliteInterface) {
     },
     async dumpDataDir() {
       return await db.dumpDataDir();
-    }
+    },
   };
 }
 
