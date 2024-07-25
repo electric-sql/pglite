@@ -11,15 +11,15 @@ import type {
   Change,
 } from "./interface";
 
-// Counter use to generate unique IDs for live queries
-// This is used to create temporary views and so are scoped to the current connection
-let liveQueryCounter = 0;
-
-// The notify triggers are only ever added and never removed
-// Keep track of which triggers have been added to avoid adding them multiple times
-const tableNotifyTriggersAdded = new Set<string>();
-
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
+  // Counter use to generate unique IDs for live queries
+  // This is used to create temporary views and so are scoped to the current connection
+  let liveQueryCounter = 0;
+
+  // The notify triggers are only ever added and never removed
+  // Keep track of which triggers have been added to avoid adding them multiple times
+  const tableNotifyTriggersAdded = new Set<string>();
+
   const namespaceObj: LiveNamespace = {
     async query<T>(
       query: string,
@@ -40,7 +40,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
 
         // Get the tables used in the view and add triggers to notify when they change
         tables = await getTablesForView(tx, `live_query_${id}_view`);
-        await addNotifyTriggersToTables(tx, tables);
+        await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded);
 
         // Create prepared statement to get the results
         await tx.exec(`
@@ -112,7 +112,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
 
         // Get the tables used in the view and add triggers to notify when they change
         tables = await getTablesForView(tx, `live_query_${id}_view`);
-        await addNotifyTriggersToTables(tx, tables);
+        await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded);
 
         // Get the columns of the view
         const columns = [
@@ -302,8 +302,9 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
                 afterMap.set(obj.__after__, obj[key]);
                 break;
               case "DELETE":
+                const oldObj = rowsMap.get(obj[key]);
                 rowsMap.delete(obj[key]);
-                afterMap.delete(obj.__after__);
+                afterMap.delete(oldObj.__after__);
                 break;
               case "UPDATE":
                 const newObj = { ...(rowsMap.get(obj[key]) ?? {}) };
@@ -313,6 +314,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
                     afterMap.set(obj.__after__, obj[key]);
                   }
                 }
+                rowsMap.set(obj[key], newObj);
                 break;
             }
           }
@@ -409,7 +411,8 @@ async function getTablesForView(
  */
 async function addNotifyTriggersToTables(
   tx: Transaction | PGliteInterface,
-  tables: { table_name: string; schema_name: string }[]
+  tables: { table_name: string; schema_name: string }[],
+  tableNotifyTriggersAdded: Set<string>
 ) {
   const triggers = tables
     .filter(
