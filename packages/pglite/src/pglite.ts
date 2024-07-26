@@ -589,14 +589,14 @@ export class PGlite implements PGliteInterface {
     // execute the message
     mod._interactive_one();
 
-    if (syncToFs) {
-      await this.#syncToFs();
-    }
-
     // Read responses from the buffer
     const msg_start = msg_len + 2;
     const msg_end = msg_start + mod._interactive_read();
     const data = mod.HEAPU8.subarray(msg_start, msg_end);
+
+    if (syncToFs) {
+      await this.#syncToFs();
+    }
 
     return data;
   }
@@ -613,45 +613,43 @@ export class PGlite implements PGliteInterface {
     const data = await this.execProtocolRaw(message, { syncToFs });
     const results: Array<[BackendMessage, Uint8Array]> = [];
 
-    return await this.#executeMutex.runExclusive(async () => {
-      this.#parser.parse(Buffer.from(data), (msg) => {
-        if (msg instanceof DatabaseError) {
-          this.#parser = new Parser(); // Reset the parser
-          throw msg;
-          // TODO: Do we want to wrap the error in a custom error?
-        } else if (msg instanceof NoticeMessage && this.debug > 0) {
-          // Notice messages are warnings, we should log them
-          console.warn(msg);
-        } else if (msg instanceof CommandCompleteMessage) {
-          // Keep track of the transaction state
-          switch (msg.text) {
-            case "BEGIN":
-              this.#inTransaction = true;
-              break;
-            case "COMMIT":
-            case "ROLLBACK":
-              this.#inTransaction = false;
-              break;
-          }
-        } else if (msg instanceof NotificationResponseMessage) {
-          // We've received a notification, call the listeners
-          const listeners = this.#notifyListeners.get(msg.channel);
-          if (listeners) {
-            listeners.forEach((cb) => {
-              // We use queueMicrotask so that the callback is called after any
-              // synchronous code has finished running.
-              queueMicrotask(() => cb(msg.payload));
-            });
-          }
-          this.#globalNotifyListeners.forEach((cb) => {
-            queueMicrotask(() => cb(msg.channel, msg.payload));
+    this.#parser.parse(Buffer.from(data), (msg) => {
+      if (msg instanceof DatabaseError) {
+        this.#parser = new Parser(); // Reset the parser
+        throw msg;
+        // TODO: Do we want to wrap the error in a custom error?
+      } else if (msg instanceof NoticeMessage && this.debug > 0) {
+        // Notice messages are warnings, we should log them
+        console.warn(msg);
+      } else if (msg instanceof CommandCompleteMessage) {
+        // Keep track of the transaction state
+        switch (msg.text) {
+          case "BEGIN":
+            this.#inTransaction = true;
+            break;
+          case "COMMIT":
+          case "ROLLBACK":
+            this.#inTransaction = false;
+            break;
+        }
+      } else if (msg instanceof NotificationResponseMessage) {
+        // We've received a notification, call the listeners
+        const listeners = this.#notifyListeners.get(msg.channel);
+        if (listeners) {
+          listeners.forEach((cb) => {
+            // We use queueMicrotask so that the callback is called after any
+            // synchronous code has finished running.
+            queueMicrotask(() => cb(msg.payload));
           });
         }
-        results.push([msg, data]);
-      });
-
-      return results;
+        this.#globalNotifyListeners.forEach((cb) => {
+          queueMicrotask(() => cb(msg.channel, msg.payload));
+        });
+      }
+      results.push([msg, data]);
     });
+
+    return results;
   }
 
   async #execProtocolNoSync(
