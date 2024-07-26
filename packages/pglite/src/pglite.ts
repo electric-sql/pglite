@@ -562,7 +562,13 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
-   * Execute a postgres wire protocol message directly without wrapping the response
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
