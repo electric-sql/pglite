@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.2.0-alpha.0",
+  "version": "0.2.0-alpha.1",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -59,7 +59,6 @@
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
     "bun": "^1.1.18",
-    "comlink": "^4.4.1",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "pg-protocol": "^1.6.1",
