@@ -74,6 +74,10 @@ export type PGliteInterface = {
   transaction<T>(
     callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined>;
+  execProtocolRaw(
+    message: Uint8Array,
+    options?: ExecProtocolOptions,
+  ): Promise<Uint8Array>;
   execProtocol(
     message: Uint8Array,
     options?: ExecProtocolOptions,

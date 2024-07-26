@@ -562,6 +562,40 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
+   * Execute a postgres wire protocol message directly without wrapping the response
+   * @param message The postgres wire protocol message to execute
+   * @returns The direct message data response produced by Postgres
+   */
+  async execProtocolRaw(
+    message: Uint8Array,
+    { syncToFs = true }: ExecProtocolOptions = {},
+  ) {
+    const msg_len = message.length;
+    const mod = this.mod!;
+
+    // >0 set buffer content type to wire protocol
+    // set buffer size so answer will be at size+0x2 pointer addr
+    mod._interactive_write(msg_len);
+
+    // copy whole buffer at addr 0x1
+    mod.HEAPU8.set(message, 1);
+
+    // execute the message
+    mod._interactive_one();
+
+    if (syncToFs) {
+      await this.#syncToFs();
+    }
+
+    // Read responses from the buffer
+    const msg_start = msg_len + 2;
+    const msg_end = msg_start + mod._interactive_read();
+    const data = mod.HEAPU8.subarray(msg_start, msg_end);
+
+    return data;
+  }
+
+  /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
@@ -570,31 +604,10 @@ export class PGlite implements PGliteInterface {
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
+    const data = await this.execProtocolRaw(message, { syncToFs });
+    const results: Array<[BackendMessage, Uint8Array]> = [];
+
     return await this.#executeMutex.runExclusive(async () => {
-      const msg_len = message.length;
-      const mod = this.mod!;
-
-      // >0 set buffer content type to wire protocol
-      // set buffer size so answer will be at size+0x2 pointer addr
-      mod._interactive_write(msg_len);
-
-      // copy whole buffer at addr 0x1
-      mod.HEAPU8.set(message, 1);
-
-      // execute the message
-      mod._interactive_one();
-
-      if (syncToFs) {
-        await this.#syncToFs();
-      }
-
-      const results: Array<[BackendMessage, Uint8Array]> = [];
-
-      // Read responses from the buffer
-      const msg_start = msg_len + 2;
-      const msg_end = msg_start + mod._interactive_read();
-      const data = mod.HEAPU8.subarray(msg_start, msg_end);
-
       this.#parser.parse(Buffer.from(data), (msg) => {
         if (msg instanceof DatabaseError) {
           this.#parser = new Parser(); // Reset the parser

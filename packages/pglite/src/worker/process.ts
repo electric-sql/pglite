@@ -31,6 +31,9 @@ const worker = {
       return callback(Comlink.proxy(tx));
     });
   },
+  async execProtocolRaw(message: Uint8Array) {
+    return await db.execProtocolRaw(message);
+  },
   async execProtocol(message: Uint8Array) {
     return await db.execProtocol(message);
   },
