@@ -87,6 +87,10 @@ export class PGliteWorker implements PGliteInterface {
     return this.#worker.transaction(callbackProxy);
   }
 
+  async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
+    return this.#worker.execProtocolRaw(message);
+  }
+
   async execProtocol(
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {

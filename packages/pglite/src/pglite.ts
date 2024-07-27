@@ -562,6 +562,46 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
+   * @param message The postgres wire protocol message to execute
+   * @returns The direct message data response produced by Postgres
+   */
+  async execProtocolRaw(
+    message: Uint8Array,
+    { syncToFs = true }: ExecProtocolOptions = {},
+  ) {
+    const msg_len = message.length;
+    const mod = this.mod!;
+
+    // >0 set buffer content type to wire protocol
+    // set buffer size so answer will be at size+0x2 pointer addr
+    mod._interactive_write(msg_len);
+
+    // copy whole buffer at addr 0x1
+    mod.HEAPU8.set(message, 1);
+
+    // execute the message
+    mod._interactive_one();
+
+    // Read responses from the buffer
+    const msg_start = msg_len + 2;
+    const msg_end = msg_start + mod._interactive_read();
+    const data = mod.HEAPU8.subarray(msg_start, msg_end);
+
+    if (syncToFs) {
+      await this.#syncToFs();
+    }
+
+    return data;
+  }
+
+  /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
@@ -570,69 +610,46 @@ export class PGlite implements PGliteInterface {
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    return await this.#executeMutex.runExclusive(async () => {
-      const msg_len = message.length;
-      const mod = this.mod!;
+    const data = await this.execProtocolRaw(message, { syncToFs });
+    const results: Array<[BackendMessage, Uint8Array]> = [];
 
-      // >0 set buffer content type to wire protocol
-      // set buffer size so answer will be at size+0x2 pointer addr
-      mod._interactive_write(msg_len);
-
-      // copy whole buffer at addr 0x1
-      mod.HEAPU8.set(message, 1);
-
-      // execute the message
-      mod._interactive_one();
-
-      if (syncToFs) {
-        await this.#syncToFs();
-      }
-
-      const results: Array<[BackendMessage, Uint8Array]> = [];
-
-      // Read responses from the buffer
-      const msg_start = msg_len + 2;
-      const msg_end = msg_start + mod._interactive_read();
-      const data = mod.HEAPU8.subarray(msg_start, msg_end);
-
-      this.#parser.parse(Buffer.from(data), (msg) => {
-        if (msg instanceof DatabaseError) {
-          this.#parser = new Parser(); // Reset the parser
-          throw msg;
-          // TODO: Do we want to wrap the error in a custom error?
-        } else if (msg instanceof NoticeMessage && this.debug > 0) {
-          // Notice messages are warnings, we should log them
-          console.warn(msg);
-        } else if (msg instanceof CommandCompleteMessage) {
-          // Keep track of the transaction state
-          switch (msg.text) {
-            case "BEGIN":
-              this.#inTransaction = true;
-              break;
-            case "COMMIT":
-            case "ROLLBACK":
-              this.#inTransaction = false;
-              break;
-          }
-        } else if (msg instanceof NotificationResponseMessage) {
-          // We've received a notification, call the listeners
-          const listeners = this.#notifyListeners.get(msg.channel);
-          if (listeners) {
-            listeners.forEach((cb) => {
-              // We use queueMicrotask so that the callback is called after any
-              // synchronous code has finished running.
-              queueMicrotask(() => cb(msg.payload));
-            });
-          }
-          this.#globalNotifyListeners.forEach((cb) => {
-            queueMicrotask(() => cb(msg.channel, msg.payload));
+    this.#parser.parse(Buffer.from(data), (msg) => {
+      if (msg instanceof DatabaseError) {
+        this.#parser = new Parser(); // Reset the parser
+        throw msg;
+        // TODO: Do we want to wrap the error in a custom error?
+      } else if (msg instanceof NoticeMessage && this.debug > 0) {
+        // Notice messages are warnings, we should log them
+        console.warn(msg);
+      } else if (msg instanceof CommandCompleteMessage) {
+        // Keep track of the transaction state
+        switch (msg.text) {
+          case "BEGIN":
+            this.#inTransaction = true;
+            break;
+          case "COMMIT":
+          case "ROLLBACK":
+            this.#inTransaction = false;
+            break;
+        }
+      } else if (msg instanceof NotificationResponseMessage) {
+        // We've received a notification, call the listeners
+        const listeners = this.#notifyListeners.get(msg.channel);
+        if (listeners) {
+          listeners.forEach((cb) => {
+            // We use queueMicrotask so that the callback is called after any
+            // synchronous code has finished running.
+            queueMicrotask(() => cb(msg.payload));
           });
         }
-        results.push([msg, data]);
-      });
-
-      return results;
+        this.#globalNotifyListeners.forEach((cb) => {
+          queueMicrotask(() => cb(msg.channel, msg.payload));
+        });
+      }
+      results.push([msg, data]);
     });
+
+    return results;
   }
 
   async #execProtocolNoSync(
