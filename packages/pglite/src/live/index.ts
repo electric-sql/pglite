@@ -24,7 +24,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
     async query<T>(
       query: string,
       params: any[] | undefined | null,
-      callback: (results: Results<T>) => void
+      callback: (results: Results<T>) => void,
     ) {
       const id = liveQueryCounter++;
 
@@ -35,7 +35,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
         // Create a temporary view with the query
         await tx.query(
           `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
-          params ?? []
+          params ?? [],
         );
 
         // Get the tables used in the view and add triggers to notify when they change
@@ -65,7 +65,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
           `table_change__${table.schema_name}__${table.table_name}`,
           async () => {
             refresh();
-          }
+          },
         );
         unsubList.push(unsub);
       }
@@ -96,7 +96,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       query: string,
       params: any[] | undefined | null,
       key: string,
-      callback: (changes: Array<Change<T>>) => void
+      callback: (changes: Array<Change<T>>) => void,
     ) {
       const id = liveQueryCounter++;
       let tables: { table_name: string; schema_name: string }[];
@@ -107,7 +107,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
         // Create a temporary view with the query
         await tx.query(
           `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
-          params ?? []
+          params ?? [],
         );
 
         // Get the tables used in the view and add triggers to notify when they change
@@ -147,7 +147,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
                   ${columns
                     .map(
                       ({ column_name }) =>
-                        `curr."${column_name}" AS "${column_name}"`
+                        `curr."${column_name}" AS "${column_name}"`,
                     )
                     .join(",\n")},
                   ARRAY[]::text[] AS __changed_columns__
@@ -183,7 +183,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
                             WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
                             THEN curr."${column_name}"
                             ELSE NULL::${data_type} 
-                            END AS "${column_name}"`
+                            END AS "${column_name}"`,
                     )
                     .join(",\n")},
                     ARRAY(SELECT unnest FROM unnest(ARRAY[${columns
@@ -194,10 +194,10 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
                             WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
                             THEN '${column_name}' 
                             ELSE NULL 
-                            END`
+                            END`,
                       )
                       .join(
-                        ", "
+                        ", ",
                       )}]) WHERE unnest IS NOT NULL) AS __changed_columns__
                 FROM curr
                 INNER JOIN prev ON curr.${key} = prev.${key}
@@ -219,7 +219,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
 
           // Get the changes
           changes = await tx.query<any>(
-            `EXECUTE live_query_${id}_diff${stateSwitch};`
+            `EXECUTE live_query_${id}_diff${stateSwitch};`,
           );
         });
 
@@ -236,7 +236,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
           `table_change__${table.schema_name}__${table.table_name}`,
           async () => {
             refresh();
-          }
+          },
         );
         unsubList.push(unsub);
       }
@@ -261,7 +261,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       // Fields
       const fields = changes!.fields.filter(
         (field) =>
-          !["__after__", "__op__", "__changed_columns__"].includes(field.name)
+          !["__after__", "__op__", "__changed_columns__"].includes(field.name),
       );
 
       // Return the initial results
@@ -277,7 +277,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       query: string,
       params: any[] | undefined | null,
       key: string,
-      callback: (results: Results<Change<T>>) => void
+      callback: (results: Results<Change<T>>) => void,
     ) {
       const rowsMap: Map<any, any> = new Map();
       const afterMap: Map<any, any> = new Map();
@@ -340,7 +340,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
               fields,
             });
           }
-        }
+        },
       );
 
       firstRun = false;
@@ -378,7 +378,7 @@ export const live = {
  */
 async function getTablesForView(
   tx: Transaction | PGliteInterface,
-  viewName: string
+  viewName: string,
 ): Promise<{ table_name: string; schema_name: string }[]> {
   return (
     await tx.query<{
@@ -399,7 +399,7 @@ async function getTablesForView(
         )
         AND d.deptype = 'n';
       `,
-      [viewName]
+      [viewName],
     )
   ).rows.filter((row) => row.table_name !== viewName);
 }
@@ -412,14 +412,14 @@ async function getTablesForView(
 async function addNotifyTriggersToTables(
   tx: Transaction | PGliteInterface,
   tables: { table_name: string; schema_name: string }[],
-  tableNotifyTriggersAdded: Set<string>
+  tableNotifyTriggersAdded: Set<string>,
 ) {
   const triggers = tables
     .filter(
       (table) =>
         !tableNotifyTriggersAdded.has(
-          `${table.schema_name}_${table.table_name}`
-        )
+          `${table.schema_name}_${table.table_name}`,
+        ),
     )
     .map((table) => {
       return `
@@ -439,6 +439,6 @@ async function addNotifyTriggersToTables(
     await tx.exec(triggers);
   }
   tables.map((table) =>
-    tableNotifyTriggersAdded.add(`${table.schema_name}_${table.table_name}`)
+    tableNotifyTriggersAdded.add(`${table.schema_name}_${table.table_name}`),
   );
 }

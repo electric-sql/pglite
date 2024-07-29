@@ -13,10 +13,7 @@ import type { BackendMessage } from "pg-protocol/dist/messages.js";
 
 /*
 TODO:
-- Throw unresolved promises when the leader changes
-- Implement notify
 - Extensions
-- Leader election events
 */
 
 export class PGliteWorker implements PGliteInterface {
@@ -25,6 +22,7 @@ export class PGliteWorker implements PGliteInterface {
 
   #ready = false;
   #closed = false;
+  #isLeader = false;
 
   #eventTarget = new EventTarget();
 
@@ -52,6 +50,7 @@ export class PGliteWorker implements PGliteInterface {
 
   /**
    * Create a new PGlite instance with extensions on the Typescript interface
+   * This also awaits the instance to be ready before resolving
    * (The main constructor does enable extensions, however due to the limitations
    * of Typescript, the extensions are not available on the instance interface)
    * @param worker The worker to use
@@ -64,7 +63,7 @@ export class PGliteWorker implements PGliteInterface {
   ): Promise<PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>> {
     const pg = new PGliteWorker(worker, options);
     await pg.#initPromise;
-    return pg as any;
+    return pg as PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>;
   }
 
   async #init() {
@@ -89,8 +88,8 @@ export class PGliteWorker implements PGliteInterface {
     const tabChannelId = `pglite-tab:${this.#tabId}`;
     this.#tabChannel = new BroadcastChannel(tabChannelId);
 
-    // Acquire the tab close lock, this is released then the tab is closed, or this
-    // PGliteWorker instance is closed
+    // Acquire the tab close lock, this is released then the tab, or this
+    // PGliteWorker instance, is closed
     const tabCloseLockId = `pglite-tab-close:${this.#tabId}`;
     await new Promise<void>((resolve) => {
       navigator.locks.request(tabCloseLockId, () => {
@@ -104,7 +103,10 @@ export class PGliteWorker implements PGliteInterface {
     this.#broadcastChannel.addEventListener("message", async (event) => {
       if (event.data.type === "leader-here") {
         this.#connected = false;
+        this.#eventTarget.dispatchEvent(new Event("leader-change"));
         this.#leaderNotifyLoop();
+      } else if (event.data.type === "notify") {
+        this.#receiveNotification(event.data.channel, event.data.payload);
       }
     });
 
@@ -114,6 +116,9 @@ export class PGliteWorker implements PGliteInterface {
         this.#eventTarget.dispatchEvent(new Event("connected"));
         this.#debug = await this.#rpc("getDebugLevel");
         this.#ready = true;
+      } else if (event.data.type === "leader-now") {
+        this.#isLeader = true;
+        this.#eventTarget.dispatchEvent(new Event("leader-change"));
       }
     });
 
@@ -135,22 +140,41 @@ export class PGliteWorker implements PGliteInterface {
     ...args: Parameters<WorkerApi[Method]>
   ): Promise<ReturnType<WorkerApi[Method]>> {
     const callId = uuid();
-    this.#tabChannel!.postMessage({ type: "rpc-call", callId, method, args });
+    const message: WorkerRpcCall<Method> = {
+      type: "rpc-call",
+      callId,
+      method,
+      args,
+    };
+    this.#tabChannel!.postMessage(message);
     return await new Promise<ReturnType<WorkerApi[Method]>>((resolve) => {
       const listener = (event: MessageEvent) => {
-        if (event.data.type === "rpc-return" && event.data.callId === callId) {
-          this.#tabChannel!.removeEventListener("message", listener);
-          resolve(event.data.result);
-        } else if (
-          event.data.type === "rpc-error" &&
-          event.data.callId === callId
-        ) {
-          this.#tabChannel!.removeEventListener("message", listener);
-          const error = new Error(event.data.error.message);
-          Object.assign(error, event.data.error);
+        if (event.data.callId !== callId) return;
+        cleanup();
+        const message: WorkerRpcResponse<Method> = event.data;
+        if (message.type === "rpc-return") {
+          resolve(message.result);
+        } else if (message.type === "rpc-error") {
+          const error = new Error(message.error.message);
+          Object.assign(error, message.error);
           throw error;
+        } else {
+          throw new Error("Invalid message");
         }
       };
+      const leaderChangeListener = () => {
+        // If the leader changes, throw an error to reject the promise
+        cleanup();
+        throw new LeaderChangedError();
+      };
+      const cleanup = () => {
+        this.#tabChannel!.removeEventListener("message", listener);
+        this.#eventTarget.removeEventListener(
+          "leader-change",
+          leaderChangeListener,
+        );
+      };
+      this.#eventTarget.addEventListener("leader-change", leaderChangeListener);
       this.#tabChannel!.addEventListener("message", listener);
     });
   }
@@ -191,8 +215,15 @@ export class PGliteWorker implements PGliteInterface {
   }
 
   /**
+   * The leader state of this tab
+   */
+  get isLeader() {
+    return this.#isLeader;
+  }
+
+  /**
    * Close the database
-   * @returns A promise that resolves when the database is closed
+   * @returns Promise that resolves when the connection to shared PGlite is closed
    */
   async close() {
     if (this.#closed) {
@@ -374,6 +405,17 @@ export class PGliteWorker implements PGliteInterface {
   async dumpDataDir(): Promise<File | Blob> {
     return (await this.#rpc("dumpDataDir")) as File | Blob;
   }
+
+  onLeaderChange(callback: () => void) {
+    this.#eventTarget.addEventListener("leader-change", callback);
+    return () => {
+      this.#eventTarget.removeEventListener("leader-change", callback);
+    };
+  }
+
+  offLeaderChange(callback: () => void) {
+    this.#eventTarget.removeEventListener("leader-change", callback);
+  }
 }
 
 export interface WorkerOptions {
@@ -420,6 +462,16 @@ export async function worker({ id, init }: WorkerOptions) {
 
   // Notify the other tabs that we are the leader
   broadcastChannel.postMessage({ type: "leader-here", id });
+
+  // Let the main thread know we are the leader
+  postMessage({ type: "leader-now" });
+
+  const db = await dbPromise;
+
+  // Listen for notifications and broadcast them to all tabs
+  db.onNotification((channel, payload) => {
+    broadcastChannel.postMessage({ type: "notify", channel, payload });
+  });
 }
 
 function connectTab(
@@ -454,10 +506,20 @@ function connectTab(
         const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>;
         try {
           // @ts-ignore
-          const result = await api[method](...args);
-          tabChannel.postMessage({ type: "rpc-return", callId, result });
+          const result = (await api[method](...args)) as WorkerRpcResult<
+            typeof method
+          >["result"];
+          tabChannel.postMessage({
+            type: "rpc-return",
+            callId,
+            result,
+          } satisfies WorkerRpcResult<typeof method>);
         } catch (error) {
-          tabChannel.postMessage({ type: "rpc-error", callId, error });
+          tabChannel.postMessage({
+            type: "rpc-error",
+            callId,
+            error,
+          } satisfies WorkerRpcError);
         }
         break;
     }
@@ -536,6 +598,7 @@ function makeWorkerApi(db: PGliteInterface) {
         throw new Error("No transaction");
       }
       await transactions.get(id)!.tx.rollback();
+      transactions.delete(id);
     },
     async execProtocol(message: Uint8Array) {
       return await db.execProtocol(message);
@@ -549,6 +612,12 @@ function makeWorkerApi(db: PGliteInterface) {
   };
 }
 
+export class LeaderChangedError extends Error {
+  constructor() {
+    super("Leader changed, pending operation in indeterminate state");
+  }
+}
+
 type WorkerApi = ReturnType<typeof makeWorkerApi>;
 
 type WorkerRpcMethod = keyof WorkerApi;
@@ -560,7 +629,7 @@ type WorkerRpcCall<Method extends WorkerRpcMethod> = {
   args: Parameters<WorkerApi[Method]>;
 };
 
-type WorkerRpcReturn<Method extends WorkerRpcMethod> = {
+type WorkerRpcResult<Method extends WorkerRpcMethod> = {
   type: "rpc-return";
   callId: string;
   result: ReturnType<WorkerApi[Method]>;
@@ -571,3 +640,7 @@ type WorkerRpcError = {
   callId: string;
   error: any;
 };
+
+type WorkerRpcResponse<Method extends WorkerRpcMethod> =
+  | WorkerRpcResult<Method>
+  | WorkerRpcError;
