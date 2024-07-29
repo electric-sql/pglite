@@ -175,7 +175,7 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 # ===========================================================================
 
 
-if echo "$*"|grep -q " contrib"
+if echo " $*"|grep -q " contrib"
 then
 
     SKIP="\
@@ -220,7 +220,7 @@ fi
 
 
 
-if echo "$*"|grep -q "vector"
+if echo " $*"|grep -q " vector"
 then
     echo "====================== vector : $(pwd) ================="
 
@@ -251,7 +251,7 @@ then
 
 fi
 
-if echo "$*"|grep -q "postgis"
+if echo " $*"|grep -q " postgis"
 then
     echo "======================= postgis : $(pwd) ==================="
 
@@ -260,7 +260,7 @@ then
     python3 cibuild/pack_extension.py
 fi
 
-if echo "$*"|grep -q " quack"
+if echo " $*"|grep -q " quack"
 then
     echo "================================================="
     ./cibuild/pg_quack.sh
@@ -297,7 +297,7 @@ fi
 # TODO: check if some versionned *.sql files can be omitted
 # TODO: for bigger extensions than pgvector make separate packaging.
 
-if echo "$*"|grep "node"
+if echo " $*"|grep " node"
 then
     echo "====================== node : $(pwd) ========================"
     mkdir -p /tmp/sdk/
@@ -315,7 +315,7 @@ fi
 
 # include current pglite source for easy local rebuild with just npm run build:js.
 
-if echo "$*"|grep "linkweb"
+if echo " $*"|grep " linkweb"
 then
 
     # build web version
