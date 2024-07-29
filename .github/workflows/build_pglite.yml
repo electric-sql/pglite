@@ -28,7 +28,7 @@ jobs:
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
       DEBUG: false
-      OBJDUMP: false
+      OBJDUMP: true
 
     steps:
       - uses: actions/checkout@v4
@@ -40,12 +40,13 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
+            /opt/python-wasm-sdk
             /tmp/web
             /tmp/pglite
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('cibuild/**', 'patches/**', '/tmp/sdk/*.tar') }}
+          key: build-cache-${{ hashFiles('cibuild/**', 'patches/*.c', 'patches/postgresql-*') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
@@ -75,11 +76,6 @@ jobs:
         run: |
           bash ./cibuild.sh node
 
-      - name: Link postgres WASM for web
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: |
-          bash ./cibuild.sh linkweb
-
       - name: Cached intermediate
         if: steps.cache-restore.outputs.cache-hit != 'true'
         id: cache-intermediate
@@ -88,10 +84,16 @@ jobs:
           path: |
             /tmp/web
             /tmp/pglite
-            /tmp/sdk/postgres-*.tar.gz
+            /tmp/sdk/*.tar
+            /tmp/sdk/*.tar.gz
             postgres
             postgresql-*
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+
+      - name: Link postgres WASM for web
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh linkweb
 
       - uses: pnpm/action-setup@v4
         with:
@@ -124,7 +126,7 @@ jobs:
         with:
           name: postgres-wasm
           path: /tmp/sdk/postgres-*.tar.gz
-          retention-days: 90
+          retention-days: 60
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
@@ -132,7 +134,7 @@ jobs:
         with:
           name: pglite-interim-build-files
           path: ./packages/pglite/release/**
-          retention-days: 90
+          retention-days: 60
 
       - name: Upload PGlite to Github artifacts
         id: upload-pglite
@@ -140,7 +142,7 @@ jobs:
         with:
           name: pglite
           path: ./packages/pglite/electric-sql-pglite-*.tgz
-          retention-days: 90
+          retention-days: 60
 
       - name: Upload Demos to Github artifacts
         id: upload-demos
@@ -148,7 +150,7 @@ jobs:
         with:
           name: pglite-demos
           path: /tmp/web/**
-          retention-days: 90
+          retention-days: 60
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
