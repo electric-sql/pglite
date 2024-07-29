@@ -28,8 +28,6 @@ with open("/tmp/symbols", "r") as file:
     imports  = set(map(str.strip, file.readlines()))
 
 matches = list( imports.intersection(exports) )
-for sym in matches:
-    print(sym)
 
 # ?
 for sym in """___cxa_throw
@@ -48,9 +46,17 @@ _shmem_request_hook
 _TopMemoryContext
 _check_function_bodies
 _clock_gettime
+_shmem_startup_hook
 _setenv""".split("\n"):
     if not sym in matches:
-        print(sym)
+        matches.append(sym)
+
+matches.sort()
+
+for sym in matches:
+    print(sym)
+
+
 
 dbg(f"""
 exports {len(exports)}

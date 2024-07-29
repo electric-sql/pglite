@@ -1,0 +1,11 @@
+--- postgresql-16.3/contrib/xml2/Makefile
++++ postgresql-16.3-wasm/contrib/xml2/Makefile
+@@ -11,7 +11,7 @@
+ PGFILEDESC = "xml2 - XPath querying and XSLT"
+ 
+ REGRESS = xml2
+-
++PG_CFLAGS=$(shell xml2-config --cflags)
+ SHLIB_LINK += $(filter -lxslt, $(LIBS)) -lxml2
+ 
+ ifdef USE_PGXS
