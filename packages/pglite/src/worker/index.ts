@@ -11,10 +11,10 @@ import type {
 import { uuid } from "../utils.js";
 import type { BackendMessage } from "pg-protocol/dist/messages.js";
 
-/*
-TODO:
-- Extensions
-*/
+export type PGliteWorkerOptions = PGliteOptions & {
+  meta?: any;
+  id?: string;
+};
 
 export class PGliteWorker implements PGliteInterface {
   #initPromise: Promise<void>;
@@ -45,11 +45,11 @@ export class PGliteWorker implements PGliteInterface {
   #extensions: Extensions;
   #extensionsClose: Array<() => Promise<void>> = [];
 
-  constructor(worker: Worker, options?: Pick<PGliteOptions, "extensions">) {
+  constructor(worker: Worker, options?: PGliteWorkerOptions) {
     this.#workerProcess = worker;
     this.#tabId = uuid();
     this.#extensions = options?.extensions ?? {};
-    this.#initPromise = this.#init();
+    this.#initPromise = this.#init(options);
   }
 
   /**
@@ -61,7 +61,7 @@ export class PGliteWorker implements PGliteInterface {
    * @param options Optional options
    * @returns A promise that resolves to the PGlite instance when it's ready.
    */
-  static async create<O extends PGliteOptions>(
+  static async create<O extends PGliteWorkerOptions>(
     worker: Worker,
     options?: O,
   ): Promise<PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>> {
@@ -70,7 +70,7 @@ export class PGliteWorker implements PGliteInterface {
     return pg as PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>;
   }
 
-  async #init() {
+  async #init(options: PGliteWorkerOptions = {}) {
     // Setup the extensions
     for (const [extName, ext] of Object.entries(this.#extensions)) {
       if (ext instanceof URL) {
@@ -101,14 +101,38 @@ export class PGliteWorker implements PGliteInterface {
       }
     }
 
-    // Wait for the worker let us know it's ready
+    // Wait for the worker let us know it's here
     await new Promise<void>((resolve) => {
       this.#workerProcess.addEventListener(
         "message",
         (event) => {
           if (event.data.type === "here") {
+            resolve();
+          } else {
+            throw new Error("Invalid message");
+          }
+        },
+        { once: true },
+      );
+    });
+
+    // Send the worker the options
+    const { extensions, ...workerOptions } = options;
+    this.#workerProcess.postMessage({
+      type: "init",
+      options: workerOptions,
+    });
+
+    // Wait for the worker let us know it's ready
+    await new Promise<void>((resolve) => {
+      this.#workerProcess.addEventListener(
+        "message",
+        (event) => {
+          if (event.data.type === "ready") {
             this.#workerID = event.data.id;
             resolve();
+          } else {
+            throw new Error("Invalid message");
           }
         },
         { once: true },
@@ -343,7 +367,6 @@ export class PGliteWorker implements PGliteInterface {
         closed: false,
       } as Transaction);
     } catch (error) {
-      console.log("Transaction error!!!!!!");
       await this.#rpc("transactionRollback", txId);
       throw error;
     }
@@ -470,20 +493,43 @@ export class PGliteWorker implements PGliteInterface {
 }
 
 export interface WorkerOptions {
-  id?: string;
-  init: () => Promise<PGliteInterface>;
+  init: (
+    options: Exclude<PGliteWorkerOptions, "extensions">,
+  ) => Promise<PGliteInterface>;
 }
 
-export async function worker({ id, init }: WorkerOptions) {
-  id = id ?? import.meta.url;
+export async function worker({ init }: WorkerOptions) {
+  // Send a message to the main thread to let it know we are here
+  postMessage({ type: "here" });
+
+  // Await the main thread to send us the options
+  const options = await new Promise<Exclude<PGliteWorkerOptions, "extensions">>(
+    (resolve) => {
+      addEventListener(
+        "message",
+        (event) => {
+          if (event.data.type === "init") {
+            resolve(event.data.options);
+          }
+        },
+        { once: true },
+      );
+    },
+  );
+
+  // ID for this multi-tab worker - this is used to identify the group of workers
+  // that are trying to elect a leader for a shared PGlite instance.
+  // It defaults to the URL of the worker, and the dataDir if provided
+  // but can be overridden by the options.
+  const id = options.id ?? `${import.meta.url}:${options.dataDir ?? ""}`;
+
+  // Let the main thread know we are ready
+  postMessage({ type: "ready", id });
 
   const electionLockId = `pglite-election-lock:${id}`;
   const broadcastChannelId = `pglite-broadcast:${id}`;
   const broadcastChannel = new BroadcastChannel(broadcastChannelId);
   const connectedTabs = new Set<string>();
-
-  // Send a message to the main thread to let it know we are here
-  postMessage({ type: "here", id });
 
   // Await the main lock which is used to elect the leader
   await new Promise<void>((resolve) => {
@@ -498,7 +544,7 @@ export async function worker({ id, init }: WorkerOptions) {
   });
 
   // Now we are the leader, start the worker
-  const dbPromise = init();
+  const dbPromise = init(options);
 
   // Start listening for messages from tabs
   broadcastChannel.onmessage = async (event) => {
