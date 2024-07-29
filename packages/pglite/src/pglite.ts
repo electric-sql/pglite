@@ -762,22 +762,6 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
-   * Create a new PGlite instance with extensions on the Typescript interface
-   * (The main constructor does enable extensions, however due to the limitations
-   * of Typescript, the extensions are not available on the instance interface)
-   * @param dataDir The directory to store the database files
-   *                Prefix with idb:// to use indexeddb filesystem in the browser
-   *                Use memory:// to use in-memory filesystem
-   * @param options Optional options
-   * @returns A new PGlite instance with extensions
-   */
-  static withExtensions<O extends PGliteOptions>(
-    options?: O,
-  ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
-    return new PGlite(options) as any;
-  }
-
-  /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    * @returns The tarball as a File object where available, and fallback to a Blob
    */
