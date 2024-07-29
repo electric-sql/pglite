@@ -146,7 +146,7 @@ pushd src/backend
 
         if [ -f ${WORKSPACE}/patches/exports.pglite ]
         then
-            echo "PGLite can export $(wc -l ${WORKSPACE}/patchesexports.pglite) symbols"
+            echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports.pglite) symbols"
             . ${WORKSPACE}/cibuild/linkimports.sh
 
         else

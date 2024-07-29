@@ -175,7 +175,52 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 # ===========================================================================
 
 
-if echo "$*"|grep -q vector
+if echo "$*"|grep -q " contrib"
+then
+
+    SKIP="\
+ [\
+ sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
+ ltree_plpython pgcrypto sepgsql bool_plperl start-scripts uuid-ossp\
+ ]"
+
+    for extdir in postgresql/contrib/*
+    do
+        if [ -d "$extdir" ]
+        then
+            ext=$(echo -n $extdir|cut -d/ -f3)
+            if echo -n $SKIP|grep -q "$ext "
+            then
+                echo skipping extension $ext
+            else
+                echo "
+
+        Building contrib extension : $ext : begin
+"
+                pushd build/postgres/contrib/$ext
+                if emmake make install
+                then
+                    popd
+                    python3 cibuild/pack_extension.py
+
+                else
+                    popd
+                    echo "
+
+        Extension $ext from $extdir failed to build
+
+"
+                    exit 208
+                fi
+            fi
+        fi
+    read
+    done
+fi
+
+
+
+if echo "$*"|grep -q "vector"
 then
     echo "====================== vector : $(pwd) ================="
 
@@ -206,16 +251,7 @@ then
 
 fi
 
-if echo "$*"|grep " pg_stat_statements"
-then
-    pushd build/postgres/contrib/pg_stat_statements
-        emmake make install
-    popd
-    python3 cibuild/pack_extension.py
-fi
-
-
-if echo "$*"|grep " postgis"
+if echo "$*"|grep -q "postgis"
 then
     echo "======================= postgis : $(pwd) ==================="
 
@@ -224,7 +260,7 @@ then
     python3 cibuild/pack_extension.py
 fi
 
-if echo "$*"|grep " quack"
+if echo "$*"|grep -q " quack"
 then
     echo "================================================="
     ./cibuild/pg_quack.sh
@@ -274,8 +310,8 @@ then
     fi
 fi
 
-# run linkweb after node build because it will remove some wasm .so used by node from fs
-# they don't need to be in MEMFS as they are fetched.
+# run linkweb after node build because it may remove some wasm .so used by node from fs
+# as they don't need to be in MEMFS since they are fetched.
 
 # include current pglite source for easy local rebuild with just npm run build:js.
 
@@ -305,6 +341,7 @@ fi
 while test $# -gt 0
 do
     case "$1" in
+
         pglite) echo "=================== pglite : $(pwd) ======================="
             # TODO: SAMs NOTE - Not using this in GitHub action as it doesnt resolve pnpm correctly
             # replaced with pglite-prep and pglite-bundle-sdk
