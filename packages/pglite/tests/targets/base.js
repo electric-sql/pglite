@@ -1,3 +1,4 @@
+import { c } from "../../dist/chunk-RZJOGGMK.js";
 import test from "../polytest.js";
 import playwright from "playwright";
 
@@ -6,6 +7,7 @@ const wsPort = process.env.WS_PORT || 3334;
 export function tests(env, dbFilename, target) {
   let browser;
   let evaluate;
+  let context;
   let page;
   let db;
 
@@ -25,7 +27,7 @@ export function tests(env, dbFilename, target) {
     if (env === "node") {
       evaluate = async (fn) => fn();
     } else {
-      const context = await browser.newContext();
+      context = await browser.newContext();
       page = await context.newPage();
       await page.goto(`http://localhost:${wsPort}/tests/blank.html`);
       page.evaluate(`window.dbFilename = "${dbFilename}";`);
@@ -148,5 +150,237 @@ export function tests(env, dbFilename, target) {
         },
       ],
     });
+  });
+
+  if (env === "node") {
+    // Skip the rest of the tests for node as they are browser specific
+    return;
+  }
+
+  test.serial(`targets ${target} worker live query`, async (t) => {
+    const page2 = await context.newPage();
+    await page2.goto(`http://localhost:${wsPort}/tests/blank.html`);
+    page2.evaluate(`window.dbFilename = "${dbFilename}";`);
+
+    const res2Prom = page2.evaluate(async () => {
+      const { live } = await import("../../dist/live/index.js");
+      const { PGliteWorker } = await import("../../dist/worker/index.js");
+
+      let db;
+      db = new PGliteWorker(
+        new Worker("/tests/targets/worker.js", {
+          type: "module",
+        }),
+        {
+          dataDir: window.dbFilename,
+          extensions: { live },
+        }
+      );
+
+      await db.waitReady;
+
+      let updatedResults;
+      const eventTarget = new EventTarget();
+      const { initialResults, unsubscribe } = await db.live.query(
+        "SELECT * FROM test ORDER BY name;",
+        [],
+        (result) => {
+          updatedResults = result;
+          eventTarget.dispatchEvent(new Event("updated"));
+        }
+      );
+      await new Promise((resolve) => {
+        eventTarget.addEventListener("updated", resolve);
+      });
+      return { initialResults, updatedResults };
+    });
+
+    const res1 = await evaluate(async () => {
+      const { live } = await import("../../dist/live/index.js");
+      const { PGliteWorker } = await import("../../dist/worker/index.js");
+
+      let db;
+      db = new PGliteWorker(
+        new Worker("/tests/targets/worker.js", {
+          type: "module",
+        }),
+        {
+          dataDir: window.dbFilename,
+          extensions: { live },
+        }
+      );
+
+      await db.waitReady;
+
+      let updatedResults;
+      const eventTarget = new EventTarget();
+      const { initialResults, unsubscribe } = await db.live.query(
+        "SELECT * FROM test ORDER BY name;",
+        [],
+        (result) => {
+          updatedResults = result;
+          eventTarget.dispatchEvent(new Event("updated"));
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await db.query("INSERT INTO test (id, name) VALUES (3, 'test3');");
+      await new Promise((resolve) => {
+        eventTarget.addEventListener("updated", resolve);
+      });
+      return { initialResults, updatedResults };
+    });
+
+    const res2 = await res2Prom;
+
+    for (const res of [res1, res2]) {
+      t.deepEqual(res.initialResults.rows, [
+        {
+          id: 1,
+          name: "test",
+        },
+        {
+          id: 2,
+          name: "test2",
+        },
+      ]);
+
+      t.deepEqual(res.updatedResults.rows, [
+        {
+          id: 1,
+          name: "test",
+        },
+        {
+          id: 2,
+          name: "test2",
+        },
+        {
+          id: 3,
+          name: "test3",
+        },
+      ]);
+    }
+  });
+
+  test.serial(`targets ${target} worker live incremental query`, async (t) => {
+    const page2 = await context.newPage();
+    await page2.goto(`http://localhost:${wsPort}/tests/blank.html`);
+    page2.evaluate(`window.dbFilename = "${dbFilename}";`);
+
+    const res2Prom = page2.evaluate(async () => {
+      const { live } = await import("../../dist/live/index.js");
+      const { PGliteWorker } = await import("../../dist/worker/index.js");
+
+      let db;
+      db = new PGliteWorker(
+        new Worker("/tests/targets/worker.js", {
+          type: "module",
+        }),
+        {
+          dataDir: window.dbFilename,
+          extensions: { live },
+        }
+      );
+
+      await db.waitReady;
+
+      let updatedResults;
+      const eventTarget = new EventTarget();
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        "SELECT * FROM test ORDER BY name;",
+        [],
+        "id",
+        (result) => {
+          updatedResults = result;
+          eventTarget.dispatchEvent(new Event("updated"));
+        }
+      );
+      await new Promise((resolve) => {
+        eventTarget.addEventListener("updated", resolve);
+      });
+      return { initialResults, updatedResults };
+    });
+
+    const res1 = await evaluate(async () => {
+      const { live } = await import("../../dist/live/index.js");
+      const { PGliteWorker } = await import("../../dist/worker/index.js");
+
+      let db;
+      db = new PGliteWorker(
+        new Worker("/tests/targets/worker.js", {
+          type: "module",
+        }),
+        {
+          dataDir: window.dbFilename,
+          extensions: { live },
+        }
+      );
+
+      await db.waitReady;
+
+      let updatedResults;
+      const eventTarget = new EventTarget();
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        "SELECT * FROM test ORDER BY name;",
+        [],
+        "id",
+        (result) => {
+          updatedResults = result;
+          eventTarget.dispatchEvent(new Event("updated"));
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const ret = await db.query(
+        "INSERT INTO test (id, name) VALUES (4, 'test4');"
+      );
+      await new Promise((resolve) => {
+        eventTarget.addEventListener("updated", resolve);
+      });
+      return { initialResults, updatedResults };
+    });
+
+    const res2 = await res2Prom;
+
+    for (const res of [res1, res2]) {
+      t.deepEqual(res.initialResults.rows, [
+        {
+          __after__: null,
+          id: 1,
+          name: "test",
+        },
+        {
+          __after__: 1,
+          id: 2,
+          name: "test2",
+        },
+        {
+          __after__: 2,
+          id: 3,
+          name: "test3",
+        },
+      ]);
+
+      t.deepEqual(res.updatedResults.rows, [
+        {
+          __after__: null,
+          id: 1,
+          name: "test",
+        },
+        {
+          __after__: 1,
+          id: 2,
+          name: "test2",
+        },
+        {
+          __after__: 2,
+          id: 3,
+          name: "test3",
+        },
+        {
+          __after__: 3,
+          id: 4,
+          name: "test4",
+        },
+      ]);
+    }
   });
 }
