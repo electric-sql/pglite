@@ -1,42 +1,82 @@
-<script type="module">
-  import { PGliteWorker } from "../dist/worker/index.js";
+<html>
+  <head>
+    <title>PGlite Worker Example</title>
+    <script type="module">
+      import { PGliteWorker } from "../dist/worker/index.js";
+      import { live } from "../dist/live/index.js";
+    
+      console.log("Creating worker...");
+      const pg = new PGliteWorker(
+        new Worker(new URL("./worker-process.js", import.meta.url), {
+          type: "module",
+        }),
+        {
+          extensions: {
+            live,
+          },
+        }
+      );
 
-  console.log("Creating worker...");
-  const pg = new PGliteWorker(
-    new Worker(new URL("./worker-process.js", import.meta.url), {
-      type: "module",
-    })
-  );
+      pg.onLeaderChange(() => {
+        if (pg.isLeader) {
+          document.title = "[leader] PGlite Worker Example";
+          const leader = document.getElementById("leader");
+          leader.textContent = "true";
+          leader.style.color = "green";
+        }
+      });
+    
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS vector;
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          data vector(3)
+        );
+      `);
 
-  console.log("Creating table...");
-  await pg.exec(`
-    CREATE TABLE IF NOT EXISTS test (
-      id SERIAL PRIMARY KEY,
-      name TEXT
-    );
-  `);
+      async function insertData() {
+        const data = [
+          Math.random(),
+          Math.random(),
+          Math.random(),
+        ];
+        await pg.query(
+          `INSERT INTO test (data) VALUES ($1)`,
+          [JSON.stringify(data)]
+        );
+      }
 
-  console.log("Inserting data...");
-  await pg.exec("INSERT INTO test (name) VALUES ('test');");
+      async function clearData() {
+        await pg.query(`DELETE FROM test`);
+      }
+    
+      const btnInsert = document.querySelector("#insert");
+      btnInsert.addEventListener("click", insertData);
 
-  console.log("Selecting data...");
-  const res = await pg.exec(`
-    SELECT * FROM test;
-  `);
+      const btnClear = document.querySelector("#clear");
+      btnClear.addEventListener("click", clearData);
 
-  console.log(res);
-
-  // Transaction example:
-  console.log("Transaction example...");
-  await pg.transaction(async (tx) => {
-    await tx.exec("INSERT INTO test (name) VALUES ('test2');");
-    await tx.exec("INSERT INTO test (name) VALUES ('test3');");
-  });
-
-  console.log("Selecting data...");
-  const res2 = await pg.exec(`
-    SELECT * FROM test;
-  `);
-
-  console.log(res2);
-</script>
+      pg.live.query(
+        `SELECT * FROM test`,
+        [],
+        (data) => {
+          const output = document.getElementById("output");
+          output.textContent = JSON.stringify(data.rows, null, 2);
+        }
+      );
+    </script>
+  </head>
+  <body>
+    <h1>PGlite Worker Example</h1>
+    <p>Leader: <span id="leader" style="color: red;">false</span></p>
+    <p>
+      <button id="insert">
+        Insert Data
+      </button>
+      <button id="clear">
+        Clear Data
+      </button>
+    </p>
+    <pre id="output"></pre>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 import type {
   DebugLevel,
-  Extension,
+  Extensions,
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
@@ -42,9 +42,13 @@ export class PGliteWorker implements PGliteInterface {
     (channel: string, payload: string) => void
   >();
 
+  #extensions: Extensions;
+  #extensionsClose: Array<() => Promise<void>> = [];
+
   constructor(worker: Worker, options?: Pick<PGliteOptions, "extensions">) {
     this.#workerProcess = worker;
     this.#tabId = uuid();
+    this.#extensions = options?.extensions ?? {};
     this.#initPromise = this.#init();
   }
 
@@ -67,6 +71,37 @@ export class PGliteWorker implements PGliteInterface {
   }
 
   async #init() {
+    // Setup the extensions
+    for (const [extName, ext] of Object.entries(this.#extensions)) {
+      if (ext instanceof URL) {
+        throw new Error(
+          "URL extensions are not supported on the client side of a worker",
+        );
+      } else {
+        const extRet = await ext.setup(this, {}, true);
+        if (extRet.emscriptenOpts) {
+          console.warn(
+            `PGlite extension ${extName} returned emscriptenOpts, these are not supported on the client side of a worker`,
+          );
+        }
+        if (extRet.namespaceObj) {
+          (this as any)[extName] = extRet.namespaceObj;
+        }
+        if (extRet.bundlePath) {
+          console.warn(
+            `PGlite extension ${extName} returned bundlePath, this is not supported on the client side of a worker`,
+          );
+        }
+        if (extRet.init) {
+          extRet.init();
+        }
+        if (extRet.close) {
+          this.#extensionsClose.push(extRet.close);
+        }
+      }
+    }
+
+    // Wait for the worker let us know it's ready
     await new Promise<void>((resolve) => {
       this.#workerProcess.addEventListener(
         "message",
@@ -116,7 +151,11 @@ export class PGliteWorker implements PGliteInterface {
         this.#eventTarget.dispatchEvent(new Event("connected"));
         this.#debug = await this.#rpc("getDebugLevel");
         this.#ready = true;
-      } else if (event.data.type === "leader-now") {
+      }
+    });
+
+    this.#workerProcess.addEventListener("message", async (event) => {
+      if (event.data.type === "leader-now") {
         this.#isLeader = true;
         this.#eventTarget.dispatchEvent(new Event("leader-change"));
       }
@@ -147,36 +186,41 @@ export class PGliteWorker implements PGliteInterface {
       args,
     };
     this.#tabChannel!.postMessage(message);
-    return await new Promise<ReturnType<WorkerApi[Method]>>((resolve) => {
-      const listener = (event: MessageEvent) => {
-        if (event.data.callId !== callId) return;
-        cleanup();
-        const message: WorkerRpcResponse<Method> = event.data;
-        if (message.type === "rpc-return") {
-          resolve(message.result);
-        } else if (message.type === "rpc-error") {
-          const error = new Error(message.error.message);
-          Object.assign(error, message.error);
-          throw error;
-        } else {
-          throw new Error("Invalid message");
-        }
-      };
-      const leaderChangeListener = () => {
-        // If the leader changes, throw an error to reject the promise
-        cleanup();
-        throw new LeaderChangedError();
-      };
-      const cleanup = () => {
-        this.#tabChannel!.removeEventListener("message", listener);
-        this.#eventTarget.removeEventListener(
+    return await new Promise<ReturnType<WorkerApi[Method]>>(
+      (resolve, reject) => {
+        const listener = (event: MessageEvent) => {
+          if (event.data.callId !== callId) return;
+          cleanup();
+          const message: WorkerRpcResponse<Method> = event.data;
+          if (message.type === "rpc-return") {
+            resolve(message.result);
+          } else if (message.type === "rpc-error") {
+            const error = new Error(message.error.message);
+            Object.assign(error, message.error);
+            reject(error);
+          } else {
+            reject(new Error("Invalid message"));
+          }
+        };
+        const leaderChangeListener = () => {
+          // If the leader changes, throw an error to reject the promise
+          cleanup();
+          throw new LeaderChangedError();
+        };
+        const cleanup = () => {
+          this.#tabChannel!.removeEventListener("message", listener);
+          this.#eventTarget.removeEventListener(
+            "leader-change",
+            leaderChangeListener,
+          );
+        };
+        this.#eventTarget.addEventListener(
           "leader-change",
           leaderChangeListener,
         );
-      };
-      this.#eventTarget.addEventListener("leader-change", leaderChangeListener);
-      this.#tabChannel!.addEventListener("message", listener);
-    });
+        this.#tabChannel!.addEventListener("message", listener);
+      },
+    );
   }
 
   get waitReady() {
@@ -532,11 +576,11 @@ function connectTab(
 function makeWorkerApi(db: PGliteInterface) {
   const transactions = new Map<
     string,
-    {
+    Promise<{
       tx: Transaction;
       resolve: () => void;
       reject: (error: any) => void;
-    }
+    }>
   >();
 
   return {
@@ -558,9 +602,22 @@ function makeWorkerApi(db: PGliteInterface) {
     },
     async transactionStart() {
       const txId = uuid();
+      let resolveTxPromise: (v: {
+        tx: Transaction;
+        resolve: () => void;
+        reject: (error: any) => void;
+      }) => void;
+      const txPromise = new Promise<{
+        tx: Transaction;
+        resolve: () => void;
+        reject: (error: any) => void;
+      }>((resolve) => {
+        resolveTxPromise = resolve;
+      });
+      transactions.set(txId, txPromise);
       db.transaction((newTx) => {
         return new Promise<void>((resolveTx, rejectTx) => {
-          transactions.set(txId, {
+          resolveTxPromise({
             tx: newTx,
             resolve: resolveTx,
             reject: rejectTx,
@@ -573,7 +630,7 @@ function makeWorkerApi(db: PGliteInterface) {
       if (!transactions.has(id)) {
         throw new Error("No transaction");
       }
-      transactions.get(id)!.resolve();
+      (await transactions.get(id)!).resolve();
       transactions.delete(id);
     },
     async transactionQuery<T>(
@@ -585,19 +642,22 @@ function makeWorkerApi(db: PGliteInterface) {
       if (!transactions.has(id)) {
         throw new Error("No transaction");
       }
-      return await transactions.get(id)!.tx.query<T>(query, params, options);
+      const tx = (await transactions.get(id)!).tx;
+      return await tx.query<T>(query, params, options);
     },
     async transactionExec(id: string, query: string, options?: QueryOptions) {
       if (!transactions.has(id)) {
         throw new Error("No transaction");
       }
-      return await transactions.get(id)!.tx.exec(query, options);
+      const tx = (await transactions.get(id)!).tx;
+      return tx.exec(query, options);
     },
     async transactionRollback(id: string) {
       if (!transactions.has(id)) {
         throw new Error("No transaction");
       }
-      await transactions.get(id)!.tx.rollback();
+      const tx = (await transactions.get(id)!).tx;
+      await tx.rollback();
       transactions.delete(id);
     },
     async execProtocol(message: Uint8Array) {

@@ -10,12 +10,11 @@ import type {
   LiveChangesReturn,
   Change,
 } from "./interface";
+import { uuid } from "../utils.js";
+
+const MAX_RETRIES = 5;
 
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
-  // Counter use to generate unique IDs for live queries
-  // This is used to create temporary views and so are scoped to the current connection
-  let liveQueryCounter = 0;
-
   // The notify triggers are only ever added and never removed
   // Keep track of which triggers have been added to avoid adding them multiple times
   const tableNotifyTriggersAdded = new Set<string>();
@@ -26,35 +25,53 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       params: any[] | undefined | null,
       callback: (results: Results<T>) => void,
     ) {
-      const id = liveQueryCounter++;
+      const id = uuid().replace(/-/g, "");
 
       let results: Results<T>;
       let tables: { table_name: string; schema_name: string }[];
 
-      await pg.transaction(async (tx) => {
-        // Create a temporary view with the query
-        await tx.query(
-          `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
-          params ?? [],
-        );
+      const init = async () => {
+        await pg.transaction(async (tx) => {
+          // Create a temporary view with the query
+          await tx.query(
+            `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
+            params ?? [],
+          );
 
-        // Get the tables used in the view and add triggers to notify when they change
-        tables = await getTablesForView(tx, `live_query_${id}_view`);
-        await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded);
+          // Get the tables used in the view and add triggers to notify when they change
+          tables = await getTablesForView(tx, `live_query_${id}_view`);
+          await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded);
 
-        // Create prepared statement to get the results
-        await tx.exec(`
-          PREPARE live_query_${id}_get AS
-          SELECT * FROM live_query_${id}_view;
-        `);
+          // Create prepared statement to get the results
+          await tx.exec(`
+            PREPARE live_query_${id}_get AS
+            SELECT * FROM live_query_${id}_view;
+          `);
 
-        // Get the initial results
-        results = await tx.query<T>(`EXECUTE live_query_${id}_get;`);
-      });
+          // Get the initial results
+          results = await tx.query<T>(`EXECUTE live_query_${id}_get;`);
+        });
+      };
+      await init();
 
       // Function to refresh the query
-      const refresh = async () => {
-        results = await pg.query<T>(`EXECUTE live_query_${id}_get;`);
+      const refresh = async (count = 0) => {
+        try {
+          results = await pg.query<T>(`EXECUTE live_query_${id}_get;`);
+        } catch (e) {
+          const msg = (e as Error).message;
+          if (
+            msg == `prepared statement "live_query_${id}_get" does not exist`
+          ) {
+            if (count > MAX_RETRIES) {
+              throw e;
+            }
+            await init();
+            refresh(count + 1);
+          } else {
+            throw e;
+          }
+        }
         callback(results);
       };
 
@@ -98,7 +115,8 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       key: string,
       callback: (changes: Array<Change<T>>) => void,
     ) {
-      const id = liveQueryCounter++;
+      const id = uuid().replace(/-/g, "");
+
       let tables: { table_name: string; schema_name: string }[];
       let stateSwitch: 1 | 2 = 1;
       let changes: Results<Change<T>>;

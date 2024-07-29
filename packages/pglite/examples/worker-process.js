@@ -1,9 +1,17 @@
 import { PGlite } from "../dist/index.js";
 import { worker } from "../dist/worker/index.js";
+import { vector } from "../dist/vector/index.js";
 
 worker({
   async init() {
-    return new PGlite();
+    const pg = new PGlite({
+      dataDir: "idb://worker-example",
+      extensions: {
+        vector,
+      },
+    });
+    // If you want run any specific setup code for the worker process, you can do it here.
+    return pg;
   },
 });
 
