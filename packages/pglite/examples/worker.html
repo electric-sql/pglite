@@ -56,9 +56,11 @@
       const btnClear = document.querySelector("#clear");
       btnClear.addEventListener("click", clearData);
 
-      pg.live.query(
+      // pg.live.query(
+      pg.live.incrementalQuery(
         `SELECT * FROM test`,
         [],
+        'id',
         (data) => {
           const output = document.getElementById("output");
           output.textContent = JSON.stringify(data.rows, null, 2);

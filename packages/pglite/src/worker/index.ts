@@ -317,29 +317,36 @@ export class PGliteWorker implements PGliteInterface {
   ): Promise<T | undefined> {
     await this.waitReady;
     const txId = await this.#rpc("transactionStart");
-    const ret = await callback({
-      query: async (query, params, options) => {
-        return await this.#rpc(
-          "transactionQuery",
-          txId,
-          query,
-          params,
-          options,
-        );
-      },
-      exec: async (query, options) => {
-        return (await this.#rpc(
-          "transactionExec",
-          txId,
-          query,
-          options,
-        )) as any;
-      },
-      rollback: async () => {
-        await this.#rpc("transactionRollback", txId);
-      },
-      closed: false,
-    } as Transaction);
+    let ret: T | undefined;
+    try {
+      ret = await callback({
+        query: async (query, params, options) => {
+          return await this.#rpc(
+            "transactionQuery",
+            txId,
+            query,
+            params,
+            options,
+          );
+        },
+        exec: async (query, options) => {
+          return (await this.#rpc(
+            "transactionExec",
+            txId,
+            query,
+            options,
+          )) as any;
+        },
+        rollback: async () => {
+          await this.#rpc("transactionRollback", txId);
+        },
+        closed: false,
+      } as Transaction);
+    } catch (error) {
+      console.log("Transaction error!!!!!!");
+      await this.#rpc("transactionRollback", txId);
+      throw error;
+    }
     await this.#rpc("transactionCommit", txId);
     return ret;
   }
@@ -656,8 +663,9 @@ function makeWorkerApi(db: PGliteInterface) {
       if (!transactions.has(id)) {
         throw new Error("No transaction");
       }
-      const tx = (await transactions.get(id)!).tx;
-      await tx.rollback();
+      const tx = await transactions.get(id)!;
+      await tx.tx.rollback();
+      tx.reject(new Error("Transaction rolled back"));
       transactions.delete(id);
     },
     async execProtocol(message: Uint8Array) {

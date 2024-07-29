@@ -77,4 +77,12 @@ export type ChangeUpdate<T> = {} & {
   __after__: number;
 } & T;
 
-export type Change<T> = ChangeInsert<T> | ChangeDelete<T> | ChangeUpdate<T>;
+export type ChangeReset<T> = {
+  __op__: "RESET";
+} & T;
+
+export type Change<T> =
+  | ChangeInsert<T>
+  | ChangeDelete<T>
+  | ChangeUpdate<T>
+  | ChangeReset<T>;
