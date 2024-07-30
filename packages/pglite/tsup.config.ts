@@ -22,6 +22,7 @@ const entryPoints = [
   "src/vector/index.ts",
   "src/fs/opfs-ahp/index.ts",
   "src/fs/nodefs.ts",
+  "src/contrib/pg_trgm.ts",
 ];
 
 export default defineConfig({
@@ -33,7 +34,7 @@ export default defineConfig({
   },
   clean: true,
   format: ["esm"],
-  external: ["./postgres.js"],
+  external: ["../release/postgres.js"],
   esbuildOptions(options, context) {
     options.inject = [
       "src/polyfills/buffer.ts",
