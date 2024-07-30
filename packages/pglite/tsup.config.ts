@@ -1,6 +1,7 @@
 import { defineConfig } from "tsup";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const thisFile = fileURLToPath(new URL(import.meta.url));
 const root = path.dirname(thisFile);
@@ -22,8 +23,15 @@ const entryPoints = [
   "src/vector/index.ts",
   "src/fs/opfs-ahp/index.ts",
   "src/fs/nodefs.ts",
-  "src/contrib/pg_trgm.ts",
 ];
+
+const contribDir = path.join(root, "src", "contrib");
+const contribFiles = await fs.promises.readdir(contribDir);
+for (const file of contribFiles) {
+  if (file.endsWith(".ts")) {
+    entryPoints.push(`src/contrib/${file}`);
+  }
+}
 
 export default defineConfig({
   entry: entryPoints,
