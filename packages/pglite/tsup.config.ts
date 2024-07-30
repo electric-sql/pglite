@@ -20,8 +20,6 @@ const entryPoints = [
   'src/live/index.ts',
   "src/worker/index.ts",
   "src/vector/index.ts",
-  "src/fs/opfs/syncOpfs/index.ts",
-  "src/fs/opfs/syncOpfs/worker.ts",
 ];
 
 export default defineConfig({

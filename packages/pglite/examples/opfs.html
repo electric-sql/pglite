@@ -3,9 +3,11 @@
 
   console.log("Starting...");
   const start = performance.now();
-  const pg = new PGliteWorker('opfs-ahp://pgdata', {
-    // debug: 1,
-  });
+  const pg = new PGliteWorker(
+    new Worker(new URL("./opfs-worker.js", import.meta.url), {
+      type: "module",
+    })
+  );
 
   console.log("Waiting for ready...");
   await pg.waitReady;

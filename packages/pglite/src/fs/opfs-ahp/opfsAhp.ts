@@ -154,23 +154,22 @@ export class OpfsAhp {
         new Promise<void>(async (resolve) => {
           if (this.#fh.has(filename)) {
             console.warn("File handle already exists for pool file", filename);
-          };
+          }
           const fh = await this.#dataDirAh.getFileHandle(filename);
-          const sh: FileSystemSyncAccessHandle = await (fh as any).createSyncAccessHandle();
+          const sh: FileSystemSyncAccessHandle = await (
+            fh as any
+          ).createSyncAccessHandle();
           this.#fh.set(filename, fh);
           this.#sh.set(filename, sh);
           resolve();
-        })
+        }),
       );
     }
-    
-    await Promise.all([
-      ...walkPromises,
-      ...poolPromises,
-    ]);
+
+    await Promise.all([...walkPromises, ...poolPromises]);
 
     await this.maintainPool(
-      isNewState ? this.initialPoolSize : this.maintainedPoolSize
+      isNewState ? this.initialPoolSize : this.maintainedPoolSize,
     );
 
     this.#ready = true;
@@ -203,7 +202,7 @@ export class OpfsAhp {
           });
           this.state.pool.push(filename);
           resolve();
-        })
+        }),
       );
     }
     for (let i = 0; i > change; i--) {
@@ -222,7 +221,7 @@ export class OpfsAhp {
           this.#fh.delete(filename);
           this.#sh.delete(filename);
           resolve();
-        })
+        }),
       );
     }
     await Promise.all(promises);
@@ -324,7 +323,7 @@ export class OpfsAhp {
 
   _mkdirState(
     path: string,
-    options?: { recursive?: boolean; mode?: number }
+    options?: { recursive?: boolean; mode?: number },
   ): void {
     const parts = this.#pathParts(path);
     const newDirName = parts.pop()!;
@@ -380,7 +379,7 @@ export class OpfsAhp {
     buffer: Int8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
-    position: number // Position in file to read from
+    position: number, // Position in file to read from
   ): number {
     const path = this.#getPathFromFd(fd);
     const node = this.#resolvePath(path);
@@ -403,7 +402,7 @@ export class OpfsAhp {
     const oldPathParts = this.#pathParts(oldPath);
     const oldFilename = oldPathParts.pop()!;
     const oldParent = this.#resolvePath(
-      oldPathParts.join("/")
+      oldPathParts.join("/"),
     ) as DirectoryNode;
     if (!oldParent.children.hasOwnProperty(oldFilename)) {
       throw new FsError("ENOENT", "No such file or directory");
@@ -411,7 +410,7 @@ export class OpfsAhp {
     const newPathParts = this.#pathParts(newPath);
     const newFilename = newPathParts.pop()!;
     const newParent = this.#resolvePath(
-      newPathParts.join("/")
+      newPathParts.join("/"),
     ) as DirectoryNode;
     if (doFileOps && newParent.children.hasOwnProperty(newFilename)) {
       // Overwrite, so return the underlying file to the pool
@@ -505,7 +504,7 @@ export class OpfsAhp {
   writeFile(
     path: string,
     data: string | Int8Array,
-    options?: { encoding?: string; mode?: number; flag?: string }
+    options?: { encoding?: string; mode?: number; flag?: string },
   ): void {
     const pathParts = this.#pathParts(path);
     const filename = pathParts.pop()!;
@@ -542,9 +541,9 @@ export class OpfsAhp {
         typeof data === "string"
           ? new TextEncoder().encode(data)
           : new Int8Array(data),
-        { at: 0 }
+        { at: 0 },
       );
-      if (path.startsWith('/pg_wal')) {
+      if (path.startsWith("/pg_wal")) {
         this.#unsyncedSH.add(sh);
       }
     }
@@ -573,7 +572,7 @@ export class OpfsAhp {
     buffer: Int8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
-    position: number // Position in file to write to
+    position: number, // Position in file to write to
   ): number {
     const path = this.#getPathFromFd(fd);
     const node = this.#resolvePath(path);
@@ -587,7 +586,7 @@ export class OpfsAhp {
     const ret = sh.write(new Int8Array(buffer, offset, length), {
       at: position,
     });
-    if (path.startsWith('/pg_wal')) {
+    if (path.startsWith("/pg_wal")) {
       this.#unsyncedSH.add(sh);
     }
     return ret;
@@ -655,7 +654,7 @@ export class OpfsAhp {
     options?: {
       from?: FileSystemDirectoryHandle;
       create?: boolean;
-    }
+    },
   ): Promise<FileSystemDirectoryHandle> {
     const parts = this.#pathParts(path);
     let ah = options?.from || this.#opfsRootAh;

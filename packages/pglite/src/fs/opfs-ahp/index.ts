@@ -17,7 +17,7 @@ export class OpfsAhpFS extends FilesystemBase {
 
   constructor(
     dataDir: string,
-    { initialPoolSize, maintainedPoolSize }: OpfsAhpFSOptions = {}
+    { initialPoolSize, maintainedPoolSize }: OpfsAhpFSOptions = {},
   ) {
     super(dataDir);
     this.#initialPoolSize = initialPoolSize ?? 1000;

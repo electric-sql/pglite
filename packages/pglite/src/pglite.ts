@@ -97,8 +97,6 @@ export class PGlite implements PGliteInterface {
       options = dataDirOrPGliteOptions;
     }
     this.dataDir = options.dataDir;
-    
-    console.log(options);
 
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
