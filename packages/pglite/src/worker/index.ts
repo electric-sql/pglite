@@ -612,10 +612,11 @@ function connectTab(
             result,
           } satisfies WorkerRpcResult<typeof method>);
         } catch (error) {
+          console.error(error);
           tabChannel.postMessage({
             type: "rpc-error",
             callId,
-            error,
+            error: { message: (error as Error).message },
           } satisfies WorkerRpcError);
         }
         break;

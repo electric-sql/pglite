@@ -31,7 +31,17 @@ export function tests(env, dbFilename, target) {
       page = await context.newPage();
       await page.goto(`http://localhost:${wsPort}/tests/blank.html`);
       page.evaluate(`window.dbFilename = "${dbFilename}";`);
-      evaluate = async (fn) => await page.evaluate(fn);
+      page.on("console", (msg) => {
+        console.log(msg);
+      });
+      evaluate = async (fn) => {
+        try {
+          return await page.evaluate(fn);
+        } catch (e) {
+          console.error(e);
+          throw e;
+        }
+      };
     }
   });
 
@@ -161,6 +171,9 @@ export function tests(env, dbFilename, target) {
     const page2 = await context.newPage();
     await page2.goto(`http://localhost:${wsPort}/tests/blank.html`);
     page2.evaluate(`window.dbFilename = "${dbFilename}";`);
+    page.on("console", (msg) => {
+      console.log(msg);
+    });
 
     const res2Prom = page2.evaluate(async () => {
       const { live } = await import("../../dist/live/index.js");
@@ -232,18 +245,18 @@ export function tests(env, dbFilename, target) {
 
     const res2 = await res2Prom;
 
-    for (const res of [res1, res2]) {
-      t.deepEqual(res.initialResults.rows, [
-        {
-          id: 1,
-          name: "test",
-        },
-        {
-          id: 2,
-          name: "test2",
-        },
-      ]);
+    t.deepEqual(res1.initialResults.rows, [
+      {
+        id: 1,
+        name: "test",
+      },
+      {
+        id: 2,
+        name: "test2",
+      },
+    ]);
 
+    for (const res of [res1, res2]) {
       t.deepEqual(res.updatedResults.rows, [
         {
           id: 1,
@@ -265,6 +278,9 @@ export function tests(env, dbFilename, target) {
     const page2 = await context.newPage();
     await page2.goto(`http://localhost:${wsPort}/tests/blank.html`);
     page2.evaluate(`window.dbFilename = "${dbFilename}";`);
+    page.on("console", (msg) => {
+      console.log(msg);
+    });
 
     const res2Prom = page2.evaluate(async () => {
       const { live } = await import("../../dist/live/index.js");
@@ -340,25 +356,25 @@ export function tests(env, dbFilename, target) {
 
     const res2 = await res2Prom;
 
-    for (const res of [res1, res2]) {
-      t.deepEqual(res.initialResults.rows, [
-        {
-          __after__: null,
-          id: 1,
-          name: "test",
-        },
-        {
-          __after__: 1,
-          id: 2,
-          name: "test2",
-        },
-        {
-          __after__: 2,
-          id: 3,
-          name: "test3",
-        },
-      ]);
+    t.deepEqual(res1.initialResults.rows, [
+      {
+        __after__: null,
+        id: 1,
+        name: "test",
+      },
+      {
+        __after__: 1,
+        id: 2,
+        name: "test2",
+      },
+      {
+        __after__: 2,
+        id: 3,
+        name: "test3",
+      },
+    ]);
 
+    for (const res of [res1, res2]) {
       t.deepEqual(res.updatedResults.rows, [
         {
           __after__: null,
