@@ -1,39 +1,9 @@
 import { FilesystemBase } from "../types.js";
 import { PGDATA } from "../index.js";
-import type { PostgresMod, FS } from "../../postgres.js";
-import { createOPFS } from "./opfs-worker.js";
-import { SyncOPFS } from "./syncOpfs/index.js";
-import { createOPFSAHP } from "./opfs-ahp.js";
-import { OpfsAhp } from "./opfsAhp/index.js";
-
-export class Opfs extends FilesystemBase {
-  constructor(dataDir: string) {
-    super(dataDir);
-  }
-
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
-    const syncOPFS = await SyncOPFS.create();
-    const options: Partial<PostgresMod> = {
-      ...opts,
-      preRun: [
-        ...(opts.preRun || []),
-        (mod: PostgresMod) => {
-          syncOPFS.mkdir(this.dataDir!, { recursive: true });
-          const OPFS = createOPFS(mod, syncOPFS);
-          mod.FS.mkdir(PGDATA);
-          mod.FS.mount(
-            OPFS,
-            {
-              root: this.dataDir!,
-            },
-            PGDATA
-          );
-        },
-      ],
-    };
-    return options;
-  }
-}
+import type { PostgresMod, FS } from "../../postgresMod.js";
+import { createOPFSAHP } from "./emscriptenFs.js";
+import { OpfsAhp } from "./opfsAhp.js";
+import { dumpTar } from "../tarUtils.js";
 
 export interface OpfsAhpFSOptions {
   initialPoolSize?: number;
@@ -81,6 +51,10 @@ export class OpfsAhpFS extends FilesystemBase {
     if (!relaxedDurability) {
       this.opfsAhp?.flush();
     }
+  }
+
+  async dumpTar(mod: FS, dbname: string) {
+    return dumpTar(mod, dbname);
   }
 
   async close(): Promise<void> {

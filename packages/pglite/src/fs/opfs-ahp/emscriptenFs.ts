@@ -1,6 +1,6 @@
-import type { PostgresMod } from "../../postgres.js";
-import type { OpfsAhp } from "./opfsAhp/index.js";
-import { FsError, ERRNO_CODES } from "./opfsAhp/types.js";
+import type { PostgresMod } from "../../postgresMod.js";
+import type { OpfsAhp } from "./opfsAhp.js";
+import { FsError, ERRNO_CODES } from "./types.js";
 
 export type FileSystemType = Emscripten.FileSystemType & {
   createNode: (

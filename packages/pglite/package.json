@@ -50,7 +50,7 @@
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
-    "dev-server": "pnpm serve",
+    "dev-server": "pnpm http-server ../",
     "format": "prettier --write ./src"
   },
   "devDependencies": {
