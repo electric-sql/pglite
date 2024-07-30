@@ -184,6 +184,7 @@ export class OpfsAhp {
     const change = size - this.state.pool.length;
     const promises: Promise<void>[] = [];
     for (let i = 0; i < change; i++) {
+      console.log("push", i);
       promises.push(
         new Promise<void>(async (resolve) => {
           ++this.poolCounter;
@@ -191,6 +192,7 @@ export class OpfsAhp {
           const fh = await this.#dataDirAh.getFileHandle(filename, {
             create: true,
           });
+          console.log("do", i);
           const sh: FileSystemSyncAccessHandle = await (
             fh as any
           ).createSyncAccessHandle();

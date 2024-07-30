@@ -87,7 +87,6 @@ export class PGlite implements PGliteInterface {
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
-    console.log(options);
     if (typeof dataDirOrPGliteOptions === "string") {
       options = {
         dataDir: dataDirOrPGliteOptions,
