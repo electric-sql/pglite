@@ -10,6 +10,10 @@ export interface OpfsAhpFSOptions {
   maintainedPoolSize?: number;
 }
 
+/**
+ * PGlite OPFS access handle pool filesystem.
+ * Opens a pool of sync access handles and then allocates them as needed.
+ */
 export class OpfsAhpFS extends FilesystemBase {
   #initialPoolSize: number;
   #maintainedPoolSize: number;

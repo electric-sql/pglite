@@ -58,6 +58,12 @@ type EmscriptenFS = PostgresMod["FS"] & {
   ) => FSNode;
 };
 
+/**
+ * Create an emscripten filesystem that uses the AHP filesystem.
+ * @param Module The emscripten module
+ * @param opfsAhp The AHP filesystem - see `OpfsAhp.ts`
+ * @returns The emscripten filesystem
+ */
 export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
   const FS = Module.FS as EmscriptenFS;
   const OPFS = {

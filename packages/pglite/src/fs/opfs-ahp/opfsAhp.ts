@@ -22,6 +22,10 @@ export interface OpfsAhpOptions {
   maintainedPoolSize?: number;
 }
 
+/**
+ * An OPFS Access Handle Pool VFS that exports a Node.js-like FS interface.
+ * This FS is then wrapped by an Emscripten FS interface in emscriptenFs.ts.
+ */
 export class OpfsAhp {
   readyPromise: Promise<void>;
   #ready = false;
