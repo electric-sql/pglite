@@ -20,6 +20,8 @@ const entryPoints = [
   'src/live/index.ts',
   "src/worker/index.ts",
   "src/vector/index.ts",
+  "src/fs/opfs-ahp/index.ts",
+  "src/fs/nodefs.ts",
 ];
 
 export default defineConfig({

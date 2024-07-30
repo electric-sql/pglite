@@ -1,7 +1,6 @@
 import type { FsType, Filesystem } from "./types.js";
 import { IdbFs } from "./idbfs.js";
 import { MemoryFS } from "./memoryfs.js";
-import { OpfsAhpFS } from "./opfs-ahp/index.js";
 
 export type * from "./types.js";
 
@@ -44,6 +43,8 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
   } else if (dataDir && fsType === "idbfs") {
     fs = new IdbFs(dataDir);
   } else if (dataDir && fsType === "opfs-ahp") {
+    // Lazy load the opfs-ahp to so that it's optional in the bundle
+    const { OpfsAhpFS } = await import("./opfs-ahp/index.js");
     fs = new OpfsAhpFS(dataDir);
   } else {
     fs = new MemoryFS();

@@ -21,15 +21,26 @@
     ".": "./dist/index.js",
     "./live": "./dist/live/index.js",
     "./worker": "./dist/worker/index.js",
-    "./vector": "./dist/vector/index.js"
+    "./vector": "./dist/vector/index.js",
+    "./nodefs": "./dist/fs/nodefs.js",
+    "./opfs-ahp": "./dist/fs/opfs-ahp/index.js"
   },
   "typesVersions": {
     "*": {
+      "live": [
+        "./dist/live/index.d.ts"
+      ],
       "worker": [
         "./dist/worker/index.d.ts"
       ],
       "vector": [
         "./dist/vector/index.d.ts"
+      ],
+      "nodefs": [
+        "./dist/fs/nodefs.d.ts"
+      ],
+      "opfs-ahp": [
+        "./dist/fs/opfs-ahp/index.d.ts"
       ]
     }
   },
