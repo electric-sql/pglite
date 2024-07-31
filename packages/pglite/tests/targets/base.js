@@ -1,4 +1,3 @@
-import { c } from "../../dist/chunk-RZJOGGMK.js";
 import test from "../polytest.js";
 import playwright from "playwright";
 
