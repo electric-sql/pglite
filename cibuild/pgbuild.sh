@@ -29,7 +29,7 @@ CC_PGLITE=$CC_PGLITE
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
  --without-pam --disable-largefile --without-zlib --with-openssl=no \
- --without-readline --without-icu \
+ --without-readline --without-icu --with-uuid=ossp \
  ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
@@ -52,7 +52,7 @@ CC_PGLITE=$CC_PGLITE
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    if CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
+    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
     then
         echo configure ok
     else
