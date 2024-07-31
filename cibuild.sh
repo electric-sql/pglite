@@ -59,6 +59,7 @@ fi
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
 # TODO: but may need to adjust $PATH with stock emsdk.
+
 if ${WASI:-false}
 then
     echo "Wasi build (experimental)"
@@ -177,11 +178,14 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 if echo " $*"|grep -q " contrib"
 then
+    # TEMP FIX for SDK
+    SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
+    [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
 
     SKIP="\
  [\
  sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
- ltree_plpython pgcrypto sepgsql bool_plperl start-scripts uuid-ossp\
+ ltree_plpython sepgsql bool_plperl start-scripts\
  ]"
 
     for extdir in postgresql/contrib/*
@@ -200,23 +204,24 @@ then
                 pushd build/postgres/contrib/$ext
                 if PATH=$PREFIX/bin:$PATH emmake make install
                 then
-                    popd
-                    python3 cibuild/pack_extension.py
-
+                    echo "
+        Building contrib extension : $ext : end
+"
                 else
-                    popd
                     echo "
 
         Extension $ext from $extdir failed to build
 
 "
-                    exit 208
+                    exit 216
                 fi
+                popd
+                python3 cibuild/pack_extension.py
+
             fi
         fi
     done
 fi
-
 
 
 if echo " $*"|grep -q " vector"
