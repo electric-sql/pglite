@@ -25,11 +25,13 @@ CC_PGLITE=$CC_PGLITE
     fi
 
 
+# TODO: fix sdk to support --with-uuid=ossp
+
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
  --without-pam --disable-largefile --without-zlib --with-openssl=no \
- --without-readline --without-icu --with-uuid=ossp \
+ --without-readline --without-icu \
  ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
