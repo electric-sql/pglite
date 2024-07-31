@@ -198,7 +198,7 @@ then
         Building contrib extension : $ext : begin
 "
                 pushd build/postgres/contrib/$ext
-                if emmake make install
+                if PATH=$PREFIX/bin:$PATH emmake make install
                 then
                     popd
                     python3 cibuild/pack_extension.py
