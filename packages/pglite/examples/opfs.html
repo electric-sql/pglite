@@ -1,0 +1,49 @@
+<script type="module">
+  import { PGliteWorker } from "../dist/worker/index.js";
+
+  console.log("Starting...");
+  const start = performance.now();
+  const pg = new PGliteWorker(
+    new Worker(new URL("./opfs-worker.js", import.meta.url), {
+      type: "module",
+    })
+  );
+
+  console.log("Waiting for ready...");
+  await pg.waitReady;
+
+  console.log("Ready! Took", performance.now() - start, "ms");
+
+  console.log("Creating table...");
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+
+  console.log("Inserting data...");
+  await pg.exec("INSERT INTO test (name) VALUES ('test');");
+
+  console.log("Selecting data...");
+  const res = await pg.exec(`
+    SELECT * FROM test;
+  `);
+
+  console.log(res);
+  
+  // Transaction example:
+  console.log("Transaction example...");
+  await pg.transaction(async (tx) => {
+    await tx.exec("INSERT INTO test (name) VALUES ('test2');");
+    await tx.exec("INSERT INTO test (name) VALUES ('test3');");
+  });
+
+  console.log("Selecting data...");
+  const res2 = await pg.exec(`
+    SELECT * FROM test;
+  `);
+
+  console.log(res2);
+
+</script>

@@ -20,6 +20,10 @@ export function parseDataDir(dataDir?: string) {
     // Remove the idb:// prefix, and use indexeddb filesystem
     dataDir = dataDir.slice(6);
     fsType = "idbfs";
+  } else if (dataDir?.startsWith("opfs-ahp://")) {
+    // Remove the opfsahp:// prefix, and use opfs access handle pool filesystem
+    dataDir = dataDir.slice(11);
+    fsType = "opfs-ahp";
   } else if (!dataDir || dataDir?.startsWith("memory://")) {
     // Use in-memory filesystem
     fsType = "memoryfs";
@@ -38,6 +42,10 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     fs = new NodeFS(dataDir);
   } else if (dataDir && fsType === "idbfs") {
     fs = new IdbFs(dataDir);
+  } else if (dataDir && fsType === "opfs-ahp") {
+    // Lazy load the opfs-ahp to so that it's optional in the bundle
+    const { OpfsAhpFS } = await import("./opfs-ahp/index.js");
+    fs = new OpfsAhpFS(dataDir);
   } else {
     fs = new MemoryFS();
   }

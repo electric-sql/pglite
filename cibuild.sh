@@ -181,7 +181,6 @@ then
     # TEMP FIX for SDK
     SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
     [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
-
     SKIP="\
  [\
  sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\

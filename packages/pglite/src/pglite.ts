@@ -110,11 +110,26 @@ export class PGlite implements PGliteInterface {
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {};
 
-    // Save the extensions for later use
-    this.#extensions = options.extensions ?? {};
-
     // Initialize the database, and store the promise so we can wait for it to be ready
     this.waitReady = this.#init(options ?? {});
+  }
+
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
+   * @param dataDir The directory to store the database files
+   *                Prefix with idb:// to use indexeddb filesystem in the browser
+   *                Use memory:// to use in-memory filesystem
+   * @param options Optional options
+   * @returns A promise that resolves to the PGlite instance when it's ready.
+   */
+  static async create<O extends PGliteOptions>(
+    options?: O,
+  ): Promise<PGlite & PGliteInterfaceExtensions<O["extensions"]>> {
+    const pg = new PGlite(options);
+    await pg.waitReady;
+    return pg as any;
   }
 
   /**
@@ -295,6 +310,13 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
+   * The Postgres Emscripten Module
+   */
+  get Module() {
+    return this.mod!;
+  }
+
+  /**
    * The ready state of the database
    */
   get ready() {
@@ -400,19 +422,22 @@ export class PGlite implements PGliteInterface {
               text: query,
               types: parsedParams.map(([, type]) => type),
             }),
+            options,
           )),
           ...(await this.#execProtocolNoSync(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
             }),
+            options,
           )),
           ...(await this.#execProtocolNoSync(
             serialize.describe({ type: "P" }),
+            options,
           )),
-          ...(await this.#execProtocolNoSync(serialize.execute({}))),
+          ...(await this.#execProtocolNoSync(serialize.execute({}), options)),
         ];
       } finally {
-        await this.#execProtocolNoSync(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync(), options);
       }
       this.#cleanupBlob();
       if (!this.#inTransaction) {
@@ -448,9 +473,12 @@ export class PGlite implements PGliteInterface {
       await this.#handleBlob(options?.blob);
       let results;
       try {
-        results = await this.#execProtocolNoSync(serialize.query(query));
+        results = await this.#execProtocolNoSync(
+          serialize.query(query),
+          options,
+        );
       } finally {
-        await this.#execProtocolNoSync(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync(), options);
       }
       this.#cleanupBlob();
       if (!this.#inTransaction) {
@@ -608,7 +636,7 @@ export class PGlite implements PGliteInterface {
    */
   async execProtocol(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true, onNotice }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     const data = await this.execProtocolRaw(message, { syncToFs });
     const results: Array<[BackendMessage, Uint8Array]> = [];
@@ -618,9 +646,14 @@ export class PGlite implements PGliteInterface {
         this.#parser = new Parser(); // Reset the parser
         throw msg;
         // TODO: Do we want to wrap the error in a custom error?
-      } else if (msg instanceof NoticeMessage && this.debug > 0) {
-        // Notice messages are warnings, we should log them
-        console.warn(msg);
+      } else if (msg instanceof NoticeMessage) {
+        if (this.debug > 0) {
+          // Notice messages are warnings, we should log them
+          console.warn(msg);
+        }
+        if (onNotice) {
+          onNotice(msg);
+        }
       } else if (msg instanceof CommandCompleteMessage) {
         // Keep track of the transaction state
         switch (msg.text) {
@@ -654,8 +687,9 @@ export class PGlite implements PGliteInterface {
 
   async #execProtocolNoSync(
     message: Uint8Array,
+    options: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    return await this.execProtocol(message, { syncToFs: false });
+    return await this.execProtocol(message, { ...options, syncToFs: false });
   }
 
   /**
@@ -671,7 +705,7 @@ export class PGlite implements PGliteInterface {
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        await this.fs!.syncToFs(this.mod!.FS);
+        await this.fs!.syncToFs(this.mod!.FS, this.#relaxedDurability);
       });
     };
 
@@ -744,22 +778,6 @@ export class PGlite implements PGliteInterface {
    */
   offNotification(callback: (channel: string, payload: string) => void) {
     this.#globalNotifyListeners.delete(callback);
-  }
-
-  /**
-   * Create a new PGlite instance with extensions on the Typescript interface
-   * (The main constructor does enable extensions, however due to the limitations
-   * of Typescript, the extensions are not available on the instance interface)
-   * @param dataDir The directory to store the database files
-   *                Prefix with idb:// to use indexeddb filesystem in the browser
-   *                Use memory:// to use in-memory filesystem
-   * @param options Optional options
-   * @returns A new PGlite instance with extensions
-   */
-  static withExtensions<O extends PGliteOptions>(
-    options?: O,
-  ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
-    return new PGlite(options) as any;
   }
 
   /**

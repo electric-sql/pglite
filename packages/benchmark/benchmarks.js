@@ -18,6 +18,24 @@ const CONFIGURATIONS = new Map(
       label: "Emscripten IndexedDB FS",
       dataDir: "idb://benchmark",
     },
+    {
+      label: "Emscripten IndexedDB FS<br> <i>relaxed durability</i>",
+      dataDir: "idb://benchmark-rd",
+      options: { relaxedDurability: true },
+    },
+    {
+      label: "OPFS Access Handle Pool",
+      dataDir: "opfs-ahp://benchmark-ahp",
+    },
+    {
+      label: "OPFS Access Handle Pool<br> <i>relaxed durability</i>",
+      dataDir: "opfs-ahp://benchmark-ahp-rd",
+      options: { relaxedDurability: true },
+    },
+    // {
+    //   label: "OPFS Worker",
+    //   dataDir: "opfs-worker://benchmark-worker",
+    // },
   ].map((obj) => [obj.label, obj])
 );
 
@@ -77,6 +95,16 @@ document.getElementById("start").addEventListener("click", async (event) => {
     }
   });
 
+  // Remove OPFS
+  const root = await navigator.storage.getDirectory();
+  for await (const handle of root.values()) {
+    try {
+      await root.removeEntry(handle.name, { recursive: true });
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const benchmarks = await benchmarksReady;
   const Comlink = await ComlinkReady;
   try {
@@ -101,6 +129,7 @@ document.getElementById("start").addEventListener("click", async (event) => {
         const query = await workerProxy({
           dataDir: config.dataDir,
           label: config.label,
+          options: config.options,
         });
 
         await query(preamble);
@@ -123,6 +152,7 @@ document.getElementById("start").addEventListener("click", async (event) => {
     document.getElementById("error").textContent = e.stack.includes(e.message)
       ? e.stack
       : `${e.stack}\n${e.message}`;
+    throw e;
   } finally {
     // @ts-ignore
     event.target.disabled = false;
@@ -132,6 +162,6 @@ document.getElementById("start").addEventListener("click", async (event) => {
 function addEntry(parent, text) {
   const tag = parent.parentElement.tagName === "TBODY" ? "td" : "th";
   const child = document.createElement(tag);
-  child.textContent = text;
+  child.innerHTML = text;
   parent.appendChild(child);
 }

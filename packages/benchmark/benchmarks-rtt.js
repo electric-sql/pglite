@@ -16,6 +16,23 @@ const CONFIGURATIONS = new Map(
       dataDir: "idb://benchmark-rtt",
     },
     {
+      label: "PGlite IDB<br> <i>relaxed durability</i>",
+      db: "pglite",
+      dataDir: "idb://benchmark-rtt-rd",
+      options: { relaxedDurability: true },
+    },
+    {
+      label: "PGlite OPFS AHP",
+      db: "pglite",
+      dataDir: "opfs-ahp://benchmark-rtt",
+    },
+    {
+      label: "PGlite OPFS AHP<br> <i>relaxed durability</i>",
+      db: "pglite",
+      dataDir: "opfs-ahp://benchmark-rtt-rd",
+      options: { relaxedDurability: true },
+    },
+    {
       label: 'SQLite Memory',
       db: 'wa-sqlite',
       isAsync: false,
@@ -38,6 +55,14 @@ const CONFIGURATIONS = new Map(
       vfsModule: './node_modules/wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js',
       vfsClass: 'OriginPrivateFileSystemVFS',
       vfsArgs: []
+    },
+    {
+      label: 'SQLite OPFS AHP',
+      db: 'wa-sqlite',
+      isAsync: false,
+      vfsModule: './node_modules/wa-sqlite/src/examples/AccessHandlePoolVFS.js',
+      vfsClass: 'AccessHandlePoolVFS',
+      vfsArgs: ['/benchmark-rtt-sqlite-ahp']
     },
   ].map((obj) => [obj.label, obj])
 );
@@ -107,7 +132,11 @@ document.getElementById("start").addEventListener("click", async (event) => {
   // Remove OPFS
   const root = await navigator.storage.getDirectory();
   for await (const handle of root.values()) {
-    await root.removeEntry(handle.name, { recursive: true });
+    try {
+      await root.removeEntry(handle.name, { recursive: true });
+    } catch (e) {
+      // ignore
+    }
   }
 
   const Comlink = await ComlinkReady;
@@ -170,6 +199,6 @@ document.getElementById("start").addEventListener("click", async (event) => {
 function addEntry(parent, text) {
   const tag = parent.parentElement.tagName === "TBODY" ? "td" : "th";
   const child = document.createElement(tag);
-  child.textContent = text;
+  child.innerHTML = text;
   parent.appendChild(child);
 }
