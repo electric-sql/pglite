@@ -1,6 +1,7 @@
 import { defineConfig } from "tsup";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const thisFile = fileURLToPath(new URL(import.meta.url));
 const root = path.dirname(thisFile);
@@ -24,6 +25,14 @@ const entryPoints = [
   "src/fs/nodefs.ts",
 ];
 
+const contribDir = path.join(root, "src", "contrib");
+const contribFiles = await fs.promises.readdir(contribDir);
+for (const file of contribFiles) {
+  if (file.endsWith(".ts")) {
+    entryPoints.push(`src/contrib/${file}`);
+  }
+}
+
 export default defineConfig({
   entry: entryPoints,
   sourcemap: true,
@@ -33,7 +42,7 @@ export default defineConfig({
   },
   clean: true,
   format: ["esm"],
-  external: ["./postgres.js"],
+  external: ["../release/postgres.js"],
   esbuildOptions(options, context) {
     options.inject = [
       "src/polyfills/buffer.ts",

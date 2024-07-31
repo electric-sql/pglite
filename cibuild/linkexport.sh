@@ -23,7 +23,7 @@ wasm-objdump -x $(realpath postgres.wasm) > ${WORKSPACE}/patches/dump.wasm-objdu
 
 pushd ${WORKSPACE}
     echo "getting postgres exports lists"
-    cat $(find build/postgres -type f |grep exports.list$) \
+    cat $(find build/postgres -type f |grep /exports) \
      | grep -v ^\ local \
      | grep -v ^{\ global \
      | sort | uniq > ${WORKSPACE}/patches/dump.postgres

@@ -310,6 +310,13 @@ export class PGlite implements PGliteInterface {
   }
 
   /**
+   * The Postgres Emscripten Module
+   */
+  get Module() {
+    return this.mod!;
+  }
+
+  /**
    * The ready state of the database
    */
   get ready() {
@@ -415,19 +422,22 @@ export class PGlite implements PGliteInterface {
               text: query,
               types: parsedParams.map(([, type]) => type),
             }),
+            options,
           )),
           ...(await this.#execProtocolNoSync(
             serialize.bind({
               values: parsedParams.map(([val]) => val),
             }),
+            options,
           )),
           ...(await this.#execProtocolNoSync(
             serialize.describe({ type: "P" }),
+            options,
           )),
-          ...(await this.#execProtocolNoSync(serialize.execute({}))),
+          ...(await this.#execProtocolNoSync(serialize.execute({}), options)),
         ];
       } finally {
-        await this.#execProtocolNoSync(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync(), options);
       }
       this.#cleanupBlob();
       if (!this.#inTransaction) {
@@ -463,9 +473,12 @@ export class PGlite implements PGliteInterface {
       await this.#handleBlob(options?.blob);
       let results;
       try {
-        results = await this.#execProtocolNoSync(serialize.query(query));
+        results = await this.#execProtocolNoSync(
+          serialize.query(query),
+          options,
+        );
       } finally {
-        await this.#execProtocolNoSync(serialize.sync());
+        await this.#execProtocolNoSync(serialize.sync(), options);
       }
       this.#cleanupBlob();
       if (!this.#inTransaction) {
@@ -623,7 +636,7 @@ export class PGlite implements PGliteInterface {
    */
   async execProtocol(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true, onNotice }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     const data = await this.execProtocolRaw(message, { syncToFs });
     const results: Array<[BackendMessage, Uint8Array]> = [];
@@ -633,9 +646,14 @@ export class PGlite implements PGliteInterface {
         this.#parser = new Parser(); // Reset the parser
         throw msg;
         // TODO: Do we want to wrap the error in a custom error?
-      } else if (msg instanceof NoticeMessage && this.debug > 0) {
-        // Notice messages are warnings, we should log them
-        console.warn(msg);
+      } else if (msg instanceof NoticeMessage) {
+        if (this.debug > 0) {
+          // Notice messages are warnings, we should log them
+          console.warn(msg);
+        }
+        if (onNotice) {
+          onNotice(msg);
+        }
       } else if (msg instanceof CommandCompleteMessage) {
         // Keep track of the transaction state
         switch (msg.text) {
@@ -669,8 +687,9 @@ export class PGlite implements PGliteInterface {
 
   async #execProtocolNoSync(
     message: Uint8Array,
+    options: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    return await this.execProtocol(message, { syncToFs: false });
+    return await this.execProtocol(message, { ...options, syncToFs: false });
   }
 
   /**

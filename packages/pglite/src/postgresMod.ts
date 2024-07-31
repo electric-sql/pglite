@@ -1,6 +1,5 @@
 //@ts-ignore
-// This file in placed in the build from ../release/postgres.js
-import PostgresModFactory from "./postgres.js";
+import PostgresModFactory from "../release/postgres.js";
 
 // Uses the types from @types/emscripten
 

@@ -1,4 +1,7 @@
-import type { BackendMessage } from "pg-protocol/dist/messages.js";
+import type {
+  BackendMessage,
+  NoticeMessage,
+} from "pg-protocol/dist/messages.js";
 import type { Filesystem } from "./fs/types.js";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";
@@ -15,10 +18,12 @@ export interface QueryOptions {
   rowMode?: RowMode;
   parsers?: ParserOptions;
   blob?: Blob | File;
+  onNotice?: (notice: NoticeMessage) => void;
 }
 
 export interface ExecProtocolOptions {
   syncToFs?: boolean;
+  onNotice?: (notice: NoticeMessage) => void;
 }
 
 export interface ExtensionSetupResult {
