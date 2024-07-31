@@ -110,11 +110,26 @@ export class PGlite implements PGliteInterface {
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {};
 
-    // Save the extensions for later use
-    this.#extensions = options.extensions ?? {};
-
     // Initialize the database, and store the promise so we can wait for it to be ready
     this.waitReady = this.#init(options ?? {});
+  }
+
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
+   * @param dataDir The directory to store the database files
+   *                Prefix with idb:// to use indexeddb filesystem in the browser
+   *                Use memory:// to use in-memory filesystem
+   * @param options Optional options
+   * @returns A promise that resolves to the PGlite instance when it's ready.
+   */
+  static async create<O extends PGliteOptions>(
+    options?: O,
+  ): Promise<PGlite & PGliteInterfaceExtensions<O["extensions"]>> {
+    const pg = new PGlite(options);
+    await pg.waitReady;
+    return pg as any;
   }
 
   /**
@@ -744,22 +759,6 @@ export class PGlite implements PGliteInterface {
    */
   offNotification(callback: (channel: string, payload: string) => void) {
     this.#globalNotifyListeners.delete(callback);
-  }
-
-  /**
-   * Create a new PGlite instance with extensions on the Typescript interface
-   * (The main constructor does enable extensions, however due to the limitations
-   * of Typescript, the extensions are not available on the instance interface)
-   * @param dataDir The directory to store the database files
-   *                Prefix with idb:// to use indexeddb filesystem in the browser
-   *                Use memory:// to use in-memory filesystem
-   * @param options Optional options
-   * @returns A new PGlite instance with extensions
-   */
-  static withExtensions<O extends PGliteOptions>(
-    options?: O,
-  ): PGlite & PGliteInterfaceExtensions<O["extensions"]> {
-    return new PGlite(options) as any;
   }
 
   /**

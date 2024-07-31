@@ -32,6 +32,7 @@ export interface ExtensionSetupResult {
 export type ExtensionSetup = (
   pg: PGliteInterface,
   emscriptenOpts: any,
+  clientOnly?: boolean,
 ) => Promise<ExtensionSetupResult>;
 
 export interface Extension {

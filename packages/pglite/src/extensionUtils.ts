@@ -35,7 +35,7 @@ export async function loadExtensionBundle(
     const response = await fetch(bundlePath.toString());
     if (!response.ok || !response.body) {
       return null;
-    } else if (response.headers.get('Content-Encoding') === 'gzip') {
+    } else if (response.headers.get("Content-Encoding") === "gzip") {
       // Although the bundle is manually compressed, some servers will recognize
       // that and add a content-encoding header. Fetch will then automatically
       // decompress the response.

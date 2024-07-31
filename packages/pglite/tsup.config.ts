@@ -19,7 +19,6 @@ const entryPoints = [
   "src/index.ts",
   'src/live/index.ts',
   "src/worker/index.ts",
-  "src/worker/process.ts",
   "src/vector/index.ts",
 ];
 
