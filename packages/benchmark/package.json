@@ -18,6 +18,6 @@
     "tsx": "^4.7.1"
   },
   "dependencies": {
-    "wa-sqlite": "github:rhashimoto/wa-sqlite"
+    "wa-sqlite": "github:rhashimoto/wa-sqlite#v0.9.14"
   }
 }

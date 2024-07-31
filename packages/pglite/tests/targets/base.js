@@ -3,6 +3,8 @@ import playwright from "playwright";
 
 const wsPort = process.env.WS_PORT || 3334;
 
+const useWorkerForBbFilename = ["opfs-ahp://base"];
+
 export function tests(env, dbFilename, target) {
   let browser;
   let evaluate;
@@ -30,6 +32,7 @@ export function tests(env, dbFilename, target) {
       page = await context.newPage();
       await page.goto(`http://localhost:${wsPort}/tests/blank.html`);
       page.evaluate(`window.dbFilename = "${dbFilename}";`);
+      page.evaluate(`window.useWorkerForBbFilename = ${JSON.stringify(useWorkerForBbFilename)};`);
       page.on("console", (msg) => {
         console.log(msg);
       });
@@ -46,8 +49,20 @@ export function tests(env, dbFilename, target) {
 
   test.serial(`targets ${target} basic`, async (t) => {
     const res = await evaluate(async () => {
-      const { PGlite } = await import("../../dist/index.js");
-      db = new PGlite(dbFilename);
+      if (useWorkerForBbFilename.includes(dbFilename)) {
+        const { PGliteWorker } = await import("../../dist/worker/index.js");
+        db = new PGliteWorker(
+          new Worker("/tests/targets/worker.js", {
+            type: "module",
+          }),
+          {
+            dataDir: dbFilename,
+          }
+        );
+      } else {
+        const { PGlite } = await import("../../dist/index.js");
+        db = new PGlite(dbFilename);
+      }
       await db.waitReady;
       await db.query(`
           CREATE TABLE IF NOT EXISTS test (
@@ -125,10 +140,24 @@ export function tests(env, dbFilename, target) {
   test.serial(`targets ${target} persisted`, async (t) => {
     await page?.reload(); // Refresh the page
     page?.evaluate(`window.dbFilename = "${dbFilename}";`);
+    page?.evaluate(`window.useWorkerForBbFilename = ${JSON.stringify(useWorkerForBbFilename)};`);
 
     const res = await evaluate(async () => {
-      const { PGlite } = await import("../../dist/index.js");
-      const db = new PGlite(dbFilename);
+      let db;
+      if (useWorkerForBbFilename.includes(dbFilename)) {
+        const { PGliteWorker } = await import("../../dist/worker/index.js");
+        db = new PGliteWorker(
+          new Worker("/tests/targets/worker.js", {
+            type: "module",
+          }),
+          {
+            dataDir: dbFilename,
+          }
+        );
+      } else {
+        const { PGlite } = await import("../../dist/index.js");
+        db = new PGlite(dbFilename);
+      }
       await db.waitReady;
       const res = await db.query(`
           SELECT * FROM test;

@@ -686,7 +686,7 @@ export class PGlite implements PGliteInterface {
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false;
-        await this.fs!.syncToFs(this.mod!.FS);
+        await this.fs!.syncToFs(this.mod!.FS, this.#relaxedDurability);
       });
     };
 

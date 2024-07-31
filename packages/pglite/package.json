@@ -21,15 +21,26 @@
     ".": "./dist/index.js",
     "./live": "./dist/live/index.js",
     "./worker": "./dist/worker/index.js",
-    "./vector": "./dist/vector/index.js"
+    "./vector": "./dist/vector/index.js",
+    "./nodefs": "./dist/fs/nodefs.js",
+    "./opfs-ahp": "./dist/fs/opfs-ahp/index.js"
   },
   "typesVersions": {
     "*": {
+      "live": [
+        "./dist/live/index.d.ts"
+      ],
       "worker": [
         "./dist/worker/index.d.ts"
       ],
       "vector": [
         "./dist/vector/index.d.ts"
+      ],
+      "nodefs": [
+        "./dist/fs/nodefs.d.ts"
+      ],
+      "opfs-ahp": [
+        "./dist/fs/opfs-ahp/index.d.ts"
       ]
     }
   },
@@ -49,6 +60,8 @@
     "test:bun": "rm -rf ./pgdata-test && npx bun test tests/basic.test.js && npx bun test tests/pgvector.test.js && npx bun test tests/targets/node-fs.test.js",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "npm run build:js",
+    "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
+    "dev-server": "pnpm http-server ../",
     "format": "prettier --write ./src"
   },
   "devDependencies": {
@@ -64,8 +77,9 @@
     "pg-protocol": "^1.6.1",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
+    "serve": "^14.2.3",
     "tinytar": "^0.1.0",
-    "tsup": "^8.0.2",
+    "tsup": "^8.1.0",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   }
