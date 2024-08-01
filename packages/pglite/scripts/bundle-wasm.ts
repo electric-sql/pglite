@@ -33,29 +33,27 @@ async function findAndReplaceInDir(
   }
 }
 
+const copyFiles = async (srcDir: string, destDir: string) => {
+  await fs.mkdir(destDir, { recursive: true });
+  const files = await fs.readdir(srcDir);
+  for (const file of files) {
+    if (file.startsWith(".")) {
+      continue;
+    }
+    const srcFile = path.join(srcDir, file);
+    const destFile = path.join(destDir, file);
+    const stat = await fs.stat(srcFile);
+    if (stat.isFile()) {
+      await fs.copyFile(srcFile, destFile);
+      console.log(`Copied ${srcFile} to ${destFile}`);
+    }
+  }
+};
+
 async function main() {
-  await fs.copyFile("./release/postgres.wasm", "./dist/postgres.wasm");
-  await fs.copyFile("./release/postgres.data", "./dist/postgres.data");
-  await fs.copyFile("./release/postgres.js", "./dist/postgres.js");
-  await fs.copyFile("./release/vector.tar.gz", "./dist/vector.tar.gz");
-  await findAndReplaceInDir(
-    "./dist",
-    /new URL\('\.\.\/release\//g,
-    "new URL('./",
-    [".js"]
-  );
-  await findAndReplaceInDir(
-    "./dist",
-    /new URL\("\.\.\/release\//g,
-    'new URL("./',
-    [".js"]
-  );
-  await findAndReplaceInDir(
-    "./dist/vector",
-    /new URL\("\.\.\/\.\.\/release\//g,
-    'new URL("\.\.\/',
-    [".js"]
-  );
+  await copyFiles("./release", "./dist");
+  await findAndReplaceInDir("./dist", /\.\.\/release\//g, "./", [".js"]);
+  await findAndReplaceInDir("./dist", /\.\.\/release/g, "", [".js"], true);
 }
 
 await main();
