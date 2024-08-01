@@ -6,7 +6,10 @@ import type {
 
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
   return {
-    bundlePath: new URL("../../release/tsm_system_rows.tar.gz", import.meta.url),
+    bundlePath: new URL(
+      "../../release/tsm_system_rows.tar.gz",
+      import.meta.url,
+    ),
   } satisfies ExtensionSetupResult;
 };
 
