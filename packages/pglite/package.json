@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.2.0-alpha.3",
+  "version": "0.2.0-alpha.4",
   "private": false,
   "publishConfig": {
     "access": "public"
