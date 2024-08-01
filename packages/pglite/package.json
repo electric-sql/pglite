@@ -24,7 +24,8 @@
     "./vector": "./dist/vector/index.js",
     "./nodefs": "./dist/fs/nodefs.js",
     "./opfs-ahp": "./dist/fs/opfs-ahp/index.js",
-    "./contrib/*": "./dist/contrib/*.js"
+    "./contrib/*": "./dist/contrib/*.js",
+    "./release/*": "./release/*"
   },
   "typesVersions": {
     "*": {
