@@ -132,6 +132,19 @@ export function tests(env, dbFilename, target) {
     });
   });
 
+  test.serial(`targets ${target} close`, async (t) => {
+    const err = await evaluate(async () => {
+      try {
+        await db.close();
+      } catch (e) {
+        console.error(e);
+        return e.message;
+      }
+      return null;
+    });
+    t.is(err, null);
+  });
+
   if (dbFilename === "memory://") {
     // Skip the rest of the tests for memory:// as it's not persisted
     return;

@@ -371,3 +371,23 @@ test("basic copy to/from blob", async (t) => {
     affectedRows: 0,
   });
 });
+
+test("basic close", async (t) => {
+  const db = new PGlite();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+  await db.query("INSERT INTO test (name) VALUES ('test');");
+  await db.close();
+  await t.throwsAsync(
+    async () => {
+      await db.query("SELECT * FROM test;");
+    },
+    {
+      message: "PGlite is closed",
+    }
+  );
+});

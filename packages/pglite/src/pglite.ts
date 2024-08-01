@@ -344,18 +344,22 @@ export class PGlite implements PGliteInterface {
     }
 
     // Close the database
-    await new Promise<void>(async (resolve, reject) => {
-      try {
-        await this.execProtocol(serialize.end());
-      } catch (e) {
-        const err = e as { name: string; status: number };
-        if (err.name === "ExitStatus" && err.status === 0) {
-          resolve();
-        } else {
-          reject(e);
-        }
+    try {
+      await this.execProtocol(serialize.end());
+    } catch (e) {
+      const err = e as { name: string; status: number };
+      if (err.name === "ExitStatus" && err.status === 0) {
+        // Database closed successfully
+        // An earlier build of PGlite would throw an error here when closing
+        // leaving this here for now. I believe it was a bug in Emscripten.
+      } else {
+        throw e;
       }
-    });
+    }
+
+    // Close the filesystem
+    await this.fs!.close();
+
     this.#closed = true;
     this.#closing = false;
   }
