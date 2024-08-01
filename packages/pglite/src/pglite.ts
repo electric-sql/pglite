@@ -31,7 +31,7 @@ import {
   NotificationResponseMessage,
 } from "pg-protocol/dist/messages.js";
 
-export class PGlite implements PGliteInterface {
+export class PGlite implements PGliteInterface, AsyncDisposable {
   fs?: Filesystem;
   protected mod?: PostgresMod;
 
@@ -362,6 +362,15 @@ export class PGlite implements PGliteInterface {
 
     this.#closed = true;
     this.#closing = false;
+  }
+
+  /**
+   * Close the database when the object exits scope
+   * Stage 3 ECMAScript Explicit Resource Management
+   * https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#using-declarations-and-explicit-resource-management
+   */
+  async [Symbol.asyncDispose]() {
+    await this.close();
   }
 
   /**
