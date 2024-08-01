@@ -25,6 +25,8 @@ CC_PGLITE=$CC_PGLITE
     fi
 
 
+# TODO: fix sdk to support --with-uuid=ossp
+
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
@@ -52,7 +54,7 @@ CC_PGLITE=$CC_PGLITE
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    if CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
+    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
     then
         echo configure ok
     else
