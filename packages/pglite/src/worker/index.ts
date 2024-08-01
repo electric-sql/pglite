@@ -16,7 +16,7 @@ export type PGliteWorkerOptions = PGliteOptions & {
   id?: string;
 };
 
-export class PGliteWorker implements PGliteInterface {
+export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   #initPromise: Promise<void>;
   #debug: DebugLevel = 0;
 
@@ -298,6 +298,15 @@ export class PGliteWorker implements PGliteInterface {
     this.#tabChannel?.close();
     this.#releaseTabCloseLock?.();
     this.#workerProcess.terminate();
+  }
+
+  /**
+   * Close the database when the object exits scope
+   * Stage 3 ECMAScript Explicit Resource Management
+   * https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#using-declarations-and-explicit-resource-management
+   */
+  async [Symbol.asyncDispose]() {
+    await this.close();
   }
 
   /**
