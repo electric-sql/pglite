@@ -17,19 +17,20 @@ import type {
 } from "./interface.js";
 import { loadExtensionBundle, loadExtensions } from "./extensionUtils.js";
 import { loadTar } from "./fs/tarUtils.js";
+import { Buffer } from "./polyfills/buffer.js";
 
 import { PGDATA, WASM_PREFIX } from "./fs/index.js";
 
 // Importing the source as the built version is not ESM compatible
-import { serialize } from "pg-protocol/dist/index.js";
-import { Parser } from "pg-protocol/dist/parser.js";
+import { serialize } from "pg-protocol/src/index.js";
+import { Parser } from "pg-protocol/src/parser.js";
 import {
   BackendMessage,
   DatabaseError,
   NoticeMessage,
   CommandCompleteMessage,
   NotificationResponseMessage,
-} from "pg-protocol/dist/messages.js";
+} from "pg-protocol/src/messages.js";
 
 export class PGlite implements PGliteInterface, AsyncDisposable {
   fs?: Filesystem;

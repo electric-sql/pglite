@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   pg-protocol@1.6.1:
-    hash: m6gmuhkj45op6ok66bc7av7i4y
+    hash: bkhu5rwnksx3hjt6z75vtsiy4y
     path: patches/pg-protocol@1.6.1.patch
 
 importers:
@@ -66,7 +66,7 @@ importers:
         version: 14.1.1
       pg-protocol:
         specifier: ^1.6.1
-        version: 1.6.1(patch_hash=m6gmuhkj45op6ok66bc7av7i4y)
+        version: 1.6.1(patch_hash=bkhu5rwnksx3hjt6z75vtsiy4y)
       playwright:
         specifier: ^1.42.1
         version: 1.42.1
@@ -4501,7 +4501,7 @@ packages:
     resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
     dev: true
 
-  /pg-protocol@1.6.1(patch_hash=m6gmuhkj45op6ok66bc7av7i4y):
+  /pg-protocol@1.6.1(patch_hash=bkhu5rwnksx3hjt6z75vtsiy4y):
     resolution: {integrity: sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==}
     dev: true
     patched: true

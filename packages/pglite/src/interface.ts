@@ -1,7 +1,7 @@
 import type {
   BackendMessage,
   NoticeMessage,
-} from "pg-protocol/dist/messages.js";
+} from "pg-protocol/src/messages.js";
 import type { Filesystem } from "./fs/types.js";
 
 export type FilesystemType = "nodefs" | "idbfs" | "memoryfs";

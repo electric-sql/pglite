@@ -18,42 +18,46 @@
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./live": "./dist/live/index.js",
-    "./worker": "./dist/worker/index.js",
-    "./vector": "./dist/vector/index.js",
-    "./nodefs": "./dist/fs/nodefs.js",
-    "./opfs-ahp": "./dist/fs/opfs-ahp/index.js",
-    "./contrib/*": "./dist/contrib/*.js",
-    "./release/*": "./release/*"
-  },
-  "typesVersions": {
-    "*": {
-      "live": [
-        "./dist/live/index.d.ts"
-      ],
-      "worker": [
-        "./dist/worker/index.d.ts"
-      ],
-      "vector": [
-        "./dist/vector/index.d.ts"
-      ],
-      "nodefs": [
-        "./dist/fs/nodefs.d.ts"
-      ],
-      "opfs-ahp": [
-        "./dist/fs/opfs-ahp/index.d.ts"
-      ],
-      "contrib/*": [
-        "./dist/contrib/*.d.ts"
-      ]
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./live": {
+      "import": "./dist/live/index.js",
+      "require": "./dist/live/index.cjs",
+      "types": "./dist/live/index.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/worker/index.js",
+      "require": "./dist/worker/index.cjs",
+      "types": "./dist/worker/index.d.ts"
+    },
+    "./vector": {
+      "import": "./dist/vector/index.js",
+      "require": "./dist/vector/index.cjs",
+      "types": "./dist/vector/index.d.ts"
+    },
+    "./nodefs": {
+      "import": "./dist/fs/nodefs.js",
+      "require": "./dist/fs/nodefs.cjs",
+      "types": "./dist/fs/nodefs.d.ts"
+    },
+    "./opfs-ahp": {
+      "import": "./dist/fs/opfs-ahp/index.js",
+      "require": "./dist/fs/opfs-ahp/index.cjs",
+      "types": "./dist/fs/opfs-ahp/index.d.ts"
+    },
+    "./contrib/*": {
+      "import": "./dist/contrib/*.js",
+      "require": "./dist/contrib/*.cjs",
+      "types": "./dist/contrib/*.d.ts"
     }
   },
   "type": "module",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "release"
+    "dist"
   ],
   "repository": {
     "type": "git",
