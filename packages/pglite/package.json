@@ -88,5 +88,17 @@
     "tsup": "^8.1.0",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "url": false,
+    "zlib": false,
+    "stream": false,
+    "stream/promises": false,
+    "crypto": false,
+    "ws": false,
+    "child_process": false,
+    "module": false
   }
 }
