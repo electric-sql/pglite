@@ -156,7 +156,6 @@ export function tests(env, dbFilename, target) {
     page?.evaluate(`window.useWorkerForBbFilename = ${JSON.stringify(useWorkerForBbFilename)};`);
 
     const res = await evaluate(async () => {
-      let db;
       if (useWorkerForBbFilename.includes(dbFilename)) {
         const { PGliteWorker } = await import("../../dist/worker/index.js");
         db = new PGliteWorker(
@@ -440,4 +439,39 @@ export function tests(env, dbFilename, target) {
       ]);
     }
   });
+
+  if (dbFilename.startsWith("idb://")) {
+    test(`targets targets ${target} idb close and delete`, async (t) => {
+      const res = await evaluate(async () => {
+        await db.query('select 1;');
+        await db.close();
+               
+        while (true) {
+          const closed = await new Promise((resolve, reject) => {
+            const req = indexedDB.deleteDatabase(dbFilename)
+        
+            req.onsuccess = () => {
+              resolve(true);
+            }
+            req.onerror = () => {
+              reject(
+                req.error
+                  ? req.error
+                  : 'An unknown error occurred when deleting IndexedDB database'
+              )
+            }
+            req.onblocked = () => {
+              resolve(false);
+            }
+          })
+          if (closed) break;
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+
+        return true;
+      });
+  
+      t.is(res, true);
+    });
+  }
 }

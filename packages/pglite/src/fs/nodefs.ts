@@ -34,4 +34,8 @@ export class NodeFS extends FilesystemBase {
   async dumpTar(mod: FS, dbname: string) {
     return dumpTar(mod, dbname);
   }
+
+  async close(FS: FS): Promise<void> {
+    FS.quit();
+  }
 }

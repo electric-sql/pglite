@@ -35,7 +35,7 @@ export interface Filesystem {
   /**
    * Close the filesystem.
    */
-  close(): Promise<void>;
+  close(FS: FS): Promise<void>;
 }
 
 export abstract class FilesystemBase implements Filesystem {
@@ -49,5 +49,5 @@ export abstract class FilesystemBase implements Filesystem {
   async syncToFs(mod: FS, relaxedDurability?: boolean) {}
   async initialSyncFs(mod: FS) {}
   abstract dumpTar(mod: FS, dbname: string): Promise<File | Blob>;
-  async close() {}
+  async close(FS: FS) {}
 }
