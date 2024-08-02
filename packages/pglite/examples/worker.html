@@ -1,84 +1,110 @@
+<!doctype html>
 <html>
   <head>
     <title>PGlite Worker Example</title>
-    <script type="module">
-      import { PGliteWorker } from "../dist/worker/index.js";
-      import { live } from "../dist/live/index.js";
-    
-      console.log("Creating worker...");
-      const pg = new PGliteWorker(
-        new Worker(new URL("./worker-process.js", import.meta.url), {
-          type: "module",
-        }),
-        {
-          extensions: {
-            live,
-          },
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite/worker": "../dist/worker/index.js",
+          "@electric-sql/pglite/live": "../dist/live/index.js"
         }
-      );
-
-      pg.onLeaderChange(() => {
-        if (pg.isLeader) {
-          document.title = "[leader] PGlite Worker Example";
-          const leader = document.getElementById("leader");
-          leader.textContent = "true";
-          leader.style.color = "green";
-        }
-      });
-    
-      await pg.exec(`
-        CREATE EXTENSION IF NOT EXISTS vector;
-        CREATE TABLE IF NOT EXISTS test (
-          id SERIAL PRIMARY KEY,
-          data vector(3)
-        );
-      `);
-
-      async function insertData() {
-        const data = [
-          Math.random(),
-          Math.random(),
-          Math.random(),
-        ];
-        await pg.query(
-          `INSERT INTO test (data) VALUES ($1)`,
-          [JSON.stringify(data)]
-        );
       }
-
-      async function clearData() {
-        await pg.query(`DELETE FROM test`);
-      }
-    
-      const btnInsert = document.querySelector("#insert");
-      btnInsert.addEventListener("click", insertData);
-
-      const btnClear = document.querySelector("#clear");
-      btnClear.addEventListener("click", clearData);
-
-      // pg.live.query(
-      pg.live.incrementalQuery(
-        `SELECT * FROM test`,
-        [],
-        'id',
-        (data) => {
-          const output = document.getElementById("output");
-          output.textContent = JSON.stringify(data.rows, null, 2);
-        }
-      );
     </script>
+    <style>
+      #output {
+        font-family: monospace;
+        overflow: auto;
+        max-height: 250px;
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+        padding: 10px;
+        margin: 1rem 0;
+        font-size: 9px;
+        line-height: 11px;
+      }
+      button {
+        margin: 0 0.5rem 0 0;
+      }
+    </style>
   </head>
-  <body>
-    <h1>PGlite Worker Example</h1>
-    <p>Leader: <span id="leader" style="color: red;">false</span></p>
-    <p>
-      <button id="insert">
-        Insert Data
-      </button>
-      <button id="clear">
-        Clear Data
-      </button>
-    </p>
-    <pre id="output"></pre>
-  </body>
+<body>
+<h1>PGlite Worker Example</h1>
+<p>Leader: <span id="leader" style="color: red;">false</span></p>
+<p>
+<button id="insert">Insert Data</button>
+<button id="clear">Clear Data</button>
+</p>
+<pre id="output"></pre>
+<div class="script-plus-log">
+<script type="module">
+import { PGliteWorker } from "@electric-sql/pglite/worker";
+import { live } from "@electric-sql/pglite/live";
+
+console.log("Creating worker...");
+const pg = new PGliteWorker(
+  new Worker(new URL("./worker-process.js", import.meta.url), {
+    type: "module",
+  }),
+  {
+    extensions: {
+      live,
+    },
+  }
+);
+
+pg.onLeaderChange(() => {
+  if (pg.isLeader) {
+    document.title = "[leader] PGlite Worker Example";
+    const leader = document.getElementById("leader");
+    leader.textContent = "true";
+    leader.style.color = "green";
+  }
+});
+
+await pg.exec(`
+  CREATE EXTENSION IF NOT EXISTS vector;
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    data vector(3)
+  );
+`);
+
+async function insertData() {
+  const data = [
+    Math.random(),
+    Math.random(),
+    Math.random(),
+  ];
+  await pg.query(
+    `INSERT INTO test (data) VALUES ($1)`,
+    [JSON.stringify(data)]
+  );
+}
+
+async function clearData() {
+  await pg.query(`DELETE FROM test`);
+}
+
+const btnInsert = document.querySelector("#insert");
+btnInsert.addEventListener("click", insertData);
+
+const btnClear = document.querySelector("#clear");
+btnClear.addEventListener("click", clearData);
+
+// pg.live.query(
+pg.live.incrementalQuery(
+  `SELECT * FROM test`,
+  [],
+  'id',
+  (data) => {
+    const output = document.getElementById("output");
+    output.textContent = JSON.stringify(data.rows, null, 2);
+  }
+);
+</script>
+<div id="log"></div>
+</div>
+</body>
 </html>
