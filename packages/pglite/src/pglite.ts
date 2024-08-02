@@ -358,7 +358,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     }
 
     // Close the filesystem
-    await this.fs!.close();
+    await this.fs!.close(this.mod!.FS);
 
     this.#closed = true;
     this.#closing = false;

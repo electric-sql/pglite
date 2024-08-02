@@ -61,7 +61,8 @@ export class OpfsAhpFS extends FilesystemBase {
     return dumpTar(mod, dbname);
   }
 
-  async close(): Promise<void> {
+  async close(FS: FS): Promise<void> {
     this.opfsAhp?.exit();
+    FS.quit();
   }
 }
