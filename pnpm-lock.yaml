@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   pg-protocol@1.6.1:
-    hash: bkhu5rwnksx3hjt6z75vtsiy4y
+    hash: v2nehwgo6jts4ikdebw4p4352i
     path: patches/pg-protocol@1.6.1.patch
 
 importers:
@@ -66,7 +66,7 @@ importers:
         version: 14.1.1
       pg-protocol:
         specifier: ^1.6.1
-        version: 1.6.1(patch_hash=bkhu5rwnksx3hjt6z75vtsiy4y)
+        version: 1.6.1(patch_hash=v2nehwgo6jts4ikdebw4p4352i)
       playwright:
         specifier: ^1.42.1
         version: 1.42.1
@@ -125,6 +125,9 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:^
         version: link:../pglite
+      '@types/node':
+        specifier: ^20.11.18
+        version: 20.11.19
       '@types/react':
         specifier: ^18.2.66
         version: 18.3.3
@@ -157,10 +160,10 @@ importers:
         version: 5.3.3
       vite:
         specifier: ^5.2.0
-        version: 5.3.1(terser@5.31.1)
+        version: 5.3.1(@types/node@20.11.19)(terser@5.31.1)
       vite-plugin-dts:
         specifier: ^3.9.1
-        version: 3.9.1(typescript@5.3.3)(vite@5.3.1)
+        version: 3.9.1(@types/node@20.11.19)(typescript@5.3.3)(vite@5.3.1)
       vite-plugin-libcss:
         specifier: ^1.1.1
         version: 1.1.1(vite@5.3.1)
@@ -1333,27 +1336,27 @@ packages:
       - supports-color
     dev: true
 
-  /@microsoft/api-extractor-model@7.28.13:
+  /@microsoft/api-extractor-model@7.28.13(@types/node@20.11.19):
     resolution: {integrity: sha512-39v/JyldX4MS9uzHcdfmjjfS6cYGAoXV+io8B5a338pkHiSt+gy2eXQ0Q7cGFJ7quSa1VqqlMdlPrB6sLR/cAw==}
     dependencies:
       '@microsoft/tsdoc': 0.14.2
       '@microsoft/tsdoc-config': 0.16.2
-      '@rushstack/node-core-library': 4.0.2
+      '@rushstack/node-core-library': 4.0.2(@types/node@20.11.19)
     transitivePeerDependencies:
       - '@types/node'
     dev: true
 
-  /@microsoft/api-extractor@7.43.0:
+  /@microsoft/api-extractor@7.43.0(@types/node@20.11.19):
     resolution: {integrity: sha512-GFhTcJpB+MI6FhvXEI9b2K0snulNLWHqC/BbcJtyNYcKUiw7l3Lgis5ApsYncJ0leALX7/of4XfmXk+maT111w==}
     hasBin: true
     dependencies:
-      '@microsoft/api-extractor-model': 7.28.13
+      '@microsoft/api-extractor-model': 7.28.13(@types/node@20.11.19)
       '@microsoft/tsdoc': 0.14.2
       '@microsoft/tsdoc-config': 0.16.2
-      '@rushstack/node-core-library': 4.0.2
+      '@rushstack/node-core-library': 4.0.2(@types/node@20.11.19)
       '@rushstack/rig-package': 0.5.2
-      '@rushstack/terminal': 0.10.0
-      '@rushstack/ts-command-line': 4.19.1
+      '@rushstack/terminal': 0.10.0(@types/node@20.11.19)
+      '@rushstack/ts-command-line': 4.19.1(@types/node@20.11.19)
       lodash: 4.17.21
       minimatch: 3.0.8
       resolve: 1.22.8
@@ -1747,7 +1750,7 @@ packages:
     dev: true
     optional: true
 
-  /@rushstack/node-core-library@4.0.2:
+  /@rushstack/node-core-library@4.0.2(@types/node@20.11.19):
     resolution: {integrity: sha512-hyES82QVpkfQMeBMteQUnrhASL/KHPhd7iJ8euduwNJG4mu2GSOKybf0rOEjOm1Wz7CwJEUm9y0yD7jg2C1bfg==}
     peerDependencies:
       '@types/node': '*'
@@ -1755,6 +1758,7 @@ packages:
       '@types/node':
         optional: true
     dependencies:
+      '@types/node': 20.11.19
       fs-extra: 7.0.1
       import-lazy: 4.0.0
       jju: 1.4.0
@@ -1770,7 +1774,7 @@ packages:
       strip-json-comments: 3.1.1
     dev: true
 
-  /@rushstack/terminal@0.10.0:
+  /@rushstack/terminal@0.10.0(@types/node@20.11.19):
     resolution: {integrity: sha512-UbELbXnUdc7EKwfH2sb8ChqNgapUOdqcCIdQP4NGxBpTZV2sQyeekuK3zmfQSa/MN+/7b4kBogl2wq0vpkpYGw==}
     peerDependencies:
       '@types/node': '*'
@@ -1778,14 +1782,15 @@ packages:
       '@types/node':
         optional: true
     dependencies:
-      '@rushstack/node-core-library': 4.0.2
+      '@rushstack/node-core-library': 4.0.2(@types/node@20.11.19)
+      '@types/node': 20.11.19
       supports-color: 8.1.1
     dev: true
 
-  /@rushstack/ts-command-line@4.19.1:
+  /@rushstack/ts-command-line@4.19.1(@types/node@20.11.19):
     resolution: {integrity: sha512-J7H768dgcpG60d7skZ5uSSwyCZs/S2HrWP1Ds8d1qYAyaaeJmpmmLr9BVw97RjFzmQPOYnoXcKA4GkqDCkduQg==}
     dependencies:
-      '@rushstack/terminal': 0.10.0
+      '@rushstack/terminal': 0.10.0(@types/node@20.11.19)
       '@types/argparse': 1.0.38
       argparse: 1.0.10
       string-argv: 0.3.2
@@ -2108,7 +2113,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.24.7(@babel/core@7.24.7)
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.2
-      vite: 5.3.1(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.11.19)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -4501,7 +4506,7 @@ packages:
     resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
     dev: true
 
-  /pg-protocol@1.6.1(patch_hash=bkhu5rwnksx3hjt6z75vtsiy4y):
+  /pg-protocol@1.6.1(patch_hash=v2nehwgo6jts4ikdebw4p4352i):
     resolution: {integrity: sha512-jPIlvgoD63hrEuihvIg+tJhoGjUsLPn6poJY9N5CnlPd91c2T18T/9zBtLxZSb1EhYxBRoZJtzScCaWlYLtktg==}
     dev: true
     patched: true
@@ -5523,7 +5528,7 @@ packages:
     engines: {node: '>= 0.8'}
     dev: true
 
-  /vite-plugin-dts@3.9.1(typescript@5.3.3)(vite@5.3.1):
+  /vite-plugin-dts@3.9.1(@types/node@20.11.19)(typescript@5.3.3)(vite@5.3.1):
     resolution: {integrity: sha512-rVp2KM9Ue22NGWB8dNtWEr+KekN3rIgz1tWD050QnRGlriUCmaDwa7qA5zDEjbXg5lAXhYMSBJtx3q3hQIJZSg==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
@@ -5533,14 +5538,14 @@ packages:
       vite:
         optional: true
     dependencies:
-      '@microsoft/api-extractor': 7.43.0
+      '@microsoft/api-extractor': 7.43.0(@types/node@20.11.19)
       '@rollup/pluginutils': 5.1.0
       '@vue/language-core': 1.8.27(typescript@5.3.3)
       debug: 4.3.4
       kolorist: 1.8.0
       magic-string: 0.30.10
       typescript: 5.3.3
-      vite: 5.3.1(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.11.19)(terser@5.31.1)
       vue-tsc: 1.8.27(typescript@5.3.3)
     transitivePeerDependencies:
       - '@types/node'
@@ -5554,10 +5559,10 @@ packages:
       vite: '*'
     dependencies:
       minimatch: 9.0.3
-      vite: 5.3.1(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.11.19)(terser@5.31.1)
     dev: true
 
-  /vite@5.3.1(terser@5.31.1):
+  /vite@5.3.1(@types/node@20.11.19)(terser@5.31.1):
     resolution: {integrity: sha512-XBmSKRLXLxiaPYamLv3/hnP/KXDai1NDexN0FpkTaZXTfycHvkRHoenpgl/fvuK/kPbB6xAgoyiryAhQNxYmAQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -5585,6 +5590,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.11.19
       esbuild: 0.21.5
       postcss: 8.4.38
       rollup: 4.18.0
