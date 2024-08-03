@@ -1,23 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite NOTIFY Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../dist/index.js"
+        }
+      }
+    </script>
+  </head>
+<body>
+<h1>PGlite <code>NOTIFY</code> Example</h1>
+<div class="script-plus-log">
 <script type="module">
+import { PGlite } from "@electric-sql/pglite";
 
-  import { PGlite } from "../dist/index.js";
+const pg = new PGlite();
 
-  const pg = new PGlite();
+const unsub = await pg.listen('test', (payload) => {
+  console.log('Received:', payload);
+});
 
-  const unsub = await pg.listen('test', (payload) => {
-    console.log('Received:', payload);
-  });
+await new Promise((resolve) => setTimeout(resolve, 500));
 
-  await new Promise((resolve) => setTimeout(resolve, 500));
+await pg.query('NOTIFY test, \'Hello, world!\'');
 
-  await pg.query('NOTIFY test, \'Hello, world!\'');
+await new Promise((resolve) => setTimeout(resolve, 500));
 
-  await new Promise((resolve) => setTimeout(resolve, 500));
+await pg.query('NOTIFY test, \'Hello, world again!\'');
 
-  await pg.query('NOTIFY test, \'Hello, world again!\'');
+await unsub();
 
-  await unsub();
-
-  await pg.query('NOTIFY test, \'Will not be received!\'');
-
+await pg.query('NOTIFY test, \'Will not be received!\'');
 </script>
+<div id="log"></div>
+</div>
+</body>
+</html>
