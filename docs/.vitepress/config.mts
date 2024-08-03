@@ -46,6 +46,7 @@ export default defineConfig({
           { text: 'Framework Hooks', link: '/docs/framework-hooks' },
           { text: 'Multi-tab Worker', link: '/docs/multi-tab-worker' },
           { text: 'REPL Component', link: '/docs/repl' },
+          { text: 'ORM Support', link: '/docs/orm-support' },
         ]
       },
       {

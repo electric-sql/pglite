@@ -279,6 +279,19 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/tsm_system_time",
     importName: "tsm_system_time",
   },
+  {
+    name: "uuid-ossp",
+    description: `
+      The uuid-ossp module provides functions to generate universally unique 
+      identifiers (UUIDs) using one of several standard algorithms. There are also 
+      functions to produce certain special UUID constants. This module is only 
+      necessary for special requirements beyond what is available in core PostgreSQL.
+    `,
+    docs: "https://www.postgresql.org/docs/current/uuid-ossp.html",
+    tags: ["postgres extension", "postgres/contrib"],
+    importPath: "@electric-sql/pglite/contrib/uuid_ossp",
+    importName: "uuid_ossp",
+  },
 ];
 
 const tags = [
@@ -317,9 +330,11 @@ export default {
       if (!descriptionHtml) {
         let description = dedent(extension.description).trim();
         if (extension.core) {
-          description += '\n\n' + dedent`
+          description +=
+            "\n\n" +
+            dedent`
           \`${extension.name}\` is included in the main PGlite package.
-          `
+          `;
         } else if (extension.npmPackage) {
           description += dedent`
           <!-- this comment is a hack to force a new paragraph -->
@@ -327,10 +342,12 @@ export default {
           ${"```"}sh
           npm install ${extension.npmPackage}
           ${"```"}
-          `
+          `;
         }
         if (extension.importName && extension.importPath) {
-          description += '\n\n' + dedent`
+          description +=
+            "\n\n" +
+            dedent`
           ${"```"}js
           import { ${extension.importName} } from '${extension.importPath}';
           const pg = new PGlite({
