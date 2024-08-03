@@ -3,7 +3,7 @@ import {
   RowDescriptionMessage,
   DataRowMessage,
   CommandCompleteMessage,
-} from "pg-protocol/dist/messages.js";
+} from "pg-protocol/src/messages.js";
 import type { Results, QueryOptions } from "./interface.js";
 import { parseType } from "./types.js";
 

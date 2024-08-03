@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:^",
+    "@types/node": "^20.11.18",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@typescript-eslint/eslint-plugin": "^7.2.0",

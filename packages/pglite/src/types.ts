@@ -1,4 +1,5 @@
 import type { ParserOptions } from "./interface.js";
+import { Buffer } from "./polyfills/buffer.js";
 
 const JSON_parse = globalThis.JSON.parse;
 const JSON_stringify = globalThis.JSON.stringify;

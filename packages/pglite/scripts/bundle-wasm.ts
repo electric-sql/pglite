@@ -52,8 +52,10 @@ const copyFiles = async (srcDir: string, destDir: string) => {
 
 async function main() {
   await copyFiles("./release", "./dist");
-  await findAndReplaceInDir("./dist", /\.\.\/release\//g, "./", [".js"]);
-  await findAndReplaceInDir("./dist", /\.\.\/release/g, "", [".js"], true);
+  await findAndReplaceInDir("./dist", /\.\.\/release\//g, "./", [".cjs"]);
+  await findAndReplaceInDir("./dist", /\.\.\/release\//g, "./", [".js", ".cjs"]);
+  await findAndReplaceInDir("./dist", /\.\.\/release/g, "", [".js", ".cjs"], true);
+  await findAndReplaceInDir("./dist", `require("./postgres.js")`, `require("./postgres.cjs").default`, [".cjs"]);
 }
 
 await main();

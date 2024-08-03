@@ -16,9 +16,19 @@ const replaceAssertPlugin = {
   },
 };
 
+const replaceBuffer = {
+  name: "replace-buffer",
+  setup(build: any) {
+    // Resolve `assert` to our buffer polyfill
+    build.onResolve({ filter: /^(node:)?buffer$/ }, (args: any) => {
+      return { path: path.join(root, "src", "polyfills", "buffer.ts") };
+    });
+  },
+};
+
 const entryPoints = [
   "src/index.ts",
-  'src/live/index.ts',
+  "src/live/index.ts",
   "src/worker/index.ts",
   "src/vector/index.ts",
   "src/fs/opfs-ahp/index.ts",
@@ -33,22 +43,27 @@ for (const file of contribFiles) {
   }
 }
 
-export default defineConfig({
-  entry: entryPoints,
-  sourcemap: true,
-  dts: {
+export default defineConfig([
+  {
     entry: entryPoints,
-    resolve: true,
+    sourcemap: true,
+    dts: {
+      entry: entryPoints,
+      resolve: true,
+    },
+    clean: true,
+    external: ["../release/postgres.js", "../release/postgres.cjs"],
+    esbuildPlugins: [replaceAssertPlugin, replaceBuffer],
+    minify: true,
+    shims: true, // Convert import.meta.url to a shim for CJS
+    format: ["esm", "cjs"],
   },
-  clean: true,
-  format: ["esm"],
-  external: ["../release/postgres.js"],
-  esbuildOptions(options, context) {
-    options.inject = [
-      "src/polyfills/buffer.ts",
-      "src/polyfills/indirectEval.ts",
-    ];
+  {
+    // Convert the Emscripten ESM bundle to a CJS bundle
+    entry: ["release/postgres.js"],
+    format: ["cjs"],
+    minify: true,
+    shims: true, // Convert import.meta.url to a shim for CJS
+    keepNames: true,
   },
-  esbuildPlugins: [replaceAssertPlugin],
-  minify: true,
-});
+]);
