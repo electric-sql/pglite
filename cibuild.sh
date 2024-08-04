@@ -382,28 +382,17 @@ do
         ;;
 
         demo-site) echo "==================== demo-site =========================="
+            # Move all existing files to a subfolder
+            mkdir -p /tmp/web/x-term-repl
+            mv -r /tmp/web/* /tmp/web/x-term-repl/
 
-            echo "<html>
-            <body>
-                <ul>
-                    <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-                    <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-                    <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
-                    <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-                    <li><a href=./benchmarks/index.html>Benchmarks</a> / <a href=./benchmarks/rtt.html>RTT Benchmarks</a></li>
-                    <li><a href=./postgres.html>Postgres xterm REPL</a></li>
-                </ul>
-            </body>
-            </html>" > /tmp/web/demos.html
-
-            mkdir -p /tmp/web/pglite
-            mkdir -p /tmp/web/repl
+            mkdir -p /tmp/web/dist
+            mkdir -p /tmp/web/examples
             mkdir -p /tmp/web/benchmarks
 
             PGLITE=$(pwd)/packages/pglite
-            cp -r ${PGLITE}/dist /tmp/web/pglite/
-            cp -r ${PGLITE}/examples /tmp/web/pglite/
-            cp -r ${WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
+            cp -r ${PGLITE}/dist/* /tmp/web/dist/
+            cp -r ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmarks/
         ;;
     esac

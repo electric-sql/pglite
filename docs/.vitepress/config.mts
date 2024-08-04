@@ -8,7 +8,16 @@ export default defineConfig({
   appearance: 'force-dark',
   base: '/',
   cleanUrls: true,
-  ignoreDeadLinks: 'localhostLinks',
+  ignoreDeadLinks: [
+    (url) => {
+      // Ignore links to our example pages
+      return url.toLowerCase().startsWith('./examples')
+    },
+    (url) => {
+      // Ignore links to the benchmark runners
+      return url.toLowerCase().startsWith('./benchmark/')
+    },
+  ],
   head: [
     ['link', {
       rel: 'icon',
@@ -59,6 +68,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: 'Examples', link: '/examples.md' },
           { text: 'Benchmarks', link: '/benchmarks.md' },
         ]
       }
