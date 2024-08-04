@@ -116,6 +116,12 @@ jobs:
           pnpm install
           pnpm run build
 
+      - name: Build Benchmarks
+        working-directory: ./packages/benchmark
+        run: |
+          pnpm install
+          pnpm run build
+
       - name: Build demo site
         run: |
           bash ./cibuild.sh demo-site

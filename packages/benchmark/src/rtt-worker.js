@@ -2,12 +2,12 @@
 // Copyright 2021 Roy T. Hashimoto. All Rights Reserved.
 // Modified by the PGLite authors.
 
-import * as SQLite from './node_modules/wa-sqlite/src/sqlite-api.js';
-import { createTag } from "./node_modules/wa-sqlite/src/examples/tag.js";
-import { PGlite } from "../pglite/dist/index.js?1";
+import * as SQLite from './wa-sqlite/src/sqlite-api.js';
+import { createTag } from "./wa-sqlite/src/examples/tag.js";
+import { PGlite } from "./pglite/index.js";
 
-const WA_SQLITE = './node_modules/wa-sqlite/dist/wa-sqlite.mjs';
-const WA_SQLITE_ASYNC = './node_modules/wa-sqlite/dist/wa-sqlite-async.mjs';
+const WA_SQLITE = './wa-sqlite/dist/wa-sqlite.mjs';
+const WA_SQLITE_ASYNC = './wa-sqlite/dist/wa-sqlite-async.mjs';
 
 (async function () {
   const Comlink = await import(

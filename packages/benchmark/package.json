@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf ./dist && mkdir dist && cp -r src/* dist/ && mkdir dist/wa-sqlite && cp -r ./node_modules/wa-sqlite/* dist/wa-sqlite && mkdir dist/pglite && cp -r ../pglite/dist/* dist/pglite"
   },
   "keywords": [],
   "author": "Electric DB Limited",
