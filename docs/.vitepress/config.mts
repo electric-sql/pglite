@@ -47,7 +47,8 @@ export default defineConfig({
       { text: 'About', link: '/docs/about' },
       { text: 'Docs', link: '/docs/' },
       { text: 'Extensions', link: '/extensions/' },
-      { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
+      { text: 'REPL', link: '/repl/' },
+      { text: 'ElectricSQL', link: 'https://www.electric-sql.com' }
     ],
     sidebar: [
       {
