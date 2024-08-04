@@ -1,0 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap");
+
+body,
+html {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  margin: 1rem 2rem;
+  padding: 0;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+#log {
+  display: block;
+  padding: 1rem;
+  white-space: pre-wrap;
+  width: 50%;
+  font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
+    "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
+    "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+}
+
+#controls {
+  margin-top: 1em;
+  display: flex;
+  align-items: center;
+}
+
+#controls * {
+  margin-right: 0.5em;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+td:first-child {
+  min-width: 15em;
+}
+
+td, th {
+  border: 1px solid #999;
+  padding: 0.5rem;
+  text-align: left;
+  max-width: 3in;
+}

@@ -2,7 +2,7 @@
 // Copyright 2021 Roy T. Hashimoto. All Rights Reserved.
 // Modified by the PGLite authors.
 
-import { PGlite } from "../pglite/dist/index.js";
+import { PGlite } from "./pglite/index.js";
 
 (async function () {
   const Comlink = await import(

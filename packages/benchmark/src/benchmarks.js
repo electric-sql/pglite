@@ -84,6 +84,22 @@ document.getElementById("start").addEventListener("click", async (event) => {
     req.onsuccess = resolve;
     req.onerror = reject;
   });
+  await new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase("/pglite/benchmark-rd");
+    req.onsuccess = resolve;
+    req.onerror = reject;
+  });
+  // OPFS
+  const root = await navigator.storage.getDirectory();
+  for await (const handle of root.values()) {
+    if (handle.name.startsWith("benchmark")) {
+      try {
+        await root.removeEntry(handle.name, { recursive: true });
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
 
   // Clear timings from the table.
   Array.from(document.getElementsByTagName("tr"), (element) => {
@@ -95,16 +111,6 @@ document.getElementById("start").addEventListener("click", async (event) => {
     }
   });
 
-  // Remove OPFS
-  const root = await navigator.storage.getDirectory();
-  for await (const handle of root.values()) {
-    try {
-      await root.removeEntry(handle.name, { recursive: true });
-    } catch (e) {
-      // ignore
-    }
-  }
-
   const benchmarks = await benchmarksReady;
   const Comlink = await ComlinkReady;
   try {
@@ -112,7 +118,7 @@ document.getElementById("start").addEventListener("click", async (event) => {
     const preamble = document.getElementById("preamble").value;
     document.getElementById("error").textContent = "";
     for (const config of CONFIGURATIONS.values()) {
-      const worker = new Worker("./demo-worker.js", { type: "module" });
+      const worker = new Worker("./benchmarks-worker.js", { type: "module" });
       try {
         await Promise.race([
           new Promise((resolve) => {

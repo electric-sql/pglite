@@ -33,36 +33,61 @@ const CONFIGURATIONS = new Map(
       options: { relaxedDurability: true },
     },
     {
-      label: 'SQLite Memory',
-      db: 'wa-sqlite',
+      label: "SQLite Memory",
+      db: "wa-sqlite",
       isAsync: false,
-      vfsModule: './node_modules/wa-sqlite/src/examples/MemoryVFS.js',
-      vfsClass: 'MemoryVFS',
-      vfsArgs: []
+      vfsModule: "./wa-sqlite/src/examples/MemoryVFS.js",
+      vfsClass: "MemoryVFS",
+      vfsArgs: [],
     },
     {
-      label: 'SQLite IDB',
-      db: 'wa-sqlite',
+      label: "SQLite IDB",
+      db: "wa-sqlite",
       isAsync: true,
-      vfsModule: './node_modules/wa-sqlite/src/examples/IDBMinimalVFS.js',
-      vfsClass: 'IDBMinimalVFS',
-      vfsArgs: ['demo-IDBMinimalVFS']
+      vfsModule: "./wa-sqlite/src/examples/IDBMinimalVFS.js",
+      vfsClass: "IDBMinimalVFS",
+      vfsArgs: ["demo-IDBMinimalVFS"],
     },
     {
-      label: 'SQLite OPFS',
-      db: 'wa-sqlite',
+      label: "SQLite IDB<br> <i>relaxed durability</i>",
+      db: "wa-sqlite",
       isAsync: true,
-      vfsModule: './node_modules/wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js',
-      vfsClass: 'OriginPrivateFileSystemVFS',
-      vfsArgs: []
+      vfsModule: "./wa-sqlite/src/examples/IDBMinimalVFS.js",
+      vfsClass: "IDBMinimalVFS",
+      vfsArgs: ["demo-IDBMinimalVFS-relaxed", { durability: "relaxed" }],
     },
     {
-      label: 'SQLite OPFS AHP',
-      db: 'wa-sqlite',
+      label: " SQLite IDB BatchAtomic",
+      db: "wa-sqlite",
+      isAsync: true,
+      vfsModule: "./wa-sqlite/src/examples/IDBBatchAtomicVFS.js",
+      vfsClass: "IDBBatchAtomicVFS",
+      vfsArgs: ["demo-IDBBatchAtomicVFS"],
+    },
+    {
+      label: "SQLite IDB BatchAtomic<br> <i>relaxed durability</i>",
+      db: "wa-sqlite",
+      isAsync: true,
+      vfsModule: "./wa-sqlite/src/examples/IDBBatchAtomicVFS.js",
+      vfsClass: "IDBBatchAtomicVFS",
+      vfsArgs: ["demo-IDBBatchAtomicVFS-relaxed", { durability: "relaxed" }],
+    },
+    {
+      label: "SQLite OPFS",
+      db: "wa-sqlite",
+      isAsync: true,
+      vfsModule: "./wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js",
+      vfsClass: "OriginPrivateFileSystemVFS",
+      vfsArgs: [],
+      dbName: "benchmark-rtt-sqlite",
+    },
+    {
+      label: "SQLite OPFS AHP",
+      db: "wa-sqlite",
       isAsync: false,
-      vfsModule: './node_modules/wa-sqlite/src/examples/AccessHandlePoolVFS.js',
-      vfsClass: 'AccessHandlePoolVFS',
-      vfsArgs: ['/benchmark-rtt-sqlite-ahp']
+      vfsModule: "./wa-sqlite/src/examples/AccessHandlePoolVFS.js",
+      vfsClass: "AccessHandlePoolVFS",
+      vfsArgs: ["/benchmark-rtt-sqlite-ahp"],
     },
   ].map((obj) => [obj.label, obj])
 );
@@ -70,12 +95,12 @@ const CONFIGURATIONS = new Map(
 const initalSetup = `
   CREATE TABLE t1 (id SERIAL PRIMARY KEY NOT NULL, a INTEGER);
   CREATE TABLE t2 (id SERIAL PRIMARY KEY NOT NULL, a TEXT);
-`
+`;
 
 const initalSetupSQLite = `
   CREATE TABLE t1 (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, a INTEGER);
   CREATE TABLE t2 (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, a TEXT);
-`
+`;
 
 const benchmarks = [
   `INSERT INTO t1 (a) VALUES (1);`,
@@ -90,7 +115,7 @@ const benchmarks = [
   `SELECT * FROM t2 WHERE id IN (SELECT id FROM t2 LIMIT 1);`,
   `UPDATE t2 SET a = '${"a".repeat(10000)}' WHERE id = 1;`,
   `DELETE FROM t2 WHERE id IN (SELECT id FROM t2 LIMIT 1);`,
-]
+];
 
 const ITERATIONS = 100;
 
@@ -106,18 +131,31 @@ document.getElementById("start").addEventListener("click", async (event) => {
   event.target.disabled = true;
 
   // Clear any existing storage state.
-  await new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase("/pglite/benchmark-rtt");
-    req.onsuccess = resolve;
-    req.onerror = reject;
-  });
-
-  // Clear any existing wa-sqlite state.
-  await new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase("demo-IDBMinimalVFS");
-    req.onsuccess = resolve;
-    req.onerror = reject;
-  });
+  for (const name of [
+    "/pglite/benchmark-rtt",
+    "/pglite/benchmark-rtt-rd",
+    "demo-IDBMinimalVFS",
+    "demo-IDBMinimalVFS-relaxed",
+    "demo-IDBBatchAtomicVFS",
+    "demo-IDBBatchAtomicVFS-relaxed",
+  ]) {
+    await new Promise((resolve, reject) => {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = resolve;
+      req.onerror = reject;
+    });
+  }
+  // OPFS
+  const root = await navigator.storage.getDirectory();
+  for await (const handle of root.values()) {
+    if (handle.name.startsWith("benchmark")) {
+      try {
+        await root.removeEntry(handle.name, { recursive: true });
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
 
   // Clear timings from the table.
   Array.from(document.getElementsByTagName("tr"), (element) => {
@@ -129,22 +167,12 @@ document.getElementById("start").addEventListener("click", async (event) => {
     }
   });
 
-  // Remove OPFS
-  const root = await navigator.storage.getDirectory();
-  for await (const handle of root.values()) {
-    try {
-      await root.removeEntry(handle.name, { recursive: true });
-    } catch (e) {
-      // ignore
-    }
-  }
-
   const Comlink = await ComlinkReady;
   try {
     // @ts-ignore
     document.getElementById("error").textContent = "";
     for (const config of CONFIGURATIONS.values()) {
-      const worker = new Worker("./rtt-demo-worker.js", { type: "module" });
+      const worker = new Worker("./rtt-worker.js", { type: "module" });
       try {
         await Promise.race([
           new Promise((resolve) => {
@@ -160,7 +188,7 @@ document.getElementById("start").addEventListener("click", async (event) => {
         const workerProxy = Comlink.wrap(worker);
         const query = await workerProxy(config);
 
-        if (config.db === 'wa-sqlite') {
+        if (config.db === "wa-sqlite") {
           await query(initalSetupSQLite);
         } else {
           await query(initalSetup);
@@ -177,7 +205,10 @@ document.getElementById("start").addEventListener("click", async (event) => {
           }
           // sort the times array and remove the first and last 10% of the values
           times.sort((a, b) => a - b);
-          times = times.slice(Math.floor(times.length * 0.1), Math.floor(times.length * 0.9));
+          times = times.slice(
+            Math.floor(times.length * 0.1),
+            Math.floor(times.length * 0.9)
+          );
           const avg = times.reduce((a, b) => a + b, 0) / times.length;
           addEntry(tr, avg.toFixed(3));
           tr = tr.nextElementSibling;

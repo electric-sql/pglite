@@ -390,7 +390,7 @@ do
         <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
         <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
         <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-        <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
+        <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
         <li><a href=./postgres.html>Postgres xterm REPL</a></li>
     </ul>
 </body>
@@ -398,12 +398,13 @@ do
 
             mkdir -p /tmp/web/pglite
             mkdir -p /tmp/web/repl
+            mkdir -p /tmp/web/benchmarks
 
             PGLITE=$(pwd)/packages/pglite
             cp -r ${PGLITE}/dist /tmp/web/pglite/
             cp -r ${PGLITE}/examples /tmp/web/pglite/
             cp -r ${WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
-            cp -r ${WORKSPACE}/packages/benchmark /tmp/web/pglite/
+            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmarks/
         ;;
     esac
     shift
