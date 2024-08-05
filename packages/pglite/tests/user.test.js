@@ -21,7 +21,7 @@ test("user switching", async (t) => {
     username: "test_user",
   });
 
-  const result = await db2.query("SELECT * FROM test;");
+  const result = await db2.query("SET ROLE test_user;SELECT * FROM test;");
   t.deepEqual(result.rows, [{ id: 1, number: 42 }]);
 
   const currentUsername = await db2.query("SELECT current_user;");
