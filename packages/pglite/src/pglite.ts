@@ -151,6 +151,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     const args = [
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
+      ...(options.username ? [`PGUSER=${options.username}`] : []),
       "MODE=REACT",
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
