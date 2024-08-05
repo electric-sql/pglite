@@ -38,6 +38,10 @@
 </p>
 <pre id="output"></pre>
 <div class="script-plus-log">
+<div class="scripts">
+<h2>Worker Thread - <code>worker-process.js</code></h2>
+<div class="script" rel="./worker-process.js"></div>
+<h2>Main Thread</h2>
 <script type="module">
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { live } from "@electric-sql/pglite/live";
@@ -63,6 +67,8 @@ pg.onLeaderChange(() => {
   }
 });
 
+console.log("Creating table...");
+
 await pg.exec(`
   CREATE EXTENSION IF NOT EXISTS vector;
   CREATE TABLE IF NOT EXISTS test (
@@ -70,6 +76,8 @@ await pg.exec(`
     data vector(3)
   );
 `);
+
+console.log("Ready!");
 
 async function insertData() {
   const data = [
@@ -104,6 +112,7 @@ pg.live.incrementalQuery(
   }
 );
 </script>
+</div>
 <div id="log"></div>
 </div>
 </body>

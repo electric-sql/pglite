@@ -24,6 +24,12 @@ To use the in-memory FS you can use one of these methods:
   })
   ```
 
+### Platform Support
+
+| Node | Bun | Chrome | Safari | Firefox |
+|------|-----|--------|--------|---------|
+| ✓    | ✓   | ✓      | ✓      | ✓       |
+
 ## Node FS
 
 The Node FS uses the Node.js file system API to implement a VFS for PGLite. It is bailable in both Node and Bun.
@@ -41,6 +47,12 @@ To use the Node FS you can use one of these methods:
     fs: new NodeFS("./path/to/datadir/")
   })
   ```
+
+#### Platform Support
+
+| Node | Bun | Chrome | Safari | Firefox |
+|------|-----|--------|--------|---------|
+| ✓    | ✓   |        |        |         |
 
 ## IndexedDB FS
 
@@ -62,6 +74,12 @@ To use the IndexedDB FS you can use one of these methods:
 
 The IndexedDB filesystem works at the file level, storing hole files as blobs in IndexedDB. Flushing whole files can take a few milliseconds after each query, to aid in building resposive apps we provide a `relaxedDurability` mode that can be [configured when starting](./api.md#options) PGlite. Under this mode the results of a query are returned imediatly, and the flush to IndexedDB is scheduled to happen asynchronous afterwards. Typically this is immediately after the query returns with no delay.
 
+### Platform Support
+
+| Node | Bun | Chrome | Safari | Firefox |
+|------|-----|--------|--------|---------|
+|      |     | ✓      | ✓      | ✓       |
+
 ## OPFS AHP FS
 
 The OPFS AHP filesystem is built on top of the [Origin Private Filesystem](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) in the browser and uses an "access handle pool". It is only available when PGlite is run in a Web Worker, this could be any worker you configure, however we provide a [Multi Tab Worker](./multi-tab-worker.md) to aid in using PGlite from multiple tabs in the browser.
@@ -79,6 +97,14 @@ To use the OPFS AHP FS you can use one of these methods:
     fs: new OpfsAhpFS("./path/to/datadir/")
   })
   ```
+
+### Platform Support
+
+| Node | Bun | Chrome | Safari | Firefox |
+|------|-----|--------|--------|---------|
+|      |     | ✓      |        | ✓       |
+
+Unfortunately Safari appears to have a limit of 252 open sync access handles, this prevents this VFS from working as a standard Postgres install has between 300-800 files.
 
 ### What is an "access handle pool"?
 

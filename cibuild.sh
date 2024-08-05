@@ -388,12 +388,12 @@ do
 
             mkdir -p /tmp/web/dist
             mkdir -p /tmp/web/examples
-            mkdir -p /tmp/web/benchmarks
+            mkdir -p /tmp/web/benchmark
 
             PGLITE=$(pwd)/packages/pglite
             cp -r ${PGLITE}/dist/* /tmp/web/dist/
             cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmarks/
+            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmark/
         ;;
     esac
     shift

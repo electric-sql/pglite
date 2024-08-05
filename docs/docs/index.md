@@ -1,46 +1,46 @@
 # Getting started with PGlite
 
-PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 2.6mb gzipped.
+PGlite can be used in both Node/Bun or the browser, and cen be used with any JavaScript framework.
 
-```js
-import { PGlite } from "@electric-sql/pglite";
-
-const db = new PGlite();
-await db.query("select 'Hello world' as message;");
-// -> { rows: [ { message: "Hello world" } ] }
-```
-
-It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun) or indexedDB (Browser).
-
-Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
-
-## Node/Bun
+## Install and start in Node/Bun
 
 Install into your project:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @electric-sql/pglite
 ```
+
+```bash [pnpm]
+pnpm install @electric-sql/pglite
+```
+
+```bash [yarn]
+yarn add @electric-sql/pglite
+```
+
+```bash [bun]
+bun install @electric-sql/pglite
+```
+
+:::
 
 To use the in-memory Postgres:
 
 ```js
-
 import { PGlite } from "@electric-sql/pglite";
 
 const db = new PGlite();
-await db.query("select 'Hello world' as message;");
-// -> { rows: [ { message: "Hello world" } ] }
 ```
 
-or to persist to the filesystem:
+or to persist to the native filesystem:
 
 ```js
-
 const db = new PGlite("./path/to/pgdata");
 ```
 
-## Browser
+## Install and start in the browser
 
 It can be installed and imported using your usual package manager:
 
@@ -57,8 +57,6 @@ Then for an in-memory Postgres:
 
 ```js
 const db = new PGlite()
-await db.query("select 'Hello world' as message;")
-// -> { rows: [ { message: "Hello world" } ] }
 ```
 
 or to persist the database to indexedDB:
@@ -66,3 +64,80 @@ or to persist the database to indexedDB:
 ```js
 const db = new PGlite("idb://my-pgdata");
 ```
+
+## Making a query
+
+There are two method for querying the database, `.query` and `.exec`, the former support parameters, and the latter multiple statements.
+
+First, lets crate a table and insert some test data using the `.exec` method:
+
+```js
+await db.exec(`
+  CREATE TABLE IF NOT EXISTS todo (
+    id SERIAL PRIMARY KEY,
+    task TEXT,
+    done BOOLEAN DEFAULT false
+  );
+  INSERT INTO todo (task, done) VALUES ('Install PGlite from NPM', true);
+  INSERT INTO todo (task, done) VALUES ('Load PGlite', true);
+  INSERT INTO todo (task, done) VALUES ('Create a table', true);
+  INSERT INTO todo (task, done) VALUES ('Insert some data', true);
+  INSERT INTO todo (task) VALUES ('Update a task');
+`)
+```
+
+The `.exec` method is perfect for migrations, or batch inserts with raw SQL.
+
+Now, lets retrieve an item using `.query` method:
+
+```js
+const ret = await db.query(`
+  SELECT * from todo WHERE id = 1;
+`)
+console.log(ret.rows)
+
+// Output:
+[
+  {
+    id: 1,
+    task: "Install PGlite from NPM"
+  }
+]
+```
+
+## Using parametrised queries
+
+When working with user supplied values its always best to use parametrised queries, these are supported on the `.query` method.
+
+We can use this to update a task:
+
+```js
+const ret = await db.query(
+  "UPDATE todo SET task = $2, done = $3 WHERE id = $1",
+  [
+    5,
+    "Update a task using parametrised queries",
+    true
+  ]
+)
+```
+
+## What next?
+
+- To learn more about [querying](./api.md#query) and [transactions](./api.md#transaction) you can read the main [PGlite API documentation](./api.md).
+
+- There is also a [live-query extension](./live-queries.md) that enables reactive queries to update a UI when the underlying database changes.
+
+- PGlite has a number of built in [virtual file systems](./filesystems.md) to provided persistance to the database.
+
+- There are [framework hooks](./framework-hooks.md) to make working with PGlite within React and Vue much easer with less boilerplate.
+
+- As PGlite only has single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
+
+- There is a [REPL component](./repl.md) that can be easily embedded into a web-app to aid in debugging and development, or as part of a database application itself.
+
+- We maintain a [list of ORMs and query builders](./orm-support.md) that support PGlite.
+
+- PGlite supports both Postgres extensions and PGlite Plugins via its [extensions API](./api.md#optionsextensions), and there is a list of [supported extensions](../extensions/).
+
+- We have a [page of examples](../examples.md) that you can open to test out PGlite in the browser.

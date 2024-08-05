@@ -16,11 +16,15 @@ h1 {
   margin: 0 0 1rem;
 }
 
-script,
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.script-plus-log :is(script, .script),
 #log {
   /* Show the content of the script tag */
   display: block;
-  padding: 1rem;
   white-space: pre-wrap;
   width: 50%;
   font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
@@ -28,7 +32,22 @@ script,
     "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
 }
 
-script {
+.script-plus-log > :is(script, .script) {
+  padding: 1rem;
+}
+
+.script-plus-log > .scripts,
+#log {
+  width: 50%;
+  padding: 1rem;
+}
+
+.script-plus-log > .scripts > :is(script, .script) {
+  width: 100%;
+}
+
+.script-plus-log > .scripts,
+.script-plus-log > :is(script, .script) {
   background-color: #eee;
 }
 
@@ -47,4 +66,16 @@ script:not([src]):first-line {
   border: 1px solid #eee;
   border-radius: 0.5rem;
   overflow: hidden;
+}
+
+.scripts h2 {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #ddd;
+}
+
+.scripts h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }

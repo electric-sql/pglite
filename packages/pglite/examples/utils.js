@@ -18,5 +18,10 @@
       const code = await source;
       script.textContent = code;
     });
+    document.body.querySelectorAll("div.script[rel]").forEach(async (el) => {
+      const source = fetch(el.getAttribute("rel")).then((res) => res.text());
+      const code = await source;
+      el.textContent = code;
+    });
   });
 }
