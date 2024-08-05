@@ -14,7 +14,7 @@
  #endif
 -
 +#else
-+	const char *name = WASM_USERNAME;
++	const char *name = getenv("PGUSER");
 +#endif
  	if (name)
  	{

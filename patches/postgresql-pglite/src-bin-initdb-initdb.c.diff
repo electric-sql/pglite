@@ -62,7 +62,7 @@
  
  	return pg_strdup(username);
 +#else
-+	return pg_strdup(WASM_USERNAME);
++	return pg_strdup(getenv("PGUSER"));
 +#endif /* wasm */
  }
  
