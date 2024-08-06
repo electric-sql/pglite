@@ -1,18 +1,18 @@
 import React, { createContext, useContext } from "react";
-import { PGliteWithLive } from "../../live/interface";
+import { PGliteWithLive } from "@electric-sql/pglite/live";
 
 interface Props<T extends PGliteWithLive> {
   children?: React.ReactNode;
-  pg?: T;
+  db?: T;
 }
 
 const ctx = createContext<PGliteWithLive | undefined>(undefined);
 
 export function PGliteProvider<T extends PGliteWithLive>({
   children,
-  pg,
-}: Props<T>) {
-  return <ctx.Provider value={pg}>{children}</ctx.Provider>;
+  db,
+}: Props<T>): React.ReactElement {
+  return <ctx.Provider value={db}>{children}</ctx.Provider>;
 }
 
 export function usePGlite(): PGliteWithLive {

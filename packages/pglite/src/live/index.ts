@@ -427,6 +427,10 @@ export const live = {
   setup,
 } satisfies Extension;
 
+export type PGliteWithLive = PGliteInterface & {
+  live: LiveNamespace;
+}
+
 /**
  * Get a list of all the tables used in a view
  * @param tx a transaction or or PGlite instance

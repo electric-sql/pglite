@@ -52,11 +52,6 @@
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs",
       "types": "./dist/contrib/*.d.ts"
-    },
-    "./react": {
-      "import": "./dist/frameworks/react/index.js",
-      "require": "./dist/frameworks/react/index.cjs",
-      "types": "./dist/frameworks/react/index.d.ts"
     }
   },
   "type": "module",
@@ -83,7 +78,6 @@
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
     "@types/node-fetch": "^2.6.11",
-    "@types/react": "^18.2.66",
     "async-mutex": "^0.4.1",
     "ava": "^6.1.2",
     "buffer": "^6.0.3",
@@ -93,20 +87,11 @@
     "pg-protocol": "^1.6.1",
     "playwright": "^1.42.1",
     "prettier": "3.2.5",
-    "react": "^18.2.0",
     "serve": "^14.2.3",
     "tinytar": "^0.1.0",
     "tsup": "^8.1.0",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
-  },
-  "peerDependencies": {
-    "react": ">= 16.8.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    }
   },
   "browser": {
     "fs": false,
