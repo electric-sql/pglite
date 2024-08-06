@@ -83,7 +83,7 @@
     "stylecheck": "pnpm lint && prettier --check ./src ./tests"
   },
   "devDependencies": {
-    "@electric-sql/next": "^0.0.7",
+    "@electric-sql/next": "^0.2.2",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
     "@types/node-fetch": "^2.6.11",
