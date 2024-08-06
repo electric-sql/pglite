@@ -1,4 +1,11 @@
-#define PDEBUG(...)
+#define PDEBUG(string)
+
+#define IDB_OK  0b11111110
+#define IDB_FAILED  0b0001
+#define IDB_CALLED  0b0010
+#define IDB_HASDB   0b0100
+#define IDB_HASUSER 0b1000
+
 #if defined(PG_MAIN)
 
 #if defined(PG_EC_STATIC)
@@ -75,7 +82,7 @@ progname;
 void
 PostgresMain(const char *dbname, const char *username)
 {
-    PDEBUG("# 22: ERROR: PostgresMain should not be called anymore" __FILE__ );
+    puts("# 82: ERROR: PostgresMain should not be called anymore" __FILE__ );
     while (1){};
 }
 
@@ -118,10 +125,10 @@ AsyncPostgresSingleUserMain(int argc, char *argv[],
 
 	/* Set default values for command-line options.	 */
 	InitializeGUCOptions();
-PDEBUG("520");
+PDEBUG("# 125");
 	/* Parse command-line options. */
 	process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
-PDEBUG("523");
+PDEBUG("# 128");
 	/* Must have gotten a database name, or have a default (the username) */
 	if (dbname == NULL)
 	{
@@ -132,6 +139,7 @@ PDEBUG("523");
 					 errmsg("%s: no database nor user name specified",
 							progname)));
 	}
+
 if (async_restart) goto async_db_change;
 	/* Acquire configuration parameters */
 	if (!SelectConfigFiles(userDoption, progname))
@@ -155,7 +163,7 @@ if (async_restart) goto async_db_change;
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-PDEBUG("557");
+PDEBUG("# 163");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -283,7 +291,7 @@ void
 RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username)
 {
 
-printf("# 54: RePostgresSingleUserMain progname=%s for %s\n", progname, single_argv[0]);
+printf("# 291: RePostgresSingleUserMain progname=%s for %s\n", progname, single_argv[0]);
     single_mode_feed = fopen(IDB_PIPE_SINGLE, "r");
 
     // should be template1.
@@ -293,14 +301,15 @@ printf("# 54: RePostgresSingleUserMain progname=%s for %s\n", progname, single_a
     /* Parse command-line options. */
     process_postgres_switches(single_argc, single_argv, PGC_POSTMASTER, &dbname);
 
-printf("# 67: dbname=%s\n", dbname);
+printf("# 301: dbname=%s\n", dbname);
 
     LocalProcessControlFile(false);
 
     process_shared_preload_libraries();
 
 //	                InitializeMaxBackends();
-PDEBUG("# 76 ?");
+PDEBUG("# 308 ?");
+
 // ? IgnoreSystemIndexes = true;
 IgnoreSystemIndexes = false;
     process_shmem_requests();
@@ -308,16 +317,11 @@ IgnoreSystemIndexes = false;
     InitializeShmemGUCs();
 
     InitializeWalConsistencyChecking();
-//PDEBUG("# NO CreateSharedMemoryAndSemaphores");
-//      CreateSharedMemoryAndSemaphores();
 
     PgStartTime = GetCurrentTimestamp();
 
-//PDEBUG("# NO InitProcess 'FATAL:  you already exist'");
-//    InitProcess();
-
     SetProcessingMode(InitProcessing);
-PDEBUG("# 91: Re-InitPostgres");
+PDEBUG("# 321: Re-InitPostgres");
 //      BaseInit();
 
     InitPostgres(dbname, InvalidOid,	/* database to connect to */
@@ -326,7 +330,7 @@ PDEBUG("# 91: Re-InitPostgres");
                  false,			/* don't ignore datallowconn */
                  NULL);			/* no out_dbname */
 /*
-PDEBUG("# 100");
+PDEBUG("# 330");
     if (PostmasterContext)
     {
         PDEBUG("# 103");
@@ -547,32 +551,33 @@ PDEBUG("# 100");
     fclose(single_mode_feed);
 
     if (strlen(getenv("REPL")) && getenv("REPL")[0]=='Y') {
-        PDEBUG("# 321: REPL(initdb-single):End " __FILE__ );
+        PDEBUG("# 551: REPL(initdb-single):End " __FILE__ );
 
         /* now use stdin as source */
         repl = true;
         single_mode_feed = NULL;
 
         force_echo = true;
+
         if (!is_node) {
-            fprintf(stdout,"# now in webloop(RAF)\npg> %c\n", 4);
-            emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 1);
+            fprintf(stdout,"# 560: now in webloop(RAF)\npg> %c\n", 4);
+            emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
         } else {
-            PDEBUG("# 331: REPL(single after initdb):Begin(NORETURN)");
+            PDEBUG("# 563: REPL(single after initdb):Begin(NORETURN)");
             while (repl) { interactive_file(); }
-            exit(0);
+            PDEBUG("# 5685 REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+            {
+                void (*npe)() = NULL;
+                npe();
+            }
         }
 
-        PDEBUG("# 338: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
-        {
-            void (*npe)() = NULL;
-            npe();
-        }
         // unreachable.
     }
 
-    PDEBUG("# 346: no line-repl requested, exiting and keeping runtime alive");
+    PDEBUG("# 575: no line-repl requested, exiting and keeping runtime alive");
 }
+
 
 
 
@@ -582,26 +587,23 @@ PDEBUG("# 100");
 /* ================================================================================ */
 
 EMSCRIPTEN_KEEPALIVE void
-pg_repl_raf(){ // const char* std_in, const char* std_out, const char* std_err, const char* js_handler) {
-    //printf("# 531: in=%s out=%s err=%s js=%s\n", std_in, std_out, std_err, js_handler);
+pg_repl_raf(){
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
+    if (is_node) {
 
+
+    }
     if (is_repl) {
-        PDEBUG("# 536: switching to REPL mode (raf)");
+        PDEBUG("# 595: switching to REPL mode (raf)");
         repl = true;
         single_mode_feed = NULL;
         force_echo = true;
         whereToSendOutput = DestNone;
         emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
     } else {
-        PDEBUG("# 543: wire mode");
+        PDEBUG("# 602: TODO: headless wire mode");
     }
-}
-
-EMSCRIPTEN_KEEPALIVE void
-pg_initdb_start() {
-    pg_idb_status++;
 }
 
 
@@ -609,12 +611,6 @@ EMSCRIPTEN_KEEPALIVE void
 pg_shutdown() {
     PDEBUG("pg_shutdown");
     proc_exit(66);
-}
-
-EMSCRIPTEN_KEEPALIVE int
-pg_isready() {
-    return pg_idb_status;
-
 }
 
 int loops = 0;
@@ -724,6 +720,7 @@ interactive_file() {
 	        appendStringInfoChar(inBuf, (char) '\0');
         	firstchar = 'Q';
         }
+
     }
 
 	if (ignore_till_sync && firstchar != EOF)
@@ -733,7 +730,6 @@ interactive_file() {
 }
 
 #include "./interactive_one.c"
-
 
 
 void
@@ -788,7 +784,7 @@ PostgresSingleUserMain(int argc, char *argv[],
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-PDEBUG("560");
+PDEBUG("784");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -987,7 +983,8 @@ printf("# 943: hybrid loop:Begin CI=%s\n", getenv("CI") );
 	while (repl && !proc_exit_inprogress) {
         interactive_one();
 	}
-    PDEBUG("\n\n# 948: REPL:End " __FILE__);
+    PDEBUG("\n\n# 996: REPL:End " __FILE__);
+
     abort();
 #if !defined(PG_INITDB_MAIN)
     proc_exit(0);
@@ -1021,18 +1018,42 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
 extern void main_post();
 extern void proc_exit(int code);
 
+extern volatile int pg_idb_status;
+/*
+void print_bits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
 
+    for (i = size-1; i >= 0; i--) {
+        for (j = 7; j >= 0; j--) {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
+*/
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-    PDEBUG("# 985: pg_initdb()");
+    PDEBUG("# 1022: pg_initdb()");
     optind = 1;
     int async_restart = 1;
-
+    pg_idb_status |= IDB_FAILED;
 
     if (!chdir(getenv("PGDATA"))){
         if (access("PG_VERSION", F_OK) == 0) {
         	chdir("/");
-            printf("pg_initdb: db exists at : %s\n", getenv("PGDATA") );
+
+            pg_idb_status |= IDB_HASDB;
+
+            /* assume auth success for now */
+            pg_idb_status |= IDB_HASUSER;
+/*
+            printf("# 1054: pg_initdb: db exists at : %s TODO: test for db name : %s \n", getenv("PGDATA"), getenv("PGDATABASE"));
+            print_bits(sizeof(pg_idb_status), &pg_idb_status);
+*/
             main_post();
             async_restart = 0;
             {
@@ -1043,7 +1064,7 @@ pg_initdb() {
                     "-D", getenv("PGDATA"),
                     "-F", "-O", "-j",
                     WASM_PGOPTS,
-                    "template1",
+                    getenv("PGDATABASE"),
                     NULL
                 };
                 int single_argc = sizeof(single_argv) / sizeof(char*) - 1;
@@ -1056,14 +1077,14 @@ pg_initdb() {
     	chdir("/");
         printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
     }
-    PDEBUG("# 1019");
+    PDEBUG("# 1080");
     printf("# pg_initdb_main result = %d\n", pg_initdb_main() );
 
 
     /* save stdin and use previous initdb output to feed boot mode */
     int saved_stdin = dup(STDIN_FILENO);
     {
-        PDEBUG("# restarting in boot mode for initdb");
+        PDEBUG("# 1087: restarting in boot mode for initdb");
         freopen(IDB_PIPE_BOOT, "r", stdin);
 
         char *boot_argv[] = {
@@ -1088,7 +1109,6 @@ pg_initdb() {
         proc_exit(66);
     }
 
-    PDEBUG("# 1051");
     /* use previous initdb output to feed single mode */
 
 
@@ -1096,7 +1116,7 @@ pg_initdb() {
 
 
     {
-        PDEBUG("# restarting in single mode for initdb");
+        PDEBUG("# 1119: restarting in single mode for initdb");
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -1114,24 +1134,18 @@ pg_initdb() {
     }
 
 initdb_done:;
-    {
-        if (async_restart)
-            PDEBUG("# FIXME: restart in server mode on 'postgres' db");
-        else
-            PDEBUG("# FIXME:  start server on 'postgres' db");
-    }
-
-
+    pg_idb_status |= IDB_CALLED;
     if (optind>0) {
         /* RESET getopt */
         optind = 1;
-        return false;
+        /* we did not fail, clear the default failed state */
+        pg_idb_status &= IDB_OK;
+    } else {
+        PDEBUG("# exiting on initdb-single error");
+        // TODO raise js exception
     }
-    PDEBUG("# exiting on initdb-single error");
-    return true;
+    return pg_idb_status;
 }
-
-
 
 
 #endif
@@ -1168,8 +1182,8 @@ extra_env:;
             const char *kv = argv[i];
             for (int sk=0;sk<strlen(kv);sk++) {
                 if (sk>255) {
-                    PDEBUG("buffer overrun on extra env at:");
-                    PDEBUG(kv);
+                    puts("buffer overrun on extra env at:");
+                    puts(kv);
                     continue;
                 }
                 if (kv[sk]=='=') {
@@ -1212,15 +1226,13 @@ extra_env:;
 
     EM_ASM({
         if (Module.is_worker) {
-            //console.log("Main: running in a worker, setting onCustomMessage");
+            console.log("Main: running in a worker, setting onCustomMessage");
             function onCustomMessage(event) {
                 console.log("onCustomMessage:", event);
-                // PUT SHM HERE
-                //stringToUTF8( utf8encode(data), shm_rcon, FD_BUFFER_MAX);
             };
             Module['onCustomMessage'] = onCustomMessage;
         } else {
-            //console.log("Running in main thread, faking onCustomMessage");
+            console.log("Running in main thread, faking onCustomMessage");
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
                     case "raw" :  {
@@ -1246,19 +1258,13 @@ extra_env:;
 
 #endif
 	chdir("/");
-    if (access("/etc/fstab", F_OK) == 0) {
-        PDEBUG("WARNING: Node with real filesystem access");
-    } else {
-        mkdirp("/tmp");
-        mkdirp("/tmp/pgdata");
-        mkdirp("/tmp/pglite");
-        mkdirp(WASM_PREFIX);
-    }
+    mkdirp("/tmp");
+    mkdirp(WASM_PREFIX);
 
 	// postgres does not know where to find the server configuration file.
     // also we store the fake locale file there.
 	// postgres.js:1605 You must specify the --config-file or -D invocation option or set the PGDATA environment variable.
-	// ?? setenv("PGDATABASE", WASM_PREFIX "/db" , 1 );
+
 	setenv("PGSYSCONFDIR", WASM_PREFIX, 1);
 	setenv("PGCLIENTENCODING", "UTF8", 1);
 
@@ -1272,10 +1278,13 @@ extra_env:;
 	setenv("LC_CTYPE", "C" , 1);
 
 	/* default username */
-	setenv("PGUSER", WASM_USERNAME , 0);
+	// setenv("PGUSER", WASM_USERNAME , 0);
 
 	/* default path */
 	setenv("PGDATA", PGDB , 0);
+
+    /* default database */
+	setenv("PGDATABASE", "template1" , 0);
 
     setenv("PG_COLOR", "always", 0);
 
@@ -1287,7 +1296,6 @@ PDEBUG("# ============= env dump ==================");
   }
 PDEBUG("# =========================================");
 
-	mkdirp(WASM_PREFIX);
 }
 
 int g_argc;
@@ -1358,7 +1366,7 @@ main_repl(int async) {
         fprintf(stderr, "db %s not found, running initdb with defaults\n", PGDB );
         #if defined(PG_INITDB_MAIN)
             #warning "web build"
-            hadloop_error = pg_initdb();
+            hadloop_error = pg_initdb() & IDB_FAILED;
 
         #else
             #warning "node build"
@@ -1418,13 +1426,13 @@ main_repl(int async) {
         }
 
         if (g_argc > 1 && strcmp(g_argv[1], "--boot") == 0) {
-            PDEBUG("# 1356: boot: " __FILE__ );
+            PDEBUG("# 1410: boot: " __FILE__ );
             BootstrapModeMain(g_argc, g_argv, false);
             return 0;
         }
 
-        PDEBUG("# 1362: single: " __FILE__ );
-        if (async)
+        PDEBUG("# 1415: single: " __FILE__ );
+        if (async>0)
             AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
         else
             PostgresSingleUserMain(g_argc, g_argv, strdup( getenv("PGUSER")));
@@ -1432,21 +1440,17 @@ main_repl(int async) {
     return 0;
 }
 
-
+extern void pg_repl_raf(void);
 
 int
-main(int argc, char **argv) // [])
+main(int argc, char **argv)
 {
-/*
-TODO:
-	postgres.js:6382 warning: unsupported syscall: __syscall_prlimit64
-*/
     int ret=0;
     is_node = !is_web_env();
 
     main_pre(argc, argv);
 
-    printf("# argv0 (%s) PGUSER=%s PGDATA=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"));
+    printf("# 1434 argv0 (%s) PGUSER=%s PGDATA=%s\n PGDATABASE=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"));
 
 	progname = get_progname(argv[0]);
 
@@ -1485,13 +1489,17 @@ TODO:
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (!is_repl) {
-        PDEBUG("exit with live runtime (nodb)");
+        PDEBUG("# 1473: exit with live runtime (nodb)");
         return 0;
     }
 
     // so it is repl
     main_repl(1);
-    PDEBUG("# 1453: " __FILE__);
+    if (is_node) {
+        PDEBUG("# 1480: node-REPL sim web loop :" __FILE__);
+        pg_repl_raf();
+        PDEBUG("# ? exit");
+    }
     emscripten_force_exit(ret);
 	return ret;
 }

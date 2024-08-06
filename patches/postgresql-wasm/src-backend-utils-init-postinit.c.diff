@@ -8,7 +8,26 @@
  void
  InitPostgres(const char *in_dbname, Oid dboid,
  			 const char *username, Oid useroid,
-@@ -1239,6 +1240,32 @@
+@@ -883,8 +884,18 @@
+ 	}
+ 	else if (!IsUnderPostmaster)
+ 	{
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++if (!strcmp( username , WASM_USERNAME )) {
++#endif
+ 		InitializeSessionUserIdStandalone();
+ 		am_superuser = true;
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++} else {
++        //puts("# 894: switching session id");
++        InitializeSessionUserId(username, InvalidOid);
++		am_superuser = superuser();
++}
++#endif
+ 		if (!ThereIsAtLeastOneRole())
+ 			ereport(WARNING,
+ 					(errcode(ERRCODE_UNDEFINED_OBJECT),
+@@ -1239,6 +1250,32 @@
  		CommitTransactionCommand();
  }
  
@@ -41,7 +60,7 @@
  /*
   * Process any command-line switches and any additional GUC variable
   * settings passed in the startup packet.
-@@ -1345,14 +1372,15 @@
+@@ -1345,14 +1382,15 @@
  static void
  ShutdownPostgres(int code, Datum arg)
  {
