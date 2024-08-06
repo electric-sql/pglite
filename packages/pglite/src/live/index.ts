@@ -78,26 +78,24 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       };
 
       // Setup the listeners
-      const unsubList: Array<() => Promise<void>> = [];
-      for (const table of tables!) {
-        const unsub = await pg.listen(
-          `table_change__${table.schema_name}__${table.table_name}`,
-          async () => {
-            refresh();
-          },
-        );
-        unsubList.push(unsub);
-      }
+      const unsubList: Array<() => Promise<void>> = await Promise.all(
+        tables!.map((table) =>
+          pg.listen(
+            `table_change__${table.schema_name}__${table.table_name}`,
+            async () => {
+              refresh();
+            },
+          ),
+        ),
+      );
 
       // Function to unsubscribe from the query
       const unsubscribe = async () => {
-        for (const unsub of unsubList) {
-          await unsub();
-        }
+        await Promise.all(unsubList.map((unsub) => unsub()));
         await pg.exec(`
-          DROP VIEW IF EXISTS live_query_${id}_view;
-          DEALLOCATE live_query_${id}_get;
-        `);
+            DROP VIEW IF EXISTS live_query_${id}_view;
+            DEALLOCATE live_query_${id}_get;
+          `);
       };
 
       // Run the callback with the initial results
@@ -283,22 +281,20 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       };
 
       // Setup the listeners
-      const unsubList: Array<() => Promise<void>> = [];
-      for (const table of tables!) {
-        const unsub = await pg.listen(
-          `table_change__${table.schema_name}__${table.table_name}`,
-          async () => {
-            refresh();
-          },
-        );
-        unsubList.push(unsub);
-      }
+      const unsubList: Array<() => Promise<void>> = await Promise.all(
+        tables!.map((table) =>
+          pg.listen(
+            `table_change__${table.schema_name}__${table.table_name}`,
+            async () => {
+              refresh();
+            },
+          ),
+        ),
+      );
 
       // Function to unsubscribe from the query
       const unsubscribe = async () => {
-        for (const unsub of unsubList) {
-          await unsub();
-        }
+        await Promise.all(unsubList.map((unsub) => unsub()));
         await pg.exec(`
           DROP VIEW IF EXISTS live_query_${id}_view;
           DROP TABLE IF EXISTS live_query_${id}_state1;
@@ -429,7 +425,7 @@ export const live = {
 
 export type PGliteWithLive = PGliteInterface & {
   live: LiveNamespace;
-}
+};
 
 /**
  * Get a list of all the tables used in a view

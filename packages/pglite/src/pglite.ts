@@ -763,7 +763,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
   async unlisten(channel: string, callback?: (payload: string) => void) {
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback);
-      if (this.#notifyListeners.get(channel)!.size === 0) {
+      if (this.#notifyListeners.get(channel)?.size === 0) {
         await this.exec(`UNLISTEN ${channel}`);
         this.#notifyListeners.delete(channel);
       }

@@ -134,7 +134,7 @@ describe("react", () => {
       // await waitFor(() => expect(result.current?.rows).toHaveLength(0))
     });
 
-    it.only("updates when query changes", async () => {
+    it("updates when query changes", async () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
       const { result, rerender } = renderHook(
@@ -146,7 +146,7 @@ describe("react", () => {
 
       rerender({ query: `SELECT * FROM test WHERE name = 'test1'` });
 
-      // await waitFor(() => expect(result.current?.rows).toHaveLength(1));
+      await waitFor(() => expect(result.current?.rows).toHaveLength(1));
     });
 
     it.skip("updates when query parameter changes", async () => {
