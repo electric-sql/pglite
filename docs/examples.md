@@ -1,12 +1,12 @@
 # Examples
 
-We have a number of examples showing how to use PGlite and it's capabilities:
+We have a number of examples showing how to use PGlite along with its capabilities:
 
 - <a href="./examples/basic.html" target="_blank">Basic</a><br>
   A basic example showing how to initiate a PGlite database and perform queries using `.exec()`
 
 - <a href="./examples/query-params.html" target="_blank">Query Params</a><br>
-  Aa example showing how to perform parasitised queries using `.query()` method.
+  Aa example showing how to perform parametrised queries using `.query()` method.
 
 - <a href="./examples/copy.html" target="_blank">Copy</a><br>
   An example showing to use the `COPY` command with the PGlite `/dev/blob` device.
@@ -24,13 +24,13 @@ We have a number of examples showing how to use PGlite and it's capabilities:
   Reactivity example using the live query extensions `.live.incrementalQuery()` method.
 
 - <a href="./examples/notify.html" target="_blank">Notify and Listen</a><br>
-  Example showing the use of the `NOTIFY` and `LISTEN` Postgres commands using PGlites `.listen()` api.
+  Example showing the use of the `NOTIFY` and `LISTEN` Postgres commands via the PGlite `.listen()` api.
 
 - <a href="./examples/opfs.html" target="_blank">OPFS VFS</a><br>
-  An example deponstrating the [OPFS Access Handle Pool VFS](./docs/filesystems.md#opfs-ahp-fs).
+  An example demonstrating the [OPFS Access Handle Pool VFS](./docs/filesystems.md#opfs-ahp-fs).
 
 - <a href="./examples/copy.html" target="_blank">PL/PGSQL</a><br>
-  Demonstration of PGlites support for Postgres's built in SQL procedural language extension "PL/PGSQL".
+  Demonstration of PGlite's support for Postgres's built-in SQL procedural language extension "PL/PGSQL".
 
 - <a href="./examples/vector.html" target="_blank">Extension: `pgvector`</a><br>
   An example showing how to use [pgvector](https://github.com/pgvector/pgvector) with PGlite.

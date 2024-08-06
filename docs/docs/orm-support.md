@@ -2,13 +2,13 @@
 
 ## Drizzle
 
-[Drizzle](https://orm.drizzle.team) is a TypeScript ORM with support for many datbases include PGlite. Features include:
+[Drizzle](https://orm.drizzle.team) is a TypeScript ORM with support for many databases include PGlite. Features include:
 
-- A declarative realtional query API
+- A declarative relational query API
 - An SQL-like query builder API
 - Migrations
 
-To use PGlite with Drizzle just wrap you PGlite instance with a `drizzle()` call:
+To use PGlite with Drizzle, wrap you PGlite instance with a `drizzle()` call:
 
 ```sh
 npm i drizzle-orm @electric-sql/pglite

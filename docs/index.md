@@ -22,8 +22,8 @@ hero:
 
 features:
   - title: Lightweight
-    details: Pure WASM build of Postgres using Emscripten that's less than 3MB Gzipped.
-  - title: Extensible
+    details: Pure WASM build of Postgres using Emscripten that's under 3MB Gzipped.
+  - title: Extendable
     details: Dynamic extension loading mechanism, including support for pgvector and PostGIS.
   - title: Reactive
     details: Built in support for data loading, synchronisation and live query primitives.
@@ -105,7 +105,7 @@ const Repl = defineClientComponent(() => {
 
   ### Try PGlite Now
 
-  This is a full PGlite Postgres running in your browser, it even includes pgvector!
+  This is a full PGlite Postgres running in your browser - it even includes pgvector!
 
 </div>
 

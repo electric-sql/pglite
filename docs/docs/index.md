@@ -1,6 +1,6 @@
 # Getting started with PGlite
 
-PGlite can be used in both Node/Bun or the browser, and cen be used with any JavaScript framework.
+PGlite can be used in both Node/Bun or the browser, and with any JavaScript framework.
 
 ## Install and start in Node/Bun
 
@@ -67,9 +67,9 @@ const db = new PGlite("idb://my-pgdata");
 
 ## Making a query
 
-There are two method for querying the database, `.query` and `.exec`, the former support parameters, and the latter multiple statements.
+There are two methods for querying the database, `.query` and `.exec`. The former supports parameters, and the latter, multiple statements.
 
-First, lets crate a table and insert some test data using the `.exec` method:
+First, let's create a table and insert some test data using the `.exec` method:
 
 ```js
 await db.exec(`
@@ -86,9 +86,9 @@ await db.exec(`
 `)
 ```
 
-The `.exec` method is perfect for migrations, or batch inserts with raw SQL.
+The `.exec` method is perfect for migrations and batch inserts with raw SQL.
 
-Now, lets retrieve an item using `.query` method:
+Now, let's retrieve an item using `.query` method:
 
 ```js
 const ret = await db.query(`
@@ -107,7 +107,7 @@ console.log(ret.rows)
 
 ## Using parametrised queries
 
-When working with user supplied values its always best to use parametrised queries, these are supported on the `.query` method.
+When working with user supplied values, it's always best to use parametrised queries; these are supported on the `.query` method.
 
 We can use this to update a task:
 
@@ -124,15 +124,15 @@ const ret = await db.query(
 
 ## What next?
 
-- To learn more about [querying](./api.md#query) and [transactions](./api.md#transaction) you can read the main [PGlite API documentation](./api.md).
+- To learn more about [querying](./api.md#query) and [transactions](./api.md#transaction) along with the other methods and options available, you can read the main [PGlite API documentation](./api.md).
 
 - There is also a [live-query extension](./live-queries.md) that enables reactive queries to update a UI when the underlying database changes.
 
-- PGlite has a number of built in [virtual file systems](./filesystems.md) to provided persistance to the database.
+- PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistance for your database.
 
-- There are [framework hooks](./framework-hooks.md) to make working with PGlite within React and Vue much easer with less boilerplate.
+- There are [framework hooks](./framework-hooks.md) to make working with PGlite within React and Vue much easier with less boilerplate.
 
-- As PGlite only has single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
+- As PGlite only has a single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
 
 - There is a [REPL component](./repl.md) that can be easily embedded into a web-app to aid in debugging and development, or as part of a database application itself.
 

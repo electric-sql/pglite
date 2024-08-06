@@ -9,7 +9,7 @@ outline: [2, 3]
 `new PGlite(dataDir: string, options: PGliteOptions)`<br/>
 `new PGlite(options: PGliteOptions)`
 
-A new pglite instance is created using the `new PGlite()` constructor.
+A new PGlite instance is created using the `new PGlite()` constructor.
 
 This is imported as:
 
@@ -20,15 +20,15 @@ import { PGlite } from "@electric-sql/pglite";
 `await PGlite.create(dataDir: string, options: PGliteOptions)`<br />
 `await PGlite.create(options: PGliteOptions)`
 
-There is also an additional `PGlite.create()` static method that returns a Promise resolving to the new PGlite instance. There are a couple of advatanges to using the static method:
+There is also a `PGlite.create()` static method that returns a promise, resolving to the new PGlite instance. There are a couple of advantages to using the static method:
 
-- The Promise awaits the [`.waitReady`](#waitready) promise ensureing that database has fully initiated.
-- When using TypeScript and extensions the returned PGlite instance will have the extensions namespace on it's type. This is not possible with the standard constructor.
+- This awaits the [`.waitReady`](#waitready) promise, ensuring that the database has fully initiated.
+- When using TypeScript and extensions, the returned PGlite instance will have the extensions namespace on its type. This is not possible with the standard constructor due to limitation with TypeScript.
 
 
 #### `dataDir`
 
-Path to the directory to store the Postgres database. You can provide a url scheme for various storage backends:
+Path to the directory for storing the Postgres database. You can provide a url scheme for various storage backends:
 
 - `file://` or unprefixed<br />
   File system storage, available in Node and Bun.
@@ -40,23 +40,23 @@ Path to the directory to store the Postgres database. You can provide a url sche
 #### `options`
 
 - `dataDir: string`<br />
-  The directory to store the Postgres database when not provided as the first argument.
+  The directory to store the Postgres database in when not provided as the first argument.
 - `debug: 1-5`<br />
   the Postgres debug level. Logs are sent to the console.
 - `relaxedDurability: boolean`<br />
-  Under relaxed durability mode PGlite will not wait for flushes to storage to complete after each query before returning results. This is particularly useful when using the indexedDB file system.
+  Under relaxed durability mode, PGlite will not wait for flushes to storage to complete after each query before returning results. This is particularly useful when using the indexedDB file system.
 - `fs: Filesystem`<br />
   The alternative to providing a dataDir with a filesystem prefix is to initiate the Filesystem yourself and provide it here. See [Filesystems](./filesystems.md)
 - `loadDataDir: Blob | File`<br />
   A tarball of a PGlite `datadir` to load when the database starts. This should be a tarball produced from the related [`.dumpDataDir()`](#dumpdatadir) method.
 - `extensions: Extensions`<br />
-  An object containing the extensions you with to load.
+  An object containing the extensions you wish to load.
 
 #### `options.extensions`
 
 PGlite and Postgres extensions are loaded into a PGLite instance on start, and can include both a WASM build of a Postgres extension and/or a PGlite client plugin.
 
-The `options.extensions` paramiter is an opbject of `namespace: extension` parings. The namespace if sued to expose the PGlite client plugin included in the extension. An example of this it the [live queries](./live-queries.md) extension.
+The `options.extensions` parameter is an object of `namespace: extension` parings. The namespace if used to expose the PGlite client plugin included in the extension. An example of this is the [live queries](./live-queries.md) extension.
 
 ```ts
 import { PGlite } from "@electric-sql/pglite";
@@ -65,7 +65,7 @@ import { vector } from "@electric-sql/pglite/vector";
 
 const pg = await PGlite.create({
   extensions: {
-    live, // Live query extension, if a PGlite client plugin
+    live, // Live query extension, is a PGlite client plugin
     vector, // Postgres pgvector extension
   },
 });
@@ -107,7 +107,7 @@ The `query` and `exec` methods take an optional `options` objects with the follo
   The returned row object type, either an object of `fieldName: value` mappings or an array of positional values. Defaults to `"object"`.
 - `parsers: ParserOptions` <br />
   An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type id to parser function.
-  For convenance the `pglite` package exports a const for most common Postgres types:
+  For convenience, the `pglite` package exports a constant for most common Postgres types:
 
   ```ts
   import { types } from "@electric-sql/pglite";
@@ -134,7 +134,7 @@ This is useful for applying database migrations, or running multi-statement sql 
 
 Uses the *simple query* Postgres wire protocol.
 
-Returns array of [result objects](#results-objects), one for each statement.
+Returns array of [result objects](#results-objects); one for each statement.
 
 ##### Example
 
@@ -167,9 +167,9 @@ await pg.exec(`
 
 `.transaction<T>(callback: (tx: Transaction) => Promise<T>)`
 
-To start an interactive transaction pass a callback to the transaction method. It is passed a `Transaction` object which can be used to perform operations within the transaction.
+To start an interactive transaction, pass a callback to the transaction method. It is passed a `Transaction` object which can be used to perform operations within the transaction.
 
-The transaction will be committed when the Promise returned from your callback resolves, and automatically rolled back if the Promise is rejected.
+The transaction will be committed when the promise returned from your callback resolves, and automatically rolled back if the promise is rejected.
 
 ##### `Transaction` objects
 
@@ -219,7 +219,7 @@ await pg.query("NOTIFY test, 'Hello, world!'");
 
 `.unlisten(channel: string, callback?: (payload: string) => void): Promise<void>`
 
-Unsubscribe from the channel. If a callback is provided it removes only that callback from the subscription, when no callback is provided is unsubscribes all callbacks for the channel.
+Unsubscribe from the channel. If a callback is provided it removes only that callback from the subscription. When no callback is provided, it unsubscribes all callbacks for the channel.
 
 ### onNotification
 
@@ -227,7 +227,7 @@ Unsubscribe from the channel. If a callback is provided it removes only that cal
 
 Add an event handler for all notifications received from Postgres.
 
-**Note:** This does not subscribe to the notification, you will have to manually subscribe with `LISTEN channel_name`.
+**Note:** This does not subscribe to the notification; you will need to manually subscribe with `LISTEN channel_name`.
 
 ### offNotification
 
@@ -239,13 +239,13 @@ Remove an event handler for all notifications received from Postgres.
 
 `dumpDataDir(): Promise<File | Blob>`
 
-Dump the Postgres `datadir` to a gziped tarball.
+Dump the Postgres `datadir` to a Gzipped tarball.
 
 This can then be used in combination with the [`loadDataDir`](#options) option when starting PGlite to load a dumped database from storage.
 
 ::: tip NOTE
 
-The datadir dump may not be compatible with other Postgres versions, it is only designed for importing back into PGlite.
+The datadir dump may not be compatible with other Postgres versions; it is only designed for importing back into PGlite.
 
 :::
 
@@ -271,7 +271,7 @@ Promise that resolves when the database is ready to use.
 
 ::: tip NOTE
 
-Queries methods will wait for the `waitReady` promise to resolve if called before the database has fully initialised, and so it's not necessary to wait for it explicitly.
+Query methods will wait for the `waitReady` promise to resolve if called before the database has fully initialised, and so it is not necessary to wait for it explicitly.
 
 :::
 
@@ -283,7 +283,7 @@ Result objects have the following properties:
   The rows retuned by the query
 
 - `affectedRows?: number` <br />
-  Count of the rows affected by the query. Note this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
+  Count of the rows affected by the query. Note, this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
 
 - `fields: { name: string; dataTypeID: number }[]`<br />
   Field name and Postgres data type ID for each field returned.
@@ -300,7 +300,7 @@ The `.query<T>()` method can take a TypeScript type describing the expected shap
 
 ::: tip NOTE
 
-These types are not validated at run time, the result only cast to the provided type
+These types are not validated at run time, the result is only cast to the provided type.
 
 :::
 
@@ -308,7 +308,7 @@ These types are not validated at run time, the result only cast to the provided 
 
 PGlite has support for importing and exporting via the SQL `COPY TO/FROM` command by using a virtual `/dev/blob` device.
 
-To import a file pass the `File` or `Blob` in the query options as `blob`, and copy from the `/dev/blob` device.
+To import a file, pass the `File` or `Blob` in the query options as `blob`, and copy from the `/dev/blob` device.
 
 ```ts
 await pg.query("COPY my_table FROM '/dev/blob';", [], {
@@ -316,7 +316,7 @@ await pg.query("COPY my_table FROM '/dev/blob';", [], {
 })
 ```
 
-To export a table or query to a file you just have to write to the `/dev/blob` device, the file will be retied as `blob` on the query results:
+To export a table or query to a file, you just need to write to the `/dev/blob` device; the file will be returned as `blob` on the query results:
 
 ```ts
 const ret = await pg.query("COPY my_table TO '/dev/blob';")

@@ -73,6 +73,7 @@ const selectedTag = ref(null)
 
 .btn-tag .count {
   margin-left: 0.25rem;
+  margin-left: 0.25rem;
   opacity: 0.5
 }
 
@@ -104,7 +105,7 @@ const selectedTag = ref(null)
 
 # PGlite Extensions
 
-PGlite support both Postgres extensions and has a plugin API to enable extensions to extend the public API of the PGlite interface.
+PGlite supports both Postgres extensions, and has a plugin API to enable extensions to extend the public API of the PGlite interface.
 
 Below is a list of available extensions.
 

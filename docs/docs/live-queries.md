@@ -1,14 +1,14 @@
 # Live Queries
 
-The "live" extension enables you to subscribe to a query and receve updated results when the underlying tables change.
+The "live" extension enables you to subscribe to a query and receive updated results when the underlying tables change.
 
-To use the extension it needs adding to the PGlite instance when creating it:
+To use the extension, it needs to be added to the PGlite instance when creating it:
 
 ```ts
 import { PGlite } from "@electric-sql/pglite";
 import { live } from "@electric-sql/pglite/live";
 
-const pg = new PGlite({
+const pg = await PGlite.create({
   extensions: {
     live,
   },
@@ -16,8 +16,8 @@ const pg = new PGlite({
 ```
 
 There are three methods on the `live` namespace:
-- `live.query()` for basic live queries. With less machinery in PG it's quicker for small results sets and narrow rows.
-- `live.incrementalQuery()` for incremental queries. It materialises the full result set on each update from only the changes emitted by the `live.changes` api. Perfect for feeding into React and good performance for large result sets and wide rows.
+- `live.query()` for basic live queries. With less machinery in PGlite, it's quicker for small results sets and narrow rows.
+- `live.incrementalQuery()` for incremental queries. It materialises the full result set on each update from only the changes emitted by the `live.changes` api. Perfect for feeding into React, and with good performance for large result sets and wide rows.
 - `live.changes()` a lower level API that emits the changes (insert/update/delete) that can then be mapped to mutations in a UI or other datastore.
 
 ## live.query
@@ -42,19 +42,19 @@ interface LiveQueryReturn<T> {
 }
 ```
 
-- `initialResults` is the initial results set (also sent to the callback
-- `unsubscribe` allow you to unsubscribe from the live query
-- `refresh` allows you to force a refresh of the query
+- `initialResults` is the initial results set (also sent to the callback)
+- `unsubscribe` allows you to unsubscribe from the live query
+- `refresh` allows you to force a refresh of the query with the updated results sent to the callback
 
-Internally it watches for the tables that the query depends on, and reruns the query whenever they are changed.
+Internally it watches the tables that the query depends on, and reruns the query whenever they are changed.
 
 ## live.incrementalQuery
 
 `live.incrementalQuery<T>()`
 
-Similar to above, but maintains a temporary table inside of Postgres of the previous state. When the tables it depends on change the query is re-run and diffed with the last state. Only the changes from the last version of the query are copied from WASM into JS.
+Similar to above, but maintains a temporary table of the previous state inside of Postgres. When the tables it depends on change, the query is re-run and diffed with the last state. Only the changes from the last version of the query are copied from WASM into JS.
 
-It requires an additional `key` argument, the name of a column (often a PK) to key the diff on.
+It requires an additional `key` argument - the name of a column (often a primary key) to key the diff on.
 
 ```ts
 const ret = pg.live.incrementalQuery(
@@ -71,7 +71,7 @@ The returned value is of the same type as the `query` method above.
 
 `live.changes()`
 
-A lower level API which is the backend for the `incrementalQuery`, it emits the change that have happened. It requires a `key` to key the diff on:
+A lower-level API which is the backend for the `incrementalQuery`, it emits the changes that have occurred. It requires a `key` to key the diff on:
 
 ```ts
 const ret = pg.live.changes(
@@ -93,7 +93,7 @@ interface LiveChangesReturn<T = { [key: string]: any }> {
 } 
 ```
 
-The results passed to the callback are array of `Change` objects:
+The results passed to the callback are an array of `Change` objects:
 
 ```ts
 type ChangeInsert<T> = {
@@ -119,8 +119,8 @@ type Change<T> = ChangeInsert<T> | ChangeDelete<T> | ChangeUpdate<T>;
 
 Each `Change` includes the new values along with:
 
-- `__changed_columns__` the columns names that were changes
+- `__changed_columns__` the column names that were changed
 - `__op__` the operation that is required to update the state (`INSERT`, `UPDATE`, `DELETE`)
-- `__after__` the `key` of the row that this row should be after, it will be included in `__changed_columns__` if it has been changed.
+- `__after__` the `key` of the row that this row should be positioned after; it will be included in `__changed_columns__` if it has been changed. This allows for very efficient moves within an ordered set of results.
 
 This API can be used to implement very efficient in-place DOM updates.

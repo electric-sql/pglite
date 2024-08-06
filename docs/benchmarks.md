@@ -18,25 +18,25 @@
 
 # Benchmarks
 
-There are two sets of micro-benchmarks, one testing [round trip time](#round-trip-time-benchmarks) for both PGlite and wa-sqlite, and [another](#sqlite-benchmark-suite) based on the [SQLite speed test](https://sqlite.org/src/file?name=tool/speedtest.tcl&ci=trunk) which was ported for the [wa-sqlite benchmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
+There are two sets of micro-benchmarks: one testing [round trip time](#round-trip-time-benchmarks) for both PGlite and wa-sqlite, and [another](#sqlite-benchmark-suite) the other based on the [SQLite speed test](https://sqlite.org/src/file?name=tool/speedtest.tcl&ci=trunk) which was ported for the [wa-sqlite benchmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
 
-We also have a set of [native baseline](#native-baseline) results where we have compared native SQLite (via the Node better-sqlite3 package) to full Postgres.
+We also have a set of [native baseline](#native-baseline) results comparing native SQLite (via the Node better-sqlite3 package) to full Postgres.
 
-Comparing Postgres to SQlite is a little difficult as they are quite different databases, particularly when you then throw in the complexities of WASM. Therefore these benchmarks provide a view of performance only as a starting point to investigate the difference between the two and the improvements we can make going forward.
+Comparing Postgres to SQlite is challenging, as they are quite different databases, particularly when you take into account the complexities of WASM. Therefore, these benchmarks provide a view of performance only as a starting point to investigate the difference between the two, and the improvements we can make going forward.
 
-The other thing to consider when analysing the speed is the performance of various different VFS implementations providing persistance to both PGlite and wa-sqlite, the the performance of the underlying storage.
+Another consideration when analysing the speed, is the performance of the various different VFS implementations providing persistance to both PGlite and wa-sqlite.
 
-The key finding are:
+The key findings are:
 
-1. wa-sqlite is a little faster than PGlite when run purely in memory. This is be expected as it is a simpler database with fewer features, its designed to go fast. Having said that, PGlite is not slow, its well withing the range you would expect when [comparing native SQLite to Postgres](#native-baseline).
+1. wa-sqlite is faster than PGlite when run purely in memory. This is to be expected as it's a simpler database with fewer features; it's designed to go fast. Having said that, PGlite is not slow; it's well within the range you would expect when [comparing native SQLite to Postgres](#native-baseline).
 
-2. For single row CRUD inserts and updates, PGlite is faster then wa-sqlite. This is likely due to PGlite using the Posrgres WAL, whereas wa-sqlite is only using the SQLite rollback journal mode and not its WAL.
+2. For single row CRUD inserts and updates, PGlite is faster then wa-sqlite. This is likely due to PGlite using the Postgres WAL, whereas wa-sqlite is only using the SQLite rollback journal mode and not a WAL.
 
-3. An fsync or flush to the underlying storage can be quite slow, particularly in the browser with IndexedDB for PGlite, or OPFS for wa-sqlite. Both offer some level of "relaxed durability" that can be used to accelerate these queriers, and is likely suitable for many embedded use cases.
+3. An fsync or flush to the underlying storage can be quite slow, particularly in the browser with IndexedDB for PGlite, or OPFS for wa-sqlite. Both offer some level of "relaxed durability" that can be used to accelerate these queries, and this mode is likely suitable for many embedded use cases.
 
-We are going to continue to use these micro-benchmarks to feed back into the development of PGlite, and update them and the findings as we move forward.
+We plan to continue to use these micro-benchmarks to feed back into the development of PGlite, and update them, and the findings, as we move forward.
 
-These results below were run on a M2 Macbook Air.
+These results below were run on an M2 Macbook Air.
 
 ## Round-trip-time benchmarks
 
@@ -63,7 +63,7 @@ Values are average ms - lower is better.
 
 ## SQLite benchmark suite
 
-The SQLite benchmark suite, converted to web for wa-sqlite, performs a number of large queries to test the performance of the sql engin.
+The SQLite benchmark suite, converted to web for wa-sqlite -  it performs a number of large queries to test the performance of the sql engine.
 
 Values are seconds to complete the test - lower is better.
 
@@ -115,7 +115,7 @@ All tests run with Node, [Better-SQLite3](https://www.npmjs.com/package/better-s
 
 ## Run the benchmarks yourself
 
-We have a hosted version of the benchmarks runner:
+We have a hosted version of the benchmark runners that you can run yourself:
 
 - <a href="./benchmark/" target="_blank">Benchmark using the SQLite benchmark suite</a>
 - <a href="./benchmark/rtt.html" target="_blank">Benchmark round-trim-time for CRUD queries</a>

@@ -14,7 +14,7 @@ const Repl = defineClientComponent(() => {
 
 A REPL, or terminal, for use in the browser with PGlite, allowing you to have an interactive session with your WASM Postgres in the page.
 
-This is the REPL with a full PGlite Postgres embeded in the page:
+This is the REPL with a full PGlite Postgres embedded in the page:
 
 <ClientOnly>
   <Repl />
@@ -52,7 +52,7 @@ function MyComponent() {
 The props for the `<Repl>` component are described by this interface:
 
 ```ts
-// The theme to use, auto is auto switching based on the system
+// The theme to use, auto is auto-switching based on the system
 type ReplTheme = "light" | "dark" | "auto";
 
 interface ReplProps {
@@ -68,7 +68,7 @@ The `lightTheme` and `darkTheme` should be instances of a [React CodeMirror](htt
 
 ## Web Component
 
-Although the PGlite REPL is built with React, its also available as a web component for easy inclusion in any page or other framework.
+Although the PGlite REPL is built with React, it's also available as a web component for easy inclusion in any page or any other framework.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist-webcomponent/Repl.js" type="module"></script>
@@ -92,7 +92,7 @@ Although the PGlite REPL is built with React, its also available as a web compon
 
 ### With Vue.js
 
-The REPL Web Component can be used with Vue.js, and in fact thats how its embeded above.
+The REPL Web Component can be used with Vue.js:
 
 ```vue
 <script setup>
