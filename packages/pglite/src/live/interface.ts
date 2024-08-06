@@ -1,4 +1,4 @@
-import type { Results } from "../interface";
+import type { PGliteInterface, Results } from "../interface";
 
 export interface LiveNamespace {
   /**
@@ -45,6 +45,10 @@ export interface LiveNamespace {
     callback: (results: Results<Change<T>>) => void,
   ): Promise<LiveQueryReturn<Change<T>>>;
 }
+
+export type PGliteWithLive = PGliteInterface & {
+  live: LiveNamespace;
+};
 
 export interface LiveQueryReturn<T> {
   initialResults: Results<T>;

@@ -33,6 +33,7 @@ const entryPoints = [
   "src/vector/index.ts",
   "src/fs/opfs-ahp/index.ts",
   "src/fs/nodefs.ts",
+  "src/frameworks/react/index.ts",
 ];
 
 const contribDir = path.join(root, "src", "contrib");

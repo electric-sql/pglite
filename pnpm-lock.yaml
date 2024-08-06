@@ -46,6 +46,9 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.11
         version: 2.6.11
+      '@types/react':
+        specifier: ^18.2.66
+        version: 18.3.3
       async-mutex:
         specifier: ^0.4.1
         version: 0.4.1
@@ -73,6 +76,9 @@ importers:
       prettier:
         specifier: 3.2.5
         version: 3.2.5
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
       serve:
         specifier: ^14.2.3
         version: 14.2.3
@@ -4050,7 +4056,6 @@ packages:
     hasBin: true
     dependencies:
       js-tokens: 4.0.0
-    dev: false
 
   /lru-cache@10.2.0:
     resolution: {integrity: sha512-2bIM8x+VAf6JT4bKAljS1qUWgMsqZRPGJS6FSahIMPVvctcNhyVp7AJu7quxOW9jwkryBReKZY5tY5JYv2n/7Q==}
@@ -4761,7 +4766,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
-    dev: false
 
   /readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
