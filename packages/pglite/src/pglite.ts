@@ -310,10 +310,12 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
 
     if (idb & 0b0010) {
       console.log("initdb was called to init PGDATA if required");
+      const pguser  = options.username ?? 'postgres';
+      const pgdatabase  = options.dbname ?? 'template1';
       if (idb &0b0100) {
         console.log("initdb has found a previous database");
         if (idb & (0b0100|0b1000)) {
-           console.log("initdb found db+user, switching user to ", options.username ?? 'postgres');
+           console.log("initdb found db+user, switching user to ", pguser);
            await this.#runExec(`SET ROLE ${options.username ?? 'postgres'}`);
         } else {
           console.warn("TODO: invalid user for db ?");
@@ -321,7 +323,8 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
         }
       } else {
         console.warn("TODO: callback for db/table/user creation + switch")
-        throw new Error("invalid database requested");
+        if (pgdatabase !== "template1")
+            throw new Error(`invalid database ${pgdatabase} requested`);
       }
     }
 
