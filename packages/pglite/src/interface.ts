@@ -58,6 +58,7 @@ export interface DumpDataDirResult {
 export interface PGliteOptions {
   dataDir?: string;
   username?: string;
+  database?: string;
   fs?: Filesystem;
   debug?: DebugLevel;
   relaxedDurability?: boolean;
