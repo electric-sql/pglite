@@ -151,7 +151,8 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     const args = [
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
-      ...(options.username ? [`PGUSER=${options.username}`] : []),
+      `PGUSER=${options.username ?? 'postgres'}`,
+      `PGDATABASE=${options.dbname ?? 'template1'}`,
       "MODE=REACT",
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -289,11 +290,39 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     const idb = this.mod._pg_initdb();
 
     if (!idb) {
-      // TODO: meaning full initdb return/error code?
-    } else {
-      if (idb & 0b0001) console.log(" #1");
-      if (idb & 0b0010) console.log(" #2");
-      if (idb & 0b0100) console.log(" #3");
+      // that case would be a sab worker crash before pg_initdb can be called
+      throw new Error("FATAL: INITDB failed to return value");
+    }
+
+    // initdb states :
+    // populating pgdata
+    // reconnect a previous db
+    // found valid db+user
+
+    // currently unhandled :  db does not exist, user is invalid for db
+
+    // this would be a wasm crash inside pg_initdb from a sab worker.
+    if (idb & 0b0001) {
+      throw new Error("INITDB has failed");
+    }
+
+    // other cases should return valid codes or throw a fatal wasm error.
+
+    if (idb & 0b0010) {
+      console.log("initdb was called to init PGDATA if required")
+      if (idb &0b0100) {
+        console.log("initdb has found a previous database")
+        if (idb & (0b0100|0b1000)) {
+           console.log("initdb found db+user, switching user to ", options.username ?? 'postgres')
+           await this.#runExec(`SET ROLE ${options.username ?? 'postgres'}`);
+        } else {
+          console.warn("TODO: invalid user for db ?")
+          thow new Error("invalid db/user combination")
+        }
+      } else {
+        console.warn("TODO: callback for db/table/user creation + switch")
+        thow new Error("invalid database requested");
+      }
     }
 
     // Sync any changes back to the persisted store (if there is one)
