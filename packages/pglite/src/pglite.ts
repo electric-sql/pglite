@@ -316,14 +316,15 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
         console.log("initdb has found a previous database");
         if (idb & (0b0100|0b1000)) {
            console.log("initdb found db+user, switching user to ", pguser);
-           await this.#runExec(`SET ROLE ${options.username ?? 'postgres'}`);
+            // wasm will change session_user when !=postgres
+           // await this.#runExec(`SET ROLE ${options.username ?? 'postgres'}`);
         } else {
           console.warn("TODO: invalid user for db ?");
           throw new Error("invalid db/user combination");
         }
       } else {
         console.warn("TODO: callback for db/table/user creation + switch")
-        if (pgdatabase !== "template1")
+        if ( (pgdatabase !== "template1") && (pguser !== "postgres") )
             throw new Error(`invalid database ${pgdatabase} requested`);
       }
     }
