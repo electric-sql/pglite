@@ -8,10 +8,6 @@ test("user switching", async (t) => {
   const db = new PGlite('./pgdata-test-user');
   await db.exec("CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';");
 
-  //
-  // CREATE DATABASE test_user WITH OWNER = test_user;
-  // CREATE SCHEMA test_user;
-  // CREATE TABLE test_user.test (
   await db.exec(`
     CREATE TABLE test (
       id SERIAL PRIMARY KEY,
@@ -19,8 +15,17 @@ test("user switching", async (t) => {
     );
     INSERT INTO test (number) VALUES (42);
   `);
-  // ALTER TABLE test_user.test OWNER TO test_user;
-  await db.exec("ALTER TABLE test OWNER TO test_user;");
+
+  await db.exec(`
+    CREATE TABLE test2 (
+      id SERIAL PRIMARY KEY,
+      number INT
+    );
+    INSERT INTO test2 (number) VALUES (42);
+  `);
+
+  await db.exec("ALTER TABLE test2 OWNER TO test_user;");
+
   await db.close();
 
   const db2 = new PGlite({
@@ -28,11 +33,16 @@ test("user switching", async (t) => {
     username: "test_user",
   });
 
-  const test_user = await db2.exec("SET ROLE test_user");
-
-  const result = await db2.query("SELECT * FROM test;");
-  t.deepEqual(result.rows, [{ id: 1, number: 42 }]);
+  // await db2.exec("SET ROLE test_user");
 
   const currentUsername = await db2.query("SELECT current_user;");
   t.deepEqual(currentUsername.rows, [{ current_user: "test_user" }]);
+
+  await t.throwsAsync(
+    () => db2.query("SELECT * FROM test;"),
+    { message: "permission denied for table test" }
+  );
+
+  const test2 = await db2.query("SELECT * FROM test2;");
+  t.deepEqual(test2.rows, [{ id: 1, number: 42 }]);
 });
