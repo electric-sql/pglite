@@ -5,8 +5,10 @@ import { PGlite } from "../dist/index.js";
 test("user switching", async (t) => {
   await fs.rm("./pgdata-test-user", { force: true, recursive: true });
 
-  const db = new PGlite('./pgdata-test-user');
-  await db.exec("CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';");
+  const db = new PGlite("./pgdata-test-user");
+  await db.exec(
+    "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';"
+  );
 
   await db.exec(`
     CREATE TABLE test (
@@ -29,7 +31,7 @@ test("user switching", async (t) => {
   await db.close();
 
   const db2 = new PGlite({
-    dataDir: './pgdata-test-user',
+    dataDir: "./pgdata-test-user",
     username: "test_user",
   });
 
@@ -38,11 +40,14 @@ test("user switching", async (t) => {
   const currentUsername = await db2.query("SELECT current_user;");
   t.deepEqual(currentUsername.rows, [{ current_user: "test_user" }]);
 
-  await t.throwsAsync(
-    () => db2.query("SELECT * FROM test;"),
-    { message: "permission denied for table test" }
-  );
+  await t.throwsAsync(() => db2.query("SELECT * FROM test;"), {
+    message: "permission denied for table test",
+  });
 
   const test2 = await db2.query("SELECT * FROM test2;");
   t.deepEqual(test2.rows, [{ id: 1, number: 42 }]);
+
+  await t.throwsAsync(() => db2.query("SET ROLE postgres;"), {
+    message: `permission denied to set role "postgres"`,
+  });
 });
