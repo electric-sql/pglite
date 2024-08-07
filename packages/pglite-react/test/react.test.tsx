@@ -186,7 +186,7 @@ function testLiveQuery(queryHook: "useLiveQuery" | "useLiveIncrementalQuery") {
       await waitFor(() => expect(result.current?.rows).toHaveLength(1));
     });
 
-    it.skip("updates when query parameter changes", async () => {
+    it("updates when query parameter changes", async () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
       const { result, rerender } = renderHook(

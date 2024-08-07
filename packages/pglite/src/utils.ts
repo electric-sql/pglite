@@ -74,7 +74,7 @@ export const uuid = (): string => {
 export async function formatQuery(
   pg: PGliteInterface | Transaction,
   query: string,
-  params?: any[],
+  params?: any[] | null,
 ) {
   if (!params || params.length === 0) {
     // no params so no formatting needed
@@ -82,7 +82,7 @@ export async function formatQuery(
   }
 
   // replace $1, $2, etc with  %1L, %2L, etc
-  query = query.replace(/\$([0-9]+)/g, (_, num) => {
+  const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
     return "%" + num + "L";
   });
 
@@ -90,7 +90,7 @@ export async function formatQuery(
     query: string;
   }>(
     `SELECT format($1, ${params.map((_, i) => `$${i + 2}`).join(", ")}) as query`,
-    [query, ...params],
+    [subbedQuery, ...params],
     {
       setAllTypes: true,
     },
