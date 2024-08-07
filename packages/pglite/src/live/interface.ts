@@ -42,8 +42,8 @@ export interface LiveNamespace {
     query: string,
     params: any[] | undefined | null,
     key: string,
-    callback: (results: Results<Change<T>>) => void,
-  ): Promise<LiveQueryReturn<Change<T>>>;
+    callback: (results: Results<T>) => void,
+  ): Promise<LiveQueryReturn<T>>;
 }
 
 export interface LiveQueryReturn<T> {
