@@ -398,17 +398,14 @@ export function tests(env, dbFilename, target) {
 
     t.deepEqual(res1.initialResults.rows, [
       {
-        __after__: null,
         id: 1,
         name: "test",
       },
       {
-        __after__: 1,
         id: 2,
         name: "test2",
       },
       {
-        __after__: 2,
         id: 3,
         name: "test3",
       },
@@ -417,22 +414,18 @@ export function tests(env, dbFilename, target) {
     for (const res of [res1, res2]) {
       t.deepEqual(res.updatedResults.rows, [
         {
-          __after__: null,
           id: 1,
           name: "test",
         },
         {
-          __after__: 1,
           id: 2,
           name: "test2",
         },
         {
-          __after__: 2,
           id: 3,
           name: "test3",
         },
         {
-          __after__: 3,
           id: 4,
           name: "test4",
         },

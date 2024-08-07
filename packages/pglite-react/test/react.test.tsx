@@ -3,7 +3,12 @@ import { renderHook, waitFor } from "@testing-library/react";
 import React from "react";
 import { PGlite } from "@electric-sql/pglite";
 import { live, PGliteWithLive } from "@electric-sql/pglite/live";
-import { PGliteProvider, usePGlite, useLiveQuery, useLiveIncrementalQuery } from "../dist/index.js";
+import {
+  PGliteProvider,
+  usePGlite,
+  useLiveQuery,
+  useLiveIncrementalQuery,
+} from "../dist/index.js";
 
 describe("react", () => {
   describe("usePGlite", () => {
@@ -28,10 +33,7 @@ describe("react", () => {
   testLiveQuery("useLiveIncrementalQuery");
 });
 
-
-function testLiveQuery(
-  queryHook: "useLiveQuery" | "useLiveIncrementalQuery"
-) {
+function testLiveQuery(queryHook: "useLiveQuery" | "useLiveIncrementalQuery") {
   describe(queryHook, () => {
     let db: PGliteWithLive;
     let wrapper: ({
@@ -39,8 +41,9 @@ function testLiveQuery(
     }: {
       children: React.ReactNode;
     }) => React.ReactElement;
-    let hookFn = queryHook === "useLiveQuery" ? useLiveQuery : useLiveIncrementalQuery;
-    const incKey = "id"
+    let hookFn =
+      queryHook === "useLiveQuery" ? useLiveQuery : useLiveIncrementalQuery;
+    const incKey = "id";
     beforeEach(async () => {
       db = await PGlite.create({
         extensions: {
@@ -101,47 +104,52 @@ function testLiveQuery(
         { wrapper },
       );
 
-      await waitFor(() => expect(result.current?.rows).toEqual([
-        {
-          id: 1,
-          name: "test1",
-        },
-        {
-          id: 2,
-          name: "test2",
-        }
-      ]));
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 1,
+            name: "test1",
+          },
+          {
+            id: 2,
+            name: "test2",
+          },
+        ]),
+      );
 
       // detect new inserts
       db.exec(`INSERT INTO test (name) VALUES ('test3');`);
-      await waitFor(() => expect(result.current?.rows).toEqual([
-        {
-          id: 1,
-          name: "test1",
-        },
-        {
-          id: 2,
-          name: "test2",
-        },
-        {
-          id: 3,
-          name: "test3",
-        },
-      ]));
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 1,
+            name: "test1",
+          },
+          {
+            id: 2,
+            name: "test2",
+          },
+          {
+            id: 3,
+            name: "test3",
+          },
+        ]),
+      );
 
       // detect deletes
       db.exec(`DELETE FROM test WHERE name = 'test1';`);
-      await waitFor(() => expect(result.current?.rows).toEqual([
-        {
-          id: 2,
-          name: "test2",
-        },
-        {
-          id: 3,
-          name: "test3",
-        },
-      ]));
-      
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 2,
+            name: "test2",
+          },
+          {
+            id: 3,
+            name: "test3",
+          },
+        ]),
+      );
 
       // detect updates
       db.exec(`UPDATE test SET name = 'foobar' WHERE name = 'test2';`);
