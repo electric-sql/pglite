@@ -33,6 +33,18 @@ const tags = computed(() => {
   })
 })
 
+function formatSize(bytes) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  let i = 0;
+
+  while (bytes >= 1024 && i < units.length - 1) {
+    bytes /= 1024;
+    i++;
+  }
+
+  return `${bytes.toFixed(1)} ${units[i]}`;
+}
+
 const selectedTag = ref(null)
 </script>
 
@@ -101,6 +113,11 @@ const selectedTag = ref(null)
 .links a {
   margin-right: 0.5rem;
 }
+
+.bundle-size {
+  float:right;
+  opacity: 0.5;
+}
 </style>
 
 # PGlite Extensions
@@ -150,6 +167,9 @@ Below is a list of available extensions.
   <a v-else-if="ext.repo" :href="ext.repo" target="_blank">Repo</a>
   <a v-if="ext.docs" :href="ext.docs" target="_blank">Documentation</a>
   <a v-if="ext.homepage" :href="ext.homepage" target="_blank">Homepage</a>
+  <span class="bundle-size" v-if="ext.size">
+    Bundle Size: {{ formatSize(ext.size) }}
+  </span>
 </div>
 <div class="tags">
   <span v-for="tag in ext.tags" :key="tag" class="tag">{{ tag }}</span>

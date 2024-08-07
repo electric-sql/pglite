@@ -36,11 +36,11 @@ export interface ExtensionSetupResult {
 `setup` is a function that receives the following parameters, and returns a promise that resolves to an object conforming to `ExtensionSetupResult`:
 
 - `pg`<br>
-  the [PGlite](../docs/api.md) instance that the extension is being added to
+  The [PGlite](../docs/api.md) instance that the extension is being added to
 - `emscriptenOpts`<br>
-  the options currently configured to pass to the [Emscrption Module factory](https://emscripten.org/docs/api_reference/module.html), including the [Emscript FS](https://emscripten.org/docs/api_reference/Filesystem-API.html).
+  The options currently configured to pass to the [Emscrption Module factory](https://emscripten.org/docs/api_reference/module.html), including the [Emscript FS](https://emscripten.org/docs/api_reference/Filesystem-API.html).
 - `clientOnly`<br>
-  A boolean indicating if this instance of the extension is "client only", meaning that it is on the main thread and doesn't have direct access to the underlying WASM as it is running in a worker. When true `emscriptenOpts` and `bundlePath` should not re returned as they will have no effect.
+  A boolean indicating if this instance of the extension is "client only", meaning that it is on the main thread and doesn't have direct access to the underlying WASM as it is running in a worker. When true, `emscriptenOpts` and `bundlePath` should not re returned as they will have no effect.
 
 The returned object has these properties - all are optional:
 
@@ -51,7 +51,7 @@ The returned object has these properties - all are optional:
 - `bundlePath`<br>
   The path to the Postgres extension tarball - see [Building Postgres Extensions](#building-postgres-extensions)
 - `init`<br>
-  An initiation function that will be run after the PGlite instance and Postgres runtime has started, but before the instance is marked as ready for external usage. You can use this to perform any initiation your extension needs to perform on the database at startup.
+  An initialisation function that will be run after the PGlite instance and Postgres runtime has started, but before the instance is marked as ready for external usage. You can use this to perform any initialisation your extension needs to perform on the database at startup.
 - `close`<br>
   A function that will be called when the user calls `close()` on their PGlite instance; this is called before the database has been shut down.
 

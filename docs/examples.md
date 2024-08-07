@@ -24,7 +24,7 @@ We have a number of examples showing how to use PGlite along with its capabiliti
   Reactivity example using the live query extensions `.live.incrementalQuery()` method.
 
 - <a href="./examples/notify.html" target="_blank">Notify and Listen</a><br>
-  Example showing the use of the `NOTIFY` and `LISTEN` Postgres commands via the PGlite `.listen()` api.
+  Example showing the use of the `NOTIFY` and `LISTEN` Postgres commands via the PGlite `.listen()` API.
 
 - <a href="./examples/opfs.html" target="_blank">OPFS VFS</a><br>
   An example demonstrating the [OPFS Access Handle Pool VFS](./docs/filesystems.md#opfs-ahp-fs).

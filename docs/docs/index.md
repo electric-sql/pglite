@@ -59,7 +59,7 @@ Then for an in-memory Postgres:
 const db = new PGlite()
 ```
 
-or to persist the database to indexedDB:
+or to persist the database to IndexedDB:
 
 ```js
 const db = new PGlite("idb://my-pgdata");
@@ -67,7 +67,7 @@ const db = new PGlite("idb://my-pgdata");
 
 ## Making a query
 
-There are two methods for querying the database, `.query` and `.exec`. The former supports parameters, and the latter, multiple statements.
+There are two methods for querying the database, `.query` and `.exec`. The former supports parameters, while the latter supports multiple statements.
 
 First, let's create a table and insert some test data using the `.exec` method:
 

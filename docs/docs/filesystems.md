@@ -4,6 +4,8 @@ PGlite has a virtual file system layer that allows it to run in environments tha
 
 PGlite VFSs are under active development, and we plan to extend the range of options in future, as well as make it easy for users to create their own filesystems.
 
+We would recommend using the IndexedDB VFS in the browser at the current time as the OPFS VFS is not supported by Safari.
+
 ## In-memory FS
 
 The in-memory FS is the default when starting PGlite, and it is available on all platforms. All files are kept in memory and there is no persistance, other than calling [`pg.dumpDataDir()`](./api.md#dumpdatadir) and then using the [`loadDataDir`](./api.md#options) option at start.
@@ -58,7 +60,7 @@ To use the Node FS you can use one of these methods:
 
 ## IndexedDB FS
 
-The IndexedDB FS persists the database to IndexedDB in the browser. It's a layer over the in-memory filesystem, loading all files for the database into memory on start, and flushing them to IndexedDB after each query if they have changed.
+The [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) FS persists the database to IndexedDB in the browser. It's a layer over the in-memory filesystem, loading all files for the database into memory on start, and flushing them to IndexedDB after each query if they have changed.
 
 To use the IndexedDB FS you can use one of these methods:
 

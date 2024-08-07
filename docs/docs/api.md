@@ -6,47 +6,48 @@ outline: [2, 3]
 
 ## Main Constructor
 
-`new PGlite(dataDir: string, options: PGliteOptions)`<br/>
-`new PGlite(options: PGliteOptions)`
-
-A new PGlite instance is created using the `new PGlite()` constructor.
-
-This is imported as:
+The main constructor is imported as:
 
 ```ts
 import { PGlite } from "@electric-sql/pglite";
 ```
 
+The preferred way to create a PGlite instance is with the `PGlite.create()` static method that returns a promise, resolving to the new PGlite instance. 
+
 `await PGlite.create(dataDir: string, options: PGliteOptions)`<br />
 `await PGlite.create(options: PGliteOptions)`
 
-There is also a `PGlite.create()` static method that returns a promise, resolving to the new PGlite instance. There are a couple of advantages to using the static method:
+There are a couple of advantages to using the static method:
 
-- This awaits the [`.waitReady`](#waitready) promise, ensuring that the database has fully initiated.
-- When using TypeScript and extensions, the returned PGlite instance will have the extensions namespace on its type. This is not possible with the standard constructor due to limitation with TypeScript.
+- This awaits the [`.waitReady`](#waitready) promise, ensuring that the database has been fully initialised.
+- When using TypeScript and extensions, the returned PGlite instance will have the extensions namespace on its type. This is not possible with the standard constructor due to TypesScript limitations.
 
+A new PGlite instance can also be created using the `new PGlite()` constructor.
+
+`new PGlite(dataDir: string, options: PGliteOptions)`<br/>
+`new PGlite(options: PGliteOptions)`
 
 #### `dataDir`
 
-Path to the directory for storing the Postgres database. You can provide a url scheme for various storage backends:
+Path to the directory for storing the Postgres database. You can provide a URI scheme for various storage backends:
 
 - `file://` or unprefixed<br />
   File system storage, available in Node and Bun.
 - `idb://`<br />
-  IndexedDB storage, available in the browser.
+  [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) storage, available in the browser.
 - `memory://`<br />
   In-memory ephemeral storage, available in all platforms.
 
 #### `options`
 
 - `dataDir: string`<br />
-  The directory to store the Postgres database in when not provided as the first argument.
+  The directory in which to store the Postgres database when not provided as the first argument.
 - `debug: 1-5`<br />
   the Postgres debug level. Logs are sent to the console.
 - `relaxedDurability: boolean`<br />
-  Under relaxed durability mode, PGlite will not wait for flushes to storage to complete after each query before returning results. This is particularly useful when using the indexedDB file system.
+  Under relaxed durability mode, PGlite will not wait for flushes to storage to complete after each query before returning results. This is particularly useful when using the IndexedDB file system.
 - `fs: Filesystem`<br />
-  The alternative to providing a dataDir with a filesystem prefix is to initiate the Filesystem yourself and provide it here. See [Filesystems](./filesystems.md)
+  The alternative to providing a dataDir with a filesystem prefix is to initialise a `Filesystem` yourself and provide it here. See [Filesystems](./filesystems.md)
 - `loadDataDir: Blob | File`<br />
   A tarball of a PGlite `datadir` to load when the database starts. This should be a tarball produced from the related [`.dumpDataDir()`](#dumpdatadir) method.
 - `extensions: Extensions`<br />
@@ -56,7 +57,7 @@ Path to the directory for storing the Postgres database. You can provide a url s
 
 PGlite and Postgres extensions are loaded into a PGLite instance on start, and can include both a WASM build of a Postgres extension and/or a PGlite client plugin.
 
-The `options.extensions` parameter is an object of `namespace: extension` parings. The namespace if used to expose the PGlite client plugin included in the extension. An example of this is the [live queries](./live-queries.md) extension.
+The `options.extensions` parameter is an object of `namespace: extension` parings. The namespace is used to expose the PGlite client plugin included in the extension. An example of this is the [live queries](./live-queries.md) extension.  
 
 ```ts
 import { PGlite } from "@electric-sql/pglite";
@@ -106,7 +107,7 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `rowMode: "object" | "array"` <br />
   The returned row object type, either an object of `fieldName: value` mappings or an array of positional values. Defaults to `"object"`.
 - `parsers: ParserOptions` <br />
-  An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type id to parser function.
+  An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type IDs to parser functions.  
   For convenience, the `pglite` package exports a constant for most common Postgres types:
 
   ```ts
@@ -130,7 +131,7 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 
 Execute one or more statements. *(note that parameters are not supported)*
 
-This is useful for applying database migrations, or running multi-statement sql that doesn't use parameters.
+This is useful for applying database migrations, or running multi-statement SQL that doesn't use parameters.
 
 Uses the *simple query* Postgres wire protocol.
 
@@ -280,7 +281,7 @@ Query methods will wait for the `waitReady` promise to resolve if called before 
 Result objects have the following properties:
 
 - `rows: Row<T>[]`<br />
-  The rows retuned by the query
+  The rows retuned by the query.
 
 - `affectedRows?: number` <br />
   Count of the rows affected by the query. Note, this is *not* the count of rows returned, it is the number or rows in the database changed by the query.

@@ -15,6 +15,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/vector",
     importName: "vector",
     core: true,
+    size: 43953,
   },
   {
     name: "live",
@@ -29,6 +30,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/live",
     importName: "live",
     core: true,
+    size: 21766
   },
   {
     name: "adminpack",
@@ -41,6 +43,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/adminpack",
     importName: "adminpack",
     core: true,
+    size: 4274,
   },
   {
     name: "amcheck",
@@ -53,6 +56,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/amcheck",
     importName: "amcheck",
     core: true,
+    size: 18815,
   },
   {
     name: "auto_explain",
@@ -65,6 +69,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/auto_explain",
     importName: "auto_explain",
     core: true,
+    size: 3125,
   },
   {
     name: "bloom",
@@ -80,6 +85,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/bloom",
     importName: "bloom",
     core: true,
+    size: 6197,
   },
   {
     name: "btree_gin",
@@ -92,6 +98,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/btree_gin",
     importName: "btree_gin",
     core: true,
+    size: 6347,
   },
   {
     name: "btree_gist",
@@ -104,6 +111,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/btree_gist",
     importName: "btree_gist",
     core: true,
+    size: 24181,
   },
   {
     name: "citext",
@@ -117,6 +125,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/citext",
     importName: "citext",
     core: true,
+    size: 4983,
   },
   {
     name: "cube",
@@ -128,6 +137,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/cube",
     importName: "cube",
     core: true,
+    size: 15104,
   },
   {
     name: "earthdistance",
@@ -140,6 +150,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/earthdistance",
     importName: "earthdistance",
     core: true,
+    size: 2220,
   },
   {
     name: "fuzzystrmatch",
@@ -152,6 +163,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/fuzzystrmatch",
     importName: "fuzzystrmatch",
     core: true,
+    size: 12026,
   },
   {
     name: "hstore",
@@ -166,6 +178,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/hstore",
     importName: "hstore",
     core: true,
+    size: 21380,
   },
   {
     name: "isn",
@@ -178,6 +191,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/isn",
     importName: "isn",
     core: true,
+    size: 31417,
   },
   {
     name: "lo",
@@ -190,6 +204,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/lo",
     importName: "lo",
     core: true,
+    size: 1822,
   },
   {
     name: "ltree",
@@ -203,6 +218,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/ltree",
     importName: "ltree",
     core: true,
+    size: 19553,
   },
   {
     name: "pg_trgm",
@@ -216,6 +232,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/pg_trgm",
     importName: "pg_trgm",
     core: true,
+    size: 16208,
   },
   {
     name: "seg",
@@ -229,6 +246,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/seg",
     importName: "seg",
     core: true,
+    size: 10426,
   },
   {
     name: "tablefunc",
@@ -242,6 +260,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/tablefunc",
     importName: "tablefunc",
     core: true,
+    size: 5824,
   },
   {
     name: "tcn",
@@ -255,6 +274,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/tcn",
     importName: "tcn",
     core: true,
+    size: 1914,
   },
   {
     name: "tsm_system_rows",
@@ -267,6 +287,7 @@ let baseExtensions: Extension[] = [
     importPath: "@electric-sql/pglite/contrib/tsm_system_rows",
     importName: "tsm_system_rows",
     core: true,
+    size: 2048,
   },
   {
     name: "tsm_system_time",
@@ -278,6 +299,7 @@ let baseExtensions: Extension[] = [
     tags: ["postgres extension", "postgres/contrib"],
     importPath: "@electric-sql/pglite/contrib/tsm_system_time",
     importName: "tsm_system_time",
+    size: 2099,
   },
   {
     name: "uuid-ossp",
@@ -291,6 +313,7 @@ let baseExtensions: Extension[] = [
     tags: ["postgres extension", "postgres/contrib"],
     importPath: "@electric-sql/pglite/contrib/uuid_ossp",
     importName: "uuid_ossp",
+    size: 17936,
   },
 ];
 
@@ -315,6 +338,7 @@ export interface Extension {
   importName?: string;
   core?: boolean;
   npmPackage?: string;
+  size?: number;
 }
 
 export default {
