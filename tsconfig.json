@@ -11,7 +11,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "lib": ["ESNext", "DOM"],
+    "preserveSymlinks": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noFallthroughCasesInSwitch": true,
@@ -29,5 +30,6 @@
     "strictNullChecks": true,
     "target": "ESNext"
   },
+  "exclude": ["node_modules"],
   "include": ["eslint.config.js", ".prettierrc.cjs"]
 }

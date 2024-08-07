@@ -4,7 +4,7 @@ import type {
   PGliteInterface,
 } from "../interface";
 
-const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
+const setup = async (_pg: PGliteInterface, emscriptenOpts: any) => {
   return {
     emscriptenOpts,
     bundlePath: new URL("../../release/vector.tar.gz", import.meta.url),
