@@ -132,11 +132,11 @@ test.serial("basic live incremental query cjs", async (t) => {
   );
 
   t.deepEqual(initialResults.rows, [
-    { id: 1, number: 10, __after__: null },
-    { id: 2, number: 20, __after__: 1 },
-    { id: 3, number: 30, __after__: 2 },
-    { id: 4, number: 40, __after__: 3 },
-    { id: 5, number: 50, __after__: 4 },
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
   ]);
 
   await db.exec("INSERT INTO test (number) VALUES (25);");
@@ -146,12 +146,12 @@ test.serial("basic live incremental query cjs", async (t) => {
   );
 
   t.deepEqual(updatedResults.rows, [
-    { id: 1, number: 10, __after__: null },
-    { id: 2, number: 20, __after__: 1 },
-    { id: 6, number: 25, __after__: 2 },
-    { id: 3, number: 30, __after__: 6 },
-    { id: 4, number: 40, __after__: 3 },
-    { id: 5, number: 50, __after__: 4 },
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 6, number: 25 },
+    { id: 3, number: 30 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
   ]);
 
   await db.exec("DELETE FROM test WHERE id = 6;");
@@ -161,11 +161,11 @@ test.serial("basic live incremental query cjs", async (t) => {
   );
 
   t.deepEqual(updatedResults.rows, [
-    { id: 1, number: 10, __after__: null },
-    { id: 2, number: 20, __after__: 1 },
-    { id: 3, number: 30, __after__: 2 },
-    { id: 4, number: 40, __after__: 3 },
-    { id: 5, number: 50, __after__: 4 },
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
   ]);
 
   await db.exec("UPDATE test SET number = 15 WHERE id = 3;");
@@ -175,11 +175,11 @@ test.serial("basic live incremental query cjs", async (t) => {
   );
 
   t.deepEqual(updatedResults.rows, [
-    { id: 1, number: 10, __after__: null },
-    { id: 3, number: 15, __after__: 1 },
-    { id: 2, number: 20, __after__: 3 },
-    { id: 4, number: 40, __after__: 2 },
-    { id: 5, number: 50, __after__: 4 },
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
   ]);
 
   unsubscribe();
@@ -189,11 +189,11 @@ test.serial("basic live incremental query cjs", async (t) => {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   t.deepEqual(updatedResults.rows, [
-    { id: 1, number: 10, __after__: null },
-    { id: 3, number: 15, __after__: 1 },
-    { id: 2, number: 20, __after__: 3 },
-    { id: 4, number: 40, __after__: 2 },
-    { id: 5, number: 50, __after__: 4 },
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+    { id: 4, number: 40 },
+    { id: 5, number: 50 },
   ]);
 });
 

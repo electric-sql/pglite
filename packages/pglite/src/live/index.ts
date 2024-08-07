@@ -285,9 +285,7 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
         tables!.map((table) =>
           pg.listen(
             `table_change__${table.schema_name}__${table.table_name}`,
-            async () => {
-              refresh();
-            },
+            async () => refresh(),
           ),
         ),
       );
@@ -326,11 +324,11 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       query: string,
       params: any[] | undefined | null,
       key: string,
-      callback: (results: Results<Change<T>>) => void,
+      callback: (results: Results<T>) => void,
     ) {
       const rowsMap: Map<any, any> = new Map();
       const afterMap: Map<any, any> = new Map();
-      let lastRows: Change<T>[] = [];
+      let lastRows: T[] = [];
       let firstRun = true;
 
       const { fields, unsubscribe, refresh } = await namespaceObj.changes<T>(
@@ -373,15 +371,18 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
           }
 
           // Get the rows in order
-          const rows: Change<T>[] = [];
+          const rows: T[] = [];
           let lastKey: any = null;
-          while (true) {
+          for (let i = 0; i < rowsMap.size; i++) {
             const nextKey = afterMap.get(lastKey);
             const obj = rowsMap.get(nextKey);
             if (!obj) {
               break;
             }
-            rows.push(obj);
+            // Remove the __after__ key from the exposed row
+            const cleanObj = { ...obj };
+            delete cleanObj.__after__;
+            rows.push(cleanObj);
             lastKey = nextKey;
           }
           lastRows = rows;

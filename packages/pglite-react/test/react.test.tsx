@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import React from "react";
 import { PGlite } from "@electric-sql/pglite";
 import { live, PGliteWithLive } from "@electric-sql/pglite/live";
-import { PGliteProvider, usePGlite, useLiveQuery } from "../dist/index.js";
+import { PGliteProvider, usePGlite, useLiveQuery, useLiveIncrementalQuery } from "../dist/index.js";
 
 describe("react", () => {
   describe("usePGlite", () => {
@@ -23,13 +23,24 @@ describe("react", () => {
     });
   });
 
-  describe("useLiveQuery", () => {
+  testLiveQuery("useLiveQuery");
+
+  testLiveQuery("useLiveIncrementalQuery");
+});
+
+
+function testLiveQuery(
+  queryHook: "useLiveQuery" | "useLiveIncrementalQuery"
+) {
+  describe(queryHook, () => {
     let db: PGliteWithLive;
     let wrapper: ({
       children,
     }: {
       children: React.ReactNode;
     }) => React.ReactElement;
+    let hookFn = queryHook === "useLiveQuery" ? useLiveQuery : useLiveIncrementalQuery;
+    const incKey = "id"
     beforeEach(async () => {
       db = await PGlite.create({
         extensions: {
@@ -53,7 +64,7 @@ describe("react", () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
       const { result } = renderHook(
-        () => useLiveQuery(`SELECT * FROM test`, []),
+        () => hookFn(`SELECT * FROM test`, [], incKey),
         { wrapper },
       );
 
@@ -86,24 +97,28 @@ describe("react", () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
       const { result } = renderHook(
-        () => useLiveQuery(`SELECT * FROM test`, []),
+        () => hookFn(`SELECT * FROM test`, [], incKey),
         { wrapper },
       );
 
-      await waitFor(() => expect(result.current?.rows).toHaveLength(2));
+      await waitFor(() => expect(result.current?.rows).toEqual([
+        {
+          id: 1,
+          name: "test1",
+        },
+        {
+          id: 2,
+          name: "test2",
+        }
+      ]));
 
       // detect new inserts
       db.exec(`INSERT INTO test (name) VALUES ('test3');`);
-      await waitFor(() => expect(result.current?.rows).toHaveLength(3));
-      expect(result.current?.rows[2]).toEqual({
-        id: 3,
-        name: "test3",
-      });
-
-      // detect deletes
-      db.exec(`DELETE FROM test WHERE name = 'test1';`);
-      await waitFor(() => expect(result.current?.rows).toHaveLength(2));
-      expect(result.current?.rows).toEqual([
+      await waitFor(() => expect(result.current?.rows).toEqual([
+        {
+          id: 1,
+          name: "test1",
+        },
         {
           id: 2,
           name: "test2",
@@ -112,10 +127,24 @@ describe("react", () => {
           id: 3,
           name: "test3",
         },
-      ]);
+      ]));
+
+      // detect deletes
+      db.exec(`DELETE FROM test WHERE name = 'test1';`);
+      await waitFor(() => expect(result.current?.rows).toEqual([
+        {
+          id: 2,
+          name: "test2",
+        },
+        {
+          id: 3,
+          name: "test3",
+        },
+      ]));
+      
 
       // detect updates
-      db.exec(`UPDATE test SET name='foobar' WHERE name = 'test2';`);
+      db.exec(`UPDATE test SET name = 'foobar' WHERE name = 'test2';`);
       await waitFor(() =>
         expect(result.current?.rows).toEqual([
           {
@@ -138,7 +167,7 @@ describe("react", () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
       const { result, rerender } = renderHook(
-        (props) => useLiveQuery(props.query, []),
+        (props) => hookFn(props.query, [], incKey),
         { wrapper, initialProps: { query: `SELECT * FROM test` } },
       );
 
@@ -152,11 +181,9 @@ describe("react", () => {
     it.skip("updates when query parameter changes", async () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`);
 
-      // console.log(await db.query(`SELECT * FROM test WHERE name = $1;`, ['test1']))
-
       const { result, rerender } = renderHook(
         (props) =>
-          useLiveQuery(`SELECT * FROM test WHERE name = $1;`, props.params),
+          hookFn(`SELECT * FROM test WHERE name = $1;`, props.params, incKey),
         { wrapper, initialProps: { params: ["test1"] } },
       );
 
@@ -181,4 +208,4 @@ describe("react", () => {
       );
     });
   });
-});
+}
