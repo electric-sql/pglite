@@ -95,9 +95,92 @@ test.serial("basic live query", async (t) => {
     { id: 4, number: 40 },
     { id: 5, number: 50 },
   ]);
-
 });
 
+test.serial("live query with params", async (t) => {
+  const db = new PGlite({
+    extensions: { live },
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      number INT
+    );
+  `);
+
+  await db.exec(`
+    INSERT INTO test (number)
+    SELECT i*10 FROM generate_series(1, 5) i;
+  `);
+
+  let updatedResults;
+  const eventTarget = new EventTarget();
+
+  const { initialResults, unsubscribe } = await db.live.query(
+    "SELECT * FROM test WHERE number < $1 ORDER BY number;",
+    [40],
+    (result) => {
+      updatedResults = result;
+      eventTarget.dispatchEvent(new Event("change"));
+    }
+  );
+
+  t.deepEqual(initialResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+  ]);
+
+  db.exec("INSERT INTO test (number) VALUES (25);");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 6, number: 25 },
+    { id: 3, number: 30 },
+  ]);
+
+  db.exec("DELETE FROM test WHERE id = 6;");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+  ]);
+
+  db.exec("UPDATE test SET number = 15 WHERE id = 3;");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+  ]);
+
+  unsubscribe();
+
+  db.exec("INSERT INTO test (number) VALUES (35);");
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+  ]);
+});
 
 test.serial("incremental query unordered", async (t) => {
   const db = new PGlite({
@@ -131,7 +214,7 @@ test.serial("incremental query unordered", async (t) => {
 
   t.deepEqual(initialResults.rows, [
     { id: 1, number: 1 },
-    { id: 2, number: 2 }
+    { id: 2, number: 2 },
   ]);
 
   await db.exec("UPDATE test SET number = 10 WHERE id = 1;");
@@ -142,11 +225,11 @@ test.serial("incremental query unordered", async (t) => {
 
   t.deepEqual(updatedResults.rows, [
     { id: 2, number: 2 },
-    { id: 1, number: 10 }
+    { id: 1, number: 10 },
   ]);
 
   unsubscribe();
-})
+});
 
 test.serial("basic live incremental query", async (t) => {
   const db = new PGlite({
@@ -241,6 +324,92 @@ test.serial("basic live incremental query", async (t) => {
     { id: 2, number: 20 },
     { id: 4, number: 40 },
     { id: 5, number: 50 },
+  ]);
+});
+
+test.serial("live incremental query with params", async (t) => {
+  const db = new PGlite({
+    extensions: { live },
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      number INT
+    );
+  `);
+
+  await db.exec(`
+    INSERT INTO test (number)
+    SELECT i*10 FROM generate_series(1, 5) i;
+  `);
+
+  let updatedResults;
+  const eventTarget = new EventTarget();
+
+  const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+    "SELECT * FROM test WHERE number < $1 ORDER BY number;",
+    [40],
+    "id",
+    (result) => {
+      updatedResults = result;
+      eventTarget.dispatchEvent(new Event("change"));
+    }
+  );
+
+  t.deepEqual(initialResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+  ]);
+
+  await db.exec("INSERT INTO test (number) VALUES (25);");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 6, number: 25 },
+    { id: 3, number: 30 },
+  ]);
+
+  await db.exec("DELETE FROM test WHERE id = 6;");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 2, number: 20 },
+    { id: 3, number: 30 },
+  ]);
+
+  await db.exec("UPDATE test SET number = 15 WHERE id = 3;");
+
+  await new Promise((resolve) =>
+    eventTarget.addEventListener("change", resolve, { once: true })
+  );
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
+  ]);
+
+  unsubscribe();
+
+  await db.exec("INSERT INTO test (number) VALUES (35);");
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  t.deepEqual(updatedResults.rows, [
+    { id: 1, number: 10 },
+    { id: 3, number: 15 },
+    { id: 2, number: 20 },
   ]);
 });
 

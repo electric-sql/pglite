@@ -89,12 +89,20 @@ export const types = {
     from: [TEXT, VARCHAR],
     serialize: (x: string) => x,
     parse: (x: string) => x,
+    forceTo: TEXT,
   },
   number: {
     to: 0,
     from: [INT2, INT4, OID, FLOAT4, FLOAT8],
     serialize: (x: number) => x.toString(),
     parse: (x: string) => +x,
+    forceTo: (x: number) => {
+      if (Number.isInteger(x)) {
+        return INT8;
+      } else {
+        return FLOAT8;
+      }
+    },
   },
   bigint: {
     to: INT8,
@@ -158,6 +166,7 @@ export type TypeHandler = {
   js?: any;
   serialize: (x: any) => string;
   parse: (x: string, typeId?: number) => any;
+  forceTo?: number | ((x: any) => number);
 };
 
 export type TypeHandlers = {
@@ -170,7 +179,7 @@ export const parsers = defaultHandlers.parsers;
 export const serializers = defaultHandlers.serializers;
 export const serializerInstanceof = defaultHandlers.serializerInstanceof;
 
-export type Serializer = (x: any) => [string, number];
+export type Serializer = (x: any, setAllTypes?: boolean) => [string, number];
 
 export function serializerFor(x: any): Serializer {
   if (Array.isArray(x)) {
@@ -188,11 +197,14 @@ export function serializerFor(x: any): Serializer {
   return serializers.json;
 }
 
-export function serializeType(x: any): [string | null, number] {
+export function serializeType(
+  x: any,
+  setAllTypes = false,
+): [string | null, number] {
   if (x === null || x === undefined) {
     return [null, 0];
   }
-  return serializerFor(x)(x);
+  return serializerFor(x)(x, setAllTypes);
 }
 
 function escapeElement(elementRepresentation: string) {
@@ -298,8 +310,17 @@ export function parseType(
 function typeHandlers(types: TypeHandlers) {
   return Object.keys(types).reduce(
     ({ parsers, serializers, serializerInstanceof }, k) => {
-      const { to, from, serialize, parse = null } = types[k];
-      const theSerializer = (x: any) => [serialize(x), to] as [string, number];
+      const { to, from, serialize, parse = null, forceTo } = types[k];
+      const theSerializer = (x: any, setAllTypes = false) => {
+        return [
+          serialize(x),
+          setAllTypes && forceTo
+            ? typeof forceTo === "function"
+              ? forceTo(x)
+              : forceTo
+            : to,
+        ] as [string, number];
+      };
       serializers[to] = theSerializer;
       serializers[k] = theSerializer;
       if (types[k].js) {

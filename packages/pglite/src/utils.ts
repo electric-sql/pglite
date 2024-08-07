@@ -1,3 +1,5 @@
+import type { PGliteInterface, Transaction } from "./interface.js";
+
 export const IN_NODE =
   typeof process === "object" &&
   typeof process.versions === "object" &&
@@ -68,3 +70,30 @@ export const uuid = (): string => {
     hexValues.slice(10).join("")
   );
 };
+
+export async function formatQuery(
+  pg: PGliteInterface | Transaction,
+  query: string,
+  params?: any[] | null,
+) {
+  if (!params || params.length === 0) {
+    // no params so no formatting needed
+    return query;
+  }
+
+  // replace $1, $2, etc with  %1L, %2L, etc
+  const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
+    return "%" + num + "L";
+  });
+
+  const ret = await pg.query<{
+    query: string;
+  }>(
+    `SELECT format($1, ${params.map((_, i) => `$${i + 2}`).join(", ")}) as query`,
+    [subbedQuery, ...params],
+    {
+      setAllTypes: true,
+    },
+  );
+  return ret.rows[0].query;
+}
