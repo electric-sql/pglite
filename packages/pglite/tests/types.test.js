@@ -84,9 +84,18 @@ test("serialize string", (t) => {
   t.deepEqual(types.serializeType("test"), ["test", 0]);
 });
 
+test("serialize string set all types", (t) => {
+  t.deepEqual(types.serializeType("test", true), ["test", 25]);
+});
+
 test("serialize number", (t) => {
   t.deepEqual(types.serializeType(1), ["1", 0]);
   t.deepEqual(types.serializeType(1.1), ["1.1", 0]);
+});
+
+test("serialize number set all types", (t) => {
+  t.deepEqual(types.serializeType(1, true), ["1", 20]);
+  t.deepEqual(types.serializeType(1.1, true), ["1.1", 701]);
 });
 
 test("serialize bigint", (t) => {

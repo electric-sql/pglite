@@ -19,6 +19,7 @@ export interface QueryOptions {
   parsers?: ParserOptions;
   blob?: Blob | File;
   onNotice?: (notice: NoticeMessage) => void;
+  setAllTypes?: boolean;
 }
 
 export interface ExecProtocolOptions {

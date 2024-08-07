@@ -7,3 +7,4 @@ export * as protocol from "pg-protocol/src/index.js";
 export { MemoryFS } from "./fs/memoryfs.js";
 export { IdbFs } from "./fs/idbfs.js";
 export { Mutex } from "async-mutex";
+export { uuid, formatQuery } from "./utils.js";

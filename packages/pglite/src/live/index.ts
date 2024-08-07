@@ -10,7 +10,7 @@ import type {
   LiveChangesReturn,
   Change,
 } from "./interface";
-import { uuid } from "../utils.js";
+import { uuid, formatQuery } from "../utils.js";
 
 const MAX_RETRIES = 5;
 
@@ -33,9 +33,9 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
+          const formattedQuery = await formatQuery(tx, query, params || []);
           await tx.query(
-            `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
-            params ?? [],
+            `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           );
 
           // Get the tables used in the view and add triggers to notify when they change
@@ -124,9 +124,9 @@ const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
+          const formattedQuery = await formatQuery(tx, query, params || []);
           await tx.query(
-            `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${query}`,
-            params ?? [],
+            `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           );
 
           // Get the tables used in the view and add triggers to notify when they change
