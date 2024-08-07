@@ -1,1 +1,16 @@
-{"pnpm":{"patchedDependencies":{"pg-protocol@1.6.1":"patches/pg-protocol@1.6.1.patch"}}}
+{
+  "pnpm": {
+    "patchedDependencies": {
+      "pg-protocol@1.6.1": "patches/pg-protocol@1.6.1.patch"
+    }
+  },
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "globals": "^15.9.0",
+    "prettier": "3.2.5",
+    "typescript": "^5.5.4"
+  }
+}

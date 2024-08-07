@@ -2,6 +2,7 @@
   "name": "@electric-sql/pglite-react",
   "version": "0.2.0",
   "description": "Hooks for using PGlite",
+  "type": "module",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -19,17 +20,17 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/electric-sql/pglite",
+    "url": "git+https://github.com/electric-sql/pglite.git",
     "directory": "packages/pglite"
   },
   "scripts": {
     "build": "tsup",
     "test": "vitest",
-    "typecheck": "tsc",
     "lint": "eslint ./src ./test",
-    "format": "prettier --write ./src ./test"
+    "format": "prettier --write ./src ./test",
+    "typecheck": "tsc",
+    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test"
   },
-  "type": "module",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
