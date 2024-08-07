@@ -20,7 +20,7 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, "src/Repl.tsx"),
+      entry: resolve(import.meta.dirname, "src/Repl.tsx"),
       name: "PGliteREPL",
       fileName: "Repl",
       // formats: ["es"],

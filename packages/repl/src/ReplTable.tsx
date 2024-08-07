@@ -1,55 +1,57 @@
-import { useState, useEffect } from "react";
-import type { Results } from "./types";
+import { useState, useEffect } from 'react'
+import type { Results } from './types'
 
-const tableRowIncrement = 100;
-const maxCellLength = 200;
+const tableRowIncrement = 100
+const maxCellLength = 200
 
-function cellClass(value: any) {
+function cellClass(value: unknown) {
   if (value === null) {
-    return "PGliteRepl-null";
-  } else if (typeof value === "number") {
-    return "PGliteRepl-number";
-  } else if (typeof value === "boolean") {
-    return "PGliteRepl-boolean";
+    return 'PGliteRepl-null'
+  } else if (typeof value === 'number') {
+    return 'PGliteRepl-number'
+  } else if (typeof value === 'boolean') {
+    return 'PGliteRepl-boolean'
   } else {
-    return "";
+    return ''
   }
 }
 
-function cellValue(value: any) {
-  let str: string;
+function cellValue(value: unknown) {
+  let str: string
   if (value === null) {
-    str = "null";
-  } else if (typeof value === "number") {
-    str = value.toString();
-  } else if (typeof value === "boolean") {
-    str = value ? "true" : "false";
+    str = 'null'
+  } else if (typeof value === 'number') {
+    str = value.toString()
+  } else if (typeof value === 'boolean') {
+    str = value ? 'true' : 'false'
   } else if (value instanceof Date) {
-    str = value.toISOString();
+    str = value.toISOString()
   } else if (Array.isArray(value)) {
-    str = `[${value.map(cellValue).join(", ")}]`;
-  } else if (typeof value === "object") {
-    str = JSON.stringify(value);
+    str = `[${value.map(cellValue).join(', ')}]`
+  } else if (typeof value === 'object') {
+    str = JSON.stringify(value)
   } else if (ArrayBuffer.isView(value)) {
-    str = `${value.byteLength} bytes`;
+    str = `${value.byteLength} bytes`
+  } else if (value === undefined) {
+    str = 'undefined'
   } else {
-    str = value.toString();
+    str = value.toString()
   }
-  return str.length > maxCellLength ? str.slice(0, maxCellLength) + "…" : str;
+  return str.length > maxCellLength ? str.slice(0, maxCellLength) + '…' : str
 }
 
 export function ReplTable({ result }: { result: Results }) {
-  const [maxRows, setMaxRows] = useState(tableRowIncrement);
-  const rows = result.rows.slice(0, maxRows);
+  const [maxRows, setMaxRows] = useState(tableRowIncrement)
+  const rows = result.rows.slice(0, maxRows)
 
   useEffect(() => {
     // Reset maxRows when the result changes
-    setMaxRows(tableRowIncrement);
-  }, [result]);
+    setMaxRows(tableRowIncrement)
+  }, [result])
 
   const showMore = () => {
-    setMaxRows((prev) => prev + tableRowIncrement);
-  };
+    setMaxRows((prev) => prev + tableRowIncrement)
+  }
 
   return (
     <>
@@ -69,8 +71,10 @@ export function ReplTable({ result }: { result: Results }) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
+              // eslint-disable-next-line @eslint-react/no-array-index-key
               <tr key={i}>
                 {row.map((col, j) => (
+                  // eslint-disable-next-line @eslint-react/no-array-index-key
                   <td key={j} className={cellClass(col)}>
                     {cellValue(col)}
                   </td>
@@ -81,14 +85,14 @@ export function ReplTable({ result }: { result: Results }) {
         </table>
       </div>
       <div className="PGliteRepl-table-row-count">
-        {result.rows.length > maxRows ? `${maxRows} of ` : ""}
-        {result.rows.length} rows{" "}
+        {result.rows.length > maxRows ? `${maxRows} of ` : ''}
+        {result.rows.length} rows{' '}
         {result.rows.length > maxRows && (
           <a
             href=""
             onClick={(e) => {
-              e.preventDefault();
-              showMore();
+              e.preventDefault()
+              showMore()
             }}
           >
             Show more
@@ -96,5 +100,5 @@ export function ReplTable({ result }: { result: Results }) {
         )}
       </div>
     </>
-  );
+  )
 }

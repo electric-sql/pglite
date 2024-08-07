@@ -1,5 +1,5 @@
-import type { Results, Response } from "./types";
-import { ReplTable } from "./ReplTable";
+import type { Results, Response } from './types'
+import { ReplTable } from './ReplTable'
 
 function OutLine({ result }: { result: Results }) {
   return (
@@ -10,21 +10,21 @@ function OutLine({ result }: { result: Results }) {
         <div className="PGliteRepl-null">null</div>
       )}
     </div>
-  );
+  )
 }
 
 export function ReplResponse({
   response,
   showTime,
 }: {
-  response: Response;
-  showTime: boolean;
+  response: Response
+  showTime: boolean
 }) {
-  let out;
+  let out
   if (response.error) {
     out = (
       <div className="PGliteRepl-line PGliteRepl-error">{response.error}</div>
-    );
+    )
   } else {
     out = (
       <>
@@ -32,7 +32,7 @@ export function ReplResponse({
           <OutLine key={i} result={result} />
         ))}
       </>
-    );
+    )
   }
   return (
     <>
@@ -48,5 +48,5 @@ export function ReplResponse({
         )}
       </div>
     </>
-  );
+  )
 }

@@ -71,7 +71,7 @@
   display: block;
   width: 0.7em;
   text-align: center;
-  content: "❮";
+  content: '❮';
   margin-right: 0.5em;
   color: var(--border-color);
   position: absolute;
@@ -87,7 +87,7 @@
 }
 
 .PGliteRepl-query::before {
-  content: "❯";
+  content: '❯';
 }
 
 .PGliteRepl-table th {
@@ -147,7 +147,7 @@
 }
 
 .PGliteRepl-error::before {
-  content: "!";
+  content: '!';
   color: #c33;
   font-weight: bold;
 }
