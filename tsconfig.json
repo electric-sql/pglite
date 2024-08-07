@@ -11,7 +11,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "preserveSymlinks": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -19,7 +18,8 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    "noUncheckedIndexedAccess": true,
+    // NOTE: causing issues as it fails pg-protocol typecheck
+    // "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
@@ -30,6 +30,5 @@
     "strictNullChecks": true,
     "target": "ESNext"
   },
-  "exclude": ["node_modules"],
   "include": ["eslint.config.js", ".prettierrc.cjs"]
 }
