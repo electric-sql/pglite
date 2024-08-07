@@ -1,4 +1,4 @@
-// @ts-expect-error
+// @ts-expect-error missing types
 import js from '@eslint/js'
 import globals from 'globals'
 
@@ -14,7 +14,7 @@ export default [
         ...globals.browser,
       },
     },
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       '@typescript-eslint': tsPlugin,
     },

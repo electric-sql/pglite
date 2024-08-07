@@ -132,7 +132,7 @@ These tests run a series of inserts/updates/deletes to find the average time to 
 </table>
 </details>
 
-## wa-sqlite benchmark suite 
+## wa-sqlite benchmark suite
 
 The wa-sqlite benchmark suite performs a number of large queries to test the performance of the sql engin.
 

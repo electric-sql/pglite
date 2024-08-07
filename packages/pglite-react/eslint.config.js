@@ -1,8 +1,8 @@
 import rootConfig from "../../eslint.config.js";
 import pluginReact from "@eslint-react/eslint-plugin";
-// @ts-expect-error
+// @ts-expect-error no types
 import pluginReactCompiler from "eslint-plugin-react-compiler";
-// @ts-expect-error
+// @ts-expect-error no types
 import pluginReactHooks from "eslint-plugin-react-hooks";
 
 export default [
