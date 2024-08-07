@@ -152,7 +152,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
       `PGUSER=${options.username ?? "postgres"}`,
-      `PGDATABASE=template1`, // TODO: allow custom db
+      `PGDATABASE=${options.database ?? "template1"}`,
       "MODE=REACT",
       "REPL=N",
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -308,7 +308,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     } else if (idb & 0b0010) {
       // initdb was called to init PGDATA if required
       const pguser = options.username ?? "postgres";
-      const pgdatabase = "template1"; // TODO: allow custom db
+      const pgdatabase = options.database ?? "template1";
       if (idb & 0b0100) {
         // initdb has found a previous database
         if (idb & (0b0100 | 0b1000)) {

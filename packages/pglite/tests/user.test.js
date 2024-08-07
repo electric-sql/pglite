@@ -101,3 +101,26 @@ test.serial("switch to user created after initial run", async (t) => {
     message: `permission denied to set role "postgres"`,
   });
 });
+
+test.serial("create database and switch to it", async (t) => {
+  await fs.rm("./pgdata-test-user", { force: true, recursive: true });
+
+  const db = new PGlite("./pgdata-test-user");
+  await db.exec(
+    "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';"
+  );
+
+  await db.exec("CREATE DATABASE test_db OWNER test_user;");
+  await db.close();
+
+  const db2 = new PGlite({
+    dataDir: "./pgdata-test-user",
+    username: "test_user",
+    database: "test_db",
+  });
+
+  const currentUsername = await db2.query("SELECT current_user;");
+  t.deepEqual(currentUsername.rows, [{ current_user: "test_user" }]);
+  const currentDatabase = await db2.query("SELECT current_database();");
+  t.deepEqual(currentDatabase.rows, [{ current_database: "test_db" }]);
+});
