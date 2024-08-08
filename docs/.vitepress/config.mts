@@ -27,6 +27,14 @@ export default defineConfig({
         href: '/img/brand/icon-light.svg',
       },
     ],
+    [
+      'script',
+      {
+        defer: 'defer',
+        'data-domain': 'pglite.dev',
+        src: 'https://plausible.io/js/script.js',
+      },
+    ],
   ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
