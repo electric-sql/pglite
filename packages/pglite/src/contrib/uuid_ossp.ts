@@ -4,7 +4,7 @@ import type {
   PGliteInterface,
 } from '../interface'
 
-const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
+const setup = async (_pg: PGliteInterface, _emscriptenOpts: any) => {
   return {
     bundlePath: new URL('../../release/uuid-ossp.tar.gz', import.meta.url),
   } satisfies ExtensionSetupResult

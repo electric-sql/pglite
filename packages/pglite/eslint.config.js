@@ -30,10 +30,4 @@ export default [
       '@typescript-eslint/no-var-requires': 'off',
     },
   },
-  {
-    files: ['src/contrib/*.ts'],
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-    },
-  },
 ]
