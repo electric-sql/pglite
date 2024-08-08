@@ -1,4 +1,4 @@
-name: Build PGlite
+name: Build WASM PGlite files
 
 on:
   workflow_call:

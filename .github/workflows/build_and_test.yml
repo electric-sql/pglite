@@ -1,4 +1,4 @@
-name: Build and test packages
+name: Build and test PGlite packages
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -8,11 +8,6 @@ permissions:
   contents: read
 
 on:
-  workflow_dispatch:
-    inputs:
-      message:
-        description: 'Build PGLite'
-
   push:
     branches: ['main']
   pull_request:
