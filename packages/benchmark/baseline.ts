@@ -72,7 +72,7 @@ async function runPostgres() {
   console.log('Postgres')
 
   const pg = new EmbeddedPostgres({
-    data_dir: './pgdata',
+    databaseDir: './pgdata',
     user: 'postgres',
     password: 'password',
     port: 5439,
@@ -99,7 +99,8 @@ async function runPostgres() {
 
 function resultsTable() {
   const table = new AsciiTable3('Benchmark Results')
-  table.setHeading('Test', 'SQLite In-Memory', 'SQLite On-Disk', 'Postgres')
+  const headings = ['Test', 'SQLite In-Memory', 'SQLite On-Disk', 'Postgres']
+  table.setHeading(...headings)
   benchmarks.forEach(([id, _], i) => {
     table.addRow(
       id,
@@ -108,7 +109,7 @@ function resultsTable() {
       results[i].postgres,
     )
   })
-  table.setAlign(AlignmentEnum.Center)
+  table.setAligns(headings.map((_) => AlignmentEnum.CENTER))
   console.log(table.toString())
 }
 

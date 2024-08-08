@@ -1,36 +1,34 @@
 /// <reference types="vite/client" />
 
-import { resolve } from "path";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import dts from "vite-plugin-dts";
-import packageJson from "./package.json";
+import { resolve } from 'path'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import dts from 'vite-plugin-dts'
+import packageJson from './package.json'
 
 export default defineConfig({
   plugins: [
+    // @ts-ignore type mismsatch but works?
     react(),
     dts({
-      include: [
-        "./src-webcomponent/main.tsx",
-        "./src/Repl.tsx",
-      ]
+      include: ['./src-webcomponent/main.tsx', './src/Repl.tsx'],
     }),
   ],
   optimizeDeps: {
-    exclude: ["@electric-sql/pglite"],
+    exclude: ['@electric-sql/pglite'],
   },
-  define: {'process.env': {}},
+  define: { 'process.env': {} },
   build: {
     lib: {
-      entry: resolve(import.meta.dirname, "./src-webcomponent/main.tsx"),
-      name: "PGliteREPL",
-      fileName: "Repl",
+      entry: resolve(import.meta.dirname, './src-webcomponent/main.tsx'),
+      name: 'PGliteREPL',
+      fileName: 'Repl',
       // formats: ["iife", "es"],
-      formats: ["es"],
+      formats: ['es'],
     },
     sourcemap: true,
-    minify: "terser",
-    outDir: "dist-webcomponent",
+    minify: 'terser',
+    outDir: 'dist-webcomponent',
     rollupOptions: {
       external: [
         ...Object.keys(packageJson.peerDependencies),
@@ -38,4 +36,4 @@ export default defineConfig({
       ],
     },
   },
-});
+})
