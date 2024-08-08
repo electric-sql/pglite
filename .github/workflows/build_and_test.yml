@@ -4,10 +4,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Build PGLite packages'
   push:
     branches: ['main']
   pull_request:
@@ -30,6 +31,7 @@ jobs:
 
   build-wasm-postgres:
     uses: ./.github/workflows/build_wasm_postgres.yml
+    secrets: inherit
 
   build-and-test-pglite:
     name: Build and Test PGLite
