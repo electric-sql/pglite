@@ -126,6 +126,13 @@ jobs:
         run: |
           bash ./cibuild.sh demo-site
 
+      - name: Build docs
+        working-directory: ./docs
+        run: |
+          pnpm install
+          pnpm run docs:build
+          cp -r ./.vitepress/dist/* /tmp/web/
+
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
         uses: actions/upload-artifact@v4

@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap');
+
+:root,
+.dark {
+  --vp-c-indigo-1: #d0bcff;
+  --vp-c-indigo-2: #998fe7;
+  --vp-c-indigo-3: #7e78db;
+
+  --vp-nav-logo-height: 30px;
+
+  --electric-color: #00d2a0;
+  --ddn-color: #d0bcff;
+  --pglite-color: #f6f95c;
+
+  --vp-c-brand-1: var(--pglite-color);
+  --vp-c-brand-2: #f1f35e;
+  --vp-c-brand-3: #d8da53;
+}
+
+.dark {
+  --vp-c-text-1: rgba(255, 255, 245, 0.92);
+  --vp-c-text-2: rgba(235, 235, 245, 0.75);
+  --vp-c-text-3: rgba(235, 235, 245, 0.55);
+}
+
+.img-row {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  flex-direction: row;
+  margin: 20px 0;
+  gap: 10px;
+}
+.img-row-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 767px) {
+  .img-row-2 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+.img-border {
+  border: 1px #ccc solid;
+  border-radius: 10px;
+  padding: 10px;
+  background: rgb(20, 21, 23);
+}
+figure {
+  margin: 40px 0;
+}
+figcaption {
+  text-align: right;
+  font-size: 90%;
+  max-width: 460px;
+  margin-left: auto;
+}
+
+iframe {
+  color-scheme: auto;
+}
+.twitter-tweet {
+  margin: 35px auto -95px !important;
+}
+.twitter-tweet iframe {
+  transform: scale(0.8);
+  transform-origin: top left;
+}
+
+.VPHomeHero .VPImage.image-src {
+  max-width: min(calc(250px + 25vw), 560px);
+  margin-left: -40px;
+  margin-top: 10px;
+}
+@media (max-width: 959px) {
+  .VPHomeHero .image .image-container {
+    height: calc(190px + 15vw) !important;
+    margin-top: -20px;
+  }
+  .VPHomeHero .VPImage.image-src {
+    margin-left: 0px;
+  }
+}
+
+.VPFeatures {
+  padding-top: 15px !important;
+  padding-bottom: 45px;
+}
+.VPFeature .VPImage {
+  width: 50px;
+}
+.VPFeature h2.title {
+  font-size: 20px;
+}
+.VPFeature.link[href='/product/electric']:hover {
+  border-color: var(--electric-color);
+}
+.VPFeature.link[href='/product/pglite']:hover {
+  border-color: var(--pglite-color);
+}
+
+.VPFeature .details {
+  font-weight: 600 !important;
+}
+
+.product-icon {
+  width: 84px;
+  margin-bottom: 20px;
+}
+
+.about-zap {
+  max-width: min(calc(150px + 25vw), 420px);
+  margin: -20px 0 30px;
+}
+@media (max-width: 767px) {
+  .about-zap-container {
+    display: none;
+  }
+}
+
+.vp-doc blockquote {
+  margin: 25px 10px 30px;
+}
+
+.VPButton.brand {
+  color: var(--vp-c-gray-3) !important;
+}
