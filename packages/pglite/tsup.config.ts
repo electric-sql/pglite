@@ -31,7 +31,6 @@ const entryPoints = [
   "src/fs/nodefs.ts",
   "src/fs/opfs-ahp/index.ts",
   "src/live/index.ts",
-  "src/sync/index.ts",
   "src/vector/index.ts",
   "src/worker/index.ts",
 ];
