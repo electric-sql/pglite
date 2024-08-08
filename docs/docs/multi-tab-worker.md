@@ -56,7 +56,7 @@ In addition to having all the standard methods of the [`PGlite` interface](./api
 - `meta: any`<br>
   Any additional metadata you would like to pass to the worker process `init` function.
 
-The `worker()` wrapper takes a single options argument, with a single `init` property. `init` is a function takes any options passed to `PGliteWorker`, excluding extensions, and returns a `PGlite` instance. You can use the options passed to decide how to configure your instance:
+The `worker()` wrapper takes a single options argument, with a single `init` property. `init` is a function that takes any options passed to `PGliteWorker`, excluding extensions, and returns a `PGlite` instance. You can use the options passed to decide how to configure your instance:
 
 ```js
 // my-pglite-worker.js

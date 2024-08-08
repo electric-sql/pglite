@@ -88,7 +88,7 @@ Execute a single statement, optionally with parameters.
 
 Uses the _extended query_ Postgres wire protocol.
 
-Returns single [result object](#results-objects).
+Returns single [result object](#results-t-objects).
 
 ##### Example
 
@@ -124,7 +124,7 @@ The `query` and `exec` methods take an optional `options` objects with the follo
   ```
 
 - `blob: Blob | File` <br />
-  Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#importing-and-exporting-with-copy-tofrom).
+  Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
 
 ### exec
 
@@ -136,7 +136,7 @@ This is useful for applying database migrations, or running multi-statement SQL 
 
 Uses the _simple query_ Postgres wire protocol.
 
-Returns array of [result objects](#results-objects); one for each statement.
+Returns array of [result objects](#results-t-objects); one for each statement.
 
 ##### Example
 
@@ -290,8 +290,8 @@ Result objects have the following properties:
 - `fields: { name: string; dataTypeID: number }[]`<br />
   Field name and Postgres data type ID for each field returned.
 
-- `blob: Blob` <br />
-  A `Blob` containing the data written to the virtual `/dev/blob/` device by a `COPY TO` command. See [/dev/blob](#devblob).
+- `blob?: Blob` <br />
+  A `Blob` containing the data written to the virtual `/dev/blob/` device by a `COPY TO` command. See [/dev/blob](#dev-blob).
 
 ## `Row<T>` Objects
 

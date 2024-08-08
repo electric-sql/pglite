@@ -5,7 +5,7 @@ layout: home
 hero:
   name: 'PGlite'
   text: 'Embeddable Postgres'
-  tagline: 'WASM Postgres with reactivity and sync'
+  tagline: 'Run a full Postgres database locally in your app with reactivity and server sync'
   actions:
     - theme: brand
       text: Getting Started
@@ -22,7 +22,7 @@ hero:
 
 features:
   - title: Lightweight
-    details: Pure WASM build of Postgres using Emscripten that's under 3MB Gzipped.
+    details: A complete WASM build of Postgres that's under 3MB Gzipped.
   - title: Extendable
     details: Dynamic extension loading mechanism, including support for pgvector and PostGIS.
   - title: Reactive

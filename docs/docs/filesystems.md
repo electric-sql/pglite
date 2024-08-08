@@ -76,7 +76,7 @@ To use the IndexedDB FS you can use one of these methods:
   })
   ```
 
-The IndexedDB filesystem works at the file level, storing whole files as blobs in IndexedDB. Flushing whole files can take a few milliseconds after each query. To aid in building responsive apps we provide a `relaxedDurability` mode that can be [configured when starting](./api.md#options) PGlite. Under this mode, the results of a query are returned immediately, and the flush to IndexedDB is scheduled to occur asynchronously afterwards. Typically, this is immediately after the query returns with no delay.
+The IndexedDB filesystem works at the file level, storing whole files (Postgres has a single file per table or index) as blobs in IndexedDB. Flushing whole files can take a few milliseconds after each query. To aid in building responsive apps we provide a `relaxedDurability` mode that can be [configured when starting](./api.md#options) PGlite. Under this mode, the results of a query are returned immediately, and the flush to IndexedDB is scheduled to occur asynchronously afterwards. Typically, this is immediately after the query returns with no delay.
 
 ### Platform Support
 
@@ -86,7 +86,7 @@ The IndexedDB filesystem works at the file level, storing whole files as blobs i
 
 ## OPFS AHP FS
 
-The OPFS AHP filesystem is built on top of the [Origin Private Filesystem](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) in the browser and uses an "access handle pool". It is only available when PGlite is run in a Web Worker, this could be any worker you configure, however we provide a [Multi Tab Worker](./multi-tab-worker.md) to aid in using PGlite from multiple tabs in the browser.
+The OPFS AHP filesystem is built on top of the [Origin Private Filesystem](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) in the browser and uses an "access handle pool". It is only available when PGlite is run in a Web Worker, this could be any worker you configure. We provide a [Multi Tab Worker](./multi-tab-worker.md) to aid in using PGlite from multiple tabs in the browser.
 
 To use the OPFS AHP FS you can use one of these methods:
 

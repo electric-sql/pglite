@@ -18,11 +18,11 @@
 
 # Benchmarks
 
-There are two sets of micro-benchmarks: one testing [round trip time](#round-trip-time-benchmarks) for both PGlite and wa-sqlite, and [another](#sqlite-benchmark-suite) the other based on the [SQLite speed test](https://sqlite.org/src/file?name=tool/speedtest.tcl&ci=trunk) which was ported for the [wa-sqlite benchmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
+There are two sets of micro-benchmarks: one testing [round trip time](#round-trip-time-benchmarks) for both PGlite and wa-sqlite, and [another one](#sqlite-benchmark-suite) based on the [SQLite speed test](https://sqlite.org/src/file?name=tool/speedtest.tcl&ci=trunk) which was ported for the [wa-sqlite benchmarks](https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html).
 
 We also have a set of [native baseline](#native-baseline) results comparing native SQLite (via the Node better-sqlite3 package) to full Postgres.
 
-Comparing Postgres to SQlite is challenging, as they are quite different databases, particularly when you take into account the complexities of WASM. Therefore, these benchmarks provide a view of performance only as a starting point to investigate the difference between the two, and the improvements we can make going forward.
+Comparing Postgres to SQLite is challenging, as they are quite different databases, particularly when you take into account the complexities of WASM. Therefore, these benchmarks provide a view of performance only as a starting point to investigate the difference between the two, and the improvements we can make going forward.
 
 Another consideration when analysing the speed, is the performance of the various different VFS implementations providing persistance to both PGlite and wa-sqlite.
 

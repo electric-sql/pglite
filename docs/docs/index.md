@@ -100,6 +100,7 @@ console.log(ret.rows)[
   {
     id: 1,
     task: 'Install PGlite from NPM',
+    done: false,
   }
 ]
 ```
@@ -133,6 +134,6 @@ const ret = await db.query(
 
 - We maintain a [list of ORMs and query builders](./orm-support.md) that support PGlite.
 
-- PGlite supports both Postgres extensions and PGlite Plugins via its [extensions API](./api.md#optionsextensions), and there is a list of [supported extensions](../extensions/).
+- PGlite supports both Postgres extensions and PGlite Plugins via its [extensions API](./api.md#options-extensions), and there is a list of [supported extensions](../extensions/).
 
 - We have a [page of examples](../examples.md) that you can open to test out PGlite in the browser.
