@@ -37,15 +37,17 @@ npm install @electric-sql/pglite-repl
 then to include in a page:
 
 ```tsx
-import { PGlite } from "@electric-sql/pglite";
-import { Repl } from "@electric-sql/pglite-repl";
+import { PGlite } from '@electric-sql/pglite'
+import { Repl } from '@electric-sql/pglite-repl'
 
 function MyComponent() {
-  const pg = new PGlite();
+  const pg = new PGlite()
 
-  return <>
-    <Repl pg={pg} />
-  </>
+  return (
+    <>
+      <Repl pg={pg} />
+    </>
+  )
 }
 ```
 
@@ -53,14 +55,14 @@ The props for the `<Repl>` component are described by this interface:
 
 ```ts
 // The theme to use, auto is auto-switching based on the system
-type ReplTheme = "light" | "dark" | "auto";
+type ReplTheme = 'light' | 'dark' | 'auto'
 
 interface ReplProps {
-  pg: PGlite;  // PGlite db instance
-  border?: boolean;  // Outer border on the component, defaults to false
-  lightTheme?: Extension;
-  darkTheme?: Extension;
-  theme?: ReplTheme;  // Defaults to "auto"
+  pg: PGlite // PGlite db instance
+  border?: boolean // Outer border on the component, defaults to false
+  lightTheme?: Extension
+  darkTheme?: Extension
+  theme?: ReplTheme // Defaults to "auto"
 }
 ```
 
@@ -71,22 +73,25 @@ The `lightTheme` and `darkTheme` should be instances of a [React CodeMirror](htt
 Although the PGlite REPL is built with React, it's also available as a web component for easy inclusion in any page or any other framework.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist-webcomponent/Repl.js" type="module"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist-webcomponent/Repl.js"
+  type="module"
+></script>
 
 <!-- Include the Repl web component in your page -->
 <pglite-repl id="repl"></pglite-repl>
 
 <script type="module">
-  import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+  import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js'
 
   // Create a PGlite instance
-  const pg = new PGlite();
+  const pg = new PGlite()
 
   // Retrieve the Repl element
-  const repl = document.getElementById('repl');
+  const repl = document.getElementById('repl')
 
   // REPL to your PGlite instance
-  repl.pg = pg;
+  repl.pg = pg
 </script>
 ```
 
@@ -96,10 +101,10 @@ The REPL Web Component can be used with Vue.js:
 
 ```vue
 <script setup>
-import { PGlite } from "@electric-sql/pglite";
-import "@electric-sql/pglite-repl/webcomponent";
+import { PGlite } from '@electric-sql/pglite'
+import '@electric-sql/pglite-repl/webcomponent'
 
-const pg = new PGlite();
+const pg = new PGlite()
 </script>
 <template>
   <pglite-repl :pg="pg" />

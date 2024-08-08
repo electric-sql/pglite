@@ -1,15 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap');
 
-:root, .dark {
-  --vp-c-indigo-1: #D0BCFF;
-  --vp-c-indigo-2: #998FE7;
-  --vp-c-indigo-3: #7E78DB;
+:root,
+.dark {
+  --vp-c-indigo-1: #d0bcff;
+  --vp-c-indigo-2: #998fe7;
+  --vp-c-indigo-3: #7e78db;
 
   --vp-nav-logo-height: 30px;
 
-  --electric-color: #00D2A0;
-  --ddn-color: #D0BCFF;
-  --pglite-color: #F6F95C;
+  --electric-color: #00d2a0;
+  --ddn-color: #d0bcff;
+  --pglite-color: #f6f95c;
 
   --vp-c-brand-1: var(--pglite-color);
   --vp-c-brand-2: #f1f35e;
@@ -89,11 +90,11 @@ iframe {
 .VPFeature h2.title {
   font-size: 20px;
 }
-.VPFeature.link[href="/product/electric"]:hover {
-    border-color: var(--electric-color);
+.VPFeature.link[href='/product/electric']:hover {
+  border-color: var(--electric-color);
 }
-.VPFeature.link[href="/product/pglite"]:hover {
-    border-color: var(--pglite-color);
+.VPFeature.link[href='/product/pglite']:hover {
+  border-color: var(--pglite-color);
 }
 
 .VPFeature .details {

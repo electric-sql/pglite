@@ -63,7 +63,7 @@ Values are average ms - lower is better.
 
 ## SQLite benchmark suite
 
-The SQLite benchmark suite, converted to web for wa-sqlite -  it performs a number of large queries to test the performance of the sql engine.
+The SQLite benchmark suite, converted to web for wa-sqlite - it performs a number of large queries to test the performance of the sql engine.
 
 Values are seconds to complete the test - lower is better.
 

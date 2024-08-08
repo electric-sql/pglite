@@ -29,15 +29,15 @@ bun install @electric-sql/pglite
 To use the in-memory Postgres:
 
 ```js
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 
-const db = new PGlite();
+const db = new PGlite()
 ```
 
 or to persist to the native filesystem:
 
 ```js
-const db = new PGlite("./path/to/pgdata");
+const db = new PGlite('./path/to/pgdata')
 ```
 
 ## Install and start in the browser
@@ -45,12 +45,13 @@ const db = new PGlite("./path/to/pgdata");
 It can be installed and imported using your usual package manager:
 
 ```js
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 ```
+
 or using a CDN such as JSDeliver:
 
 ```js
-import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js'
 ```
 
 Then for an in-memory Postgres:
@@ -62,7 +63,7 @@ const db = new PGlite()
 or to persist the database to IndexedDB:
 
 ```js
-const db = new PGlite("idb://my-pgdata");
+const db = new PGlite('idb://my-pgdata')
 ```
 
 ## Making a query
@@ -94,13 +95,11 @@ Now, let's retrieve an item using `.query` method:
 const ret = await db.query(`
   SELECT * from todo WHERE id = 1;
 `)
-console.log(ret.rows)
-
-// Output:
-[
+console.log(ret.rows)[
+  // Output:
   {
     id: 1,
-    task: "Install PGlite from NPM"
+    task: 'Install PGlite from NPM',
   }
 ]
 ```
@@ -113,12 +112,8 @@ We can use this to update a task:
 
 ```js
 const ret = await db.query(
-  "UPDATE todo SET task = $2, done = $3 WHERE id = $1",
-  [
-    5,
-    "Update a task using parametrised queries",
-    true
-  ]
+  'UPDATE todo SET task = $2, done = $3 WHERE id = $1',
+  [5, 'Update a task using parametrised queries', true],
 )
 ```
 

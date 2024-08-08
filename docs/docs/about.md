@@ -5,10 +5,10 @@ PGlite is a [WASM](https://webassembly.org/) Postgres build packaged into a Type
 Getting started with PGlite is simple: just install and import the NPM package, then create your embedded database:
 
 ```js
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 
-const db = new PGlite();
-await db.query("select 'Hello world' as message;");
+const db = new PGlite()
+await db.query("select 'Hello world' as message;")
 // -> { rows: [ { message: "Hello world" } ] }
 ```
 

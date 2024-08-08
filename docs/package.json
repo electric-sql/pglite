@@ -4,7 +4,14 @@
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:preview": "vitepress preview",
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "stylecheck": "pnpm lint && prettier --check ."
   },
   "devDependencies": {
     "vitepress": "^1.3.1"

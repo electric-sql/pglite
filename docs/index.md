@@ -3,8 +3,8 @@
 layout: home
 
 hero:
-  name: "PGlite"
-  text: "Embeddable Postgres"
+  name: 'PGlite'
+  text: 'Embeddable Postgres'
   tagline: 'WASM Postgres with reactivity and sync'
   actions:
     - theme: brand
@@ -103,9 +103,9 @@ const Repl = defineClientComponent(() => {
 
 <div class="try-it-now">
 
-  ### Try PGlite Now
+### Try PGlite Now
 
-  This is a full PGlite Postgres running in your browser - it even includes pgvector!
+This is a full PGlite Postgres running in your browser - it even includes pgvector!
 
 </div>
 

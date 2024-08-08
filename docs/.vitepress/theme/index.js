@@ -8,7 +8,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'home-hero-image': () => h(HeroImage)
+      'home-hero-image': () => h(HeroImage),
     })
-  }
+  },
 }

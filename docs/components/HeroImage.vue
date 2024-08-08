@@ -1,35 +1,35 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const positions = new Array(5).fill(0).map((_, i) => {
   return {
-    a: -((i * 30) - 20),
-    o: 1 - (i * 0.15),
-    s: 1 - (i * 0.05),
-  };
-});
+    a: -(i * 30 - 20),
+    o: 1 - i * 0.15,
+    s: 1 - i * 0.05,
+  }
+})
 
-const heroImage = ref(null);
+const heroImage = ref(null)
 
 const handleMouseMove = (event) => {
-  const { clientX, clientY } = event;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const rotateX = ((clientY / height) * 5) - 10;
-  const rotateY = ((clientX / width) * 5) - 35;
+  const { clientX, clientY } = event
+  const width = window.innerWidth
+  const height = window.innerHeight
+  const rotateX = (clientY / height) * 5 - 10
+  const rotateY = (clientX / width) * 5 - 35
 
   if (heroImage.value) {
-    heroImage.value.style.transform = `translateZ(-100px) scale(1.2) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    heroImage.value.style.transform = `translateZ(-100px) scale(1.2) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
   }
-};
+}
 
 onMounted(() => {
-  window.addEventListener('mousemove', handleMouseMove);
-});
+  window.addEventListener('mousemove', handleMouseMove)
+})
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', handleMouseMove);
-});
+  window.removeEventListener('mousemove', handleMouseMove)
+})
 </script>
 
 <template>
@@ -81,7 +81,7 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  transform-style: preserve-3d; 
+  transform-style: preserve-3d;
 }
 .baby {
   position: absolute;

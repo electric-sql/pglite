@@ -10,27 +10,27 @@ First, you need to create a js file for your worker instance. You use the `worke
 
 ```js
 // my-pglite-worker.js
-import { PGlite } from "@electric-sql/pglite";
-import { worker } from "@electric-sql/pglite/worker";
+import { PGlite } from '@electric-sql/pglite'
+import { worker } from '@electric-sql/pglite/worker'
 
 worker({
   async init() {
     // Create and return a PGlite instance
-    return new PGlite();
+    return new PGlite()
   },
-});
+})
 ```
 
 Then connect the `PGliteWorker` to your new worker process in your main script:
 
 ```js
-import { PGliteWorker } from "@electric-sql/pglite/worker";
+import { PGliteWorker } from '@electric-sql/pglite/worker'
 
 const pg = new PGliteWorker(
-  new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
-    type: "module",
-  })
-);
+  new Worker(new URL('./my-pglite-worker.js', import.meta.url), {
+    type: 'module',
+  }),
+)
 
 // `pg` has the same interface as a standard PGlite interface
 ```
@@ -60,8 +60,8 @@ The `worker()` wrapper takes a single options argument, with a single `init` pro
 
 ```js
 // my-pglite-worker.js
-import { PGlite } from "@electric-sql/pglite";
-import { worker } from "@electric-sql/pglite/worker";
+import { PGlite } from '@electric-sql/pglite'
+import { worker } from '@electric-sql/pglite/worker'
 
 worker({
   async init(options) {
@@ -69,25 +69,25 @@ worker({
     // Do something with additional metadata.
     // or even run your own code in the leader along side the PGlite
     return new PGlite({
-      dataDir: options.dataDir
-    });
+      dataDir: options.dataDir,
+    })
   },
-});
+})
 
 // my-app.js
-import { PGliteWorker } from "@electric-sql/pglite/worker";
+import { PGliteWorker } from '@electric-sql/pglite/worker'
 
 const pg = new PGliteWorker(
-  new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
-    type: "module",
+  new Worker(new URL('./my-pglite-worker.js', import.meta.url), {
+    type: 'module',
   }),
   {
     dataDir: 'idb://my-db',
     meta: {
       // additional metadata passed to `init`
-    }
-  }
-);
+    },
+  },
+)
 ```
 
 ## Extension support
@@ -98,55 +98,55 @@ Any extension can be used by the PGlite instance inside the worker, however the 
 
 ```js
 // my-pglite-worker.js
-import { PGlite } from "@electric-sql/pglite";
-import { worker } from "@electric-sql/pglite/worker";
-import { vector } from "@electric-sql/pglite/vector";
+import { PGlite } from '@electric-sql/pglite'
+import { worker } from '@electric-sql/pglite/worker'
+import { vector } from '@electric-sql/pglite/vector'
 
 worker({
   async init() {
     return new PGlite({
       extensions: {
-        vector
-      }
-    });
+        vector,
+      },
+    })
   },
-});
+})
 ```
 
 Extensions that only use the PGlite plugin interface, such as live queries, can be used on the main thread with `PGliteWorker` to expose their functionality; this is done by providing a standard options object as a second argument to the `PGliteWorker` constructor:
 
 ```js
-import { PGliteWorker } from "@electric-sql/pglite/worker";
-import { live } from "@electric-sql/pglite/live";
+import { PGliteWorker } from '@electric-sql/pglite/worker'
+import { live } from '@electric-sql/pglite/live'
 
 const pg = new PGliteWorker(
-  new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
-    type: "module",
+  new Worker(new URL('./my-pglite-worker.js', import.meta.url), {
+    type: 'module',
   }),
   {
     extensions: {
-      live
-    }
-  }
-);
+      live,
+    },
+  },
+)
 ```
 
 `PGliteWorker` also has a `create` static method that resolves to a new instance when it is fully initiated. This also adds the correct types for any extensions to the `PGliteWorker` instance:
 
 ```ts
-import { PGliteWorker } from "@electric-sql/pglite/worker";
-import { live } from "@electric-sql/pglite/live";
+import { PGliteWorker } from '@electric-sql/pglite/worker'
+import { live } from '@electric-sql/pglite/live'
 
 const pg = await PGliteWorker.create(
-  new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
-    type: "module",
+  new Worker(new URL('./my-pglite-worker.js', import.meta.url), {
+    type: 'module',
   }),
   {
     extensions: {
-      live
-    }
-  }
-);
+      live,
+    },
+  },
+)
 
 // TypeScript is aware of the `pg.live` namespace:
 pg.live.query(/* ... */)

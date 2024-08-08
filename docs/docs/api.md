@@ -9,10 +9,10 @@ outline: [2, 3]
 The main constructor is imported as:
 
 ```ts
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 ```
 
-The preferred way to create a PGlite instance is with the `PGlite.create()` static method that returns a promise, resolving to the new PGlite instance. 
+The preferred way to create a PGlite instance is with the `PGlite.create()` static method that returns a promise, resolving to the new PGlite instance.
 
 `await PGlite.create(dataDir: string, options: PGliteOptions)`<br />
 `await PGlite.create(options: PGliteOptions)`
@@ -57,21 +57,21 @@ Path to the directory for storing the Postgres database. You can provide a URI s
 
 PGlite and Postgres extensions are loaded into a PGLite instance on start, and can include both a WASM build of a Postgres extension and/or a PGlite client plugin.
 
-The `options.extensions` parameter is an object of `namespace: extension` parings. The namespace is used to expose the PGlite client plugin included in the extension. An example of this is the [live queries](./live-queries.md) extension.  
+The `options.extensions` parameter is an object of `namespace: extension` parings. The namespace is used to expose the PGlite client plugin included in the extension. An example of this is the [live queries](./live-queries.md) extension.
 
 ```ts
-import { PGlite } from "@electric-sql/pglite";
-import { live } from "@electric-sql/pglite/live";
-import { vector } from "@electric-sql/pglite/vector";
+import { PGlite } from '@electric-sql/pglite'
+import { live } from '@electric-sql/pglite/live'
+import { vector } from '@electric-sql/pglite/vector'
 
 const pg = await PGlite.create({
   extensions: {
     live, // Live query extension, is a PGlite client plugin
     vector, // Postgres pgvector extension
   },
-});
+})
 
-// The `live` namespace is added by the use of the 
+// The `live` namespace is added by the use of the
 // `live` key in the `extensions` object.
 pg.live.query('...')
 ```
@@ -86,17 +86,14 @@ For information on how to develop a PGlite extension see [Extension Development]
 
 Execute a single statement, optionally with parameters.
 
-Uses the *extended query* Postgres wire protocol.
+Uses the _extended query_ Postgres wire protocol.
 
 Returns single [result object](#results-objects).
 
 ##### Example
 
 ```ts
-await pg.query(
-  'INSERT INTO test (name) VALUES ($1);',
-  [ 'test' ]
-);
+await pg.query('INSERT INTO test (name) VALUES ($1);', ['test'])
 // { affectedRows: 1 },
 ```
 
@@ -107,19 +104,23 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `rowMode: "object" | "array"` <br />
   The returned row object type, either an object of `fieldName: value` mappings or an array of positional values. Defaults to `"object"`.
 - `parsers: ParserOptions` <br />
-  An object of type  `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type IDs to parser functions.  
+  An object of type `{[[pgType: number]: (value: string) => any;]}` mapping Postgres data type IDs to parser functions.  
   For convenience, the `pglite` package exports a constant for most common Postgres types:
 
   ```ts
-  import { types } from "@electric-sql/pglite";
-  await pg.query(`
+  import { types } from '@electric-sql/pglite'
+  await pg.query(
+    `
     SELECT * FROM test WHERE name = $1;
-  `, ["test"], {
-    rowMode: "array",
-    parsers: {
-      [types.TEXT]: (value) => value.toUpperCase(),
-    }
-  });
+  `,
+    ['test'],
+    {
+      rowMode: 'array',
+      parsers: {
+        [types.TEXT]: (value) => value.toUpperCase(),
+      },
+    },
+  )
   ```
 
 - `blob: Blob | File` <br />
@@ -129,11 +130,11 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 
 `.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`
 
-Execute one or more statements. *(note that parameters are not supported)*
+Execute one or more statements. _(note that parameters are not supported)_
 
 This is useful for applying database migrations, or running multi-statement SQL that doesn't use parameters.
 
-Uses the *simple query* Postgres wire protocol.
+Uses the _simple query_ Postgres wire protocol.
 
 Returns array of [result objects](#results-objects); one for each statement.
 
@@ -147,7 +148,7 @@ await pg.exec(`
   );
   INSERT INTO test (name) VALUES ('test');
   SELECT * FROM test;
-`);
+`)
 // [
 //   { affectedRows: 0 },
 //   { affectedRows: 1 },
@@ -211,9 +212,9 @@ Returns an unsubscribe function to unsubscribe from the channel.
 
 ```ts
 const unsub = await pg.listen('test', (payload) => {
-  console.log('Received:', payload);
-});
-await pg.query("NOTIFY test, 'Hello, world!'");
+  console.log('Received:', payload)
+})
+await pg.query("NOTIFY test, 'Hello, world!'")
 ```
 
 ### unlisten
@@ -254,19 +255,19 @@ The datadir dump may not be compatible with other Postgres versions; it is only 
 
 ### ready
 
-`.ready` *`boolean (read only)`*
+`.ready` _`boolean (read only)`_
 
 Whether the database is ready to accept queries.
 
 ### closed
 
-`.closed` *`boolean (read only)`*
+`.closed` _`boolean (read only)`_
 
 Whether the database is closed and no longer accepting queries.
 
 ### waitReady
 
-`.waitReady` *`Promise<void>`*
+`.waitReady` _`Promise<void>`_
 
 Promise that resolves when the database is ready to use.
 
@@ -284,7 +285,7 @@ Result objects have the following properties:
   The rows retuned by the query.
 
 - `affectedRows?: number` <br />
-  Count of the rows affected by the query. Note, this is *not* the count of rows returned, it is the number or rows in the database changed by the query.
+  Count of the rows affected by the query. Note, this is _not_ the count of rows returned, it is the number or rows in the database changed by the query.
 
 - `fields: { name: string; dataTypeID: number }[]`<br />
   Field name and Postgres data type ID for each field returned.
@@ -292,12 +293,11 @@ Result objects have the following properties:
 - `blob: Blob` <br />
   A `Blob` containing the data written to the virtual `/dev/blob/` device by a `COPY TO` command. See [/dev/blob](#devblob).
 
-
 ## `Row<T>` Objects
 
 Rows objects are a key / value mapping for each row returned by the query.
 
-The `.query<T>()` method can take a TypeScript type describing the expected shape of the returned rows. 
+The `.query<T>()` method can take a TypeScript type describing the expected shape of the returned rows.
 
 ::: tip NOTE
 
@@ -313,7 +313,7 @@ To import a file, pass the `File` or `Blob` in the query options as `blob`, and 
 
 ```ts
 await pg.query("COPY my_table FROM '/dev/blob';", [], {
-  blob: MyBlob
+  blob: MyBlob,
 })
 ```
 

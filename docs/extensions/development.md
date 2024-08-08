@@ -12,22 +12,22 @@ PGlite extensions are an object with the following interface:
 
 ```ts
 export interface Extension {
-  name: string;
-  setup: ExtensionSetup;
+  name: string
+  setup: ExtensionSetup
 }
 
 export type ExtensionSetup = (
   pg: PGliteInterface,
   emscriptenOpts: any,
   clientOnly?: boolean,
-) => Promise<ExtensionSetupResult>;
+) => Promise<ExtensionSetupResult>
 
 export interface ExtensionSetupResult {
-  emscriptenOpts?: any;
-  namespaceObj?: any;
-  bundlePath?: URL;
-  init?: () => Promise<void>;
-  close?: () => Promise<void>;
+  emscriptenOpts?: any
+  namespaceObj?: any
+  bundlePath?: URL
+  init?: () => Promise<void>
+  close?: () => Promise<void>
 }
 ```
 

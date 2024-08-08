@@ -18,20 +18,20 @@ To use the in-memory FS you can use one of these methods:
   ```
 - Set the `dataDir` to `memory://`
   ```ts
-  const pg = new PGlite("memory://")
+  const pg = new PGlite('memory://')
   ```
 - Import and pass the FS explicitly
   ```ts
-  import { MemoryFS } from "@electric-sql/pglite";
+  import { MemoryFS } from '@electric-sql/pglite'
   const pg = new PGlite({
-    fs: new MemoryFS()
+    fs: new MemoryFS(),
   })
   ```
 
 ### Platform Support
 
 | Node | Bun | Chrome | Safari | Firefox |
-|------|-----|--------|--------|---------|
+| ---- | --- | ------ | ------ | ------- |
 | ✓    | ✓   | ✓      | ✓      | ✓       |
 
 ## Node FS
@@ -42,20 +42,20 @@ To use the Node FS you can use one of these methods:
 
 - Set the `dataDir` to a directory on your filesystem
   ```ts
-  const pg = new PGlite("./path/to/datadir/")
+  const pg = new PGlite('./path/to/datadir/')
   ```
 - Import and pass the FS explicitly
   ```ts
-  import { NodeFS } from "@electric-sql/pglite";
+  import { NodeFS } from '@electric-sql/pglite'
   const pg = new PGlite({
-    fs: new NodeFS("./path/to/datadir/")
+    fs: new NodeFS('./path/to/datadir/'),
   })
   ```
 
 #### Platform Support
 
 | Node | Bun | Chrome | Safari | Firefox |
-|------|-----|--------|--------|---------|
+| ---- | --- | ------ | ------ | ------- |
 | ✓    | ✓   |        |        |         |
 
 ## IndexedDB FS
@@ -66,13 +66,13 @@ To use the IndexedDB FS you can use one of these methods:
 
 - Set the `dataDir` with a `idb://` prefix, the database will be stored in an IndexedDB named with the path provided
   ```ts
-  const pg = new PGlite("idb://my-database")
+  const pg = new PGlite('idb://my-database')
   ```
 - Import and pass the FS explicitly
   ```ts
-  import { IdbFs } from "@electric-sql/pglite";
+  import { IdbFs } from '@electric-sql/pglite'
   const pg = new PGlite({
-    fs: new IdbFs("my-database")
+    fs: new IdbFs('my-database'),
   })
   ```
 
@@ -81,7 +81,7 @@ The IndexedDB filesystem works at the file level, storing whole files as blobs i
 ### Platform Support
 
 | Node | Bun | Chrome | Safari | Firefox |
-|------|-----|--------|--------|---------|
+| ---- | --- | ------ | ------ | ------- |
 |      |     | ✓      | ✓      | ✓       |
 
 ## OPFS AHP FS
@@ -92,20 +92,20 @@ To use the OPFS AHP FS you can use one of these methods:
 
 - Set the `dataDir` to a directory within the origins OPFS
   ```ts
-  const pg = new PGlite("opfs-ahp://path/to/datadir/")
+  const pg = new PGlite('opfs-ahp://path/to/datadir/')
   ```
 - Import and pass the FS explicitly
   ```ts
-  import { OpfsAhpFS } from "@electric-sql/pglite/opfs-ahp";
+  import { OpfsAhpFS } from '@electric-sql/pglite/opfs-ahp'
   const pg = new PGlite({
-    fs: new OpfsAhpFS("./path/to/datadir/")
+    fs: new OpfsAhpFS('./path/to/datadir/'),
   })
   ```
 
 ### Platform Support
 
 | Node | Bun | Chrome | Safari | Firefox |
-|------|-----|--------|--------|---------|
+| ---- | --- | ------ | ------ | ------- |
 |      |     | ✓      |        | ✓       |
 
 Unfortunately, Safari appears to have a limit of 252 open sync access handles, this prevents this VFS from working due to a standard Postgres install consisting of over 300 files.
