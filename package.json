@@ -4,9 +4,13 @@
       "pg-protocol@1.6.1": "patches/pg-protocol@1.6.1.patch"
     }
   },
-  "type": "module",
   "private": true,
+  "scripts": {
+    "ci:version": "pnpm exec changeset version",
+    "ci:publish": "pnpm changeset publish"
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.27.7",
     "@eslint/eslintrc": "^3.1.0",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
