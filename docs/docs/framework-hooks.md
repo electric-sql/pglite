@@ -18,10 +18,12 @@ To use it, pass a PGlite instance as the `db` property.
 import { PGlite } from "@electric-sql/pglite"
 import { PGliteProvider } from "@electric-sql/pglite-react"
 
+const db = new PGlite({
+  extensions: { live }
+})
+
 const App = () => {
-  const db = new PGlite({
-    extensions: { live }
-  })
+  // ...
 
   return (
     <PGliteProvider db=db>
