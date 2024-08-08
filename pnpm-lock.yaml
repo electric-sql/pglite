@@ -56,6 +56,9 @@ importers:
 
   packages/benchmark:
     dependencies:
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../pglite
       wa-sqlite:
         specifier: github:rhashimoto/wa-sqlite#v0.9.14
         version: github.com/rhashimoto/wa-sqlite/6dbe4f044502a7a285e815896f56304a808fe25b
