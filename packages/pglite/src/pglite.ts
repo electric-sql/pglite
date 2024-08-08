@@ -198,9 +198,8 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
               buffer: Uint8Array,
               offset: number,
               length: number,
-              position: number,
+              _position: number,
             ) => {
-              callCounter++
               this.#queryWriteChunks ??= []
               this.#queryWriteChunks.push(buffer.slice(offset, offset + length))
               return length
