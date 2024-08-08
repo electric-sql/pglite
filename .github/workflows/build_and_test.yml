@@ -1,0 +1,224 @@
+name: Build and test PGlite packages
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Build PGLite packages'
+  push:
+    branches: ['main']
+  pull_request:
+
+jobs:
+  stylecheck:
+    name: Stylecheck
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Stylecheck packages
+        run: pnpm -r stylecheck
+
+  build-wasm-postgres:
+    name: Build PGlite WASM dependencies
+    uses: ./.github/workflows/build_wasm_postgres.yml
+    secrets: inherit
+
+  build-and-test-pglite:
+    name: Build and Test PGLite
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ./packages/pglite
+    needs: [stylecheck, build-wasm-postgres]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Download PGlite WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-interim-build-files
+          path: ./packages/pglite/release
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack for distribution
+        run: pnpm pack
+
+      - name: Upload PGlite distribution artifact
+        id: upload-pglite-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-dist
+          path: ./packages/pglite/dist/*
+
+      - name: Upload PGlite package artifact
+        id: upload-pglite-package
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-package
+          path: ./packages/pglite/electric-sql-pglite-*.tgz
+          retention-days: 60
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        if: github.event_name == 'pull_request'
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Built bundles
+
+      - name: Create or update build outputs comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: github.event_name == 'pull_request'
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            - PGlite: ${{ steps.upload-pglite-package.outputs.artifact-url }}
+          edit-mode: append
+
+  build-and-test-pglite-dependents:
+    name: Build and Test packages dependent on PGlite
+    runs-on: ubuntu-22.04
+    needs: [stylecheck, build-and-test-pglite]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Download PGlite build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-dist
+          path: ./packages/pglite/dist/
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm --filter="...^pglite" build
+
+      - name: Typecheck packages
+        run: pnpm --filter="...^pglite" typecheck
+
+      - name: Test packages
+        run: pnpm --filter="...^pglite" test
+
+  publish-website-with-demos:
+    name: Publish website with demos
+    runs-on: ubuntu-22.04
+    needs: [build-and-test-pglite, build-and-test-pglite-dependents]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Download PGlite build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-dist
+          path: ./packages/pglite/dist/
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build REPL and benchmark packages needed for examples
+        run: pnpm --filter "@electric-sql/pglite-repl" --filter "benchmark"  build
+
+      - name: Download PGlite web build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-web-build-files
+          path: /tmp/web
+
+      - name: Build demo site
+        run: |
+          bash ./cibuild.sh demo-site
+
+      - name: Build docs
+        working-directory: ./docs
+        run: |
+          pnpm run docs:build
+          cp -r ./.vitepress/dist/* /tmp/web/
+
+      - name: Upload Demos to Github artifacts
+        id: upload-demos
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-demos
+          path: /tmp/web/**
+          retention-days: 60
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        if: github.event_name == 'pull_request'
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Built bundles
+
+      - name: Create or update build outputs comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: github.event_name == 'pull_request'
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
+          edit-mode: append
+
+      - name: Deploy website to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: '/tmp/web'
+          production-branch: master
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy PR${{ github.event.pull_request.id }}: ${{ github.event.pull_request.title }}'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
