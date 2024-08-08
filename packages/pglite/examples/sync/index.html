@@ -51,14 +51,12 @@ DELETE FROM test WHERE id = 1;
   import { electricSync } from "@electric-sql/pglite/sync";
   import { live } from "@electric-sql/pglite/live";
 
-  const pg = new PGlite({
+  const pg = await PGlite.create({
     extensions: {
       live,
       electric: electricSync({ debug: true }),
     }
   });
-
-  await pg.waitReady;
   
   await pg.exec(`
     CREATE TABLE IF NOT EXISTS test (
