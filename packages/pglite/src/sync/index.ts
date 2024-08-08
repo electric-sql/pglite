@@ -1,141 +1,64 @@
 import type { Extension, PGliteInterface } from "../interface";
-import { ShapeStream, Message, ChangeMessage, Offset } from "@electric-sql/next";
-
-export interface ShapeDefinition {
-  table: string;
-}
+import { ShapeStream, Message, ChangeMessage } from "@electric-sql/client";
+import type { ShapeStreamOptions } from "@electric-sql/client";
 
 export type MapColumnsMap = Record<string, string>;
-export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, string>;
+export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>;
 export type MapColumns = MapColumnsMap | MapColumnsFn;
 
-export interface SyncInToOptions {
-  key: string;
+export interface SyncShapeToTableOptions extends ShapeStreamOptions {
   table: string;
-  shape: ShapeDefinition;
   mapColumns?: MapColumns;
+  primaryKey: string[];
 }
 
 export interface ElectricSyncOptions {
-  baseUrl: string;
-}
-
-export interface ApplyMessageToTableOptions {
-  pg: PGliteInterface;
-  key: string;
-  table: string;
-  rawMessage: Message;
-  mapColumns?: MapColumns;
-}
-
-async function applyMessageToTable({
-  pg,
-  key,
-  table,
-  rawMessage,
-  mapColumns,
-}: ApplyMessageToTableOptions) {
-  console.log("applyMessageToTable", table, rawMessage);
-  if (!(rawMessage as any).headers.action) return;
-  const message = rawMessage as ChangeMessage<any>;
-  pg.transaction(async (tx) => {
-    if (message.headers.action === "insert") {
-      const columns = Object.keys(message.value);
-      await tx.query(
-        `
-          INSERT INTO "${table}"
-          (${columns.map((s) => '"' + s + '"').join(", ")})
-          VALUES
-          (${columns.map((_v, i) => "$" + (i + 1)).join(", ")})
-        `,
-        columns.map((column) => message.value[column])
-      );
-    } else if (message.headers.action === "update") {
-      // id column is the pk in current implementation:
-      // https://github.com/electric-sql/electric-next/issues/65
-      const columns = Object.keys(message.value).filter(
-        (column) => column !== "id"
-      );
-      await tx.query(
-        `
-        UPDATE "${table}"
-        SET ${columns.map((column, i) => '"' + column + '" = $' + (i + 1)).join(", ")}
-        WHERE "id" = $${columns.length + 1}
-      `,
-        [...columns.map((column) => message.value[column]), message.value.id]
-      );
-    } else if (message.headers.action === "delete") {
-      // id is currently a suffix after a / in the message.key
-      const id = parseInt(message.key.split("/").pop() ?? "");
-      await tx.query(
-        `
-          DELETE FROM "${table}"
-          WHERE "id" = $1
-        `,
-        [id]
-      );
-    }
-    tx.query(
-      `
-        UPDATE electric.shapes
-        SET current_offset = $1, last_updated = $2
-        WHERE key = $3
-      `,
-      [message.offset, new Date(), key]
-    );
-  });
+  debug?: boolean;
 }
 
 async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
-  const baseUrl = options.baseUrl;
+  const debug = options.debug || false;
+  const streams: Array<{
+    stream: ShapeStream;
+    aborter: AbortController;
+  }> = [];
 
   const namespaceObj = {
-    syncInTo: async ({ key, table, shape, mapColumns }: SyncInToOptions) => {
-      let currentOffset: Offset = "-1";
-      let shapeId: string | undefined;
-      await pg.transaction(async (tx) => {
-        const ret = await tx.query<{
-          current_offset: Offset;
-          shape_id: string;
-        }>(
-          "SELECT current_offset, shape_id FROM electric.shapes WHERE key = $1",
-          [key]
-        );
-        if (ret.rows.length === 1) {
-          currentOffset = ret.rows[0].current_offset;
-          shapeId = ret.rows[0].shape_id;
-        } else if (ret.rows.length === 1) {
-          await tx.query(
-            `
-              INSERT INTO electric.shapes (key, shape, current_offset, last_updated)
-              VALUES ($1, $2, $3, $4)
-            `,
-            [key, shape, currentOffset, new Date()]
-          );
-        } else {
-          throw new Error("More than one shape record found");
-        }
-      });
-
-      const url = `${baseUrl}/v1/${shape.table}`;
+    syncShapeToTable: async (options: SyncShapeToTableOptions) => {
+      const aborter = new AbortController();
+      if (options.signal) {
+        // we new to have our own aborter to be able to abort the stream
+        // but still accept the signal from the user
+        options.signal.addEventListener("abort", () => {
+          aborter.abort();
+        });
+      }
       const stream = new ShapeStream({
-        url,
-        shapeId,
-        offset: currentOffset,
+        ...options,
+        signal: aborter.signal,
       });
       stream.subscribe(async (messages) => {
+        if (debug) {
+          console.log("sync messages received", messages);
+        }
         for (const message of messages) {
           await applyMessageToTable({
             pg,
-            key,
-            table,
             rawMessage: message,
-            mapColumns,
+            table: options.table,
+            mapColumns: options.mapColumns,
+            primaryKey: options.primaryKey,
+            debug,
           });
         }
       });
+      streams.push({
+        stream,
+        aborter,
+      });
       const unsubsribe = () => {
         stream.unsubscribeAll();
+        aborter.abort();
       };
       return {
         unsubsribe,
@@ -143,27 +66,15 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
     },
   };
 
-  const init = async () => {
-    pg.exec(`
-      CREATE SCHEMA IF NOT EXISTS electric;
-      CREATE TABLE IF NOT EXISTS electric.shapes (
-        key TEXT PRIMARY KEY, -- local id for the shape
-        shape_id TEXT NOT NULL,
-        shape JSONB NOT NULL,
-        current_offset TEXT NOT NULL,
-        last_updated TIMESTAMPTZ NOT NULL
-      );
-    `);
-  };
-
   const close = async () => {
-    // TODO:
-    // - close all streams
-  }
+    for (const { stream, aborter } of streams) {
+      stream.unsubscribeAll();
+      aborter.abort();
+    }
+  };
 
   return {
     namespaceObj,
-    init,
     close,
   };
 }
@@ -172,11 +83,99 @@ export function electricSync(options: ElectricSyncOptions) {
   return {
     name: "ElectricSQL Sync",
     setup: async (pg: PGliteInterface, emscriptenOpts: any) => {
-      const { namespaceObj, init } = await createPlugin(pg, options);
+      const { namespaceObj, close } = await createPlugin(pg, options);
       return {
         namespaceObj,
-        init,
+        close,
       };
     },
   } satisfies Extension;
+}
+
+function doMapColumns(
+  mapColumns: MapColumns,
+  message: ChangeMessage<any>,
+): Record<string, any> {
+  if (typeof mapColumns === "function") {
+    return mapColumns(message);
+  } else {
+    const mappedColumns: Record<string, any> = {};
+    for (const [key, value] of Object.entries(mapColumns)) {
+      mappedColumns[key] = message.value[value];
+    }
+    return mappedColumns;
+  }
+}
+
+interface ApplyMessageToTableOptions {
+  pg: PGliteInterface;
+  table: string;
+  rawMessage: Message;
+  mapColumns?: MapColumns;
+  primaryKey: string[];
+  debug: boolean;
+}
+
+async function applyMessageToTable({
+  pg,
+  table,
+  rawMessage,
+  mapColumns,
+  primaryKey,
+  debug,
+}: ApplyMessageToTableOptions) {
+  if (!(rawMessage as any).headers.action) return;
+  const message = rawMessage as ChangeMessage<any>;
+  const data = mapColumns ? doMapColumns(mapColumns, message) : message.value;
+  if (message.headers.action === "insert") {
+    if (debug) {
+      console.log("inserting", data);
+    }
+    const columns = Object.keys(data);
+    await pg.query(
+      `
+        INSERT INTO "${table}"
+        (${columns.map((s) => '"' + s + '"').join(", ")})
+        VALUES
+        (${columns.map((_v, i) => "$" + (i + 1)).join(", ")})
+      `,
+      columns.map((column) => data[column]),
+    );
+  } else if (message.headers.action === "update") {
+    if (debug) {
+      console.log("updating", data);
+    }
+    const columns = Object.keys(data).filter(
+      // we don't update the primary key, they are used to identify the row
+      (column) => !primaryKey.includes(column),
+    );
+    await pg.query(
+      `
+        UPDATE "${table}"
+        SET ${columns
+          .map((column, i) => '"' + column + '" = $' + (i + 1))
+          .join(", ")}
+        WHERE ${primaryKey
+          .map((column, i) => '"' + column + '" = $' + (columns.length + i + 1))
+          .join(" AND ")}
+      `,
+      [
+        ...columns.map((column) => data[column]),
+        ...primaryKey.map((column) => data[column]),
+      ],
+    );
+  } else if (message.headers.action === "delete") {
+    if (debug) {
+      console.log("deleting", data);
+    }
+    await pg.query(
+      `
+        DELETE FROM "${table}"
+        WHERE ${primaryKey
+          .map((column, i) => '"' + column + '" = $' + (i + 1))
+          .join(" AND ")}
+      `,
+      [...primaryKey.map((column) => data[column])],
+    );
+  }
 }

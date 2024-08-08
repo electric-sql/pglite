@@ -1,23 +1,60 @@
-<style>
-  body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-</style>
-
-<script src="../../../repl/dist-webcomponent/Repl.js" type="module"></script>
-
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite Electric Sync Example</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <script src="../utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../../dist/index.js",
+          "@electric-sql/pglite/sync": "../../dist/sync/index.js",
+          "@electric-sql/pglite/live": "../../dist/live/index.js"
+        }
+      }
+    </script>
+    <style>
+      #output {
+        font-family: monospace;
+        overflow: auto;
+        max-height: 250px;
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+        padding: 10px;
+        margin: 1rem 0;
+        font-size: 9px;
+        line-height: 11px;
+      }
+    </style>
+  </head>
+<body>
+<h1>PGlite Electric Sync Example</h1>
+<p>
+  To run the electric server:
+</p>
+<pre>cd ./examples/sync/
+docker compose up
+</pre>
+<p>
+  Then connect with <code>psql</code> and insert, update, or delete rows in 
+  the <code>test</code> table.
+</p>
+<pre>psql -h localhost -p 5432 -U postgres -d postgres
+INSERT INTO test (name) VALUES ('Hello, World!');
+UPDATE test SET name = 'Hello, Electric!' WHERE id = 1;
+DELETE FROM test WHERE id = 1;
+</pre>
+<div id="output"></div>
+<div class="script-plus-log">
 <script type="module">
-  import { PGlite } from "../../dist/index.js";
-  import { electricSync } from "../../dist/sync/index.js";
+  import { PGlite } from "@electric-sql/pglite";
+  import { electricSync } from "@electric-sql/pglite/sync";
+  import { live } from "@electric-sql/pglite/live";
 
   const pg = new PGlite({
-    debug: 1,
     extensions: {
-      electric: electricSync({
-        baseUrl: "http://localhost:3000",
-      }),
+      live,
+      electric: electricSync({ debug: true }),
     }
   });
 
@@ -30,14 +67,24 @@
     );
   `);
 
-  console.log(pg)
+  console.log('Table created, starting sync...');
+
+  window.pg = pg;
   
-  await pg.electric.syncInTo({
+  await pg.electric.syncShapeToTable({
+    url: "http://localhost:3000/v1/shape/test",
     table: "test",
+    primaryKey: ["id"],
   });
 
-  const repl = document.getElementById('repl');
-  repl.pg = pg;
-</script>
+  const output = document.getElementById("output");
 
-<pglite-repl id="repl" show-time></pglite-repl>
+  pg.live.query("SELECT * FROM test ORDER BY id;", null, (res) => {
+    console.log(`Rendering update`);
+    output.textContent = JSON.stringify(res.rows, null, 2);
+  });
+</script>
+<div id="log"></div>
+</div>
+</body>
+</html>

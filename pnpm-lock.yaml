@@ -75,7 +75,7 @@ importers:
 
   packages/pglite:
     devDependencies:
-      '@electric-sql/next':
+      '@electric-sql/client':
         specifier: ^0.2.2
         version: 0.2.2
       '@types/emscripten':
@@ -901,8 +901,8 @@ packages:
       - '@algolia/client-search'
     dev: true
 
-  /@electric-sql/next@0.2.2:
-    resolution: {integrity: sha512-znY+kYA8CPI6GL1IvDp3EHC10QEhSYLmZ77KFUelN1qQy4GiDIELEuvrYxbycAZ9EJPuqmyTh8DWIwFLUdruUA==}
+  /@electric-sql/client@0.2.2:
+    resolution: {integrity: sha512-lgL4fIRk4sfvdTbSBHV654NRrfAelpwls89b1vt4mQNQg/mZNF/AvHFAWizXK2bpWygVPXmYkB5QAqFVYTOlNA==}
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.19.1
     dev: true
