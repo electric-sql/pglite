@@ -384,7 +384,7 @@ do
         demo-site) echo "==================== demo-site =========================="
             # Move all existing files to a subfolder
             mkdir -p /tmp/web/x-term-repl
-            mv -r /tmp/web/* /tmp/web/x-term-repl/
+            mv /tmp/web/* /tmp/web/x-term-repl/
 
             mkdir -p /tmp/web/dist
             mkdir -p /tmp/web/examples
