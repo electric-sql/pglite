@@ -37,6 +37,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           await tx.query(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           )
+
+          // Get the tables used in the view and add triggers to notify when they change
+          tables = await getTablesForView(tx, `live_query_${id}_view`)
+          await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
+
           // Create prepared statement to get the results
           await tx.exec(`
             PREPARE live_query_${id}_get AS
