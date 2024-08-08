@@ -32,6 +32,7 @@ jobs:
         run: pnpm -r stylecheck
 
   build-wasm-postgres:
+    name: Build PGlite WASM dependencies
     uses: ./.github/workflows/build_wasm_postgres.yml
     secrets: inherit
 
@@ -141,8 +142,8 @@ jobs:
       - name: Test packages
         run: pnpm --filter="...^pglite" test
 
-  publish-build-outputs:
-    name: Publish build outputs
+  publish-website-with-demos:
+    name: Publish website with demos
     runs-on: ubuntu-22.04
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
@@ -177,6 +178,12 @@ jobs:
         run: |
           bash ./cibuild.sh demo-site
 
+      - name: Build docs
+        working-directory: ./docs
+        run: |
+          pnpm run docs:build
+          cp -r ./.vitepress/dist/* /tmp/web/
+
       - name: Upload Demos to Github artifacts
         id: upload-demos
         uses: actions/upload-artifact@v4
@@ -204,7 +211,7 @@ jobs:
             - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
           edit-mode: append
 
-      - name: Deploy demo to Netlify
+      - name: Deploy website to Netlify
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: '/tmp/web'
