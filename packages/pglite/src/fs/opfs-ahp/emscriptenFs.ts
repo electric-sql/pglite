@@ -1,6 +1,6 @@
-import type { PostgresMod } from "../../postgresMod.js";
-import type { OpfsAhp } from "./opfsAhp.js";
-import { FsError, ERRNO_CODES } from "./types.js";
+import type { PostgresMod } from '../../postgresMod.js'
+import type { OpfsAhp } from './opfsAhp.js'
+import { ERRNO_CODES } from './types.js'
 
 export type FileSystemType = Emscripten.FileSystemType & {
   createNode: (
@@ -8,55 +8,55 @@ export type FileSystemType = Emscripten.FileSystemType & {
     name: string,
     mode: number,
     dev?: any,
-  ) => FSNode;
-  node_ops: FS.NodeOps;
+  ) => FSNode
+  node_ops: FS.NodeOps
   stream_ops: FS.StreamOps & {
-    dup: (stream: FSStream) => void;
+    dup: (stream: FSStream) => void
     mmap: (
       stream: FSStream,
       length: number,
       position: number,
       prot: any,
       flags: any,
-    ) => { ptr: number; allocated: boolean };
+    ) => { ptr: number; allocated: boolean }
     msync: (
       stream: FSStream,
       buffer: Uint8Array,
       offset: number,
       length: number,
       mmapFlags: any,
-    ) => number;
-  };
-} & { [key: string]: any };
+    ) => number
+  }
+} & { [key: string]: any }
 
 type FSNode = FS.FSNode & {
-  node_ops: FS.NodeOps;
-  stream_ops: FS.StreamOps;
-};
+  node_ops: FS.NodeOps
+  stream_ops: FS.StreamOps
+}
 
 type FSStream = FS.FSStream & {
-  node: FSNode;
+  node: FSNode
   shared: {
-    refcount: number;
-  };
-};
+    refcount: number
+  }
+}
 
 export interface OpfsMount extends FS.Mount {
   opts: {
-    root: string;
-  };
+    root: string
+  }
 }
 
-type OpfsNode = FSNode & {};
+type OpfsNode = FSNode
 
-type EmscriptenFS = PostgresMod["FS"] & {
+type EmscriptenFS = PostgresMod['FS'] & {
   createNode: (
     parent: FSNode | null,
     name: string,
     mode: number,
     dev?: any,
-  ) => FSNode;
-};
+  ) => FSNode
+}
 
 /**
  * Create an emscripten filesystem that uses the AHP filesystem.
@@ -65,24 +65,24 @@ type EmscriptenFS = PostgresMod["FS"] & {
  * @returns The emscripten filesystem
  */
 export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
-  const FS = Module.FS as EmscriptenFS;
+  const FS = Module.FS as EmscriptenFS
   const OPFS = {
     tryFSOperation<T>(f: () => T): T {
       try {
-        return f();
+        return f()
       } catch (e: any) {
-        if (!e.code) throw e;
-        if (e.code === "UNKNOWN") throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
-        throw new FS.ErrnoError(e.code);
+        if (!e.code) throw e
+        if (e.code === 'UNKNOWN') throw new FS.ErrnoError(ERRNO_CODES.EINVAL)
+        throw new FS.ErrnoError(e.code)
       }
     },
-    mount(mount: OpfsMount): FSNode {
-      return OPFS.createNode(null, "/", 16384 | 511, 0);
+    mount(_mount: OpfsMount): FSNode {
+      return OPFS.createNode(null, '/', 16384 | 511, 0)
     },
     syncfs(
-      mount: FS.Mount,
-      populate: any, // This has the wrong type in @types/emscripten
-      done: (err?: number | null) => unknown,
+      _mount: FS.Mount,
+      _populate: any, // This has the wrong type in @types/emscripten
+      _done: (err?: number | null) => unknown,
     ): void {
       // noop
     },
@@ -90,39 +90,39 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
       parent: FSNode | null,
       name: string,
       mode: number,
-      dev?: any,
+      _dev?: any,
     ): OpfsNode {
       if (!FS.isDir(mode) && !FS.isFile(mode)) {
-        throw new FS.ErrnoError(28);
+        throw new FS.ErrnoError(28)
       }
-      const node = FS.createNode(parent, name, mode);
-      node.node_ops = OPFS.node_ops;
-      node.stream_ops = OPFS.stream_ops;
-      return node;
+      const node = FS.createNode(parent, name, mode)
+      node.node_ops = OPFS.node_ops
+      node.stream_ops = OPFS.stream_ops
+      return node
     },
     getMode: function (path: string): number {
-      log("getMode", path);
+      log('getMode', path)
       return OPFS.tryFSOperation(() => {
-        const stats = opfsAhp.lstat(path);
-        return stats.mode;
-      });
+        const stats = opfsAhp.lstat(path)
+        return stats.mode
+      })
     },
     realPath: function (node: FSNode): string {
-      const parts = [];
+      const parts: string[] = []
       while (node.parent !== node) {
-        parts.push(node.name);
-        node = node.parent as FSNode;
+        parts.push(node.name)
+        node = node.parent as FSNode
       }
-      parts.push((node.mount as OpfsMount).opts.root);
-      parts.reverse();
-      return parts.join("/");
+      parts.push((node.mount as OpfsMount).opts.root)
+      parts.reverse()
+      return parts.join('/')
     },
     node_ops: {
       getattr(node: OpfsNode): FS.Stats {
-        log("getattr", OPFS.realPath(node));
-        const path = OPFS.realPath(node);
+        log('getattr', OPFS.realPath(node))
+        const path = OPFS.realPath(node)
         return OPFS.tryFSOperation(() => {
-          const stats = opfsAhp.lstat(path);
+          const stats = opfsAhp.lstat(path)
           return {
             ...stats,
             dev: 0,
@@ -132,32 +132,32 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
             atime: new Date(stats.atime),
             mtime: new Date(stats.mtime),
             ctime: new Date(stats.ctime),
-          };
-        });
+          }
+        })
       },
       setattr(node: OpfsNode, attr: FS.Stats): void {
-        log("setattr", OPFS.realPath(node), attr);
-        var path = OPFS.realPath(node);
+        log('setattr', OPFS.realPath(node), attr)
+        const path = OPFS.realPath(node)
         OPFS.tryFSOperation(() => {
           if (attr.mode !== undefined) {
-            opfsAhp.chmod(path, attr.mode);
+            opfsAhp.chmod(path, attr.mode)
           }
           if (attr.size !== undefined) {
-            opfsAhp.truncate(path, attr.size);
+            opfsAhp.truncate(path, attr.size)
           }
           if (attr.timestamp !== undefined) {
-            opfsAhp.utimes(path, attr.timestamp, attr.timestamp);
+            opfsAhp.utimes(path, attr.timestamp, attr.timestamp)
           }
           if (attr.size !== undefined) {
-            opfsAhp.truncate(path, attr.size);
+            opfsAhp.truncate(path, attr.size)
           }
-        });
+        })
       },
       lookup(parent: FSNode, name: string): OpfsNode {
-        log("lookup", OPFS.realPath(parent), name);
-        const path = [OPFS.realPath(parent), name].join("/");
-        const mode = OPFS.getMode(path);
-        return OPFS.createNode(parent, name, mode);
+        log('lookup', OPFS.realPath(parent), name)
+        const path = [OPFS.realPath(parent), name].join('/')
+        const mode = OPFS.getMode(path)
+        return OPFS.createNode(parent, name, mode)
       },
       mknod(
         parent: FSNode,
@@ -165,86 +165,88 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
         mode: number,
         dev: unknown,
       ): OpfsNode {
-        log("mknod", OPFS.realPath(parent), name, mode, dev);
-        const node = OPFS.createNode(parent, name, mode, dev);
+        log('mknod', OPFS.realPath(parent), name, mode, dev)
+        const node = OPFS.createNode(parent, name, mode, dev)
         // create the backing node for this in the fs root as well
-        const path = OPFS.realPath(node);
+        const path = OPFS.realPath(node)
         return OPFS.tryFSOperation(() => {
           if (FS.isDir(node.mode)) {
-            opfsAhp.mkdir(path, { mode });
+            opfsAhp.mkdir(path, { mode })
           } else {
-            opfsAhp.writeFile(path, "", { mode });
+            opfsAhp.writeFile(path, '', { mode })
           }
-          return node;
-        });
+          return node
+        })
       },
       rename(oldNode: OpfsNode, newDir: OpfsNode, newName: string): void {
-        log("rename", OPFS.realPath(oldNode), OPFS.realPath(newDir), newName);
-        const oldPath = OPFS.realPath(oldNode);
-        const newPath = [OPFS.realPath(newDir), newName].join("/");
+        log('rename', OPFS.realPath(oldNode), OPFS.realPath(newDir), newName)
+        const oldPath = OPFS.realPath(oldNode)
+        const newPath = [OPFS.realPath(newDir), newName].join('/')
         OPFS.tryFSOperation(() => {
-          opfsAhp.rename(oldPath, newPath);
-        });
-        oldNode.name = newName;
+          opfsAhp.rename(oldPath, newPath)
+        })
+        oldNode.name = newName
       },
       unlink(parent: OpfsNode, name: string): void {
-        log("unlink", OPFS.realPath(parent), name);
-        const path = [OPFS.realPath(parent), name].join("/");
+        log('unlink', OPFS.realPath(parent), name)
+        const path = [OPFS.realPath(parent), name].join('/')
         try {
-          opfsAhp.unlink(path);
-        } catch (e: any) {}
+          opfsAhp.unlink(path)
+        } catch (e: any) {
+          // no-op
+        }
       },
       rmdir(parent: OpfsNode, name: string): void {
-        log("rmdir", OPFS.realPath(parent), name);
-        const path = [OPFS.realPath(parent), name].join("/");
+        log('rmdir', OPFS.realPath(parent), name)
+        const path = [OPFS.realPath(parent), name].join('/')
         return OPFS.tryFSOperation(() => {
-          opfsAhp.rmdir(path);
-        });
+          opfsAhp.rmdir(path)
+        })
       },
       readdir(node: OpfsNode): string[] {
-        log("readdir", OPFS.realPath(node));
-        const path = OPFS.realPath(node);
+        log('readdir', OPFS.realPath(node))
+        const path = OPFS.realPath(node)
         return OPFS.tryFSOperation(() => {
-          return opfsAhp.readdir(path);
-        });
+          return opfsAhp.readdir(path)
+        })
       },
       symlink(parent: FSNode, newName: string, oldPath: string): void {
-        log("symlink", OPFS.realPath(parent), newName, oldPath);
+        log('symlink', OPFS.realPath(parent), newName, oldPath)
         // This is not supported by OPFS
-        throw new FS.ErrnoError(63);
+        throw new FS.ErrnoError(63)
       },
       readlink(node: FSNode): string {
-        log("readlink", OPFS.realPath(node));
+        log('readlink', OPFS.realPath(node))
         // This is not supported by OPFS
-        throw new FS.ErrnoError(63);
+        throw new FS.ErrnoError(63)
       },
     },
     stream_ops: {
       open(stream: FSStream): void {
-        log("open stream", OPFS.realPath(stream.node));
-        const path = OPFS.realPath(stream.node);
+        log('open stream', OPFS.realPath(stream.node))
+        const path = OPFS.realPath(stream.node)
         return OPFS.tryFSOperation(() => {
           if (FS.isFile(stream.node.mode)) {
-            stream.shared.refcount = 1;
-            stream.nfd = opfsAhp.open(path);
+            stream.shared.refcount = 1
+            stream.nfd = opfsAhp.open(path)
           }
-        });
+        })
       },
       close(stream: FSStream): void {
-        log("close stream", OPFS.realPath(stream.node));
+        log('close stream', OPFS.realPath(stream.node))
         return OPFS.tryFSOperation(() => {
           if (
             FS.isFile(stream.node.mode) &&
             stream.nfd &&
             --stream.shared.refcount === 0
           ) {
-            opfsAhp.close(stream.nfd);
+            opfsAhp.close(stream.nfd)
           }
-        });
+        })
       },
       dup(stream: FSStream) {
-        log("dup stream", OPFS.realPath(stream.node));
-        stream.shared.refcount++;
+        log('dup stream', OPFS.realPath(stream.node))
+        stream.shared.refcount++
       },
       read(
         stream: FSStream, // Stream to read from
@@ -253,14 +255,8 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
         length: number, // Number of bytes to read
         position: number, // Position in file to read from
       ): number {
-        log(
-          "read stream",
-          OPFS.realPath(stream.node),
-          offset,
-          length,
-          position,
-        );
-        if (length === 0) return 0;
+        log('read stream', OPFS.realPath(stream.node), offset, length, position)
+        if (length === 0) return 0
         const ret = OPFS.tryFSOperation(() =>
           opfsAhp.read(
             stream.nfd!,
@@ -269,8 +265,8 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
             length,
             position,
           ),
-        );
-        return ret;
+        )
+        return ret
       },
       write(
         stream: FSStream, // Stream to write to
@@ -280,12 +276,12 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
         position: number, // Position in file to write to
       ): number {
         log(
-          "write stream",
+          'write stream',
           OPFS.realPath(stream.node),
           offset,
           length,
           position,
-        );
+        )
         return OPFS.tryFSOperation(() =>
           opfsAhp.write(
             stream.nfd!,
@@ -294,25 +290,25 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
             length,
             position,
           ),
-        );
+        )
       },
       llseek(stream: FSStream, offset: number, whence: number): number {
-        log("llseek stream", OPFS.realPath(stream.node), offset, whence);
-        var position = offset;
+        log('llseek stream', OPFS.realPath(stream.node), offset, whence)
+        let position = offset
         if (whence === 1) {
-          position += stream.position;
+          position += stream.position
         } else if (whence === 2) {
           if (FS.isFile(stream.node.mode)) {
             OPFS.tryFSOperation(() => {
-              var stat = opfsAhp.fstat(stream.nfd!);
-              position += stat.size;
-            });
+              const stat = opfsAhp.fstat(stream.nfd!)
+              position += stat.size
+            })
           }
         }
         if (position < 0) {
-          throw new FS.ErrnoError(28);
+          throw new FS.ErrnoError(28)
         }
-        return position;
+        return position
       },
       mmap(
         stream: FSStream,
@@ -322,18 +318,18 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
         flags: any,
       ) {
         log(
-          "mmap stream",
+          'mmap stream',
           OPFS.realPath(stream.node),
           length,
           position,
           prot,
           flags,
-        );
+        )
         if (!FS.isFile(stream.node.mode)) {
-          throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
+          throw new FS.ErrnoError(ERRNO_CODES.ENODEV)
         }
 
-        var ptr = (Module as any).mmapAlloc(length); // TODO: Fix type and check this is exported
+        const ptr = (Module as any).mmapAlloc(length) // TODO: Fix type and check this is exported
 
         OPFS.stream_ops.read(
           stream,
@@ -341,8 +337,8 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
           ptr,
           length,
           position,
-        );
-        return { ptr, allocated: true };
+        )
+        return { ptr, allocated: true }
       },
       msync(
         stream: FSStream,
@@ -352,20 +348,20 @@ export const createOPFSAHP = (Module: PostgresMod, opfsAhp: OpfsAhp) => {
         mmapFlags: any,
       ) {
         log(
-          "msync stream",
+          'msync stream',
           OPFS.realPath(stream.node),
           offset,
           length,
           mmapFlags,
-        );
-        OPFS.stream_ops.write(stream, buffer, 0, length, offset);
-        return 0;
+        )
+        OPFS.stream_ops.write(stream, buffer, 0, length, offset)
+        return 0
       },
     },
-  } satisfies FileSystemType;
-  return OPFS;
-};
+  } satisfies FileSystemType
+  return OPFS
+}
 
-function log(...args: any[]) {
+function log(..._args: any[]) {
   // console.log(...args);
 }

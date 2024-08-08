@@ -7,77 +7,75 @@ import type {
   QueryOptions,
   Results,
   Transaction,
-} from "../interface.js";
-import { uuid } from "../utils.js";
-import type { BackendMessage } from "pg-protocol/src/messages.js";
+} from '../interface.js'
+import { uuid } from '../utils.js'
+import type { BackendMessage } from 'pg-protocol/src/messages.js'
 
 export type PGliteWorkerOptions = PGliteOptions & {
-  meta?: any;
-  id?: string;
-};
+  meta?: any
+  id?: string
+}
 
 export class PGliteWorker implements PGliteInterface, AsyncDisposable {
-  #initPromise: Promise<void>;
-  #debug: DebugLevel = 0;
+  #initPromise: Promise<void>
+  #debug: DebugLevel = 0
 
-  #ready = false;
-  #closed = false;
-  #isLeader = false;
+  #ready = false
+  #closed = false
+  #isLeader = false
 
-  #eventTarget = new EventTarget();
+  #eventTarget = new EventTarget()
 
-  #tabId: string;
+  #tabId: string
 
-  #connected = false;
+  #connected = false
 
-  #workerProcess: Worker;
-  #workerID?: string;
-  #workerHerePromise?: Promise<void>;
-  #workerReadyPromise?: Promise<void>;
+  #workerProcess: Worker
+  #workerID?: string
+  #workerHerePromise?: Promise<void>
+  #workerReadyPromise?: Promise<void>
 
-  #broadcastChannel?: BroadcastChannel;
-  #tabChannel?: BroadcastChannel;
-  #releaseTabCloseLock?: () => void;
+  #broadcastChannel?: BroadcastChannel
+  #tabChannel?: BroadcastChannel
+  #releaseTabCloseLock?: () => void
 
-  #notifyListeners = new Map<string, Set<(payload: string) => void>>();
-  #globalNotifyListeners = new Set<
-    (channel: string, payload: string) => void
-  >();
+  #notifyListeners = new Map<string, Set<(payload: string) => void>>()
+  #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
-  #extensions: Extensions;
-  #extensionsClose: Array<() => Promise<void>> = [];
+  #extensions: Extensions
+  #extensionsClose: Array<() => Promise<void>> = []
 
   constructor(worker: Worker, options?: PGliteWorkerOptions) {
-    this.#workerProcess = worker;
-    this.#tabId = uuid();
-    this.#extensions = options?.extensions ?? {};
+    this.#workerProcess = worker
+    this.#tabId = uuid()
+    this.#extensions = options?.extensions ?? {}
 
     this.#workerHerePromise = new Promise<void>((resolve) => {
       this.#workerProcess.addEventListener(
-        "message",
+        'message',
         (event) => {
-          if (event.data.type === "here") {
-            resolve();
+          if (event.data.type === 'here') {
+            resolve()
           } else {
-            throw new Error("Invalid message");
+            throw new Error('Invalid message')
           }
         },
         { once: true },
-      );
-    });
+      )
+    })
 
     this.#workerReadyPromise = new Promise<void>((resolve) => {
       const callback = (event: MessageEvent<any>) => {
-        if (event.data.type === "ready") {
-          this.#workerID = event.data.id;
-          this.#workerProcess.removeEventListener("message", callback);
-          resolve();
+        if (event.data.type === 'ready') {
+          this.#workerID = event.data.id
+          this.#workerProcess.removeEventListener('message', callback)
+          resolve()
         }
-      };
-      this.#workerProcess.addEventListener("message", callback);
-    });
+      }
+      this.#workerProcess.addEventListener('message', callback)
+    })
 
-    this.#initPromise = this.#init(options);
+    this.#initPromise = this.#init(options)
   }
 
   /**
@@ -92,10 +90,10 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   static async create<O extends PGliteWorkerOptions>(
     worker: Worker,
     options?: O,
-  ): Promise<PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>> {
-    const pg = new PGliteWorker(worker, options);
-    await pg.#initPromise;
-    return pg as PGliteWorker & PGliteInterfaceExtensions<O["extensions"]>;
+  ): Promise<PGliteWorker & PGliteInterfaceExtensions<O['extensions']>> {
+    const pg = new PGliteWorker(worker, options)
+    await pg.#initPromise
+    return pg as PGliteWorker & PGliteInterfaceExtensions<O['extensions']>
   }
 
   async #init(options: PGliteWorkerOptions = {}) {
@@ -103,94 +101,95 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     for (const [extName, ext] of Object.entries(this.#extensions)) {
       if (ext instanceof URL) {
         throw new Error(
-          "URL extensions are not supported on the client side of a worker",
-        );
+          'URL extensions are not supported on the client side of a worker',
+        )
       } else {
-        const extRet = await ext.setup(this, {}, true);
+        const extRet = await ext.setup(this, {}, true)
         if (extRet.emscriptenOpts) {
           console.warn(
             `PGlite extension ${extName} returned emscriptenOpts, these are not supported on the client side of a worker`,
-          );
+          )
         }
         if (extRet.namespaceObj) {
-          (this as any)[extName] = extRet.namespaceObj;
+          const instance = this as any
+          instance[extName] = extRet.namespaceObj
         }
         if (extRet.bundlePath) {
           console.warn(
             `PGlite extension ${extName} returned bundlePath, this is not supported on the client side of a worker`,
-          );
+          )
         }
         if (extRet.init) {
-          await extRet.init();
+          await extRet.init()
         }
         if (extRet.close) {
-          this.#extensionsClose.push(extRet.close);
+          this.#extensionsClose.push(extRet.close)
         }
       }
     }
 
     // Wait for the worker let us know it's here
-    await this.#workerHerePromise;
+    await this.#workerHerePromise
 
     // Send the worker the options
-    const { extensions, ...workerOptions } = options;
+    const { extensions: _, ...workerOptions } = options
     this.#workerProcess.postMessage({
-      type: "init",
+      type: 'init',
       options: workerOptions,
-    });
+    })
 
     // Wait for the worker let us know it's ready
-    await this.#workerReadyPromise;
+    await this.#workerReadyPromise
 
     // Acquire the tab close lock, this is released then the tab, or this
     // PGliteWorker instance, is closed
-    const tabCloseLockId = `pglite-tab-close:${this.#tabId}`;
-    this.#releaseTabCloseLock = await acquireLock(tabCloseLockId);
+    const tabCloseLockId = `pglite-tab-close:${this.#tabId}`
+    this.#releaseTabCloseLock = await acquireLock(tabCloseLockId)
 
     // Start the broadcast channel used to communicate with tabs and leader election
-    const broadcastChannelId = `pglite-broadcast:${this.#workerID}`;
-    this.#broadcastChannel = new BroadcastChannel(broadcastChannelId);
+    const broadcastChannelId = `pglite-broadcast:${this.#workerID}`
+    this.#broadcastChannel = new BroadcastChannel(broadcastChannelId)
 
     // Start the tab channel used to communicate with the leader directly
-    const tabChannelId = `pglite-tab:${this.#tabId}`;
-    this.#tabChannel = new BroadcastChannel(tabChannelId);
+    const tabChannelId = `pglite-tab:${this.#tabId}`
+    this.#tabChannel = new BroadcastChannel(tabChannelId)
 
-    this.#broadcastChannel.addEventListener("message", async (event) => {
-      if (event.data.type === "leader-here") {
-        this.#connected = false;
-        this.#eventTarget.dispatchEvent(new Event("leader-change"));
-        this.#leaderNotifyLoop();
-      } else if (event.data.type === "notify") {
-        this.#receiveNotification(event.data.channel, event.data.payload);
+    this.#broadcastChannel.addEventListener('message', async (event) => {
+      if (event.data.type === 'leader-here') {
+        this.#connected = false
+        this.#eventTarget.dispatchEvent(new Event('leader-change'))
+        this.#leaderNotifyLoop()
+      } else if (event.data.type === 'notify') {
+        this.#receiveNotification(event.data.channel, event.data.payload)
       }
-    });
+    })
 
-    this.#tabChannel.addEventListener("message", async (event) => {
-      if (event.data.type === "connected") {
-        this.#connected = true;
-        this.#eventTarget.dispatchEvent(new Event("connected"));
-        this.#debug = await this.#rpc("getDebugLevel");
-        this.#ready = true;
+    this.#tabChannel.addEventListener('message', async (event) => {
+      if (event.data.type === 'connected') {
+        this.#connected = true
+        this.#eventTarget.dispatchEvent(new Event('connected'))
+        this.#debug = await this.#rpc('getDebugLevel')
+        this.#ready = true
       }
-    });
+    })
 
-    this.#workerProcess.addEventListener("message", async (event) => {
-      if (event.data.type === "leader-now") {
-        this.#isLeader = true;
-        this.#eventTarget.dispatchEvent(new Event("leader-change"));
+    this.#workerProcess.addEventListener('message', async (event) => {
+      if (event.data.type === 'leader-now') {
+        this.#isLeader = true
+        this.#eventTarget.dispatchEvent(new Event('leader-change'))
       }
-    });
+    })
 
-    this.#leaderNotifyLoop();
+    this.#leaderNotifyLoop()
   }
 
   async #leaderNotifyLoop() {
     if (!this.#connected) {
       this.#broadcastChannel!.postMessage({
-        type: "tab-here",
+        type: 'tab-here',
         id: this.#tabId,
-      });
-      setTimeout(() => this.#leaderNotifyLoop(), 16);
+      })
+      setTimeout(() => this.#leaderNotifyLoop(), 16)
     }
   }
 
@@ -198,91 +197,92 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     method: Method,
     ...args: Parameters<WorkerApi[Method]>
   ): Promise<ReturnType<WorkerApi[Method]>> {
-    const callId = uuid();
+    const callId = uuid()
     const message: WorkerRpcCall<Method> = {
-      type: "rpc-call",
+      type: 'rpc-call',
       callId,
       method,
       args,
-    };
-    this.#tabChannel!.postMessage(message);
+    }
+    this.#tabChannel!.postMessage(message)
     return await new Promise<ReturnType<WorkerApi[Method]>>(
       (resolve, reject) => {
         const listener = (event: MessageEvent) => {
-          if (event.data.callId !== callId) return;
-          cleanup();
-          const message: WorkerRpcResponse<Method> = event.data;
-          if (message.type === "rpc-return") {
-            resolve(message.result);
-          } else if (message.type === "rpc-error") {
-            const error = new Error(message.error.message);
-            Object.assign(error, message.error);
-            reject(error);
+          if (event.data.callId !== callId) return
+          cleanup()
+          const message: WorkerRpcResponse<Method> = event.data
+          if (message.type === 'rpc-return') {
+            resolve(message.result)
+          } else if (message.type === 'rpc-error') {
+            const error = new Error(message.error.message)
+            Object.assign(error, message.error)
+            reject(error)
           } else {
-            reject(new Error("Invalid message"));
+            reject(new Error('Invalid message'))
           }
-        };
+        }
         const leaderChangeListener = () => {
           // If the leader changes, throw an error to reject the promise
-          cleanup();
-          reject(new LeaderChangedError());
-        };
+          cleanup()
+          reject(new LeaderChangedError())
+        }
         const cleanup = () => {
-          this.#tabChannel!.removeEventListener("message", listener);
+          this.#tabChannel!.removeEventListener('message', listener)
           this.#eventTarget.removeEventListener(
-            "leader-change",
+            'leader-change',
             leaderChangeListener,
-          );
-        };
+          )
+        }
         this.#eventTarget.addEventListener(
-          "leader-change",
+          'leader-change',
           leaderChangeListener,
-        );
-        this.#tabChannel!.addEventListener("message", listener);
+        )
+        this.#tabChannel!.addEventListener('message', listener)
       },
-    );
+    )
   }
 
   get waitReady() {
-    return new Promise<void>(async (resolve) => {
-      await this.#initPromise;
-      if (!this.#connected) {
-        resolve(
-          new Promise<void>((resolve) => {
-            this.#eventTarget.addEventListener("connected", () => {
-              resolve();
-            });
-          }),
-        );
-      } else {
-        resolve();
-      }
-    });
+    return new Promise<void>((resolve) => {
+      this.#initPromise.then(() => {
+        if (!this.#connected) {
+          resolve(
+            new Promise<void>((resolve) => {
+              this.#eventTarget.addEventListener('connected', () => {
+                resolve()
+              })
+            }),
+          )
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 
   get debug() {
-    return this.#debug;
+    return this.#debug
   }
 
   /**
    * The ready state of the database
    */
   get ready() {
-    return this.#ready;
+    return this.#ready
   }
 
   /**
    * The closed state of the database
    */
   get closed() {
-    return this.#closed;
+    return this.#closed
   }
 
   /**
    * The leader state of this tab
    */
   get isLeader() {
-    return this.#isLeader;
+    return this.#isLeader
   }
 
   /**
@@ -291,13 +291,13 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    */
   async close() {
     if (this.#closed) {
-      return;
+      return
     }
-    this.#closed = true;
-    this.#broadcastChannel?.close();
-    this.#tabChannel?.close();
-    this.#releaseTabCloseLock?.();
-    this.#workerProcess.terminate();
+    this.#closed = true
+    this.#broadcastChannel?.close()
+    this.#tabChannel?.close()
+    this.#releaseTabCloseLock?.()
+    this.#workerProcess.terminate()
   }
 
   /**
@@ -306,7 +306,7 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#using-declarations-and-explicit-resource-management
    */
   async [Symbol.asyncDispose]() {
-    await this.close();
+    await this.close()
   }
 
   /**
@@ -321,8 +321,8 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     params?: any[],
     options?: QueryOptions,
   ): Promise<Results<T>> {
-    await this.waitReady;
-    return (await this.#rpc("query", query, params, options)) as Results<T>;
+    await this.waitReady
+    return (await this.#rpc('query', query, params, options)) as Results<T>
   }
 
   /**
@@ -332,8 +332,8 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * @returns The result of the query
    */
   async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
-    await this.waitReady;
-    return (await this.#rpc("exec", query, options)) as Array<Results>;
+    await this.waitReady
+    return (await this.#rpc('exec', query, options)) as Array<Results>
   }
 
   /**
@@ -344,39 +344,39 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   async transaction<T>(
     callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined> {
-    await this.waitReady;
-    const txId = await this.#rpc("transactionStart");
-    let ret: T | undefined;
+    await this.waitReady
+    const txId = await this.#rpc('transactionStart')
+    let ret: T | undefined
     try {
       ret = await callback({
         query: async (query, params, options) => {
           return await this.#rpc(
-            "transactionQuery",
+            'transactionQuery',
             txId,
             query,
             params,
             options,
-          );
+          )
         },
         exec: async (query, options) => {
           return (await this.#rpc(
-            "transactionExec",
+            'transactionExec',
             txId,
             query,
             options,
-          )) as any;
+          )) as any
         },
         rollback: async () => {
-          await this.#rpc("transactionRollback", txId);
+          await this.#rpc('transactionRollback', txId)
         },
         closed: false,
-      } as Transaction);
+      } as Transaction)
     } catch (error) {
-      await this.#rpc("transactionRollback", txId);
-      throw error;
+      await this.#rpc('transactionRollback', txId)
+      throw error
     }
-    await this.#rpc("transactionCommit", txId);
-    return ret;
+    await this.#rpc('transactionCommit', txId)
+    return ret
   }
 
   /**
@@ -391,8 +391,8 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * @returns The direct message data response produced by Postgres
    */
   async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
-    await this.waitReady;
-    return (await this.#rpc("execProtocolRaw", message)) as Uint8Array;
+    await this.waitReady
+    return (await this.#rpc('execProtocolRaw', message)) as Uint8Array
   }
 
   /**
@@ -403,10 +403,10 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   async execProtocol(
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    await this.waitReady;
-    return (await this.#rpc("execProtocol", message)) as Array<
+    await this.waitReady
+    return (await this.#rpc('execProtocol', message)) as Array<
       [BackendMessage, Uint8Array]
-    >;
+    >
   }
 
   /**
@@ -418,15 +418,15 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     channel: string,
     callback: (payload: string) => void,
   ): Promise<() => Promise<void>> {
-    await this.waitReady;
+    await this.waitReady
     if (!this.#notifyListeners.has(channel)) {
-      this.#notifyListeners.set(channel, new Set());
+      this.#notifyListeners.set(channel, new Set())
     }
-    this.#notifyListeners.get(channel)?.add(callback);
-    await this.exec(`LISTEN ${channel}`);
+    this.#notifyListeners.get(channel)?.add(callback)
+    await this.exec(`LISTEN ${channel}`)
     return async () => {
-      await this.unlisten(channel, callback);
-    };
+      await this.unlisten(channel, callback)
+    }
   }
 
   /**
@@ -438,15 +438,15 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     channel: string,
     callback?: (payload: string) => void,
   ): Promise<void> {
-    await this.waitReady;
+    await this.waitReady
     if (callback) {
-      this.#notifyListeners.get(channel)?.delete(callback);
+      this.#notifyListeners.get(channel)?.delete(callback)
     } else {
-      this.#notifyListeners.delete(channel);
+      this.#notifyListeners.delete(channel)
     }
     if (this.#notifyListeners.get(channel)?.size === 0) {
       // As we currently have a dedicated worker we can just unlisten
-      await this.exec(`UNLISTEN ${channel}`);
+      await this.exec(`UNLISTEN ${channel}`)
     }
   }
 
@@ -455,10 +455,10 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * @param callback The callback to call when a notification is received
    */
   onNotification(callback: (channel: string, payload: string) => void) {
-    this.#globalNotifyListeners.add(callback);
+    this.#globalNotifyListeners.add(callback)
     return () => {
-      this.#globalNotifyListeners.delete(callback);
-    };
+      this.#globalNotifyListeners.delete(callback)
+    }
   }
 
   /**
@@ -466,107 +466,107 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * @param callback The callback to remove
    */
   offNotification(callback: (channel: string, payload: string) => void) {
-    this.#globalNotifyListeners.delete(callback);
+    this.#globalNotifyListeners.delete(callback)
   }
 
   #receiveNotification(channel: string, payload: string) {
-    const listeners = this.#notifyListeners.get(channel);
+    const listeners = this.#notifyListeners.get(channel)
     if (listeners) {
       for (const listener of listeners) {
-        queueMicrotask(() => listener(payload));
+        queueMicrotask(() => listener(payload))
       }
     }
     for (const listener of this.#globalNotifyListeners) {
-      queueMicrotask(() => listener(channel, payload));
+      queueMicrotask(() => listener(channel, payload))
     }
   }
 
   async dumpDataDir(): Promise<File | Blob> {
-    return (await this.#rpc("dumpDataDir")) as File | Blob;
+    return (await this.#rpc('dumpDataDir')) as File | Blob
   }
 
   onLeaderChange(callback: () => void) {
-    this.#eventTarget.addEventListener("leader-change", callback);
+    this.#eventTarget.addEventListener('leader-change', callback)
     return () => {
-      this.#eventTarget.removeEventListener("leader-change", callback);
-    };
+      this.#eventTarget.removeEventListener('leader-change', callback)
+    }
   }
 
   offLeaderChange(callback: () => void) {
-    this.#eventTarget.removeEventListener("leader-change", callback);
+    this.#eventTarget.removeEventListener('leader-change', callback)
   }
 }
 
 export interface WorkerOptions {
   init: (
-    options: Exclude<PGliteWorkerOptions, "extensions">,
-  ) => Promise<PGliteInterface>;
+    options: Exclude<PGliteWorkerOptions, 'extensions'>,
+  ) => Promise<PGliteInterface>
 }
 
 export async function worker({ init }: WorkerOptions) {
   // Send a message to the main thread to let it know we are here
-  postMessage({ type: "here" });
+  postMessage({ type: 'here' })
 
   // Await the main thread to send us the options
-  const options = await new Promise<Exclude<PGliteWorkerOptions, "extensions">>(
+  const options = await new Promise<Exclude<PGliteWorkerOptions, 'extensions'>>(
     (resolve) => {
       addEventListener(
-        "message",
+        'message',
         (event) => {
-          if (event.data.type === "init") {
-            resolve(event.data.options);
+          if (event.data.type === 'init') {
+            resolve(event.data.options)
           }
         },
         { once: true },
-      );
+      )
     },
-  );
+  )
 
   // ID for this multi-tab worker - this is used to identify the group of workers
   // that are trying to elect a leader for a shared PGlite instance.
   // It defaults to the URL of the worker, and the dataDir if provided
   // but can be overridden by the options.
-  const id = options.id ?? `${import.meta.url}:${options.dataDir ?? ""}`;
+  const id = options.id ?? `${import.meta.url}:${options.dataDir ?? ''}`
 
   // Let the main thread know we are ready
-  postMessage({ type: "ready", id });
+  postMessage({ type: 'ready', id })
 
-  const electionLockId = `pglite-election-lock:${id}`;
-  const broadcastChannelId = `pglite-broadcast:${id}`;
-  const broadcastChannel = new BroadcastChannel(broadcastChannelId);
-  const connectedTabs = new Set<string>();
+  const electionLockId = `pglite-election-lock:${id}`
+  const broadcastChannelId = `pglite-broadcast:${id}`
+  const broadcastChannel = new BroadcastChannel(broadcastChannelId)
+  const connectedTabs = new Set<string>()
 
   // Await the main lock which is used to elect the leader
   // We don't release this lock, its automatically released when the worker or
   // tab is closed
-  await acquireLock(electionLockId);
+  await acquireLock(electionLockId)
 
   // Now we are the leader, start the worker
-  const dbPromise = init(options);
+  const dbPromise = init(options)
 
   // Start listening for messages from tabs
   broadcastChannel.onmessage = async (event) => {
-    const msg = event.data;
+    const msg = event.data
     switch (msg.type) {
-      case "tab-here":
+      case 'tab-here':
         // A new tab has joined,
-        connectTab(msg.id, await dbPromise, connectedTabs);
-        break;
+        connectTab(msg.id, await dbPromise, connectedTabs)
+        break
     }
-  };
+  }
 
   // Notify the other tabs that we are the leader
-  broadcastChannel.postMessage({ type: "leader-here", id });
+  broadcastChannel.postMessage({ type: 'leader-here', id })
 
   // Let the main thread know we are the leader
-  postMessage({ type: "leader-now" });
+  postMessage({ type: 'leader-now' })
 
-  const db = await dbPromise;
+  const db = await dbPromise
 
   // Listen for notifications and broadcast them to all tabs
   db.onNotification((channel, payload) => {
-    broadcastChannel.postMessage({ type: "notify", channel, payload });
-  });
+    broadcastChannel.postMessage({ type: 'notify', channel, payload })
+  })
 }
 
 function connectTab(
@@ -575,104 +575,107 @@ function connectTab(
   connectedTabs: Set<string>,
 ) {
   if (connectedTabs.has(tabId)) {
-    return;
+    return
   }
-  connectedTabs.add(tabId);
-  const tabChannelId = `pglite-tab:${tabId}`;
-  const tabCloseLockId = `pglite-tab-close:${tabId}`;
-  const tabChannel = new BroadcastChannel(tabChannelId);
+  connectedTabs.add(tabId)
+  const tabChannelId = `pglite-tab:${tabId}`
+  const tabCloseLockId = `pglite-tab-close:${tabId}`
+  const tabChannel = new BroadcastChannel(tabChannelId)
 
   // Use a tab close lock to unsubscribe the tab
   navigator.locks.request(tabCloseLockId, () => {
     return new Promise<void>((resolve) => {
       // The tab has been closed, unsubscribe the tab broadcast channel
-      tabChannel.close();
-      connectedTabs.delete(tabId);
-      resolve();
-    });
-  });
+      tabChannel.close()
+      connectedTabs.delete(tabId)
+      resolve()
+    })
+  })
 
-  const api = makeWorkerApi(pg);
+  const api = makeWorkerApi(pg)
 
-  tabChannel.addEventListener("message", async (event) => {
-    const msg = event.data;
+  tabChannel.addEventListener('message', async (event) => {
+    const msg = event.data
     switch (msg.type) {
-      case "rpc-call":
-        const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>;
+      case 'rpc-call': {
+        const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>
         try {
-          // @ts-ignore
+          // @ts-ignore no apparent reason why it fails
           const result = (await api[method](...args)) as WorkerRpcResult<
             typeof method
-          >["result"];
+          >['result']
           tabChannel.postMessage({
-            type: "rpc-return",
+            type: 'rpc-return',
             callId,
             result,
-          } satisfies WorkerRpcResult<typeof method>);
+          } satisfies WorkerRpcResult<typeof method>)
         } catch (error) {
-          console.error(error);
+          console.error(error)
           tabChannel.postMessage({
-            type: "rpc-error",
+            type: 'rpc-error',
             callId,
             error: { message: (error as Error).message },
-          } satisfies WorkerRpcError);
+          } satisfies WorkerRpcError)
         }
-        break;
+        break
+      }
     }
-  });
+  })
 
   // Send a message to the tab to let it know it's connected
-  tabChannel.postMessage({ type: "connected" });
+  tabChannel.postMessage({ type: 'connected' })
 }
 
 function makeWorkerApi(db: PGliteInterface) {
   const transactions = new Map<
     string,
     Promise<{
-      tx: Transaction;
-      resolve: () => void;
-      reject: (error: any) => void;
+      tx: Transaction
+      resolve: () => void
+      reject: (error: any) => void
     }>
-  >();
+  >()
 
   return {
     async getDebugLevel() {
-      return db.debug;
+      return db.debug
     },
     async close() {
-      await db.close();
+      await db.close()
     },
     async query(query: string, params?: any[], options?: QueryOptions) {
-      return await db.query(query, params, options);
+      return await db.query(query, params, options)
     },
     async exec(query: string, options?: QueryOptions) {
-      return await db.exec(query, options);
+      return await db.exec(query, options)
     },
     async transactionStart() {
-      const txId = uuid();
+      const txId = uuid()
       const { promise: txPromise, resolve: resolveTxPromise } = makePromise<{
-        tx: Transaction;
-        resolve: () => void;
-        reject: (error: any) => void;
-      }>();
-      transactions.set(txId, txPromise);
+        tx: Transaction
+        resolve: () => void
+        reject: (error: any) => void
+      }>()
+      transactions.set(txId, txPromise)
       db.transaction((newTx) => {
         return new Promise<void>((resolveTx, rejectTx) => {
           resolveTxPromise({
             tx: newTx,
             resolve: resolveTx,
             reject: rejectTx,
-          });
-        });
-      });
-      return txId;
+          })
+        })
+      })
+      return txId
     },
     async transactionCommit(id: string) {
       if (!transactions.has(id)) {
-        throw new Error("No transaction");
+        throw new Error('No transaction')
       }
-      (await transactions.get(id)!).resolve();
-      transactions.delete(id);
+      const trnasaction = await transactions.get(id)!
+      trnasaction.resolve()
+
+      transactions.delete(id)
     },
     async transactionQuery<T>(
       id: string,
@@ -681,91 +684,91 @@ function makeWorkerApi(db: PGliteInterface) {
       options?: QueryOptions,
     ) {
       if (!transactions.has(id)) {
-        throw new Error("No transaction");
+        throw new Error('No transaction')
       }
-      const tx = (await transactions.get(id)!).tx;
-      return await tx.query<T>(query, params, options);
+      const tx = (await transactions.get(id)!).tx
+      return await tx.query<T>(query, params, options)
     },
     async transactionExec(id: string, query: string, options?: QueryOptions) {
       if (!transactions.has(id)) {
-        throw new Error("No transaction");
+        throw new Error('No transaction')
       }
-      const tx = (await transactions.get(id)!).tx;
-      return tx.exec(query, options);
+      const tx = (await transactions.get(id)!).tx
+      return tx.exec(query, options)
     },
     async transactionRollback(id: string) {
       if (!transactions.has(id)) {
-        throw new Error("No transaction");
+        throw new Error('No transaction')
       }
-      const tx = await transactions.get(id)!;
-      await tx.tx.rollback();
-      tx.reject(new Error("Transaction rolled back"));
-      transactions.delete(id);
+      const tx = await transactions.get(id)!
+      await tx.tx.rollback()
+      tx.reject(new Error('Transaction rolled back'))
+      transactions.delete(id)
     },
     async execProtocol(message: Uint8Array) {
-      return await db.execProtocol(message);
+      return await db.execProtocol(message)
     },
     async execProtocolRaw(message: Uint8Array) {
-      return await db.execProtocolRaw(message);
+      return await db.execProtocolRaw(message)
     },
     async dumpDataDir() {
-      return await db.dumpDataDir();
+      return await db.dumpDataDir()
     },
-  };
+  }
 }
 
 export class LeaderChangedError extends Error {
   constructor() {
-    super("Leader changed, pending operation in indeterminate state");
+    super('Leader changed, pending operation in indeterminate state')
   }
 }
 
 async function acquireLock(lockId: string) {
-  let release;
+  let release
   await new Promise<void>((resolve) => {
     navigator.locks.request(lockId, () => {
       return new Promise<void>((releaseCallback) => {
-        release = releaseCallback;
-        resolve();
-      });
-    });
-  });
-  return release;
+        release = releaseCallback
+        resolve()
+      })
+    })
+  })
+  return release
 }
 
 function makePromise<T>() {
-  let resolve: (value: T) => void;
-  let reject: (error: any) => void;
+  let resolve: (value: T) => void
+  let reject: (error: any) => void
   const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve: resolve!, reject: reject! };
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve: resolve!, reject: reject! }
 }
 
-type WorkerApi = ReturnType<typeof makeWorkerApi>;
+type WorkerApi = ReturnType<typeof makeWorkerApi>
 
-type WorkerRpcMethod = keyof WorkerApi;
+type WorkerRpcMethod = keyof WorkerApi
 
 type WorkerRpcCall<Method extends WorkerRpcMethod> = {
-  type: "rpc-call";
-  callId: string;
-  method: Method;
-  args: Parameters<WorkerApi[Method]>;
-};
+  type: 'rpc-call'
+  callId: string
+  method: Method
+  args: Parameters<WorkerApi[Method]>
+}
 
 type WorkerRpcResult<Method extends WorkerRpcMethod> = {
-  type: "rpc-return";
-  callId: string;
-  result: ReturnType<WorkerApi[Method]>;
-};
+  type: 'rpc-return'
+  callId: string
+  result: ReturnType<WorkerApi[Method]>
+}
 
 type WorkerRpcError = {
-  type: "rpc-error";
-  callId: string;
-  error: any;
-};
+  type: 'rpc-error'
+  callId: string
+  error: any
+}
 
 type WorkerRpcResponse<Method extends WorkerRpcMethod> =
   | WorkerRpcResult<Method>
-  | WorkerRpcError;
+  | WorkerRpcError

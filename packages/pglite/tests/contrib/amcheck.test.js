@@ -1,15 +1,15 @@
-import test from "ava";
-import { PGlite } from "../../dist/index.js";
-import { amcheck } from "../../dist/contrib/amcheck.js";
+import test from 'ava'
+import { PGlite } from '../../dist/index.js'
+import { amcheck } from '../../dist/contrib/amcheck.js'
 
-test("amcheck", async (t) => {
+test('amcheck', async (t) => {
   const pg = new PGlite({
     extensions: {
       amcheck,
     },
-  });
+  })
 
-  await pg.exec("CREATE EXTENSION IF NOT EXISTS amcheck;");
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS amcheck;')
 
   // Example query from https://www.postgresql.org/docs/current/amcheck.html
   const res = await pg.query(`
@@ -27,50 +27,50 @@ test("amcheck", async (t) => {
     -- Function may throw an error when this is omitted:
     AND c.relkind = 'i' AND i.indisready AND i.indisvalid
     ORDER BY c.relpages DESC LIMIT 10;
-  `);
+  `)
 
   t.deepEqual(res.rows, [
     {
-      bt_index_check: "",
-      relname: "pg_proc_proname_args_nsp_index",
+      bt_index_check: '',
+      relname: 'pg_proc_proname_args_nsp_index',
       relpages: 32,
     },
     {
-      bt_index_check: "",
-      relname: "pg_description_o_c_o_index",
+      bt_index_check: '',
+      relname: 'pg_description_o_c_o_index',
       relpages: 24,
     },
     {
-      bt_index_check: "",
-      relname: "pg_attribute_relid_attnam_index",
+      bt_index_check: '',
+      relname: 'pg_attribute_relid_attnam_index',
       relpages: 16,
     },
-    { bt_index_check: "", relname: "pg_proc_oid_index", relpages: 11 },
+    { bt_index_check: '', relname: 'pg_proc_oid_index', relpages: 11 },
     {
-      bt_index_check: "",
-      relname: "pg_attribute_relid_attnum_index",
+      bt_index_check: '',
+      relname: 'pg_attribute_relid_attnum_index',
       relpages: 11,
     },
     {
-      bt_index_check: "",
-      relname: "pg_depend_depender_index",
+      bt_index_check: '',
+      relname: 'pg_depend_depender_index',
       relpages: 9,
     },
     {
-      bt_index_check: "",
-      relname: "pg_depend_reference_index",
+      bt_index_check: '',
+      relname: 'pg_depend_reference_index',
       relpages: 8,
     },
-    { bt_index_check: "", relname: "pg_amop_opr_fam_index", relpages: 6 },
+    { bt_index_check: '', relname: 'pg_amop_opr_fam_index', relpages: 6 },
     {
-      bt_index_check: "",
-      relname: "pg_amop_fam_strat_index",
+      bt_index_check: '',
+      relname: 'pg_amop_fam_strat_index',
       relpages: 6,
     },
     {
-      bt_index_check: "",
-      relname: "pg_operator_oprname_l_r_n_index",
+      bt_index_check: '',
+      relname: 'pg_operator_oprname_l_r_n_index',
       relpages: 6,
     },
-  ]);
-});
+  ])
+})

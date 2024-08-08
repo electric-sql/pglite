@@ -1,15 +1,15 @@
-import test from "ava";
-import { PGlite } from "../../dist/index.js";
-import { tcn } from "../../dist/contrib/tcn.js";
+import test from 'ava'
+import { PGlite } from '../../dist/index.js'
+import { tcn } from '../../dist/contrib/tcn.js'
 
-test("tcn", async (t) => {
+test('tcn', async (t) => {
   const pg = new PGlite({
     extensions: {
       tcn,
     },
-  });
+  })
 
-  await pg.exec("CREATE EXTENSION IF NOT EXISTS tcn;");
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS tcn;')
 
   await pg.exec(`
     CREATE TABLE test (
@@ -20,11 +20,11 @@ test("tcn", async (t) => {
     AFTER INSERT OR UPDATE OR DELETE ON test
     FOR EACH ROW
     EXECUTE FUNCTION triggered_change_notification();
-  `);
+  `)
 
-  pg.listen("tcn", (payload) => {
-    t.is(payload, `"test",I,"id"='1'`);
-  });
+  pg.listen('tcn', (payload) => {
+    t.is(payload, `"test",I,"id"='1'`)
+  })
 
-  await pg.exec("INSERT INTO test (name) VALUES ('test1');");
-});
+  await pg.exec("INSERT INTO test (name) VALUES ('test1');")
+})

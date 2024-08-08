@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("firefox", "memory://", "firefox.memory");
+tests('firefox', 'memory://', 'firefox.memory')

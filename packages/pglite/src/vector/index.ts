@@ -2,16 +2,16 @@ import type {
   Extension,
   ExtensionSetupResult,
   PGliteInterface,
-} from "../interface";
+} from '../interface'
 
-const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
+const setup = async (_pg: PGliteInterface, emscriptenOpts: any) => {
   return {
     emscriptenOpts,
-    bundlePath: new URL("../../release/vector.tar.gz", import.meta.url),
-  } satisfies ExtensionSetupResult;
-};
+    bundlePath: new URL('../../release/vector.tar.gz', import.meta.url),
+  } satisfies ExtensionSetupResult
+}
 
 export const vector = {
-  name: "pgvector",
+  name: 'pgvector',
   setup,
-} satisfies Extension;
+} satisfies Extension

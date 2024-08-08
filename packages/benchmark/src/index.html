@@ -1,13 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>PGlite benchmarks</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <h1>PGlite benchmarks</h1>
-    <p>Based on the <a href="https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html">wa-sqlite bechmarks</a></p>
+    <p>
+      Based on the
+      <a href="https://rhashimoto.github.io/wa-sqlite/demo/benchmarks.html"
+        >wa-sqlite bechmarks</a
+      >
+    </p>
 
     <div id="controls">
       <textarea id="preamble" rows="2" cols="48">
@@ -37,7 +42,9 @@
             <td>Test 3: 25000 INSERTs into an indexed table</td>
           </tr>
           <tr id="test3">
-            <td>Test 3.1: 25000 INSERTs into an indexed table in single statement</td>
+            <td>
+              Test 3.1: 25000 INSERTs into an indexed table in single statement
+            </td>
           </tr>
           <tr id="test4">
             <td>Test 4: 100 SELECTs without an index</td>
@@ -82,6 +89,5 @@
       </table>
     </div>
     <script type="module" src="benchmarks.js"></script>
-
   </body>
 </html>

@@ -1,37 +1,37 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import CodeMirror, {
   type ViewUpdate,
   type ReactCodeMirrorRef,
   type Extension,
-} from "@uiw/react-codemirror";
-import { defaultKeymap } from "@codemirror/commands";
-import { keymap } from "@codemirror/view";
-import { PostgreSQL } from "@codemirror/lang-sql";
-import { type PGlite } from "@electric-sql/pglite";
-import { makeSqlExt } from "./sqlSupport";
-import type { Response } from "./types";
-import { runQuery, getSchema } from "./utils";
-import { ReplResponse } from "./ReplResponse";
-import { xcodeDark, xcodeLight } from "@uiw/codemirror-theme-xcode";
+} from '@uiw/react-codemirror'
+import { defaultKeymap } from '@codemirror/commands'
+import { keymap } from '@codemirror/view'
+import { PostgreSQL } from '@codemirror/lang-sql'
+import { type PGlite } from '@electric-sql/pglite'
+import { makeSqlExt } from './sqlSupport'
+import type { Response } from './types'
+import { runQuery, getSchema } from './utils'
+import { ReplResponse } from './ReplResponse'
+import { xcodeDark, xcodeLight } from '@uiw/codemirror-theme-xcode'
 
-import "./Repl.css";
+import './Repl.css'
 
 // Filter out the Enter key from the default keymap, we entirely override its behavior
 // to run the query when the user presses Enter.
 // We keep the up and down arrow keys as we only override their behavior
 // when the cursor is on the first or last line.
-const baseKeymap = defaultKeymap.filter((key) => key.key !== "Enter");
+const baseKeymap = defaultKeymap.filter((key) => key.key !== 'Enter')
 
-export type ReplTheme = "light" | "dark" | "auto";
+export type ReplTheme = 'light' | 'dark' | 'auto'
 
 export interface ReplProps {
-  pg: PGlite;
-  border?: boolean;
-  lightTheme?: Extension;
-  darkTheme?: Extension;
-  theme?: ReplTheme;
-  showTime?: boolean;
-  disableUpdateSchema?: boolean;
+  pg: PGlite
+  border?: boolean
+  lightTheme?: Extension
+  darkTheme?: Extension
+  theme?: ReplTheme
+  showTime?: boolean
+  disableUpdateSchema?: boolean
 }
 
 export function Repl({
@@ -39,156 +39,156 @@ export function Repl({
   border = false,
   lightTheme = xcodeLight,
   darkTheme = xcodeDark,
-  theme = "auto",
+  theme = 'auto',
   showTime = false,
   disableUpdateSchema = false,
 }: ReplProps) {
-  const [value, setValue] = useState("");
-  const valueNoHistory = useRef("");
-  const [loading, setLoading] = useState(true);
-  const [output, setOutput] = useState<Response[]>([]);
-  const outputRef = useRef<HTMLDivElement | null>(null);
-  const [schema, setSchema] = useState<Record<string, string[]>>({});
-  const historyPos = useRef(-1);
-  const rcm = useRef<ReactCodeMirrorRef | null>(null);
+  const [value, setValue] = useState('')
+  const valueNoHistory = useRef('')
+  const [loading, setLoading] = useState(true)
+  const [output, setOutput] = useState<Response[]>([])
+  const outputRef = useRef<HTMLDivElement | null>(null)
+  const [schema, setSchema] = useState<Record<string, string[]>>({})
+  const historyPos = useRef(-1)
+  const rcm = useRef<ReactCodeMirrorRef | null>(null)
   const [themeToUse, setThemeToUse] = useState<Extension>(
-    theme === "dark" ? darkTheme : lightTheme,
-  );
-  const [styles, setStyles] = useState<{ [key: string]: string | number }>({});
+    theme === 'dark' ? darkTheme : lightTheme,
+  )
+  const [styles, setStyles] = useState<{ [key: string]: string | number }>({})
 
   useEffect(() => {
-    let ignore = false;
+    let ignore = false
     const init = async () => {
-      await pg.waitReady;
-      if (ignore) return;
-      setLoading(false);
-    };
-    setLoading(true);
-    init();
+      await pg.waitReady
+      if (ignore) return
+      setLoading(false)
+    }
+    setLoading(true)
+    init()
     return () => {
-      ignore = true;
-    };
-  }, [pg]);
+      ignore = true
+    }
+  }, [pg])
 
   useEffect(() => {
-    if (theme === "auto") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+    if (theme === 'auto') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
         .matches
-        ? "dark"
-        : "light";
-      setThemeToUse(systemTheme === "dark" ? darkTheme : lightTheme);
+        ? 'dark'
+        : 'light'
+      setThemeToUse(systemTheme === 'dark' ? darkTheme : lightTheme)
       const listener = (e: MediaQueryListEvent) => {
-        setThemeToUse(e.matches ? darkTheme : lightTheme);
+        setThemeToUse(e.matches ? darkTheme : lightTheme)
         setTimeout(() => {
-          extractStyles();
-        }, 0);
-      };
+          extractStyles()
+        }, 0)
+      }
       window
-        .matchMedia("(prefers-color-scheme: dark)")
-        .addEventListener("change", listener);
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', listener)
       return () => {
         window
-          .matchMedia("(prefers-color-scheme: dark)")
-          .removeEventListener("change", listener);
-      };
+          .matchMedia('(prefers-color-scheme: dark)')
+          .removeEventListener('change', listener)
+      }
     } else {
-      setThemeToUse(theme === "dark" ? darkTheme : lightTheme);
+      setThemeToUse(theme === 'dark' ? darkTheme : lightTheme)
       setTimeout(() => {
-        extractStyles();
-      }, 0);
+        extractStyles()
+      }, 0)
+      return
     }
-  }, [theme, lightTheme, darkTheme]);
+  }, [theme, lightTheme, darkTheme])
 
   const onChange = useCallback((val: string, _viewUpdate: ViewUpdate) => {
-    extractStyles();
-    setValue(val);
+    extractStyles()
+    setValue(val)
     if (historyPos.current === -1) {
-      valueNoHistory.current = val;
+      valueNoHistory.current = val
     }
-  }, []);
+  }, [])
 
   const extensions = useMemo(
     () => [
       keymap.of([
         {
-          key: "Enter",
+          key: 'Enter',
           preventDefault: true,
           run: () => {
-            if (value.trim() === "") return false; // Do nothing if the input is empty
+            if (value.trim() === '') return false // Do nothing if the input is empty
             runQuery(value, pg).then((response) => {
-              setOutput((prev) => [...prev, response]);
+              setOutput((prev) => [...prev, response])
               if (outputRef.current) {
                 setTimeout(() => {
-                  outputRef.current!.scrollTop =
-                    outputRef.current!.scrollHeight;
-                }, 0);
+                  outputRef.current!.scrollTop = outputRef.current!.scrollHeight
+                }, 0)
               }
               // Update the schema for any new tables to be used in autocompletion
               if (!disableUpdateSchema) {
-                getSchema(pg).then(setSchema);
+                getSchema(pg).then(setSchema)
               }
-            });
-            historyPos.current = -1;
-            valueNoHistory.current = "";
-            setValue("");
-            return true;
+            })
+            historyPos.current = -1
+            valueNoHistory.current = ''
+            setValue('')
+            return true
           },
         },
         {
-          key: "ArrowUp",
+          key: 'ArrowUp',
           run: (view) => {
-            const state = view.state;
+            const state = view.state
             const cursorLine = state.doc.lineAt(
               state.selection.main.head,
-            ).number;
+            ).number
             if (cursorLine === 1) {
               // If the cursor is on the first line, go back in history
-              const currentPos = historyPos.current;
-              historyPos.current++;
+              const currentPos = historyPos.current
+              historyPos.current++
               if (historyPos.current >= output.length) {
-                historyPos.current = output.length - 1;
+                historyPos.current = output.length - 1
               }
               if (historyPos.current < -1) {
-                historyPos.current = -1;
+                historyPos.current = -1
               }
-              if (historyPos.current === currentPos) return true;
+              if (historyPos.current === currentPos) return true
               if (historyPos.current === -1) {
-                setValue(valueNoHistory.current);
+                setValue(valueNoHistory.current)
               } else {
-                setValue(output[output.length - historyPos.current - 1].query);
+                setValue(output[output.length - historyPos.current - 1].query)
               }
-              return true; // Prevent the default behavior
+              return true // Prevent the default behavior
             }
-            return false; // Allow the default behavior
+            return false // Allow the default behavior
           },
         },
         {
-          key: "ArrowDown",
+          key: 'ArrowDown',
           run: (view) => {
-            const state = view.state;
+            const state = view.state
             const cursorLine = state.doc.lineAt(
               state.selection.main.head,
-            ).number;
-            const lastLine = state.doc.lines;
+            ).number
+            const lastLine = state.doc.lines
             if (cursorLine === lastLine) {
               // If the cursor is on the last line, go forward in history
-              const currentPos = historyPos.current;
-              historyPos.current--;
+              const currentPos = historyPos.current
+              historyPos.current--
               if (historyPos.current >= output.length) {
-                historyPos.current = output.length - 1;
+                historyPos.current = output.length - 1
               }
               if (historyPos.current < -1) {
-                historyPos.current = -1;
+                historyPos.current = -1
               }
-              if (historyPos.current === currentPos) return true;
+              if (historyPos.current === currentPos) return true
               if (historyPos.current === -1) {
-                setValue(valueNoHistory.current);
+                setValue(valueNoHistory.current)
               } else {
-                setValue(output[output.length - historyPos.current - 1].query);
+                setValue(output[output.length - historyPos.current - 1].query)
               }
-              return true; // Prevent the default behavior
+              return true // Prevent the default behavior
             }
-            return false; // Allow the default behavior
+            return false // Allow the default behavior
           },
         },
         ...baseKeymap,
@@ -198,48 +198,51 @@ export function Repl({
         schema: schema,
         tables: [
           {
-            label: "d",
-            displayLabel: "\\d",
+            label: 'd',
+            displayLabel: '\\d',
           },
         ],
-        defaultSchema: "public",
+        defaultSchema: 'public',
       }),
     ],
-    [pg, schema, value, output],
-  );
+    [pg, schema, value, output, disableUpdateSchema],
+  )
 
   const extractStyles = () => {
     // Get the styles from the CodeMirror editor to use in the REPL
-    const cmEditorEl = rcm.current?.editor!.querySelector(".cm-editor")!;
-    const gutterEl = cmEditorEl.querySelector(".cm-gutters")!;
-    const cmEditorElComputedStyles = window.getComputedStyle(cmEditorEl);
-    const foregroundColor = cmEditorElComputedStyles.color;
-    const backgroundColor = cmEditorElComputedStyles.backgroundColor;
+    const cmEditorEl = rcm.current?.editor?.querySelector('.cm-editor')
+    if (!cmEditorEl) {
+      throw new Error('No CodeMirror editor found')
+    }
+    const gutterEl = cmEditorEl.querySelector('.cm-gutters')
+    const cmEditorElComputedStyles = window.getComputedStyle(cmEditorEl)
+    const foregroundColor = cmEditorElComputedStyles.color
+    const backgroundColor = cmEditorElComputedStyles.backgroundColor
 
-    const gutterElComputedStyles = window.getComputedStyle(gutterEl!);
-    const gutterBorder = gutterElComputedStyles.borderRight;
-    const borderWidth = parseInt(gutterElComputedStyles.borderRightWidth) || 0;
+    const gutterElComputedStyles = window.getComputedStyle(gutterEl!)
+    const gutterBorder = gutterElComputedStyles.borderRight
+    const borderWidth = parseInt(gutterElComputedStyles.borderRightWidth) || 0
     const borderColor = borderWidth
       ? gutterElComputedStyles.borderRightColor
-      : foregroundColor.replace("rgb", "rgba").replace(")", ", 0.15)");
+      : foregroundColor.replace('rgb', 'rgba').replace(')', ', 0.15)')
     const border = borderWidth
       ? gutterElComputedStyles.borderRight
-      : `1px solid ${borderColor}`;
+      : `1px solid ${borderColor}`
 
     setStyles({
-      "--PGliteRepl-foreground-color": foregroundColor,
-      "--PGliteRepl-background-color": backgroundColor,
-      "--PGliteRepl-border": border,
-      "--PGliteRepl-gutter-border": gutterBorder,
-      "--PGliteRepl-border-color": borderColor,
-    });
-  };
+      '--PGliteRepl-foreground-color': foregroundColor,
+      '--PGliteRepl-background-color': backgroundColor,
+      '--PGliteRepl-border': border,
+      '--PGliteRepl-gutter-border': gutterBorder,
+      '--PGliteRepl-border-color': borderColor,
+    })
+  }
 
   return (
     <div
       className={`
       PGliteRepl-root
-      ${border ? "PGliteRepl-root-border" : ""}
+      ${border ? 'PGliteRepl-root-border' : ''}
     `}
       style={styles}
     >
@@ -248,15 +251,15 @@ export function Repl({
         ref={(ref) => (outputRef.current = ref)}
       >
         {loading && <div className="PGliteRepl-loading-msg">Loading...</div>}
-        {output.map((response, i) => (
-          <div key={i}>
+        {output.map((response) => (
+          <div key={`${response.query}-${response.time}`}>
             <ReplResponse response={response || []} showTime={showTime} />
           </div>
         ))}
       </div>
       <CodeMirror
         ref={rcm}
-        className={`PGliteRepl-input ${loading ? "PGliteRepl-input-loading" : ""}`}
+        className={`PGliteRepl-input ${loading ? 'PGliteRepl-input-loading' : ''}`}
         width="100%"
         value={value}
         basicSetup={{
@@ -267,11 +270,11 @@ export function Repl({
         onChange={onChange}
         editable={!loading}
         onCreateEditor={() => {
-          extractStyles();
-          setTimeout(extractStyles, 0);
-          getSchema(pg).then(setSchema);
+          extractStyles()
+          setTimeout(extractStyles, 0)
+          getSchema(pg).then(setSchema)
         }}
       />
     </div>
-  );
+  )
 }

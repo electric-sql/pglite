@@ -5,7 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "rm -rf ./dist && mkdir dist && cp -r src/* dist/ && mkdir dist/wa-sqlite && cp -r ./node_modules/wa-sqlite/* dist/wa-sqlite && mkdir dist/pglite && cp -r ../pglite/dist/* dist/pglite"
+    "build": "rm -rf ./dist && mkdir dist && cp -r src/* dist/ && mkdir dist/wa-sqlite && cp -r ./node_modules/wa-sqlite/* dist/wa-sqlite && mkdir dist/pglite && cp -r ../pglite/dist/* dist/pglite",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "stylecheck": "pnpm lint && prettier --check ."
   },
   "keywords": [],
   "author": "Electric DB Limited",
@@ -14,8 +18,7 @@
     "@types/better-sqlite3": "^7.6.9",
     "ascii-table3": "^0.9.0",
     "better-sqlite3": "^9.4.3",
-    "embedded-postgres": "15.5.1-beta.9",
-    "tsx": "^4.7.1"
+    "embedded-postgres": "15.5.1-beta.9"
   },
   "dependencies": {
     "wa-sqlite": "github:rhashimoto/wa-sqlite#v0.9.14"

@@ -1,18 +1,18 @@
-import * as fs from "fs";
-import * as path from "path";
-import { FilesystemBase } from "./types.js";
-import { PGDATA } from "./index.js";
-import type { PostgresMod, FS } from "../postgresMod.js";
-import { dumpTar } from "./tarUtils.js";
+import * as fs from 'fs'
+import * as path from 'path'
+import { FilesystemBase } from './types.js'
+import { PGDATA } from './index.js'
+import type { PostgresMod, FS } from '../postgresMod.js'
+import { dumpTar } from './tarUtils.js'
 
 export class NodeFS extends FilesystemBase {
-  protected rootDir: string;
+  protected rootDir: string
 
   constructor(dataDir: string) {
-    super(dataDir);
-    this.rootDir = path.resolve(dataDir);
+    super(dataDir)
+    this.rootDir = path.resolve(dataDir)
     if (!fs.existsSync(path.join(this.rootDir))) {
-      fs.mkdirSync(this.rootDir);
+      fs.mkdirSync(this.rootDir)
     }
   }
 
@@ -22,20 +22,20 @@ export class NodeFS extends FilesystemBase {
       preRun: [
         ...(opts.preRun || []),
         (mod: any) => {
-          const nodefs = mod.FS.filesystems.NODEFS;
-          mod.FS.mkdir(PGDATA);
-          mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA);
+          const nodefs = mod.FS.filesystems.NODEFS
+          mod.FS.mkdir(PGDATA)
+          mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA)
         },
       ],
-    };
-    return options;
+    }
+    return options
   }
 
   async dumpTar(mod: FS, dbname: string) {
-    return dumpTar(mod, dbname);
+    return dumpTar(mod, dbname)
   }
 
   async close(FS: FS): Promise<void> {
-    FS.quit();
+    FS.quit()
   }
 }

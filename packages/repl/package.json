@@ -26,9 +26,11 @@
     "build:react": "tsc && vite build",
     "build:webcomp": "vite build --config vite.webcomp.config.ts",
     "build": "pnpm run build:react && pnpm run build:webcomp",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint ./**/*.{ts,tsx} --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "format": "prettier --write ./src && prettier --write ./src-webcomponent"
+    "format": "prettier --write ./src && prettier --write ./src-webcomponent",
+    "typecheck": "tsc --noEmit",
+    "stylecheck": "pnpm lint && prettier -c ./src"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.16.2",
@@ -55,16 +57,13 @@
     "@types/node": "^20.11.18",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.57.0",
+    "eslint-plugin-react-compiler": "0.0.0-experimental-9ed098e-20240725",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "terser": "^5.31.1",
-    "typescript": "^5.2.2",
     "vite": "^5.2.0",
-    "vite-plugin-dts": "^3.9.1",
+    "vite-plugin-dts": "^4.0.1",
     "vite-plugin-libcss": "^1.1.1"
   }
 }

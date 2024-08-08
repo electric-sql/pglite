@@ -11,6 +11,10 @@ CC_PGLITE=$CC_PGLITE
 
     mkdir -p build/postgres
     pushd build/postgres
+    
+    # create empty package.json to avoid emsdk node conflicts
+    # with root package.json of project
+    echo "{}" > package.json
 
 
     if $CI

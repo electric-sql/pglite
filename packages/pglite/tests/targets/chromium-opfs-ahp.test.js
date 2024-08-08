@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("chromium", "opfs-ahp://base", "chromium.opfs-ahp");
+tests('chromium', 'opfs-ahp://base', 'chromium.opfs-ahp')

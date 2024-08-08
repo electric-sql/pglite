@@ -1,15 +1,15 @@
-import test from "ava";
-import { PGlite } from "../../dist/index.js";
-import { ltree } from "../../dist/contrib/ltree.js";
+import test from 'ava'
+import { PGlite } from '../../dist/index.js'
+import { ltree } from '../../dist/contrib/ltree.js'
 
-test("ltree", async (t) => {
+test('ltree', async (t) => {
   const pg = new PGlite({
     extensions: {
       ltree,
     },
-  });
+  })
 
-  await pg.exec("CREATE EXTENSION IF NOT EXISTS ltree;");
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS ltree;')
 
   await pg.exec(`
     CREATE TABLE test (path ltree);
@@ -28,16 +28,16 @@ test("ltree", async (t) => {
     INSERT INTO test VALUES ('Top.Collections.Pictures.Astronomy.Astronauts');
     CREATE INDEX path_gist_idx ON test USING GIST (path);
     CREATE INDEX path_idx ON test USING BTREE (path);
-  `);
+  `)
 
   const ret = await pg.query(`
     SELECT path FROM test WHERE path <@ 'Top.Science';
-  `);
+  `)
 
   t.deepEqual(ret.rows, [
     { path: 'Top.Science' },
     { path: 'Top.Science.Astronomy' },
     { path: 'Top.Science.Astronomy.Astrophysics' },
-    { path: 'Top.Science.Astronomy.Cosmology' }
-  ]);
-});
+    { path: 'Top.Science.Astronomy.Cosmology' },
+  ])
+})

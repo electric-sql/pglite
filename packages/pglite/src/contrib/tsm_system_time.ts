@@ -2,18 +2,18 @@ import type {
   Extension,
   ExtensionSetupResult,
   PGliteInterface,
-} from "../interface";
+} from '../interface'
 
-const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
+const setup = async (_pg: PGliteInterface, _emscriptenOpts: any) => {
   return {
     bundlePath: new URL(
-      "../../release/tsm_system_time.tar.gz",
+      '../../release/tsm_system_time.tar.gz',
       import.meta.url,
     ),
-  } satisfies ExtensionSetupResult;
-};
+  } satisfies ExtensionSetupResult
+}
 
 export const tsm_system_time = {
-  name: "tsm_system_time",
+  name: 'tsm_system_time',
   setup,
-} satisfies Extension;
+} satisfies Extension

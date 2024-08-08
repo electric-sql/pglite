@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("node", "memory://", "node.memory");
+tests('node', 'memory://', 'node.memory')
