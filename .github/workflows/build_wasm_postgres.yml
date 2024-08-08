@@ -82,6 +82,10 @@ jobs:
             postgresql-*
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
+      - name: Copy release for PGlite build
+        run: |
+          bash ./cibuild.sh pglite-prep
+
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
         uses: actions/upload-artifact@v4
