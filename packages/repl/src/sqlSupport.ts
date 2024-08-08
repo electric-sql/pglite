@@ -302,7 +302,7 @@ function describeCompletionsAutoComplete(
 // This is a reimplemented version of `sql()` from `@codemirror/lang-sql` that
 // includes a custom autocompletion function for postgresql's `\d` command.
 export function makeSqlExt(config: SQLConfig = {}) {
-  let lang = config.dialect || PostgreSQL
+  const lang = config.dialect || PostgreSQL
   return new LanguageSupport(lang.language, [
     // schemaCompletion(config),
     config.schema

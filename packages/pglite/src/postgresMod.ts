@@ -1,9 +1,4 @@
-/// <reference types="@types/emscripten" />
-
-//@ts-ignore using Emscripten generated code
 import PostgresModFactory from '../release/postgres.js'
-
-// Uses the types from @types/emscripten
 
 type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
