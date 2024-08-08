@@ -1,4 +1,8 @@
-import type { Extension, PGliteInterface } from '@electric-sql/pglite'
+import type {
+  Extension,
+  PGliteInterface,
+  Transaction,
+} from '@electric-sql/pglite'
 import { ShapeStream, Message, ChangeMessage } from '@electric-sql/client'
 import type { ShapeStreamOptions } from '@electric-sql/client'
 
@@ -30,8 +34,8 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
       if (options.signal) {
         // we new to have our own aborter to be able to abort the stream
         // but still accept the signal from the user
-        options.signal.addEventListener('abort', () => {
-          aborter.abort()
+        options.signal.addEventListener('abort', () => aborter.abort(), {
+          once: true,
         })
       }
       const stream = new ShapeStream({
@@ -43,14 +47,16 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
           console.log('sync messages received', messages)
         }
         for (const message of messages) {
-          await applyMessageToTable({
-            pg,
-            rawMessage: message,
-            table: options.table,
-            schema: options.schema,
-            mapColumns: options.mapColumns,
-            primaryKey: options.primaryKey,
-            debug,
+          pg.transaction(async (tx) => {
+            await applyMessageToTable({
+              pg: tx,
+              rawMessage: message,
+              table: options.table,
+              schema: options.schema,
+              mapColumns: options.mapColumns,
+              primaryKey: options.primaryKey,
+              debug,
+            })
           })
         }
       })
@@ -103,7 +109,7 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
 export function electricSync(options: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
-    setup: async (pg: PGliteInterface, _emscriptenOpts: any) => {
+    setup: async (pg: PGliteInterface) => {
       const { namespaceObj, close } = await createPlugin(pg, options)
       return {
         namespaceObj,
@@ -129,7 +135,7 @@ function doMapColumns(
 }
 
 interface ApplyMessageToTableOptions {
-  pg: PGliteInterface
+  pg: PGliteInterface | Transaction
   table: string
   schema?: string
   rawMessage: Message

@@ -1,14 +1,14 @@
 # Sync using ElectricSQL
 
-At [ElectricSQL](https://electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application. 
+At [ElectricSQL](https://electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
 
 We recently started on a [new version of the Electric sync engine](https://next.electric-sql.com) that is more loosely coupled, and will have improved scalability. You can read more about the work we are doing here: [next.electric-sql.com](https://next.electric-sql.com)
 
 To accompany the new sync engine, we are developing a sync extension for PGlite that will enable you to synchronise a remote Postgres with PGlite. As the new Electric sync engine continues to be developed, additional functionality will be added to the sync plugin.
 
-The first *alpha* version of the sync plugin can sync a "shape" from Electric into a table in your PGlite. We don't yet support local writes being synced out, or conflict resolution, but we are actively exploring the best way to enable this in a layered and extendable way.
+The first _alpha_ version of the sync plugin can sync a "shape" from Electric into a table in your PGlite. We don't yet support local writes being synced out, or conflict resolution, but we are actively exploring the best way to enable this in a layered and extendable way.
 
-## Using the Sync plugin *(alpha)*
+## Using the Sync plugin _(alpha)_
 
 To use the sync plugin, first install the `@electric-sql/pglite-sync` package:
 
@@ -19,13 +19,13 @@ npm install @electric-sql/pglite-sync
 Then add it to you PGlite instance and create any local tables needed:
 
 ```ts
-import { electricSync } from "@electric-sql/pglite-sync";
+import { electricSync } from '@electric-sql/pglite-sync'
 
 const pg = await PGlite.create({
   extensions: {
     electric: electricSync(),
-  }
-});
+  },
+})
 
 await pg.exec(`
   CREATE TABLE IF NOT EXISTS todo (
@@ -33,27 +33,30 @@ await pg.exec(`
     task TEXT,
     done BOOLEAN
   );
-`);
+`)
 ```
 
 You can then use the `syncShapeToTable` method to sync a table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
-  url: "http://localhost:3000/v1/shape/todo",
-  table: "todo",
-  primaryKey: ["id"],
-});
+  url: 'http://localhost:3000/v1/shape/todo',
+  table: 'todo',
+  primaryKey: ['id'],
+})
 ```
+
 To stop syncing you can call `unsubscribe` on the shape:
 
 ```ts
 shape.unsubscribe()
 ```
 
+There is a full example you can run locally in the [GitHib repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
+
 ## syncShapeToTable API
 
-The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeStream API](https://next.electric-sql.com/api/clients/typescript#shapestream) designed to do the minimal required to sync a shape *into* a table.
+The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeStream API](https://next.electric-sql.com/api/clients/typescript#shapestream) designed to do the minimal required to sync a shape _into_ a table.
 
 It takes the following options as an object:
 

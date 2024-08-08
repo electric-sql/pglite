@@ -15,7 +15,6 @@ export default [
     },
     rules: {
       ...rootConfig.rules,
-      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ]
