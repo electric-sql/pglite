@@ -27,7 +27,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Stylecheck packages
         run: pnpm -r stylecheck
 
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps
 
       - name: Typecheck
@@ -130,7 +130,7 @@ jobs:
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages
         run: pnpm --filter="...^pglite" build
@@ -162,7 +162,7 @@ jobs:
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build REPL and benchmark packages needed for examples
         run: pnpm --filter "@electric-sql/pglite-repl" --filter "benchmark"  build
