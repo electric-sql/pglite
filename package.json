@@ -5,6 +5,7 @@
     }
   },
   "private": true,
+  "type": "module",
   "scripts": {
     "ci:version": "pnpm exec changeset version",
     "ci:publish": "pnpm changeset publish"

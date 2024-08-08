@@ -27,10 +27,10 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest",
-    "lint": "eslint ./src ./test",
+    "lint": "eslint ./src ./test --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
-    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test"
+    "stylecheck": "pnpm lint && prettier --check ./src ./test"
   },
   "types": "dist/index.d.ts",
   "exports": {
