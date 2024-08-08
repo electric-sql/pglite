@@ -24,7 +24,7 @@ jobs:
 
       - name: Restore cached
         id: cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v3
         with:
           path: |
             /opt/python-wasm-sdk
@@ -71,7 +71,7 @@ jobs:
       - name: Cached intermediate
         if: steps.cache-restore.outputs.cache-hit != 'true'
         id: cache-intermediate
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v3
         with:
           path: |
             /tmp/web

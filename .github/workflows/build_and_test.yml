@@ -19,11 +19,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
       - uses: pnpm/action-setup@v4
         with:
           version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install
       - name: Stylecheck packages
@@ -42,16 +44,19 @@ jobs:
     needs: [stylecheck, build-wasm-postgres]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
       - uses: pnpm/action-setup@v4
         with:
           version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-interim-build-files
+          path: ./packages/pglite/release
 
       - name: Install dependencies
         run: |
@@ -110,16 +115,19 @@ jobs:
     needs: [stylecheck, build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
       - uses: pnpm/action-setup@v4
         with:
           version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-dist
+          path: ./packages/pglite/dist/
 
       - name: Install dependencies
         run: pnpm install
@@ -139,17 +147,19 @@ jobs:
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - uses: pnpm/action-setup@v4
         with:
           version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-dist
+          path: ./packages/pglite/dist/
 
       - name: Install dependencies
         run: pnpm install
@@ -161,6 +171,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-web-build-files
+          path: /tmp/web
 
       - name: Build demo site
         run: |
@@ -173,11 +184,6 @@ jobs:
           name: pglite-demos
           path: /tmp/web/**
           retention-days: 60
-
-      - name: Download PGlite demos artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-demos
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
