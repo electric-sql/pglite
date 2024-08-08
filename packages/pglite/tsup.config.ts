@@ -28,11 +28,11 @@ const replaceBuffer = {
 
 const entryPoints = [
   "src/index.ts",
-  "src/live/index.ts",
-  "src/worker/index.ts",
-  "src/vector/index.ts",
-  "src/fs/opfs-ahp/index.ts",
   "src/fs/nodefs.ts",
+  "src/fs/opfs-ahp/index.ts",
+  "src/live/index.ts",
+  "src/vector/index.ts",
+  "src/worker/index.ts",
 ];
 
 const contribDir = path.join(root, "src", "contrib");

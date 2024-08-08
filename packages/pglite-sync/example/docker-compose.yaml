@@ -1,0 +1,33 @@
+version: "3.3"
+name: "electric_quickstart"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: electric
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - 54321:5432
+    tmpfs:
+      - /var/lib/postgresql/data
+      - /tmp
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - -c
+      - listen_addresses=*
+      - -c
+      - wal_level=logical
+
+  electric:
+    image: electricsql/electric:0.2.8
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/electric
+    ports:
+      - "3000:3000"
+    build:
+      context: ../packages/sync-service/
+    depends_on:
+      - postgres

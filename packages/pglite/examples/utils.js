@@ -5,10 +5,18 @@
     const log = document.getElementById("log");
     const el = document.createElement("div");
     el.classList.add("log-entry");
-    el.innerText +=
-      typeof args[0] === "string"
-        ? args.join(" ")
-        : JSON.stringify(args[0], null, 2);
+    if (args.length !== 1) {
+      el.innerText = JSON.stringify(args, null, 2);
+    } else {
+      try {
+        el.innerText +=
+          typeof args[0] === "string"
+            ? args.join(" ")
+            : JSON.stringify(args[0], null, 2);
+      } catch (e) {
+        el.innerText = args[0].toString();
+      }
+    }
     log.appendChild(el);
   };
 

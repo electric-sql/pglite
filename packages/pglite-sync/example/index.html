@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite Electric Sync Example</title>
+    <link rel="stylesheet" href="../../pglite/examples/styles.css" />
+    <script src="../../pglite/examples/utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../../pglite/dist/index.js",
+          "@electric-sql/pglite/live": "../../pglite/dist/live/index.js",
+          "@electric-sql/pglite/sync": "../dist/index.js"
+        }
+      }
+    </script>
+    <style>
+      #output {
+        font-family: monospace;
+        overflow: auto;
+        max-height: 250px;
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+        padding: 10px;
+        margin: 1rem 0;
+        font-size: 9px;
+        line-height: 11px;
+      }
+    </style>
+  </head>
+<body>
+<h1>PGlite Electric Sync Example</h1>
+<div id="output"></div>
+<div class="script-plus-log">
+<script type="module">
+  import { PGlite } from "@electric-sql/pglite";
+  import { electricSync } from "@electric-sql/pglite/sync";
+  import { live } from "@electric-sql/pglite/live";
+
+  const pg = await PGlite.create({
+    extensions: {
+      live,
+      electric: electricSync({ debug: true }),
+    }
+  });
+  
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `);
+
+  console.log('Table created, starting sync...');
+
+  window.pg = pg;
+  
+  await pg.electric.syncShapeToTable({
+    url: "http://localhost:3000/v1/shape/test",
+    table: "test",
+    primaryKey: ["id"],
+  });
+
+  const output = document.getElementById("output");
+
+  pg.live.query("SELECT * FROM test ORDER BY id;", null, (res) => {
+    console.log(`Rendering update`);
+    output.textContent = JSON.stringify(res.rows, null, 2);
+  });
+</script>
+<div id="log"></div>
+</div>
+</body>
+</html>
