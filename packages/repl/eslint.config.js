@@ -11,9 +11,6 @@ export default [
     ...pluginReact.configs.recommended,
   },
   {
-    ignores: ['vite.config.js', 'vite.config.ts', 'vite.webcomp.config.ts'],
-  },
-  {
     plugins: {
       'react-hooks': pluginReactHooks,
       'react-compiler': pluginReactCompiler,
