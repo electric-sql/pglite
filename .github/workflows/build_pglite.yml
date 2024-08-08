@@ -35,6 +35,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: HACK - rename top-level package.json
+        run: |
+          mv package.json package-bak.json
+
       - name: Restore cached
         id: cache-restore
         uses: actions/cache/restore@v4
@@ -102,6 +106,10 @@ jobs:
       - name: Copy release for PGlite build
         run: |
           bash ./cibuild.sh pglite-prep
+
+      - name: HACK - rename top-level package.json back
+        run: |
+          mv package-bak.json package.json
 
       - name: Build PGlite
         working-directory: ./packages/pglite
