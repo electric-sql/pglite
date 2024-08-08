@@ -1,24 +1,11 @@
-name: Build PGLite
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+name: Build PGlite
 
 on:
-  workflow_dispatch:
-    inputs:
-      message:
-        description: 'Build PGLite'
-
-  push:
-    branches: main
-
-  pull_request:
-    branches: main
+  workflow_call:
 
 jobs:
   build:
-    name: Build and Test PGlite
+    name: Build WASM Postgres
     runs-on: ubuntu-22.04
     env:
       PGVERSION: 16.3
@@ -76,6 +63,11 @@ jobs:
         run: |
           bash ./cibuild.sh node
 
+      - name: Link postgres WASM for web
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh linkweb
+
       - name: Cached intermediate
         if: steps.cache-restore.outputs.cache-hit != 'true'
         id: cache-intermediate
@@ -90,41 +82,12 @@ jobs:
             postgresql-*
           key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
-      - name: Link postgres WASM for web
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: |
-          bash ./cibuild.sh linkweb
-
       - uses: pnpm/action-setup@v4
         with:
           version: 8
 
-      - name: Copy release for PGlite build
-        run: |
-          bash ./cibuild.sh pglite-prep
-
-      - name: Build PGlite
-        working-directory: ./packages/pglite
-        run: |
-          pnpm install
-          pnpm run build
-          pnpm pack
-
-      - name: Build REPL for Example deployment
-        working-directory: ./packages/repl
-        run: |
-          pnpm install
-          pnpm run build
-
-      - name: Build Benchmarks
-        working-directory: ./packages/benchmark
-        run: |
-          pnpm install
-          pnpm run build
-
-      - name: Build demo site
-        run: |
-          bash ./cibuild.sh demo-site
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v4
 
       - name: Build docs
         working-directory: ./docs
@@ -149,33 +112,13 @@ jobs:
           path: ./packages/pglite/release/**
           retention-days: 60
 
-      - name: Upload PGlite to Github artifacts
-        id: upload-pglite
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite
-          path: ./packages/pglite/electric-sql-pglite-*.tgz
-          retention-days: 60
-
-      - name: Upload Demos to Github artifacts
+      - name: Upload PGlite Web Interim to Github artifacts
         id: upload-demos
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-demos
+          name: pglite-web-build-files
           path: /tmp/web/**
           retention-days: 60
-
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: '/tmp/web'
-          production-branch: master
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: 'Deploy PR${{ github.event.pull_request.id }}: ${{ github.event.pull_request.title }}'
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 1
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
@@ -186,7 +129,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: Built bundles
 
-      - name: Create or update comment
+      - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4
         if: github.event_name == 'pull_request'
         with:
@@ -195,13 +138,5 @@ jobs:
           body: |
             Built bundles:
             - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
-            - PGlite: ${{ steps.upload-pglite.outputs.artifact-url }}
             - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
-            - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
           edit-mode: replace
-
-      - name: Test pglite
-        working-directory: ./packages/pglite
-        run: |
-          pnpm exec playwright install --with-deps
-          pnpm run test
