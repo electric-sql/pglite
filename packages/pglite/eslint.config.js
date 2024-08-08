@@ -18,16 +18,4 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-
-  {
-    files: ['**/*.cjs'],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-var-requires': 'off',
-    },
-  },
 ]
