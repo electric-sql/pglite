@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("firefox", "opfs-ahp://base", "firefox.opfs-ahp");
+tests('firefox', 'opfs-ahp://base', 'firefox.opfs-ahp')

@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("firefox", "idb://base", "firefox.idb");
+tests('firefox', 'idb://base', 'firefox.idb')

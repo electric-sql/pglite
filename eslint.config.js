@@ -1,12 +1,17 @@
-// @ts-expect-error missing types
+// @ts-expect-error no types
 import js from '@eslint/js'
+// @ts-expect-error no types
+import { FlatCompat } from '@eslint/eslintrc'
 import globals from 'globals'
 
 import eslintTsParser from '@typescript-eslint/parser'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 
+const compat = new FlatCompat()
+
 export default [
   js.configs.recommended,
+  ...compat.extends('plugin:@typescript-eslint/recommended'),
   {
     languageOptions: {
       parser: eslintTsParser,
@@ -14,7 +19,7 @@ export default [
         ...globals.browser,
       },
     },
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ['**/*.{ts,tsx}'],
     plugins: {
       '@typescript-eslint': tsPlugin,
     },

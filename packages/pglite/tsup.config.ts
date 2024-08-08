@@ -10,7 +10,7 @@ const replaceAssertPlugin = {
   name: "replace-assert",
   setup(build: any) {
     // Resolve `assert` to a blank file
-    build.onResolve({ filter: /^assert$/ }, (args: any) => {
+    build.onResolve({ filter: /^assert$/ }, (_args: any) => {
       return { path: path.join(root, "src", "polyfills", "blank.ts") };
     });
   },
@@ -20,7 +20,7 @@ const replaceBuffer = {
   name: "replace-buffer",
   setup(build: any) {
     // Resolve `assert` to our buffer polyfill
-    build.onResolve({ filter: /^(node:)?buffer$/ }, (args: any) => {
+    build.onResolve({ filter: /^(node:)?buffer$/ }, (_args: any) => {
       return { path: path.join(root, "src", "polyfills", "buffer.ts") };
     });
   },

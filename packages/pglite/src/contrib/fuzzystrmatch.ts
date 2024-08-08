@@ -2,15 +2,15 @@ import type {
   Extension,
   ExtensionSetupResult,
   PGliteInterface,
-} from "../interface";
+} from '../interface'
 
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
   return {
-    bundlePath: new URL("../../release/fuzzystrmatch.tar.gz", import.meta.url),
-  } satisfies ExtensionSetupResult;
-};
+    bundlePath: new URL('../../release/fuzzystrmatch.tar.gz', import.meta.url),
+  } satisfies ExtensionSetupResult
+}
 
 export const fuzzystrmatch = {
-  name: "fuzzystrmatch",
+  name: 'fuzzystrmatch',
   setup,
-} satisfies Extension;
+} satisfies Extension

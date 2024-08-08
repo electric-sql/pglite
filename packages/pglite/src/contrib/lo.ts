@@ -2,15 +2,15 @@ import type {
   Extension,
   ExtensionSetupResult,
   PGliteInterface,
-} from "../interface";
+} from '../interface'
 
 const setup = async (pg: PGliteInterface, emscriptenOpts: any) => {
   return {
-    bundlePath: new URL("../../release/lo.tar.gz", import.meta.url),
-  } satisfies ExtensionSetupResult;
-};
+    bundlePath: new URL('../../release/lo.tar.gz', import.meta.url),
+  } satisfies ExtensionSetupResult
+}
 
 export const lo = {
-  name: "lo",
+  name: 'lo',
   setup,
-} satisfies Extension;
+} satisfies Extension

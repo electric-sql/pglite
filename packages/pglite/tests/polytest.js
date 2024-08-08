@@ -1,10 +1,10 @@
 /* This file is a polyfill for AVA tests to run in Bun */
 
-let test;
+let test
 
-if (typeof Bun !== "undefined") {
+if (typeof Bun !== 'undefined') {
   // Minimal implementation of AVA for Bun
-  const bunTest = await import("bun:test");
+  const bunTest = await import('bun:test')
 
   const t = {
     is: (a, b) => bunTest.expect(a).toBe(b),
@@ -14,24 +14,24 @@ if (typeof Bun !== "undefined") {
     fail: () => bunTest.expect(true).toBe(false),
     throwsAsync: async (fn, expected) => {
       try {
-        await fn();
-        bunTest.expect(true).toBe(false);
+        await fn()
+        bunTest.expect(true).toBe(false)
       } catch (err) {
-        bunTest.expect(err).toMatchObject(expected);
+        bunTest.expect(err).toMatchObject(expected)
       }
-    }
+    },
   }
 
   test = (name, fn) => {
-    return bunTest.test(name, () => fn(t));
+    return bunTest.test(name, () => fn(t))
   }
-  test.before = (fn) => bunTest.beforeAll(() => fn(t));
-  test.after = (fn) => bunTest.afterAll(() => fn(t));
-  test.serial = test;
-  test.serial.before = (fn) => bunTest.beforeEach(() => fn(t));
+  test.before = (fn) => bunTest.beforeAll(() => fn(t))
+  test.after = (fn) => bunTest.afterAll(() => fn(t))
+  test.serial = test
+  test.serial.before = (fn) => bunTest.beforeEach(() => fn(t))
 } else {
   // Just use AVA
-  test = (await import("ava")).default;
+  test = (await import('ava')).default
 }
 
-export default test;
+export default test

@@ -42,7 +42,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
     }: {
       children: React.ReactNode
     }) => React.ReactElement
-    let hookFn =
+    const hookFn =
       queryHook === 'useLiveQuery' ? useLiveQuery : useLiveIncrementalQuery
     const incKey = 'id'
     beforeEach(async () => {

@@ -5,7 +5,7 @@
     "alwaysStrict": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "checkJs": true,
+    "checkJs": false,
     "declaration": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -30,5 +30,5 @@
     "strictNullChecks": true,
     "target": "ES2020"
   },
-  "include": ["eslint.config.js", ".prettierrc.cjs"]
+  "include": ["eslint.config.js"]
 }

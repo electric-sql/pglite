@@ -1,3 +1,3 @@
-import { tests } from "./base.js";
+import { tests } from './base.js'
 
-tests("webkit", "idb://base", "webkit.idb");
+tests('webkit', 'idb://base', 'webkit.idb')

@@ -1,27 +1,27 @@
 export type FsStats = {
-  dev: number;
-  ino: number;
-  mode: number;
-  nlink: number;
-  uid: number;
-  gid: number;
-  rdev: number;
-  size: number;
-  blksize: number;
-  blocks: number;
-  atime: number;
-  mtime: number;
-  ctime: number;
-};
+  dev: number
+  ino: number
+  mode: number
+  nlink: number
+  uid: number
+  gid: number
+  rdev: number
+  size: number
+  blksize: number
+  blocks: number
+  atime: number
+  mtime: number
+  ctime: number
+}
 
 // TypeScript doesn't have a built-in type for FileSystemSyncAccessHandle
 export interface FileSystemSyncAccessHandle {
-  close(): void;
-  flush(): void;
-  getSize(): number;
-  read(buffer: ArrayBuffer, options: { at: number }): number;
-  truncate(newSize: number): void;
-  write(buffer: ArrayBuffer, options: { at: number }): number;
+  close(): void
+  flush(): void
+  getSize(): number
+  read(buffer: ArrayBuffer, options: { at: number }): number
+  truncate(newSize: number): void
+  write(buffer: ArrayBuffer, options: { at: number }): number
 }
 
 export const ERRNO_CODES = {
@@ -34,16 +34,16 @@ export const ERRNO_CODES = {
   ENOENT: 44,
   ENOTDIR: 54,
   ENOTEMPTY: 55,
-} as const;
+} as const
 
 export class FsError extends Error {
-  code?: number;
+  code?: number
   constructor(code: number | keyof typeof ERRNO_CODES | null, message: string) {
-    super(message);
-    if (typeof code === "number") {
-      this.code = code;
-    } else if (typeof code === "string") {
-      this.code = ERRNO_CODES[code];
+    super(message)
+    if (typeof code === 'number') {
+      this.code = code
+    } else if (typeof code === 'string') {
+      this.code = ERRNO_CODES[code]
     }
   }
 }
@@ -51,37 +51,37 @@ export class FsError extends Error {
 // State
 
 export interface State {
-  root: DirectoryNode;
-  pool: PoolFilenames;
+  root: DirectoryNode
+  pool: PoolFilenames
 }
 
-export type PoolFilenames = Array<string>;
+export type PoolFilenames = Array<string>
 
 // WAL
 
 export interface WALEntry {
-  opp: string;
-  args: any[];
+  opp: string
+  args: any[]
 }
 
 // Node tree
 
-export type NodeType = "file" | "directory";
+export type NodeType = 'file' | 'directory'
 
 interface BaseNode {
-  type: NodeType;
-  lastModified: number;
-  mode: number;
+  type: NodeType
+  lastModified: number
+  mode: number
 }
 
 export interface FileNode extends BaseNode {
-  type: "file";
-  backingFilename: string;
+  type: 'file'
+  backingFilename: string
 }
 
 export interface DirectoryNode extends BaseNode {
-  type: "directory";
-  children: { [filename: string]: Node };
+  type: 'directory'
+  children: { [filename: string]: Node }
 }
 
-export type Node = FileNode | DirectoryNode;
+export type Node = FileNode | DirectoryNode
