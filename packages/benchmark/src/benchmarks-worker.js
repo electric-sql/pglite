@@ -3,7 +3,6 @@
 // Modified by the PGLite authors.
 
 import { PGlite } from './pglite/index.js'
-
 ;(async function () {
   const Comlink = await import('https://unpkg.com/comlink/dist/esm/comlink.mjs')
 
