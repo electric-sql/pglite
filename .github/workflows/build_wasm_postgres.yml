@@ -22,9 +22,9 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Restore cached
+      - name: Restore cached build
         id: cache-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache@v4
         with:
           path: |
             /opt/python-wasm-sdk
@@ -67,20 +67,6 @@ jobs:
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./cibuild.sh linkweb
-
-      - name: Cached intermediate
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        id: cache-intermediate
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            /tmp/web
-            /tmp/pglite
-            /tmp/sdk/*.tar
-            /tmp/sdk/*.tar.gz
-            postgres
-            postgresql-*
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
       - name: Copy release for PGlite build
         run: |
