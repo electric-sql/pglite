@@ -5,6 +5,10 @@
       "@types/emscripten",
       "node"
     ],
+    "paths": {
+      "pg-protocol/*": ["./node_modules/pg-protocol/*"],
+      "node:buffer": ["./src/polyfills/buffer"]
+    }
   },
   "include": ["src"]
 }
