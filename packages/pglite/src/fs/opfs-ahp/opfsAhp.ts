@@ -122,7 +122,7 @@ export class OpfsAhp {
       if (typeof this[methodName as keyof this] === 'function') {
         try {
           const method = this[methodName as keyof this] as any
-          method(...entry.args)
+          method.bind(this)(...entry.args)
         } catch (e) {
           console.warn('Error applying OPFS AHP WAL entry', entry, e)
         }
