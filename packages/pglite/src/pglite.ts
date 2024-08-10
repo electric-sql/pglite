@@ -183,7 +183,9 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
             ) => {
               const buf = this.#queryReadBuffer
               if (!buf) {
-                throw new Error('No File or Blob provided to read from')
+                throw new Error(
+                  'No /deb/blob File or Blob provided to read from',
+                )
               }
               const contents = new Uint8Array(buf)
               if (position >= contents.length) return 0
@@ -204,8 +206,21 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
               this.#queryWriteChunks.push(buffer.slice(offset, offset + length))
               return length
             },
-            llseek: (_stream: any, _offset: number, _whence: number) => {
-              throw new Error('Cannot seek /dev/blob')
+            llseek: (stream: any, offset: number, whence: number) => {
+              const buf = this.#queryReadBuffer
+              if (!buf) {
+                throw new Error('No /dev/blob File or Blob provided to llseek')
+              }
+              var position = offset
+              if (whence === 1) {
+                position += stream.position
+              } else if (whence === 2) {
+                position = new Uint8Array(buf).length
+              }
+              if (position < 0) {
+                throw new mod.FS.ErrnoError(28)
+              }
+              return position
             },
           }
           mod.FS.registerDevice(devId, devOpt)
