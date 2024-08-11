@@ -185,7 +185,7 @@ _________________________________________________________
 
 
     emcc $EMCC_WEB $LINKER $MODULE  \
-     -sTOTAL_MEMORY=1GB -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
+     -sTOTAL_MEMORY=256MB -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
      -lnodefs.js -lidbfs.js \
