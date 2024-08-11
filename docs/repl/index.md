@@ -6,7 +6,13 @@ pageClass: page-repl-playground
 ---
 
 <script setup>
-  import ReplPlayground from "./ReplPlayground.vue";
+import { defineClientComponent } from 'vitepress'
+
+const ReplPlayground = defineClientComponent(() => {
+  return import('./ReplPlayground.vue')
+})
 </script>
 
-<ReplPlayground />
+<ClientOnly>
+  <ReplPlayground />
+</ClientOnly>
