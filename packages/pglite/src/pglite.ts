@@ -184,7 +184,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
               const buf = this.#queryReadBuffer
               if (!buf) {
                 throw new Error(
-                  'No /deb/blob File or Blob provided to read from',
+                  'No /dev/blob File or Blob provided to read from',
                 )
               }
               const contents = new Uint8Array(buf)
