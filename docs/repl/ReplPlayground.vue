@@ -16,6 +16,7 @@ const loadedExtensions = ref([])
 
 const pg = shallowRef()
 const repl = ref(null)
+const showOptions = ref(false)
 
 watch(enabledExtensions, (value) => {
   localStorage.setItem('enabledExtensions', JSON.stringify(value))
@@ -141,7 +142,7 @@ async function clearDb() {
 </script>
 
 <template>
-  <div class="repl-playground">
+  <div class="repl-playground" :class="{ 'show-options': showOptions }">
     <div class="sidebar">
       <div class="top">
         <h1>PGlite Playground REPL</h1>
@@ -180,7 +181,7 @@ async function clearDb() {
         </button>
       </div>
     </div>
-    <div class="main">
+    <div class="main" @click="showOptions = false">
       <div class="info-msg" v-if="showReloadMsg">
         Please <button @click="loadPg()">Restart</button> PGlite to enable the
         selected extensions.
@@ -196,12 +197,37 @@ async function clearDb() {
       <div v-else class="loading">Loading...</div>
     </div>
   </div>
+
+  <teleport to=".VPNavBar .content-body" v-if="pg">
+    <button
+      href="#repl-option"
+      class="repl-option-link"
+      :class="{ active: showOptions }"
+      @click="showOptions = !showOptions"
+    >
+      REPL Options
+    </button>
+  </teleport>
 </template>
 
 <style>
 :is(html, body):has(.page-repl-playground) {
   height: 100vh;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  body:has(.page-repl-playground) {
+    touch-action: none;
+  }
+}
+
+.page-repl-playground .VPNav {
+  position: fixed !important;
+}
+
+.page-repl-playground .VPContent {
+  padding-top: var(--vp-nav-height) !important;
 }
 
 .page-repl-playground.Layout {
@@ -370,5 +396,42 @@ p code {
   flex: 1;
   font-size: 14px;
   opacity: 0.5;
+}
+
+.repl-option-link {
+  display: none;
+}
+.repl-option-link:hover,
+.repl-option-link.active {
+  color: var(--vp-c-brand-1);
+}
+
+@media (max-width: 768px) {
+  .repl-option-link {
+    order: -1;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    line-height: var(--vp-nav-height);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--vp-c-text-1);
+    transition: color 0.25s;
+  }
+  .sidebar {
+    width: 300px;
+  }
+  .main {
+    width: 100vw;
+  }
+  .repl-playground {
+    width: calc(100vw + 300px);
+    position: relative;
+    left: -300px;
+    transition: transform 0.15s ease;
+  }
+  .repl-playground.show-options {
+    transform: translateX(300px);
+  }
 }
 </style>
