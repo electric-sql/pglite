@@ -62,6 +62,7 @@ export interface PGliteOptions {
   relaxedDurability?: boolean
   extensions?: Extensions
   loadDataDir?: Blob | File
+  initialMemory?: number
 }
 
 export type PGliteInterface = {
