@@ -159,6 +159,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     let emscriptenOpts: Partial<PostgresMod> = {
       WASM_PREFIX,
       arguments: args,
+      INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
       ...(this.debug > 0
         ? { print: console.info, printErr: console.error }

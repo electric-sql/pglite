@@ -21,6 +21,7 @@ export interface PostgresMod
   postRun: Array<{ (mod: PostgresMod): void }>
   FS: FS
   WASM_PREFIX: string
+  INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
   _pg_initdb: () => number
   _interactive_write: (msgLength: number) => void
