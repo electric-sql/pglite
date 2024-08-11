@@ -46,6 +46,7 @@ async function loadPg() {
 
   loadedExtensions.value = [...enabledExtensions.value]
   pg.value = await PGlite.create({
+    dataDir: 'idb://pglite-playground',
     extensions,
   })
 }
@@ -319,6 +320,7 @@ async function clearDb() {
 
 .repl {
   flex: 1;
+  max-height: 100%;
 }
 
 .btn-clear {
