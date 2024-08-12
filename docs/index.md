@@ -164,7 +164,7 @@ onMounted(async () => {
         build on PGlite by <a href="https:/supabase.com">Supabase</a>
       </p>
     </div>
-    <video controls>
+    <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
       <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
     </video>
     <a class="link-btn" href="https://postgres.new">What would you like to create?</a>
