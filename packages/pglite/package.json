@@ -89,12 +89,8 @@
     "http-server": "^14.1.1",
     "pg-protocol": "^1.6.1",
     "playwright": "^1.42.1",
-    "prettier": "3.2.5",
     "serve": "^14.2.3",
-    "tinytar": "^0.1.0",
-    "tsup": "^8.1.0",
-    "tsx": "^4.7.1",
-    "typescript": "^5.3.3"
+    "tinytar": "^0.1.0"
   },
   "browser": {
     "fs": false,

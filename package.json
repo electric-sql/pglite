@@ -4,6 +4,11 @@
       "pg-protocol@1.6.1": "patches/pg-protocol@1.6.1.patch"
     }
   },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +24,7 @@
     "globals": "^15.9.0",
     "prettier": "3.2.5",
     "tsup": "^8.1.0",
-    "tsx": "^4.7.1",
-    "typescript": "^5.5.4"
+    "tsx": "^4.8.1",
+    "typescript": "^5.3.3"
   }
 }
