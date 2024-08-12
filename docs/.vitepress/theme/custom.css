@@ -123,3 +123,30 @@ iframe {
 .VPButton.brand {
   color: var(--vp-c-gray-3) !important;
 }
+
+@media (min-width: 768px) {
+  .VPNav a.VPLink[href="https://github.com/electric-sql/pglite"]::after
+  {
+    display: none !important;
+  }
+  .VPNav a.VPLink[href="https://github.com/electric-sql/pglite"] span
+  {
+    border-radius: 20px;
+    padding: 0 15px;
+    line-height: 30px;
+    font-size: 14px;
+    color: var(--vp-c-gray-3) !important;
+    border-color: var(--vp-button-brand-border);
+    background-color: var(--vp-button-brand-bg);
+    transition:
+      color 0.25s,
+      border-color 0.25s,
+      background-color 0.25s;
+  }
+  .VPNav a.VPLink[href="https://github.com/electric-sql/pglite"] span:hover
+  {
+    border-color: var(--vp-button-brand-hover-border);
+    color: var(--vp-button-brand-hover-text);
+    background-color: var(--vp-button-brand-hover-bg);
+  }
+}

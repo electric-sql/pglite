@@ -46,9 +46,12 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'About', link: '/docs/about' },
       { text: 'Docs', link: '/docs/' },
-      { text: 'Extensions', link: '/extensions/' },
       { text: 'REPL', link: '/repl/' },
       { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
+      {
+        text: 'Star on GitHub',
+        link: 'https://github.com/electric-sql/pglite',
+      },
     ],
     sidebar: [
       {

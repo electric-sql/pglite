@@ -10,6 +10,12 @@ const Repl = defineClientComponent(() => {
 })
 </script>
 
+<style scoped>
+  .repl {
+    height: 350px;
+  }
+</style>
+
 # PGlite REPL Component
 
 A REPL, or terminal, for use in the browser with PGlite, allowing you to have an interactive session with your WASM Postgres in the page.
@@ -17,7 +23,7 @@ A REPL, or terminal, for use in the browser with PGlite, allowing you to have an
 This is the REPL with a full PGlite Postgres embedded in the page:
 
 <ClientOnly>
-  <Repl />
+  <Repl class="repl" />
 </ClientOnly>
 
 ## Features:
