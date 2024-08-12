@@ -8,17 +8,11 @@ hero:
   tagline: 'Run a full Postgres database locally in your app with reactivity and server sync'
   actions:
     - theme: brand
-      text: Getting Started
+      text: Get Started
       link: /docs/
     - theme: alt
-      text: About
-      link: /docs/about
-    - theme: alt
-      text: GitHub
+      text: Star on GitHub
       link: https://github.com/electric-sql/pglite
-    - theme: alt
-      text: Discord
-      link: https://discord.com/channels/933657521581858818/1212676471588520006
 
 features:
   - title: Lightweight
@@ -30,13 +24,64 @@ features:
 ---
 
 <script setup>
+import { onMounted } from 'vue'
 import { defineClientComponent } from 'vitepress'
 import { VPHomeHero } from 'vitepress/theme'
+import { starCount } from './components/starCount.ts'
 
 const Repl = defineClientComponent(() => {
   return import('./components/Repl.vue')
 })
+
+onMounted(async () => {
+  if (typeof window !== 'undefined' && document.querySelector) {
+    const count = await starCount()
+    const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
+    let countEl = linkEl.querySelector('.count')
+    
+    if (!countEl) {
+      countEl = document.createElement('span')
+      countEl.classList.add('count')
+
+      const icon = document.createElement('span')
+      icon.classList.add('vpi-social-github')
+      linkEl.prepend(icon)
+    }
+    
+    linkEl.append(countEl)
+
+    let currentCount = Math.max(count - 15, 0)
+    const animateCount = () => {
+      currentCount += 1;
+      if (currentCount >= count) {
+        currentCount = count;
+        clearInterval(intervalId);
+      }
+      countEl.innerText = `( ${currentCount.toLocaleString()} )`;
+    };
+    const intervalId = setInterval(animateCount, 64);
+  }
+});
+
 </script>
+
+<style>
+  .actions a[href="https://github.com/electric-sql/pglite"] {
+    display: flex;
+    align-items: center;
+  }
+  .actions a[href="https://github.com/electric-sql/pglite"] .vpi-social-github {
+    display: block;
+    width: 1.42rem;
+    height: 1.42rem;
+    margin: 0 0.5rem 0 -10px;
+    position: relative;
+  }
+  .actions a[href="https://github.com/electric-sql/pglite"] .count {
+    margin-left: 0.5rem;
+    min-width: 55px;
+  }
+</style>
 
 <style scoped>
 
@@ -107,6 +152,8 @@ const Repl = defineClientComponent(() => {
     }
   }
 </style>
+
+<span class="vpi-social-github"></span>
 
 <div class="row">
   <div class="postgres-new">
