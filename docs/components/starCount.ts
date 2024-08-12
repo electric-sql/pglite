@@ -32,7 +32,7 @@ export async function starCount(currentCount) {
   })
 }
 
-export async function fetchStarCount (currentCount) {
+export async function fetchStarCount(currentCount) {
   const resp = await fetch('https://api.github.com/repos/electric-sql/pglite')
 
   if (resp.ok) {
