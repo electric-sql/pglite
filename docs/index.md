@@ -163,25 +163,30 @@ onMounted(async () => {
     <div class="info">
       <h3>Experience PGlite with <a href="https://postgres.new">postgres.new</a></h3>
       <p>
-        Create and publish a Postgres database using AI<br />
+        Create and publish a Postgres database using AI
+        <br class="hide-xs" />
         built on PGlite by <a href="https://supabase.com">Supabase</a>:
       </p>
     </div>
     <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
       <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
     </video>
-    <a class="link-btn" href="https://postgres.new">What would you like to create?</a>
+    <a class="link-btn" href="https://postgres.new">
+      What would you like to create?</a>
   </div>
   <div class="try-it-now">
     <div class="info">
       <h3>Try PGlite Now</h3>
       <p>
-        This is a full PGlite Postgres running in your browser<br>
-        It even includes <a href="/extensions/#pgvector">pgvector</a>!</p>
+        This is a full PGlite Postgres running in your browser.
+        <br class="hide-xs" />
+        It even includes <a href="/extensions/#pgvector">pgvector</a>!
+      </p>
     </div>
     <ClientOnly>
       <Repl class="repl" />
     </ClientOnly>
-    <a class="link-btn" href="/repl">Try more extensions in the playground</a>
+    <a class="link-btn" href="/repl">
+      Try more extensions in the playground</a>
   </div>
 </div>

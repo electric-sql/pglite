@@ -98,7 +98,12 @@ onUnmounted(() => {
 
 @media (max-width: 959px) {
   .custom-hero-image-wrapper {
-    transform: scale(0.6);
+    transform: scale(0.55);
+  }
+}
+@media (max-width: 575px) {
+  .custom-hero-image-wrapper {
+    transform: scale(0.45);
   }
 }
 </style>

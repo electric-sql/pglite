@@ -23,6 +23,12 @@
   --vp-c-text-3: rgba(235, 235, 245, 0.55);
 }
 
+@media (max-width: 575px) {
+  .hide-xs {
+    display: none;
+  }
+}
+
 .img-row {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
