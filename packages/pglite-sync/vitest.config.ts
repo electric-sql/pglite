@@ -8,11 +8,10 @@ export default defineConfig({
     dir: './test',
     watch: false,
     environment: 'jsdom',
-    setupFiles: ['test-setup.ts'],
     typecheck: { enabled: true },
     restoreMocks: true,
     testTransformMode: {
-      ssr: ['**/*']
+      ssr: ['**/*'],
     },
   },
 })

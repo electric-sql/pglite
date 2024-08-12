@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "rm -rf ./dist && mkdir dist && cp -r src/* dist/ && mkdir dist/wa-sqlite && cp -r ./node_modules/wa-sqlite/* dist/wa-sqlite && mkdir dist/pglite && cp -r ../pglite/dist/* dist/pglite",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
@@ -22,5 +23,8 @@
   },
   "dependencies": {
     "wa-sqlite": "github:rhashimoto/wa-sqlite#v0.9.14"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": "workspace:*"
   }
 }
