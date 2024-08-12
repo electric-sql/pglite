@@ -92,7 +92,7 @@ watch(
       }
 
       const replRootEl = repl.value.shadowRoot.querySelector('.PGliteRepl-root')
-      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14px;`)
+      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14.5px;`)
 
       const styleEl = document.createElement('style')
       styleEl.innerHTML = `
@@ -265,7 +265,7 @@ async function clearDb() {
   display: flex;
   flex-direction: column;
   max-height: 100%;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
 .sidebar .top {
@@ -296,7 +296,7 @@ async function clearDb() {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
 .info-msg button {
@@ -307,7 +307,7 @@ async function clearDb() {
   margin: 0 0.25rem;
   cursor: pointer;
   border-radius: 0.25rem;
-  font-size: 14px;
+  font-size: 14.5px;
   transition:
     color 0.25s,
     border-color 0.25s,
@@ -333,7 +333,7 @@ async function clearDb() {
     color 0.25s,
     border-color 0.25s,
     background-color 0.25s;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
 .btn-clear:hover {
@@ -344,7 +344,7 @@ async function clearDb() {
 h1,
 h2 {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
 h1 {
@@ -357,7 +357,7 @@ h2 {
 }
 
 p {
-  font-size: 14px;
+  font-size: 14.5px;
   margin: 0.5rem 0;
 }
 
@@ -396,7 +396,7 @@ p code {
   justify-content: center;
   align-items: center;
   flex: 1;
-  font-size: 14px;
+  font-size: 14.5px;
   opacity: 0.5;
 }
 
@@ -415,7 +415,7 @@ p code {
     align-items: center;
     padding: 0 12px;
     line-height: var(--vp-nav-height);
-    font-size: 14px;
+    font-size: 14.5px;
     font-weight: 500;
     color: var(--vp-c-text-1);
     transition: color 0.25s;

@@ -56,7 +56,7 @@ const selectedTag = ref(null)
     border-radius: 20px;
     padding: 0 20px;
     line-height: 38px;
-    font-size: 14px;
+    font-size: 14.5px;
     display: inline-block;
     border: 1px solid transparent;
     text-align: center;
@@ -100,7 +100,7 @@ const selectedTag = ref(null)
     border-radius: 20px;
     padding: 5px 10px;
     line-height: 18px;
-    font-size: 14px;
+    font-size: 14.5px;
     display: inline-block;
     border: 1px solid transparent;
     text-align: center;

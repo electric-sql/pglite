@@ -56,7 +56,7 @@ watch(
       }
 
       const replRootEl = repl.value.shadowRoot.querySelector('.PGliteRepl-root')
-      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14px;`)
+      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14.5px;`)
 
       const styleEl = document.createElement('style')
       styleEl.innerHTML = `
