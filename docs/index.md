@@ -5,7 +5,7 @@ layout: home
 hero:
   name: 'PGlite'
   text: 'Embeddable Postgres'
-  tagline: 'Run a full Postgres database locally in your app with reactivity and server sync'
+  tagline: 'Run a full Postgres database locally in WASM with reactivity and live sync.'
   actions:
     - theme: brand
       text: Get Started
