@@ -234,13 +234,6 @@ jobs:
     needs: [build-wasm-postgres]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Download PGlite WASM build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-interim-build-files
-          path: ./packages/pglite/release
       - uses: pnpm/action-setup@v4
         with:
           version: 8
@@ -248,8 +241,14 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Download PGlite WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-interim-build-files
+          path: ./packages/pglite/release
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r build
+      - run: pnpm --filter "./packages/**" build
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
