@@ -1,3 +1,5 @@
+ARCHIVE=postgresql-${PGVERSION}.tar.gz
+
 if echo ${PGVERSION} | grep -q 16.4
 then
     PG_PREREL=true
@@ -7,7 +9,6 @@ else
     ARCHIVE_URL=https://ftp.postgresql.org/pub/source/v${PGVERSION}/${ARCHIVE}
 fi
 
-ARCHIVE=postgresql-${PGVERSION}.tar.gz
 
 if [ -f postgresql/postgresql-${PGVERSION}.patched ]
 then
