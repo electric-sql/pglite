@@ -1,9 +1,9 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import '../../packages/repl/dist-webcomponent/Repl.js'
-import { defaultDarkThemeInit } from '../../packages/repl/dist-webcomponent/Repl.js'
-import { PGlite } from '../../packages/pglite/dist/index.js'
-import { vector } from '../../packages/pglite/dist/vector/index.js'
+import { ref, watch, onBeforeUnmount } from 'vue'
+import '@electric-sql/pglite-repl/webcomponent'
+import { defaultDarkThemeInit } from '@electric-sql/pglite-repl/webcomponent'
+import { PGlite } from '@electric-sql/pglite'
+import { vector } from '@electric-sql/pglite/vector'
 
 const pg = new PGlite({
   extensions: {
