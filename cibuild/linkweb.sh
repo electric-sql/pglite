@@ -73,8 +73,10 @@ pushd src/backend
 
     PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a"
 
-    if $DEBUG
+    if ${DEV:-false}
     then
+        # PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
+        # PG_L="$PG_L /tmp/libduckdb.so -lstdc++"
         echo -n
     fi
 
@@ -132,12 +134,10 @@ pushd src/backend
 
     # --js-library
     # cp ${WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
-    python3 > pgpass <<END
-USER="${PGPASS:-postgres}"
-PASS="${PGUSER:-postgres}"
-md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
-print(f"localhost:5432:postgres:{USER}:{md5pass}")
-END
+
+
+    echo 'localhost:5432:postgres:postgres:password' > pgpass
+
 
     if $OBJDUMP
     then
@@ -175,7 +175,7 @@ _________________________________________________________
     cat ${WORKSPACE}/patches/exports > exports
 
     # min
-    # LINKER="-sMAIN_MODULE=2"
+    LINKER="-sMAIN_MODULE=2"
 
     # tailored
     LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
