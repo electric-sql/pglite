@@ -47,7 +47,7 @@ importers:
   docs:
     dependencies:
       '@electric-sql/pglite':
-        specifier: workspace:0.2.0-alpha.9
+        specifier: workspace:*
         version: link:../packages/pglite
       '@electric-sql/pglite-repl':
         specifier: workspace:*
