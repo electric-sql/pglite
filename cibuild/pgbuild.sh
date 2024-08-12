@@ -40,25 +40,12 @@ CC_PGLITE=$CC_PGLITE
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
 
-
-    if [ -f ${PGROOT}/config.cache.emsdk ]
-    then
-        echo "re-using config cache file from ${PGROOT}/config.cache.emsdk"
-    else
-        if [ -f ../config.cache.emsdk ]
-        then
-            cp ../config.cache.emsdk ${PGROOT}/
-        else
-            cp config.cache.emsdk ${PGROOT}/
-        fi
-    fi
-
     # -lwebsocket.js -sPROXY_POSIX_SOCKETS -pthread -sPROXY_TO_PTHREAD
     # CONFIG_SITE=$(pwd)/config.site EMCC_CFLAGS="--oformat=html" \
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
+    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten
     then
         echo configure ok
     else
@@ -206,7 +193,7 @@ rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
 export TZ=UTC
 export PGTZ=UTC
 SQL=/tmp/initdb-\$\$
-# TODO: --waldir=${PREFIX}/wal
+# TODO: --waldir=${PGROOT}/wal
 > /tmp/initdb.txt
 
 ${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
