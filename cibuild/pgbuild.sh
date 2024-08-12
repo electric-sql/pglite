@@ -11,10 +11,6 @@ CC_PGLITE=$CC_PGLITE
 
     mkdir -p build/postgres
     pushd build/postgres
-    
-    # create empty package.json to avoid emsdk node conflicts
-    # with root package.json of project
-    echo "{}" > package.json
 
 
     if $CI
@@ -117,7 +113,7 @@ END
 
     # only required for static initdb
     EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 ${CC_PGLITE}"
-    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=256MB -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
+    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=1GB -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
     EMCC_CFLAGS="${EMCC_CFLAGS} -DPREFIX=${PGROOT}"
 
     export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"

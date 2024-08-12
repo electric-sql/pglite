@@ -11,7 +11,7 @@ export PGROOT=${PGROOT:-/tmp/pglite}
 export WEBROOT=${WEBROOT:-/tmp/web}
 export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
-export PGUSER=postgres
+export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
 
 
@@ -50,11 +50,27 @@ fi
 # default to web/release size optim.
 if $DEBUG
 then
-    echo "debug not supported on web build"
-    exit 51
+    export CDEBUG="-g0 -O0"
+    cat > /tmp/pgdebug.h << END
+#ifndef I_PGDEBUG
+#define I_PGDEBUG
+#define WASM_USERNAME "$PGUSER"
+#define PGDEBUG 1
+#define PDEBUG(string) puts(string)
+#endif
+END
+
 else
     export PGDEBUG=""
     export CDEBUG="-g0 -Os"
+    cat > /tmp/pgdebug.h << END
+#ifndef I_PGDEBUG
+#define I_PGDEBUG
+#define WASM_USERNAME "$PGUSER"
+#define PDEBUG(string)
+#define PGDEBUG 0
+#endif
+END
 fi
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
@@ -67,10 +83,18 @@ then
 else
     if which emcc
     then
-        echo "Using provided emsdk from $(which emcc)"
+        echo "emcc found in PATH=$PATH"
     else
         . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
     fi
+    export PG_LINK=${PG_LINK:-$(which emcc)}
+
+    echo "
+
+    Using provided emsdk from $(which emcc)
+    Using PG_LINK=$PG_LINK as linker
+
+"
 
     # custom code for node/web builds that modify pg main/tools behaviour
     # this used by both node/linkweb build stages
@@ -175,7 +199,6 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 # ===========================================================================
 # ===========================================================================
 
-
 if echo " $*"|grep -q " contrib"
 then
     # TEMP FIX for SDK
@@ -220,56 +243,57 @@ then
             fi
         fi
     done
-fi
 
+    if echo " $*"|grep -q " vector"
+    then
+        echo "====================== vector : $(pwd) ================="
 
-if echo " $*"|grep -q " vector"
-then
-    echo "====================== vector : $(pwd) ================="
+        pushd build
 
-    pushd build
+            # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
 
-        # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
+            if [ -d pgvector ]
+            then
+                echo using local pgvector
+            else
+                wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
+                tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
+                mv pgvector-?.?.? pgvector
+            fi
 
-        if [ -d pgvector ]
-        then
-            echo using local pgvector
-        else
-            wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
-            tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
-            mv pgvector-?.?.? pgvector
-        fi
+            pushd pgvector
+                # path for wasm-shared already set to (pwd:pg build dir)/bin
+                # OPTFLAGS="" turns off arch optim (sse/neon).
+                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
+                cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
+                rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
+            popd
 
-        pushd pgvector
-            # path for wasm-shared already set to (pwd:pg build dir)/bin
-            # OPTFLAGS="" turns off arch optim (sse/neon).
-            PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
-            cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
-            rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
         popd
 
-    popd
+        python3 cibuild/pack_extension.py
 
-    python3 cibuild/pack_extension.py
+    fi
 
+    if echo " $*"|grep -q " postgis"
+    then
+        echo "======================= postgis : $(pwd) ==================="
+
+        ./cibuild/postgis.sh
+
+        python3 cibuild/pack_extension.py
+    fi
+
+    if echo " $*"|grep -q " quack"
+    then
+        echo "================================================="
+        ./cibuild/pg_quack.sh
+        cp $PGROOT/lib/libduckdb.so /tmp/
+        python3 cibuild/pack_extension.py
+    fi
 fi
 
-if echo " $*"|grep -q " postgis"
-then
-    echo "======================= postgis : $(pwd) ==================="
 
-    ./cibuild/postgis.sh
-
-    python3 cibuild/pack_extension.py
-fi
-
-if echo " $*"|grep -q " quack"
-then
-    echo "================================================="
-    ./cibuild/pg_quack.sh
-    cp $PGROOT/lib/libduckdb.so /tmp/
-    python3 cibuild/pack_extension.py
-fi
 
 
 # ===========================================================================
@@ -382,18 +406,29 @@ do
         ;;
 
         demo-site) echo "==================== demo-site =========================="
-            # Move all existing files to a subfolder
-            mkdir -p /tmp/web/x-term-repl
-            mv -r /tmp/web/* /tmp/web/x-term-repl/
 
-            mkdir -p /tmp/web/dist
-            mkdir -p /tmp/web/examples
-            mkdir -p /tmp/web/benchmark
+            echo "<html>
+<body>
+    <ul>
+        <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
+        <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
+        <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
+        <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
+        <li><a href=./benchmark/index.html>Benchmarks</a> / <a href=./benchmark/rtt.html>RTT Benchmarks</a></li>
+        <li><a href=./postgres.html>Postgres xterm REPL</a></li>
+    </ul>
+</body>
+</html>" > /tmp/web/index.html
+
+            mkdir -p /tmp/web/pglite
+            mkdir -p /tmp/web/repl
+            mkdir -p /tmp/web/benchmarks
 
             PGLITE=$(pwd)/packages/pglite
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmark/
+            cp -r ${PGLITE}/dist /tmp/web/pglite/
+            cp -r ${PGLITE}/examples /tmp/web/pglite/
+            cp -r ${WORKSPACE}/packages/repl/dist-webcomponent /tmp/web/repl/
+            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmarks/
         ;;
     esac
     shift
