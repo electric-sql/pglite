@@ -245,10 +245,11 @@ then
         fi
     done
 
- 
+
 fi
 
-   if echo " $*"|grep -q " vector"
+
+    if echo " $*"|grep -q " vector"
     then
         echo "====================== vector : $(pwd) ================="
 
@@ -295,7 +296,6 @@ fi
         cp $PGROOT/lib/libduckdb.so /tmp/
         python3 cibuild/pack_extension.py
     fi
-
 
 # ===========================================================================
 # ===========================================================================
@@ -393,10 +393,17 @@ do
             du -hs ${WEBROOT}/*
         ;;
 
-        repl) echo "=============== pglite-repl ================================"
+        pglite-repl) echo "=============== pglite-repl ================================"
             pushd ./packages/repl
             pnpm install
             pnpm run build
+            popd
+        ;;
+
+        pglite-test) echo "================== pglite-test ========================="
+            pushd ./packages/pglite
+            pnpm exec playwright install --with-deps
+            pnpm run test
             popd
         ;;
 

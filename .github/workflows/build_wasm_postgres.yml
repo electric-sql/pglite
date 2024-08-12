@@ -33,7 +33,7 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('cibuild/**', 'patches/*.c', 'patches/postgresql-*') }}
+          key: build-cache-${{ hashFiles('cibuild.sh', 'cibuild/**', 'patches/*.c', 'patches/postgresql-*') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
