@@ -35,7 +35,7 @@ onUnmounted(() => {
 <template>
   <div class="custom-hero-image-wrapper">
     <div ref="heroImage" class="custom-hero-image">
-      <img src="/public/img/brand/icon-light.svg" class="main" />
+      <img src="/img/brand/icon-light.svg" class="main" />
       <div class="chain">
         <div
           class="baby"
@@ -46,7 +46,7 @@ onUnmounted(() => {
             filter: `brightness(${pos.o})`,
           }"
         >
-          <img src="/public/img/brand/icon-light.svg" />
+          <img src="/img/brand/icon-light.svg" />
         </div>
       </div>
     </div>
