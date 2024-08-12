@@ -27,6 +27,7 @@ features:
 import { onMounted } from 'vue'
 import { defineClientComponent } from 'vitepress'
 import { VPHomeHero } from 'vitepress/theme'
+import { data as initialStarCount } from './count.data.ts'
 import { starCount } from './components/starCount.ts'
 
 const Repl = defineClientComponent(() => {
@@ -35,13 +36,13 @@ const Repl = defineClientComponent(() => {
 
 onMounted(async () => {
   if (typeof window !== 'undefined' && document.querySelector) {
-    const count = await starCount()
     const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
     let countEl = linkEl.querySelector('.count')
     
     if (!countEl) {
       countEl = document.createElement('span')
       countEl.classList.add('count')
+      countEl.innerText = `( ${initialStarCount.toLocaleString()} )`;
 
       const icon = document.createElement('span')
       icon.classList.add('vpi-social-github')
@@ -50,7 +51,9 @@ onMounted(async () => {
     
     linkEl.append(countEl)
 
-    let currentCount = Math.max(count - 15, 0)
+    const count = await starCount(initialStarCount)
+
+    let currentCount = Math.max(count - 15, initialStarCount)
     const animateCount = () => {
       currentCount += 1;
       if (currentCount >= count) {
@@ -74,11 +77,11 @@ onMounted(async () => {
     display: block;
     width: 1.42rem;
     height: 1.42rem;
-    margin: 0 0.5rem 0 -10px;
+    margin: 0 0.5rem 0 0;
     position: relative;
   }
   .actions a[href="https://github.com/electric-sql/pglite"] .count {
-    margin-left: 0.5rem;
+    margin-left: 0.25rem;
     min-width: 55px;
   }
 </style>

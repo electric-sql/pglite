@@ -1,3 +1,5 @@
+const FALLBACK_INITIAL_COUNT = 5_000
+
 export async function localStorageCache(
   key: string,
   ttl: number,
@@ -23,11 +25,21 @@ export async function localStorageCache(
   return value
 }
 
-export async function starCount() {
+export async function starCount(currentCount) {
   const ttl = 3600 // 1 hour
   return localStorageCache('starCount', ttl, async () => {
-    const resp = await fetch('https://api.github.com/repos/electric-sql/pglite')
-    const data = await resp.json()
-    return data.stargazers_count
+    return await fetchStarCount(currentCount)
   })
+}
+
+export async function fetchStarCount (currentCount) {
+  const resp = await fetch('https://api.github.com/repos/electric-sql/pglite')
+
+  if (resp.ok) {
+    const data = await resp.json()
+
+    return data.stargazers_count
+  }
+
+  return currentCount || FALLBACK_INITIAL_COUNT
 }
