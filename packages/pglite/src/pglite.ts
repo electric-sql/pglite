@@ -212,7 +212,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
               if (!buf) {
                 throw new Error('No /dev/blob File or Blob provided to llseek')
               }
-              var position = offset
+              let position = offset
               if (whence === 1) {
                 position += stream.position
               } else if (whence === 2) {
