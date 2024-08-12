@@ -4,6 +4,11 @@
       "pg-protocol@1.6.1": "patches/pg-protocol@1.6.1.patch"
     }
   },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.7.0",
   "private": true,
   "type": "module",
   "scripts": {
