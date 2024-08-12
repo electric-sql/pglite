@@ -44,7 +44,6 @@ const theme = defaultDarkThemeInit({
     caret: codeStyles['--vp-c-brand-1'],
   },
 })
-console.log(codeStyles)
 
 watch(
   () => repl.value,
