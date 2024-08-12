@@ -46,6 +46,12 @@ importers:
 
   docs:
     dependencies:
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../packages/pglite
+      '@electric-sql/pglite-repl':
+        specifier: workspace:*
+        version: link:../packages/repl
       '@uiw/codemirror-theme-github':
         specifier: ^4.23.0
         version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.28.1)
