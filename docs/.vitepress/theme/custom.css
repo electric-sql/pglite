@@ -23,6 +23,12 @@
   --vp-c-text-3: rgba(235, 235, 245, 0.55);
 }
 
+@media (max-width: 575px) {
+  .hide-xs {
+    display: none;
+  }
+}
+
 .img-row {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
@@ -100,6 +106,13 @@ iframe {
 .VPFeature .details {
   font-weight: 600 !important;
 }
+.VPFeature .details,
+.VPButton.medium,
+.link-btn,
+.message,
+.copywrite {
+  font-size: 14.5px !important;
+}
 
 .product-icon {
   width: 84px;
@@ -134,7 +147,7 @@ iframe {
     border-radius: 20px;
     padding: 0 15px;
     line-height: 30px;
-    font-size: 14px;
+    font-size: 14.5px;
     color: var(--vp-c-gray-3) !important;
     border-color: var(--vp-button-brand-border);
     background-color: var(--vp-button-brand-bg);

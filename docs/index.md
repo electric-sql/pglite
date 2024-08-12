@@ -5,7 +5,7 @@ layout: home
 hero:
   name: 'PGlite'
   text: 'Embeddable Postgres'
-  tagline: 'Run a full Postgres database locally in your app with reactivity and server sync'
+  tagline: 'Run a full Postgres database locally in WASM with reactivity and live sync.'
   actions:
     - theme: brand
       text: Get Started
@@ -27,6 +27,7 @@ features:
 import { onMounted } from 'vue'
 import { defineClientComponent } from 'vitepress'
 import { VPHomeHero } from 'vitepress/theme'
+import { data as initialStarCount } from './count.data.ts'
 import { starCount } from './components/starCount.ts'
 
 const Repl = defineClientComponent(() => {
@@ -35,13 +36,13 @@ const Repl = defineClientComponent(() => {
 
 onMounted(async () => {
   if (typeof window !== 'undefined' && document.querySelector) {
-    const count = await starCount()
     const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
     let countEl = linkEl.querySelector('.count')
     
     if (!countEl) {
       countEl = document.createElement('span')
       countEl.classList.add('count')
+      countEl.innerText = `( ${initialStarCount.toLocaleString()} )`;
 
       const icon = document.createElement('span')
       icon.classList.add('vpi-social-github')
@@ -50,7 +51,9 @@ onMounted(async () => {
     
     linkEl.append(countEl)
 
-    let currentCount = Math.max(count - 15, 0)
+    const count = await starCount(initialStarCount)
+
+    let currentCount = Math.max(count - 15, initialStarCount)
     const animateCount = () => {
       currentCount += 1;
       if (currentCount >= count) {
@@ -74,11 +77,11 @@ onMounted(async () => {
     display: block;
     width: 1.42rem;
     height: 1.42rem;
-    margin: 0 0.5rem 0 -10px;
+    margin: 0 0.5rem 0 0;
     position: relative;
   }
   .actions a[href="https://github.com/electric-sql/pglite"] .count {
-    margin-left: 0.5rem;
+    margin-left: 0.25rem;
     min-width: 55px;
   }
 </style>
@@ -118,7 +121,7 @@ onMounted(async () => {
     border-radius: 20px;
     padding: 0 20px;
     line-height: 38px;
-    font-size: 14px;
+    font-size: 14.5px;
     display: inline-block;
     border: 1px solid transparent;
     text-align: center;
@@ -160,25 +163,30 @@ onMounted(async () => {
     <div class="info">
       <h3>Experience PGlite with <a href="https://postgres.new">postgres.new</a></h3>
       <p>
-        Create and publish a Postgres database using AI<br>
-        build on PGlite by <a href="https://supabase.com">Supabase</a>
+        Create and publish a Postgres database using AI
+        <br class="hide-xs" />
+        built on PGlite by <a href="https://supabase.com">Supabase</a>:
       </p>
     </div>
     <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
       <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
     </video>
-    <a class="link-btn" href="https://postgres.new">What would you like to create?</a>
+    <a class="link-btn" href="https://postgres.new">
+      What would you like to create?</a>
   </div>
   <div class="try-it-now">
     <div class="info">
       <h3>Try PGlite Now</h3>
       <p>
-        This is a full PGlite Postgres running in your browser<br>
-        It even includes <a href="/extensions/#pgvector">pgvector</a>!</p>
+        This is a full PGlite Postgres running in your browser.
+        <br class="hide-xs" />
+        It even includes <a href="/extensions/#pgvector">pgvector</a>!
+      </p>
     </div>
     <ClientOnly>
       <Repl class="repl" />
     </ClientOnly>
-    <a class="link-btn" href="/repl">Try more extensions in the playground</a>
+    <a class="link-btn" href="/repl">
+      Try more extensions in the playground</a>
   </div>
 </div>
