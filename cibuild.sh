@@ -245,7 +245,10 @@ then
         fi
     done
 
-    if echo " $*"|grep -q " vector"
+ 
+fi
+
+   if echo " $*"|grep -q " vector"
     then
         echo "====================== vector : $(pwd) ================="
 
@@ -292,9 +295,6 @@ then
         cp $PGROOT/lib/libduckdb.so /tmp/
         python3 cibuild/pack_extension.py
     fi
-fi
-
-
 
 
 # ===========================================================================
