@@ -285,6 +285,7 @@ _RecordFreeIndexPage
 _RecoveryInProgress
 _RegisterBackgroundWorker
 _RegisterDynamicBackgroundWorker
+_RegisterResourceReleaseCallback
 _RegisterSnapshot
 _RegisterSubXactCallback
 _RegisterXactCallback
@@ -415,8 +416,16 @@ ___THREW__
 ___cxa_atexit
 ___cxa_throw
 ___errno_location
+___extenddftf2
+___fixtfsi
+___floatsitf
+___getf2
+___letf2
+___lttf2
+___multf3
 ___multi3
 ___small_fprintf
+___subtf3
 ___threwValue
 ___wasm_setjmp
 ___wasm_setjmp_test
@@ -591,6 +600,7 @@ _dlerror
 _dlopen
 _dlsym
 _domain_check
+_downcase_truncate_identifier
 _dsm_attach
 _dsm_create
 _dsm_detach
@@ -646,6 +656,7 @@ _exprTypmod
 _extra_float_digits
 _extract_actual_clauses
 _fclose
+_fcntl
 _fd_durable_rename
 _fd_fsync_fname
 _feof
@@ -689,6 +700,7 @@ _ftruncate
 _function_parse_error_transpose
 _fwrite
 _gai_strerror
+_gen_random_uuid
 _generate_implied_equalities_for_column
 _generic_restriction_selectivity
 _genericcostestimate
@@ -748,6 +760,7 @@ _getsockopt
 _gettimeofday
 _ginPostingListDecode
 _gistcheckpage
+_gmtime
 _grouping_is_sortable
 _guc_malloc
 _has_fn_opclass_options
@@ -803,6 +816,7 @@ _interval_um
 _ioctl
 _isalnum
 _isatty
+_isxdigit
 _join_clause_is_movable_to
 _lappend
 _lappend_int
@@ -878,6 +892,7 @@ _memcpy
 _memmove
 _memset
 _namein
+_nanosleep
 _network_cmp
 _nextval
 _nocache_index_getattr
@@ -936,6 +951,7 @@ _pg_database_encoding_max_length
 _pg_detoast_datum
 _pg_detoast_datum_copy
 _pg_detoast_datum_packed
+_pg_do_encoding_conversion
 _pg_encoding_dsplen
 _pg_encoding_max_length
 _pg_encoding_mblen
@@ -957,6 +973,7 @@ _pg_hmac_init
 _pg_hmac_update
 _pg_inet_net_ntop
 _pg_initdb
+_pg_is_ascii
 _pg_ltoa
 _pg_mb2wchar_with_len
 _pg_mblen
@@ -1042,6 +1059,7 @@ _quote_ident
 _quote_identifier
 _quote_literal_cstr
 _quote_qualified_identifier
+_rand
 _raw_parser
 _read
 _read_local_xlog_page_no_wait
@@ -1098,6 +1116,7 @@ _smgrsetowner
 _smgrtruncate
 _snprintf
 _socket
+_srand
 _sscanf
 _standard_ExecutorEnd
 _standard_ExecutorFinish
@@ -1157,6 +1176,7 @@ _text_gt
 _text_le
 _text_lt
 _text_to_cstring
+_text_to_cstring_buffer
 _texteq
 _tidin
 _tidout
@@ -1215,6 +1235,8 @@ _updateClosestMatch
 _update_mergeclause_eclasses
 _utf8_to_unicode
 _uuid_cmp
+_uuid_in
+_uuid_out
 _vac_estimate_reltuples
 _vacuum_delay_point
 _varbit_in
