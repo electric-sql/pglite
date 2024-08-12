@@ -40,18 +40,24 @@ Path to the directory for storing the Postgres database. You can provide a URI s
 
 #### `options`
 
-- `dataDir: string`<br />
+- `dataDir?: string`<br />
   The directory in which to store the Postgres database when not provided as the first argument.
-- `debug: 1-5`<br />
+- `debug?: 1-5`<br />
   the Postgres debug level. Logs are sent to the console.
-- `relaxedDurability: boolean`<br />
+- `relaxedDurability?: boolean`<br />
   Under relaxed durability mode, PGlite will not wait for flushes to storage to complete after each query before returning results. This is particularly useful when using the IndexedDB file system.
-- `fs: Filesystem`<br />
+- `fs?: Filesystem`<br />
   The alternative to providing a dataDir with a filesystem prefix is to initialise a `Filesystem` yourself and provide it here. See [Filesystems](./filesystems.md)
-- `loadDataDir: Blob | File`<br />
+- `loadDataDir?: Blob | File`<br />
   A tarball of a PGlite `datadir` to load when the database starts. This should be a tarball produced from the related [`.dumpDataDir()`](#dumpdatadir) method.
-- `extensions: Extensions`<br />
+- `extensions?: Extensions`<br />
   An object containing the extensions you wish to load.
+- `username?: string`<br />
+  The username of the user to connect to the database as. Permissions will be applied in the context of this user.
+- `database?: string`<br />
+  The database from the Postgres cluster within the `dataDir` to connect to.
+- `initialMemory?: number`<br />
+  The initial amount of memory in bytes to allocate for the PGlite instance. PGlite will grow the memory automatically, but if you have a particularly large database you can set this higher to prevent the pause during memory growth.
 
 #### `options.extensions`
 
