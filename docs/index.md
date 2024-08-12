@@ -163,8 +163,8 @@ onMounted(async () => {
     <div class="info">
       <h3>Experience PGlite with <a href="https://postgres.new">postgres.new</a></h3>
       <p>
-        Create and publish a Postgres database using AI<br>
-        build on PGlite by <a href="https:/supabase.com">Supabase</a>
+        Create and publish a Postgres database using AI<br />
+        built on PGlite by <a href="https://supabase.com">Supabase</a>:
       </p>
     </div>
     <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
