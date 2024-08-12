@@ -54,6 +54,13 @@ export default defineConfig({
       },
     ],
     [
+      'meta',
+      {
+        property: 'og:image',
+        content: '/img/brand/og-image.png',
+      },
+    ],
+    [
       'script',
       {
         defer: 'defer',
