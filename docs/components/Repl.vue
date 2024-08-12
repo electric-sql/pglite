@@ -162,8 +162,6 @@ function dispatchEnterEvent(el) {
 
 <style scoped>
 .repl {
-  margin-top: 2rem;
-  height: clamp(350px, 35vh, 450px);
   display: flex;
   align-items: stretch;
   border-radius: 12px;

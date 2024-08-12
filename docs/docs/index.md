@@ -101,12 +101,12 @@ console.log(ret.rows)
 Output:
 
 ```js
-[
+;[
   {
     id: 1,
     task: 'Install PGlite from NPM',
     done: false,
-  }
+  },
 ]
 ```
 
