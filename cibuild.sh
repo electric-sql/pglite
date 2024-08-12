@@ -112,6 +112,8 @@ else
 
 fi
 
+export PATH=$PATH:$(echo -n $EMSDK/node/*_64bit/bin)
+
 export CC_PGLITE
 
 
@@ -403,7 +405,7 @@ do
         pglite-test) echo "================== pglite-test ========================="
             pushd ./packages/pglite
             pnpm exec playwright install --with-deps
-            pnpm run test
+            pnpm run test || exit 408
             popd
         ;;
 
