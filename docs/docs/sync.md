@@ -1,6 +1,6 @@
 # Sync using ElectricSQL
 
-At [ElectricSQL](https://electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
+At [ElectricSQL](https://next.electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
 
 We recently started on a [new version of the Electric sync engine](https://next.electric-sql.com) that is more loosely coupled, and will have improved scalability. You can read more about the work we are doing here: [next.electric-sql.com](https://next.electric-sql.com)
 

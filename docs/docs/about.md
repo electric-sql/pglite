@@ -16,7 +16,7 @@ It can be used as an ephemeral in-memory database, or with persistence either to
 
 Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
 
-It's being developed by [ElectricSQL](https://electric-sql.com/) for our use case of embedding into applications, either locally or at the edge, allowing users to sync a subset of their server-side Postgres database.
+It's being developed by [ElectricSQL](https://next.electric-sql.com/) for our use case of embedding into applications, either locally or at the edge, allowing users to sync a subset of their server-side Postgres database.
 
 However, there are many more use cases for PGlite beyond its use as an embedded application database:
 
