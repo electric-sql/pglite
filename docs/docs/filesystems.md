@@ -117,3 +117,29 @@ The Origin Private Filesystem API provides both asynchronous and synchronous met
 To overcome these limitations, and to provide a fully synchronous file system to PGlite on top of OPFS, we use something called an "access handle pool". When you first start PGlite we open a pool of OPFS access handles with randomised file names; these are then allocated to files as needed. After each query, a pool maintenance job is scheduled that maintains its size. When you inspect the OPFS directory where the database is stored, you will not see the normal Postgres directory layout, but rather a pool of files and a state file containing the directory tree mapping along with file metadata.
 
 The PGlite OPFS AHP FS is inspired by the [wa-sqlite](https://github.com/rhashimoto/wa-sqlite) access handle pool file system by [Roy Hashimoto](https://github.com/rhashimoto).
+
+## Mobile FS
+
+The Mobile FS is designed for use with React Native and Expo, allowing PGlite to persist data to the filesystem on mobile devices.
+
+To use the Mobile FS you can use one of these methods:
+
+- Set the `dataDir` to a directory within the mobile filesystem
+  ```ts
+  import * as FileSystem from 'expo-file-system';
+  const pg = new PGlite(FileSystem.documentDirectory + 'pgdata')
+  ```
+- Import and pass the FS explicitly
+  ```ts
+  import { MobileFS } from '@electric-sql/pglite/mobile'
+  import * as FileSystem from 'expo-file-system';
+  const pg = new PGlite({
+    fs: new MobileFS(FileSystem.documentDirectory + 'pgdata'),
+  })
+  ```
+
+### Platform Support
+
+| Node | Bun | Chrome | Safari | Firefox | React Native | Expo |
+| ---- | --- | ------ | ------ | ------- | ------------ | ---- |
+|      |     |        |        |         | ✓            | ✓    |

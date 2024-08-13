@@ -1,6 +1,6 @@
 # What is PGlite
 
-PGlite is a [WASM](https://webassembly.org/) Postgres build packaged into a TypeScript/JavaScript client library, that enables you to run Postgres in the browser, [Node.js](https://nodejs.org/) and [Bun](https://bun.sh/), with no need to install any other dependencies. It's under 3mb Gzipped, and has support for many [Postgres extensions](../extensions/), including [pgvector](../extensions/#pgvector).
+PGlite is a [WASM](https://webassembly.org/) Postgres build packaged into a TypeScript/JavaScript client library, that enables you to run Postgres in the browser, [Node.js](https://nodejs.org/), [Bun](https://bun.sh/), and mobile platforms using React Native and Expo, with no need to install any other dependencies. It's under 3mb Gzipped, and has support for many [Postgres extensions](../extensions/), including [pgvector](../extensions/#pgvector).
 
 Getting started with PGlite is simple: just install and import the NPM package, then create your embedded database:
 

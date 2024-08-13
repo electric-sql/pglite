@@ -33,7 +33,7 @@
 
 ![PGlite](https://raw.githubusercontent.com/electric-sql/pglite/main/screenshot.png)
 
-PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
+PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js, Bun, and mobile platforms using React Native and Expo, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
 
 ```javascript
 import { PGlite } from "@electric-sql/pglite";
@@ -98,6 +98,32 @@ or to persist to the filesystem:
 
 ```javascript
 const db = new PGlite("./path/to/pgdata");
+```
+
+## Mobile (React Native/Expo)
+
+Install into your project:
+
+```bash
+npm install @electric-sql/pglite
+```
+
+To use the in-memory Postgres:
+
+```javascript
+import { PGlite } from "@electric-sql/pglite";
+
+const db = new PGlite();
+await db.query("select 'Hello world' as message;");
+// -> { rows: [ { message: "Hello world" } ] }
+```
+
+or to persist to the filesystem:
+
+```javascript
+import * as FileSystem from 'expo-file-system';
+
+const db = new PGlite(FileSystem.documentDirectory + 'pgdata');
 ```
 
 ## How it works

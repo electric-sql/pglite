@@ -1,6 +1,6 @@
 # Getting started with PGlite
 
-PGlite can be used in both Node/Bun or the browser, and with any JavaScript framework.
+PGlite can be used in Node.js, Bun, the browser, and mobile platforms using React Native and Expo, and with any JavaScript framework.
 
 ## Install and start in Node/Bun
 
@@ -64,6 +64,46 @@ or to persist the database to IndexedDB:
 
 ```js
 const db = new PGlite('idb://my-pgdata')
+```
+
+## Install and start in mobile applications
+
+Install into your project:
+
+::: code-group
+
+```bash [npm]
+npm install @electric-sql/pglite
+```
+
+```bash [pnpm]
+pnpm install @electric-sql/pglite
+```
+
+```bash [yarn]
+yarn add @electric-sql/pglite
+```
+
+```bash [bun]
+bun install @electric-sql/pglite
+```
+
+:::
+
+To use the in-memory Postgres:
+
+```js
+import { PGlite } from '@electric-sql/pglite'
+
+const db = new PGlite()
+```
+
+or to persist to the filesystem:
+
+```js
+import * as FileSystem from 'expo-file-system';
+
+const db = new PGlite(FileSystem.documentDirectory + 'pgdata');
 ```
 
 ## Making a query

@@ -71,6 +71,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * @param dataDir The directory to store the database files
    *                Prefix with idb:// to use indexeddb filesystem in the browser
    *                Use memory:// to use in-memory filesystem
+   *                Use mobile:// to use mobile filesystem in React Native/Expo
    * @param options Optional options
    */
   constructor(dataDir?: string, options?: PGliteOptions)
@@ -119,6 +120,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * @param dataDir The directory to store the database files
    *                Prefix with idb:// to use indexeddb filesystem in the browser
    *                Use memory:// to use in-memory filesystem
+   *                Use mobile:// to use mobile filesystem in React Native/Expo
    * @param options Optional options
    * @returns A promise that resolves to the PGlite instance when it's ready.
    */
