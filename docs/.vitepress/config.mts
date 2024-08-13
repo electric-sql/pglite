@@ -130,6 +130,9 @@ export default defineConfig({
         'Dual-licensed under <a href="https://github.com/electric-sql/pglite/blob/main/LICENSE">Apache 2.0</a> and the <a href="https://github.com/electric-sql/pglite/blob/main/POSTGRES-LICENSE">PostgreSQL License</a>',
       copyright: '© <a href="https://electric-sql.com/">ElectricSQL</a>',
     },
+    search: {
+      provider: 'local',
+    },
   },
   vue: {
     template: {
