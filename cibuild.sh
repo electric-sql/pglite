@@ -71,8 +71,8 @@ else
 #define I_PGDEBUG
 #define WASM_USERNAME "$PGUSER"
 #define PDEBUG(string)
-#define JSDEBUG(string
-#define ADEBUG(string))
+#define JSDEBUG(string)
+#define ADEBUG(string)
 #define PGDEBUG 0
 #endif
 END
