@@ -78,6 +78,7 @@ else
 END
 fi
 
+# TESTING: removed node / npm from CI
 # make sure CI pnpm will be in the path
 if which pnpm
 then

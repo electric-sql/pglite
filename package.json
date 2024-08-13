@@ -5,8 +5,8 @@
     }
   },
   "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
+    "node": ">=18",
+    "pnpm": ">=8"
   },
   "packageManager": "pnpm@9.7.0",
   "private": true,

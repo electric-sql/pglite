@@ -33,13 +33,14 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('cibuild.sh', 'cibuild/**', 'patches/*.c', 'patches/**/*.diff') }}
+          key: build-cache-${{ hashFiles('cibuild.sh', 'package.json', 'cibuild/**', 'patches/*.c', 'patches/**/*.diff') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
         working-directory: /
         run: |
           sudo apt-get install -y lz4 wget pv bash
+          sudo rm $(which node) $(which npm)
           echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
           curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 24400 >/dev/null
 
