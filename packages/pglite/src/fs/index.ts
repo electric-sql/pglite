@@ -1,6 +1,7 @@
 import type { FsType, Filesystem } from './types.js'
 import { IdbFs } from './idbfs.js'
 import { MemoryFS } from './memoryfs.js'
+import { MobileFS } from './mobilefs.js'
 
 export type * from './types.js'
 
@@ -24,6 +25,10 @@ export function parseDataDir(dataDir?: string) {
     // Remove the opfsahp:// prefix, and use opfs access handle pool filesystem
     dataDir = dataDir.slice(11)
     fsType = 'opfs-ahp'
+  } else if (dataDir?.startsWith('mobile://')) {
+    // Remove the mobile:// prefix, and use mobile filesystem
+    dataDir = dataDir.slice(9)
+    fsType = 'mobilefs'
   } else if (!dataDir || dataDir?.startsWith('memory://')) {
     // Use in-memory filesystem
     fsType = 'memoryfs'
@@ -46,6 +51,8 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     // Lazy load the opfs-ahp to so that it's optional in the bundle
     const { OpfsAhpFS } = await import('./opfs-ahp/index.js')
     fs = new OpfsAhpFS(dataDir)
+  } else if (dataDir && fsType === 'mobilefs') {
+    fs = new MobileFS(dataDir)
   } else {
     fs = new MemoryFS()
   }
