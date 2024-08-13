@@ -13,7 +13,7 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-
+export TOTAL_MEMORY=${TOTAL_MEMORY:-256MB}
 
 # exit on error
 EOE=false
@@ -58,6 +58,8 @@ then
 #define WASM_USERNAME "$PGUSER"
 #define PGDEBUG 1
 #define PDEBUG(string) puts(string)
+#define JSDEBUG(string) {EM_ASM({ console.log(string); });}
+#define ADEBUG(string) { PDEBUG(string); JSDEBUG(string) }
 #endif
 END
 
@@ -69,10 +71,40 @@ else
 #define I_PGDEBUG
 #define WASM_USERNAME "$PGUSER"
 #define PDEBUG(string)
+#define JSDEBUG(string
+#define ADEBUG(string))
 #define PGDEBUG 0
 #endif
 END
 fi
+
+# make sure CI pnpm will be in the path
+if which pnpm
+then
+    echo -n
+else
+    if which npm
+    then
+        npm init playwright@latest --force
+        npx playwright install
+        npm install -g pnpm@^8.0.0
+        pnpm create playwright
+        echo "
+
+        PNPM : $(which pnpm)
+        node : $(which node) $($(which node) -v)
+
+    "
+        export NPATH="/usr/local/bin"
+        export CIPNPM=true
+        export CIHOME=${HOME}
+    else
+        echo will use sdk bundled node18/npm/pnpm
+        export NPATH=""
+        export CIPNPM=false
+    fi
+fi
+
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
 # TODO: but may need to adjust $PATH with stock emsdk.
@@ -112,7 +144,6 @@ else
 
 fi
 
-export PATH=$PATH:$(echo -n $EMSDK/node/*_64bit/bin)
 
 export CC_PGLITE
 
@@ -127,6 +158,9 @@ else
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
+export NPATH=$NPATH
+export CIHOME=$CIHOME
+export CIPNPM=$CIPNPM
 export PGOPTS="\\
  -c log_checkpoints=false \\
  -c dynamic_shared_memory_type=posix \\
@@ -186,7 +220,7 @@ fi
 
 # put wasm-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
-export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
+export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$NPATH:$PATH
 
 
 
@@ -250,7 +284,8 @@ then
 
 fi
 
-
+if ${EXTRA_EXT:-true}
+then
     if echo " $*"|grep -q " vector"
     then
         echo "====================== vector : $(pwd) ================="
@@ -271,7 +306,7 @@ fi
             pushd pgvector
                 # path for wasm-shared already set to (pwd:pg build dir)/bin
                 # OPTFLAGS="" turns off arch optim (sse/neon).
-                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
+                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install || exit 276
                 cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
                 rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
             popd
@@ -294,32 +329,16 @@ fi
     if echo " $*"|grep -q " quack"
     then
         echo "================================================="
-        ./cibuild/pg_quack.sh
+        ./cibuild/pg_quack.sh || exit 299
         cp $PGROOT/lib/libduckdb.so /tmp/
         python3 cibuild/pack_extension.py
     fi
-
+fi
 # ===========================================================================
 # ===========================================================================
 #                               PGLite
 # ===========================================================================
 # ===========================================================================
-
-
-
-
-# in pg git test mode we pull pglite instead
-if [ -d pglite ]
-then
-    # to get  pglite/postgres populated by web build
-    rmdir pglite/postgres pglite 2>/dev/null
-    if [ -d pglite ]
-    then
-        echo using local
-    else
-        git clone --no-tags --depth 1 --single-branch --branch pglite-build https://github.com/electric-sql/pglite pglite
-    fi
-fi
 
 
 # run this last so all extensions files can be packaged
@@ -403,9 +422,27 @@ do
         ;;
 
         pglite-test) echo "================== pglite-test ========================="
+            if $CIPNPM
+            then
+                export HOME=$CIHOME
+            fi
+            echo "
+
+        PNPM : $(which pnpm)
+        CIPNPM=$CIPNPM
+        CIHOME=$CIHOME
+        PATH=$PATH
+        HOME=$HOME
+
+"
             pushd ./packages/pglite
-            pnpm exec playwright install --with-deps
-            pnpm run test || exit 408
+            if pnpm exec playwright install --with-deps
+            then
+                pnpm run test || exit 429
+            else
+                echo "failed to install test env"
+                pnpm run test || exit 432
+            fi
             popd
         ;;
 
