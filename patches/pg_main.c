@@ -1,5 +1,3 @@
-#include "/tmp/pgdebug.h"
-
 #define IDB_OK  0b11111110
 #define IDB_FAILED  0b0001
 #define IDB_CALLED  0b0010
@@ -592,11 +590,10 @@ pg_repl_raf(){
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (is_node) {
-
-
+JSDEBUG("pg_repl_raf(NODE)");
     }
     if (is_repl) {
-        PDEBUG("# 595: switching to REPL mode (raf)");
+ADEBUG("#598: pg_repl_raf(REPL)");
         repl = true;
         single_mode_feed = NULL;
         force_echo = true;
@@ -605,6 +602,11 @@ pg_repl_raf(){
     } else {
         PDEBUG("# 602: TODO: headless wire mode");
     }
+
+    if (is_node) {
+JSDEBUG("pg_repl_raf(NODE) EXIT!!!");
+    }
+
 }
 
 
@@ -1281,6 +1283,7 @@ extra_env:;
     // also we store the fake locale file there.
 	// postgres.js:1605 You must specify the --config-file or -D invocation option or set the PGDATA environment variable.
 
+    /* enforce ? */
 	setenv("PGSYSCONFDIR", WASM_PREFIX, 1);
 	setenv("PGCLIENTENCODING", "UTF8", 1);
 
@@ -1293,15 +1296,13 @@ extra_env:;
 
 	setenv("LC_CTYPE", "C" , 1);
 
-	/* default username */
+    /* defaults */
+
+    setenv("TZ", "UTC", 0);
+    setenv("PGTZ", "UTC", 0);
 	setenv("PGUSER", WASM_USERNAME , 0);
-
-	/* default path */
 	setenv("PGDATA", PGDB , 0);
-
-    /* default database */
 	setenv("PGDATABASE", "template1" , 0);
-
     setenv("PG_COLOR", "always", 0);
 
 #if PGDEBUG
@@ -1379,7 +1380,9 @@ main_repl(int async) {
 
     if (!mkdir(PGDB, 0700)) {
         /* no db : run initdb now. */
-        fprintf(stderr, "db %s not found, running initdb with defaults\n", PGDB );
+#if PGDEBUG
+        fprintf(stderr, "PGDATA=%s not found, running initdb with defaults\n", PGDB );
+#endif
         #if defined(PG_INITDB_MAIN)
             #warning "web build"
             hadloop_error = pg_initdb() & IDB_FAILED;

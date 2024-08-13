@@ -1,4 +1,4 @@
-#define PDEBUG(...)
+#define PDEBUG(string) puts(string)
 #include <unistd.h>  // access, unlink
 
 static void pg_prompt() {
@@ -183,7 +183,7 @@ interactive_one() {
         }
 
 
-    // this could be pg_flush in sync mode.
+        // this could be pg_flush in sync mode.
         if (SOCKET_DATA>0) {
 
             PDEBUG("end packet");
@@ -225,7 +225,7 @@ interactive_one() {
         if (access(PGS_ILOCK, F_OK) != 0) {
             packetlen = 0;
             FILE *fp;
-    // TODO: lock file
+            // TODO: lock file
             fp = fopen(PGS_IN, "r");
             if (fp) {
                 fseek(fp, 0L, SEEK_END);
@@ -353,8 +353,9 @@ interactive_one() {
             SOCKET_FILE =  fopen(PGS_OUT,"w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
+#if PGDEBUG
         printf("# fd %s: %s fd=%d\n", PGS_OUT, IO, MyProcPort->sock);
-
+#endif
         goto incoming;
 
     }
@@ -391,7 +392,9 @@ interactive_one() {
             SOCKET_FILE =  fopen(PGS_OUT,"w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
+#if PGDEBUG
         printf("# fd %s: %s fd=%d\n", PGS_OUT, IO, MyProcPort->sock);
+#endif
 
     }
 
