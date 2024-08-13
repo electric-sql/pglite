@@ -9,7 +9,7 @@ interface PGliteDependencyInjection<T extends PGliteWithLive> {
 const PGliteKey = Symbol('PGliteProvider')
 
 /**
- * Call this function to get aa PGlite provider and injector for your Vue application.
+ * Call this function to get a PGlite provider and injector for your Vue application.
  * We can't provide a predefined provider and injector because that would lose type information
  * as the PGlite interface depends on the extensions provided to PGlite.
  *
