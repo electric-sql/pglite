@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expectTypeOf } from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
+import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { live } from '@electric-sql/pglite/live'
 import { makePGliteDependencyInjector } from '../src'
 import { vector } from '@electric-sql/pglite/vector'
@@ -21,8 +21,13 @@ describe('dependency injection', () => {
         vector,
       },
     })
-    const { providePGlite, injectPGlite } =
-      makePGliteDependencyInjector<typeof dbLiveVector>()
+    const { providePGlite, injectPGlite } = makePGliteDependencyInjector<
+      PGlite &
+        PGliteInterfaceExtensions<{
+          live: typeof live
+          vector: typeof vector
+        }>
+    >()
 
     // @ts-expect-error name is a string
     providePGlite(dbLive)

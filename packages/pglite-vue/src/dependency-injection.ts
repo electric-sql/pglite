@@ -25,7 +25,7 @@ const PGliteKey = Symbol('PGliteProvider')
  * @returns An object with two functions: `providePGlite` and `injectPGlite`.
  *
  */
-export function makePGliteDependencyInjector<
+function makePGliteDependencyInjector<
   T extends PGliteWithLive,
 >(): PGliteDependencyInjection<T> {
   const providePGlite = (db: Ref<T | undefined> | (T | undefined)): void =>
@@ -42,14 +42,7 @@ export function makePGliteDependencyInjector<
   }
 }
 
-/**
- * This "static" injector is used internally by our reactive methods
- * to get access to the provided PGlite instance.
- * It loses information about the extensions present on PGlite,
- * but we only need the `live` extension information for our methods.
- * However, users preferably don't lose extension type information,
- * therefore, they can use {@link makePGliteDependencyInjector}.
- */
-const { injectPGlite: injectPGliteUntyped } = makePGliteDependencyInjector()
+const { injectPGlite, providePGlite } =
+  makePGliteDependencyInjector<PGliteWithLive>()
 
-export { injectPGliteUntyped }
+export { makePGliteDependencyInjector, injectPGlite, providePGlite }
