@@ -4,6 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  pull-requests: write
+  issues: write
+
 on:
   workflow_dispatch:
     inputs:
