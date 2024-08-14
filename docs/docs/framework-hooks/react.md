@@ -2,9 +2,7 @@
 outline: [2, 3]
 ---
 
-# Framework Hooks
-
-## React
+# React
 
 To aid integration of PGlite into a [React](https://react.dev/) project we have a `PGliteProvider` with a corresponding `usePGlite` and hooks for the [live query](./live-queries.md) plugin.
 
@@ -53,6 +51,27 @@ const MyComponent = () => {
     </>
   )
 }
+```
+
+### makePGliteProvider
+
+The `makePGliteProvider` function returns a `PGliteProvider` component and a `usePGlite` hook with the specified type, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.
+
+```ts
+import { PGlite } from "@electric-sql/pglite"
+import { live } from "@electric-sql/pglite/live"
+import { vector } from "@electric-sql/pglite/vector"
+import { makePGliteProvider } from "@electric-sql/pglite-react"
+
+const {
+  PGliteProvider,
+  usePGlite
+} = makePGliteProvider<PGlite & {
+  live: LiveNamespace;
+  vector: VectorNamespace
+}>()
+
+export { PGliteProvider, usePGlite }
 ```
 
 ### useLiveQuery
