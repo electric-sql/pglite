@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       PGVERSION: 16.3
-      SDK_VERSION: 3.1.65.8bi
+      SDK_VERSION: 3.1.65.10bi
       SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
@@ -33,7 +33,7 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('cibuild.sh', 'package.json', 'cibuild/**', 'patches/*.c', 'patches/**/*.diff') }}
+          key: build-cache-${{ hashFiles('cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'cibuild/**', 'patches/*.c', 'patches/**/*.diff') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
@@ -80,6 +80,12 @@ jobs:
           name: postgres-wasm
           path: /tmp/sdk/postgres-*.tar.gz
           retention-days: 60
+
+      - name: Test pglite
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          bash ./cibuild.sh pglite-test
+
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
