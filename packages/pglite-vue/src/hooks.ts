@@ -25,7 +25,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
   params?: QueryParams | WatchSource<QueryParams>,
   key?: string | WatchSource<string>,
-): LiveQueryResults<T> | undefined {
+): LiveQueryResults<T> {
   const db = injectPGlite()!
 
   const liveUpdate = shallowReactive<
@@ -86,7 +86,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
   params?: QueryParams | WatchSource<QueryParams>,
-): LiveQueryResults<T> | undefined {
+): LiveQueryResults<T> {
   return useLiveQueryImpl<T>(query, params)
 }
 
@@ -94,6 +94,6 @@ export function useLiveIncrementalQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
   params: QueryParams | WatchSource<QueryParams>,
   key: string | WatchSource<string>,
-): LiveQueryResults<T> | undefined {
+): LiveQueryResults<T> {
   return useLiveQueryImpl<T>(query, params, key)
 }

@@ -103,7 +103,10 @@ export default defineConfig({
             link: '/react',
             base: '/docs/framework-hooks',
             collapsed: true,
-            items: [{ text: 'React', link: '/react' }],
+            items: [
+              { text: 'React', link: '/react' },
+              { text: 'Vue', link: '/vue' },
+            ],
           },
           { text: 'Multi-tab Worker', link: '/docs/multi-tab-worker' },
           { text: 'REPL Component', link: '/docs/repl' },
