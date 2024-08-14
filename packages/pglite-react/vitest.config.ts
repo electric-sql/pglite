@@ -12,7 +12,7 @@ export default defineConfig({
     typecheck: { enabled: true },
     restoreMocks: true,
     testTransformMode: {
-      ssr: ['**/*']
+      ssr: ['**/*'],
     },
   },
 })

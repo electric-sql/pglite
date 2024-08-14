@@ -33,7 +33,6 @@ if (isVue3) {
         template: '<div>count: {{ count }}</div>',
         setup() {
           const db = injectPGlite()
-          console.log(db)
           const count = ref(0)
           db?.exec(`SELECT 1 as count;`).then((res) => {
             count.value = res[0].rows[0]['count']

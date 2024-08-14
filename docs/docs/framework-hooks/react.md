@@ -2,11 +2,9 @@
 outline: [2, 3]
 ---
 
-# Framework Hooks
+# React
 
-## React
-
-To aid integration of PGlite into a [React](https://react.dev/) project we have a `PGliteProvider` with a corresponding `usePGlite` and hooks for the [live query](./live-queries.md) plugin.
+To aid integration of PGlite into a [React](https://react.dev/) project we have a `PGliteProvider` with a corresponding `usePGlite` and hooks for the [live query](../live-queries.md) plugin.
 
 ### PGliteProvider
 
@@ -55,9 +53,30 @@ const MyComponent = () => {
 }
 ```
 
+### makePGliteProvider
+
+The `makePGliteProvider` function returns a `PGliteProvider` component and a `usePGlite` hook with the specified type, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.
+
+```ts
+import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
+import { LiveNamespace } from '@electric-sql/pglite/live'
+import { VectorNamespace } from '@electric-sql/pglite/vector'
+import { makePGliteProvider } from '@electric-sql/pglite-react'
+
+const { PGliteProvider, usePGlite } = makePGliteProvider<
+  PGlite &
+    PGliteInterfaceExtensions<{
+      live: typeof live
+      vector: typeof vector
+    }>
+>()
+
+export { PGliteProvider, usePGlite }
+```
+
 ### useLiveQuery
 
-The `useLiveQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.query()`](./live-queries.md#livequery) API.
+The `useLiveQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.query()`](../live-queries.md#livequery) API.
 
 It has the interface:
 
@@ -74,7 +93,7 @@ And its arguments are:
 2. optional parameters for the query
 
 ```ts
-import { useLiveQuery } from "@electric-sql/pglite-react"
+import { useLiveQuery } from '@electric-sql/pglite-react'
 
 const MyComponent = () => {
   const maxNumber = 100
@@ -99,7 +118,7 @@ const MyComponent = () => {
 
 ### useLiveIncrementalQuery
 
-The `useLiveIncrementalQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](./live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
+The `useLiveIncrementalQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](../live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
 
 It has the interface:
 
@@ -118,7 +137,7 @@ And its arguments are:
 3. the name of the column to key the diff algorithm on
 
 ```ts
-import { useLiveIncrementalQuery } from "@electric-sql/pglite-react"
+import { useLiveIncrementalQuery } from '@electric-sql/pglite-react'
 
 const MyComponent = () => {
   const maxNumber = 100

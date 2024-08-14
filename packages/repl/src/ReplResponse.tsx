@@ -29,6 +29,7 @@ export function ReplResponse({
     out = (
       <>
         {response.results?.map((result, i) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key
           <OutLine key={i} result={result} />
         ))}
       </>

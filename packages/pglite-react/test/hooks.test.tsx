@@ -4,31 +4,9 @@ import { waitFor } from '@testing-library/dom'
 import React from 'react'
 import { PGlite } from '@electric-sql/pglite'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
-import {
-  PGliteProvider,
-  usePGlite,
-  useLiveQuery,
-  useLiveIncrementalQuery,
-} from '../dist/index.js'
+import { PGliteProvider, useLiveQuery, useLiveIncrementalQuery } from '../src'
 
-describe('react', () => {
-  describe('usePGlite', () => {
-    it('can receive PGlite', async () => {
-      const db = await PGlite.create({
-        extensions: {
-          live,
-        },
-      })
-      const wrapper = ({ children }: { children: React.ReactNode }) => {
-        return <PGliteProvider db={db}>{children}</PGliteProvider>
-      }
-
-      const { result } = renderHook(() => usePGlite(), { wrapper })
-
-      await waitFor(() => expect(result.current).toBe(db))
-    })
-  })
-
+describe('hooks', () => {
   testLiveQuery('useLiveQuery')
 
   testLiveQuery('useLiveIncrementalQuery')
