@@ -11,8 +11,9 @@ export default defineConfig({
     setupFiles: ['test-setup.ts'],
     typecheck: { enabled: true },
     restoreMocks: true,
+    fileParallelism: false,
     testTransformMode: {
-      ssr: ['**/*']
+      ssr: ['**/*'],
     },
   },
 })
