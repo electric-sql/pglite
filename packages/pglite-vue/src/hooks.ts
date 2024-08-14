@@ -12,7 +12,7 @@ import {
   isRef,
 } from 'vue-demi'
 import { Results } from '@electric-sql/pglite'
-import { injectPGliteUntyped } from './dependency-injection'
+import { injectPGlite } from './dependency-injection'
 
 type UnsubscribeFn = () => Promise<void>
 type QueryParams = unknown[] | undefined | null
@@ -26,7 +26,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   params?: QueryParams | WatchSource<QueryParams>,
   key?: string | WatchSource<string>,
 ): LiveQueryResults<T> | undefined {
-  const db = injectPGliteUntyped()!
+  const db = injectPGlite()!
 
   const liveUpdate = shallowReactive<
     | Omit<Results<T>, 'affectedRows'>

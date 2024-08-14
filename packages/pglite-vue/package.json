@@ -1,7 +1,7 @@
 {
   "name": "@electric-sql/pglite-vue",
   "version": "0.2.0",
-  "description": "Vue.js hooks for using PGlite",
+  "description": "Vue hooks for using PGlite",
   "type": "module",
   "private": false,
   "publishConfig": {
