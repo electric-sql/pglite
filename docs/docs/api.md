@@ -257,6 +257,30 @@ The datadir dump may not be compatible with other Postgres versions; it is only 
 
 :::
 
+### execProtocol
+
+`execProtocol(message: Uint8Array, options?: ExecProtocolOptions): Promise<Array<[BackendMessage, Uint8Array]>>`
+
+Execute a Postgres wire protocol message, returning an array of tuples, one for each wire protocol result message, consisting of:
+
+1. The passed message object - see [pg-protocol](https://github.com/brianc/node-postgres/tree/master/packages/pg-protocol)
+2. The raw `Uint8Array` for that message.
+
+This API is safe to use alongside the other PGlite query APIs as it handles error, transactions and notifications.
+
+### execProtocolRaw
+
+`execProtocolRaw(message: Uint8Array, options?: ExecProtocolOptions): Promise<Uint8Array>`
+
+Execute a Postgres wire protocol message, returning the unparsed result `Uint8Array`, this includes all wire protocol result messages emitted as a result of your message and will require external passing. This is the lowest level API exposed by PGlite and can be used to interact with a PGlite database using existing Postgres clients. It is likely that you will want to use something such as [pg-gateway](https://github.com/supabase-community/pg-gateway) that uses this internally to expose the database on a TCP socket.
+
+::: warning WARNING
+
+`execProtocolRaw` bypasses PGlite's protocol wrappers that manage error/notice messages,
+transactions, and notification listeners. Only use if you need to bypass these wrappers and don't intend to use the above features. [`execProtocol`](#execprotocol) is a safer alternative.
+
+:::
+
 ## Properties
 
 ### ready
