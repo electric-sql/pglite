@@ -1,5 +1,5 @@
 ---
-'@electric-sql/pglite-react': minor
+'@electric-sql/pglite-react': patch
 ---
 
 Fix exports in package.json
