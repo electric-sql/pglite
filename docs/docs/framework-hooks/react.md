@@ -4,7 +4,7 @@ outline: [2, 3]
 
 # React
 
-To aid integration of PGlite into a [React](https://react.dev/) project we have a `PGliteProvider` with a corresponding `usePGlite` and hooks for the [live query](./live-queries.md) plugin.
+To aid integration of PGlite into a [React](https://react.dev/) project we have a `PGliteProvider` with a corresponding `usePGlite` and hooks for the [live query](../live-queries.md) plugin.
 
 ### PGliteProvider
 
@@ -75,7 +75,7 @@ export { PGliteProvider, usePGlite }
 
 ### useLiveQuery
 
-The `useLiveQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.query()`](./live-queries.md#livequery) API.
+The `useLiveQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.query()`](../live-queries.md#livequery) API.
 
 It has the interface:
 
@@ -117,7 +117,7 @@ const MyComponent = () => {
 
 ### useLiveIncrementalQuery
 
-The `useLiveIncrementalQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](./live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
+The `useLiveIncrementalQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](../live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
 
 It has the interface:
 
