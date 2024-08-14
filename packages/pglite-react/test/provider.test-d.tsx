@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf } from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
+import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { live } from '@electric-sql/pglite/live'
 import { vector } from '@electric-sql/pglite/vector'
 import { makePGliteProvider } from '../src/provider.js'
@@ -18,8 +18,13 @@ describe('provider', () => {
       },
     })
 
-    const { PGliteProvider, usePGlite } =
-      makePGliteProvider<typeof dbLiveVector>()
+    const { PGliteProvider, usePGlite } = makePGliteProvider<
+      PGlite &
+        PGliteInterfaceExtensions<{
+          live: typeof live
+          vector: typeof vector
+        }>
+    >()
 
     // @ts-expect-error cannot pass db with just live extension
     ;() => <PGliteProvider db={dbLive}></PGliteProvider>

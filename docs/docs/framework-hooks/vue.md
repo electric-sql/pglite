@@ -51,16 +51,17 @@ const insertItem = () => {
 The `makePGliteDependencyInjector` function returns typed versions of `providePGlite` and `injectPGlite`, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.
 
 ```ts
-import { PGlite } from '@electric-sql/pglite'
+import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { live } from '@electric-sql/pglite/live'
 import { vector } from '@electric-sql/pglite/vector'
 import { makePGliteDependencyInjector } from '@electric-sql/pglite-vue'
 
 const { providePGlite, injectPGlite } = makePGliteDependencyInjector<
-  PGlite & {
-    live: LiveNamespace
-    vector: VectorNamespace
-  }
+  PGlite &
+    PGliteInterfaceExtensions<{
+      live: typeof live
+      vector: typeof vector
+    }>
 >()
 
 export { providePGlite, injectPGlite }
