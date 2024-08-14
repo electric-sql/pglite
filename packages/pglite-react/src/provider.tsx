@@ -34,7 +34,7 @@ function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
       return dbProvided
     },
     PGliteProvider: ({ children, db }: Props<T>) => {
-      return <PGliteProvider db={db}>{children}</PGliteProvider>
+      return <ctx.Provider value={db}>{children}</ctx.Provider>
     },
   }
 }
