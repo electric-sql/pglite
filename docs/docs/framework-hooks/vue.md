@@ -37,12 +37,11 @@ const db = injectPGlite()
 const insertItem = () => {
   db.query("INSERT INTO my_table (name, number) VALUES ('Arthur', 42);")
 }
-
 </script>
 
 <template>
   // ...
-  <button @click="insertItem"> Insert item</button>
+  <button @click="insertItem">Insert item</button>
   // ...
 </template>
 ```
@@ -90,20 +89,19 @@ And its arguments, which can also be [watch sources](https://vuejs.org/guide/ess
 import { useLiveQuery } from '@electric-sql/pglite-vue'
 
 const maxNumber = 100
-const items = useLiveQuery(`
+const items = useLiveQuery(
+  `
   SELECT *
   FROM my_table
   WHERE number <= $1
   ORDER BY number;
-`, [maxNumber])
-
+`,
+  [maxNumber],
+)
 </script>
 
 <template>
-  <MyItem
-    v-for="item in items"
-    v-bind:item="item"
-  />
+  <MyItem v-for="item in items" v-bind:item="item" />
 </template>
 ```
 
@@ -127,25 +125,24 @@ And its arguments, which can also be [watch sources](https://vuejs.org/guide/ess
 2. optional parameters for the query
 3. the name of the column to key the diff algorithm on
 
-
 ```vue
 <script lang="ts">
 import { useLiveInceremntalQuery } from '@electric-sql/pglite-vue'
 
 const maxNumber = 100
-const items = useLiveInceremntalQuery(`
+const items = useLiveInceremntalQuery(
+  `
   SELECT *
   FROM my_table
   WHERE number <= $1
   ORDER BY number;
-`, [maxNumber], 'id')
-
+`,
+  [maxNumber],
+  'id',
+)
 </script>
 
 <template>
-  <MyItem
-    v-for="item in items"
-    v-bind:item="item"
-  />
+  <MyItem v-for="item in items" v-bind:item="item" />
 </template>
 ```
