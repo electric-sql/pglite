@@ -3,6 +3,7 @@ name: Build WASM PGlite files
 permissions:
   pull-requests: write
   issues: write
+  contents: read
 
 on:
   workflow_call:
