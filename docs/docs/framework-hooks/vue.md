@@ -92,17 +92,17 @@ import { useLiveQuery } from '@electric-sql/pglite-vue'
 const maxNumber = 100
 const items = useLiveQuery(
   `
-  SELECT *
-  FROM my_table
-  WHERE number <= $1
-  ORDER BY number;
-`,
+    SELECT *
+    FROM my_table
+    WHERE number <= $1
+    ORDER BY number;
+  `,
   [maxNumber],
 )
 </script>
 
 <template>
-  <MyItem v-for="item in items" v-bind:item="item" />
+  <MyItem v-for="item in items" :item="item" :key="item.id" />
 </template>
 ```
 
@@ -133,17 +133,17 @@ import { useLiveInceremntalQuery } from '@electric-sql/pglite-vue'
 const maxNumber = 100
 const items = useLiveInceremntalQuery(
   `
-  SELECT *
-  FROM my_table
-  WHERE number <= $1
-  ORDER BY number;
-`,
+    SELECT *
+    FROM my_table
+    WHERE number <= $1
+    ORDER BY number;
+  `,
   [maxNumber],
   'id',
 )
 </script>
 
 <template>
-  <MyItem v-for="item in items" v-bind:item="item" />
+  <MyItem v-for="item in items" :item="item" :key="item.id" />
 </template>
 ```
