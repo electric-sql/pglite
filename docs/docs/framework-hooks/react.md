@@ -58,18 +58,17 @@ const MyComponent = () => {
 The `makePGliteProvider` function returns a `PGliteProvider` component and a `usePGlite` hook with the specified type, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.
 
 ```ts
-import { PGlite } from "@electric-sql/pglite"
-import { live } from "@electric-sql/pglite/live"
-import { vector } from "@electric-sql/pglite/vector"
-import { makePGliteProvider } from "@electric-sql/pglite-react"
+import { PGlite } from '@electric-sql/pglite'
+import { live } from '@electric-sql/pglite/live'
+import { vector } from '@electric-sql/pglite/vector'
+import { makePGliteProvider } from '@electric-sql/pglite-react'
 
-const {
-  PGliteProvider,
-  usePGlite
-} = makePGliteProvider<PGlite & {
-  live: LiveNamespace;
-  vector: VectorNamespace
-}>()
+const { PGliteProvider, usePGlite } = makePGliteProvider<
+  PGlite & {
+    live: LiveNamespace
+    vector: VectorNamespace
+  }
+>()
 
 export { PGliteProvider, usePGlite }
 ```
@@ -93,7 +92,7 @@ And its arguments are:
 2. optional parameters for the query
 
 ```ts
-import { useLiveQuery } from "@electric-sql/pglite-react"
+import { useLiveQuery } from '@electric-sql/pglite-react'
 
 const MyComponent = () => {
   const maxNumber = 100
@@ -137,7 +136,7 @@ And its arguments are:
 3. the name of the column to key the diff algorithm on
 
 ```ts
-import { useLiveIncrementalQuery } from "@electric-sql/pglite-react"
+import { useLiveIncrementalQuery } from '@electric-sql/pglite-react'
 
 const MyComponent = () => {
   const maxNumber = 100
