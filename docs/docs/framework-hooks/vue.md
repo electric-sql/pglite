@@ -4,7 +4,7 @@ outline: [2, 3]
 
 # Vue
 
-To aid integration of PGlite into a [Vue](https://vuejs.org/) project we have a `providePGlite` with a corresponding `injectPGlite` and hooks for the [live query](./live-queries.md) plugin.
+To aid integration of PGlite into a [Vue](https://vuejs.org/) project we have a `providePGlite` with a corresponding `injectPGlite` and hooks for the [live query](../live-queries.md) plugin.
 
 ### providePGlite
 
@@ -69,7 +69,7 @@ export { providePGlite, injectPGlite }
 
 ### useLiveQuery
 
-The `useLiveQuery` hook enables you to reactively receive updates to the results of a live query change. It wraps the [`.live.query()`](./live-queries.md#livequery) API.
+The `useLiveQuery` hook enables you to reactively receive updates to the results of a live query change. It wraps the [`.live.query()`](../live-queries.md#livequery) API.
 
 It has the interface:
 
@@ -109,7 +109,7 @@ const items = useLiveQuery(`
 
 ### useLiveIncrementalQuery
 
-The `useLiveIncrementalQuery` hook enables you to reactively receive updates whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](./live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
+The `useLiveIncrementalQuery` hook enables you to reactively receive updates whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](../live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
 
 It has the interface:
 
