@@ -58,16 +58,17 @@ const MyComponent = () => {
 The `makePGliteProvider` function returns a `PGliteProvider` component and a `usePGlite` hook with the specified type, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.
 
 ```ts
-import { PGlite } from '@electric-sql/pglite'
-import { live } from '@electric-sql/pglite/live'
-import { vector } from '@electric-sql/pglite/vector'
+import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
+import { LiveNamespace } from '@electric-sql/pglite/live'
+import { VectorNamespace } from '@electric-sql/pglite/vector'
 import { makePGliteProvider } from '@electric-sql/pglite-react'
 
 const { PGliteProvider, usePGlite } = makePGliteProvider<
-  PGlite & {
-    live: LiveNamespace
-    vector: VectorNamespace
-  }
+  PGlite &
+    PGliteInterfaceExtensions<{
+      live: typeof live
+      vector: typeof vector
+    }>
 >()
 
 export { PGliteProvider, usePGlite }
