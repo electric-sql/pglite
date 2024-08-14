@@ -4,6 +4,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -98,7 +103,8 @@ jobs:
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -195,7 +201,8 @@ jobs:
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
