@@ -1,9 +1,9 @@
 ARCHIVE=postgresql-${PGVERSION}.tar.gz
 
-if echo ${PGVERSION} | grep -q 16.4
+if echo ${PGVERSION} | grep -q 16.5
 then
     PG_PREREL=true
-    ARCHIVE_URL=https://github.com/postgres/postgres/archive/refs/tags/REL_16_4.tar.gz
+    ARCHIVE_URL=https://github.com/postgres/postgres/archive/refs/tags/REL_16_5.tar.gz
 else
     PG_PREREL=false
     ARCHIVE_URL=https://ftp.postgresql.org/pub/source/v${PGVERSION}/${ARCHIVE}
