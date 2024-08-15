@@ -8,7 +8,7 @@ import { type CreateThemeOptions } from '@uiw/codemirror-themes'
 import { defaultKeymap } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import { PostgreSQL } from '@codemirror/lang-sql'
-import { type PGlite } from '@electric-sql/pglite'
+import { type PGliteInterface } from '@electric-sql/pglite'
 import { makeSqlExt } from './sqlSupport'
 import type { Response } from './types'
 import { runQuery, getSchema } from './utils'
@@ -38,7 +38,7 @@ export const defaultDarkThemeInit: ThemeInit = githubDarkInit
 export const defaultDarkTheme = githubDark
 
 export interface ReplProps {
-  pg: PGlite
+  pg: PGliteInterface
   border?: boolean
   lightTheme?: Extension
   darkTheme?: Extension

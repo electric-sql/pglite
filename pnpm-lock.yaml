@@ -51,7 +51,7 @@ importers:
         version: link:../packages/pglite
       '@electric-sql/pglite-repl':
         specifier: workspace:*
-        version: link:../packages/repl
+        version: link:../packages/pglite-repl
       '@uiw/codemirror-theme-github':
         specifier: ^4.23.0
         version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
@@ -169,71 +169,7 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
 
-  packages/pglite-sync:
-    devDependencies:
-      '@electric-sql/client':
-        specifier: ^0.2.2
-        version: 0.2.2
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@eslint-react/eslint-plugin':
-        specifier: ^1.9.0
-        version: 1.10.1(eslint@8.57.0)(typescript@5.5.4)
-      '@vitejs/plugin-react':
-        specifier: ^4.2.1
-        version: 4.3.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
-      globals:
-        specifier: ^15.9.0
-        version: 15.9.0
-      vitest:
-        specifier: ^2.0.5
-        version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
-
-  packages/pglite-vue:
-    dependencies:
-      vue-demi:
-        specifier: ^0.14.10
-        version: 0.14.10(@vue/composition-api@1.7.2(vue@3.4.37(typescript@5.5.4)))(vue@3.4.37(typescript@5.5.4))
-    devDependencies:
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@eslint-react/eslint-plugin':
-        specifier: ^1.9.0
-        version: 1.10.1(eslint@8.57.0)(typescript@5.5.4)
-      '@testing-library/dom':
-        specifier: ^10.4.0
-        version: 10.4.0
-      '@testing-library/vue':
-        specifier: ^8.1.0
-        version: 8.1.0(@vue/compiler-sfc@3.4.37)(vue@3.4.37(typescript@5.5.4))
-      '@vitejs/plugin-vue':
-        specifier: ^5.1.2
-        version: 5.1.2(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))(vue@3.4.37(typescript@5.5.4))
-      '@vue/composition-api':
-        specifier: 1.7.2
-        version: 1.7.2(vue@3.4.37(typescript@5.5.4))
-      eslint-plugin-vue:
-        specifier: ^9.27.0
-        version: 9.27.0(eslint@8.57.0)
-      jsdom:
-        specifier: ^24.1.1
-        version: 24.1.1
-      vitest:
-        specifier: ^2.0.5
-        version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
-      vue:
-        specifier: ^3.4.27
-        version: 3.4.37(typescript@5.5.4)
-      vue2:
-        specifier: npm:vue@2.6
-        version: vue@2.6.14
-      vue2.7:
-        specifier: npm:vue@2.7
-        version: vue@2.7.16
-
-  packages/repl:
+  packages/pglite-repl:
     dependencies:
       '@codemirror/autocomplete':
         specifier: ^6.16.2
@@ -308,6 +244,70 @@ importers:
       vite-plugin-libcss:
         specifier: ^1.1.1
         version: 1.1.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
+
+  packages/pglite-sync:
+    devDependencies:
+      '@electric-sql/client':
+        specifier: ^0.2.2
+        version: 0.2.2
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../pglite
+      '@eslint-react/eslint-plugin':
+        specifier: ^1.9.0
+        version: 1.10.1(eslint@8.57.0)(typescript@5.5.4)
+      '@vitejs/plugin-react':
+        specifier: ^4.2.1
+        version: 4.3.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
+      globals:
+        specifier: ^15.9.0
+        version: 15.9.0
+      vitest:
+        specifier: ^2.0.5
+        version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
+
+  packages/pglite-vue:
+    dependencies:
+      vue-demi:
+        specifier: ^0.14.10
+        version: 0.14.10(@vue/composition-api@1.7.2(vue@3.4.37(typescript@5.5.4)))(vue@3.4.37(typescript@5.5.4))
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../pglite
+      '@eslint-react/eslint-plugin':
+        specifier: ^1.9.0
+        version: 1.10.1(eslint@8.57.0)(typescript@5.5.4)
+      '@testing-library/dom':
+        specifier: ^10.4.0
+        version: 10.4.0
+      '@testing-library/vue':
+        specifier: ^8.1.0
+        version: 8.1.0(@vue/compiler-sfc@3.4.37)(vue@3.4.37(typescript@5.5.4))
+      '@vitejs/plugin-vue':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))(vue@3.4.37(typescript@5.5.4))
+      '@vue/composition-api':
+        specifier: 1.7.2
+        version: 1.7.2(vue@3.4.37(typescript@5.5.4))
+      eslint-plugin-vue:
+        specifier: ^9.27.0
+        version: 9.27.0(eslint@8.57.0)
+      jsdom:
+        specifier: ^24.1.1
+        version: 24.1.1
+      vitest:
+        specifier: ^2.0.5
+        version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.37(typescript@5.5.4)
+      vue2:
+        specifier: npm:vue@2.6
+        version: vue@2.6.14
+      vue2.7:
+        specifier: npm:vue@2.7
+        version: vue@2.7.16
 
 packages:
 
@@ -1911,7 +1911,6 @@ packages:
 
   bun@1.1.24:
     resolution: {integrity: sha512-vZt5zNVaoNTSlNprdVdQVZInBcGC2QSik6o9ZsMzuYiiUEAEqpRwwMXAYDUN85mt2FNnsGvmk/8xVlUXS7IzEw==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
