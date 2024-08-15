@@ -20,7 +20,7 @@ jobs:
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
       DEBUG: false
-      OBJDUMP: true
+      OBJDUMP: false
 
     steps:
       - uses: actions/checkout@v4

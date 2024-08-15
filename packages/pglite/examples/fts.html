@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite FTS Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../dist/index.js"
+        }
+      }
+    </script>
+  </head>
+<body>
+<h1>PGlite FTS Example</h1>
+<div class="script-plus-log">
+<script type="module">
+import { PGlite } from "@electric-sql/pglite";
+
+console.log("Starting...");
+
+// In-memory database:
+const pg = await PGlite.create();
+
+const ret1 = await pg.query(`
+  SELECT 'a fat cat sat on a mat and ate a fat rat'::tsvector @@ 'cat & rat'::tsquery AS match;
+`);
+console.log(ret1.rows[0].match);
+
+const ret2 = await pg.query(`
+  SELECT to_tsvector('fat cats ate fat rats') @@ to_tsquery('fat & rat') AS match;
+`);
+console.log(ret2.rows[0].match);
+
+</script>
+<div id="log"></div>
+</div>
+</body>
+</html>
