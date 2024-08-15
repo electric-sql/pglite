@@ -15,7 +15,7 @@ To use it, pass a PGlite instance as the `db` property.
 ```vue
 <script lang="ts" setup>
 import { PGlite } from '@electric-sql/pglite'
-import { providePGlite } from '@electric-sql/pglite-react'
+import { providePGlite } from '@electric-sql/pglite-vue'
 
 const db = new PGlite()
 providePGlite(db)
@@ -30,7 +30,7 @@ You can retrieve the provided PGlite instance using `injectPGlite` and then quer
 ```vue
 <script lang="ts" setup>
 import { onMounted, shallowRef } from 'vue'
-import { injectPGlite } from '@electric-sql/pglite-react'
+import { injectPGlite } from '@electric-sql/pglite-vue'
 
 const db = injectPGlite()
 
