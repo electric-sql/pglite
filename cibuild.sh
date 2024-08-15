@@ -409,16 +409,15 @@ do
         ;;
 
         pglite-test) echo "================== pglite-test ========================="
-            PATH=$PATH:$(pwd)/node_modules/.bin
             echo "
-
         node : $(which node) $($(which node) -v)
         PNPM : $(which pnpm)
-
 "
+            export PATH=$PATH:$(pwd)/node_modules/.bin
             pushd ./packages/pglite
             #npm install -g concurrently playwright ava http-server pg-protocol serve tinytar buffer async-mutex 2>&1 > /dev/null
             pnpm install --prefix .
+            pnpm run build
             if pnpm exec playwright install --with-deps
             then
                 pnpm run test || exit 429
