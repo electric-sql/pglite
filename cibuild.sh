@@ -417,7 +417,7 @@ do
 
 "
             pushd ./packages/pglite
-            npm install -g concurrently playwright
+            npm install -g concurrently playwright ava http-server pg-protocol serve tinytar buffer async-mutex 2>&1 > /dev/null
             if pnpm exec playwright install --with-deps
             then
                 pnpm run test || exit 429
