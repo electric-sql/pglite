@@ -4,11 +4,12 @@ import CodeMirror, {
   type ReactCodeMirrorRef,
   type Extension,
 } from '@uiw/react-codemirror'
-import { type CreateThemeOptions } from '@uiw/codemirror-themes'
+import type { CreateThemeOptions } from '@uiw/codemirror-themes'
 import { defaultKeymap } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import { PostgreSQL } from '@codemirror/lang-sql'
-import { type PGliteInterface } from '@electric-sql/pglite'
+import type { PGliteInterface } from '@electric-sql/pglite'
+import type { PGliteWithLive } from '@electric-sql/pglite/live'
 import { usePGlite } from '@electric-sql/pglite-react'
 import { makeSqlExt } from './sqlSupport'
 import type { Response } from './types'
@@ -70,11 +71,7 @@ export function Repl({
   )
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({})
 
-  // We have to call usePGlite() in a useEffect hook because hooks can't be
-  // called conditionally
-  let pg: PGliteInterface = usePGlite()
-  // If pgProp is provided, use it instead of the one from usePGlite()
-  pg = pgProp || pg
+  const pg: PGliteInterface = usePGlite(pgProp as PGliteWithLive)
 
   useEffect(() => {
     let ignore = false
