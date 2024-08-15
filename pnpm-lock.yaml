@@ -12,6 +12,10 @@ patchedDependencies:
 importers:
 
   .:
+    dependencies:
+      concurrently:
+        specifier: ^8.2.2
+        version: 8.2.2
     devDependencies:
       '@changesets/cli':
         specifier: ^2.27.7
@@ -87,9 +91,6 @@ importers:
 
   packages/pglite:
     devDependencies:
-      '@types/emscripten':
-        specifier: ^1.39.13
-        version: 1.39.13
       '@types/node':
         specifier: ^20.11.18
         version: 20.14.15
@@ -1309,9 +1310,6 @@ packages:
 
   '@types/better-sqlite3@7.6.11':
     resolution: {integrity: sha512-i8KcD3PgGtGBLl3+mMYA8PdKkButvPyARxA7IQAd6qeslht13qxb1zzO8dRCtE7U3IoJS782zDBAeoKiM695kg==}
-
-  '@types/emscripten@1.39.13':
-    resolution: {integrity: sha512-cFq+fO/isvhvmuP/+Sl4K4jtU6E23DoivtbO4r50e3odaxAiVdbfSYRDdJ4gCdxx+3aRjhphS5ZMwIH4hFy/Cw==}
 
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
@@ -5737,8 +5735,6 @@ snapshots:
   '@types/better-sqlite3@7.6.11':
     dependencies:
       '@types/node': 20.14.15
-
-  '@types/emscripten@1.39.13': {}
 
   '@types/estree@1.0.5': {}
 

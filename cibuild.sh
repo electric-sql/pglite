@@ -401,6 +401,7 @@ do
         ;;
 
         pglite-repl) echo "=============== pglite-repl ================================"
+            PATH=$PATH:$PREFIX/bin
             pushd ./packages/repl
             pnpm install
             pnpm run build
@@ -408,6 +409,7 @@ do
         ;;
 
         pglite-test) echo "================== pglite-test ========================="
+            PATH=$PATH:$PREFIX/bin
             echo "
 
         node : $(which node) $($(which node) -v)
@@ -415,7 +417,7 @@ do
 
 "
             pushd ./packages/pglite
-            pnpm install
+            npm install -g concurrently playwright
             if pnpm exec playwright install --with-deps
             then
                 pnpm run test || exit 429
