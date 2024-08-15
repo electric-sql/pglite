@@ -2,9 +2,15 @@ import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from 'tinytar'
 import { FS } from '../postgresMod.js'
 import { PGDATA } from './index.js'
 
-export async function dumpTar(FS: FS, dbname?: string): Promise<File | Blob> {
+export type DumpTarCompressionOptions = 'none' | 'gzip' | 'auto'
+
+export async function dumpTar(
+  FS: FS,
+  dbname?: string,
+  compression: DumpTarCompressionOptions = 'auto',
+): Promise<File | Blob> {
   const tarball = createTarball(FS, PGDATA)
-  const [compressed, zipped] = await maybeZip(tarball)
+  const [compressed, zipped] = await maybeZip(tarball, compression)
   const filename = (dbname || 'pgdata') + (zipped ? '.tar.gz' : '.tar')
   const type = zipped ? 'application/x-gzip' : 'application/x-tar'
   if (typeof File !== 'undefined') {
@@ -104,8 +110,11 @@ export function createTarball(FS: FS, directoryPath: string) {
 
 export async function maybeZip(
   file: Uint8Array,
+  compression: DumpTarCompressionOptions = 'auto',
 ): Promise<[Uint8Array, boolean]> {
-  if (typeof window !== 'undefined' && 'CompressionStream' in window) {
+  if (compression === 'none') {
+    return [file, false]
+  } else if (typeof CompressionStream !== 'undefined') {
     return [await zipBrowser(file), true]
   } else if (
     typeof process !== 'undefined' &&
@@ -113,8 +122,10 @@ export async function maybeZip(
     process.versions.node
   ) {
     return [await zipNode(file), true]
-  } else {
+  } else if (compression === 'auto') {
     return [file, false]
+  } else {
+    throw new Error('Compression not supported in this environment')
   }
 }
 
@@ -154,7 +165,7 @@ export async function zipNode(file: Uint8Array): Promise<Uint8Array> {
 }
 
 export async function unzip(file: Uint8Array): Promise<Uint8Array> {
-  if (typeof window !== 'undefined' && 'DecompressionStream' in window) {
+  if (typeof CompressionStream !== 'undefined') {
     return await unzipBrowser(file)
   } else if (
     typeof process !== 'undefined' &&

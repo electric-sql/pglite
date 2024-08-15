@@ -3,7 +3,7 @@ import { PGDATA } from '../index.js'
 import type { PostgresMod, FS } from '../../postgresMod.js'
 import { createOPFSAHP } from './emscriptenFs.js'
 import { OpfsAhp } from './opfsAhp.js'
-import { dumpTar } from '../tarUtils.js'
+import { dumpTar, type DumpTarCompressionOptions } from '../tarUtils.js'
 
 export interface OpfsAhpFSOptions {
   initialPoolSize?: number
@@ -57,8 +57,12 @@ export class OpfsAhpFS extends FilesystemBase {
     }
   }
 
-  async dumpTar(mod: FS, dbname: string) {
-    return dumpTar(mod, dbname)
+  async dumpTar(
+    mod: FS,
+    dbname: string,
+    compression?: DumpTarCompressionOptions,
+  ) {
+    return dumpTar(mod, dbname, compression)
   }
 
   async close(FS: FS): Promise<void> {
