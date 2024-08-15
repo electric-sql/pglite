@@ -14,9 +14,10 @@ To use it, pass a PGlite instance as the `db` property.
 
 ```ts
 import { PGlite } from "@electric-sql/pglite"
+import { live } from "@electric-sql/pglite/live"
 import { PGliteProvider } from "@electric-sql/pglite-react"
 
-const db = new PGlite({
+const db = await PGlite.create({
   extensions: { live }
 })
 
@@ -24,7 +25,7 @@ const App = () => {
   // ...
 
   return (
-    <PGliteProvider db=db>
+    <PGliteProvider db={db}>
       // ...
     </PGliteProvider>
   )

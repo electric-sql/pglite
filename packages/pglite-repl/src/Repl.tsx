@@ -9,6 +9,7 @@ import { defaultKeymap } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import { PostgreSQL } from '@codemirror/lang-sql'
 import { type PGliteInterface } from '@electric-sql/pglite'
+import { usePGlite } from '@electric-sql/pglite-react'
 import { makeSqlExt } from './sqlSupport'
 import type { Response } from './types'
 import { runQuery, getSchema } from './utils'
@@ -38,7 +39,7 @@ export const defaultDarkThemeInit: ThemeInit = githubDarkInit
 export const defaultDarkTheme = githubDark
 
 export interface ReplProps {
-  pg: PGliteInterface
+  pg?: PGliteInterface
   border?: boolean
   lightTheme?: Extension
   darkTheme?: Extension
@@ -48,7 +49,7 @@ export interface ReplProps {
 }
 
 export function Repl({
-  pg,
+  pg: pgProp,
   border = false,
   lightTheme = defaultLightTheme,
   darkTheme = defaultDarkTheme,
@@ -68,6 +69,8 @@ export function Repl({
     theme === 'dark' ? darkTheme : lightTheme,
   )
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({})
+
+  const pg = pgProp || usePGlite()
 
   useEffect(() => {
     let ignore = false

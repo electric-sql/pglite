@@ -211,6 +211,9 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:^
         version: link:../pglite
+      '@electric-sql/pglite-react':
+        specifier: workspace:^
+        version: link:../pglite-react
       '@types/node':
         specifier: ^20.11.18
         version: 20.14.15
