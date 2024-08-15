@@ -70,7 +70,11 @@ export function Repl({
   )
   const [styles, setStyles] = useState<{ [key: string]: string | number }>({})
 
-  const pg = pgProp || usePGlite()
+  // We have to call usePGlite() in a useEffect hook because hooks can't be
+  // called conditionally
+  let pg: PGliteInterface = usePGlite()
+  // If pgProp is provided, use it instead of the one from usePGlite()
+  pg = pgProp || pg
 
   useEffect(() => {
     let ignore = false
