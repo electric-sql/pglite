@@ -214,13 +214,10 @@ async function clearDb() {
 <style>
 :is(html, body):has(.page-repl-playground) {
   height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  width: 100dvw;
   overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  body:has(.page-repl-playground) {
-    touch-action: none;
-  }
 }
 
 .page-repl-playground .VPNav {
@@ -234,7 +231,8 @@ async function clearDb() {
 .page-repl-playground.Layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
+  width: 100dvw;
 }
 .page-repl-playground .VPContent,
 .page-repl-playground .VPPage,
@@ -248,6 +246,20 @@ async function clearDb() {
 .page-repl-playground .VPPage > div,
 .page-repl-playground .VPPage > div > div {
   flex-grow: 1;
+}
+
+@media (max-width: 768px) {
+  :is(html, body):has(.page-repl-playground) {
+    touch-action: pan-x pan-y !important;
+  }
+
+  .page-repl-playground.Layout {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100dvw;
+  }
 }
 </style>
 
@@ -422,12 +434,14 @@ p code {
   }
   .sidebar {
     width: 300px;
+    height: calc(100svh - var(--vp-nav-height));
   }
   .main {
     width: 100vw;
+    height: calc(100svh - var(--vp-nav-height));
   }
   .repl-playground {
-    width: calc(100vw + 300px);
+    width: calc(100dvw + 300px);
     position: relative;
     left: -300px;
     transition: transform 0.15s ease;

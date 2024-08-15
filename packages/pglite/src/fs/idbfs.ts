@@ -1,7 +1,7 @@
 import { FilesystemBase } from './types.js'
 import type { FS, PostgresMod } from '../postgresMod.js'
 import { PGDATA } from './index.js'
-import { dumpTar } from './tarUtils.js'
+import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 
 export class IdbFs extends FilesystemBase {
   async emscriptenOpts(opts: Partial<PostgresMod>) {
@@ -50,8 +50,12 @@ export class IdbFs extends FilesystemBase {
     })
   }
 
-  async dumpTar(mod: FS, dbname: string) {
-    return dumpTar(mod, dbname)
+  async dumpTar(
+    mod: FS,
+    dbname: string,
+    compression?: DumpTarCompressionOptions,
+  ) {
+    return dumpTar(mod, dbname, compression)
   }
 
   async close(FS: FS): Promise<void> {
