@@ -1235,5 +1235,3 @@ _wal_segment_size
 _wasm_OpenPipeStream
 _work_mem
 _write
-_readstoplist
-_searchstoplist
