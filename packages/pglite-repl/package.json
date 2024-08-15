@@ -33,6 +33,7 @@
     "stylecheck": "pnpm lint && prettier -c ./src"
   },
   "dependencies": {
+    "@electric-sql/pglite-react": "workspace:^",
     "@codemirror/autocomplete": "^6.16.2",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/lang-sql": "^6.6.4",
