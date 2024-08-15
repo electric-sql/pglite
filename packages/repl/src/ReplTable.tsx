@@ -59,8 +59,8 @@ export function ReplTable({ result }: { result: Results }) {
         <table className="PGliteRepl-table">
           <thead>
             <tr>
-              {result.fields.map((col, i) => (
-                <th key={i}>{col.name}</th>
+              {result.fields.map((col) => (
+                <th key={col.name}>{col.name}</th>
               ))}
             </tr>
             {/* <tr>

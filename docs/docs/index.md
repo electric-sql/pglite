@@ -95,13 +95,18 @@ Now, let's retrieve an item using `.query` method:
 const ret = await db.query(`
   SELECT * from todo WHERE id = 1;
 `)
-console.log(ret.rows)[
-  // Output:
+console.log(ret.rows)
+```
+
+Output:
+
+```js
+;[
   {
     id: 1,
     task: 'Install PGlite from NPM',
     done: false,
-  }
+  },
 ]
 ```
 
@@ -126,7 +131,7 @@ const ret = await db.query(
 
 - PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistance for your database.
 
-- There are [framework hooks](./framework-hooks.md) to make working with PGlite within React and Vue much easier with less boilerplate.
+- There are [framework hooks](./framework-hooks/react.md) to make working with PGlite within React and Vue much easier with less boilerplate.
 
 - As PGlite only has a single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
 

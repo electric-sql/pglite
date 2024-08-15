@@ -56,7 +56,7 @@ watch(
       }
 
       const replRootEl = repl.value.shadowRoot.querySelector('.PGliteRepl-root')
-      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14px;`)
+      replRootEl.setAttribute('style', `--PGliteRepl-font-size: 14.5px;`)
 
       const styleEl = document.createElement('style')
       styleEl.innerHTML = `
@@ -162,8 +162,6 @@ function dispatchEnterEvent(el) {
 
 <style scoped>
 .repl {
-  margin-top: 2rem;
-  height: clamp(350px, 35vh, 450px);
   display: flex;
   align-items: stretch;
   border-radius: 12px;

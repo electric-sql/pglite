@@ -1,7 +1,7 @@
 {
-  "name": "@electric-sql/pglite-react",
+  "name": "@electric-sql/pglite-vue",
   "version": "0.2.0",
-  "description": "Hooks for using PGlite",
+  "description": "Vue hooks for using PGlite",
   "type": "module",
   "private": false,
   "publishConfig": {
@@ -14,18 +14,21 @@
     "wasm",
     "client",
     "pglite",
-    "react"
+    "vue"
   ],
   "author": "Electric DB Limited",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/electric-sql/pglite.git",
-    "directory": "packages/pglite"
+    "directory": "packages/pglite-vue"
   },
   "scripts": {
     "build": "tsup",
-    "test": "vitest",
+    "test-v2": "vue-demi-switch 2 vue2 && vitest",
+    "test-v2.7": "vue-demi-switch 2.7 vue2.7 && vitest",
+    "test-v3": "vue-demi-switch 3 && vitest",
+    "test": "pnpm test-v2 && pnpm test-v2.7 && pnpm test-v3",
     "lint": "eslint ./src ./test",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
@@ -42,23 +45,31 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "vue-demi": "^0.14.10"
+  },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@eslint-react/eslint-plugin": "^1.9.0",
     "@testing-library/dom": "^10.4.0",
-    "@testing-library/react": "^16.0.0",
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
-    "eslint-plugin-react-compiler": "0.0.0-experimental-9ed098e-20240725",
-    "globals": "^15.9.0",
+    "@testing-library/vue": "^8.1.0",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "@vue/composition-api": "1.7.2",
+    "eslint-plugin-vue": "^9.27.0",
     "jsdom": "^24.1.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "vitest": "^2.0.5"
+    "vitest": "^2.0.5",
+    "vue": "^3.4.27",
+    "vue2": "npm:vue@2.6",
+    "vue2.7": "npm:vue@2.7"
   },
   "peerDependencies": {
     "@electric-sql/pglite": "workspace:^",
-    "react": "^18.0.0"
+    "@vue/composition-api": "^1.1.2",
+    "vue": "^2.6.0 || ^3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@vue/composition-api": {
+      "optional": true
+    }
   }
 }

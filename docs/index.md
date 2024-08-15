@@ -5,20 +5,14 @@ layout: home
 hero:
   name: 'PGlite'
   text: 'Embeddable Postgres'
-  tagline: 'Run a full Postgres database locally in your app with reactivity and server sync'
+  tagline: 'Run a full Postgres database locally in WASM with reactivity and live sync.'
   actions:
     - theme: brand
-      text: Getting Started
+      text: Get Started
       link: /docs/
     - theme: alt
-      text: About
-      link: /docs/about
-    - theme: alt
-      text: GitHub
+      text: Star on GitHub
       link: https://github.com/electric-sql/pglite
-    - theme: alt
-      text: Discord
-      link: https://discord.com/channels/933657521581858818/1212676471588520006
 
 features:
   - title: Lightweight
@@ -30,56 +24,104 @@ features:
 ---
 
 <script setup>
+import { onMounted } from 'vue'
 import { defineClientComponent } from 'vitepress'
 import { VPHomeHero } from 'vitepress/theme'
+import { data as initialStarCount } from './count.data.ts'
+import { starCount } from './components/starCount.ts'
 
 const Repl = defineClientComponent(() => {
   return import('./components/Repl.vue')
 })
+
+onMounted(async () => {
+  if (typeof window !== 'undefined' && document.querySelector) {
+    const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
+    let countEl = linkEl.querySelector('.count')
+    
+    if (!countEl) {
+      countEl = document.createElement('span')
+      countEl.classList.add('count')
+      countEl.innerText = `( ${initialStarCount.toLocaleString()} )`;
+
+      const icon = document.createElement('span')
+      icon.classList.add('vpi-social-github')
+      linkEl.prepend(icon)
+    }
+    
+    linkEl.append(countEl)
+
+    const count = await starCount(initialStarCount)
+
+    let currentCount = Math.max(count - 15, initialStarCount)
+    const animateCount = () => {
+      currentCount += 1;
+      if (currentCount >= count) {
+        currentCount = count;
+        clearInterval(intervalId);
+      }
+      countEl.innerText = `( ${currentCount.toLocaleString()} )`;
+    };
+    const intervalId = setInterval(animateCount, 64);
+  }
+});
+
 </script>
 
-<style scoped>
-  .try-it-now {
-    text-align: center;
-    margin-top: 4rem;
-  }
-
-  .postgres-new {
+<style>
+  .actions a[href="https://github.com/electric-sql/pglite"] {
     display: flex;
-    flex-direction: row;
-    background: var(--vp-c-bg-soft);
-    border-radius: 12px;
-    margin-top: 4rem;
+    align-items: center;
+  }
+  .actions a[href="https://github.com/electric-sql/pglite"] .vpi-social-github {
+    display: block;
+    width: 1.42rem;
+    height: 1.42rem;
+    margin: 0 0.5rem 0 0;
+    position: relative;
+  }
+  .actions a[href="https://github.com/electric-sql/pglite"] .count {
+    margin-left: 0.25rem;
+    min-width: 55px;
+  }
+</style>
+
+<style scoped>
+
+  .try-it-now,
+  .postgres-new {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
   }
 
-  .postgres-new > .info {
-    padding: 24px;
-    flex-grow: 1;
+  .try-it-now .repl {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    height: 350px;
+  }
+
+  .info {
     text-align: center;
   }
 
-  .postgres-new > .image {
+  .postgres-new video {
     display: block;
-    flex-shrink: 1;
-    width: 70%;
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    aspect-ratio: 1616 / 1080;
   }
 
-  .postgres-new > .image > img {
-    margin: -4% 0 -6% 0;
-  }
-
-  .postgres-new h3 {
-    margin: 0;
-  }
-
-  .postgres-new-btn {
+  .link-btn {
     border-color: var(--vp-button-alt-border);
     color: var(--vp-button-alt-text);
     background-color: var(--vp-button-alt-bg);
     border-radius: 20px;
     padding: 0 20px;
     line-height: 38px;
-    font-size: 14px;
+    font-size: 14.5px;
     display: inline-block;
     border: 1px solid transparent;
     text-align: center;
@@ -88,27 +130,63 @@ const Repl = defineClientComponent(() => {
     transition: color 0.25s, border-color 0.25s, background-color 0.25s;
     text-decoration: none;
   }
+
+  @media (min-width: 1000px) {
+    .row {
+      display: flex;
+    }
+
+    .try-it-now,
+    .postgres-new {
+      width: 50%;
+    }
+
+    .try-it-now {
+      padding-left: 1rem;
+    }
+
+    .postgres-new {
+      padding-right: 1rem;
+    }
+
+    .try-it-now .repl {
+      height: auto;
+      aspect-ratio: 1616 / 1080;
+    }
+  }
 </style>
 
-<!-- <div class="postgres-new">
-  <div class="info">
-    <h3>Experience <a href="https://postgres.new">postgres.new</a></h3>
-    <p>An AI Postgres assistant<br> built on PGlite.</p>
-    <a class="postgres-new-btn" href="/docs/about">What would you like to create?</a>
+<span class="vpi-social-github"></span>
+
+<div class="row">
+  <div class="postgres-new">
+    <div class="info">
+      <h3>Experience PGlite with <a href="https://postgres.new">postgres.new</a></h3>
+      <p>
+        Create and publish a Postgres database using AI
+        <br class="hide-xs" />
+        built on PGlite by <a href="https://supabase.com">Supabase</a>:
+      </p>
+    </div>
+    <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
+      <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
+    </video>
+    <a class="link-btn" href="https://postgres.new">
+      What would you like to create?</a>
   </div>
-  <div class="image">
-    <img src="./public/img/postgres-new.png">
+  <div class="try-it-now">
+    <div class="info">
+      <h3>Try PGlite Now</h3>
+      <p>
+        This is a full PGlite Postgres running in your browser.
+        <br class="hide-xs" />
+        It even includes <a href="/extensions/#pgvector">pgvector</a>!
+      </p>
+    </div>
+    <ClientOnly>
+      <Repl class="repl" />
+    </ClientOnly>
+    <a class="link-btn" href="/repl">
+      Try more extensions in the playground</a>
   </div>
-</div> -->
-
-<div class="try-it-now">
-
-### Try PGlite Now
-
-This is a full PGlite Postgres running in your browser - it even includes pgvector!
-
 </div>
-
-<ClientOnly>
-  <Repl />
-</ClientOnly>

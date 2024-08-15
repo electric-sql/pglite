@@ -23,8 +23,41 @@ export default defineConfig({
       'link',
       {
         rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/img/favicons/favicon-16x16.png',
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/img/favicons/favicon-32x32.png',
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/img/favicons/apple-touch-icon.png',
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'icon',
         type: 'image/svg+xml',
         href: '/img/brand/icon-light.svg',
+      },
+    ],
+    [
+      'meta',
+      {
+        property: 'og:image',
+        content: '/img/brand/og-image.png',
       },
     ],
     [
@@ -46,9 +79,12 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'About', link: '/docs/about' },
       { text: 'Docs', link: '/docs/' },
-      { text: 'Extensions', link: '/extensions/' },
       { text: 'REPL', link: '/repl/' },
       { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
+      {
+        text: 'Star on GitHub',
+        link: 'https://github.com/electric-sql/pglite',
+      },
     ],
     sidebar: [
       {
@@ -62,7 +98,16 @@ export default defineConfig({
           { text: 'PGlite API', link: '/docs/api' },
           { text: 'Live Queries', link: '/docs/live-queries' },
           { text: 'Filesystems', link: '/docs/filesystems' },
-          { text: 'Framework Hooks', link: '/docs/framework-hooks' },
+          {
+            text: 'Framework Hooks',
+            link: '/react',
+            base: '/docs/framework-hooks',
+            collapsed: true,
+            items: [
+              { text: 'React', link: '/react' },
+              { text: 'Vue', link: '/vue' },
+            ],
+          },
           { text: 'Multi-tab Worker', link: '/docs/multi-tab-worker' },
           { text: 'REPL Component', link: '/docs/repl' },
           { text: 'ORM Support', link: '/docs/orm-support' },

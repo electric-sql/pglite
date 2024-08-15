@@ -35,7 +35,7 @@ onUnmounted(() => {
 <template>
   <div class="custom-hero-image-wrapper">
     <div ref="heroImage" class="custom-hero-image">
-      <img src="/public/img/brand/icon-light.svg" class="main" />
+      <img src="/img/brand/icon-light.svg" class="main" />
       <div class="chain">
         <div
           class="baby"
@@ -46,7 +46,7 @@ onUnmounted(() => {
             filter: `brightness(${pos.o})`,
           }"
         >
-          <img src="/public/img/brand/icon-light.svg" />
+          <img src="/img/brand/icon-light.svg" />
         </div>
       </div>
     </div>
@@ -98,7 +98,12 @@ onUnmounted(() => {
 
 @media (max-width: 959px) {
   .custom-hero-image-wrapper {
-    transform: scale(0.6);
+    transform: scale(0.55);
+  }
+}
+@media (max-width: 575px) {
+  .custom-hero-image-wrapper {
+    transform: scale(0.45);
   }
 }
 </style>
