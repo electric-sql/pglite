@@ -43,6 +43,7 @@ _pg_initdb
 _pg_shutdown
 _lowerstr
 _shmem_request_hook
+_CurrentMemoryContext
 _TopMemoryContext
 _check_function_bodies
 _clock_gettime

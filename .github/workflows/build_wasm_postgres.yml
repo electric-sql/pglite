@@ -14,12 +14,13 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       PGVERSION: 16.3
-      SDK_VERSION: 3.1.65.11bi
+      SDK_VERSION: 3.1.65.6bi
       SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
-      DEBUG: false
+      TOTAL_MEMORY: 256MB
+      DEBUG: true
       OBJDUMP: true
 
     steps:
