@@ -164,7 +164,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build REPL and benchmark packages needed for examples
-        run: pnpm --filter "@electric-sql/pglite-repl" --filter "benchmark"  build
+        run: pnpm --filter "@electric-sql/pglite-react" --filter "@electric-sql/pglite-repl" --filter "benchmark"  build
 
       - name: Download PGlite web build artifacts
         uses: actions/download-artifact@v4
