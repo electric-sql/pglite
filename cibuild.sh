@@ -78,33 +78,16 @@ else
 END
 fi
 
-# TESTING: removed node / npm from CI
-# make sure CI pnpm will be in the path
-if which pnpm
-then
-    echo -n
-else
-    if which npm
-    then
-        npm init playwright@latest --force
-        npx playwright install
-        npm install -g pnpm@^8.0.0
-        pnpm create playwright
-        echo "
+echo "
 
-        PNPM : $(which pnpm)
         node : $(which node) $($(which node) -v)
+        PNPM : $(which pnpm)
 
-    "
-        export NPATH="/usr/local/bin"
-        export CIPNPM=true
-        export CIHOME=${HOME}
-    else
-        echo will use sdk bundled node18/npm/pnpm
-        export NPATH=""
-        export CIPNPM=false
-    fi
-fi
+
+
+
+"
+
 
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
@@ -114,6 +97,7 @@ if ${WASI:-false}
 then
     echo "Wasi build (experimental)"
     . /opt/python-wasm-sdk/wasm32-wasi-shell.sh
+
 else
     if which emcc
     then
@@ -127,6 +111,10 @@ else
 
     Using provided emsdk from $(which emcc)
     Using PG_LINK=$PG_LINK as linker
+
+        node : $(which node) $($(which node) -v)
+        PNPM : $(which pnpm)
+
 
 "
 
@@ -159,9 +147,6 @@ else
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
-export NPATH=$NPATH
-export CIHOME=$CIHOME
-export CIPNPM=$CIPNPM
 export PGOPTS="\\
  -c log_checkpoints=false \\
  -c dynamic_shared_memory_type=posix \\
@@ -221,7 +206,7 @@ fi
 
 # put wasm-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
-export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$NPATH:$PATH
+export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 
 
@@ -423,20 +408,14 @@ do
         ;;
 
         pglite-test) echo "================== pglite-test ========================="
-            if $CIPNPM
-            then
-                export HOME=$CIHOME
-            fi
             echo "
 
+        node : $(which node) $($(which node) -v)
         PNPM : $(which pnpm)
-        CIPNPM=$CIPNPM
-        CIHOME=$CIHOME
-        PATH=$PATH
-        HOME=$HOME
 
 "
             pushd ./packages/pglite
+            pnpm install
             if pnpm exec playwright install --with-deps
             then
                 pnpm run test || exit 429
