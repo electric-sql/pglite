@@ -11,9 +11,9 @@ export PGROOT=${PGROOT:-/tmp/pglite}
 export WEBROOT=${WEBROOT:-/tmp/web}
 export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
-export PGUSER=postgres
+export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-
+export TOTAL_MEMORY=${TOTAL_MEMORY:-256MB}
 
 # exit on error
 EOE=false
@@ -50,12 +50,45 @@ fi
 # default to web/release size optim.
 if $DEBUG
 then
-    echo "debug not supported on web build"
-    exit 51
+    export PGDEBUG=""
+    export CDEBUG="-g0 -O0"
+    cat > /tmp/pgdebug.h << END
+#ifndef I_PGDEBUG
+#define I_PGDEBUG
+#define WASM_USERNAME "$PGUSER"
+#define PGDEBUG 1
+#define PDEBUG(string) puts(string)
+#define JSDEBUG(string) {EM_ASM({ console.log(string); });}
+#define ADEBUG(string) { PDEBUG(string); JSDEBUG(string) }
+#endif
+END
+
 else
     export PGDEBUG=""
     export CDEBUG="-g0 -Os"
+    cat > /tmp/pgdebug.h << END
+#ifndef I_PGDEBUG
+#define I_PGDEBUG
+#define WASM_USERNAME "$PGUSER"
+#define PDEBUG(string)
+#define JSDEBUG(string)
+#define ADEBUG(string)
+#define PGDEBUG 0
+#endif
+END
 fi
+
+echo "
+
+        node : $(which node) $($(which node) -v)
+        PNPM : $(which pnpm)
+
+
+
+
+"
+
+
 
 # setup compiler+node. emsdk provides node (18), recent enough for bun.
 # TODO: but may need to adjust $PATH with stock emsdk.
@@ -64,13 +97,26 @@ if ${WASI:-false}
 then
     echo "Wasi build (experimental)"
     . /opt/python-wasm-sdk/wasm32-wasi-shell.sh
+
 else
     if which emcc
     then
-        echo "Using provided emsdk from $(which emcc)"
+        echo "emcc found in PATH=$PATH"
     else
         . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
     fi
+    export PG_LINK=${PG_LINK:-$(which emcc)}
+
+    echo "
+
+    Using provided emsdk from $(which emcc)
+    Using PG_LINK=$PG_LINK as linker
+
+        node : $(which node) $($(which node) -v)
+        PNPM : $(which pnpm)
+
+
+"
 
     # custom code for node/web builds that modify pg main/tools behaviour
     # this used by both node/linkweb build stages
@@ -86,6 +132,7 @@ else
     CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
 
 fi
+
 
 export CC_PGLITE
 
@@ -175,7 +222,6 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 # ===========================================================================
 # ===========================================================================
 
-
 if echo " $*"|grep -q " contrib"
 then
     # TEMP FIX for SDK
@@ -220,79 +266,65 @@ then
             fi
         fi
     done
+
+
 fi
 
-
-if echo " $*"|grep -q " vector"
+if ${EXTRA_EXT:-true}
 then
-    echo "====================== vector : $(pwd) ================="
+    if echo " $*"|grep -q " vector"
+    then
+        echo "====================== vector : $(pwd) ================="
 
-    pushd build
+        pushd build
 
-        # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
+            # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
 
-        if [ -d pgvector ]
-        then
-            echo using local pgvector
-        else
-            wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
-            tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
-            mv pgvector-?.?.? pgvector
-        fi
+            if [ -d pgvector ]
+            then
+                echo using local pgvector
+            else
+                wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
+                tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
+                mv pgvector-?.?.? pgvector
+            fi
 
-        pushd pgvector
-            # path for wasm-shared already set to (pwd:pg build dir)/bin
-            # OPTFLAGS="" turns off arch optim (sse/neon).
-            PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install
-            cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
-            rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
+            pushd pgvector
+                # path for wasm-shared already set to (pwd:pg build dir)/bin
+                # OPTFLAGS="" turns off arch optim (sse/neon).
+                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install || exit 276
+                cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
+                rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
+            popd
+
         popd
 
-    popd
+        python3 cibuild/pack_extension.py
 
-    python3 cibuild/pack_extension.py
+    fi
 
+    if echo " $*"|grep -q " postgis"
+    then
+        echo "======================= postgis : $(pwd) ==================="
+
+        ./cibuild/postgis.sh
+
+        python3 cibuild/pack_extension.py
+    fi
+
+    if echo " $*"|grep -q " quack"
+    then
+        echo "================================================="
+        ./cibuild/pg_quack.sh || exit 299
+        cp $PGROOT/lib/libduckdb.so /tmp/
+        python3 cibuild/pack_extension.py
+    fi
 fi
-
-if echo " $*"|grep -q " postgis"
-then
-    echo "======================= postgis : $(pwd) ==================="
-
-    ./cibuild/postgis.sh
-
-    python3 cibuild/pack_extension.py
-fi
-
-if echo " $*"|grep -q " quack"
-then
-    echo "================================================="
-    ./cibuild/pg_quack.sh
-    cp $PGROOT/lib/libduckdb.so /tmp/
-    python3 cibuild/pack_extension.py
-fi
-
-
 # ===========================================================================
 # ===========================================================================
 #                               PGLite
 # ===========================================================================
 # ===========================================================================
-
-
-
-
-# in pg git test mode we pull pglite instead
-if [ -d pglite ]
-then
-    # to get  pglite/postgres populated by web build
-    rmdir pglite/postgres pglite 2>/dev/null
-    if [ -d pglite ]
-    then
-        echo using local
-    else
-        git clone --no-tags --depth 1 --single-branch --branch pglite-build https://github.com/electric-sql/pglite pglite
-    fi
-fi
 
 
 # run this last so all extensions files can be packaged
@@ -366,6 +398,34 @@ do
             fi
 
             du -hs ${WEBROOT}/*
+        ;;
+
+        pglite-repl) echo "=============== pglite-repl ================================"
+            PATH=$PATH:$PREFIX/bin
+            pushd ./packages/repl
+            pnpm install
+            pnpm run build
+            popd
+        ;;
+
+        pglite-test) echo "================== pglite-test ========================="
+            echo "
+        node : $(which node) $($(which node) -v)
+        PNPM : $(which pnpm)
+"
+            export PATH=$PATH:$(pwd)/node_modules/.bin
+            pushd ./packages/pglite
+            #npm install -g concurrently playwright ava http-server pg-protocol serve tinytar buffer async-mutex 2>&1 > /dev/null
+            pnpm install --prefix .
+            pnpm run build
+            if pnpm exec playwright install --with-deps
+            then
+                pnpm run test || exit 429
+            else
+                echo "failed to install test env"
+                pnpm run test || exit 432
+            fi
+            popd
         ;;
 
         pglite-prep) echo "==================== pglite-prep  =========================="
