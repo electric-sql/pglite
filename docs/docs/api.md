@@ -245,9 +245,11 @@ Remove an event handler for all notifications received from Postgres.
 
 ### dumpDataDir
 
-`dumpDataDir(): Promise<File | Blob>`
+`dumpDataDir(compression?: 'auto' | 'gzip' | 'none'): Promise<File | Blob>`
 
 Dump the Postgres `datadir` to a Gzipped tarball.
+
+The compression option defults to `auto` which uses compression where possible. You can explicit opt in or out of compression with `gzip` and `none`. When you specify that compression is required with `gzip`, if the environment doesn't support a suitable completion API it will throw an error.
 
 This can then be used in combination with the [`loadDataDir`](#options) option when starting PGlite to load a dumped database from storage.
 
