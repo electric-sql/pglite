@@ -1,5 +1,6 @@
 import type { BackendMessage, NoticeMessage } from 'pg-protocol/src/messages.js'
 import type { Filesystem } from './fs/types.js'
+import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -98,7 +99,7 @@ export type PGliteInterface = {
     callback: (channel: string, payload: string) => void,
   ): () => void
   offNotification(callback: (channel: string, payload: string) => void): void
-  dumpDataDir(): Promise<File | Blob>
+  dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
 }
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions

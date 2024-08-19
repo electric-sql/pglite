@@ -16,7 +16,7 @@ import type {
   Extensions,
 } from './interface.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
-import { loadTar } from './fs/tarUtils.js'
+import { loadTar, DumpTarCompressionOptions } from './fs/tarUtils.js'
 import { Buffer } from './polyfills/buffer.js'
 
 import { PGDATA, WASM_PREFIX } from './fs/index.js'
@@ -841,10 +841,13 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
 
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   * @param compression The compression options to use - 'gzip', 'auto', 'none'
    * @returns The tarball as a File object where available, and fallback to a Blob
    */
-  async dumpDataDir() {
+  async dumpDataDir(
+    compression?: DumpTarCompressionOptions,
+  ): Promise<File | Blob> {
     const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
-    return this.fs!.dumpTar(this.mod!.FS, dbname)
+    return this.fs!.dumpTar(this.mod!.FS, dbname, compression)
   }
 }

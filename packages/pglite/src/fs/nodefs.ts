@@ -3,7 +3,7 @@ import * as path from 'path'
 import { FilesystemBase } from './types.js'
 import { PGDATA } from './index.js'
 import type { PostgresMod, FS } from '../postgresMod.js'
-import { dumpTar } from './tarUtils.js'
+import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 
 export class NodeFS extends FilesystemBase {
   protected rootDir: string
@@ -31,8 +31,12 @@ export class NodeFS extends FilesystemBase {
     return options
   }
 
-  async dumpTar(mod: FS, dbname: string) {
-    return dumpTar(mod, dbname)
+  async dumpTar(
+    mod: FS,
+    dbname: string,
+    compression?: DumpTarCompressionOptions,
+  ) {
+    return dumpTar(mod, dbname, compression)
   }
 
   async close(FS: FS): Promise<void> {

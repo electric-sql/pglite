@@ -1,6 +1,6 @@
 {
   "name": "benchmark",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -16,9 +16,9 @@
   "author": "Electric DB Limited",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.9",
+    "@types/better-sqlite3": "^7.6.11",
     "ascii-table3": "^0.9.0",
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^11.1.2",
     "embedded-postgres": "15.5.1-beta.9"
   },
   "dependencies": {

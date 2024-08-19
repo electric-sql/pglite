@@ -134,6 +134,28 @@ export function tests(env, dbFilename, target) {
     })
   })
 
+  test.serial(`targets ${target} dump data dir and load it`, async (t) => {
+    const res = await evaluate(async () => {
+      // Force compression to test that it's working in all environments
+      const file = await db.dumpDataDir('gzip')
+      const { PGlite } = await import('../../dist/index.js')
+      const db2 = await PGlite.create({
+        loadDataDir: file,
+      })
+      return await db2.query('SELECT * FROM test;')
+    })
+    t.deepEqual(res.rows, [
+      {
+        id: 1,
+        name: 'test',
+      },
+      {
+        id: 2,
+        name: 'test2',
+      },
+    ])
+  })
+
   test.serial(`targets ${target} close`, async (t) => {
     const err = await evaluate(async () => {
       try {
