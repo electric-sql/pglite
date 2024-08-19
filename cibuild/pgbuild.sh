@@ -11,7 +11,7 @@ CC_PGLITE=$CC_PGLITE
 
     mkdir -p build/postgres
     pushd build/postgres
-    
+
     # create empty package.json to avoid emsdk node conflicts
     # with root package.json of project
     echo "{}" > package.json
@@ -32,6 +32,7 @@ CC_PGLITE=$CC_PGLITE
 # TODO: fix sdk to support --with-uuid=ossp
 
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
+ --cache-file=${PGROOT}/config.cache.emsdk \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
  --without-pam --disable-largefile --without-zlib --with-openssl=no \
@@ -87,8 +88,6 @@ END
     # for zic and wasm-shared
     export PATH=$(pwd)/bin:$PATH
 
-
-    EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sENVIRONMENT=web"
     EMCC_NODE="-sEXIT_RUNTIME=1 -DEXIT_RUNTIME -sNODERAWFS -sENVIRONMENT=node"
 
     # -lwebsocket.js"
@@ -104,7 +103,7 @@ END
 
     # only required for static initdb
     EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 ${CC_PGLITE}"
-    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=256MB -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
+    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
     EMCC_CFLAGS="${EMCC_CFLAGS} -DPREFIX=${PGROOT}"
 
     export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"

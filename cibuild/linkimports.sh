@@ -8,11 +8,11 @@ echo "============= link imports : begin ==============="
 #_emscripten_copy_to_end
 
 # copyFrom,copyTo,copyToEnd
-    cat ${WORKSPACE}/patches/imports.* | sort | uniq > /tmp/symbols
+    cat ${WORKSPACE}/patches/imports/* | sort | uniq > /tmp/symbols
 
     echo "Requesting $(wc -l /tmp/symbols) symbols from PGlite"
 
-    python3 <<END > ${WORKSPACE}/patches/exports
+    python3 <<END > ${WORKSPACE}/patches/exports/pglite
 
 import sys
 import os
@@ -21,7 +21,7 @@ def dbg(*argv, **kw):
     kw.setdefault('file',sys.stderr)
     return print(*argv,**kw)
 
-with open("${WORKSPACE}/patches/exports.pglite", "r") as file:
+with open("${WORKSPACE}/patches/exports/pgcore", "r") as file:
     exports  = set(map(str.strip, file.readlines()))
 
 with open("/tmp/symbols", "r") as file:
@@ -45,11 +45,13 @@ _lowerstr
 _shmem_request_hook
 _CurrentMemoryContext
 _TopMemoryContext
+_error_context_stack
 _check_function_bodies
 _clock_gettime
 _shmem_startup_hook
 _stderr
-_setenv""".split("\n"):
+_readstoplist
+_searchstoplist""".split("\n"):
     if not sym in matches:
         matches.append(sym)
 

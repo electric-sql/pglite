@@ -42,10 +42,7 @@ fi
 
 export PGPASS
 
-if which wasm-objdump
-then
-    cp $(which wasm-objdump) $PGROOT/bin/
-fi
+
 
 # default to web/release size optim.
 if $DEBUG
@@ -79,11 +76,10 @@ END
 fi
 
 echo "
+System node/pnpm ( may interfer) :
 
-        node : $(which node) $($(which node) -v)
+        node : $(which node) $(which node && $(which node) -v)
         PNPM : $(which pnpm)
-
-
 
 
 "
@@ -135,6 +131,69 @@ fi
 
 
 export CC_PGLITE
+export PGPRELOAD="\
+--preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
+--preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
+--preload-file ${PGROOT}/password@${PGROOT}/password \
+--preload-file ${PGROOT}/PGPASSFILE@/home/web_user/.pgpass \
+--preload-file placeholder@${PGROOT}/bin/postgres \
+--preload-file placeholder@${PGROOT}/bin/initdb\
+"
+
+# ========================= symbol extractor ============================
+
+OBJDUMP=${OBJDUMP:-true}
+
+if $OBJDUMP
+then
+    if [ -f $PGROOT/bin/wasm-objdump ]
+    then
+        echo "wasm-objdump found"
+    else
+        WRAPPER=$(which wasm-objdump)
+        WASIFILE=$(realpath ${WRAPPER}.wasi)
+        if $WRAPPER -h $WASIFILE | grep -q 'file format wasm 0x1'
+        then
+            mkdir -p $PGROOT/bin/
+            if cp -f $WRAPPER $WASIFILE $PGROOT/bin/
+            then
+                echo "wasm-objdump found and working, and copied to $PGROOT/bin/"
+            else
+                OBJDUMP=false
+            fi
+        else
+            echo "
+        ERROR: $(which wasm-objdump) is not working properly ( is wasmtime ok ? )
+
+    "
+            OBJDUMP=false
+        fi
+    fi
+else
+    echo "
+
+    WARNING: OBJDUMP disabled, some newer or complex extensions may not load properly
+
+
+"
+fi
+
+if $OBJDUMP
+then
+    mkdir -p patches/imports
+else
+    echo "
+
+    WARNING:    wasm-objdump not found or OBJDUMP disabled, some extensions may not load properly
+
+
+"
+fi
+
+export OBJDUMP
+
+
+# ========================= pg core configuration ============================
 
 
 if [ -f ${WEBROOT}/postgres.js ]
@@ -356,16 +415,7 @@ then
     # build web version
     echo "========== linkweb : $(pwd) =================="
     pushd build/postgres
-
-    . $WORKSPACE/cibuild/linkweb.sh
-
-    # upload all to gh pages,
-    # TODO: include node archive and samples ?
-    if $CI
-    then
-        mkdir -p /tmp/web/
-        cp -r $WEBROOT/* /tmp/web/
-    fi
+        . $WORKSPACE/cibuild/linkweb.sh
     popd
 fi
 
@@ -384,7 +434,7 @@ do
             . cibuild/pglite-ts.sh
 
             # copy needed files for a minimal js/ts/extension build
-            # NB: these don't use NODE FS
+            # NB: ext can't use NODE FS if main not linked with -lnodefs.js -lidbfs.js
 
             mkdir -p ${PGROOT}/sdk/packages/ /tmp/web/pglite /tmp/web/repl/
             cp -r $PGLITE ${PGROOT}/sdk/packages/
@@ -400,25 +450,13 @@ do
             du -hs ${WEBROOT}/*
         ;;
 
-        pglite-repl) echo "=============== pglite-repl ================================"
-            PATH=$PATH:$PREFIX/bin
-            pushd ./packages/repl
-            pnpm install
-            pnpm run build
-            popd
-        ;;
-
         pglite-test) echo "================== pglite-test ========================="
-            echo "
-        node : $(which node) $($(which node) -v)
-        PNPM : $(which pnpm)
-"
             export PATH=$PATH:$(pwd)/node_modules/.bin
             pushd ./packages/pglite
             #npm install -g concurrently playwright ava http-server pg-protocol serve tinytar buffer async-mutex 2>&1 > /dev/null
-            pnpm install --prefix .
-            pnpm run build
-            if pnpm exec playwright install --with-deps
+            pnpm install --prefix . 2>&1 >/dev/null
+            pnpm run build 2>&1 >/dev/null
+            if pnpm exec playwright install --with-deps 2>&1 >/dev/null
             then
                 pnpm run test || exit 429
             else
