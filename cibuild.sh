@@ -42,8 +42,6 @@ fi
 
 export PGPASS
 
-
-
 # default to web/release size optim.
 if $DEBUG
 then
@@ -129,6 +127,10 @@ else
 
 fi
 
+if which wasm-objdump
+then
+    cp $(which wasm-objdump).wasi $PGROOT/bin/
+fi
 
 export CC_PGLITE
 export PGPRELOAD="\
