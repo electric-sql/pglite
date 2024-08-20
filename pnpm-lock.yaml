@@ -126,6 +126,9 @@ importers:
       tinytar:
         specifier: ^0.1.0
         version: 0.1.0
+      vitest:
+        specifier: ^2.0.5
+        version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
 
   packages/pglite-react:
     devDependencies:
@@ -1914,6 +1917,7 @@ packages:
 
   bun@1.1.24:
     resolution: {integrity: sha512-vZt5zNVaoNTSlNprdVdQVZInBcGC2QSik6o9ZsMzuYiiUEAEqpRwwMXAYDUN85mt2FNnsGvmk/8xVlUXS7IzEw==}
+    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
