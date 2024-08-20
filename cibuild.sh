@@ -127,11 +127,6 @@ else
 
 fi
 
-if which wasm-objdump
-then
-    cp $(which wasm-objdump).wasi $PGROOT/bin/
-fi
-
 export CC_PGLITE
 export PGPRELOAD="\
 --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
