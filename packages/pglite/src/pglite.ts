@@ -441,10 +441,21 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
   }
 
   /**
-   * Execute a single SQL statement
+   * Execute a single SQL statement like with {@link PGlite.query}, but with a
+   * templated statement where template values will be treated as parameters.
+   *
+   * You can use helpers from `/template` to further format the query with
+   * identifiers, raw SQL, and nested statements.
+   *
    * This uses the "Extended Query" postgres wire protocol message.
+   *
    * @param query The query to execute with parameters as template values
    * @returns The result of the query
+   *
+   * @example
+   * ```ts
+   * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
+   * ```
    */
   async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
     const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
