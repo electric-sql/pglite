@@ -42,8 +42,6 @@ fi
 
 export PGPASS
 
-
-
 # default to web/release size optim.
 if $DEBUG
 then
@@ -128,7 +126,6 @@ else
     CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
 
 fi
-
 
 export CC_PGLITE
 export PGPRELOAD="\

@@ -13,8 +13,7 @@ jobs:
     name: Build WASM Postgres
     runs-on: ubuntu-22.04
     env:
-      PGVERSION: 16.4
-      SDK_VERSION: 3.1.65.12bi
+      BUILD_CONFIG_FILE: .buildconfig
       SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
@@ -27,6 +26,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Set build parameters
+        run: |
+          cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
+
+      # HACK: for some reason build uses PGVERSION which is uglier than PG_VERSION
+      - name: Set PGVERSION from PG_VERSION
+        run: echo "PGVERSION=${PG_VERSION}" >> $GITHUB_ENV
 
       - name: Restore cached build
         id: cache-restore
