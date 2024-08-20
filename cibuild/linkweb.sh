@@ -73,10 +73,8 @@ pushd src/backend
 
     PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a"
 
-    if ${DEV:-false}
+    if $DEBUG
     then
-        # PG_L="$PG_L -L../../src/interfaces/ecpg/ecpglib ../../src/interfaces/ecpg/ecpglib/libecpg.so /tmp/pglite/lib/postgresql/libduckdb.so"
-        # PG_L="$PG_L /tmp/libduckdb.so -lstdc++"
         echo -n
     fi
 
@@ -96,7 +94,7 @@ pushd src/backend
         MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # no plpgsql 7.2M
         MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
         #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
-        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
+        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
     else
         # local debug fast build
         MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
@@ -135,18 +133,25 @@ pushd src/backend
     # --js-library
     # cp ${WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
 
-
-    echo 'localhost:5432:postgres:postgres:password' > pgpass
-
+    python3 > ${PGROOT}/PGPASSFILE <<END
+USER="${PGPASS:-postgres}"
+PASS="${PGUSER:-postgres}"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+USER="login"
+PASS="password"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+END
 
     if $OBJDUMP
     then
         # link with MAIN_MODULE=1 ( ie export all ) and extract all sym.
         . ${WORKSPACE}/cibuild/linkexport.sh
 
-        if [ -f ${WORKSPACE}/patches/exports.pglite ]
+        if [ -f ${WORKSPACE}/patches/exports/pgcore ]
         then
-            echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports.pglite) symbols"
+            echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports/pgcore) core symbols"
             . ${WORKSPACE}/cibuild/linkimports.sh
 
         else
@@ -172,30 +177,25 @@ _________________________________________________________
     fi
 
 
-    cat ${WORKSPACE}/patches/exports > exports
+    cat ${WORKSPACE}/patches/exports/pglite > exports
 
     # min
-    LINKER="-sMAIN_MODULE=2"
+    # LINKER="-sMAIN_MODULE=2"
 
     # tailored
     LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
 
     # FULL
-    # LINKER="-sMAIN_MODULE=1"
+    # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
     emcc $EMCC_WEB $LINKER $MODULE  \
-     -sTOTAL_MEMORY=256MB -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
+     -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
      -lnodefs.js -lidbfs.js \
      -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
-     --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
-     --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
-     --preload-file ${PGROOT}/password@${PGROOT}/password \
-     --preload-file pgpass@${PGROOT}/pgpass \
-     --preload-file placeholder@${PGROOT}/bin/postgres \
-     --preload-file placeholder@${PGROOT}/bin/initdb \
+     $PGPRELOAD \
      -o postgres.html $PG_O $PG_L || exit 200
 
     cp postgres.js /tmp/

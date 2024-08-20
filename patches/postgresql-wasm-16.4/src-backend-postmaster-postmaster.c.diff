@@ -1,0 +1,32 @@
+--- postgresql-16.3/src/backend/postmaster/postmaster.c
++++ postgresql-16.3-wasm/src/backend/postmaster/postmaster.c
+@@ -422,7 +422,8 @@
+ static void ExitPostmaster(int status) pg_attribute_noreturn();
+ static int	ServerLoop(void);
+ static int	BackendStartup(Port *port);
+-static int	ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done);
++//static
++int	ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done);
+ static void SendNegotiateProtocolVersion(List *unrecognized_protocol_options);
+ static void processCancelRequest(Port *port, void *pkt);
+ static void report_fork_failure_to_client(Port *port, int errnum);
+@@ -1533,7 +1534,7 @@
+ 	/* Locate the postgres executable itself */
+ 	if (find_my_exec(argv0, my_exec_path) < 0)
+ 		ereport(FATAL,
+-				(errmsg("%s: could not locate my own executable path", argv0)));
++				(errmsg("%s:1536: could not locate my own executable path", argv0)));
+ 
+ #ifdef EXEC_BACKEND
+ 	/* Locate executable backend before we change working directory */
+@@ -1947,8 +1948,8 @@
+  * should make no assumption here about the order in which the client may make
+  * requests.
+  */
+-static int
+-ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
++// static int
++int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
+ {
+ 	int32		len;
+ 	char	   *buf;

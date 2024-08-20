@@ -11,7 +11,7 @@ CC_PGLITE=$CC_PGLITE
 
     mkdir -p build/postgres
     pushd build/postgres
-    
+
     # create empty package.json to avoid emsdk node conflicts
     # with root package.json of project
     echo "{}" > package.json
@@ -32,6 +32,7 @@ CC_PGLITE=$CC_PGLITE
 # TODO: fix sdk to support --with-uuid=ossp
 
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
+ --cache-file=${PGROOT}/config.cache.emsdk \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
  --without-pam --disable-largefile --without-zlib --with-openssl=no \
@@ -40,25 +41,12 @@ CC_PGLITE=$CC_PGLITE
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
 
-
-    if [ -f ${PGROOT}/config.cache.emsdk ]
-    then
-        echo "re-using config cache file from ${PGROOT}/config.cache.emsdk"
-    else
-        if [ -f ../config.cache.emsdk ]
-        then
-            cp ../config.cache.emsdk ${PGROOT}/
-        else
-            cp config.cache.emsdk ${PGROOT}/
-        fi
-    fi
-
     # -lwebsocket.js -sPROXY_POSIX_SOCKETS -pthread -sPROXY_TO_PTHREAD
     # CONFIG_SITE=$(pwd)/config.site EMCC_CFLAGS="--oformat=html" \
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten --cache-file=${PGROOT}/config.cache.emsdk
+    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten
     then
         echo configure ok
     else
@@ -100,8 +88,6 @@ END
     # for zic and wasm-shared
     export PATH=$(pwd)/bin:$PATH
 
-
-    EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sENVIRONMENT=web"
     EMCC_NODE="-sEXIT_RUNTIME=1 -DEXIT_RUNTIME -sNODERAWFS -sENVIRONMENT=node"
 
     # -lwebsocket.js"
@@ -117,7 +103,7 @@ END
 
     # only required for static initdb
     EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 ${CC_PGLITE}"
-    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=256MB -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
+    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
     EMCC_CFLAGS="${EMCC_CFLAGS} -DPREFIX=${PGROOT}"
 
     export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
@@ -206,7 +192,7 @@ rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
 export TZ=UTC
 export PGTZ=UTC
 SQL=/tmp/initdb-\$\$
-# TODO: --waldir=${PREFIX}/wal
+# TODO: --waldir=${PGROOT}/wal
 > /tmp/initdb.txt
 
 ${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
