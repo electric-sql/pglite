@@ -2,6 +2,7 @@ import { Mutex } from 'async-mutex'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
 import { makeLocateFile } from './utils.js'
+import { parametrizeQuery } from './templating.js'
 import { parseResults } from './parse.js'
 import { serializeType } from './types.js'
 import type {
@@ -437,6 +438,20 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     return await this.#transactionMutex.runExclusive(async () => {
       return await this.#runQuery<T>(query, params, options)
     })
+  }
+
+  /**
+   * Execute a single SQL statement
+   * This uses the "Extended Query" postgres wire protocol message.
+   * @param query The query to execute with parameters as template values
+   * @returns The result of the query
+   */
+  async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
+    const { query, params: actualParams } = parametrizeQuery(
+      sqlStrings,
+      ...params,
+    )
+    return await this.query(query, actualParams)
   }
 
   /**
