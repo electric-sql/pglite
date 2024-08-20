@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { bloom } from '../../dist/contrib/bloom.js'
 
-test('bloom', async (t) => {
+it('bloom', async () => {
   const pg = new PGlite({
     extensions: {
       bloom,
@@ -30,7 +30,7 @@ test('bloom', async (t) => {
     WHERE name = 'test1';
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     {
       name: 'test1',
     },
@@ -48,5 +48,5 @@ test('bloom', async (t) => {
   const match = res2.rows.filter((row) =>
     row['QUERY PLAN'].includes('test_name_bloom_idx'),
   )
-  t.true(match.length > 0)
+  expect(match.length > 0).toBe(true)
 })

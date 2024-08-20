@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { auto_explain } from '../../dist/contrib/auto_explain.js'
 
-test('auto_explain', async (t) => {
+it('auto_explain', async () => {
   const pg = new PGlite({
     extensions: {
       auto_explain,
@@ -35,5 +35,5 @@ test('auto_explain', async (t) => {
     (msg) => msg.routine === 'explain_ExecutorEnd',
   )
 
-  t.truthy(explainNotice)
+  expect(!!explainNotice).toBe(true)
 })

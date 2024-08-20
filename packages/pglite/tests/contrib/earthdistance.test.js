@@ -1,9 +1,9 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { cube } from '../../dist/contrib/cube.js'
 import { earthdistance } from '../../dist/contrib/earthdistance.js'
 
-test('earthdistance', async (t) => {
+it('earthdistance', async () => {
   const pg = new PGlite({
     extensions: {
       cube,
@@ -44,7 +44,7 @@ test('earthdistance', async (t) => {
     ORDER BY distance;
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     { name: 'Location A', distance: 0 },
     { name: 'Location D', distance: 5424.971028170555 },
     { name: 'Location B', distance: 6290.327117342975 },

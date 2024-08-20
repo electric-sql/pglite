@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { tablefunc } from '../../dist/contrib/tablefunc.js'
 
-test('tablefunc', async (t) => {
+it('tablefunc', async () => {
   const pg = new PGlite({
     extensions: {
       tablefunc,
@@ -12,7 +12,7 @@ test('tablefunc', async (t) => {
   await pg.exec('CREATE EXTENSION IF NOT EXISTS tablefunc;')
 
   const ret = await pg.query(`SELECT * FROM normal_rand(10, 5, 3)`)
-  t.deepEqual(ret.rows.length, 10)
+  expect(ret.rows.length).toEqual(10)
 
   await pg.exec(`
     CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);
@@ -36,7 +36,7 @@ test('tablefunc', async (t) => {
     AS ct(row_name text, category_1 text, category_2 text, category_3 text);
   `)
 
-  t.deepEqual(ret2.rows, [
+  expect(ret2.rows).toEqual([
     {
       row_name: 'test1',
       category_1: 'val2',

@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { tcn } from '../../dist/contrib/tcn.js'
 
-test('tcn', async (t) => {
+it('tcn', async () => {
   const pg = new PGlite({
     extensions: {
       tcn,
@@ -23,7 +23,7 @@ test('tcn', async (t) => {
   `)
 
   pg.listen('tcn', (payload) => {
-    t.is(payload, `"test",I,"id"='1'`)
+    expect(payload).toBe(`"test",I,"id"='1'`)
   })
 
   await pg.exec("INSERT INTO test (name) VALUES ('test1');")

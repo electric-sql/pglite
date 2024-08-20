@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { hstore } from '../../dist/contrib/hstore.js'
 
-test('hstore', async (t) => {
+it('hstore', async () => {
   const pg = new PGlite({
     extensions: {
       hstore,
@@ -29,7 +29,7 @@ test('hstore', async (t) => {
     WHERE data->'name' = 'test1';
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     {
       data: {
         name: 'test1',
