@@ -30,7 +30,7 @@ export function tests(env, dbFilename, target) {
     } else {
       context = await browser.newContext()
       page = await context.newPage()
-      await page.goto(`http://localhost:${wsPort}/tests/blank.html`)
+      await page.goto(`http://localhost:${wsPort}/blank.html`)
       page.evaluate(`window.dbFilename = "${dbFilename}";`)
       page.evaluate(
         `window.useWorkerForBbFilename = ${JSON.stringify(useWorkerForBbFilename)};`,
@@ -235,7 +235,7 @@ export function tests(env, dbFilename, target) {
 
   test.serial(`targets ${target} worker live query`, async (t) => {
     const page2 = await context.newPage()
-    await page2.goto(`http://localhost:${wsPort}/tests/blank.html`)
+    await page2.goto(`http://localhost:${wsPort}/blank.html`)
     page2.evaluate(`window.dbFilename = "${dbFilename}";`)
     page.on('console', (msg) => {
       console.log(msg)
@@ -342,7 +342,7 @@ export function tests(env, dbFilename, target) {
 
   test.serial(`targets ${target} worker live incremental query`, async (t) => {
     const page2 = await context.newPage()
-    await page2.goto(`http://localhost:${wsPort}/tests/blank.html`)
+    await page2.goto(`http://localhost:${wsPort}/blank.html`)
     page2.evaluate(`window.dbFilename = "${dbFilename}";`)
     page.on('console', (msg) => {
       console.log(msg)
