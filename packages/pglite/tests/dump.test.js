@@ -1,79 +1,81 @@
-import test from 'ava'
+import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
 
-test('dump data dir and load it', async (t) => {
-  const pg1 = new PGlite()
-  await pg1.exec(`
+describe('dump', () => {
+  it('dump data dir and load it', async () => {
+    const pg1 = new PGlite()
+    await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
       name TEXT
     );
   `)
-  pg1.exec("INSERT INTO test (name) VALUES ('test');")
+    pg1.exec("INSERT INTO test (name) VALUES ('test');")
 
-  const ret1 = await pg1.query('SELECT * FROM test;')
+    const ret1 = await pg1.query('SELECT * FROM test;')
 
-  const file = await pg1.dumpDataDir()
+    const file = await pg1.dumpDataDir()
 
-  t.is(typeof file, 'object')
+    expect(typeof file).toBe('object')
 
-  const pg2 = new PGlite({
-    loadDataDir: file,
+    const pg2 = new PGlite({
+      loadDataDir: file,
+    })
+
+    const ret2 = await pg2.query('SELECT * FROM test;')
+
+    expect(ret1).toEqual(ret2)
   })
 
-  const ret2 = await pg2.query('SELECT * FROM test;')
-
-  t.deepEqual(ret1, ret2)
-})
-
-test('dump persisted data dir and load it', async (t) => {
-  const pg1 = new PGlite('./pgdata-test-dump')
-  await pg1.exec(`
+  it('dump persisted data dir and load it', async () => {
+    const pg1 = new PGlite('./pgdata-test-dump')
+    await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
       name TEXT
     );
   `)
-  pg1.exec("INSERT INTO test (name) VALUES ('test');")
+    pg1.exec("INSERT INTO test (name) VALUES ('test');")
 
-  const ret1 = await pg1.query('SELECT * FROM test;')
+    const ret1 = await pg1.query('SELECT * FROM test;')
 
-  const file = await pg1.dumpDataDir()
+    const file = await pg1.dumpDataDir()
 
-  t.is(typeof file, 'object')
+    expect(typeof file).toBe('object')
 
-  const pg2 = new PGlite({
-    loadDataDir: file,
+    const pg2 = new PGlite({
+      loadDataDir: file,
+    })
+
+    const ret2 = await pg2.query('SELECT * FROM test;')
+
+    expect(ret1).toEqual(ret2)
   })
 
-  const ret2 = await pg2.query('SELECT * FROM test;')
-
-  t.deepEqual(ret1, ret2)
-})
-
-test('dump data dir and load it no compression', async (t) => {
-  const pg1 = new PGlite()
-  await pg1.exec(`
+  it('dump data dir and load it no compression', async () => {
+    const pg1 = new PGlite()
+    await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
       name TEXT
     );
   `)
-  pg1.exec("INSERT INTO test (name) VALUES ('test');")
+    pg1.exec("INSERT INTO test (name) VALUES ('test');")
 
-  const ret1 = await pg1.query('SELECT * FROM test;')
+    const ret1 = await pg1.query('SELECT * FROM test;')
 
-  const file = await pg1.dumpDataDir('none')
+    const file = await pg1.dumpDataDir('none')
 
-  t.is(typeof file, 'object')
+    expect(typeof file).toBe('object')
 
-  t.is(file.type, 'application/x-tar')
+    expect(file.type).toBe('application/x-tar')
 
-  const pg2 = new PGlite({
-    loadDataDir: file,
+    const pg2 = new PGlite({
+      loadDataDir: file,
+    })
+
+    const ret2 = await pg2.query('SELECT * FROM test;')
+
+    expect(ret1).toEqual(ret2)
   })
-
-  const ret2 = await pg2.query('SELECT * FROM test;')
-
-  t.deepEqual(ret1, ret2)
 })

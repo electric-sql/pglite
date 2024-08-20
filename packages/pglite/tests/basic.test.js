@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { PGlite } from '../dist/index.cjs'
 import { expectToThrowAsync } from './polytest-vitest.js'
+import { PGlite } from '../dist/index.cjs'
 
 describe('basic', () => {
   it('exec', async () => {

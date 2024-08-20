@@ -1,9 +1,10 @@
-import test from 'ava'
+import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
 
-test('can create and call function', async (t) => {
-  const db = new PGlite()
-  await db.exec(`
+describe('plpgsql', () => {
+  it('can create and call function', async () => {
+    const db = new PGlite()
+    await db.exec(`
     CREATE EXTENSION IF NOT EXISTS plpgsql;
     CREATE OR REPLACE FUNCTION test_func()
     RETURNS TEXT AS $$
@@ -13,13 +14,13 @@ test('can create and call function', async (t) => {
     $$ LANGUAGE plpgsql;
   `)
 
-  const res = await db.query('SELECT test_func();')
-  t.is(res.rows[0].test_func, 'test')
-})
+    const res = await db.query('SELECT test_func();')
+    expect(res.rows[0].test_func).toBe('test')
+  })
 
-test('can create and call complex function', async (t) => {
-  const db = new PGlite()
-  await db.exec(`
+  it('can create and call complex function', async () => {
+    const db = new PGlite()
+    await db.exec(`
     CREATE EXTENSION IF NOT EXISTS plpgsql;
     CREATE OR REPLACE FUNCTION calculate_factorial(n INT) RETURNS INT AS $$
     DECLARE
@@ -39,6 +40,7 @@ test('can create and call complex function', async (t) => {
     $$ LANGUAGE plpgsql;
   `)
 
-  const res = await db.query('SELECT calculate_factorial(5) AS result;')
-  t.is(res.rows[0].result, 120)
+    const res = await db.query('SELECT calculate_factorial(5) AS result;')
+    expect(res.rows[0].result).toBe(120)
+  })
 })
