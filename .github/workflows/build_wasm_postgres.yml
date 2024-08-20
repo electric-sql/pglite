@@ -19,8 +19,8 @@ jobs:
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
-      TOTAL_MEMORY: 256MB
-      DEBUG: true
+      TOTAL_MEMORY: 512MB
+      DEBUG: false
       OBJDUMP: true
 
     steps:
