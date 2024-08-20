@@ -62,7 +62,7 @@ END
 
 else
     export PGDEBUG=""
-    export CDEBUG="-g0 -O2"
+    export CDEBUG="-g0 -Os"
     cat > /tmp/pgdebug.h << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
