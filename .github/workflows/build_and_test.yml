@@ -154,6 +154,10 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: vx.x.x
+
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
