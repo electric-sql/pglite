@@ -69,7 +69,7 @@
     "test:quick": "rm -rf ./pgdata-bun-test && ava tests/*.test.js tests/target/node-*.test.js",
     "test:bun": "rm -rf ./pgdata-test && npx bun test tests/basic.test.js && npx bun test tests/pgvector.test.js && npx bun test tests/targets/node-fs.test.js",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
-    "build": "npm run build:js",
+    "build": "pnpm run build:js || pnpm run build:js || pnpm run build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
     "dev-server": "pnpm http-server ../",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
