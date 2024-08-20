@@ -26,9 +26,7 @@ RUN \
   make build-essential wget lz4 bzip2 pv curl
 
 # Download the python-wasm-sdk source for the given version
-# RUN git clone --depth 1 --branch ${SDK_VERSION} https://github.com/pygame-web/python-wasm-sdk.git
-# TEMP HACK: point to most recent commit because ossp_uuid doesn't work otherwise on arm
-RUN git clone --depth 1 --branch main https://github.com/pygame-web/python-wasm-sdk.git
+RUN git clone --depth 1 --branch ${SDK_VERSION} https://github.com/pygame-web/python-wasm-sdk.git
 
 # Remove third party libraries that are not necessary for PGLite
 RUN cd ./python-wasm-sdk/sources.wasm && rm assimp.sh bullet3.sh ode.sh
