@@ -23,6 +23,11 @@
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     },
+    "./template": {
+      "import": "./dist/templating.js",
+      "require": "./dist/templating.cjs",
+      "types": "./dist/templating.d.ts"
+    },
     "./live": {
       "import": "./dist/live/index.js",
       "require": "./dist/live/index.cjs",

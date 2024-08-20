@@ -2,7 +2,7 @@ import { Mutex } from 'async-mutex'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
 import { makeLocateFile } from './utils.js'
-import { parametrizeQuery } from './templating.js'
+import { query as queryTemplate } from './templating.js'
 import { parseResults } from './parse.js'
 import { serializeType } from './types.js'
 import type {
@@ -447,10 +447,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * @returns The result of the query
    */
   async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
-    const { query, params: actualParams } = parametrizeQuery(
-      sqlStrings,
-      ...params,
-    )
+    const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
     return await this.query(query, actualParams)
   }
 
