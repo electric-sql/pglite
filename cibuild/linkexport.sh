@@ -18,6 +18,7 @@ echo >> ${WORKSPACE}/build/sizes.log
 echo "getting wasm exports lists"
 wasm-objdump -x $(realpath postgres.wasm) > ${WORKSPACE}/patches/exports/pgcore.wasm-objdump
 
+
 pushd ${WORKSPACE}
     echo "getting postgres exports lists"
     cat $(find build/postgres -type f |grep /exports) \

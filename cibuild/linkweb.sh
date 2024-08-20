@@ -183,7 +183,7 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=2"
 
     # tailored
-    # LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
+    LINKER="-sMAIN_MODULE=2 -sEXPORTED_FUNCTIONS=@exports"
 
     # FULL
     LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"

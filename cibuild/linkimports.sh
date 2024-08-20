@@ -1,5 +1,22 @@
 echo "============= link imports : begin ==============="
-    # _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
+
+# TODO : make a C-API list
+# _main,_getenv,_setenv,_interactive_one,_interactive_write,_interactive_read,_pg_initdb,_pg_shutdown
+
+
+# extract own pg lib requirements
+
+pushd ${WORKSPACE}
+    > patches/imports/pgcore
+    for extra_pg_so in $(find $PGROOT/lib/postgresql/|grep \.so$)
+    do
+        SOBASE=patches/imports.pgcore/$(basename $extra_pg_so .so)
+        wasm-objdump -x $(realpath $extra_pg_so) > $SOBASE.wasm-objdump
+        OBJDUMP=$SOBASE.wasm-objdump \
+         PGDUMP=patches/exports/pgcore.exports \
+         python3 cibuild/getsyms.py imports >> patches/imports/pgcore
+    done
+popd
 
 #not yet
 
@@ -11,6 +28,8 @@ echo "============= link imports : begin ==============="
     cat ${WORKSPACE}/patches/imports/* | sort | uniq > /tmp/symbols
 
     echo "Requesting $(wc -l /tmp/symbols) symbols from pg core for PGlite extensions"
+
+
 
     python3 <<END > ${WORKSPACE}/patches/exports/pglite
 
