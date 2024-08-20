@@ -23,4 +23,5 @@ docker run \
   -v ./tests:/workspace/tests \
   -v ./packages/pglite:/workspace/packages/pglite \
   $IMG_NAME:$IMG_TAG \
+  -e OBJDUMP=${OBJDUMP:-true} \
   bash ./cibuild/build-all.sh
