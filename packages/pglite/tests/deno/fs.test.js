@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertRejects,
-} from 'https://deno.land/std@0.202.0/testing/asserts.ts'
+import { assertEquals } from 'https://deno.land/std@0.202.0/testing/asserts.ts'
 import { PGlite } from '@electric-sql/pglite'
 
 Deno.test('filesystem new', async () => {

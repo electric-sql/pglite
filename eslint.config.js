@@ -55,4 +55,12 @@ export default [
       '@typescript-eslint/no-var-requires': 'off',
     },
   },
+  {
+    files: ['tests/deno/**/*.js'],
+    languageOptions: {
+      globals: {
+        Deno: false,
+      },
+    },
+  },
 ]
