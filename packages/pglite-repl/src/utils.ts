@@ -1,8 +1,11 @@
-import { type PGlite } from '@electric-sql/pglite'
+import { type PGliteInterface } from '@electric-sql/pglite'
 import { describe } from 'psql-describe'
 import type { Results, Response } from './types'
 
-export async function runQuery(query: string, pg: PGlite): Promise<Response> {
+export async function runQuery(
+  query: string,
+  pg: PGliteInterface,
+): Promise<Response> {
   if (query.trim().toLowerCase().startsWith('\\')) {
     return runDescribe(query, pg)
   }
@@ -28,7 +31,7 @@ export async function runQuery(query: string, pg: PGlite): Promise<Response> {
 
 export async function runDescribe(
   query: string,
-  pg: PGlite,
+  pg: PGliteInterface,
 ): Promise<Response> {
   const start = performance.now()
   let out: string | Record<string, unknown> | undefined
@@ -81,7 +84,9 @@ export async function runDescribe(
   }
 }
 
-export async function getSchema(pg: PGlite): Promise<Record<string, string[]>> {
+export async function getSchema(
+  pg: PGliteInterface,
+): Promise<Record<string, string[]>> {
   const ret = await pg.query<{
     schema: string
     table: string

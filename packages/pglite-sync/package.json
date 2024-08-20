@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "ElectricSQL Sync for PGlite",
   "type": "module",
   "private": false,
@@ -35,9 +35,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./build/index.d.ts",
-      "import": "./build/index.js",
-      "require": "./build/index.cjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [

@@ -51,7 +51,7 @@ importers:
         version: link:../packages/pglite
       '@electric-sql/pglite-repl':
         specifier: workspace:*
-        version: link:../packages/repl
+        version: link:../packages/pglite-repl
       '@uiw/codemirror-theme-github':
         specifier: ^4.23.0
         version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
@@ -73,14 +73,14 @@ importers:
         version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
-        specifier: ^7.6.9
+        specifier: ^7.6.11
         version: 7.6.11
       ascii-table3:
         specifier: ^0.9.0
         version: 0.9.0
       better-sqlite3:
-        specifier: ^9.4.3
-        version: 9.6.0
+        specifier: ^11.1.2
+        version: 11.1.2
       embedded-postgres:
         specifier: 15.5.1-beta.9
         version: 15.5.1-beta.9
@@ -169,6 +169,85 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(@types/node@20.14.15)(jsdom@24.1.1)(terser@5.31.6)
 
+  packages/pglite-repl:
+    dependencies:
+      '@codemirror/autocomplete':
+        specifier: ^6.16.2
+        version: 6.18.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)(@lezer/common@1.2.1)
+      '@codemirror/commands':
+        specifier: ^6.6.0
+        version: 6.6.0
+      '@codemirror/lang-sql':
+        specifier: ^6.6.4
+        version: 6.7.0(@codemirror/view@6.32.0)
+      '@codemirror/language':
+        specifier: ^6.10.2
+        version: 6.10.2
+      '@codemirror/view':
+        specifier: ^6.28.1
+        version: 6.32.0
+      '@electric-sql/pglite-react':
+        specifier: workspace:^
+        version: link:../pglite-react
+      '@uiw/codemirror-theme-github':
+        specifier: ^4.23.0
+        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
+      '@uiw/codemirror-theme-xcode':
+        specifier: ^4.22.2
+        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
+      '@uiw/codemirror-themes':
+        specifier: ^4.23.0
+        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
+      '@uiw/react-codemirror':
+        specifier: ^4.22.2
+        version: 4.23.0(@babel/runtime@7.25.0)(@codemirror/autocomplete@6.18.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)(@lezer/common@1.2.1))(@codemirror/language@6.10.2)(@codemirror/lint@6.8.1)(@codemirror/search@6.5.6)(@codemirror/state@6.4.1)(@codemirror/theme-one-dark@6.1.2)(@codemirror/view@6.32.0)(codemirror@6.0.1(@lezer/common@1.2.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      psql-describe:
+        specifier: ^0.1.5
+        version: 0.1.5
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: workspace:^
+        version: link:../pglite
+      '@types/node':
+        specifier: ^20.11.18
+        version: 20.14.15
+      '@types/react':
+        specifier: ^18.2.66
+        version: 18.3.3
+      '@types/react-dom':
+        specifier: ^18.2.22
+        version: 18.3.0
+      '@vitejs/plugin-react':
+        specifier: ^4.2.1
+        version: 4.3.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
+      eslint-plugin-react-compiler:
+        specifier: 0.0.0-experimental-9ed098e-20240725
+        version: 0.0.0-experimental-9ed098e-20240725(eslint@8.57.0)
+      eslint-plugin-react-hooks:
+        specifier: ^4.6.0
+        version: 4.6.2(eslint@8.57.0)
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.6
+        version: 0.4.9(eslint@8.57.0)
+      terser:
+        specifier: ^5.31.1
+        version: 5.31.6
+      vite:
+        specifier: ^5.2.0
+        version: 5.4.0(@types/node@20.14.15)(terser@5.31.6)
+      vite-plugin-dts:
+        specifier: ^4.0.1
+        version: 4.0.2(@types/node@20.14.15)(rollup@4.20.0)(typescript@5.5.4)(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
+      vite-plugin-libcss:
+        specifier: ^1.1.1
+        version: 1.1.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
+
   packages/pglite-sync:
     devDependencies:
       '@electric-sql/client':
@@ -232,82 +311,6 @@ importers:
       vue2.7:
         specifier: npm:vue@2.7
         version: vue@2.7.16
-
-  packages/repl:
-    dependencies:
-      '@codemirror/autocomplete':
-        specifier: ^6.16.2
-        version: 6.18.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)(@lezer/common@1.2.1)
-      '@codemirror/commands':
-        specifier: ^6.6.0
-        version: 6.6.0
-      '@codemirror/lang-sql':
-        specifier: ^6.6.4
-        version: 6.7.0(@codemirror/view@6.32.0)
-      '@codemirror/language':
-        specifier: ^6.10.2
-        version: 6.10.2
-      '@codemirror/view':
-        specifier: ^6.28.1
-        version: 6.32.0
-      '@uiw/codemirror-theme-github':
-        specifier: ^4.23.0
-        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
-      '@uiw/codemirror-theme-xcode':
-        specifier: ^4.22.2
-        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
-      '@uiw/codemirror-themes':
-        specifier: ^4.23.0
-        version: 4.23.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)
-      '@uiw/react-codemirror':
-        specifier: ^4.22.2
-        version: 4.23.0(@babel/runtime@7.25.0)(@codemirror/autocomplete@6.18.0(@codemirror/language@6.10.2)(@codemirror/state@6.4.1)(@codemirror/view@6.32.0)(@lezer/common@1.2.1))(@codemirror/language@6.10.2)(@codemirror/lint@6.8.1)(@codemirror/search@6.5.6)(@codemirror/state@6.4.1)(@codemirror/theme-one-dark@6.1.2)(@codemirror/view@6.32.0)(codemirror@6.0.1(@lezer/common@1.2.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      psql-describe:
-        specifier: ^0.1.5
-        version: 0.1.5
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@electric-sql/pglite':
-        specifier: workspace:^
-        version: link:../pglite
-      '@types/node':
-        specifier: ^20.11.18
-        version: 20.14.15
-      '@types/react':
-        specifier: ^18.2.66
-        version: 18.3.3
-      '@types/react-dom':
-        specifier: ^18.2.22
-        version: 18.3.0
-      '@vitejs/plugin-react':
-        specifier: ^4.2.1
-        version: 4.3.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
-      eslint-plugin-react-compiler:
-        specifier: 0.0.0-experimental-9ed098e-20240725
-        version: 0.0.0-experimental-9ed098e-20240725(eslint@8.57.0)
-      eslint-plugin-react-hooks:
-        specifier: ^4.6.0
-        version: 4.6.2(eslint@8.57.0)
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.6
-        version: 0.4.9(eslint@8.57.0)
-      terser:
-        specifier: ^5.31.1
-        version: 5.31.6
-      vite:
-        specifier: ^5.2.0
-        version: 5.4.0(@types/node@20.14.15)(terser@5.31.6)
-      vite-plugin-dts:
-        specifier: ^4.0.1
-        version: 4.0.2(@types/node@20.14.15)(rollup@4.20.0)(typescript@5.5.4)(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
-      vite-plugin-libcss:
-        specifier: ^1.1.1
-        version: 1.1.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
 
 packages:
 
@@ -1856,8 +1859,8 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  better-sqlite3@9.6.0:
-    resolution: {integrity: sha512-yR5HATnqeYNVnkaUTf4bOP2dJSnyhP4puJN/QPRyx4YkBEEUxib422n2XzPqDEHjQQqazoYoADdAm5vE15+dAQ==}
+  better-sqlite3@11.1.2:
+    resolution: {integrity: sha512-gujtFwavWU4MSPT+h9B+4pkvZdyOUkH54zgLdIrMmmmd4ZqiBIrRNBzNzYVFO417xo882uP5HBu4GjOfaSrIQw==}
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -1911,7 +1914,6 @@ packages:
 
   bun@1.1.24:
     resolution: {integrity: sha512-vZt5zNVaoNTSlNprdVdQVZInBcGC2QSik6o9ZsMzuYiiUEAEqpRwwMXAYDUN85mt2FNnsGvmk/8xVlUXS7IzEw==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -6426,7 +6428,7 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  better-sqlite3@9.6.0:
+  better-sqlite3@11.1.2:
     dependencies:
       bindings: 1.5.0
       prebuild-install: 7.1.2

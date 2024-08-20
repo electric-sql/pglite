@@ -1,4 +1,5 @@
 import type { PostgresMod, FS } from '../postgresMod.js'
+import type { DumpTarCompressionOptions } from './tarUtils.js'
 
 export type FsType =
   | 'nodefs'
@@ -30,7 +31,11 @@ export interface Filesystem {
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
-  dumpTar(FS: FS, dbname: string): Promise<File | Blob>
+  dumpTar(
+    FS: FS,
+    dbname: string,
+    compression?: DumpTarCompressionOptions,
+  ): Promise<File | Blob>
 
   /**
    * Close the filesystem.
