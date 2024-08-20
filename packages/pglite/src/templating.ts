@@ -46,6 +46,18 @@ function addToLastAndPushWithSuffix(
   arr.push(values[lastValIdx] + suffix)
 }
 
+/**
+ * Templating utility that allows nesting multiple SQL strings without
+ * losing the automatic parametrization capabilities of {@link query}.
+ *
+ * @example
+ * ```ts
+ * query`SELECT * FROM tale ${withFilter ? sql`WHERE foo = ${fooVar}` : sql``}`
+ * // > { query: 'SELECT * FROM tale WHERE foo = $1', params: [fooVar] }
+ * // or
+ * // > { query: 'SELECT * FROM tale', params: [] }
+ * ```
+ */
 export function sql(
   strings: TemplateStringsArray,
   ...values: any[]
@@ -104,6 +116,16 @@ export function sql(
   }
 }
 
+/**
+ * Allows adding identifiers into a query template string without
+ * parametrizing them. This method will automatically escape identifiers.
+ *
+ * @example
+ * ```ts
+ * query`SELECT * FROM ${identifier`foo`} WHERE ${identifier`id`} = ${id}`
+ * // > { query: 'SELECT * FROM "foo" WHERE "id" = $1', params: [id] }
+ * ```
+ */
 export function identifier(
   strings: TemplateStringsArray,
   ...values: any[]
@@ -114,6 +136,17 @@ export function identifier(
     str: `"${String.raw(strings, ...values)}"`,
   }
 }
+
+/**
+ * Allows adding raw strings into a query template string without
+ * parametrizing or modifying them in any way.
+ *
+ * @example
+ * ```ts
+ * query`SELECT * FROM foo ${raw`WHERE id = ${2+3}`}`
+ * // > { query: 'SELECT * FROM foo WHERE id = 5', params: [] }
+ * ```
+ */
 
 export function raw(
   strings: TemplateStringsArray,
@@ -127,7 +160,18 @@ export function raw(
 }
 
 /**
- * Generates a parametrized query from a templated query string
+ * Generates a parametrized query from a templated query string, assigning
+ * the provided values to the appropriate named parameters.
+ *
+ * You can use templating helpers like {@link identifier} and {@link raw} to
+ * add identifiers and raw strings to the query without making them parameters,
+ * and you can use {@link sql} to nest multiple queries and create utilities.
+ *
+ * @example
+ * ```ts
+ * query`SELECT * FROM ${identifier`foo`} WHERE id = ${id} and name = ${name}`
+ * // > { query: 'SELECT * FROM "foo" WHERE id = $1 and name = $2', params: [id, name] }
+ * ```
  */
 export function query(
   strings: TemplateStringsArray,
