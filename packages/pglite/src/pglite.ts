@@ -604,15 +604,28 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
 
       try {
         const tx: Transaction = {
-          query: async (
+          query: async <T>(
             query: string,
             params?: any[],
             options?: QueryOptions,
-          ) => {
+          ): Promise<Results<T>> => {
             checkClosed()
             return await this.#runQuery(query, params, options)
           },
-          exec: async (query: string, options?: QueryOptions) => {
+          sql: async <T>(
+            sqlStrings: TemplateStringsArray,
+            ...params: any[]
+          ): Promise<Results<T>> => {
+            const { query, params: actualParams } = queryTemplate(
+              sqlStrings,
+              ...params,
+            )
+            return await this.#runQuery(query, actualParams)
+          },
+          exec: async (
+            query: string,
+            options?: QueryOptions,
+          ): Promise<Array<Results>> => {
             checkClosed()
             return await this.#runExec(query, options)
           },

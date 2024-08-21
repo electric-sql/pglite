@@ -133,6 +133,10 @@ export interface Transaction {
     params?: any[],
     options?: QueryOptions,
   ): Promise<Results<T>>
+  sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>>
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   rollback(): Promise<void>
   get closed(): boolean
