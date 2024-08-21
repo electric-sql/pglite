@@ -1,85 +1,111 @@
 //binary data writer tuned for encoding binary specific to the postgres binary protocol
 
 export class Writer {
-  private buffer: Buffer
-  private offset: number = 5
-  private headerPosition: number = 0
+  #bufferView: DataView
+  #offset: number = 5
+
+  readonly #littleEndian = false as const
+  readonly #encoder = new TextEncoder()
+  readonly #headerPosition: number = 0
   constructor(private size = 256) {
-    this.buffer = Buffer.allocUnsafe(size)
+    this.#bufferView = this.#allocateBuffer(size)
+  }
+
+  #allocateBuffer(size: number): DataView {
+    return new DataView(new ArrayBuffer(size))
   }
 
   private ensure(size: number): void {
-    var remaining = this.buffer.length - this.offset
+    const remaining = this.#bufferView.byteLength - this.#offset
     if (remaining < size) {
-      var oldBuffer = this.buffer
+      const oldBuffer = this.#bufferView.buffer
       // exponential growth factor of around ~ 1.5
       // https://stackoverflow.com/questions/2269063/buffer-growth-strategy
-      var newSize = oldBuffer.length + (oldBuffer.length >> 1) + size
-      this.buffer = Buffer.allocUnsafe(newSize)
-      oldBuffer.copy(this.buffer)
+      const newSize = oldBuffer.byteLength + (oldBuffer.byteLength >> 1) + size
+      this.#bufferView = this.#allocateBuffer(newSize)
+      new Uint8Array(this.#bufferView.buffer).set(new Uint8Array(oldBuffer))
     }
   }
 
   public addInt32(num: number): Writer {
     this.ensure(4)
-    this.buffer[this.offset++] = (num >>> 24) & 0xff
-    this.buffer[this.offset++] = (num >>> 16) & 0xff
-    this.buffer[this.offset++] = (num >>> 8) & 0xff
-    this.buffer[this.offset++] = (num >>> 0) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 24) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 16) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 8) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 0) & 0xff
+    this.#bufferView.setInt32(this.#offset, num, this.#littleEndian)
+    this.#offset += 4
     return this
   }
 
   public addInt16(num: number): Writer {
     this.ensure(2)
-    this.buffer[this.offset++] = (num >>> 8) & 0xff
-    this.buffer[this.offset++] = (num >>> 0) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 8) & 0xff
+    // this.buffer[this.#offset++] = (num >>> 0) & 0xff
+    this.#bufferView.setInt16(this.#offset, num, this.#littleEndian)
+    this.#offset += 2
     return this
   }
 
   public addCString(string: string): Writer {
-    if (!string) {
-      this.ensure(1)
-    } else {
-      var len = Buffer.byteLength(string)
-      this.ensure(len + 1) // +1 for null terminator
-      this.buffer.write(string, this.offset, 'utf-8')
-      this.offset += len
+    if (string) {
+      // TODO(msfstef): might be faster to extract `addString` code and
+      // ensure length + 1 once rather than length and then +1?
+      this.addString(string)
     }
 
-    this.buffer[this.offset++] = 0 // null terminator
+    // set null terminator
+    this.ensure(1)
+    this.#bufferView.setUint8(this.#offset, 0)
+    this.#offset++
     return this
   }
 
   public addString(string: string = ''): Writer {
-    var len = Buffer.byteLength(string)
-    this.ensure(len)
-    this.buffer.write(string, this.offset)
-    this.offset += len
+    // TODO(msfstef): Write `byteLength` function to get size
+    // of string wihtout creating buffer and use `encodeInto`
+    // to write into buffer.
+    // See https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/encodeInto
+    const encodedStr = this.#encoder.encode(string)
+    const length = encodedStr.byteLength
+    this.ensure(length)
+    new Uint8Array(this.#bufferView.buffer).set(
+      new Uint8Array(encodedStr),
+      this.#offset,
+    )
+    this.#offset += length
     return this
   }
 
-  public add(otherBuffer: Buffer): Writer {
-    this.ensure(otherBuffer.length)
-    otherBuffer.copy(this.buffer, this.offset)
-    this.offset += otherBuffer.length
+  public add(otherBuffer: ArrayBuffer): Writer {
+    this.ensure(otherBuffer.byteLength)
+    new Uint8Array(this.#bufferView.buffer).set(
+      new Uint8Array(otherBuffer),
+      this.#offset,
+    )
+
+    this.#offset += otherBuffer.byteLength
     return this
   }
 
-  private join(code?: number): Buffer {
+  private join(code?: number): ArrayBuffer {
     if (code) {
-      this.buffer[this.headerPosition] = code
-      //length is everything in this packet minus the code
-      const length = this.offset - (this.headerPosition + 1)
-      this.buffer.writeInt32BE(length, this.headerPosition + 1)
+      this.#bufferView.setUint8(this.#headerPosition, code)
+      // length is everything in this packet minus the code
+      const length = this.#offset - (this.#headerPosition + 1)
+      this.#bufferView.setInt32(
+        this.#headerPosition + 1,
+        length,
+        this.#littleEndian,
+      )
     }
-    return this.buffer.slice(code ? 0 : 5, this.offset)
+    return this.#bufferView.buffer.slice(code ? 0 : 5, this.#offset)
   }
 
-  public flush(code?: number): Buffer {
-    var result = this.join(code)
-    this.offset = 5
-    this.headerPosition = 0
-    this.buffer = Buffer.allocUnsafe(this.size)
+  public flush(code?: number): ArrayBuffer {
+    const result = this.join(code)
+    this.#offset = 5
+    this.#bufferView = this.#allocateBuffer(this.size)
     return result
   }
 }
