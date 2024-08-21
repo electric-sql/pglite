@@ -74,6 +74,13 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test web integrations
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: pnpm test:web
+
       - name: Pack for distribution
         run: pnpm pack
 
