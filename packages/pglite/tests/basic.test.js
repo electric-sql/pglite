@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { expectToThrowAsync } from './polytest-vitest.js'
+import { expectToThrowAsync, testEsmAndCjs } from './test-utils.js'
 
-await tests('esm')
-await tests('cjs')
-
-async function tests(importType) {
+await testEsmAndCjs(async (importType) => {
   const { PGlite } =
     importType === 'esm'
       ? await import('../dist/index.js')
@@ -405,4 +402,4 @@ async function tests(importType) {
       }, 'PGlite is closed')
     })
   })
-}
+})

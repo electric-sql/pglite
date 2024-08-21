@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { expectToThrowAsync } from './polytest-vitest.js'
+import { expectToThrowAsync } from './test-utils.js'
 import * as fs from 'fs/promises'
 import { PGlite } from '../dist/index.js'
 

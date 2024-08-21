@@ -14,4 +14,13 @@ async function expectToThrowAsync(fn, expected) {
   return expect(fn).rejects.toThrow(expected)
 }
 
-export { expectToThrowAsync }
+async function testEsmAndCjs(fn) {
+  await fn('esm')
+
+  // don't run cjs tests for Bun
+  if (typeof Bun !== 'undefined') return
+
+  await fn('cjs')
+}
+
+export { expectToThrowAsync, testEsmAndCjs }
