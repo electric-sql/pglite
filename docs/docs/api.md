@@ -132,6 +132,14 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `blob: Blob | File` <br />
   Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
 
+##### Tagged Template Literal `    sql`` `
+You can also use the [`    sql`` `](#sql) tagged template literal to create queries:
+```ts
+await pg.sql`SELECT * FROM test WHERE name = ${'test'}`
+// equivalent of pg.query('SELECT * FROM test WHERE name = $1', ['test'])
+```
+See the [templating](#sql) section for more details on how to use the tagged template literal along with various helpers for more complex cases.
+
 ### exec
 
 `.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`
@@ -336,6 +344,42 @@ The `.query<T>()` method can take a TypeScript type describing the expected shap
 These types are not validated at run time, the result is only cast to the provided type.
 
 :::
+
+## `    sql`` `
+
+`.sql<T>(strings: TemplateStringsArray, ...params: any[]): Promise<Results<T>>`
+
+If additional configurations or complex binary parameters are not needed, then it is possible to use the `    sql`` ` tag on a templated SQL string literal and get the same results as calling the [`query`](#query) API directly, where the templated values will automatically be converted to parameters.
+
+There are helpers in the `template` export to create more complex and parametrizeable templated queries:
+- `    identifier`` ` <br />
+  Tag identifiers like column and table names to escape them with quotes and prevent them from becoming parameters.
+- `    raw`` ` <br />
+  Tag any string that you want to avoid being interpreted as a parameter. Will allow you to still do regular string templating.
+- `    sql`` ` <br />
+  Tag nested templated literals to preserve behaviour and parametrization. Will allow you to create reusable templating utilities
+- `    query`` ` <br />
+  Use at the top level tag in order to generate the parametrized query without passing it to the `query` API. Returns a `{ query: string, params: any[] }` object with the parametrized query and any parameters used in the query.
+
+##### Example
+```ts
+import { identifier, raw, sql, query } from '@electric-sql/pglite/template'
+
+await pg.sql`SELECT * FROM ${identifier`test`} WHERE name = ${'test'}`
+// equivalent of pg.query('SELECT * FROM "test" WHERE name = $1', ['test'])
+
+const filterStmt = (filterVar?: string) => filterVar ?
+  sql`WHERE name = ${filterVar}` :
+  raw`WHERE 1=1`
+
+await pg.sql`SELECT * FROM test ${filterStmt('test')}`
+// equivalent of pg.query('SELECT * FROM "test" WHERE name = $1', ['test'])
+await pg.sql`SELECT * FROM test ${filterStmt(null)}`
+// equivalent of pg.query('SELECT * FROM "test" WHERE 1=1, [])
+
+query`SELECT * FROM ${identifier`test`} WHERE name = ${'test'}`
+// { query: 'SELECT * FROM "test" WHERE name = $1', params: ['test'] }
+```
 
 ## /dev/blob
 
