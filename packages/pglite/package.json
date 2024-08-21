@@ -66,7 +66,7 @@
   },
   "scripts": {
     "test": "pnpm test:basic && pnpm test:runtimes",
-    "test:basic": "pnpm test:clean && vitest tests/{**/,}*.test.js",
+    "test:basic": "pnpm test:clean && vitest tests/*.test.js tests/**/*.test.js",
     "test:web": "pnpm test:clean && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && vitest --fileParallelism false tests/targets/web/*.test.web.js\" \"npx http-server --port 3334 ./\"",
     "test:bun": "pnpm test:clean && pnpm bun test tests/{basic,pgvector}.test.js tests/targets/runtimes/node-fs.test.js",
     "test:node": "pnpm test:clean && pnpm vitest tests/targets/runtimes/node-*.test.js",
