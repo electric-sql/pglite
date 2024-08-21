@@ -1,0 +1,29 @@
+{
+  "name": "@electric-sql/pglite-protocol",
+  "version": "0.0.1",
+  "description": "The postgres client/server binary protocol, implemented in TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.18",
+    "chunky": "^0.0.0",
+    "vitest": "^2.0.5"
+  },
+  "scripts": {
+    "test": "mocha dist/**/*.test.js",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "prepublish": "yarn build",
+    "pretest": "yarn build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/brianc/node-postgres.git",
+    "directory": "packages/pg-protocol"
+  },
+  "files": [
+    "/dist/*{js,ts,map}",
+    "/src"
+  ]
+}
