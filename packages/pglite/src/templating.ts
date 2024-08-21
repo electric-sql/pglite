@@ -1,14 +1,8 @@
-enum TemplateTagType {
-  identifier,
-  raw,
-}
-
 const templateTagSymbol = Symbol('templateTagSymbol')
 const templateContainerSymbol = Symbol('templateContainerSymbol')
 
-interface TemplatePart<T = TemplateTagType> {
+interface TemplatePart {
   [templateTagSymbol]: true
-  type: T
   str: string
 }
 
@@ -129,10 +123,9 @@ export function sql(
 export function identifier(
   strings: TemplateStringsArray,
   ...values: any[]
-): TemplatePart<TemplateTagType.identifier> {
+): TemplatePart {
   return {
     [templateTagSymbol]: true,
-    type: TemplateTagType.identifier,
     str: `"${String.raw(strings, ...values)}"`,
   }
 }
@@ -151,10 +144,9 @@ export function identifier(
 export function raw(
   strings: TemplateStringsArray,
   ...values: any[]
-): TemplatePart<TemplateTagType.raw> {
+): TemplatePart {
   return {
     [templateTagSymbol]: true,
-    type: TemplateTagType.raw,
     str: String.raw(strings, ...values),
   }
 }

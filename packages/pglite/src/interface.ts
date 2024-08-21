@@ -78,6 +78,10 @@ export type PGliteInterface = {
     params?: any[],
     options?: QueryOptions,
   ): Promise<Results<T>>
+  sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>>
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   transaction<T>(
     callback: (tx: Transaction) => Promise<T>,

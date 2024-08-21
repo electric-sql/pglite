@@ -457,7 +457,10 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
    * ```
    */
-  async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
+  async sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>> {
     const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
     return await this.query(query, actualParams)
   }

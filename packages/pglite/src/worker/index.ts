@@ -325,6 +325,14 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     return (await this.#rpc('query', query, params, options)) as Results<T>
   }
 
+  async sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>> {
+    await this.waitReady
+    return (await this.#rpc('sql', sqlStrings, ...params)) as Results<T>
+  }
+
   /**
    * Execute a SQL query, this can have multiple statements.
    * This uses the "Simple Query" postgres wire protocol message.
@@ -645,6 +653,9 @@ function makeWorkerApi(db: PGliteInterface) {
     },
     async query(query: string, params?: any[], options?: QueryOptions) {
       return await db.query(query, params, options)
+    },
+    async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
+      return await db.sql(sqlStrings, ...params)
     },
     async exec(query: string, options?: QueryOptions) {
       return await db.exec(query, options)
