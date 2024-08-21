@@ -330,7 +330,12 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
     ...params: any[]
   ): Promise<Results<T>> {
     await this.waitReady
-    return (await this.#rpc('sql', sqlStrings, ...params)) as Results<T>
+    return (await this.#rpc(
+      'sql',
+      sqlStrings,
+      sqlStrings.raw,
+      params,
+    )) as Results<T>
   }
 
   /**
@@ -654,8 +659,16 @@ function makeWorkerApi(db: PGliteInterface) {
     async query(query: string, params?: any[], options?: QueryOptions) {
       return await db.query(query, params, options)
     },
-    async sql(sqlStrings: TemplateStringsArray, ...params: any[]) {
-      return await db.sql(sqlStrings, ...params)
+    async sql(
+      sqlStrings: ReadonlyArray<string>,
+      sqlStringsRaw: ReadonlyArray<string>,
+      params: any[],
+    ) {
+      const sqlStringsFull = sqlStrings as ReadonlyArray<string> & {
+        raw: ReadonlyArray<string>
+      }
+      sqlStringsFull.raw = sqlStringsRaw
+      return await db.sql(sqlStringsFull, ...params)
     },
     async exec(query: string, options?: QueryOptions) {
       return await db.exec(query, options)
