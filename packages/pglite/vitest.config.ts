@@ -6,9 +6,11 @@ export default defineConfig({
     dir: './tests',
     watch: false,
     typecheck: { enabled: true },
-    // restoreMocks: true,
-    // testTransformMode: {
-    //   ssr: ['**/*'],
-    // },
+    testTimeout: 30000,
+    server: {
+      deps: {
+        external: [/\/tests\/targets\/web\//],
+      },
+    },
   },
 })

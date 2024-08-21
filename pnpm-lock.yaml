@@ -96,9 +96,6 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.11
         version: 2.6.11
-      '@vitest/browser':
-        specifier: ^2.0.5
-        version: 2.0.5(playwright@1.46.0)(typescript@5.5.4)(vitest@2.0.5)
       async-mutex:
         specifier: ^0.4.1
         version: 0.4.1
@@ -131,7 +128,7 @@ importers:
         version: 0.1.0
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+        version: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
 
   packages/pglite-react:
     devDependencies:
@@ -173,7 +170,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
 
   packages/pglite-repl:
     dependencies:
@@ -273,7 +270,7 @@ importers:
         version: 15.9.0
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
 
   packages/pglite-vue:
     dependencies:
@@ -307,7 +304,7 @@ importers:
         version: 24.1.1
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
       vue:
         specifier: ^3.4.27
         version: 3.4.37(typescript@5.5.4)
@@ -1609,6 +1606,11 @@ packages:
   '@vitest/spy@2.0.5':
     resolution: {integrity: sha512-c/jdthAhvJdpfVuaexSrnawxZz6pywlTPe84LUB2m/4t3rl2fTo9NFGBG4oWgaD+FTgDDV8hJ/nibT7IfH3JfA==}
 
+  '@vitest/ui@2.0.5':
+    resolution: {integrity: sha512-m+ZpVt/PVi/nbeRKEjdiYeoh0aOfI9zr3Ria9LO7V2PlMETtAXJS3uETEZkc8Be2oOl8mhd7Ew+5SRBXRYncNw==}
+    peerDependencies:
+      vitest: 2.0.5
+
   '@vitest/utils@2.0.5':
     resolution: {integrity: sha512-d8HKbqIcya+GR67mkZbrzhS5kKhtp8dQLcmRZLGTscGVg7yImT82cIrhtn2L8+VujWcy6KZweApgNmPsTAO/UQ==}
 
@@ -2004,7 +2006,6 @@ packages:
 
   bun@1.1.24:
     resolution: {integrity: sha512-vZt5zNVaoNTSlNprdVdQVZInBcGC2QSik6o9ZsMzuYiiUEAEqpRwwMXAYDUN85mt2FNnsGvmk/8xVlUXS7IzEw==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -2614,6 +2615,9 @@ packages:
 
   fastq@1.17.1:
     resolution: {integrity: sha512-sRVD3lWVIXWg6By68ZN7vho9a1pQcN/WBFaAAsDDFzlJjvoGx0P8z7V1t72grFJfJhu3YPZBuu25f7Kaw2jN1w==}
+
+  fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
 
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
@@ -5024,15 +5028,18 @@ snapshots:
   '@bundled-es-modules/cookie@2.0.0':
     dependencies:
       cookie: 0.5.0
+    optional: true
 
   '@bundled-es-modules/statuses@1.0.1':
     dependencies:
       statuses: 2.0.1
+    optional: true
 
   '@bundled-es-modules/tough-cookie@0.1.6':
     dependencies:
       '@types/tough-cookie': 4.0.5
       tough-cookie: 4.1.4
+    optional: true
 
   '@changesets/apply-release-plan@7.0.4':
     dependencies:
@@ -5605,6 +5612,7 @@ snapshots:
     dependencies:
       '@inquirer/core': 9.0.10
       '@inquirer/type': 1.5.2
+    optional: true
 
   '@inquirer/core@9.0.10':
     dependencies:
@@ -5621,12 +5629,15 @@ snapshots:
       strip-ansi: 6.0.1
       wrap-ansi: 6.2.0
       yoctocolors-cjs: 2.1.2
+    optional: true
 
-  '@inquirer/figures@1.0.5': {}
+  '@inquirer/figures@1.0.5':
+    optional: true
 
   '@inquirer/type@1.5.2':
     dependencies:
       mute-stream: 1.0.0
+    optional: true
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -5771,6 +5782,7 @@ snapshots:
       is-node-process: 1.2.0
       outvariant: 1.4.3
       strict-event-emitter: 0.5.1
+    optional: true
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -5786,14 +5798,17 @@ snapshots:
 
   '@one-ini/wasm@0.1.1': {}
 
-  '@open-draft/deferred-promise@2.2.0': {}
+  '@open-draft/deferred-promise@2.2.0':
+    optional: true
 
   '@open-draft/logger@0.3.0':
     dependencies:
       is-node-process: 1.2.0
       outvariant: 1.4.3
+    optional: true
 
-  '@open-draft/until@2.1.0': {}
+  '@open-draft/until@2.1.0':
+    optional: true
 
   '@oven/bun-darwin-aarch64@1.1.24':
     optional: true
@@ -5822,7 +5837,8 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@polka/url@1.0.0-next.25': {}
+  '@polka/url@1.0.0-next.25':
+    optional: true
 
   '@rollup/pluginutils@4.2.1':
     dependencies:
@@ -5996,6 +6012,7 @@ snapshots:
   '@testing-library/user-event@14.5.2(@testing-library/dom@10.4.0)':
     dependencies:
       '@testing-library/dom': 10.4.0
+    optional: true
 
   '@testing-library/vue@8.1.0(@vue/compiler-sfc@3.4.37)(vue@3.4.37(typescript@5.5.4))':
     dependencies:
@@ -6035,7 +6052,8 @@ snapshots:
     dependencies:
       '@types/node': 20.14.15
 
-  '@types/cookie@0.6.0': {}
+  '@types/cookie@0.6.0':
+    optional: true
 
   '@types/emscripten@1.39.13': {}
 
@@ -6057,6 +6075,7 @@ snapshots:
   '@types/mute-stream@0.0.4':
     dependencies:
       '@types/node': 20.14.15
+    optional: true
 
   '@types/node-fetch@2.6.11':
     dependencies:
@@ -6072,6 +6091,7 @@ snapshots:
   '@types/node@22.4.1':
     dependencies:
       undici-types: 6.19.8
+    optional: true
 
   '@types/prop-types@15.7.12': {}
 
@@ -6086,15 +6106,18 @@ snapshots:
 
   '@types/semver@7.5.8': {}
 
-  '@types/statuses@2.0.5': {}
+  '@types/statuses@2.0.5':
+    optional: true
 
-  '@types/tough-cookie@4.0.5': {}
+  '@types/tough-cookie@4.0.5':
+    optional: true
 
   '@types/unist@3.0.2': {}
 
   '@types/web-bluetooth@0.0.20': {}
 
-  '@types/wrap-ansi@3.0.0': {}
+  '@types/wrap-ansi@3.0.0':
+    optional: true
 
   '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.4))(eslint@8.57.0)(typescript@5.5.4)':
     dependencies:
@@ -6331,7 +6354,7 @@ snapshots:
       magic-string: 0.30.11
       msw: 2.3.5(typescript@5.5.4)
       sirv: 2.0.4
-      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
       ws: 8.18.0
     optionalDependencies:
       playwright: 1.46.0
@@ -6339,6 +6362,7 @@ snapshots:
       - bufferutil
       - typescript
       - utf-8-validate
+    optional: true
 
   '@vitest/expect@2.0.5':
     dependencies:
@@ -6365,6 +6389,18 @@ snapshots:
   '@vitest/spy@2.0.5':
     dependencies:
       tinyspy: 3.0.0
+
+  '@vitest/ui@2.0.5(vitest@2.0.5)':
+    dependencies:
+      '@vitest/utils': 2.0.5
+      fast-glob: 3.3.2
+      fflate: 0.8.2
+      flatted: 3.3.1
+      pathe: 1.1.2
+      sirv: 2.0.4
+      tinyrainbow: 1.2.0
+      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+    optional: true
 
   '@vitest/utils@2.0.5':
     dependencies:
@@ -6627,6 +6663,7 @@ snapshots:
   ansi-escapes@4.3.2:
     dependencies:
       type-fest: 0.21.3
+    optional: true
 
   ansi-regex@5.0.1: {}
 
@@ -6936,14 +6973,16 @@ snapshots:
 
   cli-boxes@3.0.0: {}
 
-  cli-spinners@2.9.2: {}
+  cli-spinners@2.9.2:
+    optional: true
 
   cli-truncate@4.0.0:
     dependencies:
       slice-ansi: 5.0.0
       string-width: 7.2.0
 
-  cli-width@4.1.0: {}
+  cli-width@4.1.0:
+    optional: true
 
   clipboardy@3.0.0:
     dependencies:
@@ -7061,7 +7100,8 @@ snapshots:
 
   convert-to-spaces@2.0.1: {}
 
-  cookie@0.5.0: {}
+  cookie@0.5.0:
+    optional: true
 
   copy-anything@3.0.5:
     dependencies:
@@ -7596,6 +7636,9 @@ snapshots:
     dependencies:
       reusify: 1.0.4
 
+  fflate@0.8.2:
+    optional: true
+
   figures@6.1.0:
     dependencies:
       is-unicode-supported: 2.0.0
@@ -7786,7 +7829,8 @@ snapshots:
 
   graphemer@1.4.0: {}
 
-  graphql@16.9.0: {}
+  graphql@16.9.0:
+    optional: true
 
   has-bigints@1.0.2: {}
 
@@ -7814,7 +7858,8 @@ snapshots:
 
   he@1.2.0: {}
 
-  headers-polyfill@4.0.3: {}
+  headers-polyfill@4.0.3:
+    optional: true
 
   hermes-estree@0.20.1: {}
 
@@ -7985,7 +8030,8 @@ snapshots:
 
   is-map@2.0.3: {}
 
-  is-node-process@1.2.0: {}
+  is-node-process@1.2.0:
+    optional: true
 
   is-number-object@1.0.7:
     dependencies:
@@ -8311,7 +8357,8 @@ snapshots:
 
   mri@1.2.0: {}
 
-  mrmime@2.0.0: {}
+  mrmime@2.0.0:
+    optional: true
 
   ms@2.0.0: {}
 
@@ -8340,10 +8387,12 @@ snapshots:
       yargs: 17.7.2
     optionalDependencies:
       typescript: 5.5.4
+    optional: true
 
   muggle-string@0.4.1: {}
 
-  mute-stream@1.0.0: {}
+  mute-stream@1.0.0:
+    optional: true
 
   mz@2.7.0:
     dependencies:
@@ -8451,7 +8500,8 @@ snapshots:
 
   outdent@0.5.0: {}
 
-  outvariant@1.4.3: {}
+  outvariant@1.4.3:
+    optional: true
 
   p-filter@2.1.0:
     dependencies:
@@ -8517,7 +8567,8 @@ snapshots:
 
   path-to-regexp@2.2.1: {}
 
-  path-to-regexp@6.2.2: {}
+  path-to-regexp@6.2.2:
+    optional: true
 
   path-type@4.0.0: {}
 
@@ -8947,6 +8998,7 @@ snapshots:
       '@polka/url': 1.0.0-next.25
       mrmime: 2.0.0
       totalist: 3.0.1
+    optional: true
 
   slash@3.0.0: {}
 
@@ -8989,7 +9041,8 @@ snapshots:
 
   stackback@0.0.2: {}
 
-  statuses@2.0.1: {}
+  statuses@2.0.1:
+    optional: true
 
   std-env@3.7.0: {}
 
@@ -8997,7 +9050,8 @@ snapshots:
     dependencies:
       internal-slot: 1.0.7
 
-  strict-event-emitter@0.5.1: {}
+  strict-event-emitter@0.5.1:
+    optional: true
 
   string-argv@0.3.2: {}
 
@@ -9151,7 +9205,8 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
-  totalist@3.0.1: {}
+  totalist@3.0.1:
+    optional: true
 
   tough-cookie@4.1.4:
     dependencies:
@@ -9234,11 +9289,13 @@ snapshots:
 
   type-fest@0.20.2: {}
 
-  type-fest@0.21.3: {}
+  type-fest@0.21.3:
+    optional: true
 
   type-fest@2.19.0: {}
 
-  type-fest@4.25.0: {}
+  type-fest@4.25.0:
+    optional: true
 
   typescript@5.4.2: {}
 
@@ -9248,7 +9305,8 @@ snapshots:
 
   undici-types@5.26.5: {}
 
-  undici-types@6.19.8: {}
+  undici-types@6.19.8:
+    optional: true
 
   unicorn-magic@0.1.0: {}
 
@@ -9415,7 +9473,7 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6):
+  vitest@2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6):
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@vitest/expect': 2.0.5
@@ -9439,6 +9497,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.14.15
       '@vitest/browser': 2.0.5(playwright@1.46.0)(typescript@5.5.4)(vitest@2.0.5)
+      '@vitest/ui': 2.0.5(vitest@2.0.5)
       jsdom: 24.1.1
     transitivePeerDependencies:
       - less
@@ -9450,7 +9509,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(jsdom@24.1.1)(terser@5.31.6):
+  vitest@2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6):
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@vitest/expect': 2.0.5
@@ -9474,6 +9533,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.4.1
       '@vitest/browser': 2.0.5(playwright@1.46.0)(typescript@5.5.4)(vitest@2.0.5)
+      '@vitest/ui': 2.0.5(vitest@2.0.5)
       jsdom: 24.1.1
     transitivePeerDependencies:
       - less
@@ -9630,6 +9690,7 @@ snapshots:
       ansi-styles: 4.3.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+    optional: true
 
   wrap-ansi@7.0.0:
     dependencies:
@@ -9682,7 +9743,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yoctocolors-cjs@2.1.2: {}
+  yoctocolors-cjs@2.1.2:
+    optional: true
 
   zod-validation-error@3.3.1(zod@3.23.8):
     dependencies:
