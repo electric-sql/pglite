@@ -132,16 +132,18 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `blob: Blob | File` <br />
   Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
 
-##### Tagged Template Literal `    sql`` `
+##### `    sql`` `
 
-You can also use the [`    sql`` `](#sql) tagged template literal to create queries:
+`.sql<T>(strings: TemplateStringsArray, ...params: any[]): Promise<Results<T>>`
+
+You can also use the [`    sql`` `](#tagged-template-queries) tagged template literal to create queries:
 
 ```ts
 await pg.sql`SELECT * FROM test WHERE name = ${'test'}`
 // equivalent of pg.query('SELECT * FROM test WHERE name = $1', ['test'])
 ```
 
-See the [templating](#sql) section for more details on how to use the tagged template literal along with various helpers for more complex cases.
+See the [templating](#tagged-template-queries) section for more details on how to use the tagged template literal along with various helpers for more complex cases.
 
 ### exec
 
@@ -348,9 +350,7 @@ These types are not validated at run time, the result is only cast to the provid
 
 :::
 
-## `    sql`` `
-
-`.sql<T>(strings: TemplateStringsArray, ...params: any[]): Promise<Results<T>>`
+## Tagged Template Queries
 
 If additional configurations or complex binary parameters are not needed, then it is possible to use the `    sql`` ` tag on a templated SQL string literal and get the same results as calling the [`query`](#query) API directly, where the templated values will automatically be converted to parameters.
 
