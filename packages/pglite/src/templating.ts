@@ -1,13 +1,15 @@
-const templateTagSymbol = Symbol('templateTagSymbol')
-const templateContainerSymbol = Symbol('templateContainerSymbol')
+const TemplateType = {
+  part: 'part',
+  container: 'container',
+} as const
 
 interface TemplatePart {
-  [templateTagSymbol]: true
+  _templateType: typeof TemplateType.part
   str: string
 }
 
 interface TemplateContainer {
-  [templateContainerSymbol]: true
+  _templateType: typeof TemplateType.container
   strings: TemplateStringsArray
   values: any[]
 }
@@ -67,7 +69,7 @@ export function sql(
     const nextStringIdx = i + 1
 
     // if value is a template tag, collapse into last string
-    if (value[templateTagSymbol]) {
+    if (value._templateType === TemplateType.part) {
       addToLastAndPushWithSuffix(
         parsedStrings,
         strings[nextStringIdx],
@@ -82,7 +84,7 @@ export function sql(
     }
 
     // if value is an output of this method, append in place
-    if (value[templateContainerSymbol]) {
+    if (value._templateType === TemplateType.container) {
       addToLastAndPushWithSuffix(
         parsedStrings,
         strings[nextStringIdx],
@@ -104,7 +106,7 @@ export function sql(
   }
 
   return {
-    [templateContainerSymbol]: true,
+    _templateType: 'container',
     strings: parsedStrings,
     values: parsedValues,
   }
@@ -125,7 +127,7 @@ export function identifier(
   ...values: any[]
 ): TemplatePart {
   return {
-    [templateTagSymbol]: true,
+    _templateType: 'part',
     str: `"${String.raw(strings, ...values)}"`,
   }
 }
@@ -146,7 +148,7 @@ export function raw(
   ...values: any[]
 ): TemplatePart {
   return {
-    [templateTagSymbol]: true,
+    _templateType: 'part',
     str: String.raw(strings, ...values),
   }
 }

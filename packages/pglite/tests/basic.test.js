@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { expectToThrowAsync, testEsmAndCjs } from './test-utils.js'
+import { identifier } from '../dist/templating.js'
 
 await testEsmAndCjs(async (importType) => {
   const { PGlite } =
@@ -77,6 +78,47 @@ await testEsmAndCjs(async (importType) => {
       })
 
       const updateResult = await db.query("UPDATE test SET name = 'test2';")
+      expect(updateResult).toEqual({
+        rows: [],
+        fields: [],
+        affectedRows: 1,
+      })
+    })
+
+    it('query templated', async () => {
+      const db = new PGlite()
+      const tableName = identifier`test`
+      await db.sql`
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `
+      await db.sql`INSERT INTO ${tableName} (name) VALUES (${'test'});`
+      const selectResult = await db.sql`SELECT * FROM ${tableName};`
+
+      expect(selectResult).toEqual({
+        rows: [
+          {
+            id: 1,
+            name: 'test',
+          },
+        ],
+        fields: [
+          {
+            name: 'id',
+            dataTypeID: 23,
+          },
+          {
+            name: 'name',
+            dataTypeID: 25,
+          },
+        ],
+        affectedRows: 0,
+      })
+
+      const updateResult =
+        await db.sql`UPDATE ${tableName} SET name = ${'test2'};`
       expect(updateResult).toEqual({
         rows: [],
         fields: [],
