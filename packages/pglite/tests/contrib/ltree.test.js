@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { ltree } from '../../dist/contrib/ltree.js'
 
-test('ltree', async (t) => {
+it('ltree', async () => {
   const pg = new PGlite({
     extensions: {
       ltree,
@@ -34,7 +34,7 @@ test('ltree', async (t) => {
     SELECT path FROM test WHERE path <@ 'Top.Science';
   `)
 
-  t.deepEqual(ret.rows, [
+  expect(ret.rows).toEqual([
     { path: 'Top.Science' },
     { path: 'Top.Science.Astronomy' },
     { path: 'Top.Science.Astronomy.Astrophysics' },

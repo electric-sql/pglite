@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { tsm_system_rows } from '../../dist/contrib/tsm_system_rows.js'
 
-test('tsm_system_rows', async (t) => {
+it('tsm_system_rows', async () => {
   const pg = new PGlite({
     extensions: {
       tsm_system_rows,
@@ -32,5 +32,5 @@ test('tsm_system_rows', async (t) => {
     TABLESAMPLE SYSTEM_ROWS(5);
   `)
 
-  t.is(res.rows.length, 5)
+  expect(res.rows.length).toBe(5)
 })

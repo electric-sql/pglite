@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { amcheck } from '../../dist/contrib/amcheck.js'
 
-test('amcheck', async (t) => {
+it('amcheck', async () => {
   const pg = new PGlite({
     extensions: {
       amcheck,
@@ -29,7 +29,7 @@ test('amcheck', async (t) => {
     ORDER BY c.relpages DESC LIMIT 10;
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     {
       bt_index_check: '',
       relname: 'pg_proc_proname_args_nsp_index',

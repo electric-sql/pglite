@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { tsm_system_time } from '../../dist/contrib/tsm_system_time.js'
 
-test('tsm_system_time', async (t) => {
+it('tsm_system_time', async () => {
   const pg = new PGlite({
     extensions: {
       tsm_system_time,
@@ -32,5 +32,5 @@ test('tsm_system_time', async (t) => {
     TABLESAMPLE SYSTEM_TIME(50);
   `)
 
-  t.is(res.rows.length, 10)
+  expect(res.rows.length).toBe(10)
 })

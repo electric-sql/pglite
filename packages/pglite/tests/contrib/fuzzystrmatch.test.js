@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { fuzzystrmatch } from '../../dist/contrib/fuzzystrmatch.js'
 
-test('fuzzystrmatch', async (t) => {
+it('fuzzystrmatch', async () => {
   const pg = new PGlite({
     extensions: {
       fuzzystrmatch,
@@ -16,12 +16,12 @@ test('fuzzystrmatch', async (t) => {
       levenshtein('kitten', 'sitting') AS distance;
   `)
 
-  t.deepEqual(res.rows, [{ distance: 3 }])
+  expect(res.rows).toEqual([{ distance: 3 }])
 
   const res2 = await pg.query(`
     SELECT
       soundex('kitten') AS soundex;
   `)
 
-  t.deepEqual(res2.rows, [{ soundex: 'K350' }])
+  expect(res2.rows).toEqual([{ soundex: 'K350' }])
 })

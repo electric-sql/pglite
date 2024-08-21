@@ -1,43 +1,44 @@
-import test from './polytest.js'
+import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
 
-test('notify', async (t) => {
-  const db = new PGlite()
+describe('notify API', () => {
+  it('notify', async () => {
+    const db = new PGlite()
 
-  await db.listen('test', (payload) => {
-    t.is(payload, '321')
+    await db.listen('test', (payload) => {
+      expect(payload).toBe('321')
+    })
+
+    await db.query("NOTIFY test, '321'")
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
-  await db.query("NOTIFY test, '321'")
+  it('unlisten', async () => {
+    const db = new PGlite()
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-})
+    const unsub = await db.listen('test', () => {
+      throw new Error('Notification received after unsubscribed')
+    })
 
-test('unlisten', async (t) => {
-  const db = new PGlite()
+    await unsub()
 
-  const unsub = await db.listen('test', () => {
-    t.fail()
+    await db.query('NOTIFY test')
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
-  await unsub()
+  it('onNotification', async () => {
+    const db = new PGlite()
 
-  await db.query('NOTIFY test')
+    db.onNotification((chan, payload) => {
+      expect(chan).toBe('test')
+      expect(payload).toBe('123')
+    })
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  t.pass()
-})
+    await db.query('LISTEN test')
+    await db.query("NOTIFY test, '123'")
 
-test('onNotification', async (t) => {
-  const db = new PGlite()
-
-  db.onNotification((chan, payload) => {
-    t.is(chan, 'test')
-    t.is(payload, '123')
+    await new Promise((resolve) => setTimeout(resolve, 1000))
   })
-
-  await db.query('LISTEN test')
-  await db.query("NOTIFY test, '123'")
-
-  await new Promise((resolve) => setTimeout(resolve, 1000))
 })

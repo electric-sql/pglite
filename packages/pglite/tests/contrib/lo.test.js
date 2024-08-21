@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { lo } from '../../dist/contrib/lo.js'
 
-test('lo', async (t) => {
+it('lo', async () => {
   const pg = new PGlite({
     extensions: {
       lo,
@@ -39,7 +39,7 @@ test('lo', async (t) => {
 
   const data = res.blob
   const asText = await data.text()
-  t.is(asText, text)
+  expect(asText).toBe(text)
 
   await pg.query(`
     DELETE FROM test;

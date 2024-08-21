@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { citext } from '../../dist/contrib/citext.js'
 
-test('citext', async (t) => {
+it('citext', async () => {
   const pg = new PGlite({
     extensions: {
       citext,
@@ -29,7 +29,7 @@ test('citext', async (t) => {
     WHERE name = 'test1';
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     {
       name: 'tEsT1',
     },

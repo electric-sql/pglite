@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { adminpack } from '../../dist/contrib/adminpack.js'
 
-test('adminpack', async (t) => {
+it('adminpack', async () => {
   const pg = new PGlite({
     extensions: {
       adminpack,
@@ -15,7 +15,7 @@ test('adminpack', async (t) => {
   const res = await pg.query(
     "SELECT pg_catalog.pg_file_write('/test.txt', 'test', false);",
   )
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     {
       pg_file_write: 4,
     },
@@ -27,23 +27,23 @@ test('adminpack', async (t) => {
   pg.Module.FS.read(stream, buffer, 0, 4, 0)
   pg.Module.FS.close(stream)
   const text = new TextDecoder().decode(buffer)
-  t.is(text, 'test')
+  expect(text).toBe('test')
 
   // Rename the file
   const res2 = await pg.query(
     "SELECT pg_catalog.pg_file_rename('/test.txt', '/test2.txt');",
   )
-  t.deepEqual(res2.rows, [
+  expect(res2.rows).toEqual([
     {
       pg_file_rename: true,
     },
   ])
   const stats = pg.Module.FS.lstat('/test2.txt')
-  t.is(stats.size, 4)
+  expect(stats.size).toBe(4)
 
   // Remove the file
   const res3 = await pg.query("SELECT pg_catalog.pg_file_unlink('/test2.txt');")
-  t.deepEqual(res3.rows, [
+  expect(res3.rows).toEqual([
     {
       pg_file_unlink: true,
     },
@@ -52,6 +52,6 @@ test('adminpack', async (t) => {
   try {
     pg.Module.FS.lstat('/test2.txt')
   } catch (e) {
-    t.is(e.errno, 44)
+    expect(e.errno).toBe(44)
   }
 })

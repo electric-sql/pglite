@@ -1,36 +1,37 @@
-import test from 'ava'
+import { describe, beforeAll, it, expect } from 'vitest'
 import { PGlite, formatQuery } from '../dist/index.js'
 
-let pg
+describe('format', () => {
+  let pg
+  beforeAll(async () => {
+    pg = await PGlite.create()
+  })
 
-test.before(async () => {
-  pg = await PGlite.create()
-})
+  it('boolean', async () => {
+    const ret1 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
+      true,
+    ])
+    expect(ret1).toBe("SELECT * FROM test WHERE value = 't';")
+  })
 
-test.serial('format boolean', async (t) => {
-  const ret1 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-    true,
-  ])
-  t.is(ret1, "SELECT * FROM test WHERE value = 't';")
-})
+  it('number', async () => {
+    const ret2 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
+      1,
+    ])
+    expect(ret2).toBe("SELECT * FROM test WHERE value = '1';")
+  })
 
-test.serial('format number', async (t) => {
-  const ret2 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-    1,
-  ])
-  t.is(ret2, "SELECT * FROM test WHERE value = '1';")
-})
+  it('string', async () => {
+    const ret3 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
+      'test',
+    ])
+    expect(ret3).toBe("SELECT * FROM test WHERE value = 'test';")
+  })
 
-test.serial('format string', async (t) => {
-  const ret3 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-    'test',
-  ])
-  t.is(ret3, "SELECT * FROM test WHERE value = 'test';")
-})
-
-test.serial('format json', async (t) => {
-  const ret4 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-    { test: 'test' },
-  ])
-  t.is(ret4, 'SELECT * FROM test WHERE value = \'{"test":"test"}\';')
+  it('json', async () => {
+    const ret4 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
+      { test: 'test' },
+    ])
+    expect(ret4).toBe('SELECT * FROM test WHERE value = \'{"test":"test"}\';')
+  })
 })

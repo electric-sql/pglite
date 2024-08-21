@@ -1,8 +1,8 @@
-import test from 'ava'
+import { it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { cube } from '../../dist/contrib/cube.js'
 
-test('cube', async (t) => {
+it('cube', async () => {
   const pg = new PGlite({
     extensions: {
       cube,
@@ -29,7 +29,7 @@ test('cube', async (t) => {
     FROM test;
   `)
 
-  t.deepEqual(res.rows, [
+  expect(res.rows).toEqual([
     { point: '(1, 2, 3)', distance: 0 },
     { point: '(4, 5, 6)', distance: 5.196152422706632 },
     { point: '(7, 8, 9)', distance: 10.392304845413264 },
