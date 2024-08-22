@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.2.3
+
+### Patch Changes
+
+- d8ef285: Implement `sql` tagged template literal method for querying, along with helpers.
+
 ## 0.2.2
 
 ### Patch Changes
