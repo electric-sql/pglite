@@ -129,15 +129,9 @@ importers:
 
   packages/pglite-protocol:
     devDependencies:
-      '@types/node':
-        specifier: ^20.11.18
-        version: 20.14.15
-      chunky:
-        specifier: ^0.0.0
-        version: 0.0.0
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
 
   packages/pglite-react:
     devDependencies:
@@ -2011,10 +2005,6 @@ packages:
 
   chownr@1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
-
-  chunky@0.0.0:
-    resolution: {integrity: sha512-NIMZ9RHjzp4abEUfUyM6jG4wGlNp/TpfaTZCZ9aXaAML9vLf+XGZziJOAMQZ+rKfU0XcEhA9XeVOx/zqBOdM8A==}
-    engines: {node: '>=0.4.0'}
 
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
@@ -5948,7 +5938,7 @@ snapshots:
       magic-string: 0.30.11
       msw: 2.3.5(typescript@5.5.4)
       sirv: 2.0.4
-      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+      vitest: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
       ws: 8.18.0
     optionalDependencies:
       playwright: 1.46.0
@@ -5993,7 +5983,7 @@ snapshots:
       pathe: 1.1.2
       sirv: 2.0.4
       tinyrainbow: 1.2.0
-      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+      vitest: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
     optional: true
 
   '@vitest/utils@2.0.5':
@@ -6467,8 +6457,6 @@ snapshots:
       fsevents: 2.3.3
 
   chownr@1.1.4: {}
-
-  chunky@0.0.0: {}
 
   ci-info@3.9.0: {}
 

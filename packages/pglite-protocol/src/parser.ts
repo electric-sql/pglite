@@ -38,10 +38,10 @@ const HEADER_LENGTH = CODE_LENGTH + LEN_LENGTH
 
 export type Packet = {
   code: number
-  packet: Buffer
+  packet: ArrayBuffer
 }
 
-const emptyBuffer = Buffer.allocUnsafe(0)
+const emptyBuffer = new ArrayBuffer(0)
 
 type StreamOptions = TransformOptions & {
   mode: Mode
@@ -75,31 +75,34 @@ const enum MessageCodes {
 export type MessageCallback = (msg: BackendMessage) => void
 
 export class Parser {
-  private buffer: Buffer = emptyBuffer
+  private bufferView: DataView = new DataView(emptyBuffer)
   private bufferLength: number = 0
   private bufferOffset: number = 0
   private reader = new BufferReader()
-  private mode: Mode
 
   constructor(opts?: StreamOptions) {
     if (opts?.mode === 'binary') {
       throw new Error('Binary mode not supported yet')
     }
-    this.mode = opts?.mode || 'text'
   }
 
-  public parse(buffer: Buffer, callback: MessageCallback) {
+  public parse(buffer: ArrayBuffer, callback: MessageCallback) {
     this.mergeBuffer(buffer)
     const bufferFullLength = this.bufferOffset + this.bufferLength
     let offset = this.bufferOffset
     while (offset + HEADER_LENGTH <= bufferFullLength) {
       // code is 1 byte long - it identifies the message type
-      const code = this.buffer[offset]
+      const code = this.bufferView.getUint8(offset)
       // length is 1 Uint32BE - it is the length of the message EXCLUDING the code
-      const length = this.buffer.readUInt32BE(offset + CODE_LENGTH)
+      const length = this.bufferView.getUint32(offset + CODE_LENGTH, false)
       const fullMessageLength = CODE_LENGTH + length
       if (fullMessageLength + offset <= bufferFullLength) {
-        const message = this.handlePacket(offset + HEADER_LENGTH, code, length, this.buffer)
+        const message = this.handlePacket(
+          offset + HEADER_LENGTH,
+          code,
+          length,
+          this.bufferView.buffer,
+        )
         callback(message)
         offset += fullMessageLength
       } else {
@@ -108,7 +111,7 @@ export class Parser {
     }
     if (offset === bufferFullLength) {
       // No more use for the buffer
-      this.buffer = emptyBuffer
+      this.bufferView = new DataView(emptyBuffer)
       this.bufferLength = 0
       this.bufferOffset = 0
     } else {
@@ -118,40 +121,58 @@ export class Parser {
     }
   }
 
-  private mergeBuffer(buffer: Buffer): void {
+  private mergeBuffer(buffer: ArrayBuffer): void {
     if (this.bufferLength > 0) {
       const newLength = this.bufferLength + buffer.byteLength
       const newFullLength = newLength + this.bufferOffset
-      if (newFullLength > this.buffer.byteLength) {
+      if (newFullLength > this.bufferView.byteLength) {
         // We can't concat the new buffer with the remaining one
-        let newBuffer: Buffer
-        if (newLength <= this.buffer.byteLength && this.bufferOffset >= this.bufferLength) {
+        let newBuffer: ArrayBuffer
+        if (
+          newLength <= this.bufferView.byteLength &&
+          this.bufferOffset >= this.bufferLength
+        ) {
           // We can move the relevant part to the beginning of the buffer instead of allocating a new buffer
-          newBuffer = this.buffer
+          newBuffer = this.bufferView.buffer
         } else {
           // Allocate a new larger buffer
-          let newBufferLength = this.buffer.byteLength * 2
+          let newBufferLength = this.bufferView.byteLength * 2
           while (newLength >= newBufferLength) {
             newBufferLength *= 2
           }
-          newBuffer = Buffer.allocUnsafe(newBufferLength)
+          newBuffer = new ArrayBuffer(newBufferLength)
         }
         // Move the remaining buffer to the new one
-        this.buffer.copy(newBuffer, 0, this.bufferOffset, this.bufferOffset + this.bufferLength)
-        this.buffer = newBuffer
+        new Uint8Array(newBuffer).set(
+          new Uint8Array(
+            this.bufferView.buffer,
+            this.bufferOffset,
+            this.bufferLength,
+          ),
+        )
+        this.bufferView = new DataView(newBuffer)
         this.bufferOffset = 0
       }
+
       // Concat the new buffer with the remaining one
-      buffer.copy(this.buffer, this.bufferOffset + this.bufferLength)
+      new Uint8Array(this.bufferView.buffer).set(
+        new Uint8Array(buffer),
+        this.bufferOffset + this.bufferLength,
+      )
       this.bufferLength = newLength
     } else {
-      this.buffer = buffer
+      this.bufferView = new DataView(buffer)
       this.bufferOffset = 0
       this.bufferLength = buffer.byteLength
     }
   }
 
-  private handlePacket(offset: number, code: number, length: number, bytes: Buffer): BackendMessage {
+  private handlePacket(
+    offset: number,
+    code: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ): BackendMessage {
     switch (code) {
       case MessageCodes.BindComplete:
         return bindComplete
@@ -198,36 +219,61 @@ export class Parser {
       case MessageCodes.CopyData:
         return this.parseCopyData(offset, length, bytes)
       default:
-        return new DatabaseError('received invalid response: ' + code.toString(16), length, 'error')
+        return new DatabaseError(
+          'received invalid response: ' + code.toString(16),
+          length,
+          'error',
+        )
     }
   }
 
-  private parseReadyForQueryMessage(offset: number, length: number, bytes: Buffer) {
+  private parseReadyForQueryMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const status = this.reader.string(1)
     return new ReadyForQueryMessage(length, status)
   }
 
-  private parseCommandCompleteMessage(offset: number, length: number, bytes: Buffer) {
+  private parseCommandCompleteMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const text = this.reader.cstring()
     return new CommandCompleteMessage(length, text)
   }
 
-  private parseCopyData(offset: number, length: number, bytes: Buffer) {
+  private parseCopyData(offset: number, length: number, bytes: ArrayBuffer) {
     const chunk = bytes.slice(offset, offset + (length - 4))
     return new CopyDataMessage(length, chunk)
   }
 
-  private parseCopyInMessage(offset: number, length: number, bytes: Buffer) {
+  private parseCopyInMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     return this.parseCopyMessage(offset, length, bytes, 'copyInResponse')
   }
 
-  private parseCopyOutMessage(offset: number, length: number, bytes: Buffer) {
+  private parseCopyOutMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     return this.parseCopyMessage(offset, length, bytes, 'copyOutResponse')
   }
 
-  private parseCopyMessage(offset: number, length: number, bytes: Buffer, messageName: MessageName) {
+  private parseCopyMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+    messageName: MessageName,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const isBinary = this.reader.byte() !== 0
     const columnCount = this.reader.int16()
@@ -238,7 +284,11 @@ export class Parser {
     return message
   }
 
-  private parseNotificationMessage(offset: number, length: number, bytes: Buffer) {
+  private parseNotificationMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const processId = this.reader.int32()
     const channel = this.reader.cstring()
@@ -246,7 +296,11 @@ export class Parser {
     return new NotificationResponseMessage(length, processId, channel, payload)
   }
 
-  private parseRowDescriptionMessage(offset: number, length: number, bytes: Buffer) {
+  private parseRowDescriptionMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const fieldCount = this.reader.int16()
     const message = new RowDescriptionMessage(length, fieldCount)
@@ -264,10 +318,22 @@ export class Parser {
     const dataTypeSize = this.reader.int16()
     const dataTypeModifier = this.reader.int32()
     const mode = this.reader.int16() === 0 ? 'text' : 'binary'
-    return new Field(name, tableID, columnID, dataTypeID, dataTypeSize, dataTypeModifier, mode)
+    return new Field(
+      name,
+      tableID,
+      columnID,
+      dataTypeID,
+      dataTypeSize,
+      dataTypeModifier,
+      mode,
+    )
   }
 
-  private parseParameterDescriptionMessage(offset: number, length: number, bytes: Buffer) {
+  private parseParameterDescriptionMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const parameterCount = this.reader.int16()
     const message = new ParameterDescriptionMessage(length, parameterCount)
@@ -277,7 +343,11 @@ export class Parser {
     return message
   }
 
-  private parseDataRowMessage(offset: number, length: number, bytes: Buffer) {
+  private parseDataRowMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const fieldCount = this.reader.int16()
     const fields: any[] = new Array(fieldCount)
@@ -289,21 +359,33 @@ export class Parser {
     return new DataRowMessage(length, fields)
   }
 
-  private parseParameterStatusMessage(offset: number, length: number, bytes: Buffer) {
+  private parseParameterStatusMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const name = this.reader.cstring()
     const value = this.reader.cstring()
     return new ParameterStatusMessage(length, name, value)
   }
 
-  private parseBackendKeyData(offset: number, length: number, bytes: Buffer) {
+  private parseBackendKeyData(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const processID = this.reader.int32()
     const secretKey = this.reader.int32()
     return new BackendKeyDataMessage(length, processID, secretKey)
   }
 
-  public parseAuthenticationResponse(offset: number, length: number, bytes: Buffer) {
+  public parseAuthenticationResponse(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const code = this.reader.int32()
     // TODO(bmc): maybe better types here
@@ -330,14 +412,11 @@ export class Parser {
       case 10: // AuthenticationSASL
         message.name = 'authenticationSASL'
         message.mechanisms = []
-        let mechanism: string
-        do {
-          mechanism = this.reader.cstring()
-
-          if (mechanism) {
-            message.mechanisms.push(mechanism)
-          }
-        } while (mechanism)
+        while (true) {
+          const mechanism = this.reader.cstring()
+          if (mechanism.length === 0) break
+          message.mechanisms.push(mechanism)
+        }
         break
       case 11: // AuthenticationSASLContinue
         message.name = 'authenticationSASLContinue'
@@ -353,7 +432,12 @@ export class Parser {
     return message
   }
 
-  private parseErrorMessage(offset: number, length: number, bytes: Buffer, name: MessageName) {
+  private parseErrorMessage(
+    offset: number,
+    length: number,
+    bytes: ArrayBuffer,
+    name: MessageName,
+  ) {
     this.reader.setBuffer(offset, bytes)
     const fields: Record<string, string> = {}
     let fieldType = this.reader.string(1)
@@ -365,7 +449,9 @@ export class Parser {
     const messageValue = fields.M
 
     const message =
-      name === 'notice' ? new NoticeMessage(length, messageValue) : new DatabaseError(messageValue, length, name)
+      name === 'notice'
+        ? new NoticeMessage(length, messageValue)
+        : new DatabaseError(messageValue, length, name)
 
     message.severity = fields.S
     message.code = fields.C

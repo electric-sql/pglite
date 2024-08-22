@@ -3,7 +3,7 @@ import BufferList from './buffer-list'
 
 const buffers = {
   readyForQuery: function () {
-    return new BufferList().add(Buffer.from('I')).join(true, 'Z')
+    return new BufferList().add(new TextEncoder().encode('I')).join(true, 'Z')
   },
 
   authenticationOk: function () {
@@ -17,12 +17,16 @@ const buffers = {
   authenticationMD5Password: function () {
     return new BufferList()
       .addInt32(5)
-      .add(Buffer.from([1, 2, 3, 4]))
+      .add(new Uint8Array([1, 2, 3, 4]).buffer)
       .join(true, 'R')
   },
 
   authenticationSASL: function () {
-    return new BufferList().addInt32(10).addCString('SCRAM-SHA-256').addCString('').join(true, 'R')
+    return new BufferList()
+      .addInt32(10)
+      .addCString('SCRAM-SHA-256')
+      .addCString('')
+      .join(true, 'R')
   },
 
   authenticationSASLContinue: function () {
@@ -38,7 +42,10 @@ const buffers = {
   },
 
   backendKeyData: function (processID: number, secretKey: number) {
-    return new BufferList().addInt32(processID).addInt32(secretKey).join(true, 'K')
+    return new BufferList()
+      .addInt32(processID)
+      .addInt32(secretKey)
+      .join(true, 'K')
   },
 
   commandComplete: function (string: string) {
@@ -47,7 +54,7 @@ const buffers = {
 
   rowDescription: function (fields: any[]) {
     fields = fields || []
-    var buf = new BufferList()
+    const buf = new BufferList()
     buf.addInt16(fields.length)
     fields.forEach(function (field) {
       buf
@@ -64,7 +71,7 @@ const buffers = {
 
   parameterDescription: function (dataTypeIDs: number[]) {
     dataTypeIDs = dataTypeIDs || []
-    var buf = new BufferList()
+    const buf = new BufferList()
     buf.addInt16(dataTypeIDs.length)
     dataTypeIDs.forEach(function (dataTypeID) {
       buf.addInt32(dataTypeID)
@@ -74,14 +81,14 @@ const buffers = {
 
   dataRow: function (columns: any[]) {
     columns = columns || []
-    var buf = new BufferList()
+    const buf = new BufferList()
     buf.addInt16(columns.length)
     columns.forEach(function (col) {
-      if (col == null) {
+      if (col === null || col === undefined) {
         buf.addInt32(-1)
       } else {
-        var strBuf = Buffer.from(col, 'utf8')
-        buf.addInt32(strBuf.length)
+        const strBuf = new TextEncoder().encode(col).buffer
+        buf.addInt32(strBuf.byteLength)
         buf.add(strBuf)
       }
     })
@@ -98,12 +105,12 @@ const buffers = {
 
   errorOrNotice: function (fields: any) {
     fields = fields || []
-    var buf = new BufferList()
+    const buf = new BufferList()
     fields.forEach(function (field: any) {
       buf.addChar(field.type)
       buf.addCString(field.value)
     })
-    return buf.add(Buffer.from([0])) // terminator
+    return buf.add(new Uint8Array([0]).buffer) // terminator
   },
 
   parseComplete: function () {
@@ -115,7 +122,11 @@ const buffers = {
   },
 
   notification: function (id: number, channel: string, payload: string) {
-    return new BufferList().addInt32(id).addCString(channel).addCString(payload).join(true, 'A')
+    return new BufferList()
+      .addInt32(id)
+      .addCString(channel)
+      .addCString(payload)
+      .join(true, 'A')
   },
 
   emptyQuery: function () {
@@ -154,7 +165,7 @@ const buffers = {
     return list.join(true, 'H')
   },
 
-  copyData: function (bytes: Buffer) {
+  copyData: function (bytes: ArrayBuffer) {
     return new BufferList().add(bytes).join(true, 'd')
   },
 

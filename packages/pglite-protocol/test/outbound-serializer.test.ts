@@ -1,4 +1,4 @@
-import assert from 'assert'
+import { describe, it, expect } from 'vitest'
 import { serialize } from '../src/serializer'
 import BufferList from './testing/buffer-list'
 
@@ -8,8 +8,7 @@ describe('serializer', () => {
       user: 'brian',
       database: 'bang',
     })
-    assert.deepEqual(
-      actual,
+    expect(actual).toEqual(
       new BufferList()
         .addInt16(3)
         .addInt16(0)
@@ -26,19 +25,18 @@ describe('serializer', () => {
 
   it('builds password message', function () {
     const actual = serialize.password('!')
-    assert.deepEqual(actual, new BufferList().addCString('!').join(true, 'p'))
+    expect(actual).toEqual(new BufferList().addCString('!').join(true, 'p'))
   })
 
   it('builds request ssl message', function () {
     const actual = serialize.requestSsl()
     const expected = new BufferList().addInt32(80877103).join(true)
-    assert.deepEqual(actual, expected)
+    expect(actual).toEqual(expected)
   })
 
   it('builds SASLInitialResponseMessage message', function () {
     const actual = serialize.sendSASLInitialResponseMessage('mech', 'data')
-    assert.deepEqual(
-      actual,
+    expect(actual).toEqual(
       new BufferList()
         .addCString('mech')
         .addInt32(4)
@@ -49,24 +47,24 @@ describe('serializer', () => {
 
   it('builds SCRAMClientFinalMessage message', function () {
     const actual = serialize.sendSCRAMClientFinalMessage('data')
-    assert.deepEqual(actual, new BufferList().addString('data').join(true, 'p'))
+    expect(actual).toEqual(new BufferList().addString('data').join(true, 'p'))
   })
 
   it('builds query message', function () {
-    var txt = 'select * from boom'
+    const txt = 'select * from boom'
     const actual = serialize.query(txt)
-    assert.deepEqual(actual, new BufferList().addCString(txt).join(true, 'Q'))
+    expect(actual).toEqual(new BufferList().addCString(txt).join(true, 'Q'))
   })
 
   describe('parse message', () => {
     it('builds parse message', function () {
       const actual = serialize.parse({ text: '!' })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addCString('')
         .addCString('!')
         .addInt16(0)
         .join(true, 'P')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('builds parse message with named query', function () {
@@ -75,12 +73,12 @@ describe('serializer', () => {
         text: 'select * from boom',
         types: [],
       })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addCString('boom')
         .addCString('select * from boom')
         .addInt16(0)
         .join(true, 'P')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('with multiple parameters', function () {
@@ -89,7 +87,7 @@ describe('serializer', () => {
         text: 'select * from bang where name = $1',
         types: [1, 2, 3, 4],
       })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addCString('force')
         .addCString('select * from bang where name = $1')
         .addInt16(4)
@@ -98,7 +96,7 @@ describe('serializer', () => {
         .addInt32(3)
         .addInt32(4)
         .join(true, 'P')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
   })
 
@@ -106,14 +104,14 @@ describe('serializer', () => {
     it('with no values', function () {
       const actual = serialize.bind()
 
-      var expectedBuffer = new BufferList()
+      const expectedBuffer = new BufferList()
         .addCString('')
         .addCString('')
         .addInt16(0)
         .addInt16(0)
         .addInt16(0)
         .join(true, 'B')
-      assert.deepEqual(actual, expectedBuffer)
+      expect(actual).toEqual(expectedBuffer)
     })
 
     it('with named statement, portal, and values', function () {
@@ -122,7 +120,7 @@ describe('serializer', () => {
         statement: 'woo',
         values: ['1', 'hi', null, 'zing'],
       })
-      var expectedBuffer = new BufferList()
+      const expectedBuffer = new BufferList()
         .addCString('bang') // portal name
         .addCString('woo') // statement name
         .addInt16(4)
@@ -132,15 +130,15 @@ describe('serializer', () => {
         .addInt16(0)
         .addInt16(4)
         .addInt32(1)
-        .add(Buffer.from('1'))
+        .add(new TextEncoder().encode('1'))
         .addInt32(2)
-        .add(Buffer.from('hi'))
+        .add(new TextEncoder().encode('hi'))
         .addInt32(-1)
         .addInt32(4)
-        .add(Buffer.from('zing'))
+        .add(new TextEncoder().encode('zing'))
         .addInt16(0)
         .join(true, 'B')
-      assert.deepEqual(actual, expectedBuffer)
+      expect(actual).toEqual(expectedBuffer)
     })
   })
 
@@ -151,7 +149,7 @@ describe('serializer', () => {
       values: ['1', 'hi', null, 'zing'],
       valueMapper: () => null,
     })
-    var expectedBuffer = new BufferList()
+    const expectedBuffer = new BufferList()
       .addCString('bang') // portal name
       .addCString('woo') // statement name
       .addInt16(4)
@@ -166,16 +164,16 @@ describe('serializer', () => {
       .addInt32(-1)
       .addInt16(0)
       .join(true, 'B')
-    assert.deepEqual(actual, expectedBuffer)
+    expect(actual).toEqual(expectedBuffer)
   })
 
   it('with named statement, portal, and buffer value', function () {
     const actual = serialize.bind({
       portal: 'bang',
       statement: 'woo',
-      values: ['1', 'hi', null, Buffer.from('zing', 'utf8')],
+      values: ['1', 'hi', null, new TextEncoder().encode('zing')],
     })
-    var expectedBuffer = new BufferList()
+    const expectedBuffer = new BufferList()
       .addCString('bang') // portal name
       .addCString('woo') // statement name
       .addInt16(4) // value count
@@ -185,25 +183,25 @@ describe('serializer', () => {
       .addInt16(1) // binary
       .addInt16(4)
       .addInt32(1)
-      .add(Buffer.from('1'))
+      .add(new TextEncoder().encode('1'))
       .addInt32(2)
-      .add(Buffer.from('hi'))
+      .add(new TextEncoder().encode('hi'))
       .addInt32(-1)
       .addInt32(4)
-      .add(Buffer.from('zing', 'utf-8'))
+      .add(new TextEncoder().encode('zing'))
       .addInt16(0)
       .join(true, 'B')
-    assert.deepEqual(actual, expectedBuffer)
+    expect(actual).toEqual(expectedBuffer)
   })
 
   describe('builds execute message', function () {
     it('for unamed portal with no row limit', function () {
       const actual = serialize.execute()
-      var expectedBuffer = new BufferList()
+      const expectedBuffer = new BufferList()
         .addCString('')
         .addInt32(0)
         .join(true, 'E')
-      assert.deepEqual(actual, expectedBuffer)
+      expect(actual).toEqual(expectedBuffer)
     })
 
     it('for named portal with row limit', function () {
@@ -211,91 +209,91 @@ describe('serializer', () => {
         portal: 'my favorite portal',
         rows: 100,
       })
-      var expectedBuffer = new BufferList()
+      const expectedBuffer = new BufferList()
         .addCString('my favorite portal')
         .addInt32(100)
         .join(true, 'E')
-      assert.deepEqual(actual, expectedBuffer)
+      expect(actual).toEqual(expectedBuffer)
     })
   })
 
   it('builds flush command', function () {
     const actual = serialize.flush()
-    var expected = new BufferList().join(true, 'H')
-    assert.deepEqual(actual, expected)
+    const expected = new BufferList().join(true, 'H')
+    expect(actual).toEqual(expected)
   })
 
   it('builds sync command', function () {
     const actual = serialize.sync()
-    var expected = new BufferList().join(true, 'S')
-    assert.deepEqual(actual, expected)
+    const expected = new BufferList().join(true, 'S')
+    expect(actual).toEqual(expected)
   })
 
   it('builds end command', function () {
     const actual = serialize.end()
-    var expected = Buffer.from([0x58, 0, 0, 0, 4])
-    assert.deepEqual(actual, expected)
+    const expected = new Uint8Array([0x58, 0, 0, 0, 4]).buffer
+    expect(actual).toEqual(expected)
   })
 
   describe('builds describe command', function () {
     it('describe statement', function () {
       const actual = serialize.describe({ type: 'S', name: 'bang' })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addChar('S')
         .addCString('bang')
         .join(true, 'D')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('describe unnamed portal', function () {
       const actual = serialize.describe({ type: 'P' })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addChar('P')
         .addCString('')
         .join(true, 'D')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
   })
 
   describe('builds close command', function () {
     it('describe statement', function () {
       const actual = serialize.close({ type: 'S', name: 'bang' })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addChar('S')
         .addCString('bang')
         .join(true, 'C')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('describe unnamed portal', function () {
       const actual = serialize.close({ type: 'P' })
-      var expected = new BufferList()
+      const expected = new BufferList()
         .addChar('P')
         .addCString('')
         .join(true, 'C')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
   })
 
   describe('copy messages', function () {
     it('builds copyFromChunk', () => {
-      const actual = serialize.copyData(Buffer.from([1, 2, 3]))
+      const actual = serialize.copyData(new Uint8Array([1, 2, 3]))
       const expected = new BufferList()
-        .add(Buffer.from([1, 2, 3]))
+        .add(new Uint8Array([1, 2, 3]))
         .join(true, 'd')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('builds copy fail', () => {
       const actual = serialize.copyFail('err!')
       const expected = new BufferList().addCString('err!').join(true, 'f')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
 
     it('builds copy done', () => {
       const actual = serialize.copyDone()
       const expected = new BufferList().join(true, 'c')
-      assert.deepEqual(actual, expected)
+      expect(actual).toEqual(expected)
     })
   })
 
@@ -307,6 +305,6 @@ describe('serializer', () => {
       .addInt32(3)
       .addInt32(4)
       .join(true)
-    assert.deepEqual(actual, expected)
+    expect(actual).toEqual(expected)
   })
 })

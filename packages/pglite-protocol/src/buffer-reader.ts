@@ -58,7 +58,9 @@ export class BufferReader {
 
     const start = this.#offset
     let end = start
-    while (this.#bufferView.getUint8(end++) !== 0) {}
+    while (this.#bufferView.getUint8(end++) !== 0) {
+      // no-op - increment until terminator reached
+    }
     const result = this.string(end - start - 1)
     this.#offset = end
     return result

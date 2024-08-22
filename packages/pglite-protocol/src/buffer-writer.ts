@@ -1,5 +1,7 @@
 //binary data writer tuned for encoding binary specific to the postgres binary protocol
 
+import { byteLengthUtf8 } from './string-utils'
+
 export class Writer {
   #bufferView: DataView
   #offset: number = 5
@@ -62,16 +64,11 @@ export class Writer {
   }
 
   public addString(string: string = ''): Writer {
-    // TODO(msfstef): Write `byteLength` function to get size
-    // of string wihtout creating buffer and use `encodeInto`
-    // to write into buffer.
-    // See https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/encodeInto
-    const encodedStr = this.#encoder.encode(string)
-    const length = encodedStr.byteLength
+    const length = byteLengthUtf8(string)
     this.ensure(length)
-    new Uint8Array(this.#bufferView.buffer).set(
-      new Uint8Array(encodedStr),
-      this.#offset,
+    this.#encoder.encodeInto(
+      string,
+      new Uint8Array(this.#bufferView.buffer, this.#offset),
     )
     this.#offset += length
     return this

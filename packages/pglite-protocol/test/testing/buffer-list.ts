@@ -1,53 +1,61 @@
-export default class BufferList {
-  constructor(public buffers: Buffer[] = []) {}
+import { byteLengthUtf8 } from '../../src/string-utils'
 
-  public add(buffer: Buffer, front?: boolean) {
+export default class BufferList {
+  constructor(public buffers: ArrayBuffer[] = []) {}
+
+  public add(buffer: ArrayBuffer, front?: boolean) {
     this.buffers[front ? 'unshift' : 'push'](buffer)
     return this
   }
 
   public addInt16(val: number, front?: boolean) {
-    return this.add(Buffer.from([val >>> 8, val >>> 0]), front)
+    return this.add(new Uint8Array([val >>> 8, val >>> 0]).buffer, front)
   }
 
   public getByteLength(initial?: number) {
     return this.buffers.reduce(function (previous, current) {
-      return previous + current.length
-    }, initial || 0)
+      return previous + current.byteLength
+    }, initial ?? 0)
   }
 
   public addInt32(val: number, first?: boolean) {
     return this.add(
-      Buffer.from([(val >>> 24) & 0xff, (val >>> 16) & 0xff, (val >>> 8) & 0xff, (val >>> 0) & 0xff]),
-      first
+      new Uint8Array([
+        (val >>> 24) & 0xff,
+        (val >>> 16) & 0xff,
+        (val >>> 8) & 0xff,
+        (val >>> 0) & 0xff,
+      ]).buffer,
+      first,
     )
   }
 
   public addCString(val: string, front?: boolean) {
-    var len = Buffer.byteLength(val)
-    var buffer = Buffer.alloc(len + 1)
-    buffer.write(val)
-    buffer[len] = 0
-    return this.add(buffer, front)
+    const len = byteLengthUtf8(val)
+    const bufferView = new Uint8Array(len + 1)
+    new TextEncoder().encodeInto(val, bufferView)
+    bufferView[len] = 0
+    return this.add(bufferView.buffer, front)
   }
 
   public addString(val: string, front?: boolean) {
-    var len = Buffer.byteLength(val)
-    var buffer = Buffer.alloc(len)
-    buffer.write(val)
-    return this.add(buffer, front)
+    const len = byteLengthUtf8(val)
+    const bufferView = new Uint8Array(len)
+    new TextEncoder().encodeInto(val, bufferView)
+    return this.add(bufferView.buffer, front)
   }
 
   public addChar(char: string, first?: boolean) {
-    return this.add(Buffer.from(char, 'utf8'), first)
+    const bufferView = new TextEncoder().encode(char)
+    return this.add(bufferView.buffer, first)
   }
 
   public addByte(byte: number) {
-    return this.add(Buffer.from([byte]))
+    return this.add(new Uint8Array([byte]).buffer)
   }
 
-  public join(appendLength?: boolean, char?: string): Buffer {
-    var length = this.getByteLength()
+  public join(appendLength?: boolean, char?: string): ArrayBuffer {
+    let length = this.getByteLength()
     if (appendLength) {
       this.addInt32(length + 4, true)
       return this.join(false, char)
@@ -56,19 +64,19 @@ export default class BufferList {
       this.addChar(char, true)
       length++
     }
-    var result = Buffer.alloc(length)
-    var index = 0
+    const result = new ArrayBuffer(length)
+    let index = 0
     this.buffers.forEach(function (buffer) {
-      buffer.copy(result, index, 0)
-      index += buffer.length
+      new Uint8Array(result).set(new Uint8Array(buffer), index)
+      index += buffer.byteLength
     })
     return result
   }
 
-  public static concat(): Buffer {
-    var total = new BufferList()
-    for (var i = 0; i < arguments.length; i++) {
-      total.add(arguments[i])
+  public static concat(...args: ArrayBuffer[]): ArrayBuffer {
+    const total = new BufferList()
+    for (let i = 0; i < args.length; i++) {
+      total.add(args[i])
     }
     return total.join()
   }

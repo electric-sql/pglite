@@ -114,7 +114,7 @@ export class DatabaseError extends Error implements NoticeOrError {
   constructor(
     message: string,
     public readonly length: number,
-    public readonly name: MessageName
+    public readonly name: MessageName,
   ) {
     super(message)
   }
@@ -124,7 +124,7 @@ export class CopyDataMessage {
   public readonly name = 'copyData'
   constructor(
     public readonly length: number,
-    public readonly chunk: Buffer
+    public readonly chunk: ArrayBuffer,
   ) {}
 }
 
@@ -134,7 +134,7 @@ export class CopyResponse {
     public readonly length: number,
     public readonly name: MessageName,
     public readonly binary: boolean,
-    columnCount: number
+    columnCount: number,
   ) {
     this.columnTypes = new Array(columnCount)
   }
@@ -148,7 +148,7 @@ export class Field {
     public readonly dataTypeID: number,
     public readonly dataTypeSize: number,
     public readonly dataTypeModifier: number,
-    public readonly format: Mode
+    public readonly format: Mode,
   ) {}
 }
 
@@ -157,7 +157,7 @@ export class RowDescriptionMessage {
   public readonly fields: Field[]
   constructor(
     public readonly length: number,
-    public readonly fieldCount: number
+    public readonly fieldCount: number,
   ) {
     this.fields = new Array(this.fieldCount)
   }
@@ -168,7 +168,7 @@ export class ParameterDescriptionMessage {
   public readonly dataTypeIDs: number[]
   constructor(
     public readonly length: number,
-    public readonly parameterCount: number
+    public readonly parameterCount: number,
   ) {
     this.dataTypeIDs = new Array(this.parameterCount)
   }
@@ -179,7 +179,7 @@ export class ParameterStatusMessage {
   constructor(
     public readonly length: number,
     public readonly parameterName: string,
-    public readonly parameterValue: string
+    public readonly parameterValue: string,
   ) {}
 }
 
@@ -187,7 +187,7 @@ export class AuthenticationMD5Password implements BackendMessage {
   public readonly name: MessageName = 'authenticationMD5Password'
   constructor(
     public readonly length: number,
-    public readonly salt: Buffer
+    public readonly salt: ArrayBuffer,
   ) {}
 }
 
@@ -196,7 +196,7 @@ export class BackendKeyDataMessage {
   constructor(
     public readonly length: number,
     public readonly processID: number,
-    public readonly secretKey: number
+    public readonly secretKey: number,
   ) {}
 }
 
@@ -206,7 +206,7 @@ export class NotificationResponseMessage {
     public readonly length: number,
     public readonly processId: number,
     public readonly channel: string,
-    public readonly payload: string
+    public readonly payload: string,
   ) {}
 }
 
@@ -214,7 +214,7 @@ export class ReadyForQueryMessage {
   public readonly name: MessageName = 'readyForQuery'
   constructor(
     public readonly length: number,
-    public readonly status: string
+    public readonly status: string,
   ) {}
 }
 
@@ -222,7 +222,7 @@ export class CommandCompleteMessage {
   public readonly name: MessageName = 'commandComplete'
   constructor(
     public readonly length: number,
-    public readonly text: string
+    public readonly text: string,
   ) {}
 }
 
@@ -231,7 +231,7 @@ export class DataRowMessage {
   public readonly name: MessageName = 'dataRow'
   constructor(
     public length: number,
-    public fields: any[]
+    public fields: any[],
   ) {
     this.fieldCount = fields.length
   }
@@ -240,7 +240,7 @@ export class DataRowMessage {
 export class NoticeMessage implements BackendMessage, NoticeOrError {
   constructor(
     public readonly length: number,
-    public readonly message: string | undefined
+    public readonly message: string | undefined,
   ) {}
   public readonly name = 'notice'
   public severity: string | undefined
