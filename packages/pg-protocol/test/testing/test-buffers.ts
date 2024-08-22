@@ -54,24 +54,24 @@ const buffers = {
   },
 
   rowDescription: function (fields: Field[]) {
-    fields = fields || []
+    fields = fields ?? []
     const buf = new BufferList()
     buf.addInt16(fields.length)
     fields.forEach(function (field) {
       buf
         .addCString(field.name)
-        .addInt32(field.tableID || 0)
-        .addInt16(field.columnID || 0)
-        .addInt32(field.dataTypeID || 0)
-        .addInt16(field.dataTypeSize || 0)
-        .addInt32(field.dataTypeModifier || 0)
-        .addInt16(field.format || 0)
+        .addInt32(field.tableID)
+        .addInt16(field.columnID)
+        .addInt32(field.dataTypeID)
+        .addInt16(field.dataTypeSize)
+        .addInt32(field.dataTypeModifier)
+        .addInt16(field.format)
     })
     return buf.join(true, 'T')
   },
 
   parameterDescription: function (dataTypeIDs: number[]) {
-    dataTypeIDs = dataTypeIDs || []
+    dataTypeIDs = dataTypeIDs ?? []
     const buf = new BufferList()
     buf.addInt16(dataTypeIDs.length)
     dataTypeIDs.forEach(function (dataTypeID) {
@@ -81,7 +81,7 @@ const buffers = {
   },
 
   dataRow: function (columns: (string | null)[]) {
-    columns = columns || []
+    columns = columns ?? []
     const buf = new BufferList()
     buf.addInt16(columns.length)
     columns.forEach(function (col) {
@@ -105,7 +105,7 @@ const buffers = {
   },
 
   errorOrNotice: function (fields: { type: string; value: string }[]) {
-    fields = fields || []
+    fields = fields ?? []
     const buf = new BufferList()
     fields.forEach((field) => {
       buf.addChar(field.type)

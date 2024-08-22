@@ -87,7 +87,7 @@ const parse = (query: ParseOpts): ArrayBuffer => {
   //   types: ['int8', 'bool'] }
 
   // normalize missing query names to allow for null
-  const name = query.name || ''
+  const name = query.name ?? ''
   if (name.length > 63) {
     /* eslint-disable no-console */
     console.error(
@@ -247,14 +247,14 @@ const emptyDescribeStatement = writer.addCString('S').flush(code.describe)
 
 const describe = (msg: PortalOpts): ArrayBuffer => {
   return msg.name
-    ? cstringMessage(code.describe, `${msg.type}${msg.name || ''}`)
+    ? cstringMessage(code.describe, `${msg.type}${msg.name ?? ''}`)
     : msg.type === 'P'
       ? emptyDescribePortal
       : emptyDescribeStatement
 }
 
 const close = (msg: PortalOpts): ArrayBuffer => {
-  const text = `${msg.type}${msg.name || ''}`
+  const text = `${msg.type}${msg.name ?? ''}`
   return cstringMessage(code.close, text)
 }
 
