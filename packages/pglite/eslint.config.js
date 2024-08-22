@@ -18,4 +18,12 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  {
+    files: ['tests/targets/deno/**/*.js'],
+    languageOptions: {
+      globals: {
+        Deno: false,
+      },
+    },
+  },
 ]
