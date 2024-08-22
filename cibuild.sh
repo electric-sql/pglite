@@ -2,7 +2,7 @@
 
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
-export CMA_MB=${CMA_MB:-64}
+export CMA_MB=${CMA_MB:-32}
 
 export PGVERSION=${PGVERSION:-16.3}
 export CI=${CI:-false}
@@ -13,7 +13,7 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-export TOTAL_MEMORY=${TOTAL_MEMORY:-256MB}
+export TOTAL_MEMORY=${TOTAL_MEMORY:-64MB}
 
 # exit on error
 EOE=false
