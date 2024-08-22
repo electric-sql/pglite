@@ -225,7 +225,7 @@ Close the database, ensuring it is shut down cleanly.
 
 ### listen
 
-`.listen(channel: string, callback: (payload: string) => void): Promise<void>`
+`.listen(channel: string, callback: (payload: string) => void): Promise<(() => Promise<void>>`
 
 Subscribe to a [pg_notify](https://www.postgresql.org/docs/current/sql-notify.html) channel. The callback will receive the payload from the notification.
 
