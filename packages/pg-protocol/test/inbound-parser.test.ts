@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import buffers from './testing/test-buffers'
 import BufferList from './testing/buffer-list'
-import { parse } from '../src'
-import { PassThrough } from 'stream'
+import { Parser } from '../src'
 import {
   AuthenticationMessage,
   BackendKeyDataMessage,
@@ -230,13 +229,20 @@ const expectedNotificationResponseMessage: NotificationResponseMessage = {
 const parseBuffers = async (
   buffers: ArrayBuffer[],
 ): Promise<BackendMessage[]> => {
-  const stream = new PassThrough()
-  for (const buffer of buffers) {
-    stream.write(new Uint8Array(buffer))
-  }
-  stream.end()
+  const parser = new Parser()
   const msgs: BackendMessage[] = []
-  await parse(stream, (msg) => msgs.push(msg))
+  const numBuffers = buffers.length
+
+  await new Promise<void>((res) => {
+    for (let i = 0; i < numBuffers; i++) {
+      const buffer = buffers[i]
+      parser.parse(buffer, (msg) => {
+        msgs.push(msg)
+        if (i === numBuffers - 1) res()
+      })
+    }
+  })
+
   return msgs
 }
 

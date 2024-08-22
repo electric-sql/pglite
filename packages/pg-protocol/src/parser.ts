@@ -44,10 +44,6 @@ export type Packet = {
 
 const emptyBuffer = new ArrayBuffer(0)
 
-type StreamOptions = TransformOptions & {
-  mode: Mode
-}
-
 const enum MessageCodes {
   DataRow = 0x44, // D
   ParseComplete = 0x31, // 1
@@ -80,12 +76,6 @@ export class Parser {
   private bufferLength: number = 0
   private bufferOffset: number = 0
   private reader = new BufferReader()
-
-  constructor(opts?: StreamOptions) {
-    if (opts?.mode === Modes.binary) {
-      throw new Error('Binary mode not supported yet')
-    }
-  }
 
   public parse(buffer: ArrayBuffer, callback: MessageCallback) {
     this.mergeBuffer(buffer)
@@ -382,7 +372,7 @@ export class Parser {
     return new BackendKeyDataMessage(length, processID, secretKey)
   }
 
-  public parseAuthenticationResponse(
+  private parseAuthenticationResponse(
     offset: number,
     length: number,
     bytes: ArrayBuffer,
