@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/utils/init/miscinit.c
-+++ postgresql-16.3-wasm/src/backend/utils/init/miscinit.c
+--- postgresql/src/backend/utils/init/miscinit.c
++++ postgresql-wasm/src/backend/utils/init/miscinit.c
 @@ -209,7 +209,7 @@
  	if (my_exec_path[0] == '\0')
  	{

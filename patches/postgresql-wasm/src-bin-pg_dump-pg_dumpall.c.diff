@@ -1,5 +1,5 @@
---- postgresql-16.3/src/bin/pg_dump/pg_dumpall.c
-+++ postgresql-16.3-wasm/src/bin/pg_dump/pg_dumpall.c
+--- postgresql/src/bin/pg_dump/pg_dumpall.c
++++ postgresql-wasm/src/bin/pg_dump/pg_dumpall.c
 @@ -14,7 +14,13 @@
   */
  

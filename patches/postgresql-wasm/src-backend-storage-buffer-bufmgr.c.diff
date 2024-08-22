@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/storage/buffer/bufmgr.c
-+++ postgresql-16.3-wasm/src/backend/storage/buffer/bufmgr.c
+--- postgresql/src/backend/storage/buffer/bufmgr.c
++++ postgresql-wasm/src/backend/storage/buffer/bufmgr.c
 @@ -1134,16 +1134,16 @@
  			{
  				ereport(WARNING,

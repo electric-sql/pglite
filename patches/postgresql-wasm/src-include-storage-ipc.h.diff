@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/storage/ipc.h
-+++ postgresql-16.3-wasm/src/include/storage/ipc.h
+--- postgresql/src/include/storage/ipc.h
++++ postgresql-wasm/src/include/storage/ipc.h
 @@ -64,8 +64,11 @@
  /* ipc.c */
  extern PGDLLIMPORT bool proc_exit_inprogress;

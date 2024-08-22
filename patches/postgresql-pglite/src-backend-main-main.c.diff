@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/main/main.c
-+++ postgresql-16.3-wasm/src/backend/main/main.c
+--- postgresql/src/backend/main/main.c
++++ postgresql-wasm/src/backend/main/main.c
 @@ -41,20 +41,20 @@
  #include "utils/pg_locale.h"
  #include "utils/ps_status.h"

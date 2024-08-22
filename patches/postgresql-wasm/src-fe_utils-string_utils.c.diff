@@ -1,5 +1,5 @@
---- postgresql-16.3/src/fe_utils/string_utils.c
-+++ postgresql-16.3-wasm/src/fe_utils/string_utils.c
+--- postgresql/src/fe_utils/string_utils.c
++++ postgresql-wasm/src/fe_utils/string_utils.c
 @@ -23,7 +23,9 @@
  static PQExpBuffer defaultGetLocalPQExpBuffer(void);
  

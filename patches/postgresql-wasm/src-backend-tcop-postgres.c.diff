@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/tcop/postgres.c
-+++ postgresql-16.3-wasm/src/backend/tcop/postgres.c
+--- postgresql/src/backend/tcop/postgres.c
++++ postgresql-wasm/src/backend/tcop/postgres.c
 @@ -3988,7 +3988,11 @@
  #endif
  }

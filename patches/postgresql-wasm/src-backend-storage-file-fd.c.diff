@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/storage/file/fd.c
-+++ postgresql-16.3-wasm/src/backend/storage/file/fd.c
+--- postgresql/src/backend/storage/file/fd.c
++++ postgresql-wasm/src/backend/storage/file/fd.c
 @@ -69,7 +69,7 @@
   *
   *-------------------------------------------------------------------------
