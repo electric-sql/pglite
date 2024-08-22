@@ -13,7 +13,7 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-export TOTAL_MEMORY=${TOTAL_MEMORY:-256MB}
+export TOTAL_MEMORY=${TOTAL_MEMORY:-128MB}
 
 # exit on error
 EOE=false
