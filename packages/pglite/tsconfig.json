@@ -10,5 +10,5 @@
       "node:buffer": ["./src/polyfills/buffer"]
     }
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["src", "tsup.config.ts", "vitest.config.ts"]
 }

@@ -326,6 +326,36 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   }
 
   /**
+   * Execute a single SQL statement like with {@link PGlite.query}, but with a
+   * templated statement where template values will be treated as parameters.
+   *
+   * You can use helpers from `/template` to further format the query with
+   * identifiers, raw SQL, and nested statements.
+   *
+   * This uses the "Extended Query" postgres wire protocol message.
+   *
+   * @param query The query to execute with parameters as template values
+   * @returns The result of the query
+   *
+   * @example
+   * ```ts
+   * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
+   * ```
+   */
+  async sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>> {
+    await this.waitReady
+    return (await this.#rpc(
+      'sql',
+      sqlStrings,
+      sqlStrings.raw,
+      params,
+    )) as Results<T>
+  }
+
+  /**
    * Execute a SQL query, this can have multiple statements.
    * This uses the "Simple Query" postgres wire protocol message.
    * @param query The query to execute
@@ -645,6 +675,17 @@ function makeWorkerApi(db: PGliteInterface) {
     },
     async query(query: string, params?: any[], options?: QueryOptions) {
       return await db.query(query, params, options)
+    },
+    async sql(
+      sqlStrings: ReadonlyArray<string>,
+      sqlStringsRaw: ReadonlyArray<string>,
+      params: any[],
+    ) {
+      const sqlStringsFull = sqlStrings as ReadonlyArray<string> & {
+        raw: ReadonlyArray<string>
+      }
+      sqlStringsFull.raw = sqlStringsRaw
+      return await db.sql(sqlStringsFull, ...params)
     },
     async exec(query: string, options?: QueryOptions) {
       return await db.exec(query, options)

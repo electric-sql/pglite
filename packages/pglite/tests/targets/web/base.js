@@ -307,7 +307,7 @@ export function tests(env, dbFilename, target) {
           },
         )
         await new Promise((resolve) => setTimeout(resolve, 500))
-        await db.query("INSERT INTO test (id, name) VALUES (3, 'test3');")
+        await db.sql`INSERT INTO test (id, name) VALUES (${3}, ${'test3'});`
         await new Promise((resolve) => {
           eventTarget.addEventListener('updated', resolve)
         })
