@@ -1,0 +1,11 @@
+{
+  "name": "pglite-deno-tests",
+  "type": "module",
+  "description": "Tests for pglite running in Deno. The `test` script below is designed to trick Deno into 'Node Compatibility' mode for the tests.",
+  "scripts": {
+    "test": "rm -rf ./pgdata-test && rm -rf ./node_modules && mkdir -p ./node_modules/@electric-sql/ && ln -s ../../../../../ ./node_modules/@electric-sql/pglite && deno test --allow-read --allow-write --allow-env --allow-sys --node-modules-dir ./*.test.deno.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "*"
+  }
+}

@@ -54,6 +54,10 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: vx.x.x
+
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -77,6 +81,9 @@ jobs:
       - name: Test web integrations
         # retry on failure as web tests can be flaky
         run: pnpm test:web || pnpm test:web || pnpm test:web
+
+      - name: Test Deno
+        run: pnpm test:deno
 
       - name: Pack for distribution
         run: pnpm pack
