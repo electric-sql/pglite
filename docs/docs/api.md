@@ -132,7 +132,9 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `blob: Blob | File` <br />
   Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
 
-##### `    sql`` `
+### sql
+
+`   .sql<T>``: Promise<Results<T>>`
 
 `.sql<T>(strings: TemplateStringsArray, ...params: any[]): Promise<Results<T>>`
 
@@ -196,6 +198,8 @@ The transaction will be committed when the promise returned from your callback r
 
 - `tx.query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>>`<br />
   The same as the main [`.query` method](#querytquery-string-params-any-promiseresultst).
+- `   tx.sql<T>``: Promise<Results<T>>`<br />
+  The same as the main [`.sql` template string method](#tagged-template-queries).
 - `tx.exec(query: string, options?: QueryOptions): Promise<Array<Results>>`<br />
   The same as the main [`.exec` method](#execquery-string-promisearrayresults).
 - `tx.rollback()`<br />
@@ -352,7 +356,12 @@ These types are not validated at run time, the result is only cast to the provid
 
 ## Tagged Template Queries
 
-If additional configurations or complex binary parameters are not needed, then it is possible to use the `    sql`` ` tag on a templated SQL string literal and get the same results as calling the [`query`](#query) API directly, where the templated values will automatically be converted to parameters.
+PGlite has support for using [tagged template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates) to construct SQL queries via the `    .sql`` ` method on both the main PGlite instance and [Transaction](#transaction-objects) objects. Substituted template values are automatically converted to query parameters, and you receive the same results as calling the [`query`](#query) API directly.
+
+```ts
+const name = getName()
+await pg.sql`SELECT * FROM test WHERE name = ${name}`
+```
 
 There are helpers in the `template` export to create more complex and parametrizeable templated queries:
 
@@ -364,6 +373,8 @@ There are helpers in the `template` export to create more complex and parametriz
   Tag nested templated literals to preserve behaviour and parametrization. Will allow you to create reusable templating utilities
 - `    query`` ` <br />
   Use at the top level tag in order to generate the parametrized query without passing it to the `query` API. Returns a `{ query: string, params: any[] }` object with the parametrized query and any parameters used in the query.
+
+If you require additional configurations or complex binary parameters it's best to use the [`query` method](#query).
 
 ##### Example
 
