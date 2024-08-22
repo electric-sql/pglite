@@ -17,6 +17,8 @@ const enum code {
   copyFail = 0x66,
 }
 
+type LegalValue = string | ArrayBuffer | ArrayBufferView | null
+
 const writer = new Writer()
 
 const startup = (opts: Record<string, string>): ArrayBuffer => {
@@ -76,7 +78,7 @@ type ParseOpts = {
   text: string
 }
 
-const emptyArray: any[] = []
+const emptyValueArray: LegalValue[] = []
 
 const parse = (query: ParseOpts): ArrayBuffer => {
   // expect something like this:
@@ -98,29 +100,23 @@ const parse = (query: ParseOpts): ArrayBuffer => {
     /* eslint-enable no-console */
   }
 
-  const types = query.types || emptyArray
-
-  const len = types.length
-
   const buffer = writer
     .addCString(name) // name of query
     .addCString(query.text) // actual query text
-    .addInt16(len)
+    .addInt16(query.types?.length ?? 0)
 
-  for (let i = 0; i < len; i++) {
-    buffer.addInt32(types[i])
-  }
+  query.types?.forEach((type) => buffer.addInt32(type))
 
   return writer.flush(code.parse)
 }
 
-type ValueMapper = (param: any, index: number) => any
+type ValueMapper = (param: unknown, index: number) => LegalValue
 
 type BindOpts = {
   portal?: string
   binary?: boolean
   statement?: string
-  values?: any[]
+  values?: LegalValue[]
   // optional map from JS value to postgres value per parameter
   valueMapper?: ValueMapper
 }
@@ -133,10 +129,13 @@ const enum ParamType {
   BINARY = 1,
 }
 
-const writeValues = function (values: any[], valueMapper?: ValueMapper): void {
+const writeValues = function (
+  values: LegalValue[],
+  valueMapper?: ValueMapper,
+): void {
   for (let i = 0; i < values.length; i++) {
     const mappedVal = valueMapper ? valueMapper(values[i], i) : values[i]
-    if (mappedVal === null || mappedVal === undefined) {
+    if (mappedVal === null) {
       // add the param type (string) to the writer
       writer.addInt16(ParamType.STRING)
       // write -1 to the param writer to indicate null
@@ -164,10 +163,10 @@ const writeValues = function (values: any[], valueMapper?: ValueMapper): void {
 
 const bind = (config: BindOpts = {}): ArrayBuffer => {
   // normalize config
-  const portal = config.portal || ''
-  const statement = config.statement || ''
-  const binary = config.binary || false
-  const values = config.values || emptyArray
+  const portal = config.portal ?? ''
+  const statement = config.statement ?? ''
+  const binary = config.binary ?? false
+  const values = config.values ?? emptyValueArray
   const len = values.length
 
   writer.addCString(portal).addCString(statement)

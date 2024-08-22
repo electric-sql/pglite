@@ -1,4 +1,5 @@
 // https://www.postgresql.org/docs/current/protocol-message-formats.html
+import { Field } from '../../src/messages'
 import BufferList from './buffer-list'
 
 const buffers = {
@@ -52,7 +53,7 @@ const buffers = {
     return new BufferList().addCString(string).join(true, 'C')
   },
 
-  rowDescription: function (fields: any[]) {
+  rowDescription: function (fields: Field[]) {
     fields = fields || []
     const buf = new BufferList()
     buf.addInt16(fields.length)
@@ -60,11 +61,11 @@ const buffers = {
       buf
         .addCString(field.name)
         .addInt32(field.tableID || 0)
-        .addInt16(field.attributeNumber || 0)
+        .addInt16(field.columnID || 0)
         .addInt32(field.dataTypeID || 0)
         .addInt16(field.dataTypeSize || 0)
-        .addInt32(field.typeModifier || 0)
-        .addInt16(field.formatCode || 0)
+        .addInt32(field.dataTypeModifier || 0)
+        .addInt16(field.format || 0)
     })
     return buf.join(true, 'T')
   },
@@ -79,12 +80,12 @@ const buffers = {
     return buf.join(true, 't')
   },
 
-  dataRow: function (columns: any[]) {
+  dataRow: function (columns: (string | null)[]) {
     columns = columns || []
     const buf = new BufferList()
     buf.addInt16(columns.length)
     columns.forEach(function (col) {
-      if (col === null || col === undefined) {
+      if (col === null) {
         buf.addInt32(-1)
       } else {
         const strBuf = new TextEncoder().encode(col).buffer
@@ -95,18 +96,18 @@ const buffers = {
     return buf.join(true, 'D')
   },
 
-  error: function (fields: any) {
+  error: function (fields: { type: string; value: string }[]) {
     return buffers.errorOrNotice(fields).join(true, 'E')
   },
 
-  notice: function (fields: any) {
+  notice: function (fields: { type: string; value: string }[]) {
     return buffers.errorOrNotice(fields).join(true, 'N')
   },
 
-  errorOrNotice: function (fields: any) {
+  errorOrNotice: function (fields: { type: string; value: string }[]) {
     fields = fields || []
     const buf = new BufferList()
-    fields.forEach(function (field: any) {
+    fields.forEach((field) => {
       buf.addChar(field.type)
       buf.addCString(field.value)
     })

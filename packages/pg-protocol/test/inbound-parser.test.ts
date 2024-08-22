@@ -4,7 +4,19 @@ import BufferList from './testing/buffer-list'
 import { parse } from '../src'
 import assert from 'assert'
 import { PassThrough } from 'stream'
-import { BackendMessage } from '../src/messages'
+import {
+  AuthenticationMessage,
+  BackendKeyDataMessage,
+  BackendMessage,
+  CommandCompleteMessage,
+  DataRowMessage,
+  Modes,
+  NotificationResponseMessage,
+  ParameterDescriptionMessage,
+  ParameterStatusMessage,
+  ReadyForQueryMessage,
+  RowDescriptionMessage,
+} from '../src/messages'
 
 const authOkBuffer = buffers.authenticationOk()
 const paramStatusBuffer = buffers.parameterStatus('client_encoding', 'UTF8')
@@ -18,11 +30,11 @@ const portalSuspendedBuffer = buffers.portalSuspended()
 const row1 = {
   name: 'id',
   tableID: 1,
-  attributeNumber: 2,
+  columnID: 2,
   dataTypeID: 3,
   dataTypeSize: 4,
-  typeModifier: 5,
-  formatCode: 0,
+  dataTypeModifier: 5,
+  format: Modes.text,
 }
 const oneRowDescBuff = buffers.rowDescription([row1])
 row1.name = 'bang'
@@ -32,11 +44,11 @@ const twoRowBuf = buffers.rowDescription([
   {
     name: 'whoah',
     tableID: 10,
-    attributeNumber: 11,
+    columnID: 11,
     dataTypeID: 12,
     dataTypeSize: 13,
-    typeModifier: 14,
-    formatCode: 0,
+    dataTypeModifier: 14,
+    format: Modes.text,
   },
 ])
 
@@ -44,31 +56,32 @@ const emptyRowFieldBuf = buffers.dataRow([])
 
 const oneFieldBuf = buffers.dataRow(['test'])
 
-const expectedAuthenticationOkayMessage = {
+const expectedAuthenticationOkayMessage: BackendMessage = {
   name: 'authenticationOk',
   length: 8,
 }
 
-const expectedParameterStatusMessage = {
+const expectedParameterStatusMessage: ParameterStatusMessage = {
   name: 'parameterStatus',
   parameterName: 'client_encoding',
   parameterValue: 'UTF8',
   length: 25,
 }
 
-const expectedBackendKeyDataMessage = {
+const expectedBackendKeyDataMessage: BackendKeyDataMessage = {
   name: 'backendKeyData',
   processID: 1,
   secretKey: 2,
+  length: 12,
 }
 
-const expectedReadyForQueryMessage = {
+const expectedReadyForQueryMessage: ReadyForQueryMessage = {
   name: 'readyForQuery',
   length: 5,
   status: 'I',
 }
 
-const expectedCommandCompleteMessage = {
+const expectedCommandCompleteMessage: CommandCompleteMessage = {
   name: 'commandComplete',
   length: 13,
   text: 'SELECT 3',
@@ -77,13 +90,13 @@ const emptyRowDescriptionBuffer = new BufferList()
   .addInt16(0) // number of fields
   .join(true, 'T')
 
-const expectedEmptyRowDescriptionMessage = {
+const expectedEmptyRowDescriptionMessage: RowDescriptionMessage = {
   name: 'rowDescription',
   length: 6,
   fieldCount: 0,
   fields: [],
 }
-const expectedOneRowMessage = {
+const expectedOneRowMessage: RowDescriptionMessage = {
   name: 'rowDescription',
   length: 27,
   fieldCount: 1,
@@ -95,12 +108,12 @@ const expectedOneRowMessage = {
       dataTypeID: 3,
       dataTypeSize: 4,
       dataTypeModifier: 5,
-      format: 'text',
+      format: Modes.text,
     },
   ],
 }
 
-const expectedTwoRowMessage = {
+const expectedTwoRowMessage: RowDescriptionMessage = {
   name: 'rowDescription',
   length: 53,
   fieldCount: 2,
@@ -112,7 +125,7 @@ const expectedTwoRowMessage = {
       dataTypeID: 3,
       dataTypeSize: 4,
       dataTypeModifier: 5,
-      format: 'text',
+      format: Modes.text,
     },
     {
       name: 'whoah',
@@ -121,7 +134,7 @@ const expectedTwoRowMessage = {
       dataTypeID: 12,
       dataTypeSize: 13,
       dataTypeModifier: 14,
-      format: 'text',
+      format: Modes.text,
     },
   ],
 }
@@ -134,34 +147,39 @@ const oneParameterDescBuf = buffers.parameterDescription([1111])
 
 const twoParameterDescBuf = buffers.parameterDescription([2222, 3333])
 
-const expectedEmptyParameterDescriptionMessage = {
+const expectedEmptyParameterDescriptionMessage: ParameterDescriptionMessage = {
   name: 'parameterDescription',
   length: 6,
   parameterCount: 0,
   dataTypeIDs: [],
 }
 
-const expectedOneParameterMessage = {
+const expectedOneParameterMessage: ParameterDescriptionMessage = {
   name: 'parameterDescription',
   length: 10,
   parameterCount: 1,
   dataTypeIDs: [1111],
 }
 
-const expectedTwoParameterMessage = {
+const expectedTwoParameterMessage: ParameterDescriptionMessage = {
   name: 'parameterDescription',
   length: 14,
   parameterCount: 2,
   dataTypeIDs: [2222, 3333],
 }
 
-const testForMessage = function (buffer: ArrayBuffer, expectedMessage: any) {
+function testForMessage<T extends BackendMessage>(
+  buffer: ArrayBuffer,
+  expectedMessage: T,
+) {
   it('recieves and parses ' + expectedMessage.name, async () => {
     const messages = await parseBuffers([buffer])
     const [lastMessage] = messages
 
     for (const key in expectedMessage) {
-      expect((lastMessage as any)[key]).toEqual(expectedMessage[key])
+      expect((lastMessage as Record<string, unknown>)[key]).toEqual(
+        expectedMessage[key],
+      )
     }
   })
 }
@@ -172,36 +190,42 @@ const SASLBuffer = buffers.authenticationSASL()
 const SASLContinueBuffer = buffers.authenticationSASLContinue()
 const SASLFinalBuffer = buffers.authenticationSASLFinal()
 
-const expectedPlainPasswordMessage = {
+const expectedPlainPasswordMessage: AuthenticationMessage = {
   name: 'authenticationCleartextPassword',
+  length: 8,
 }
 
-const expectedMD5PasswordMessage = {
+const expectedMD5PasswordMessage: AuthenticationMessage = {
   name: 'authenticationMD5Password',
+  length: 12,
   salt: new Uint8Array([1, 2, 3, 4]).buffer,
 }
 
-const expectedSASLMessage = {
+const expectedSASLMessage: AuthenticationMessage = {
   name: 'authenticationSASL',
+  length: SASLBuffer.byteLength - 1,
   mechanisms: ['SCRAM-SHA-256'],
 }
 
-const expectedSASLContinueMessage = {
+const expectedSASLContinueMessage: AuthenticationMessage = {
   name: 'authenticationSASLContinue',
+  length: SASLContinueBuffer.byteLength - 1,
   data: 'data',
 }
 
-const expectedSASLFinalMessage = {
+const expectedSASLFinalMessage: AuthenticationMessage = {
   name: 'authenticationSASLFinal',
+  length: SASLFinalBuffer.byteLength - 1,
   data: 'data',
 }
 
 const notificationResponseBuffer = buffers.notification(4, 'hi', 'boom')
-const expectedNotificationResponseMessage = {
+const expectedNotificationResponseMessage: NotificationResponseMessage = {
   name: 'notification',
   processId: 4,
   channel: 'hi',
   payload: 'boom',
+  length: notificationResponseBuffer.byteLength - 1,
 }
 
 const parseBuffers = async (
@@ -274,6 +298,7 @@ describe('PgPacketStream', function () {
 
   testForMessage(new Uint8Array([0x6e, 0, 0, 0, 4]).buffer, {
     name: 'noData',
+    length: 5,
   })
 
   describe('rowDescription messages', function () {
@@ -299,6 +324,7 @@ describe('PgPacketStream', function () {
       testForMessage(emptyRowFieldBuf, {
         name: 'dataRow',
         fieldCount: 0,
+        length: emptyRowFieldBuf.byteLength - 1,
       })
     })
 
@@ -307,6 +333,7 @@ describe('PgPacketStream', function () {
         name: 'dataRow',
         fieldCount: 1,
         fields: ['test'],
+        length: oneFieldBuf.byteLength - 1,
       })
     })
   })
@@ -317,11 +344,13 @@ describe('PgPacketStream', function () {
     testForMessage(buff, {
       name: 'notice',
       code: 'code',
+      length: buff.byteLength - 1,
     })
   })
 
   testForMessage(buffers.error([]), {
     name: 'error',
+    length: buffers.error([]).byteLength - 1,
   })
 
   describe('with all the fields', function () {
@@ -394,28 +423,29 @@ describe('PgPacketStream', function () {
       file: 'file',
       line: 'line',
       routine: 'routine',
+      length: buffer.byteLength - 1,
     })
   })
 
   testForMessage(parseCompleteBuffer, {
     name: 'parseComplete',
+    length: 5,
   })
 
   testForMessage(bindCompleteBuffer, {
     name: 'bindComplete',
-  })
-
-  testForMessage(bindCompleteBuffer, {
-    name: 'bindComplete',
+    length: 5,
   })
 
   testForMessage(buffers.closeComplete(), {
     name: 'closeComplete',
+    length: 5,
   })
 
   describe('parses portal suspended message', function () {
     testForMessage(portalSuspendedBuffer, {
       name: 'portalSuspended',
+      length: 5,
     })
   })
 
@@ -475,7 +505,7 @@ describe('PgPacketStream', function () {
 
     it('parses when full buffer comes in', async function () {
       const messages = await parseBuffers([fullBuffer])
-      const message = messages[0] as any
+      const message = messages[0] as DataRowMessage
       assert.equal(message.fields.length, 5)
       assert.equal(message.fields[0], null)
       assert.equal(message.fields[1], 'bang')
@@ -498,7 +528,7 @@ describe('PgPacketStream', function () {
       )
 
       const messages = await parseBuffers([fullBuffer])
-      const message = messages[0] as any
+      const message = messages[0] as DataRowMessage
       assert.equal(message.fields.length, 5)
       assert.equal(message.fields[0], null)
       assert.equal(message.fields[1], 'bang')
@@ -535,7 +565,7 @@ describe('PgPacketStream', function () {
       dataRowBuffer.byteLength,
     )
 
-    const verifyMessages = function (messages: any[]) {
+    function verifyMessages(messages: BackendMessage[]) {
       expect(messages).toHaveLength(2)
       expect(messages[0]).toEqual({
         name: 'dataRow',
@@ -543,7 +573,7 @@ describe('PgPacketStream', function () {
         length: 11,
         fields: ['!'],
       })
-      expect(messages[0].fields[0]).toBe('!')
+      expect((messages[0] as DataRowMessage).fields[0]).toBe('!')
       expect(messages[1]).toEqual({
         name: 'readyForQuery',
         length: 5,

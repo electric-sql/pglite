@@ -23,8 +23,9 @@ import {
   DatabaseError,
   BackendMessage,
   MessageName,
-  AuthenticationMD5Password,
   NoticeMessage,
+  AuthenticationMessage,
+  Modes,
 } from './messages'
 import { BufferReader } from './buffer-reader'
 
@@ -81,7 +82,7 @@ export class Parser {
   private reader = new BufferReader()
 
   constructor(opts?: StreamOptions) {
-    if (opts?.mode === 'binary') {
+    if (opts?.mode === Modes.binary) {
       throw new Error('Binary mode not supported yet')
     }
   }
@@ -317,7 +318,7 @@ export class Parser {
     const dataTypeID = this.reader.int32()
     const dataTypeSize = this.reader.int16()
     const dataTypeModifier = this.reader.int32()
-    const mode = this.reader.int16() === 0 ? 'text' : 'binary'
+    const mode = this.reader.int16() === 0 ? Modes.text : Modes.binary
     return new Field(
       name,
       tableID,
@@ -350,7 +351,7 @@ export class Parser {
   ) {
     this.reader.setBuffer(offset, bytes)
     const fieldCount = this.reader.int16()
-    const fields: any[] = new Array(fieldCount)
+    const fields: (string | null)[] = new Array(fieldCount)
     for (let i = 0; i < fieldCount; i++) {
       const len = this.reader.int32()
       // a -1 for length means the value of the field is null
@@ -385,51 +386,59 @@ export class Parser {
     offset: number,
     length: number,
     bytes: ArrayBuffer,
-  ) {
+  ): AuthenticationMessage {
     this.reader.setBuffer(offset, bytes)
     const code = this.reader.int32()
-    // TODO(bmc): maybe better types here
-    const message: BackendMessage & any = {
-      name: 'authenticationOk',
-      length,
-    }
-
     switch (code) {
       case 0: // AuthenticationOk
-        break
+        return {
+          name: 'authenticationOk',
+          length,
+        }
       case 3: // AuthenticationCleartextPassword
-        if (message.length === 8) {
-          message.name = 'authenticationCleartextPassword'
+        return {
+          name: 'authenticationCleartextPassword',
+          length,
         }
-        break
+
       case 5: // AuthenticationMD5Password
-        if (message.length === 12) {
-          message.name = 'authenticationMD5Password'
-          const salt = this.reader.bytes(4)
-          return new AuthenticationMD5Password(length, salt)
+        return {
+          name: 'authenticationMD5Password',
+          length,
+          salt: this.reader.bytes(4),
         }
-        break
-      case 10: // AuthenticationSASL
-        message.name = 'authenticationSASL'
-        message.mechanisms = []
+
+      case 10: {
+        // AuthenticationSASL
+        const mechanisms: string[] = []
         while (true) {
           const mechanism = this.reader.cstring()
-          if (mechanism.length === 0) break
-          message.mechanisms.push(mechanism)
+          if (mechanism.length === 0) {
+            return {
+              name: 'authenticationSASL',
+              length,
+              mechanisms: mechanisms,
+            }
+          }
+          mechanisms.push(mechanism)
         }
-        break
+      }
       case 11: // AuthenticationSASLContinue
-        message.name = 'authenticationSASLContinue'
-        message.data = this.reader.string(length - 8)
-        break
+        return {
+          name: 'authenticationSASLContinue',
+          length,
+          data: this.reader.string(length - 8),
+        }
+
       case 12: // AuthenticationSASLFinal
-        message.name = 'authenticationSASLFinal'
-        message.data = this.reader.string(length - 8)
-        break
+        return {
+          name: 'authenticationSASLFinal',
+          length,
+          data: this.reader.string(length - 8),
+        }
       default:
         throw new Error('Unknown authenticationOk message type ' + code)
     }
-    return message
   }
 
   private parseErrorMessage(

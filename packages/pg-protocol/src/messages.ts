@@ -1,4 +1,9 @@
-export type Mode = 'text' | 'binary'
+export const Modes = {
+  text: 0,
+  binary: 1,
+} as const
+
+export type Mode = (typeof Modes)[keyof typeof Modes]
 
 export type MessageName =
   | 'parseComplete'
@@ -29,7 +34,7 @@ export type MessageName =
   | 'error'
   | 'notice'
 
-export interface BackendMessage {
+export type BackendMessage = {
   name: MessageName
   length: number
 }
@@ -73,6 +78,42 @@ export const copyDone: BackendMessage = {
   name: 'copyDone',
   length: 4,
 }
+
+export interface AuthenticationOk extends BackendMessage {
+  name: 'authenticationOk'
+}
+
+export interface AuthenticationCleartextPassword extends BackendMessage {
+  name: 'authenticationCleartextPassword'
+}
+
+export interface AuthenticationMD5Password extends BackendMessage {
+  name: 'authenticationMD5Password'
+  salt: ArrayBuffer
+}
+
+export interface AuthenticationSASL extends BackendMessage {
+  name: 'authenticationSASL'
+  mechanisms: string[]
+}
+
+export interface AuthenticationSASLContinue extends BackendMessage {
+  name: 'authenticationSASLContinue'
+  data: string
+}
+
+export interface AuthenticationSASLFinal extends BackendMessage {
+  name: 'authenticationSASLFinal'
+  data: string
+}
+
+export type AuthenticationMessage =
+  | AuthenticationOk
+  | AuthenticationCleartextPassword
+  | AuthenticationMD5Password
+  | AuthenticationSASL
+  | AuthenticationSASLContinue
+  | AuthenticationSASLFinal
 
 interface NoticeOrError {
   message: string | undefined
@@ -120,7 +161,7 @@ export class DatabaseError extends Error implements NoticeOrError {
   }
 }
 
-export class CopyDataMessage {
+export class CopyDataMessage implements BackendMessage {
   public readonly name = 'copyData'
   constructor(
     public readonly length: number,
@@ -128,7 +169,7 @@ export class CopyDataMessage {
   ) {}
 }
 
-export class CopyResponse {
+export class CopyResponse implements BackendMessage {
   public readonly columnTypes: number[]
   constructor(
     public readonly length: number,
@@ -152,7 +193,7 @@ export class Field {
   ) {}
 }
 
-export class RowDescriptionMessage {
+export class RowDescriptionMessage implements BackendMessage {
   public readonly name: MessageName = 'rowDescription'
   public readonly fields: Field[]
   constructor(
@@ -163,7 +204,7 @@ export class RowDescriptionMessage {
   }
 }
 
-export class ParameterDescriptionMessage {
+export class ParameterDescriptionMessage implements BackendMessage {
   public readonly name: MessageName = 'parameterDescription'
   public readonly dataTypeIDs: number[]
   constructor(
@@ -174,7 +215,7 @@ export class ParameterDescriptionMessage {
   }
 }
 
-export class ParameterStatusMessage {
+export class ParameterStatusMessage implements BackendMessage {
   public readonly name: MessageName = 'parameterStatus'
   constructor(
     public readonly length: number,
@@ -183,15 +224,7 @@ export class ParameterStatusMessage {
   ) {}
 }
 
-export class AuthenticationMD5Password implements BackendMessage {
-  public readonly name: MessageName = 'authenticationMD5Password'
-  constructor(
-    public readonly length: number,
-    public readonly salt: ArrayBuffer,
-  ) {}
-}
-
-export class BackendKeyDataMessage {
+export class BackendKeyDataMessage implements BackendMessage {
   public readonly name: MessageName = 'backendKeyData'
   constructor(
     public readonly length: number,
@@ -200,7 +233,7 @@ export class BackendKeyDataMessage {
   ) {}
 }
 
-export class NotificationResponseMessage {
+export class NotificationResponseMessage implements BackendMessage {
   public readonly name: MessageName = 'notification'
   constructor(
     public readonly length: number,
@@ -210,7 +243,7 @@ export class NotificationResponseMessage {
   ) {}
 }
 
-export class ReadyForQueryMessage {
+export class ReadyForQueryMessage implements BackendMessage {
   public readonly name: MessageName = 'readyForQuery'
   constructor(
     public readonly length: number,
@@ -218,7 +251,7 @@ export class ReadyForQueryMessage {
   ) {}
 }
 
-export class CommandCompleteMessage {
+export class CommandCompleteMessage implements BackendMessage {
   public readonly name: MessageName = 'commandComplete'
   constructor(
     public readonly length: number,
@@ -226,12 +259,12 @@ export class CommandCompleteMessage {
   ) {}
 }
 
-export class DataRowMessage {
+export class DataRowMessage implements BackendMessage {
   public readonly fieldCount: number
   public readonly name: MessageName = 'dataRow'
   constructor(
     public length: number,
-    public fields: any[],
+    public fields: (string | null)[],
   ) {
     this.fieldCount = fields.length
   }
