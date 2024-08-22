@@ -1,5 +1,3 @@
-//binary data writer tuned for encoding binary specific to the postgres binary protocol
-
 import { byteLengthUtf8 } from './string-utils'
 
 export class Writer {

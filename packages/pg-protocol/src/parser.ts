@@ -1,6 +1,4 @@
-import { TransformOptions } from 'stream'
 import {
-  Mode,
   bindComplete,
   parseComplete,
   closeComplete,
