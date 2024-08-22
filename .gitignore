@@ -5,6 +5,7 @@ node_modules
 /packages/pglite/dist
 /packages/pglite/pgdata-test
 /packages/pglite/package-lock.json
+/packages/**/dist
 /build
 /postgresql-16.2.tar.bz2
 /postgresql-16.2

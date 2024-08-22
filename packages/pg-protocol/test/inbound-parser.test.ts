@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import buffers from './testing/test-buffers'
 import BufferList from './testing/buffer-list'
 import { parse } from '../src'
-import assert from 'assert'
 import { PassThrough } from 'stream'
 import {
   AuthenticationMessage,
@@ -506,12 +505,12 @@ describe('PgPacketStream', () => {
     it('parses when full buffer comes in', async () => {
       const messages = await parseBuffers([fullBuffer])
       const message = messages[0] as DataRowMessage
-      assert.equal(message.fields.length, 5)
-      assert.equal(message.fields[0], null)
-      assert.equal(message.fields[1], 'bang')
-      assert.equal(message.fields[2], 'zug zug')
-      assert.equal(message.fields[3], null)
-      assert.equal(message.fields[4], '!')
+      expect(message.fields.length).toBe(5)
+      expect(message.fields[0]).toBe(null)
+      expect(message.fields[1]).toBe('bang')
+      expect(message.fields[2]).toBe('zug zug')
+      expect(message.fields[3]).toBe(null)
+      expect(message.fields[4]).toBe('!')
     })
 
     const testMessageRecievedAfterSpiltAt = async (split: number) => {
@@ -529,12 +528,12 @@ describe('PgPacketStream', () => {
 
       const messages = await parseBuffers([fullBuffer])
       const message = messages[0] as DataRowMessage
-      assert.equal(message.fields.length, 5)
-      assert.equal(message.fields[0], null)
-      assert.equal(message.fields[1], 'bang')
-      assert.equal(message.fields[2], 'zug zug')
-      assert.equal(message.fields[3], null)
-      assert.equal(message.fields[4], '!')
+      expect(message.fields.length).toBe(5)
+      expect(message.fields[0]).toBe(null)
+      expect(message.fields[1]).toBe('bang')
+      expect(message.fields[2]).toBe('zug zug')
+      expect(message.fields[3]).toBe(null)
+      expect(message.fields[4]).toBe('!')
     }
 
     it('parses when split in the middle', () => {
@@ -566,7 +565,7 @@ describe('PgPacketStream', () => {
     )
 
     function verifyMessages(messages: BackendMessage[]) {
-      expect(messages).toHaveLength(2)
+      expect(messages.length).toBe(2)
       expect(messages[0]).toEqual({
         name: 'dataRow',
         fieldCount: 1,

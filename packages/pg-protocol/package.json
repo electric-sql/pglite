@@ -3,17 +3,24 @@
   "version": "0.0.1",
   "description": "The postgres client/server binary protocol, implemented in TypeScript",
   "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "pg-protocol"
+  ],
+  "author": "Electric DB Limited",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/electric-sql/pglite.git",
     "directory": "packages/pg-protocol"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "/dist"
-  ],
-  "license": "Apache-2.0",
   "scripts": {
     "build": "tsup",
     "test": "vitest",
@@ -22,6 +29,17 @@
     "typecheck": "tsc",
     "stylecheck": "eslint ./src ./test && prettier --check ./src ./test"
   },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "vitest": "^2.0.5"
   }

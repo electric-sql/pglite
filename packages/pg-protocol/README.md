@@ -1,3 +1,3 @@
 # pg-protocol
 
-Low level postgres wire protocol parser and serializer written in Typescript. Used by node-postgres. Needs more documentation. :smile:
+Adapted from [Brian C](https://github.com/brianc)'s [pg-protocol](https://github.com/brianc/node-postgres/tree/master/packages/pg-protocol).
