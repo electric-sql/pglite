@@ -1,12 +1,12 @@
 {
-  "name": "@electric-sql/pglite-protocol",
+  "name": "@electric-sql/pg-protocol",
   "version": "0.0.1",
   "description": "The postgres client/server binary protocol, implemented in TypeScript",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/electric-sql/pglite.git",
-    "directory": "packages/pglite-protocol"
+    "directory": "packages/pg-protocol"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
