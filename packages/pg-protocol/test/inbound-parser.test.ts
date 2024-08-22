@@ -256,7 +256,7 @@ function concatBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   return buf.buffer
 }
 
-describe('PgPacketStream', function () {
+describe('PgPacketStream', () => {
   testForMessage(authOkBuffer, expectedAuthenticationOkayMessage)
   testForMessage(plainPasswordBuffer, expectedPlainPasswordMessage)
   testForMessage(md5PasswordBuffer, expectedMD5PasswordMessage)
@@ -301,7 +301,7 @@ describe('PgPacketStream', function () {
     length: 5,
   })
 
-  describe('rowDescription messages', function () {
+  describe('rowDescription messages', () => {
     testForMessage(
       emptyRowDescriptionBuffer,
       expectedEmptyRowDescriptionMessage,
@@ -310,7 +310,7 @@ describe('PgPacketStream', function () {
     testForMessage(twoRowBuf, expectedTwoRowMessage)
   })
 
-  describe('parameterDescription messages', function () {
+  describe('parameterDescription messages', () => {
     testForMessage(
       emptyParameterDescriptionBuffer,
       expectedEmptyParameterDescriptionMessage,
@@ -319,8 +319,8 @@ describe('PgPacketStream', function () {
     testForMessage(twoParameterDescBuf, expectedTwoParameterMessage)
   })
 
-  describe('parsing rows', function () {
-    describe('parsing empty row', function () {
+  describe('parsing rows', () => {
+    describe('parsing empty row', () => {
       testForMessage(emptyRowFieldBuf, {
         name: 'dataRow',
         fieldCount: 0,
@@ -328,7 +328,7 @@ describe('PgPacketStream', function () {
       })
     })
 
-    describe('parsing data row with fields', function () {
+    describe('parsing data row with fields', () => {
       testForMessage(oneFieldBuf, {
         name: 'dataRow',
         fieldCount: 1,
@@ -338,7 +338,7 @@ describe('PgPacketStream', function () {
     })
   })
 
-  describe('notice message', function () {
+  describe('notice message', () => {
     // this uses the same logic as error message
     const buff = buffers.notice([{ type: 'C', value: 'code' }])
     testForMessage(buff, {
@@ -353,7 +353,7 @@ describe('PgPacketStream', function () {
     length: buffers.error([]).byteLength - 1,
   })
 
-  describe('with all the fields', function () {
+  describe('with all the fields', () => {
     const buffer = buffers.error([
       {
         type: 'S',
@@ -442,14 +442,14 @@ describe('PgPacketStream', function () {
     length: 5,
   })
 
-  describe('parses portal suspended message', function () {
+  describe('parses portal suspended message', () => {
     testForMessage(portalSuspendedBuffer, {
       name: 'portalSuspended',
       length: 5,
     })
   })
 
-  describe('parses replication start message', function () {
+  describe('parses replication start message', () => {
     testForMessage(new Uint8Array([0x57, 0x00, 0x00, 0x00, 0x04]).buffer, {
       name: 'replicationStart',
       length: 4,
@@ -500,10 +500,10 @@ describe('PgPacketStream', function () {
   // since the data message on a stream can randomly divide the incomming
   // tcp packets anywhere, we need to make sure we can parse every single
   // split on a tcp message
-  describe('split buffer, single message parsing', function () {
+  describe('split buffer, single message parsing', () => {
     const fullBuffer = buffers.dataRow([null, 'bang', 'zug zug', null, '!'])
 
-    it('parses when full buffer comes in', async function () {
+    it('parses when full buffer comes in', async () => {
       const messages = await parseBuffers([fullBuffer])
       const message = messages[0] as DataRowMessage
       assert.equal(message.fields.length, 5)
@@ -514,7 +514,7 @@ describe('PgPacketStream', function () {
       assert.equal(message.fields[4], '!')
     })
 
-    const testMessageRecievedAfterSpiltAt = async function (split: number) {
+    const testMessageRecievedAfterSpiltAt = async (split: number) => {
       const firstBufferView = new Uint8Array(fullBuffer.byteLength - split)
       const secondBufferView = new Uint8Array(
         fullBuffer.byteLength - firstBufferView.byteLength,
@@ -537,22 +537,22 @@ describe('PgPacketStream', function () {
       assert.equal(message.fields[4], '!')
     }
 
-    it('parses when split in the middle', function () {
+    it('parses when split in the middle', () => {
       testMessageRecievedAfterSpiltAt(6)
     })
 
-    it('parses when split at end', function () {
+    it('parses when split at end', () => {
       testMessageRecievedAfterSpiltAt(2)
     })
 
-    it('parses when split at beginning', function () {
+    it('parses when split at beginning', () => {
       testMessageRecievedAfterSpiltAt(fullBuffer.byteLength - 2)
       testMessageRecievedAfterSpiltAt(fullBuffer.byteLength - 1)
       testMessageRecievedAfterSpiltAt(fullBuffer.byteLength - 5)
     })
   })
 
-  describe('split buffer, multiple message parsing', function () {
+  describe('split buffer, multiple message parsing', () => {
     const dataRowBuffer = buffers.dataRow(['!'])
     const readyForQueryBuffer = buffers.readyForQuery()
     const fullBuffer = new ArrayBuffer(
@@ -581,12 +581,12 @@ describe('PgPacketStream', function () {
       })
     }
     // sanity check
-    it('recieves both messages when packet is not split', async function () {
+    it('recieves both messages when packet is not split', async () => {
       const messages = await parseBuffers([fullBuffer])
       verifyMessages(messages)
     })
 
-    const splitAndVerifyTwoMessages = async function (split: number) {
+    const splitAndVerifyTwoMessages = async (split: number) => {
       const firstBufferView = new Uint8Array(fullBuffer.byteLength - split)
       const secondBufferView = new Uint8Array(
         fullBuffer.byteLength - firstBufferView.byteLength,
@@ -605,11 +605,11 @@ describe('PgPacketStream', function () {
       verifyMessages(messages)
     }
 
-    describe('recieves both messages when packet is split', function () {
-      it('in the middle', function () {
+    describe('recieves both messages when packet is split', () => {
+      it('in the middle', () => {
         return splitAndVerifyTwoMessages(11)
       })
-      it('at the front', function () {
+      it('at the front', () => {
         return Promise.all([
           splitAndVerifyTwoMessages(fullBuffer.byteLength - 1),
           splitAndVerifyTwoMessages(fullBuffer.byteLength - 4),
@@ -617,7 +617,7 @@ describe('PgPacketStream', function () {
         ])
       })
 
-      it('at the end', function () {
+      it('at the end', () => {
         return Promise.all([
           splitAndVerifyTwoMessages(8),
           splitAndVerifyTwoMessages(1),

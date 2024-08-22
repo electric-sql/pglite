@@ -13,7 +13,7 @@ export default class BufferList {
   }
 
   public getByteLength(initial?: number) {
-    return this.buffers.reduce(function (previous, current) {
+    return this.buffers.reduce((previous, current) => {
       return previous + current.byteLength
     }, initial ?? 0)
   }
@@ -66,7 +66,7 @@ export default class BufferList {
     }
     const result = new ArrayBuffer(length)
     let index = 0
-    this.buffers.forEach(function (buffer) {
+    this.buffers.forEach((buffer) => {
       new Uint8Array(result).set(new Uint8Array(buffer), index)
       index += buffer.byteLength
     })

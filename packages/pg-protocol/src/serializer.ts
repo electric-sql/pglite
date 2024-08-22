@@ -49,10 +49,10 @@ const password = (password: string): ArrayBuffer => {
   return writer.addCString(password).flush(code.startup)
 }
 
-const sendSASLInitialResponseMessage = function (
+const sendSASLInitialResponseMessage = (
   mechanism: string,
   initialResponse: string,
-): ArrayBuffer {
+): ArrayBuffer => {
   // 0x70 = 'p'
   writer
     .addCString(mechanism)
@@ -62,9 +62,7 @@ const sendSASLInitialResponseMessage = function (
   return writer.flush(code.startup)
 }
 
-const sendSCRAMClientFinalMessage = function (
-  additionalData: string,
-): ArrayBuffer {
+const sendSCRAMClientFinalMessage = (additionalData: string): ArrayBuffer => {
   return writer.addString(additionalData).flush(code.startup)
 }
 
@@ -129,10 +127,7 @@ const enum ParamType {
   BINARY = 1,
 }
 
-const writeValues = function (
-  values: LegalValue[],
-  valueMapper?: ValueMapper,
-): void {
+const writeValues = (values: LegalValue[], valueMapper?: ValueMapper): void => {
   for (let i = 0; i < values.length; i++) {
     const mappedVal = valueMapper ? valueMapper(values[i], i) : values[i]
     if (mappedVal === null) {

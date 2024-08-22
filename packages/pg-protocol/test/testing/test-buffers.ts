@@ -3,26 +3,26 @@ import { Field } from '../../src/messages'
 import BufferList from './buffer-list'
 
 const buffers = {
-  readyForQuery: function () {
+  readyForQuery: () => {
     return new BufferList().add(new TextEncoder().encode('I')).join(true, 'Z')
   },
 
-  authenticationOk: function () {
+  authenticationOk: () => {
     return new BufferList().addInt32(0).join(true, 'R')
   },
 
-  authenticationCleartextPassword: function () {
+  authenticationCleartextPassword: () => {
     return new BufferList().addInt32(3).join(true, 'R')
   },
 
-  authenticationMD5Password: function () {
+  authenticationMD5Password: () => {
     return new BufferList()
       .addInt32(5)
       .add(new Uint8Array([1, 2, 3, 4]).buffer)
       .join(true, 'R')
   },
 
-  authenticationSASL: function () {
+  authenticationSASL: () => {
     return new BufferList()
       .addInt32(10)
       .addCString('SCRAM-SHA-256')
@@ -30,34 +30,34 @@ const buffers = {
       .join(true, 'R')
   },
 
-  authenticationSASLContinue: function () {
+  authenticationSASLContinue: () => {
     return new BufferList().addInt32(11).addString('data').join(true, 'R')
   },
 
-  authenticationSASLFinal: function () {
+  authenticationSASLFinal: () => {
     return new BufferList().addInt32(12).addString('data').join(true, 'R')
   },
 
-  parameterStatus: function (name: string, value: string) {
+  parameterStatus: (name: string, value: string) => {
     return new BufferList().addCString(name).addCString(value).join(true, 'S')
   },
 
-  backendKeyData: function (processID: number, secretKey: number) {
+  backendKeyData: (processID: number, secretKey: number) => {
     return new BufferList()
       .addInt32(processID)
       .addInt32(secretKey)
       .join(true, 'K')
   },
 
-  commandComplete: function (string: string) {
+  commandComplete: (string: string) => {
     return new BufferList().addCString(string).join(true, 'C')
   },
 
-  rowDescription: function (fields: Field[]) {
+  rowDescription: (fields: Field[]) => {
     fields = fields ?? []
     const buf = new BufferList()
     buf.addInt16(fields.length)
-    fields.forEach(function (field) {
+    fields.forEach((field) => {
       buf
         .addCString(field.name)
         .addInt32(field.tableID)
@@ -70,21 +70,21 @@ const buffers = {
     return buf.join(true, 'T')
   },
 
-  parameterDescription: function (dataTypeIDs: number[]) {
+  parameterDescription: (dataTypeIDs: number[]) => {
     dataTypeIDs = dataTypeIDs ?? []
     const buf = new BufferList()
     buf.addInt16(dataTypeIDs.length)
-    dataTypeIDs.forEach(function (dataTypeID) {
+    dataTypeIDs.forEach((dataTypeID) => {
       buf.addInt32(dataTypeID)
     })
     return buf.join(true, 't')
   },
 
-  dataRow: function (columns: (string | null)[]) {
+  dataRow: (columns: (string | null)[]) => {
     columns = columns ?? []
     const buf = new BufferList()
     buf.addInt16(columns.length)
-    columns.forEach(function (col) {
+    columns.forEach((col) => {
       if (col === null) {
         buf.addInt32(-1)
       } else {
@@ -96,15 +96,15 @@ const buffers = {
     return buf.join(true, 'D')
   },
 
-  error: function (fields: { type: string; value: string }[]) {
+  error: (fields: { type: string; value: string }[]) => {
     return buffers.errorOrNotice(fields).join(true, 'E')
   },
 
-  notice: function (fields: { type: string; value: string }[]) {
+  notice: (fields: { type: string; value: string }[]) => {
     return buffers.errorOrNotice(fields).join(true, 'N')
   },
 
-  errorOrNotice: function (fields: { type: string; value: string }[]) {
+  errorOrNotice: (fields: { type: string; value: string }[]) => {
     fields = fields ?? []
     const buf = new BufferList()
     fields.forEach((field) => {
@@ -114,15 +114,15 @@ const buffers = {
     return buf.add(new Uint8Array([0]).buffer) // terminator
   },
 
-  parseComplete: function () {
+  parseComplete: () => {
     return new BufferList().join(true, '1')
   },
 
-  bindComplete: function () {
+  bindComplete: () => {
     return new BufferList().join(true, '2')
   },
 
-  notification: function (id: number, channel: string, payload: string) {
+  notification: (id: number, channel: string, payload: string) => {
     return new BufferList()
       .addInt32(id)
       .addCString(channel)
@@ -130,19 +130,19 @@ const buffers = {
       .join(true, 'A')
   },
 
-  emptyQuery: function () {
+  emptyQuery: () => {
     return new BufferList().join(true, 'I')
   },
 
-  portalSuspended: function () {
+  portalSuspended: () => {
     return new BufferList().join(true, 's')
   },
 
-  closeComplete: function () {
+  closeComplete: () => {
     return new BufferList().join(true, '3')
   },
 
-  copyIn: function (cols: number) {
+  copyIn: (cols: number) => {
     const list = new BufferList()
       // text mode
       .addByte(0)
@@ -154,7 +154,7 @@ const buffers = {
     return list.join(true, 'G')
   },
 
-  copyOut: function (cols: number) {
+  copyOut: (cols: number) => {
     const list = new BufferList()
       // text mode
       .addByte(0)
@@ -166,11 +166,11 @@ const buffers = {
     return list.join(true, 'H')
   },
 
-  copyData: function (bytes: ArrayBuffer) {
+  copyData: (bytes: ArrayBuffer) => {
     return new BufferList().add(bytes).join(true, 'd')
   },
 
-  copyDone: function () {
+  copyDone: () => {
     return new BufferList().join(true, 'c')
   },
 }

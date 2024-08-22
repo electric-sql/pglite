@@ -3,7 +3,7 @@ import { serialize } from '../src/serializer'
 import BufferList from './testing/buffer-list'
 
 describe('serializer', () => {
-  it('builds startup message', function () {
+  it('builds startup message', () => {
     const actual = serialize.startup({
       user: 'brian',
       database: 'bang',
@@ -23,18 +23,18 @@ describe('serializer', () => {
     )
   })
 
-  it('builds password message', function () {
+  it('builds password message', () => {
     const actual = serialize.password('!')
     expect(actual).toEqual(new BufferList().addCString('!').join(true, 'p'))
   })
 
-  it('builds request ssl message', function () {
+  it('builds request ssl message', () => {
     const actual = serialize.requestSsl()
     const expected = new BufferList().addInt32(80877103).join(true)
     expect(actual).toEqual(expected)
   })
 
-  it('builds SASLInitialResponseMessage message', function () {
+  it('builds SASLInitialResponseMessage message', () => {
     const actual = serialize.sendSASLInitialResponseMessage('mech', 'data')
     expect(actual).toEqual(
       new BufferList()
@@ -45,19 +45,19 @@ describe('serializer', () => {
     )
   })
 
-  it('builds SCRAMClientFinalMessage message', function () {
+  it('builds SCRAMClientFinalMessage message', () => {
     const actual = serialize.sendSCRAMClientFinalMessage('data')
     expect(actual).toEqual(new BufferList().addString('data').join(true, 'p'))
   })
 
-  it('builds query message', function () {
+  it('builds query message', () => {
     const txt = 'select * from boom'
     const actual = serialize.query(txt)
     expect(actual).toEqual(new BufferList().addCString(txt).join(true, 'Q'))
   })
 
   describe('parse message', () => {
-    it('builds parse message', function () {
+    it('builds parse message', () => {
       const actual = serialize.parse({ text: '!' })
       const expected = new BufferList()
         .addCString('')
@@ -67,7 +67,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expected)
     })
 
-    it('builds parse message with named query', function () {
+    it('builds parse message with named query', () => {
       const actual = serialize.parse({
         name: 'boom',
         text: 'select * from boom',
@@ -81,7 +81,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expected)
     })
 
-    it('with multiple parameters', function () {
+    it('with multiple parameters', () => {
       const actual = serialize.parse({
         name: 'force',
         text: 'select * from bang where name = $1',
@@ -100,8 +100,8 @@ describe('serializer', () => {
     })
   })
 
-  describe('bind messages', function () {
-    it('with no values', function () {
+  describe('bind messages', () => {
+    it('with no values', () => {
       const actual = serialize.bind()
 
       const expectedBuffer = new BufferList()
@@ -114,7 +114,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expectedBuffer)
     })
 
-    it('with named statement, portal, and values', function () {
+    it('with named statement, portal, and values', () => {
       const actual = serialize.bind({
         portal: 'bang',
         statement: 'woo',
@@ -142,7 +142,7 @@ describe('serializer', () => {
     })
   })
 
-  it('with custom valueMapper', function () {
+  it('with custom valueMapper', () => {
     const actual = serialize.bind({
       portal: 'bang',
       statement: 'woo',
@@ -167,7 +167,7 @@ describe('serializer', () => {
     expect(actual).toEqual(expectedBuffer)
   })
 
-  it('with named statement, portal, and buffer value', function () {
+  it('with named statement, portal, and buffer value', () => {
     const actual = serialize.bind({
       portal: 'bang',
       statement: 'woo',
@@ -194,8 +194,8 @@ describe('serializer', () => {
     expect(actual).toEqual(expectedBuffer)
   })
 
-  describe('builds execute message', function () {
-    it('for unamed portal with no row limit', function () {
+  describe('builds execute message', () => {
+    it('for unamed portal with no row limit', () => {
       const actual = serialize.execute()
       const expectedBuffer = new BufferList()
         .addCString('')
@@ -204,7 +204,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expectedBuffer)
     })
 
-    it('for named portal with row limit', function () {
+    it('for named portal with row limit', () => {
       const actual = serialize.execute({
         portal: 'my favorite portal',
         rows: 100,
@@ -217,26 +217,26 @@ describe('serializer', () => {
     })
   })
 
-  it('builds flush command', function () {
+  it('builds flush command', () => {
     const actual = serialize.flush()
     const expected = new BufferList().join(true, 'H')
     expect(actual).toEqual(expected)
   })
 
-  it('builds sync command', function () {
+  it('builds sync command', () => {
     const actual = serialize.sync()
     const expected = new BufferList().join(true, 'S')
     expect(actual).toEqual(expected)
   })
 
-  it('builds end command', function () {
+  it('builds end command', () => {
     const actual = serialize.end()
     const expected = new Uint8Array([0x58, 0, 0, 0, 4]).buffer
     expect(actual).toEqual(expected)
   })
 
-  describe('builds describe command', function () {
-    it('describe statement', function () {
+  describe('builds describe command', () => {
+    it('describe statement', () => {
       const actual = serialize.describe({ type: 'S', name: 'bang' })
       const expected = new BufferList()
         .addChar('S')
@@ -245,7 +245,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expected)
     })
 
-    it('describe unnamed portal', function () {
+    it('describe unnamed portal', () => {
       const actual = serialize.describe({ type: 'P' })
       const expected = new BufferList()
         .addChar('P')
@@ -255,8 +255,8 @@ describe('serializer', () => {
     })
   })
 
-  describe('builds close command', function () {
-    it('describe statement', function () {
+  describe('builds close command', () => {
+    it('describe statement', () => {
       const actual = serialize.close({ type: 'S', name: 'bang' })
       const expected = new BufferList()
         .addChar('S')
@@ -265,7 +265,7 @@ describe('serializer', () => {
       expect(actual).toEqual(expected)
     })
 
-    it('describe unnamed portal', function () {
+    it('describe unnamed portal', () => {
       const actual = serialize.close({ type: 'P' })
       const expected = new BufferList()
         .addChar('P')
@@ -275,7 +275,7 @@ describe('serializer', () => {
     })
   })
 
-  describe('copy messages', function () {
+  describe('copy messages', () => {
     it('builds copyFromChunk', () => {
       const actual = serialize.copyData(new Uint8Array([1, 2, 3]))
       const expected = new BufferList()
