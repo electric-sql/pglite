@@ -15,7 +15,7 @@ export class Writer {
     return new DataView(new ArrayBuffer(size))
   }
 
-  private ensure(size: number): void {
+  #ensure(size: number): void {
     const remaining = this.#bufferView.byteLength - this.#offset
     if (remaining < size) {
       const oldBuffer = this.#bufferView.buffer
@@ -28,20 +28,14 @@ export class Writer {
   }
 
   public addInt32(num: number): Writer {
-    this.ensure(4)
-    // this.buffer[this.#offset++] = (num >>> 24) & 0xff
-    // this.buffer[this.#offset++] = (num >>> 16) & 0xff
-    // this.buffer[this.#offset++] = (num >>> 8) & 0xff
-    // this.buffer[this.#offset++] = (num >>> 0) & 0xff
+    this.#ensure(4)
     this.#bufferView.setInt32(this.#offset, num, this.#littleEndian)
     this.#offset += 4
     return this
   }
 
   public addInt16(num: number): Writer {
-    this.ensure(2)
-    // this.buffer[this.#offset++] = (num >>> 8) & 0xff
-    // this.buffer[this.#offset++] = (num >>> 0) & 0xff
+    this.#ensure(2)
     this.#bufferView.setInt16(this.#offset, num, this.#littleEndian)
     this.#offset += 2
     return this
@@ -55,7 +49,7 @@ export class Writer {
     }
 
     // set null terminator
-    this.ensure(1)
+    this.#ensure(1)
     this.#bufferView.setUint8(this.#offset, 0)
     this.#offset++
     return this
@@ -63,7 +57,7 @@ export class Writer {
 
   public addString(string: string = ''): Writer {
     const length = byteLengthUtf8(string)
-    this.ensure(length)
+    this.#ensure(length)
     this.#encoder.encodeInto(
       string,
       new Uint8Array(this.#bufferView.buffer, this.#offset),
@@ -73,7 +67,7 @@ export class Writer {
   }
 
   public add(otherBuffer: ArrayBuffer): Writer {
-    this.ensure(otherBuffer.byteLength)
+    this.#ensure(otherBuffer.byteLength)
     new Uint8Array(this.#bufferView.buffer).set(
       new Uint8Array(otherBuffer),
       this.#offset,
@@ -83,7 +77,7 @@ export class Writer {
     return this
   }
 
-  private join(code?: number): ArrayBuffer {
+  #join(code?: number): ArrayBuffer {
     if (code) {
       this.#bufferView.setUint8(this.#headerPosition, code)
       // length is everything in this packet minus the code
@@ -98,7 +92,7 @@ export class Writer {
   }
 
   public flush(code?: number): Uint8Array {
-    const result = this.join(code)
+    const result = this.#join(code)
     this.#offset = 5
     this.#bufferView = this.#allocateBuffer(this.size)
     return new Uint8Array(result)
