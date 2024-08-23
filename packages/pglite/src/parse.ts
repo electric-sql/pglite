@@ -3,7 +3,7 @@ import {
   RowDescriptionMessage,
   DataRowMessage,
   CommandCompleteMessage,
-} from 'pg-protocol/src/messages.js'
+} from '@electric-sql/pg-protocol/messages'
 import type { Results, QueryOptions } from './interface.js'
 import { parseType } from './types.js'
 

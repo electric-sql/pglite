@@ -9,7 +9,7 @@ import type {
   Transaction,
 } from '../interface.js'
 import { uuid } from '../utils.js'
-import type { BackendMessage } from 'pg-protocol/src/messages.js'
+import type { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export type PGliteWorkerOptions = PGliteOptions & {
   meta?: any
