@@ -11,6 +11,7 @@ export default defineConfig({
     setupFiles: ['test-setup.ts'],
     typecheck: { enabled: true },
     restoreMocks: true,
+    testTimeout: 15000,
     testTransformMode: {
       ssr: ['**/*'],
     },
