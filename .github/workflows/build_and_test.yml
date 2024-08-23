@@ -89,6 +89,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps
 
+      - name: Build dependencies
+        run: pnpm --filter "pglite^..." build
+
       - name: Typecheck
         run: pnpm typecheck
 
