@@ -74,32 +74,46 @@ export const copyDone: BackendMessage = {
   length: 4,
 }
 
-export interface AuthenticationOk extends BackendMessage {
-  name: 'authenticationOk'
+export class AuthenticationOk implements BackendMessage {
+  public readonly name = 'authenticationOk'
+  constructor(public readonly length: number) {}
 }
 
-export interface AuthenticationCleartextPassword extends BackendMessage {
-  name: 'authenticationCleartextPassword'
+export class AuthenticationCleartextPassword implements BackendMessage {
+  public readonly name = 'authenticationCleartextPassword'
+  constructor(public readonly length: number) {}
 }
 
-export interface AuthenticationMD5Password extends BackendMessage {
-  name: 'authenticationMD5Password'
-  salt: Uint8Array
+export class AuthenticationMD5Password implements BackendMessage {
+  public readonly name = 'authenticationMD5Password'
+  constructor(
+    public readonly length: number,
+    public readonly salt: Uint8Array,
+  ) {}
 }
 
-export interface AuthenticationSASL extends BackendMessage {
-  name: 'authenticationSASL'
-  mechanisms: string[]
+export class AuthenticationSASL implements BackendMessage {
+  public readonly name = 'authenticationSASL'
+  constructor(
+    public readonly length: number,
+    public readonly mechanisms: string[],
+  ) {}
 }
 
-export interface AuthenticationSASLContinue extends BackendMessage {
-  name: 'authenticationSASLContinue'
-  data: string
+export class AuthenticationSASLContinue implements BackendMessage {
+  public readonly name = 'authenticationSASLContinue'
+  constructor(
+    public readonly length: number,
+    public readonly data: string,
+  ) {}
 }
 
-export interface AuthenticationSASLFinal extends BackendMessage {
-  name: 'authenticationSASLFinal'
-  data: string
+export class AuthenticationSASLFinal implements BackendMessage {
+  public readonly name = 'authenticationSASLFinal'
+  constructor(
+    public readonly length: number,
+    public readonly data: string,
+  ) {}
 }
 
 export type AuthenticationMessage =

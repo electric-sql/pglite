@@ -23,6 +23,12 @@ import {
   MessageName,
   NoticeMessage,
   AuthenticationMessage,
+  AuthenticationOk,
+  AuthenticationCleartextPassword,
+  AuthenticationMD5Password,
+  AuthenticationSASL,
+  AuthenticationSASLContinue,
+  AuthenticationSASLFinal,
 } from './messages'
 import { BufferParameter, Modes } from './types'
 import { BufferReader } from './buffer-reader'
@@ -369,52 +375,36 @@ export class Parser {
     this.#reader.setBuffer(offset, bytes)
     const code = this.#reader.int32()
     switch (code) {
-      case 0: // AuthenticationOk
-        return {
-          name: 'authenticationOk',
-          length,
-        }
-      case 3: // AuthenticationCleartextPassword
-        return {
-          name: 'authenticationCleartextPassword',
-          length,
-        }
+      case 0:
+        return new AuthenticationOk(length)
+      case 3:
+        return new AuthenticationCleartextPassword(length)
 
-      case 5: // AuthenticationMD5Password
-        return {
-          name: 'authenticationMD5Password',
-          length,
-          salt: this.#reader.bytes(4),
-        }
+      case 5:
+        return new AuthenticationMD5Password(length, this.#reader.bytes(4))
 
       case 10: {
-        // AuthenticationSASL
         const mechanisms: string[] = []
         while (true) {
           const mechanism = this.#reader.cstring()
           if (mechanism.length === 0) {
-            return {
-              name: 'authenticationSASL',
-              length,
-              mechanisms: mechanisms,
-            }
+            return new AuthenticationSASL(length, mechanisms)
           }
           mechanisms.push(mechanism)
         }
       }
-      case 11: // AuthenticationSASLContinue
-        return {
-          name: 'authenticationSASLContinue',
+      case 11:
+        return new AuthenticationSASLContinue(
           length,
-          data: this.#reader.string(length - 8),
-        }
+          this.#reader.string(length - 8),
+        )
 
-      case 12: // AuthenticationSASLFinal
-        return {
-          name: 'authenticationSASLFinal',
+      case 12:
+        return new AuthenticationSASLFinal(
           length,
-          data: this.#reader.string(length - 8),
-        }
+          this.#reader.string(length - 8),
+        )
+
       default:
         throw new Error('Unknown authenticationOk message type ' + code)
     }
