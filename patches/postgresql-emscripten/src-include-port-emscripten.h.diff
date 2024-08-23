@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/port/emscripten.h
-+++ postgresql-16.3-wasm/src/include/port/emscripten.h
+--- postgresql/src/include/port/emscripten.h
++++ postgresql-wasm/src/include/port/emscripten.h
 @@ -0,0 +1,329 @@
 +/* src/include/port/emscripten.h */
 +

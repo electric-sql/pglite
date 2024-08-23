@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/Makefile
-+++ postgresql-16.3-wasm/src/backend/Makefile
+--- postgresql/src/backend/Makefile
++++ postgresql-wasm/src/backend/Makefile
 @@ -65,7 +65,7 @@
  ifneq ($(PORTNAME), aix)
  

@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/tcop/utility.c
-+++ postgresql-16.3-wasm/src/backend/tcop/utility.c
+--- postgresql/src/backend/tcop/utility.c
++++ postgresql-wasm/src/backend/tcop/utility.c
 @@ -811,7 +811,7 @@
  				ListenStmt *stmt = (ListenStmt *) parsetree;
  

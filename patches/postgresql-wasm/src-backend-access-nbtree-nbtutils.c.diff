@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/access/nbtree/nbtutils.c
-+++ postgresql-16.3-wasm/src/backend/access/nbtree/nbtutils.c
+--- postgresql/src/backend/access/nbtree/nbtutils.c
++++ postgresql-wasm/src/backend/access/nbtree/nbtutils.c
 @@ -2732,7 +2732,7 @@
  			break;
  		}

@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/libpq/be-fsstubs.c
-+++ postgresql-16.3-wasm/src/backend/libpq/be-fsstubs.c
+--- postgresql/src/backend/libpq/be-fsstubs.c
++++ postgresql-wasm/src/backend/libpq/be-fsstubs.c
 @@ -150,8 +150,12 @@
   *
   *****************************************************************************/

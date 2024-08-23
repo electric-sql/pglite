@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/bootstrap/bootstrap.h
-+++ postgresql-16.3-wasm/src/include/bootstrap/bootstrap.h
+--- postgresql/src/include/bootstrap/bootstrap.h
++++ postgresql-wasm/src/include/bootstrap/bootstrap.h
 @@ -31,8 +31,11 @@
  extern PGDLLIMPORT Form_pg_attribute attrtypes[MAXATTR];
  extern PGDLLIMPORT int numattr;

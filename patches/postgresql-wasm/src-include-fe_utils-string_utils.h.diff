@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/fe_utils/string_utils.h
-+++ postgresql-16.3-wasm/src/include/fe_utils/string_utils.h
+--- postgresql/src/include/fe_utils/string_utils.h
++++ postgresql-wasm/src/include/fe_utils/string_utils.h
 @@ -19,8 +19,12 @@
  #include "libpq-fe.h"
  #include "pqexpbuffer.h"

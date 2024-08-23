@@ -1,5 +1,5 @@
---- postgresql-16.3/src/bin/initdb/initdb.c
-+++ postgresql-16.3-wasm/src/bin/initdb/initdb.c
+--- postgresql/src/bin/initdb/initdb.c
++++ postgresql-wasm/src/bin/initdb/initdb.c
 @@ -45,7 +45,7 @@
   *
   *-------------------------------------------------------------------------
