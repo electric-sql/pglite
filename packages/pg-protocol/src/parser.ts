@@ -71,7 +71,7 @@ export type MessageCallback = (msg: BackendMessage) => void
 
 export class Parser {
   #bufferView: DataView = new DataView(emptyBuffer)
-  #bufferLength: number = 0
+  #bufferRemainingLength: number = 0
   #bufferOffset: number = 0
   #reader = new BufferReader()
 
@@ -84,7 +84,7 @@ export class Parser {
           )
         : buffer,
     )
-    const bufferFullLength = this.#bufferOffset + this.#bufferLength
+    const bufferFullLength = this.#bufferOffset + this.#bufferRemainingLength
     let offset = this.#bufferOffset
     while (offset + HEADER_LENGTH <= bufferFullLength) {
       // code is 1 byte long - it identifies the message type
@@ -108,25 +108,25 @@ export class Parser {
     if (offset === bufferFullLength) {
       // No more use for the buffer
       this.#bufferView = new DataView(emptyBuffer)
-      this.#bufferLength = 0
+      this.#bufferRemainingLength = 0
       this.#bufferOffset = 0
     } else {
       // Adjust the cursors of remainingBuffer
-      this.#bufferLength = bufferFullLength - offset
+      this.#bufferRemainingLength = bufferFullLength - offset
       this.#bufferOffset = offset
     }
   }
 
   #mergeBuffer(buffer: ArrayBuffer): void {
-    if (this.#bufferLength > 0) {
-      const newLength = this.#bufferLength + buffer.byteLength
+    if (this.#bufferRemainingLength > 0) {
+      const newLength = this.#bufferRemainingLength + buffer.byteLength
       const newFullLength = newLength + this.#bufferOffset
       if (newFullLength > this.#bufferView.byteLength) {
         // We can't concat the new buffer with the remaining one
         let newBuffer: ArrayBuffer
         if (
           newLength <= this.#bufferView.byteLength &&
-          this.#bufferOffset >= this.#bufferLength
+          this.#bufferOffset >= this.#bufferRemainingLength
         ) {
           // We can move the relevant part to the beginning of the buffer instead of allocating a new buffer
           newBuffer = this.#bufferView.buffer
@@ -143,7 +143,7 @@ export class Parser {
           new Uint8Array(
             this.#bufferView.buffer,
             this.#bufferOffset,
-            this.#bufferLength,
+            this.#bufferRemainingLength,
           ),
         )
         this.#bufferView = new DataView(newBuffer)
@@ -153,13 +153,13 @@ export class Parser {
       // Concat the new buffer with the remaining one
       new Uint8Array(this.#bufferView.buffer).set(
         new Uint8Array(buffer),
-        this.#bufferOffset + this.#bufferLength,
+        this.#bufferOffset + this.#bufferRemainingLength,
       )
-      this.#bufferLength = newLength
+      this.#bufferRemainingLength = newLength
     } else {
       this.#bufferView = new DataView(buffer)
       this.#bufferOffset = 0
-      this.#bufferLength = buffer.byteLength
+      this.#bufferRemainingLength = buffer.byteLength
     }
   }
 
