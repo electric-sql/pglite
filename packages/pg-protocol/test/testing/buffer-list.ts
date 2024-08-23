@@ -54,7 +54,7 @@ export default class BufferList {
     return this.add(new Uint8Array([byte]).buffer)
   }
 
-  public join(appendLength?: boolean, char?: string): ArrayBuffer {
+  public join(appendLength?: boolean, char?: string): Uint8Array {
     let length = this.getByteLength()
     if (appendLength) {
       this.addInt32(length + 4, true)
@@ -70,14 +70,14 @@ export default class BufferList {
       new Uint8Array(result).set(new Uint8Array(buffer), index)
       index += buffer.byteLength
     })
-    return result
+    return new Uint8Array(result)
   }
 
-  public static concat(...args: ArrayBuffer[]): ArrayBuffer {
+  public static concat(...args: ArrayBuffer[]): Uint8Array {
     const total = new BufferList()
     for (let i = 0; i < args.length; i++) {
       total.add(args[i])
     }
-    return total.join()
+    return new Uint8Array(total.join())
   }
 }

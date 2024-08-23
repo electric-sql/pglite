@@ -21,7 +21,7 @@ type LegalValue = string | ArrayBuffer | ArrayBufferView | null
 
 const writer = new Writer()
 
-const startup = (opts: Record<string, string>): ArrayBuffer => {
+const startup = (opts: Record<string, string>): Uint8Array => {
   // protocol version
   writer.addInt16(3).addInt16(0)
   for (const key of Object.keys(opts)) {
@@ -38,21 +38,21 @@ const startup = (opts: Record<string, string>): ArrayBuffer => {
   return new Writer().addInt32(length).add(bodyBuffer).flush()
 }
 
-const requestSsl = (): ArrayBuffer => {
+const requestSsl = (): Uint8Array => {
   const bufferView = new DataView(new ArrayBuffer(8))
   bufferView.setInt32(0, 8, false)
   bufferView.setInt32(4, 80877103, false)
-  return bufferView.buffer
+  return new Uint8Array(bufferView.buffer)
 }
 
-const password = (password: string): ArrayBuffer => {
+const password = (password: string): Uint8Array => {
   return writer.addCString(password).flush(code.startup)
 }
 
 const sendSASLInitialResponseMessage = (
   mechanism: string,
   initialResponse: string,
-): ArrayBuffer => {
+): Uint8Array => {
   // 0x70 = 'p'
   writer
     .addCString(mechanism)
@@ -62,11 +62,11 @@ const sendSASLInitialResponseMessage = (
   return writer.flush(code.startup)
 }
 
-const sendSCRAMClientFinalMessage = (additionalData: string): ArrayBuffer => {
+const sendSCRAMClientFinalMessage = (additionalData: string): Uint8Array => {
   return writer.addString(additionalData).flush(code.startup)
 }
 
-const query = (text: string): ArrayBuffer => {
+const query = (text: string): Uint8Array => {
   return writer.addCString(text).flush(code.query)
 }
 
@@ -78,7 +78,7 @@ type ParseOpts = {
 
 const emptyValueArray: LegalValue[] = []
 
-const parse = (query: ParseOpts): ArrayBuffer => {
+const parse = (query: ParseOpts): Uint8Array => {
   // expect something like this:
   // { name: 'queryName',
   //   text: 'select * from blah',
@@ -140,7 +140,10 @@ const writeValues = (values: LegalValue[], valueMapper?: ValueMapper): void => {
       ArrayBuffer.isView(mappedVal)
     ) {
       const buffer = ArrayBuffer.isView(mappedVal)
-        ? mappedVal.buffer
+        ? mappedVal.buffer.slice(
+            mappedVal.byteOffset,
+            mappedVal.byteOffset + mappedVal.byteLength,
+          )
         : mappedVal
       // add the param type (binary) to the writer
       writer.addInt16(ParamType.BINARY)
@@ -156,7 +159,7 @@ const writeValues = (values: LegalValue[], valueMapper?: ValueMapper): void => {
   }
 }
 
-const bind = (config: BindOpts = {}): ArrayBuffer => {
+const bind = (config: BindOpts = {}): Uint8Array => {
   // normalize config
   const portal = config.portal ?? ''
   const statement = config.statement ?? ''
@@ -193,9 +196,9 @@ const emptyExecute = new Uint8Array([
   0x00,
   0x00,
   0x00,
-]).buffer
+])
 
-const execute = (config?: ExecOpts): ArrayBuffer => {
+const execute = (config?: ExecOpts): Uint8Array => {
   // this is the happy path for most queries
   if (!config || (!config.portal && !config.rows)) {
     return emptyExecute
@@ -213,17 +216,17 @@ const execute = (config?: ExecOpts): ArrayBuffer => {
   new TextEncoder().encodeInto(portal, new Uint8Array(bufferView.buffer, 5))
   bufferView.setUint8(portalLength + 5, 0) // null terminate portal cString
   bufferView.setUint32(bufferView.byteLength - 4, rows, false)
-  return bufferView.buffer
+  return new Uint8Array(bufferView.buffer)
 }
 
-const cancel = (processID: number, secretKey: number): ArrayBuffer => {
+const cancel = (processID: number, secretKey: number): Uint8Array => {
   const bufferView = new DataView(new ArrayBuffer(16))
   bufferView.setInt32(0, 16, false)
   bufferView.setInt16(4, 1234, false)
   bufferView.setInt16(6, 5678, false)
   bufferView.setInt32(8, processID, false)
   bufferView.setInt32(12, secretKey, false)
-  return bufferView.buffer
+  return new Uint8Array(bufferView.buffer)
 }
 
 type PortalOpts = {
@@ -231,7 +234,7 @@ type PortalOpts = {
   name?: string
 }
 
-const cstringMessage = (code: code, string: string): ArrayBuffer => {
+const cstringMessage = (code: code, string: string): Uint8Array => {
   const writer = new Writer()
   writer.addCString(string)
   return writer.flush(code)
@@ -240,7 +243,7 @@ const cstringMessage = (code: code, string: string): ArrayBuffer => {
 const emptyDescribePortal = writer.addCString('P').flush(code.describe)
 const emptyDescribeStatement = writer.addCString('S').flush(code.describe)
 
-const describe = (msg: PortalOpts): ArrayBuffer => {
+const describe = (msg: PortalOpts): Uint8Array => {
   return msg.name
     ? cstringMessage(code.describe, `${msg.type}${msg.name ?? ''}`)
     : msg.type === 'P'
@@ -248,21 +251,21 @@ const describe = (msg: PortalOpts): ArrayBuffer => {
       : emptyDescribeStatement
 }
 
-const close = (msg: PortalOpts): ArrayBuffer => {
+const close = (msg: PortalOpts): Uint8Array => {
   const text = `${msg.type}${msg.name ?? ''}`
   return cstringMessage(code.close, text)
 }
 
-const copyData = (chunk: ArrayBuffer): ArrayBuffer => {
+const copyData = (chunk: ArrayBuffer): Uint8Array => {
   return writer.add(chunk).flush(code.copyFromChunk)
 }
 
-const copyFail = (message: string): ArrayBuffer => {
+const copyFail = (message: string): Uint8Array => {
   return cstringMessage(code.copyFail, message)
 }
 
-const codeOnlyBuffer = (code: code): ArrayBuffer =>
-  new Uint8Array([code, 0x00, 0x00, 0x00, 0x04]).buffer
+const codeOnlyBuffer = (code: code): Uint8Array =>
+  new Uint8Array([code, 0x00, 0x00, 0x00, 0x04])
 
 const flushBuffer = codeOnlyBuffer(code.flush)
 const syncBuffer = codeOnlyBuffer(code.sync)

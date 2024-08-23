@@ -3,10 +3,7 @@
   "version": "0.0.1",
   "description": "The postgres client/server binary protocol, implemented in TypeScript",
   "type": "module",
-  "private": false,
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "keywords": [
     "postgres",
     "sql",
@@ -35,6 +32,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./messages": {
+      "types": "./dist/messages.d.ts",
+      "import": "./dist/messages.js",
+      "require": "./dist/messages.cjs"
     }
   },
   "files": [

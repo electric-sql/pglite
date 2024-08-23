@@ -23,15 +23,15 @@ import {
   MessageName,
   NoticeMessage,
   AuthenticationMessage,
-  Modes,
 } from './messages'
+import { BufferParameter, Modes } from './types'
 import { BufferReader } from './buffer-reader'
 
 // every message is prefixed with a single bye
-const CODE_LENGTH = 1
+const CODE_LENGTH = 1 as const
 // every message has an int32 length which includes itself but does
 // NOT include the code in the length
-const LEN_LENGTH = 4
+const LEN_LENGTH = 4 as const
 
 const HEADER_LENGTH = CODE_LENGTH + LEN_LENGTH
 
@@ -75,8 +75,15 @@ export class Parser {
   private bufferOffset: number = 0
   private reader = new BufferReader()
 
-  public parse(buffer: ArrayBuffer, callback: MessageCallback) {
-    this.mergeBuffer(buffer)
+  public parse(buffer: BufferParameter, callback: MessageCallback) {
+    this.mergeBuffer(
+      ArrayBuffer.isView(buffer)
+        ? buffer.buffer.slice(
+            buffer.byteOffset,
+            buffer.byteOffset + buffer.byteLength,
+          )
+        : buffer,
+    )
     const bufferFullLength = this.bufferOffset + this.bufferLength
     let offset = this.bufferOffset
     while (offset + HEADER_LENGTH <= bufferFullLength) {
@@ -238,7 +245,7 @@ export class Parser {
 
   private parseCopyData(offset: number, length: number, bytes: ArrayBuffer) {
     const chunk = bytes.slice(offset, offset + (length - 4))
-    return new CopyDataMessage(length, chunk)
+    return new CopyDataMessage(length, new Uint8Array(chunk))
   }
 
   private parseCopyInMessage(

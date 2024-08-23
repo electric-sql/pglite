@@ -1,9 +1,4 @@
-export const Modes = {
-  text: 0,
-  binary: 1,
-} as const
-
-export type Mode = (typeof Modes)[keyof typeof Modes]
+import { Mode } from './types'
 
 export type MessageName =
   | 'parseComplete'
@@ -89,7 +84,7 @@ export interface AuthenticationCleartextPassword extends BackendMessage {
 
 export interface AuthenticationMD5Password extends BackendMessage {
   name: 'authenticationMD5Password'
-  salt: ArrayBuffer
+  salt: Uint8Array
 }
 
 export interface AuthenticationSASL extends BackendMessage {
@@ -165,7 +160,7 @@ export class CopyDataMessage implements BackendMessage {
   public readonly name = 'copyData'
   constructor(
     public readonly length: number,
-    public readonly chunk: ArrayBuffer,
+    public readonly chunk: Uint8Array,
   ) {}
 }
 

@@ -97,10 +97,10 @@ export class Writer {
     return this.#bufferView.buffer.slice(code ? 0 : 5, this.#offset)
   }
 
-  public flush(code?: number): ArrayBuffer {
+  public flush(code?: number): Uint8Array {
     const result = this.join(code)
     this.#offset = 5
     this.#bufferView = this.#allocateBuffer(this.size)
-    return result
+    return new Uint8Array(result)
   }
 }

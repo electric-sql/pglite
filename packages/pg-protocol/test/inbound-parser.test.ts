@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest'
 import buffers from './testing/test-buffers'
 import BufferList from './testing/buffer-list'
 import { Parser } from '../src'
+import { Modes } from '../src/types'
 import {
   AuthenticationMessage,
   BackendKeyDataMessage,
   BackendMessage,
   CommandCompleteMessage,
   DataRowMessage,
-  Modes,
   NotificationResponseMessage,
   ParameterDescriptionMessage,
   ParameterStatusMessage,
@@ -196,7 +196,7 @@ const expectedPlainPasswordMessage: AuthenticationMessage = {
 const expectedMD5PasswordMessage: AuthenticationMessage = {
   name: 'authenticationMD5Password',
   length: 12,
-  salt: new Uint8Array([1, 2, 3, 4]).buffer,
+  salt: new Uint8Array([1, 2, 3, 4]),
 }
 
 const expectedSASLMessage: AuthenticationMessage = {
@@ -246,19 +246,19 @@ const parseBuffers = async (
   return msgs
 }
 
-function concatBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+function concatBuffers(views: ArrayBufferView[]): Uint8Array {
   let length = 0
-  for (const b of buffers) length += b.byteLength
+  for (const v of views) length += v.byteLength
 
   const buf = new Uint8Array(length)
   let offset = 0
-  for (const b of buffers) {
-    const uint8view = new Uint8Array(b)
+  for (const v of views) {
+    const uint8view = new Uint8Array(v.buffer)
     buf.set(uint8view, offset)
     offset += uint8view.byteLength
   }
 
-  return buf.buffer
+  return buf
 }
 
 describe('PgPacketStream', () => {
@@ -273,7 +273,7 @@ describe('PgPacketStream', () => {
   // and adds a test which is deterministic, rather than relying on network packet chunking
   const extendedSASLContinueBuffer = concatBuffers([
     SASLContinueBuffer,
-    new Uint8Array([1, 2, 3, 4]).buffer,
+    new Uint8Array([1, 2, 3, 4]),
   ])
   testForMessage(extendedSASLContinueBuffer, expectedSASLContinueMessage)
 
@@ -284,7 +284,7 @@ describe('PgPacketStream', () => {
   // and adds a test which is deterministic, rather than relying on network packet chunking
   const extendedSASLFinalBuffer = concatBuffers([
     SASLFinalBuffer,
-    new Uint8Array([1, 2, 4, 5]).buffer,
+    new Uint8Array([1, 2, 4, 5]),
   ])
   testForMessage(extendedSASLFinalBuffer, expectedSASLFinalMessage)
 
@@ -455,7 +455,7 @@ describe('PgPacketStream', () => {
   })
 
   describe('parses replication start message', () => {
-    testForMessage(new Uint8Array([0x57, 0x00, 0x00, 0x00, 0x04]).buffer, {
+    testForMessage(new Uint8Array([0x57, 0x00, 0x00, 0x00, 0x04]), {
       name: 'replicationStart',
       length: 4,
     })
@@ -495,10 +495,10 @@ describe('PgPacketStream', () => {
       length: 4,
     })
 
-    testForMessage(buffers.copyData(new Uint8Array([5, 6, 7]).buffer), {
+    testForMessage(buffers.copyData(new Uint8Array([5, 6, 7])), {
       name: 'copyData',
       length: 7,
-      chunk: new Uint8Array([5, 6, 7]).buffer,
+      chunk: new Uint8Array([5, 6, 7]),
     })
   })
 
@@ -506,7 +506,8 @@ describe('PgPacketStream', () => {
   // tcp packets anywhere, we need to make sure we can parse every single
   // split on a tcp message
   describe('split buffer, single message parsing', () => {
-    const fullBuffer = buffers.dataRow([null, 'bang', 'zug zug', null, '!'])
+    const fullBufferView = buffers.dataRow([null, 'bang', 'zug zug', null, '!'])
+    const fullBuffer = fullBufferView.buffer
 
     it('parses when full buffer comes in', async () => {
       const messages = await parseBuffers([fullBuffer])
@@ -627,6 +628,31 @@ describe('PgPacketStream', () => {
           splitAndVerifyTwoMessages(8),
           splitAndVerifyTwoMessages(1),
         ])
+      })
+    })
+  })
+
+  describe('buffer view handling', () => {
+    it('should only read buffer section specified by view', async () => {
+      const originalMessageBufferView = buffers.dataRow(['bang'])
+      const largerView = concatBuffers([
+        new Uint8Array([1, 2, 3, 4]),
+        originalMessageBufferView,
+        new Uint8Array([5, 6, 7, 8]),
+      ])
+
+      const fullBufferView = new Uint8Array(
+        largerView.buffer,
+        4,
+        originalMessageBufferView.byteLength,
+      )
+      const messages = await parseBuffers([fullBufferView])
+      expect(messages.length).toBe(1)
+      expect(messages[0]).toEqual({
+        name: 'dataRow',
+        fieldCount: 1,
+        length: originalMessageBufferView.byteLength - 1,
+        fields: ['bang'],
       })
     })
   })

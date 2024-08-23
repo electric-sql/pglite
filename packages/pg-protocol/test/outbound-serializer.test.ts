@@ -231,7 +231,7 @@ describe('serializer', () => {
 
   it('builds end command', () => {
     const actual = serialize.end()
-    const expected = new Uint8Array([0x58, 0, 0, 0, 4]).buffer
+    const expected = new Uint8Array([0x58, 0, 0, 0, 4])
     expect(actual).toEqual(expected)
   })
 

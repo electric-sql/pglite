@@ -66,13 +66,13 @@ export class BufferReader {
     return result
   }
 
-  public bytes(length: number): ArrayBuffer {
+  public bytes(length: number): Uint8Array {
     // const result = this.buffer.slice(this.#offset, this.#offset + length)
     const result = this.#bufferView.buffer.slice(
       this.#offset,
       this.#offset + length,
     )
     this.#offset += length
-    return result
+    return new Uint8Array(result)
   }
 }
