@@ -64,12 +64,12 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
         stream,
         aborter,
       })
-      const unsubsribe = () => {
+      const unsubscribe = () => {
         stream.unsubscribeAll()
         aborter.abort()
       }
       return {
-        unsubsribe,
+        unsubscribe,
         get isUpToDate() {
           return stream.isUpToDate
         },
