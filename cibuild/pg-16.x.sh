@@ -1,20 +1,20 @@
-ARCHIVE=postgresql-${PGVERSION}.tar.gz
+ARCHIVE=postgresql-${PG_VERSION}.tar.gz
 
-if echo ${PGVERSION} | grep -q 16.5
+if echo ${PG_VERSION} | grep -q 16.5
 then
     PG_PREREL=true
     ARCHIVE_URL=https://github.com/postgres/postgres/archive/refs/tags/REL_16_5.tar.gz
 else
     PG_PREREL=false
-    ARCHIVE_URL=https://ftp.postgresql.org/pub/source/v${PGVERSION}/${ARCHIVE}
+    ARCHIVE_URL=https://ftp.postgresql.org/pub/source/v${PG_VERSION}/${ARCHIVE}
 fi
 
 
-if [ -f postgresql/postgresql-${PGVERSION}.patched ]
+if [ -f postgresql/postgresql-${PG_VERSION}.patched ]
 then
     echo "
 
-    Version ${PGVERSION} already selected and patch stage already done
+    Version ${PG_VERSION} already selected and patch stage already done
 
 "
 else
@@ -24,10 +24,10 @@ else
 
     if $PG_PREREL
     then
-        ln -sf $(pwd)/postgres-REL_16_? postgresql-${PGVERSION}
+        ln -sf $(pwd)/postgres-REL_16_? postgresql-${PG_VERSION}
     fi
 
-    if pushd postgresql-${PGVERSION}
+    if pushd postgresql-${PG_VERSION}
     then
             echo
         > ./src/template/emscripten
@@ -35,15 +35,15 @@ else
         > ./src/makefiles/Makefile.emscripten
         for patchdir in \
             postgresql-emscripten \
-            postgresql-wasm postgresql-wasm-${PGVERSION} \
-            postgresql-pglite postgresql-pglite-${PGVERSION}
+            postgresql-wasm postgresql-wasm-${PG_VERSION} \
+            postgresql-pglite postgresql-pglite-${PG_VERSION}
         do
             if [ -d ../patches/$patchdir ]
             then
                 cat ../patches/$patchdir/*.diff | patch -p1 || exit 24
             fi
         done
-        touch postgresql-${PGVERSION}.patched
+        touch postgresql-${PG_VERSION}.patched
         popd
     fi
 
@@ -51,11 +51,11 @@ else
     # release only use symlink
 
     rm postgresql 2>/dev/null
-    ln -s postgresql-${PGVERSION} postgresql
+    ln -s postgresql-${PG_VERSION} postgresql
 
 fi
 
-export PGSRC=$(realpath postgresql-${PGVERSION})
+export PGSRC=$(realpath postgresql-${PG_VERSION})
 
 if [ -f ${PGROOT}/pg.installed ]
 then

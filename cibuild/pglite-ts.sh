@@ -22,7 +22,7 @@ pushd packages/pglite
     pnpm pack || exit 31
     packed=$(echo -n electric-sql-pglite-*.tgz)
 
-    mv $packed /tmp/sdk/pg${PGVERSION}-${packed}
+    mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}
 
     # for repl demo
     mkdir -p /tmp/web/pglite
