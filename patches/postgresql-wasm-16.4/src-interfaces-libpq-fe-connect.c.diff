@@ -1,5 +1,5 @@
---- postgresql-16.3/src/interfaces/libpq/fe-connect.c
-+++ postgresql-16.3-wasm/src/interfaces/libpq/fe-connect.c
+--- postgresql/src/interfaces/libpq/fe-connect.c
++++ postgresql-wasm/src/interfaces/libpq/fe-connect.c
 @@ -1932,6 +1932,7 @@
  static int
  connectNoDelay(PGconn *conn)

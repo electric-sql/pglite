@@ -1,13 +1,16 @@
 --- postgresql/src/include/port/emscripten.h
 +++ postgresql-wasm/src/include/port/emscripten.h
-@@ -0,0 +1,329 @@
+@@ -0,0 +1,334 @@
 +/* src/include/port/emscripten.h */
 +
 +#ifndef I_EMSCRIPTEN
 +#define I_EMSCRIPTEN
++#include "/tmp/pgdebug.h"
 +#define PGDLLIMPORT
++
 +// #define COPY_INTERNAL
 +#define COPY_OFF
++
 +#include <stdbool.h>
 +extern PGDLLIMPORT bool fe_utils_quote_all_identifiers;
 +
@@ -35,7 +38,9 @@
 +#define PLATFORM_DEFAULT_WAL_SYNC_METHOD	WAL_SYNC_METHOD_FDATASYNC
 +
 +// force the name used with --single
++#if !defined(WASM_USERNAME)
 +#define WASM_USERNAME "postgres"
++#endif
 +
 +
 +#define BOOT_END_MARK "build indices"
@@ -55,13 +60,6 @@
 +        "-c", "shared_buffers=128MB"
 +
 +
-+// socket emulation via file
-+#define PGS_ILOCK "/tmp/.s.PGSQL.5432.lock.in"
-+#define PGS_IN "/tmp/.s.PGSQL.5432.in"
-+
-+#define PGS_OLOCK "/tmp/.s.PGSQL.5432.lock.out"
-+#define PGS_OUT "/tmp/.s.PGSQL.5432.out"
-+
 +
 +#if defined(PREFIX)
 +#define em_xstr(s) em_str(s)
@@ -74,6 +72,14 @@
 +#   define PG_MAIN_INCLUDE "/data/git/pg/pg_main.c"
 +#   define PG_PLUGIN_INCLUDE "/data/git/pg/pg_plugin.h"
 +#endif
++
++// socket emulation via file, need to go in PGDATA for nodefs mount in web mode
++#define PGS_ILOCK "/tmp/pglite/base/.s.PGSQL.5432.lock.in"
++#define PGS_IN    "/tmp/pglite/base/.s.PGSQL.5432.in"
++#define PGS_OLOCK "/tmp/pglite/base/.s.PGSQL.5432.lock.out"
++#define PGS_OUT   "/tmp/pglite/base/.s.PGSQL.5432.out"
++
++// MEMFS ok files
 +
 +#define IDB_PIPE_FILE "/tmp/initdb.txt"
 +#define IDB_PIPE_BOOT "/tmp/initdb.boot.txt"
@@ -232,14 +238,13 @@
 +    const char *locale = "/locale";
 +    char *localefile = malloc( strlen(prefix) + strlen(locale) + 1 );
 +    localefile = strcat(prefix,locale);
-+    fprintf(stderr, "# 204:%s: OpenPipeStream(command=%s, mode=%s)\n#\tredirected to %s\n", __FILE__, command, mode, localefile);
++    //fprintf(stderr, "# 232:%s: OpenPipeStream(command=%s, mode=%s)\n#\tredirected to %s\n", __FILE__, command, mode, localefile);
 +    if (localefile) {
 +        if (access(localefile, F_OK) != 0) {
 +            FILE *fakeloc = fopen(localefile, "w");
 +            {
 +                const char* encoding = getenv("PGCLIENTENCODING");
 +                fprintf(fakeloc, "C\nC.%s\nPOSIX\n%s\n", encoding, encoding);
-+                puts("#211 locale created");
 +            }
 +            if (fakeloc)
 +                fclose(fakeloc);
