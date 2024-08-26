@@ -19,7 +19,7 @@
 +#define IDB_PIPE_FILE "/tmp/initdb.txt"
 +#define IDB_PIPE_BOOT "/tmp/initdb.boot.txt"
 +#define IDB_PIPE_SINGLE "/tmp/initdb.single.txt"
-+#define PG_DEBUG_HEADER "pg_debug.h"
++#define PG_DEBUG_HEADER <pg_debug.h>
 +
 +
 +#if defined(PREFIX)
