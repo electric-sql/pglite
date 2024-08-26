@@ -1,5 +1,14 @@
 # @electric-sql/pglite-sync
 
+## 0.2.4
+
+### Patch Changes
+
+- 76d1908: Fix typo in `unsubscribe` API (was previously `unsuscribe`).
+- e9a2677: Change `action` header to `operation` to match the Electric API.
+- Updated dependencies [113aa56]
+  - @electric-sql/pglite@0.2.4
+
 ## 0.2.3
 
 ### Patch Changes
