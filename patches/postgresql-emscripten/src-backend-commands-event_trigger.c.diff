@@ -1,0 +1,67 @@
+--- postgresql/src/backend/commands/event_trigger.c
++++ postgresql-wasm/src/backend/commands/event_trigger.c
+@@ -643,6 +643,8 @@ EventTriggerDDLCommandStart(Node *parsetree)
+ 	List	   *runlist;
+ 	EventTriggerData trigdata;
+ 
++#if defined(__EMSCRIPTEN__)
++#else
+ 	/*
+ 	 * Event Triggers are completely disabled in standalone mode.  There are
+ 	 * (at least) two reasons for this:
+@@ -661,6 +663,7 @@ EventTriggerDDLCommandStart(Node *parsetree)
+ 	 */
+ 	if (!IsUnderPostmaster)
+ 		return;
++#endif
+ 
+ 	runlist = EventTriggerCommonSetup(parsetree,
+ 									  EVT_DDLCommandStart,
+@@ -691,12 +694,15 @@ EventTriggerDDLCommandEnd(Node *parsetree)
+ 	List	   *runlist;
+ 	EventTriggerData trigdata;
+ 
++#if defined(__EMSCRIPTEN__)
++#else
+ 	/*
+ 	 * See EventTriggerDDLCommandStart for a discussion about why event
+ 	 * triggers are disabled in single user mode.
+ 	 */
+ 	if (!IsUnderPostmaster)
+ 		return;
++#endif
+ 
+ 	/*
+ 	 * Also do nothing if our state isn't set up, which it won't be if there
+@@ -739,12 +745,15 @@ EventTriggerSQLDrop(Node *parsetree)
+ 	List	   *runlist;
+ 	EventTriggerData trigdata;
+ 
++#if defined(__EMSCRIPTEN__)
++#else
+ 	/*
+ 	 * See EventTriggerDDLCommandStart for a discussion about why event
+ 	 * triggers are disabled in single user mode.
+ 	 */
+ 	if (!IsUnderPostmaster)
+ 		return;
++#endif
+ 
+ 	/*
+ 	 * Use current state to determine whether this event fires at all.  If
+@@ -810,12 +819,15 @@ EventTriggerTableRewrite(Node *parsetree, Oid tableOid, int reason)
+ 	List	   *runlist;
+ 	EventTriggerData trigdata;
+ 
++#if defined(__EMSCRIPTEN__)
++#else
+ 	/*
+ 	 * See EventTriggerDDLCommandStart for a discussion about why event
+ 	 * triggers are disabled in single user mode.
+ 	 */
+ 	if (!IsUnderPostmaster)
+ 		return;
++#endif
+ 
+ 	/*
+ 	 * Also do nothing if our state isn't set up, which it won't be if there
