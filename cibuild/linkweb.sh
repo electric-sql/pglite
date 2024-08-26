@@ -71,7 +71,7 @@ pushd src/backend
      ../../src/timezone/strftime.o \
      ../../pg_initdb.o"
 
-    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2 -lz"
+    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2 -sUSE_ZLIB"
 
     if $DEBUG
     then
@@ -148,13 +148,20 @@ END
 
     if $OBJDUMP
     then
+    echo "
+
+    Linking to : $PG_L
+
+
+"
+
         # link with MAIN_MODULE=1 ( ie export all ) and extract all sym.
-        . ${WORKSPACE}/cibuild/linkexport.sh
+        . ${WORKSPACE}/cibuild/linkexport.sh || exit 158
 
         if [ -f ${WORKSPACE}/patches/exports/pgcore ]
         then
             echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports/pgcore) core symbols"
-            . ${WORKSPACE}/cibuild/linkimports.sh
+            . ${WORKSPACE}/cibuild/linkimports.sh || exit 163
 
         else
             echo "

@@ -5,6 +5,7 @@
 export CMA_MB=${CMA_MB:-64}
 
 export CI=${CI:-false}
+
 if $CI
 then
     . .buildconfig
