@@ -71,7 +71,7 @@ pushd src/backend
      ../../src/timezone/strftime.o \
      ../../pg_initdb.o"
 
-    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2"
+    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2 -lz"
 
     if $DEBUG
     then
