@@ -1,4 +1,4 @@
-#include "/tmp/pgdebug.h"
+#include PG_DEBUG_HEADER
 
 #define IDB_OK  0b11111110
 #define IDB_FAILED  0b0001
