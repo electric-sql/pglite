@@ -40,7 +40,7 @@ else
     XSLT="--with-libxslt"
 fi
 
-# xml does not fit with --without-zlib
+# --with-libxml does not fit with --without-zlib
 
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
    XML2_CONFIG=$PREFIX/bin/xml2-config \
