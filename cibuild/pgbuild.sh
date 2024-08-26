@@ -47,7 +47,7 @@ fi
  --cache-file=${PGROOT}/config.cache.emsdk \
  --disable-spinlocks \
  --disable-largefile --without-llvm \
- --without-pam --disable-largefile --without-zlib --with-openssl=no \
+ --without-pam --disable-largefile --with-openssl=no \
  --without-readline --without-icu --with-libxml ${XSLT} --with-uuid=ossp \
  ${PGDEBUG}"
 
