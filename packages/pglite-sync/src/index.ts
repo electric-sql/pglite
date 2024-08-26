@@ -153,10 +153,10 @@ async function applyMessageToTable({
   primaryKey,
   debug,
 }: ApplyMessageToTableOptions) {
-  if (!(rawMessage as any).headers.action) return
+  if (!(rawMessage as any).headers.operation) return
   const message = rawMessage as ChangeMessage<any>
   const data = mapColumns ? doMapColumns(mapColumns, message) : message.value
-  if (message.headers.action === 'insert') {
+  if (message.headers.operation === 'insert') {
     if (debug) {
       console.log('inserting', data)
     }
@@ -170,7 +170,7 @@ async function applyMessageToTable({
       `,
       columns.map((column) => data[column]),
     )
-  } else if (message.headers.action === 'update') {
+  } else if (message.headers.operation === 'update') {
     if (debug) {
       console.log('updating', data)
     }
@@ -193,7 +193,7 @@ async function applyMessageToTable({
         ...primaryKey.map((column) => data[column]),
       ],
     )
-  } else if (message.headers.action === 'delete') {
+  } else if (message.headers.operation === 'delete') {
     if (debug) {
       console.log('deleting', data)
     }
