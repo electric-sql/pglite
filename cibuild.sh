@@ -200,7 +200,7 @@ END
 
     else
         export PGDEBUG=""
-        export CDEBUG="-g0 -O0"
+        export CDEBUG="-g0 -O2"
         cat > ${PG_DEBUG_HEADER} << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
