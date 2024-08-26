@@ -36,7 +36,7 @@
 +#   define PG_PLUGIN_INCLUDE "/pgdata/pg_plugin.h"
 +#endif
 +
-+#include PG_DEBUG_HEADER
++#include "/tmp/pglite/include/pg_debug.h"
 +
 +#define PGDLLIMPORT
 +
