@@ -80,7 +80,7 @@
     "test:integration": "pnpm test:runtimes && pnpm test:web",
     "test:clean": "rm -rf ./pgdata-test",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
-    "build": "pnpm build:js || pnpm build:js || pnpm build:js",
+    "build": "pnpm build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
     "dev-server": "pnpm http-server ../",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
