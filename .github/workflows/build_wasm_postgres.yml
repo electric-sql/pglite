@@ -19,7 +19,7 @@ jobs:
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
       TOTAL_MEMORY: 128MB
-      DEBUG: false
+      DEBUG: true
       OBJDUMP: true
 
     steps:
