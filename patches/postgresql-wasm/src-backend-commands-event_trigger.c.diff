@@ -4,7 +4,7 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
-+#if defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +#else
  	/*
  	 * Event Triggers are completely disabled in standalone mode.  There are
@@ -21,7 +21,7 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
-+#if defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +#else
  	/*
  	 * See EventTriggerDDLCommandStart for a discussion about why event
@@ -37,7 +37,7 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
-+#if defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +#else
  	/*
  	 * See EventTriggerDDLCommandStart for a discussion about why event
@@ -53,7 +53,7 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
-+#if defined(__EMSCRIPTEN__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +#else
  	/*
  	 * See EventTriggerDDLCommandStart for a discussion about why event
