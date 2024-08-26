@@ -99,6 +99,6 @@ describe('pglite-sync', () => {
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([])
 
-    await shape.unsubsribe()
+    await shape.unsubscribe()
   })
 })
