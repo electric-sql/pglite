@@ -18,20 +18,18 @@ import type {
 } from './interface.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
 import { loadTar, DumpTarCompressionOptions } from './fs/tarUtils.js'
-import { Buffer } from './polyfills/buffer.js'
 
 import { PGDATA, WASM_PREFIX } from './fs/index.js'
 
 // Importing the source as the built version is not ESM compatible
-import { serialize } from 'pg-protocol/src/index.js'
-import { Parser } from 'pg-protocol/src/parser.js'
+import { serialize, Parser } from '@electric-sql/pg-protocol'
 import {
   BackendMessage,
   DatabaseError,
   NoticeMessage,
   CommandCompleteMessage,
   NotificationResponseMessage,
-} from 'pg-protocol/src/messages.js'
+} from '@electric-sql/pg-protocol/messages'
 
 export class PGlite implements PGliteInterface, AsyncDisposable {
   fs?: Filesystem
@@ -739,7 +737,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     const data = await this.execProtocolRaw(message, { syncToFs })
     const results: Array<[BackendMessage, Uint8Array]> = []
 
-    this.#parser.parse(Buffer.from(data), (msg) => {
+    this.#parser.parse(data, (msg) => {
       if (msg instanceof DatabaseError) {
         this.#parser = new Parser() // Reset the parser
         throw msg

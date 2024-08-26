@@ -1,5 +1,4 @@
 import type { ParserOptions } from './interface.js'
-import { Buffer } from './polyfills/buffer.js'
 
 const JSON_parse = globalThis.JSON.parse
 const JSON_stringify = globalThis.JSON.stringify
@@ -141,10 +140,18 @@ export const types = {
   bytea: {
     to: BYTEA,
     from: [BYTEA],
-    js: [Uint8Array, Buffer],
-    serialize: (x: Uint8Array) => '\\x' + Buffer.from(x).toString('hex'),
-    parse: (x: string): Uint8Array =>
-      new Uint8Array(Buffer.from(x.slice(2), 'hex')),
+    js: [Uint8Array],
+    serialize: (x: Uint8Array) =>
+      '\\x' +
+      Array.from(x)
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join(''),
+    parse: (x: string): Uint8Array => {
+      const hexString = x.slice(2)
+      return Uint8Array.from({ length: hexString.length / 2 }, (_, idx) =>
+        parseInt(hexString.substring(idx * 2, (idx + 1) * 2), 16),
+      )
+    },
   },
   array: {
     to: 0,
@@ -224,17 +231,12 @@ function serializeArray(x: any[]) {
       result = result + 'NULL'
     } else if (Array.isArray(x[i])) {
       result = result + serializeArray(x[i])
-    } else if (ArrayBuffer.isView(x[i])) {
-      let item = x[i]
-      if (!(item instanceof Buffer)) {
-        const buf = Buffer.from(item.buffer, item.byteOffset, item.byteLength)
-        if (buf.length === item.byteLength) {
-          item = buf
-        } else {
-          item = buf.slice(item.byteOffset, item.byteOffset + item.byteLength)
-        }
-      }
-      result += '\\\\x' + item.toString('hex')
+    } else if (ArrayBuffer.isView(x[i]) || x[i] instanceof ArrayBuffer) {
+      const bufferView = ArrayBuffer.isView(x[i])
+        ? new Uint8Array(x[i].buffer, x[i].byteOffset, x[i].byteLength)
+        : new Uint8Array(x[i])
+
+      result += '\\' + types.bytea.serialize(bufferView)
     } else {
       result += escapeElement(serializeType(x[i])[0]!)
     }
@@ -292,7 +294,7 @@ export function parseArray(value: string, parser?: (s: string) => any) {
 }
 
 export function parseType(
-  x: string,
+  x: string | null,
   type: number,
   parsers?: ParserOptions,
 ): any {

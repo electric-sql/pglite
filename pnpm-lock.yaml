@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  pg-protocol@1.6.1:
-    hash: v2nehwgo6jts4ikdebw4p4352i
-    path: patches/pg-protocol@1.6.1.patch
-
 importers:
 
   .:
@@ -85,8 +80,17 @@ importers:
         specifier: 15.5.1-beta.9
         version: 15.5.1-beta.9
 
+  packages/pg-protocol:
+    devDependencies:
+      vitest:
+        specifier: ^2.0.5
+        version: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+
   packages/pglite:
     devDependencies:
+      '@electric-sql/pg-protocol':
+        specifier: workspace:*
+        version: link:../pg-protocol
       '@types/emscripten':
         specifier: ^1.39.13
         version: 1.39.13
@@ -111,9 +115,6 @@ importers:
       http-server:
         specifier: ^14.1.1
         version: 14.1.1
-      pg-protocol:
-        specifier: ^1.6.1
-        version: 1.6.1(patch_hash=v2nehwgo6jts4ikdebw4p4352i)
       playwright:
         specifier: ^1.42.1
         version: 1.46.0
@@ -5932,7 +5933,7 @@ snapshots:
       magic-string: 0.30.11
       msw: 2.3.5(typescript@5.5.4)
       sirv: 2.0.4
-      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+      vitest: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
       ws: 8.18.0
     optionalDependencies:
       playwright: 1.46.0
@@ -5977,7 +5978,7 @@ snapshots:
       pathe: 1.1.2
       sirv: 2.0.4
       tinyrainbow: 1.2.0
-      vitest: 2.0.5(@types/node@20.14.15)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
+      vitest: 2.0.5(@types/node@22.4.1)(@vitest/browser@2.0.5)(@vitest/ui@2.0.5)(jsdom@24.1.1)(terser@5.31.6)
     optional: true
 
   '@vitest/utils@2.0.5':
@@ -7905,7 +7906,7 @@ snapshots:
     dependencies:
       pg: 8.12.0
 
-  pg-protocol@1.6.1(patch_hash=v2nehwgo6jts4ikdebw4p4352i): {}
+  pg-protocol@1.6.1: {}
 
   pg-types@2.2.0:
     dependencies:
@@ -7919,7 +7920,7 @@ snapshots:
     dependencies:
       pg-connection-string: 2.6.4
       pg-pool: 3.6.2(pg@8.12.0)
-      pg-protocol: 1.6.1(patch_hash=v2nehwgo6jts4ikdebw4p4352i)
+      pg-protocol: 1.6.1
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:
