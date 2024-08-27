@@ -201,8 +201,8 @@ END
 
     else
         export PGDEBUG=""
-        export CDEBUG="-g0 -O0"
-        export LDEBUG="-g0 -O0"
+        export CDEBUG="-g3 -O0"
+        export LDEBUG="-g3 -O0"
         cat > ${PG_DEBUG_HEADER} << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
@@ -467,7 +467,7 @@ do
 
                 # debug CI does not use pnpm/npm for building pg, so call the typescript build
                 # part from here
-                pnpm run build:js || exit 450
+                pnpm --filter "pglite^..." build || exit 450
 
                 mkdir -p /tmp/sdk
                 pnpm pack || exit 31
@@ -531,11 +531,13 @@ do
             pnpm run build 2>&1 >/dev/null
             if pnpm exec playwright install --with-deps 2>&1 >/dev/null
             then
-                pnpm run test || exit 429
+                pnpm --filter "pglite^..." test || exit 534
+                pnpm test:web || pnpm test:web || pnpm test:web || exit 535
             else
-                echo "failed to install test env"
-                pnpm run test || exit 432
+                echo "failed to install web-test env"
+                pnpm --filter "pglite^..." test || exit 538
             fi
+            pnpm pack
             popd
         ;;
 
