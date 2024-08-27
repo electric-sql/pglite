@@ -187,6 +187,7 @@ else
     then
         export PGDEBUG=""
         export CDEBUG="-g3 -O0"
+        export LDEBUG="-g3 -O0"
         cat > ${PG_DEBUG_HEADER} << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
@@ -200,7 +201,8 @@ END
 
     else
         export PGDEBUG=""
-        export CDEBUG="-g3 -O0"
+        export CDEBUG="-g0 -O2"
+        export LDEBUG="-g3 -O0"
         cat > ${PG_DEBUG_HEADER} << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
@@ -221,6 +223,7 @@ END
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
 export CDEBUG=$CDEBUG
+export LDEBUG=$LDEBUG
 export PGDEBUG=$PGDEBUG
 export PG_DEBUG_HEADER=$PG_DEBUG_HEADER
 export PGOPTS="\\

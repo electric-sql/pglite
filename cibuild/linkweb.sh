@@ -97,10 +97,10 @@ pushd src/backend
         MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
         #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
         # MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO  08-23 3.1.65
-        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
 
     else
-        # local debug fast build
+        # local debug always fast build
         MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
