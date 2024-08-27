@@ -10,7 +10,12 @@ node_modules
 /postgresql-16.2
 /postgresql-16.3.tar.bz2
 /postgresql-16.3
+/postgresql-16.4.tar.bz2
+/postgresql-16.4
 /postgresql
+
+/patches/imports/*
+/patches/exports/pgcore.wasm-objdump
 
 docs/.vitepress/dist
 docs/.vitepress/cache
