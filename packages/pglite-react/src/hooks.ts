@@ -51,7 +51,6 @@ export function useLiveSql<T = { [key: string]: unknown }>(
   ...values: any[]
 ): Results<T> | undefined {
   const { query, params } = buildQuery(strings, ...values)
-  console.log(query, params)
   return useLiveQueryImpl<T>(query, params)
 }
 
