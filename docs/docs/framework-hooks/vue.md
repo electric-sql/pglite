@@ -76,7 +76,7 @@ It has the interface:
 ```ts
 function useLiveQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
-  params?: QueryParams | WatchSource<QueryParams>,
+  params?: QueryParams | WatchSource<QueryParams> | WatchSource<unknown>[],
 ): LiveQueryResults<T>
 ```
 
@@ -106,6 +106,25 @@ const items = useLiveQuery(
 </template>
 ```
 
+### useLiveSql
+
+Similarly to how you can use [`    sql`` `](../api.md#sql) to to construct SQL queries through string templating, you can do that with `    useLiveSql`` ` for the hook equivalent. See the [templating](../api.md#tagged-template-queries) section of the API for more details.
+
+```vue
+<script lang="ts">
+import { useLiveQuery } from '@electric-sql/pglite-vue'
+
+const maxNumber = 100
+const items = useLiveSql`
+  SELECT *
+  FROM my_table
+  WHERE number <= ${maxNumber}
+  ORDER BY number;
+`
+</script>
+// ...
+```
+
 ### useLiveIncrementalQuery
 
 The `useLiveIncrementalQuery` hook enables you to reactively receive updates whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](../live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
@@ -115,7 +134,7 @@ It has the interface:
 ```ts
 export function useLiveIncrementalQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
-  params: QueryParams | WatchSource<QueryParams>,
+  params: QueryParams | WatchSource<QueryParams> | WatchSource<unknown>[],
   key: string | WatchSource<string>,
 ): LiveQueryResults<T>
 ```
