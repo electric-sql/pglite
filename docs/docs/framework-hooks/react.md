@@ -117,6 +117,24 @@ const MyComponent = () => {
 }
 ```
 
+### useLiveSql
+
+Similarly to how you can use [`    sql`` `](../api.md#sql) to to construct SQL queries through string templating, you can do that with `    useLiveSql`` ` for the hook equivalent. See the [templating](../api.md#tagged-template-queries) section of the API for more details.
+
+```ts
+import { useLiveSql } from '@electric-sql/pglite-react'
+
+const MyComponent = () => {
+  const maxNumber = 100
+  const items = useLiveSql`
+    SELECT *
+    FROM my_table
+    WHERE number <= ${maxNumber}
+    ORDER BY number;
+  `
+// ...
+```
+
 ### useLiveIncrementalQuery
 
 The `useLiveIncrementalQuery` hook enables you to reactively re-render your component whenever the results of a live query change. It wraps the [`.live.incrementalQuery()`](../live-queries.md#liveincrementalquery) API, which provides a way to efficiently diff the query results in Postgres.
@@ -124,7 +142,7 @@ The `useLiveIncrementalQuery` hook enables you to reactively re-render your comp
 It has the interface:
 
 ```ts
-function useLiveQuery<T = { [key: string]: unknown }>(
+function useLiveIncrementalQuery<T = { [key: string]: unknown }>(
   query: string,
   params: unknown[] | undefined | null,
   key: string,
