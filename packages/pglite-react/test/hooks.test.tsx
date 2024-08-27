@@ -4,12 +4,75 @@ import { waitFor } from '@testing-library/dom'
 import React from 'react'
 import { PGlite } from '@electric-sql/pglite'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
-import { PGliteProvider, useLiveQuery, useLiveIncrementalQuery } from '../src'
+import {
+  PGliteProvider,
+  useLiveQuery,
+  useLiveIncrementalQuery,
+  useLiveSql,
+} from '../src'
 
 describe('hooks', () => {
   testLiveQuery('useLiveQuery')
 
   testLiveQuery('useLiveIncrementalQuery')
+
+  describe.only('useLiveSql', () => {
+    let db: PGliteWithLive
+    let wrapper: ({
+      children,
+    }: {
+      children: React.ReactNode
+    }) => React.ReactElement
+
+    beforeEach(async () => {
+      db = await PGlite.create({
+        extensions: {
+          live,
+        },
+      })
+      wrapper = ({ children }) => {
+        return <PGliteProvider db={db}>{children}</PGliteProvider>
+      }
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`TRUNCATE test;`)
+    })
+
+    it('updates when query parameter changes', async () => {
+      await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
+
+      const { result, rerender } = renderHook(
+        (props) =>
+          useLiveSql`SELECT * FROM test WHERE name = ${props.params[0]};`,
+        { wrapper, initialProps: { params: ['test1'] } },
+      )
+
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 1,
+            name: 'test1',
+          },
+        ]),
+      )
+
+      rerender({ params: ['test2'] })
+
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 2,
+            name: 'test2',
+          },
+        ]),
+      )
+    })
+  })
 })
 
 function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
