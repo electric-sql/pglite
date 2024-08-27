@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -80,7 +80,7 @@
     "test:integration": "pnpm test:runtimes && pnpm test:web",
     "test:clean": "rm -rf ./pgdata-test",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
-    "build": "pnpm build:js || pnpm build:js || pnpm build:js",
+    "build": "pnpm build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
     "dev-server": "pnpm http-server ../",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
@@ -89,6 +89,7 @@
     "stylecheck": "pnpm lint && prettier --check ./src ./tests"
   },
   "devDependencies": {
+    "@electric-sql/pg-protocol": "workspace:*",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.11.18",
     "@types/node-fetch": "^2.6.11",
@@ -97,7 +98,6 @@
     "bun": "^1.1.18",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
-    "pg-protocol": "^1.6.1",
     "playwright": "^1.42.1",
     "serve": "^14.2.3",
     "tinytar": "^0.1.0",

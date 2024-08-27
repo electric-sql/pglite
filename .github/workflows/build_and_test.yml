@@ -34,6 +34,26 @@ jobs:
       - name: Stylecheck packages
         run: pnpm -r stylecheck
 
+  build-and-test-pglite-dependencies:
+    name: Build and Test PGLite dependencies
+    runs-on: ubuntu-22.04
+    needs: [stylecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: pnpm --filter "pglite^..." build
+      - name: Typecheck packages
+        run: pnpm --filter "pglite^..." typecheck
+      - name: Test packages
+        run: pnpm --filter "pglite^..." test
+
   build-wasm-postgres:
     name: Build PGlite WASM dependencies
     uses: ./.github/workflows/build_wasm_postgres.yml
@@ -45,7 +65,7 @@ jobs:
     defaults:
       run:
         working-directory: ./packages/pglite
-    needs: [stylecheck, build-wasm-postgres]
+    needs: [stylecheck, build-wasm-postgres, build-and-test-pglite-dependencies]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -68,6 +88,9 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps
+
+      - name: Build dependencies
+        run: pnpm --filter "pglite^..." build
 
       - name: Typecheck
         run: pnpm typecheck

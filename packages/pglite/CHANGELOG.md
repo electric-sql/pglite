@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.2.4
+
+### Patch Changes
+
+- 113aa56: Replace `pg-protocol` with vendored version and remove `Buffer` polyfill.
+
 ## 0.2.3
 
 ### Patch Changes
