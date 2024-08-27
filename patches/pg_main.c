@@ -1299,7 +1299,7 @@ extra_env:;
         };
     });
 
-#endif
+#endif // __EMSCRIPTEN__
 	chdir("/");
     mkdirp("/tmp");
     mkdirp(WASM_PREFIX);

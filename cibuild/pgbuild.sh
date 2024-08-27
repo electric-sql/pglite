@@ -35,9 +35,9 @@ CC_PGLITE=$CC_PGLITE
 if $CI
 then
     # do not build obsolete ext xml2 on CI
-    XSLT=""
+    XML2="--with-zlib --with-libxml"
 else
-    XSLT="--with-libxslt"
+    XML2="--with-zlib --with-libxml --with-libxslt"
 fi
 
 # --with-libxml does not fit with --without-zlib
@@ -45,10 +45,9 @@ fi
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
    XML2_CONFIG=$PREFIX/bin/xml2-config \
  --cache-file=${PGROOT}/config.cache.emsdk \
- --disable-spinlocks \
- --disable-largefile --without-llvm \
+ --disable-spinlocks --disable-largefile --without-llvm \
  --without-pam --disable-largefile --with-openssl=no \
- --without-readline --without-icu --with-libxml ${XSLT} --with-uuid=ossp \
+ --without-readline --without-icu --with-uuid=ossp $XML2 \
  ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
