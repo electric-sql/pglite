@@ -6,7 +6,7 @@ ARG DEBUG=false
 ARG OBJDUMP=true
 
 ENV \
-  PGVERSION=$PG_VERSION \
+  PG_VERSION=$PG_VERSION \
   SDK_VERSION=$SDK_VERSION \
   SDKROOT=/opt/python-wasm-sdk \
   SYS_PYTHON=/usr/bin/python3 \
@@ -43,7 +43,7 @@ ARG DEBUG=false
 ARG OBJDUMP=true
 
 ENV \
-  PGVERSION=$PG_VERSION \
+  PG_VERSION=$PG_VERSION \
   SDK_VERSION=$SDK_VERSION \
   SDK_ARCHIVE=python3.12-wasm-sdk-Ubuntu-22.04.tar \
   SDKROOT=/opt/python-wasm-sdk \

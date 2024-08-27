@@ -171,7 +171,7 @@ export OBJDUMP
 
 # ========================= pg core configuration ============================
 
-
+# testing postgres.js file instead of ${PGROOT}/pgopts.sh because build should not have failed.
 if [ -f ${WEBROOT}/postgres.js ]
 then
     echo using current from ${WEBROOT}
@@ -200,7 +200,7 @@ END
 
     else
         export PGDEBUG=""
-        export CDEBUG="-g3 -O0"
+        export CDEBUG="-g0 -O0"
         cat > ${PG_DEBUG_HEADER} << END
 #ifndef I_PGDEBUG
 #define I_PGDEBUG
@@ -220,6 +220,9 @@ END
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
+export CDEBUG=$CDEBUG
+export PGDEBUG=$PGDEBUG
+export PG_DEBUG_HEADER=$PG_DEBUG_HEADER
 export PGOPTS="\\
  -c log_checkpoints=false \\
  -c dynamic_shared_memory_type=posix \\
