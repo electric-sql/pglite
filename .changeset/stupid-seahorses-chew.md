@@ -2,4 +2,4 @@
 '@electric-sql/pglite-vue': patch
 ---
 
-Add `useLiveSql` hook for SQL string templating.
+Add `useLiveQuery.sql` hook for SQL string templating.

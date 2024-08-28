@@ -26,7 +26,7 @@ describe('hooks', () => {
 
   testLiveQuery('useLiveIncrementalQuery')
 
-  describe('useLiveSql', () => {
+  describe('useLiveQuery.sql', () => {
     beforeEach(async () => {
       // prepare db for test
       db = await PGlite.create({
@@ -44,12 +44,12 @@ describe('hooks', () => {
     })
 
     it('updates when query parameter ref changes', async () => {
-      const { useLiveSql } = await import('../src')
+      const { useLiveQuery } = await import('../src')
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
 
       const param = ref('test1')
 
-      const result = useLiveSql`SELECT * FROM test WHERE name = ${param};`
+      const result = useLiveQuery.sql`SELECT * FROM test WHERE name = ${param};`
 
       await flushPromises()
       expect(result?.rows?.value).toEqual([

@@ -11,7 +11,7 @@ describe('hooks', () => {
 
   testLiveQuery('useLiveIncrementalQuery')
 
-  describe('useLiveSql', () => {
+  describe('useLiveQuery.sql', () => {
     let db: PGliteWithLive
     let wrapper: ({
       children,

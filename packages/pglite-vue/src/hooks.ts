@@ -104,7 +104,7 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
   return useLiveQueryImpl<T>(query, params)
 }
 
-export function useLiveSql<T = { [key: string]: unknown }>(
+useLiveQuery.sql = function <T = { [key: string]: unknown }>(
   strings: TemplateStringsArray,
   ...values: any[]
 ): LiveQueryResults<T> {
