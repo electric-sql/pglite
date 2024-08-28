@@ -1,21 +1,21 @@
 <p align="center">
-  <a href="https://electric-sql.com" target="_blank">
+  <a href="https://pglite.dev" target="_blank">
     <picture>
       <source media="(prefers-color-scheme: dark)"
-          srcset="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-light-trans.svg"
+          srcset="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo.svg"
       />
       <source media="(prefers-color-scheme: light)"
-          srcset="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-black.svg"
+          srcset="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo-light.svg"
       />
       <img alt="ElectricSQL logo"
-          src="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-black.svg"
+          src="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo-light.svg"
       />
     </picture>
   </a>
 </p>
 
 <p align="center">
-  PGlite - the WASM build of Postgres from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
+  <a href="https://pglite.dev">PGlite</a> - the WASM build of Postgres from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
   Build reactive, realtime, local-first apps directly on Postgres.
 <p>
 
@@ -109,6 +109,26 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 ## Limitations
 
 - PGlite is single user/connection.
+
+## How to contribute
+
+You will need [pnpm](https://pnpm.io/) installed, and a recent version of Node.js (v20 and above).
+
+You will also need the Postgres WASM build files, which you download from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. These are necessary to build PGlite and the dependent workspace projects. We plan to enable a local build in the future to streamline this step.
+
+Once the requirements are met, you can install dependencies and build the workspace projects:
+```bash
+pnpm install
+pnpm build
+```
+
+This will build all packages in the correct order based on their dependency relationships. You can now develop any individual package using the `build` and `test` scripts, as well as the `stylecheck` and `typecheck` scripts to ensure style and type validity.
+
+When ready to open a PR, run the following command at the root of the repository:
+```bash
+pnpm changeset
+```
+And follow the instructions to create an appropriate changeset. Please ensure any contributions that touch code are accompanied by a changeset.
 
 ## Acknowledgments
 

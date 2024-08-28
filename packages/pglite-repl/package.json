@@ -2,8 +2,14 @@
   "name": "@electric-sql/pglite-repl",
   "version": "0.2.4",
   "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite.git",
+    "directory": "packages/pglite-repl"
+  },
   "publishConfig": {
     "access": "public"
   },
