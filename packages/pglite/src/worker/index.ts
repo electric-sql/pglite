@@ -388,6 +388,15 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
             options,
           )
         },
+        sql: async (sqlStrings, ...params) => {
+          return this.#rpc(
+            'transactionSql',
+            txId,
+            sqlStrings,
+            sqlStrings.raw,
+            params,
+          )
+        },
         exec: async (query, options) => {
           return (await this.#rpc(
             'transactionExec',
@@ -729,6 +738,22 @@ function makeWorkerApi(db: PGliteInterface) {
       }
       const tx = (await transactions.get(id)!).tx
       return await tx.query<T>(query, params, options)
+    },
+    async transactionSql<T>(
+      id: string,
+      sqlStrings: ReadonlyArray<string>,
+      sqlStringsRaw: ReadonlyArray<string>,
+      params: any[],
+    ) {
+      if (!transactions.has(id)) {
+        throw new Error('No transaction')
+      }
+      const sqlStringsFull = sqlStrings as ReadonlyArray<string> & {
+        raw: ReadonlyArray<string>
+      }
+      sqlStringsFull.raw = sqlStringsRaw
+      const tx = (await transactions.get(id)!).tx
+      return await tx.sql<T>(sqlStringsFull, ...params)
     },
     async transactionExec(id: string, query: string, options?: QueryOptions) {
       if (!transactions.has(id)) {

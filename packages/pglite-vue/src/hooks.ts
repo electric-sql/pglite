@@ -10,8 +10,10 @@ import {
   onScopeDispose,
   ref,
   isRef,
+  unref,
 } from 'vue-demi'
 import { Results } from '@electric-sql/pglite'
+import { query as buildQuery } from '@electric-sql/pglite/template'
 import { injectPGlite } from './dependency-injection'
 
 type UnsubscribeFn = () => Promise<void>
@@ -23,7 +25,7 @@ type LiveQueryResults<T> = ToRefs<DeepReadonly<QueryResult<T>>>
 
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
-  params?: QueryParams | WatchSource<QueryParams>,
+  params?: QueryParams | WatchSource<QueryParams> | WatchSource<unknown>[],
   key?: string | WatchSource<string>,
 ): LiveQueryResults<T> {
   const db = injectPGlite()!
@@ -41,14 +43,18 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   const unsubscribeRef = shallowRef<UnsubscribeFn>()
 
   const querySource = typeof query === 'string' ? ref(query) : query
-  const paramsSource =
-    !isRef(params) && typeof params !== 'function' ? ref(params) : params
+  const paramsSources = !params
+    ? [ref(params)]
+    : Array.isArray(params)
+      ? params.map(ref)
+      : [params]
+
   const keySource = typeof key === 'string' ? ref(key) : key
 
   watch(
     key !== undefined
-      ? [querySource, paramsSource, keySource]
-      : [querySource, paramsSource],
+      ? [querySource, keySource, ...paramsSources]
+      : [querySource, ...paramsSources],
     () => {
       let cancelled = false
       const cb = (results: Results<T>) => {
@@ -60,14 +66,22 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
         }
       }
 
-      const query = isRef(querySource) ? querySource.value : querySource()
-      const params = isRef(paramsSource) ? paramsSource.value : paramsSource()
+      const query = isRef(querySource) ? unref(querySource) : querySource()
+
+      const paramVals = isRef(params)
+        ? unref(params)
+        : typeof params === 'function'
+          ? params()
+          : Array.isArray(params)
+            ? params.map(unref)
+            : [params]
+
       const key = isRef(keySource) ? keySource.value : keySource?.()
 
       const ret =
         key !== undefined
-          ? db.live.incrementalQuery<T>(query, params, key, cb)
-          : db.live.query<T>(query, params, cb)
+          ? db.live.incrementalQuery<T>(query, paramVals, key, cb)
+          : db.live.query<T>(query, paramVals, cb)
 
       unsubscribeRef.value = () => {
         cancelled = true
@@ -85,14 +99,22 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
-  params?: QueryParams | WatchSource<QueryParams>,
+  params?: QueryParams | WatchSource<QueryParams> | WatchSource<unknown>[],
 ): LiveQueryResults<T> {
+  return useLiveQueryImpl<T>(query, params)
+}
+
+useLiveQuery.sql = function <T = { [key: string]: unknown }>(
+  strings: TemplateStringsArray,
+  ...values: any[]
+): LiveQueryResults<T> {
+  const { query, params } = buildQuery(strings, ...values)
   return useLiveQueryImpl<T>(query, params)
 }
 
 export function useLiveIncrementalQuery<T = { [key: string]: unknown }>(
   query: string | WatchSource<string>,
-  params: QueryParams | WatchSource<QueryParams>,
+  params: QueryParams | WatchSource<QueryParams> | WatchSource<unknown>[],
   key: string | WatchSource<string>,
 ): LiveQueryResults<T> {
   return useLiveQueryImpl<T>(query, params, key)

@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach, beforeAll } from 'vitest'
 import { ref } from 'vue-demi'
 import { PGlite } from '@electric-sql/pglite'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
-import type { useLiveIncrementalQuery, useLiveQuery } from '../src'
+import { type useLiveIncrementalQuery, type useLiveQuery } from '../src'
 
 function flushPromises(timeoutMs = 0): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, timeoutMs))
@@ -25,6 +25,51 @@ describe('hooks', () => {
   testLiveQuery('useLiveQuery')
 
   testLiveQuery('useLiveIncrementalQuery')
+
+  describe('useLiveQuery.sql', () => {
+    beforeEach(async () => {
+      // prepare db for test
+      db = await PGlite.create({
+        extensions: {
+          live,
+        },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+    })
+
+    it('updates when query parameter ref changes', async () => {
+      const { useLiveQuery } = await import('../src')
+      await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
+
+      const param = ref('test1')
+
+      const result = useLiveQuery.sql`SELECT * FROM test WHERE name = ${param};`
+
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([
+        {
+          id: 1,
+          name: 'test1',
+        },
+      ])
+
+      param.value = 'test2'
+
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([
+        {
+          id: 2,
+          name: 'test2',
+        },
+      ])
+    })
+  })
 })
 function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
   describe(queryHook, () => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Results } from '@electric-sql/pglite'
 import { usePGlite } from './provider'
+import { query as buildQuery } from '@electric-sql/pglite/template'
 
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
   query: string,
@@ -42,6 +43,16 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string,
   params: unknown[] | undefined | null,
 ): Results<T> | undefined {
+  return useLiveQueryImpl<T>(query, params)
+}
+
+useLiveQuery.sql = function <T = { [key: string]: unknown }>(
+  strings: TemplateStringsArray,
+  ...values: any[]
+): Results<T> | undefined {
+  const { query, params } = buildQuery(strings, ...values)
+  // eslint-disable-next-line react-compiler/react-compiler
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useLiveQueryImpl<T>(query, params)
 }
 
