@@ -117,16 +117,16 @@ const MyComponent = () => {
 }
 ```
 
-### useLiveSql
+### useLiveQuery.sql
 
-Similarly to how you can use [`    sql`` `](../api.md#sql) to to construct SQL queries through string templating, you can do that with `    useLiveSql`` ` for the hook equivalent. See the [templating](../api.md#tagged-template-queries) section of the API for more details.
+Similarly to how you can use [`    sql`` `](../api.md#sql) to to construct SQL queries through string templating, you can do that with `    useLiveQuery.sql`` ` for the hook equivalent. See the [templating](../api.md#tagged-template-queries) section of the API for more details.
 
 ```ts
-import { useLiveSql } from '@electric-sql/pglite-react'
+import { useLiveQuery } from '@electric-sql/pglite-react'
 
 const MyComponent = () => {
   const maxNumber = 100
-  const items = useLiveSql`
+  const items = useLiveQuery.sql`
     SELECT *
     FROM my_table
     WHERE number <= ${maxNumber}

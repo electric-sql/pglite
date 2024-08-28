@@ -4,12 +4,7 @@ import { waitFor } from '@testing-library/dom'
 import React from 'react'
 import { PGlite } from '@electric-sql/pglite'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
-import {
-  PGliteProvider,
-  useLiveQuery,
-  useLiveIncrementalQuery,
-  useLiveSql,
-} from '../src'
+import { PGliteProvider, useLiveQuery, useLiveIncrementalQuery } from '../src'
 
 describe('hooks', () => {
   testLiveQuery('useLiveQuery')
@@ -48,7 +43,7 @@ describe('hooks', () => {
 
       const { result, rerender } = renderHook(
         (props) =>
-          useLiveSql`SELECT * FROM test WHERE name = ${props.params[0]};`,
+          useLiveQuery.sql`SELECT * FROM test WHERE name = ${props.params[0]};`,
         { wrapper, initialProps: { params: ['test1'] } },
       )
 

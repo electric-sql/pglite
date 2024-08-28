@@ -46,11 +46,13 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
   return useLiveQueryImpl<T>(query, params)
 }
 
-export function useLiveSql<T = { [key: string]: unknown }>(
+useLiveQuery.sql = function <T = { [key: string]: unknown }>(
   strings: TemplateStringsArray,
   ...values: any[]
 ): Results<T> | undefined {
   const { query, params } = buildQuery(strings, ...values)
+  // eslint-disable-next-line react-compiler/react-compiler
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useLiveQueryImpl<T>(query, params)
 }
 
