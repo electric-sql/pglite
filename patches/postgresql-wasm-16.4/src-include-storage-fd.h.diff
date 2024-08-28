@@ -1,5 +1,5 @@
---- postgresql-16.3/src/include/storage/fd.h
-+++ postgresql-16.3-wasm/src/include/storage/fd.h
+--- postgresql/src/include/storage/fd.h
++++ postgresql-wasm/src/include/storage/fd.h
 @@ -188,13 +188,17 @@
  extern int	pg_fdatasync(int fd);
  extern void pg_flush_data(int fd, off_t offset, off_t nbytes);

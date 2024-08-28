@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/postmaster/postmaster.c
-+++ postgresql-16.3-wasm/src/backend/postmaster/postmaster.c
+--- postgresql/src/backend/postmaster/postmaster.c
++++ postgresql-wasm/src/backend/postmaster/postmaster.c
 @@ -422,7 +422,8 @@
  static void ExitPostmaster(int status) pg_attribute_noreturn();
  static int	ServerLoop(void);
@@ -19,14 +19,58 @@
  
  #ifdef EXEC_BACKEND
  	/* Locate executable backend before we change working directory */
-@@ -1947,8 +1948,8 @@
+@@ -1947,10 +1948,21 @@
   * should make no assumption here about the order in which the client may make
   * requests.
   */
 -static int
 -ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
++
++static inline uint32
++em_bswap32(uint32 x)
++{
++	return
++		((x << 24) & 0xff000000) |
++		((x << 8) & 0x00ff0000) |
++		((x >> 8) & 0x0000ff00) |
++		((x >> 24) & 0x000000ff);
++}
++
 +// static int
 +int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
  {
- 	int32		len;
+-	int32		len;
++	uint32		len;
  	char	   *buf;
+ 	ProtocolVersion proto;
+ 	MemoryContext oldcontext;
+@@ -1988,15 +2000,16 @@
+ 		return STATUS_ERROR;
+ 	}
+ 
+-	len = pg_ntoh32(len);
++	//len = pg_ntoh32(len);
++    len = em_bswap32(len);
+ 	len -= 4;
+-
+-	if (len < (int32) sizeof(ProtocolVersion) ||
++printf("len %d proto %d max %d\n", len,(uint32) sizeof(ProtocolVersion) , MAX_STARTUP_PACKET_LENGTH) ;
++	if (len < (uint32) sizeof(ProtocolVersion) ||
+ 		len > MAX_STARTUP_PACKET_LENGTH)
+ 	{
+ 		ereport(COMMERROR,
+ 				(errcode(ERRCODE_PROTOCOL_VIOLATION),
+-				 errmsg("invalid length of startup packet")));
++				 errmsg("# 2000 invalid length of startup packet")));
+ 		return STATUS_ERROR;
+ 	}
+ 
+@@ -2029,7 +2042,7 @@
+ 		{
+ 			ereport(COMMERROR,
+ 					(errcode(ERRCODE_PROTOCOL_VIOLATION),
+-					 errmsg("invalid length of startup packet")));
++					 errmsg("# 2033 invalid length of startup packet")));
+ 			return STATUS_ERROR;
+ 		}
+ 		processCancelRequest(port, buf);

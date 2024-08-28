@@ -71,7 +71,9 @@ pushd src/backend
      ../../src/timezone/strftime.o \
      ../../pg_initdb.o"
 
-    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a"
+    PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2 -lz"
+    # -lz for xml2
+    # -sUSE_ZLIB"
 
     if $DEBUG
     then
@@ -94,9 +96,11 @@ pushd src/backend
         MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # no plpgsql 7.2M
         MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
         #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
-        MODULE="-g0 -O2 --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        # MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO  08-23 3.1.65
+        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+
     else
-        # local debug fast build
+        # local debug always fast build
         MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
@@ -146,13 +150,20 @@ END
 
     if $OBJDUMP
     then
+    echo "
+
+    Linking to : $PG_L
+
+
+"
+
         # link with MAIN_MODULE=1 ( ie export all ) and extract all sym.
-        . ${WORKSPACE}/cibuild/linkexport.sh
+        . ${WORKSPACE}/cibuild/linkexport.sh || exit 158
 
         if [ -f ${WORKSPACE}/patches/exports/pgcore ]
         then
             echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports/pgcore) core symbols"
-            . ${WORKSPACE}/cibuild/linkimports.sh
+            . ${WORKSPACE}/cibuild/linkimports.sh || exit 163
 
         else
             echo "

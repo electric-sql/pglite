@@ -11,5 +11,8 @@ node_modules
 /postgresql-*
 /postgresql
 
+/patches/imports/*
+/patches/exports/pgcore.wasm-objdump
+
 docs/.vitepress/dist
 docs/.vitepress/cache

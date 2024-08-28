@@ -1,5 +1,5 @@
---- postgresql-16.3/src/backend/bootstrap/bootstrap.c
-+++ postgresql-16.3-wasm/src/backend/bootstrap/bootstrap.c
+--- postgresql/src/backend/bootstrap/bootstrap.c
++++ postgresql-wasm/src/backend/bootstrap/bootstrap.c
 @@ -199,7 +199,11 @@
   *	 to shared memory sizing, options work (or at least do not cause an error
   *	 up to shared memory creation).

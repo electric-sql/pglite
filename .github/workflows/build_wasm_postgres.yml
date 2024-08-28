@@ -31,10 +31,6 @@ jobs:
         run: |
           cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
 
-      # HACK: for some reason build uses PGVERSION which is uglier than PG_VERSION
-      - name: Set PGVERSION from PG_VERSION
-        run: echo "PGVERSION=${PG_VERSION}" >> $GITHUB_ENV
-
       - name: Restore cached build
         id: cache-restore
         uses: actions/cache@v4
@@ -46,7 +42,7 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'cibuild/**', 'patches/*.c', 'patches/**/*.diff') }}
+          key: build-cache-${{ hashFiles('.buildconfig', 'cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'cibuild/**', 'patches/*.c', 'patches/*.h', 'patches/**/*.diff') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
