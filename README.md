@@ -1,21 +1,21 @@
 <p align="center">
-  <a href="https://electric-sql.com" target="_blank">
+  <a href="https://pglite.dev" target="_blank">
     <picture>
       <source media="(prefers-color-scheme: dark)"
-          srcset="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-light-trans.svg"
+          srcset="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo.svg"
       />
       <source media="(prefers-color-scheme: light)"
-          srcset="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-black.svg"
+          srcset="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo-light.svg"
       />
       <img alt="ElectricSQL logo"
-          src="https://raw.githubusercontent.com/electric-sql/meta/main/identity/ElectricSQL-logo-black.svg"
+          src="https://raw.githubusercontent.com/electric-sql/pglite/main/docs/public/img/brand/logo-light.svg"
       />
     </picture>
   </a>
 </p>
 
 <p align="center">
-  PGlite - the WASM build of Postgres from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
+  <a href="https://pglite.dev">PGlite</a> - the WASM build of Postgres from <a href="https://electric-sql.com" target="_blank">ElectricSQL</a>.<br>
   Build reactive, realtime, local-first apps directly on Postgres.
 <p>
 

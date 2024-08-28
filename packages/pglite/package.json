@@ -15,6 +15,7 @@
     "pglite"
   ],
   "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "exports": {
