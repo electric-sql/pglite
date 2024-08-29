@@ -222,9 +222,9 @@ END
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
-export CDEBUG=$CDEBUG
-export LDEBUG=$LDEBUG
-export PGDEBUG=$PGDEBUG
+export CDEBUG="$CDEBUG"
+export LDEBUG="$LDEBUG"
+export PGDEBUG="$PGDEBUG"
 export PG_DEBUG_HEADER=$PG_DEBUG_HEADER
 export PGOPTS="\\
  -c log_checkpoints=false \\
@@ -349,56 +349,32 @@ then
 
 fi
 
-if ${EXTRA_EXT:-true}
+ if echo " $*"|grep -q " extra"
 then
-    if echo " $*"|grep -q " vector"
-    then
-        echo "====================== vector : $(pwd) ================="
-
-        pushd build
-
-            # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
-
-            if [ -d pgvector ]
+    for extra_ext in  ${EXTRA_EXT:-"vector"}
+    do
+        if $CI
+        then
+            if [ -d $PREFIX/include/X11 ]
             then
-                echo using local pgvector
+                echo -n
             else
-                wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
-                tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
-                mv pgvector-?.?.? pgvector
+                # install EXTRA sdk
+                . /etc/lsb-release
+                DISTRIB="${DISTRIB_ID}-${DISTRIB_RELEASE}"
+                CIVER=${CIVER:-$DISTRIB}
+                SDK_URL=https://github.com/pygame-web/python-wasm-sdk-extra/releases/download/$SDK_VERSION/python-emsdk-sdk-extra-${CIVER}.tar.lz4
+                echo "Installing $SDK_URL"
+                curl -sL --retry 5 $SDK_URL | tar xvP --use-compress-program=lz4 | pv -p -l -s 15000 >/dev/null
+                chmod ./extra/*.sh
             fi
+        fi
+        echo "======================= ${extra_ext} : $(pwd) ==================="
 
-            pushd pgvector
-                # path for wasm-shared already set to (pwd:pg build dir)/bin
-                # OPTFLAGS="" turns off arch optim (sse/neon).
-                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install || exit 354
-                cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
-                rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
-            popd
-
-        popd
-
-        python3 cibuild/pack_extension.py
-
-    fi
-
-    if echo " $*"|grep -q " postgis"
-    then
-        echo "======================= postgis : $(pwd) ==================="
-
-        ./cibuild/postgis.sh || exit 369
-
-        python3 cibuild/pack_extension.py
-    fi
-
-    if echo " $*"|grep -q " quack"
-    then
-        echo "================================================="
-        ./cibuild/pg_quack.sh || exit 377
-        cp $PGROOT/lib/libduckdb.so /tmp/
-        python3 cibuild/pack_extension.py
-    fi
+        ./extra/${extra_ext}.sh || exit 400
+    done
 fi
+
 # ===========================================================================
 # ===========================================================================
 #                               PGLite
