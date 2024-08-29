@@ -3,16 +3,15 @@
 mkdir -p build
 
 pushd build
-
     # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
 
-    if [ -d pgvector ]
+    if [ -d vector ]
     then
         echo using local pgvector
     else
         wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
         tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
-        mv pgvector-?.?.? pgvector
+        mv pgvector-?.?.? vector
     fi
 popd
 
