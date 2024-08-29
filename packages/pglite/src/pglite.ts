@@ -70,7 +70,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * @param dataDir The directory to store the database files
    *                Prefix with idb:// to use indexeddb filesystem in the browser
    *                Use memory:// to use in-memory filesystem
-   * @param options Optional options
+   * @param options PGlite options
    */
   constructor(dataDir?: string, options?: PGliteOptions)
 
@@ -115,16 +115,42 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * Create a new PGlite instance with extensions on the Typescript interface
    * (The main constructor does enable extensions, however due to the limitations
    * of Typescript, the extensions are not available on the instance interface)
+   * @param options PGlite options including the data directory
+   * @returns A promise that resolves to the PGlite instance when it's ready.
+   */
+
+  static async create<O extends PGliteOptions>(
+    options?: O,
+  ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>>
+
+  /**
+   * Create a new PGlite instance with extensions on the Typescript interface
+   * (The main constructor does enable extensions, however due to the limitations
+   * of Typescript, the extensions are not available on the instance interface)
    * @param dataDir The directory to store the database files
    *                Prefix with idb:// to use indexeddb filesystem in the browser
    *                Use memory:// to use in-memory filesystem
-   * @param options Optional options
+   * @param options PGlite options
    * @returns A promise that resolves to the PGlite instance when it's ready.
    */
   static async create<O extends PGliteOptions>(
+    dataDir?: string,
+    options?: O,
+  ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>>
+
+  static async create<O extends PGliteOptions>(
+    dataDirOrPGliteOptions?: string | O,
     options?: O,
   ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>> {
-    const pg = new PGlite(options)
+    const resolvedOpts: PGliteOptions =
+      typeof dataDirOrPGliteOptions === 'string'
+        ? {
+            dataDir: dataDirOrPGliteOptions,
+            ...(options ?? {}),
+          }
+        : dataDirOrPGliteOptions ?? {}
+
+    const pg = new PGlite(resolvedOpts)
     await pg.waitReady
     return pg as any
   }
