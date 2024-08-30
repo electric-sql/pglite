@@ -51,11 +51,10 @@ class LitePg {
     }
   }
   end(callback) {
-    if (callback) {
-      setImmediate(callback);
-    } else {
-      return Promise.resolve();
+    if (!callback) {
+      return db.close();
     }
+    db.close().then(callback, callback);
   }
   connect(callback) {
     if (callback) {
