@@ -66,6 +66,19 @@ or to persist the database to IndexedDB:
 const db = new PGlite('idb://my-pgdata')
 ```
 
+### Using with Vite
+When using Vite, make sure to add `optimizeDeps` inside `vite.config.js`:
+
+```js
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@electric-sql/pglite'],
+  },
+});
+```
+
 ## Making a query
 
 There are two methods for querying the database, `.query` and `.exec`. The former supports parameters, while the latter supports multiple statements.
