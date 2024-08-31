@@ -1,0 +1,15 @@
+{
+  "$schema": "https://turborepo.org/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/"]
+    },
+    "lint": {
+      "cache": false
+    },
+    "test": {
+      "cache": false
+    }
+  }
+}
