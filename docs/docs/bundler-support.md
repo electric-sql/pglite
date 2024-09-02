@@ -10,7 +10,7 @@ If you come across any issues with PGlite and a specific bundler, please [open a
 
 ## Vite
 
-When using [Vite](https://vitejs.dev/), make sure to add `optimizeDeps` inside `vite.config.js`:
+When using [Vite](https://vitejs.dev/), make sure to exclude `pglite` from dependency optimization using the `optimizeDeps` option inside `vite.config.js`:
 
 ```js
 import { defineConfig } from 'vite'
