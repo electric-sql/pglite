@@ -21,8 +21,11 @@ export interface ElectricSyncOptions {
   debug?: boolean
 }
 
-async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
-  const debug = options.debug || false
+async function createPlugin(
+  pg: PGliteInterface,
+  options?: ElectricSyncOptions,
+) {
+  const debug = options?.debug ?? false
   const streams: Array<{
     stream: ShapeStream
     aborter: AbortController
