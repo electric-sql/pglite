@@ -32,12 +32,12 @@ CC_PGLITE=$CC_PGLITE
 # TODO: --with-libxslt   add to sdk
 #  --disable-atomics https://github.com/WebAssembly/threads/pull/147  "Allow atomic operations on unshared memories"
 
-if $WASI
+if ${WASI}
 then
     echo "WASI BUILD: turning off xml/xslt support"
     XML2=""
     UUID=""
-    BUILD=emsdk
+    BUILD=wasi
 else
     if $CI
     then
@@ -47,7 +47,7 @@ else
         XML2="--with-zlib --with-libxml --with-libxslt"
     fi
     UUID="--with-uuid=ossp"
-    BUILD=wasi
+    BUILD=emsdk
 fi
 # --with-libxml does not fit with --without-zlib
 
@@ -56,8 +56,8 @@ fi
  --cache-file=${PGROOT}/config.cache.${BUILD} \
  --disable-spinlocks --disable-largefile --without-llvm \
  --without-pam --disable-largefile --with-openssl=no \
- --without-readline --without-icu $UUID $XML2 \
- ${PGDEBUG}"
+ --without-readline --without-icu \
+ ${UUID} {$XML2} ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
 
