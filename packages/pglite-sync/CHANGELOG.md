@@ -1,5 +1,16 @@
 # @electric-sql/pglite-sync
 
+## 0.2.5
+
+### Patch Changes
+
+- dd271b3: Fix #232 by making the options passed to the sync plugin optional
+- 79b5a7b: Fix the pglite-sync package dependencies
+- Updated dependencies [fcb101c]
+- Updated dependencies [3ee5e60]
+- Updated dependencies [0dc34af]
+  - @electric-sql/pglite@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes
