@@ -226,10 +226,12 @@ _________________________________________________________
         gzip -f -9 $tarf
     done
 
+    mkdir -p $PGLITE/release
+
     echo "
 
 
-____________________________ enabled extensions __________________________________
+__________________________ enabled extensions (dlfcn)_____________________________
 "
     cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 echo "

@@ -521,7 +521,7 @@ do
 
         pglite-prep) echo "==================== pglite-prep  =========================="
             mkdir -p $PGLITE/release
-            rm $PGLITE/release/*
+            #rm $PGLITE/release/*
 
             # copy packed extensions
             cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
