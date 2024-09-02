@@ -21,8 +21,11 @@ export interface ElectricSyncOptions {
   debug?: boolean
 }
 
-async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
-  const debug = options.debug || false
+async function createPlugin(
+  pg: PGliteInterface,
+  options?: ElectricSyncOptions,
+) {
+  const debug = options?.debug ?? false
   const streams: Array<{
     stream: ShapeStream
     aborter: AbortController
@@ -106,7 +109,7 @@ async function createPlugin(pg: PGliteInterface, options: ElectricSyncOptions) {
   }
 }
 
-export function electricSync(options: ElectricSyncOptions) {
+export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
     setup: async (pg: PGliteInterface) => {

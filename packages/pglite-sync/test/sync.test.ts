@@ -20,7 +20,7 @@ describe('pglite-sync', () => {
   beforeEach(async () => {
     pg = await PGlite.create({
       extensions: {
-        electric: electricSync({}),
+        electric: electricSync(),
       },
     })
     await pg.exec(`
