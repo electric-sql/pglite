@@ -66,19 +66,6 @@ or to persist the database to IndexedDB:
 const db = new PGlite('idb://my-pgdata')
 ```
 
-### Using with Vite
-When using Vite, make sure to add `optimizeDeps` inside `vite.config.js`:
-
-```js
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  optimizeDeps: {
-    exclude: ['@electric-sql/pglite'],
-  },
-});
-```
-
 ## Making a query
 
 There are two methods for querying the database, `.query` and `.exec`. The former supports parameters, while the latter supports multiple statements.
@@ -145,6 +132,8 @@ const ret = await db.query(
 - PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistance for your database.
 
 - There are [framework hooks](./framework-hooks/react.md) to make working with PGlite within React and Vue much easier with less boilerplate.
+
+- For help configuring PGlite with your bundler, see the [bundler support](./bundler-support.md) page.
 
 - As PGlite only has a single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
 
