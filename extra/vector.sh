@@ -36,10 +36,4 @@ pushd build/vector
     rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
 popd
 
-if ${CI:-false}
-then
-    echo -n
-else
-    python3 cibuild/pack_extension.py
-fi
 

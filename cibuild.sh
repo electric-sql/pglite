@@ -374,6 +374,8 @@ then
         echo "======================= ${extra_ext} : $(pwd) ==================="
 
         ./extra/${extra_ext}.sh || exit 400
+
+        python3 cibuild/pack_extension.py
     done
 fi
 

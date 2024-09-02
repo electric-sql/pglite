@@ -58,10 +58,3 @@ END
 
 popd
 
-if ${CI:-false}
-then
-    echo -n
-else
-    python3 cibuild/pack_extension.py
-fi
-
