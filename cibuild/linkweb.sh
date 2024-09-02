@@ -226,7 +226,15 @@ _________________________________________________________
         gzip -f -9 $tarf
     done
 
+    echo "
 
+
+____________________________ enabled extensions __________________________________
+"
+    cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+echo "
+__________________________________________________________________________________
+"
     cp $WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
 
 popd
