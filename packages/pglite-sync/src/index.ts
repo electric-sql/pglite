@@ -109,7 +109,7 @@ async function createPlugin(
   }
 }
 
-export function electricSync(options: ElectricSyncOptions) {
+export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
     setup: async (pg: PGliteInterface) => {
