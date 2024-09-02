@@ -1,5 +1,13 @@
 # @electric-sql/pglite
 
+## 0.2.5
+
+### Patch Changes
+
+- fcb101c: Add `    tx.sql`` ` API to PGliteWorker transactions.
+- 3ee5e60: Implement `.create(dataDir: string, options: PGliteOptions)` signature for factory method to match constructor.
+- 0dc34af: Enable event triggers like `ddl_command_end`.
+
 ## 0.2.4
 
 ### Patch Changes

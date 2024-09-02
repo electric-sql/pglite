@@ -1,5 +1,15 @@
 # @electric-sql/pglite-vue
 
+## 0.2.5
+
+### Patch Changes
+
+- fcb101c: Add `useLiveQuery.sql` hook for SQL string templating.
+- Updated dependencies [fcb101c]
+- Updated dependencies [3ee5e60]
+- Updated dependencies [0dc34af]
+  - @electric-sql/pglite@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes
