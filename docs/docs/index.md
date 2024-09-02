@@ -133,6 +133,8 @@ const ret = await db.query(
 
 - There are [framework hooks](./framework-hooks/react.md) to make working with PGlite within React and Vue much easier with less boilerplate.
 
+- For help configuring PGlite with your bundler, see the [bundler support](./bundler-support.md) page.
+
 - As PGlite only has a single exclusive connection to the database, we provide a [multi-tab worker](./multi-tab-worker.md) to enable sharing a PGlite instance between multiple browser tabs.
 
 - There is a [REPL component](./repl.md) that can be easily embedded into a web-app to aid in debugging and development, or as part of a database application itself.
