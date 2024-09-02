@@ -39,6 +39,11 @@
       "require": "./dist/worker/index.cjs",
       "types": "./dist/worker/index.d.ts"
     },
+    "./postgis": {
+      "import": "./dist/postgis/index.js",
+      "require": "./dist/postgis/index.cjs",
+      "types": "./dist/postgis/index.d.ts"
+    },
     "./vector": {
       "import": "./dist/vector/index.js",
       "require": "./dist/vector/index.cjs",
