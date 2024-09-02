@@ -250,10 +250,11 @@ importers:
         version: 1.1.1(vite@5.4.0(@types/node@20.14.15)(terser@5.31.6))
 
   packages/pglite-sync:
-    devDependencies:
+    dependencies:
       '@electric-sql/client':
-        specifier: ^0.3.1
-        version: 0.3.1
+        specifier: ^0.3.2
+        version: 0.3.2
+    devDependencies:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
@@ -629,8 +630,8 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@0.3.1':
-    resolution: {integrity: sha512-algV8ntk6KjWg8x4SggkQGMCN1MnYxFYdK160XIic+b2PCQ51+0uCxr8ouEGdNY+IJzvyNePilWvIGtT9pZd+w==}
+  '@electric-sql/client@0.3.2':
+    resolution: {integrity: sha512-DVOtrIfg7xlXpU95F53MnLXLeIn1eYkSRz01vj63NzZZ7bf6vLSHzNKvil0413C3U3769btfQytGNWmsb744WQ==}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -2002,6 +2003,7 @@ packages:
 
   bun@1.1.24:
     resolution: {integrity: sha512-vZt5zNVaoNTSlNprdVdQVZInBcGC2QSik6o9ZsMzuYiiUEAEqpRwwMXAYDUN85mt2FNnsGvmk/8xVlUXS7IzEw==}
+    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -5031,7 +5033,7 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@0.3.1':
+  '@electric-sql/client@0.3.2':
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.20.0
 
