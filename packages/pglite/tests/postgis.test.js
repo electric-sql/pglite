@@ -73,8 +73,9 @@ await testEsmAndCjs(async (importType) => {
           affectedRows: 0,
         },
       ])
-    })
 */
+    })
+
   })
 
 })
