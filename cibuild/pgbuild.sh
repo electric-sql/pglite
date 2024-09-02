@@ -51,13 +51,14 @@ else
 fi
 # --with-libxml does not fit with --without-zlib
 
+    export XML2_CONFIG=$PREFIX/bin/xml2-config
+
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
-   XML2_CONFIG=$PREFIX/bin/xml2-config \
  --cache-file=${PGROOT}/config.cache.${BUILD} \
  --disable-spinlocks --disable-largefile --without-llvm \
  --without-pam --disable-largefile --with-openssl=no \
  --without-readline --without-icu \
- ${UUID} {$XML2} ${PGDEBUG}"
+ ${UUID} ${XML2} ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
 
