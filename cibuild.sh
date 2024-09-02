@@ -368,7 +368,7 @@ then
                 SDK_URL=https://github.com/pygame-web/python-wasm-sdk-extra/releases/download/$SDK_VERSION/python-emsdk-sdk-extra-${CIVER}.tar.lz4
                 echo "Installing $SDK_URL"
                 curl -sL --retry 5 $SDK_URL | tar xvP --use-compress-program=lz4 | pv -p -l -s 15000 >/dev/null
-                chmod ./extra/*.sh
+                chmod +x ./extra/*.sh
             fi
         fi
         echo "======================= ${extra_ext} : $(pwd) ==================="
