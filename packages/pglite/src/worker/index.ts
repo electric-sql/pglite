@@ -324,7 +324,6 @@ export class PGliteWorker
    * @returns The direct message data response produced by Postgres
    */
   async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
-    await this.waitReady
     return (await this.#rpc('execProtocolRaw', message)) as Uint8Array
   }
 
@@ -336,7 +335,6 @@ export class PGliteWorker
   async execProtocol(
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    await this.waitReady
     return (await this.#rpc('execProtocol', message)) as Array<
       [BackendMessage, Uint8Array]
     >
@@ -359,6 +357,7 @@ export class PGliteWorker
     channel: string,
     callback: (payload: string) => void,
   ): Promise<() => Promise<void>> {
+    console.log('listen', channel)
     await this.waitReady
     if (!this.#notifyListeners.has(channel)) {
       this.#notifyListeners.set(channel, new Set())
@@ -379,6 +378,7 @@ export class PGliteWorker
     channel: string,
     callback?: (payload: string) => void,
   ): Promise<void> {
+    console.log('unlisten', channel)
     await this.waitReady
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback)
@@ -396,6 +396,7 @@ export class PGliteWorker
    * @param callback The callback to call when a notification is received
    */
   onNotification(callback: (channel: string, payload: string) => void) {
+    console.log('onNotification', callback)
     this.#globalNotifyListeners.add(callback)
     return () => {
       this.#globalNotifyListeners.delete(callback)
@@ -411,6 +412,7 @@ export class PGliteWorker
   }
 
   #receiveNotification(channel: string, payload: string) {
+    console.log('receiveNotification', channel, payload)
     const listeners = this.#notifyListeners.get(channel)
     if (listeners) {
       for (const listener of listeners) {
@@ -538,6 +540,7 @@ export async function worker({ init }: WorkerOptions) {
 
   // Listen for notifications and broadcast them to all tabs
   db.onNotification((channel, payload) => {
+    console.log('onNotification', channel, payload)
     broadcastChannel.postMessage({ type: 'notify', channel, payload })
   })
 }
@@ -567,6 +570,7 @@ function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
     const msg = event.data
     switch (msg.type) {
       case 'rpc-call': {
+        await pg.waitReady
         const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>
         try {
           // @ts-ignore no apparent reason why it fails
@@ -619,12 +623,32 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       await db.close()
     },
     async execProtocol(message: Uint8Array) {
-      // await db.waitReady
-      return await db.execProtocol(message)
+      const result = await db.execProtocol(message)
+      return result.map(([message, data]) => {
+        if (data.byteLength !== data.buffer.byteLength) {
+          // The data is a slice of a larger buffer, this is potentially the whole
+          // memory of the WASM module. We copy it to a new Uint8Array and return that.
+          const buffer = new ArrayBuffer(data.byteLength)
+          const dataCopy = new Uint8Array(buffer)
+          dataCopy.set(data)
+          return [message, dataCopy]
+        } else {
+          return [message, data]
+        }
+      })
     },
     async execProtocolRaw(message: Uint8Array) {
-      // await db.waitReady
-      return await db.execProtocolRaw(message)
+      const result = await db.execProtocolRaw(message)
+      if (result.byteLength !== result.buffer.byteLength) {
+        // The data is a slice of a larger buffer, this is potentially the whole
+        // memory of the WASM module. We copy it to a new Uint8Array and return that.
+        const buffer = new ArrayBuffer(result.byteLength)
+        const resultCopy = new Uint8Array(buffer)
+        resultCopy.set(result)
+        return resultCopy
+      } else {
+        return result
+      }
     },
     async dumpDataDir() {
       return await db.dumpDataDir()

@@ -57,6 +57,7 @@ const pg = new PGliteWorker(
     },
   }
 );
+window.pg = pg;
 
 pg.onLeaderChange(() => {
   if (pg.isLeader) {
@@ -67,53 +68,52 @@ pg.onLeaderChange(() => {
   }
 });
 
-console.log("Creating table...");
+console.log(await pg.query('SELECT 1'))
 
-// wait for 1 second
-await new Promise(resolve => setTimeout(resolve, 500));
+// console.log("Creating table...");
 
-await pg.exec(`
-  CREATE EXTENSION IF NOT EXISTS vector;
-  CREATE TABLE IF NOT EXISTS test (
-    id SERIAL PRIMARY KEY,
-    data vector(3)
-  );
-`);
+// await pg.exec(`
+//   CREATE EXTENSION IF NOT EXISTS vector;
+//   CREATE TABLE IF NOT EXISTS test (
+//     id SERIAL PRIMARY KEY,
+//     data vector(3)
+//   );
+// `);
 
-console.log("Ready!");
+// console.log("Ready!");
 
-async function insertData() {
-  const data = [
-    Math.random(),
-    Math.random(),
-    Math.random(),
-  ];
-  await pg.query(
-    `INSERT INTO test (data) VALUES ($1)`,
-    [JSON.stringify(data)]
-  );
-}
+// async function insertData() {
+//   const data = [
+//     Math.random(),
+//     Math.random(),
+//     Math.random(),
+//   ];
+//   await pg.query(
+//     `INSERT INTO test (data) VALUES ($1)`,
+//     [JSON.stringify(data)]
+//   );
+// }
 
-async function clearData() {
-  await pg.query(`DELETE FROM test`);
-}
+// async function clearData() {
+//   await pg.query(`DELETE FROM test`);
+// }
 
-const btnInsert = document.querySelector("#insert");
-btnInsert.addEventListener("click", insertData);
+// const btnInsert = document.querySelector("#insert");
+// btnInsert.addEventListener("click", insertData);
 
-const btnClear = document.querySelector("#clear");
-btnClear.addEventListener("click", clearData);
+// const btnClear = document.querySelector("#clear");
+// btnClear.addEventListener("click", clearData);
 
-// pg.live.query(
-pg.live.incrementalQuery(
-  `SELECT * FROM test`,
-  [],
-  'id',
-  (data) => {
-    const output = document.getElementById("output");
-    output.textContent = JSON.stringify(data.rows, null, 2);
-  }
-);
+// // pg.live.query(
+// pg.live.incrementalQuery(
+//   `SELECT * FROM test`,
+//   [],
+//   'id',
+//   (data) => {
+//     const output = document.getElementById("output");
+//     output.textContent = JSON.stringify(data.rows, null, 2);
+//   }
+// );
 </script>
 </div>
 <div id="log"></div>
