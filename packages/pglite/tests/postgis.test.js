@@ -7,7 +7,7 @@ await testEsmAndCjs(async (importType) => {
       ? await import('../dist/index.js')
       : await import('../dist/index.cjs')
 
-  const { vector } =
+  const { postgis } =
     importType === 'esm'
       ? await import('../dist/postgis/index.js')
       : await import('../dist/postgis/index.cjs')
@@ -21,7 +21,7 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-/*
+      /*
       await pg.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -36,7 +36,7 @@ await testEsmAndCjs(async (importType) => {
       const res = await pg.exec(`
         SELECT postgis_full_version();
   `)
-/*
+
       expect(res).toMatchObject([
         {
           rows: [
@@ -45,37 +45,16 @@ await testEsmAndCjs(async (importType) => {
               vec: '[1,2,3]',
               distance: 2.449489742783178,
             },
-            {
-              name: 'test2',
-              vec: '[4,5,6]',
-              distance: 5.744562646538029,
-            },
-            {
-              name: 'test3',
-              vec: '[7,8,9]',
-              distance: 10.677078252031311,
-            },
           ],
           fields: [
             {
               name: 'name',
               dataTypeID: 25,
             },
-            {
-              name: 'vec',
-              dataTypeID: 12772,
-            },
-            {
-              name: 'distance',
-              dataTypeID: 701,
-            },
           ],
           affectedRows: 0,
         },
       ])
-*/
     })
-
   })
-
 })

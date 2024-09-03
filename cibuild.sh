@@ -437,8 +437,8 @@ do
                 mkdir -p $PGLITE/release
                 rm $PGLITE/release/* 2>/dev/null
 
-                # move packed extensions
-                mv ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+                # copy packed extensions for dist
+                cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
 
                 # copy wasm web prebuilt artifacts to release folder
                 # TODO: get them from web for nosdk systems.

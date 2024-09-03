@@ -235,6 +235,7 @@
             if (!err) {
                 if (vm.FS.filesystems.PGFS && vm.FS.filesystems.PGFS.load_package) {
                     vm.FS.filesystems.PGFS.load_package("vector","vector.tar.gz")
+                    //vm.FS.filesystems.PGFS.load_package("postgis","postgis-3.tar.gz")
                     if (vm.FS.analyzePath(PGDATA+"/PG_VERSION").exists) {
                         console.log("@@@@@@@@@@@@@@@@@@@@@ found DB @@@@@@@@@@@@@@@@@@@@@@@")
                         console.log( vm.FS.readdir(PGDATA));
@@ -272,6 +273,7 @@
             }
             */
             await Module.load_package("vector", "vector.tar.gz")
+            await Module.load_package("postgis", "postgis-3.tar.gz")
 
             vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
 

@@ -38,7 +38,9 @@ END
 
     # --without-raster --without-topology --without-address-standardizer
     # --without-raster => --with-gdalconfig=
-    CONFIG_SITE=config.site emconfigure ./configure --with-gdalconfig=$PREFIX/bin/gdal-config\
+    # --with-gdalconfig=$PREFIX/bin/gdal-config
+    CONFIG_SITE=config.site emconfigure ./configure \
+  --without-raster --without-topology --without-address-standardizer \
      --without-gui --without-phony-revision --without-protobuf \
      --without-interrupt-tests --without-json \
      --without-libiconv --without-libiconv-prefix \
@@ -52,9 +54,9 @@ END
 
     # or would fail on some frontend functions linking.
     sed -i 's/PGSQL_FE_LDFLAGS=-L/PGSQL_FE_LDFLAGS=-sERROR_ON_UNDEFINED_SYMBOLS=0 -L/g' loader/Makefile
-    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 -Wno-unused-function -lpng -ljpeg -lsqlite3" emmake make install
+    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 -Wno-unused-function -lc++-noexcept -lpng -ljpeg -lsqlite3" emmake make install
     rm $PGROOT/share/postgresql/extension/postgis*.sql
-    cp extensions/postgis_tiger_geocoder/sql/postgis_tiger_geocoder--TEMPLATED--TO--ANY.sql $PGROOT/share/postgresql/extension/postgis--3.4.2.sql
+    cp extensions/postgis/sql/postgis--TEMPLATED--TO--ANY.sql $PGROOT/share/postgresql/extension/postgis--3.4.2.sql
 
 popd
 
