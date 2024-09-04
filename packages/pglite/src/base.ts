@@ -194,7 +194,7 @@ export abstract class BasePGlite
       if (!this.#inTransaction) {
         await this.syncToFs()
       }
-      let blob = await this._getWrittenBlob()
+      const blob = await this._getWrittenBlob()
       return parseResults(
         results.map(([msg]) => msg),
         options,
@@ -231,7 +231,7 @@ export abstract class BasePGlite
       if (!this.#inTransaction) {
         await this.syncToFs()
       }
-      let blob = await this._getWrittenBlob()
+      const blob = await this._getWrittenBlob()
       return parseResults(
         results.map(([msg]) => msg),
         options,
