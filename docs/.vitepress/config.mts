@@ -111,7 +111,7 @@ export default defineConfig({
           { text: 'Bundler Support', link: '/docs/bundler-support' },
           { text: 'Multi-tab Worker', link: '/docs/multi-tab-worker' },
           { text: 'REPL Component', link: '/docs/repl' },
-          { text: 'ORM Support', link: '/docs/orm-support' },
+          { text: 'ORM/Query Builder Support', link: '/docs/orm-support' },
           { text: 'Sync using ElectricSQL', link: '/docs/sync' },
         ],
       },
