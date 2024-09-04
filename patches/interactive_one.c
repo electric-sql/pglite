@@ -531,8 +531,10 @@ wire_flush:
         if (SOCKET_DATA>0) {
             if (!ClientAuthInProgress) {
                 PDEBUG("# 533: end packet - sending rfq");
-                if (send_ready_for_query)
+                if (send_ready_for_query) {
                     ReadyForQuery(DestRemote);
+                    send_ready_for_query = false;
+                }
             } else {
                 PDEBUG("# 537: end packet (ClientAuthInProgress - no rfq) ");
             }
