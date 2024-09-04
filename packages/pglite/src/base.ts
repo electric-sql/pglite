@@ -190,7 +190,7 @@ export abstract class BasePGlite
       } finally {
         await this.#execProtocolNoSync(serialize.sync(), options)
       }
-      this._cleanupBlob()
+      await this._cleanupBlob()
       if (!this.#inTransaction) {
         await this.syncToFs()
       }
