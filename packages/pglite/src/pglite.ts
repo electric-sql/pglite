@@ -2,20 +2,15 @@ import { Mutex } from 'async-mutex'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
 import { makeLocateFile } from './utils.js'
-import { query as queryTemplate } from './templating.js'
-import { parseResults } from './parse.js'
-import { serializeType } from './types.js'
 import type {
   DebugLevel,
   PGliteOptions,
   PGliteInterface,
-  Results,
-  Transaction,
-  QueryOptions,
   ExecProtocolOptions,
   PGliteInterfaceExtensions,
   Extensions,
 } from './interface.js'
+import { BasePGlite } from './base.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
 import { loadTar, DumpTarCompressionOptions } from './fs/tarUtils.js'
 
@@ -31,7 +26,10 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-export class PGlite implements PGliteInterface, AsyncDisposable {
+export class PGlite
+  extends BasePGlite
+  implements PGliteInterface, AsyncDisposable
+{
   fs?: Filesystem
   protected mod?: PostgresMod
 
@@ -84,6 +82,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
+    super()
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
         dataDir: dataDirOrPGliteOptions,
@@ -366,12 +365,12 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
 
     // Sync any changes back to the persisted store (if there is one)
     // TODO: only sync here if initdb did init db.
-    await this.#syncToFs()
-
-    // Set the search path to public for this connection
-    await this.#runExec('SET search_path TO public;')
+    await this.syncToFs()
 
     this.#ready = true
+
+    // Set the search path to public for this connection
+    await this.exec('SET search_path TO public;')
 
     // Init extensions
     for (const initFn of extensionInitFns) {
@@ -405,7 +404,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
    * @returns A promise that resolves when the database is closed
    */
   async close() {
-    await this.#checkReady()
+    await this._checkReady()
     this.#closing = true
 
     // Close all extensions
@@ -444,260 +443,37 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
   }
 
   /**
-   * Execute a single SQL statement
-   * This uses the "Extended Query" postgres wire protocol message.
-   * @param query The query to execute
-   * @param params Optional parameters for the query
-   * @returns The result of the query
-   */
-  async query<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>> {
-    await this.#checkReady()
-    // We wrap the public query method in the transaction mutex to ensure that
-    // only one query can be executed at a time and not concurrently with a
-    // transaction.
-    return await this.#transactionMutex.runExclusive(async () => {
-      return await this.#runQuery<T>(query, params, options)
-    })
-  }
-
-  /**
-   * Execute a single SQL statement like with {@link PGlite.query}, but with a
-   * templated statement where template values will be treated as parameters.
-   *
-   * You can use helpers from `/template` to further format the query with
-   * identifiers, raw SQL, and nested statements.
-   *
-   * This uses the "Extended Query" postgres wire protocol message.
-   *
-   * @param query The query to execute with parameters as template values
-   * @returns The result of the query
-   *
-   * @example
-   * ```ts
-   * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
-   * ```
-   */
-  async sql<T>(
-    sqlStrings: TemplateStringsArray,
-    ...params: any[]
-  ): Promise<Results<T>> {
-    const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
-    return await this.query(query, actualParams)
-  }
-
-  /**
-   * Execute a SQL query, this can have multiple statements.
-   * This uses the "Simple Query" postgres wire protocol message.
-   * @param query The query to execute
-   * @returns The result of the query
-   */
-  async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
-    await this.#checkReady()
-    // We wrap the public exec method in the transaction mutex to ensure that
-    // only one query can be executed at a time and not concurrently with a
-    // transaction.
-    return await this.#transactionMutex.runExclusive(async () => {
-      return await this.#runExec(query, options)
-    })
-  }
-
-  /**
-   * Internal method to execute a query
-   * Not protected by the transaction mutex, so it can be used inside a transaction
-   * @param query The query to execute
-   * @param params Optional parameters for the query
-   * @returns The result of the query
-   */
-  async #runQuery<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>> {
-    return await this.#queryMutex.runExclusive(async () => {
-      // We need to parse, bind and execute a query with parameters
-      this.#log('runQuery', query, params, options)
-      await this.#handleBlob(options?.blob)
-      const parsedParams =
-        params?.map((p) => serializeType(p, options?.setAllTypes)) || []
-      let results
-      try {
-        results = [
-          ...(await this.#execProtocolNoSync(
-            serialize.parse({
-              text: query,
-              types: parsedParams.map(([, type]) => type),
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serialize.bind({
-              values: parsedParams.map(([val]) => val),
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serialize.describe({ type: 'P' }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(serialize.execute({}), options)),
-        ]
-      } finally {
-        await this.#execProtocolNoSync(serialize.sync(), options)
-      }
-      this.#cleanupBlob()
-      if (!this.#inTransaction) {
-        await this.#syncToFs()
-      }
-      let blob: Blob | undefined
-      if (this.#queryWriteChunks) {
-        blob = new Blob(this.#queryWriteChunks)
-        this.#queryWriteChunks = undefined
-      }
-      return parseResults(
-        results.map(([msg]) => msg),
-        options,
-        blob,
-      )[0] as Results<T>
-    })
-  }
-
-  /**
-   * Internal method to execute a query
-   * Not protected by the transaction mutex, so it can be used inside a transaction
-   * @param query The query to execute
-   * @param params Optional parameters for the query
-   * @returns The result of the query
-   */
-  async #runExec(
-    query: string,
-    options?: QueryOptions,
-  ): Promise<Array<Results>> {
-    return await this.#queryMutex.runExclusive(async () => {
-      // No params so we can just send the query
-      this.#log('runExec', query, options)
-      await this.#handleBlob(options?.blob)
-      let results
-      try {
-        results = await this.#execProtocolNoSync(
-          serialize.query(query),
-          options,
-        )
-      } finally {
-        await this.#execProtocolNoSync(serialize.sync(), options)
-      }
-      this.#cleanupBlob()
-      if (!this.#inTransaction) {
-        await this.#syncToFs()
-      }
-      let blob: Blob | undefined
-      if (this.#queryWriteChunks) {
-        blob = new Blob(this.#queryWriteChunks)
-        this.#queryWriteChunks = undefined
-      }
-      return parseResults(
-        results.map(([msg]) => msg),
-        options,
-        blob,
-      ) as Array<Results>
-    })
-  }
-
-  /**
-   * Execute a transaction
-   * @param callback A callback function that takes a transaction object
-   * @returns The result of the transaction
-   */
-  async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
-  ): Promise<T | undefined> {
-    await this.#checkReady()
-    return await this.#transactionMutex.runExclusive(async () => {
-      await this.#runExec('BEGIN')
-
-      // Once a transaction is closed, we throw an error if it's used again
-      let closed = false
-      const checkClosed = () => {
-        if (closed) {
-          throw new Error('Transaction is closed')
-        }
-      }
-
-      try {
-        const tx: Transaction = {
-          query: async <T>(
-            query: string,
-            params?: any[],
-            options?: QueryOptions,
-          ): Promise<Results<T>> => {
-            checkClosed()
-            return await this.#runQuery(query, params, options)
-          },
-          sql: async <T>(
-            sqlStrings: TemplateStringsArray,
-            ...params: any[]
-          ): Promise<Results<T>> => {
-            const { query, params: actualParams } = queryTemplate(
-              sqlStrings,
-              ...params,
-            )
-            return await this.#runQuery(query, actualParams)
-          },
-          exec: async (
-            query: string,
-            options?: QueryOptions,
-          ): Promise<Array<Results>> => {
-            checkClosed()
-            return await this.#runExec(query, options)
-          },
-          rollback: async () => {
-            checkClosed()
-            // Rollback and set the closed flag to prevent further use of this
-            // transaction
-            await this.#runExec('ROLLBACK')
-            closed = true
-          },
-          get closed() {
-            return closed
-          },
-        }
-        const result = await callback(tx)
-        if (!closed) {
-          closed = true
-          await this.#runExec('COMMIT')
-        }
-        return result
-      } catch (e) {
-        if (!closed) {
-          await this.#runExec('ROLLBACK')
-        }
-        throw e
-      }
-    })
-  }
-
-  /**
    * Handle a file attached to the current query
    * @param file The file to handle
    */
-  async #handleBlob(blob?: File | Blob) {
+  async _handleBlob(blob?: File | Blob) {
     this.#queryReadBuffer = blob ? await blob.arrayBuffer() : undefined
   }
 
   /**
    * Cleanup the current file
    */
-  #cleanupBlob() {
+  async _cleanupBlob() {
     this.#queryReadBuffer = undefined
+  }
+
+  /**
+   * Get the written blob from the current query
+   * @returns The written blob
+   */
+  async _getWrittenBlob(): Promise<Blob | undefined> {
+    if (!this.#queryWriteChunks) {
+      return undefined
+    }
+    const blob = new Blob(this.#queryWriteChunks)
+    this.#queryWriteChunks = undefined
+    return blob
   }
 
   /**
    * Wait for the database to be ready
    */
-  async #checkReady() {
+  async _checkReady() {
     if (this.#closing) {
       throw new Error('PGlite is closing')
     }
@@ -745,7 +521,7 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     const data = mod.HEAPU8.subarray(msg_start, msg_end)
 
     if (syncToFs) {
-      await this.#syncToFs()
+      await this.syncToFs()
     }
 
     return data
@@ -807,18 +583,19 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
     return results
   }
 
-  async #execProtocolNoSync(
-    message: Uint8Array,
-    options: ExecProtocolOptions = {},
-  ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    return await this.execProtocol(message, { ...options, syncToFs: false })
+  /**
+   * Check if the database is in a transaction
+   * @returns True if the database is in a transaction, false otherwise
+   */
+  isInTransaction() {
+    return this.#inTransaction
   }
 
   /**
    * Perform any sync operations implemented by the filesystem, this is
    * run after every query to ensure that the filesystem is synced.
    */
-  async #syncToFs() {
+  async syncToFs() {
     if (this.#fsSyncScheduled) {
       return
     }
@@ -912,5 +689,23 @@ export class PGlite implements PGliteInterface, AsyncDisposable {
   ): Promise<File | Blob> {
     const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
     return this.fs!.dumpTar(this.mod!.FS, dbname, compression)
+  }
+
+  /**
+   * Run a function in a mutex that's exclusive to queries
+   * @param fn The query to run
+   * @returns The result of the query
+   */
+  _runExclusiveQuery<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#queryMutex.runExclusive(fn)
+  }
+
+  /**
+   * Run a function in a mutex that's exclusive to transactions
+   * @param fn The function to run
+   * @returns The result of the function
+   */
+  _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#transactionMutex.runExclusive(fn)
   }
 }
