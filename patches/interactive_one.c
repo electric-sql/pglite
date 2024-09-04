@@ -130,7 +130,7 @@ static void io_init(bool in_auth, bool out_auth) {
     	whereToSendOutput = DestRemote; /* now safe to ereport to client */
         MyProcPort = (Port *) calloc(1, sizeof(Port));
         if (!MyProcPort) {
-            PDEBUG("# 131 io_init   --------- NO CLIENT (oom) ---------");
+            PDEBUG("# 133: io_init   --------- NO CLIENT (oom) ---------");
             abort();
         }
         MyProcPort->canAcceptConnections = CAC_OK;
@@ -138,7 +138,7 @@ static void io_init(bool in_auth, bool out_auth) {
 
         SOCKET_FILE = NULL;
         SOCKET_DATA = 0;
-        PDEBUG("# 139 io_init  --------- CLIENT (ready) ---------");
+        PDEBUG("# 141: io_init  --------- CLIENT (ready) ---------");
 
 
 }
@@ -147,7 +147,7 @@ static void wait_unlock() {
     int busy = 0;
     while (access(PGS_OLOCK, F_OK) == 0) {
         if (!(busy++ % 1110222))
-            printf("FIXME: busy wait lock removed %d\n", busy);
+            printf("# 150: FIXME: busy wait lock removed %d\n", busy);
     }
 }
 
@@ -263,9 +263,9 @@ interactive_one() {
 
                         if (!firstchar) {
                             if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
-                                PDEBUG("# 274: ProcessStartupPacket !OK");
+                                PDEBUG("# 266: ProcessStartupPacket !OK");
                             } else {
-                                PDEBUG("# 276: auth request");
+                                PDEBUG("# 267: auth request");
                                 //ClientAuthentication(MyProcPort);
     ClientAuthInProgress = true;
                                 md5Salt[0]=0x01;
@@ -498,7 +498,7 @@ incoming:
 #endif
 
     if (force_echo) {
-        printf("# 524: wire=%d socket=%d repl=%c: %s", is_wire, is_socket, firstchar, inBuf->data);
+        printf("# 501: wire=%d socket=%d repl=%c: %s", is_wire, is_socket, firstchar, inBuf->data);
     }
 
 
@@ -530,10 +530,11 @@ incoming:
 wire_flush:
         if (SOCKET_DATA>0) {
             if (!ClientAuthInProgress) {
-                PDEBUG("# 529: end packet - sending rfq");
-                ReadyForQuery(DestRemote);
+                PDEBUG("# 533: end packet - sending rfq");
+                if (send_ready_for_query)
+                    ReadyForQuery(DestRemote);
             } else {
-                PDEBUG("# 532: end packet (ClientAuthInProgress - no rfq) ");
+                PDEBUG("# 537: end packet (ClientAuthInProgress - no rfq) ");
             }
 
             if (sockfiles) {
@@ -548,9 +549,9 @@ wire_flush:
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
                 if (cma_wsize)
-                    PDEBUG("# 551: cma and sockfile ???");
+                    PDEBUG("# 552: cma and sockfile ???");
                 if (sockfiles) {
-                    PDEBUG("# 553: setting sockfile lock, ready to read");
+                    PDEBUG("# 554: setting sockfile lock, ready to read");
                     PDEBUG(PGS_OLOCK);
                     c_lock = fopen(PGS_OLOCK, "w");
                     fclose(c_lock);
