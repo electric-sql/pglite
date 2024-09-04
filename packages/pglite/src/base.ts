@@ -161,7 +161,7 @@ export abstract class BasePGlite
   ): Promise<Results<T>> {
     return await this._runExclusiveQuery(async () => {
       // We need to parse, bind and execute a query with parameters
-      console.log('runQuery', query, params, options)
+      this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
       const parsedParams =
         params?.map((p) => serializeType(p, options?.setAllTypes)) || []
@@ -190,7 +190,6 @@ export abstract class BasePGlite
       } finally {
         await this.#execProtocolNoSync(serialize.sync(), options)
       }
-      console.log('runQuery results', results)
       this._cleanupBlob()
       if (!this.#inTransaction) {
         await this.syncToFs()
@@ -217,7 +216,7 @@ export abstract class BasePGlite
   ): Promise<Array<Results>> {
     return await this._runExclusiveQuery(async () => {
       // No params so we can just send the query
-      console.log('runExec', query, options)
+      this.#log('runExec', query, options)
       await this._handleBlob(options?.blob)
       let results
       try {
@@ -321,9 +320,9 @@ export abstract class BasePGlite
   /**
    * Internal log function
    */
-  // #log(...args: any[]) {
-  //   if (this.debug > 0) {
-  //     console.log(...args)
-  //   }
-  // }
+  #log(...args: any[]) {
+    if (this.debug > 0) {
+      console.log(...args)
+    }
+  }
 }

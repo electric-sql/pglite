@@ -27,29 +27,27 @@ const pg = new PGlite();
 
 console.log("Ready!");
 
-console.log(await pg.query('SELECT 1'))
+console.log("Creating table...");
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`);
 
-// console.log("Creating table...");
-// await pg.exec(`
-//   CREATE TABLE IF NOT EXISTS test (
-//     id SERIAL PRIMARY KEY,
-//     name TEXT
-//   );
-// `);
+console.log("Inserting data...");
 
-// console.log("Inserting data...");
+await pg.exec("INSERT INTO test (name) VALUES ('test');");
 
-// await pg.exec("INSERT INTO test (name) VALUES ('test');");
+console.log("Selecting data...");
 
-// console.log("Selecting data...");
+const res = await pg.exec(`
+  SELECT * FROM test;
+`);
 
-// const res = await pg.exec(`
-//   SELECT * FROM test;
-// `);
+console.log(res);
 
-// console.log(res);
-
-// console.log(await pg.exec("SELECT * FROM test;"));
+console.log(await pg.exec("SELECT * FROM test;"));
 </script>
 <div id="log"></div>
 </div>

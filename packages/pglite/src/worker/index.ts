@@ -357,7 +357,6 @@ export class PGliteWorker
     channel: string,
     callback: (payload: string) => void,
   ): Promise<() => Promise<void>> {
-    console.log('listen', channel)
     await this.waitReady
     if (!this.#notifyListeners.has(channel)) {
       this.#notifyListeners.set(channel, new Set())
@@ -378,7 +377,6 @@ export class PGliteWorker
     channel: string,
     callback?: (payload: string) => void,
   ): Promise<void> {
-    console.log('unlisten', channel)
     await this.waitReady
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback)
@@ -396,7 +394,6 @@ export class PGliteWorker
    * @param callback The callback to call when a notification is received
    */
   onNotification(callback: (channel: string, payload: string) => void) {
-    console.log('onNotification', callback)
     this.#globalNotifyListeners.add(callback)
     return () => {
       this.#globalNotifyListeners.delete(callback)
@@ -412,7 +409,6 @@ export class PGliteWorker
   }
 
   #receiveNotification(channel: string, payload: string) {
-    console.log('receiveNotification', channel, payload)
     const listeners = this.#notifyListeners.get(channel)
     if (listeners) {
       for (const listener of listeners) {
@@ -540,7 +536,6 @@ export async function worker({ init }: WorkerOptions) {
 
   // Listen for notifications and broadcast them to all tabs
   db.onNotification((channel, payload) => {
-    console.log('onNotification', channel, payload)
     broadcastChannel.postMessage({ type: 'notify', channel, payload })
   })
 }
