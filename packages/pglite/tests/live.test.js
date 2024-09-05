@@ -242,6 +242,37 @@ await testEsmAndCjs(async (importType) => {
       unsubscribe()
     })
 
+    it.only('incremental query non-int key', async () => {
+      const db = new PGlite({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS test (
+          id TEXT PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO test (id, number)
+        VALUES ('potato', 1), ('banana', 2);
+      `)
+
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        'SELECT * FROM test;',
+        [],
+        'id',
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 'potato', number: 1 },
+        { id: 'banana', number: 2 },
+      ])
+
+      unsubscribe()
+    })
+
     it('basic live incremental query', async () => {
       const db = new PGlite({
         extensions: { live },
