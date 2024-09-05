@@ -242,7 +242,7 @@ await testEsmAndCjs(async (importType) => {
       unsubscribe()
     })
 
-    it.only('incremental query non-int key', async () => {
+    it('incremental query with non-integer key', async () => {
       const db = new PGlite({
         extensions: { live },
       })
@@ -259,15 +259,33 @@ await testEsmAndCjs(async (importType) => {
         VALUES ('potato', 1), ('banana', 2);
       `)
 
+      let updatedResults
+      const eventTarget = new EventTarget()
+
       const { initialResults, unsubscribe } = await db.live.incrementalQuery(
         'SELECT * FROM test;',
         [],
         'id',
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
       )
 
       expect(initialResults.rows).toEqual([
         { id: 'potato', number: 1 },
         { id: 'banana', number: 2 },
+      ])
+
+      await db.exec(`UPDATE test SET number = 10 WHERE id = 'potato';`)
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 'banana', number: 2 },
+        { id: 'potato', number: 10 },
       ])
 
       unsubscribe()
