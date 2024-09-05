@@ -317,6 +317,8 @@ interactive_one() {
 
 PDEBUG("# 324 : TODO: set a pg_main started flag");
                             sf_connected++;
+// CHECK ME see 538 / 563
+                            send_ready_for_query = true;
                         } // auth
                     } else {
 #if PGDEBUG
@@ -491,6 +493,8 @@ incoming:
             goto wire_flush;
         }
         RESUME_INTERRUPTS();
+
+        send_ready_for_query = true;
         return;
     }
 
@@ -533,7 +537,6 @@ wire_flush:
                 PDEBUG("# 533: end packet - sending rfq");
                 if (send_ready_for_query) {
                     ReadyForQuery(DestRemote);
-                    send_ready_for_query = false;
                 }
             } else {
                 PDEBUG("# 537: end packet (ClientAuthInProgress - no rfq) ");
@@ -558,6 +561,8 @@ wire_flush:
                     c_lock = fopen(PGS_OLOCK, "w");
                     fclose(c_lock);
                 }
+// CHECK ME 320 / 538 . only initially or after error
+                // send_ready_for_query = true;
             }
 
         } else {
