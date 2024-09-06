@@ -24,6 +24,10 @@ yarn add @electric-sql/pglite
 bun install @electric-sql/pglite
 ```
 
+```bash [deno]
+deno add npm:@electric-sql/pglite
+```
+
 :::
 
 To use the in-memory Postgres:
