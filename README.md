@@ -33,7 +33,7 @@
 
 ![PGlite](https://raw.githubusercontent.com/electric-sql/pglite/main/screenshot.png)
 
-PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
+PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js, Bun and Deno, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
 
 ```javascript
 import { PGlite } from "@electric-sql/pglite";
@@ -43,7 +43,7 @@ await db.query("select 'Hello world' as message;");
 // -> { rows: [ { message: "Hello world" } ] }
 ```
 
-It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun) or indexedDB (Browser).
+It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun/Deno) or indexedDB (Browser).
 
 Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
 
@@ -76,12 +76,26 @@ or to persist the database to indexedDB:
 const db = new PGlite("idb://my-pgdata");
 ```
 
-## Node/Bun
+## Node/Bun/Deno
 
 Install into your project:
 
+**NodeJS**
+
 ```bash
 npm install @electric-sql/pglite
+```
+
+**Bun**
+
+```bash
+bun install @electric-sql/pglite
+```
+
+**Deno**
+
+```bash
+deno add npm:@electric-sql/pglite
 ```
 
 To use the in-memory Postgres:
