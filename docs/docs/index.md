@@ -1,8 +1,8 @@
 # Getting started with PGlite
 
-PGlite can be used in both Node/Bun or the browser, and with any JavaScript framework.
+PGlite can be used in both Node/Bun/Deno or the browser, and with any JavaScript framework.
 
-## Install and start in Node/Bun
+## Install and start in Node/Bun/Deno
 
 Install into your project:
 
