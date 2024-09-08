@@ -29,6 +29,7 @@ describe('hooks', () => {
         return <PGliteProvider db={db}>{children}</PGliteProvider>
       }
 
+      // Create the test table
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -36,6 +37,15 @@ describe('hooks', () => {
         );
       `)
       await db.exec(`TRUNCATE test;`)
+
+      // Create the someTable
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS "someTable" (
+          id SERIAL PRIMARY KEY,
+          value TEXT
+        );
+      `)
+      await db.exec(`TRUNCATE "someTable";`)
     })
 
     it('updates when query parameter changes', async () => {
@@ -65,6 +75,24 @@ describe('hooks', () => {
             name: 'test2',
           },
         ]),
+      )
+    })
+
+    it('works with camel case table names', async () => {
+      await db.exec(`INSERT INTO "someTable" (value) VALUES ('value1'),('value2');`)
+
+      const { result } = renderHook(
+        () => useLiveQuery.sql`SELECT * FROM "someTable" WHERE value = ${'value1'};`,
+        { wrapper }
+      )
+
+      await waitFor(() =>
+        expect(result.current?.rows).toEqual([
+          {
+            id: 1,
+            value: 'value1',
+          },
+        ])
       )
     })
   })
