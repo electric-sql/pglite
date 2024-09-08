@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.2.6
+
+### Patch Changes
+
+- ef57e10: Refactor PGliteWorker so parsing happens on the main thread, fixes query options with custom parser
+
 ## 0.2.5
 
 ### Patch Changes
