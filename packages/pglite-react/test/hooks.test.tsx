@@ -79,11 +79,14 @@ describe('hooks', () => {
     })
 
     it('works with camel case table names', async () => {
-      await db.exec(`INSERT INTO "someTable" (value) VALUES ('value1'),('value2');`)
+      await db.exec(
+        `INSERT INTO "someTable" (value) VALUES ('value1'),('value2');`,
+      )
 
       const { result } = renderHook(
-        () => useLiveQuery.sql`SELECT * FROM "someTable" WHERE value = ${'value1'};`,
-        { wrapper }
+        () =>
+          useLiveQuery.sql`SELECT * FROM "someTable" WHERE value = ${'value1'};`,
+        { wrapper },
       )
 
       await waitFor(() =>
@@ -92,7 +95,7 @@ describe('hooks', () => {
             id: 1,
             value: 'value1',
           },
-        ])
+        ]),
       )
     })
   })
