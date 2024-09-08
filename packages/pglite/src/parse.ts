@@ -22,18 +22,20 @@ export function parseResults(
 
   const filteredMessages = messages.filter(
     (msg) =>
-      msg instanceof RowDescriptionMessage ||
-      msg instanceof DataRowMessage ||
-      msg instanceof CommandCompleteMessage,
+      msg.name === 'rowDescription' ||
+      msg.name === 'dataRow' ||
+      msg.name === 'commandComplete',
   )
 
-  filteredMessages.forEach((msg, index) => {
-    if (msg instanceof RowDescriptionMessage) {
+  filteredMessages.forEach((message, index) => {
+    if (message.name === 'rowDescription') {
+      const msg = message as RowDescriptionMessage
       currentResultSet.fields = msg.fields.map((field) => ({
         name: field.name,
         dataTypeID: field.dataTypeID,
       }))
-    } else if (msg instanceof DataRowMessage && currentResultSet) {
+    } else if (message.name === 'dataRow' && currentResultSet) {
+      const msg = message as DataRowMessage
       if (options?.rowMode === 'array') {
         currentResultSet.rows.push(
           msg.fields.map((field, i) =>
@@ -59,7 +61,8 @@ export function parseResults(
           ),
         )
       }
-    } else if (msg instanceof CommandCompleteMessage) {
+    } else if (message.name === 'commandComplete') {
+      const msg = message as CommandCompleteMessage
       affectedRows += retrieveRowCount(msg)
 
       if (index === filteredMessages.length - 1)

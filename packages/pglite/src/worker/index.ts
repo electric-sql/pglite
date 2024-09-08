@@ -4,10 +4,9 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
-  QueryOptions,
-  Results,
-  Transaction,
 } from '../interface.js'
+import type { PGlite } from '../pglite.js'
+import { BasePGlite } from '../base.js'
 import { uuid } from '../utils.js'
 import type { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
@@ -16,7 +15,10 @@ export type PGliteWorkerOptions = PGliteOptions & {
   id?: string
 }
 
-export class PGliteWorker implements PGliteInterface, AsyncDisposable {
+export class PGliteWorker
+  extends BasePGlite
+  implements PGliteInterface, AsyncDisposable
+{
   #initPromise: Promise<void>
   #debug: DebugLevel = 0
 
@@ -46,6 +48,7 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   #extensionsClose: Array<() => Promise<void>> = []
 
   constructor(worker: Worker, options?: PGliteWorkerOptions) {
+    super()
     this.#workerProcess = worker
     this.#tabId = uuid()
     this.#extensions = options?.extensions ?? {}
@@ -310,115 +313,6 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   }
 
   /**
-   * Execute a single SQL statement
-   * This uses the "Extended Query" postgres wire protocol message.
-   * @param query The query to execute
-   * @param params Optional parameters for the query
-   * @returns The result of the query
-   */
-  async query<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>> {
-    await this.waitReady
-    return (await this.#rpc('query', query, params, options)) as Results<T>
-  }
-
-  /**
-   * Execute a single SQL statement like with {@link PGlite.query}, but with a
-   * templated statement where template values will be treated as parameters.
-   *
-   * You can use helpers from `/template` to further format the query with
-   * identifiers, raw SQL, and nested statements.
-   *
-   * This uses the "Extended Query" postgres wire protocol message.
-   *
-   * @param query The query to execute with parameters as template values
-   * @returns The result of the query
-   *
-   * @example
-   * ```ts
-   * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
-   * ```
-   */
-  async sql<T>(
-    sqlStrings: TemplateStringsArray,
-    ...params: any[]
-  ): Promise<Results<T>> {
-    await this.waitReady
-    return (await this.#rpc(
-      'sql',
-      sqlStrings,
-      sqlStrings.raw,
-      params,
-    )) as Results<T>
-  }
-
-  /**
-   * Execute a SQL query, this can have multiple statements.
-   * This uses the "Simple Query" postgres wire protocol message.
-   * @param query The query to execute
-   * @returns The result of the query
-   */
-  async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
-    await this.waitReady
-    return (await this.#rpc('exec', query, options)) as Array<Results>
-  }
-
-  /**
-   * Execute a transaction
-   * @param callback A callback function that takes a transaction object
-   * @returns The result of the transaction
-   */
-  async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
-  ): Promise<T | undefined> {
-    await this.waitReady
-    const txId = await this.#rpc('transactionStart')
-    let ret: T | undefined
-    try {
-      ret = await callback({
-        query: async (query, params, options) => {
-          return await this.#rpc(
-            'transactionQuery',
-            txId,
-            query,
-            params,
-            options,
-          )
-        },
-        sql: async (sqlStrings, ...params) => {
-          return this.#rpc(
-            'transactionSql',
-            txId,
-            sqlStrings,
-            sqlStrings.raw,
-            params,
-          )
-        },
-        exec: async (query, options) => {
-          return (await this.#rpc(
-            'transactionExec',
-            txId,
-            query,
-            options,
-          )) as any
-        },
-        rollback: async () => {
-          await this.#rpc('transactionRollback', txId)
-        },
-        closed: false,
-      } as Transaction)
-    } catch (error) {
-      await this.#rpc('transactionRollback', txId)
-      throw error
-    }
-    await this.#rpc('transactionCommit', txId)
-    return ret
-  }
-
-  /**
    * Execute a postgres wire protocol message directly without wrapping the response.
    * Only use if `execProtocol()` doesn't suite your needs.
    *
@@ -430,7 +324,6 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
    * @returns The direct message data response produced by Postgres
    */
   async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
-    await this.waitReady
     return (await this.#rpc('execProtocolRaw', message)) as Uint8Array
   }
 
@@ -442,10 +335,17 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   async execProtocol(
     message: Uint8Array,
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    await this.waitReady
     return (await this.#rpc('execProtocol', message)) as Array<
       [BackendMessage, Uint8Array]
     >
+  }
+
+  /**
+   * Sync the database to the filesystem
+   * @returns Promise that resolves when the database is synced to the filesystem
+   */
+  async syncToFs() {
+    await this.#rpc('syncToFs')
   }
 
   /**
@@ -534,12 +434,44 @@ export class PGliteWorker implements PGliteInterface, AsyncDisposable {
   offLeaderChange(callback: () => void) {
     this.#eventTarget.removeEventListener('leader-change', callback)
   }
+
+  async _handleBlob(blob?: File | Blob): Promise<void> {
+    await this.#rpc('_handleBlob', blob)
+  }
+
+  async _getWrittenBlob(): Promise<File | Blob | undefined> {
+    return await this.#rpc('_getWrittenBlob')
+  }
+
+  async _cleanupBlob(): Promise<void> {
+    await this.#rpc('_cleanupBlob')
+  }
+
+  async _checkReady() {
+    await this.waitReady
+  }
+
+  async _runExclusiveQuery<T>(fn: () => Promise<T>): Promise<T> {
+    await this.#rpc('_acquireQueryLock')
+    try {
+      return await fn()
+    } finally {
+      await this.#rpc('_releaseQueryLock')
+    }
+  }
+
+  async _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    await this.#rpc('_acquireTransactionLock')
+    try {
+      return await fn()
+    } finally {
+      await this.#rpc('_releaseTransactionLock')
+    }
+  }
 }
 
 export interface WorkerOptions {
-  init: (
-    options: Exclude<PGliteWorkerOptions, 'extensions'>,
-  ) => Promise<PGliteInterface>
+  init: (options: Exclude<PGliteWorkerOptions, 'extensions'>) => Promise<PGlite>
 }
 
 export async function worker({ init }: WorkerOptions) {
@@ -608,11 +540,7 @@ export async function worker({ init }: WorkerOptions) {
   })
 }
 
-function connectTab(
-  tabId: string,
-  pg: PGliteInterface,
-  connectedTabs: Set<string>,
-) {
+function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
   if (connectedTabs.has(tabId)) {
     return
   }
@@ -631,12 +559,13 @@ function connectTab(
     })
   })
 
-  const api = makeWorkerApi(pg)
+  const api = makeWorkerApi(tabId, pg)
 
   tabChannel.addEventListener('message', async (event) => {
     const msg = event.data
     switch (msg.type) {
       case 'rpc-call': {
+        await pg.waitReady
         const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>
         try {
           // @ts-ignore no apparent reason why it fails
@@ -665,15 +594,21 @@ function connectTab(
   tabChannel.postMessage({ type: 'connected' })
 }
 
-function makeWorkerApi(db: PGliteInterface) {
-  const transactions = new Map<
-    string,
-    Promise<{
-      tx: Transaction
-      resolve: () => void
-      reject: (error: any) => void
-    }>
-  >()
+function makeWorkerApi(tabId: string, db: PGlite) {
+  let queryLockRelease: (() => void) | null = null
+  let transactionLockRelease: (() => void) | null = null
+
+  // If the tab is closed and it is holding a lock, release the the locks
+  // and rollback any pending transactions
+  const tabCloseLockId = `pglite-tab-close:${tabId}`
+  acquireLock(tabCloseLockId).then(() => {
+    if (transactionLockRelease) {
+      // rollback any pending transactions
+      db.exec('ROLLBACK')
+    }
+    queryLockRelease?.()
+    transactionLockRelease?.()
+  })
 
   return {
     async getDebugLevel() {
@@ -682,103 +617,79 @@ function makeWorkerApi(db: PGliteInterface) {
     async close() {
       await db.close()
     },
-    async query(query: string, params?: any[], options?: QueryOptions) {
-      return await db.query(query, params, options)
-    },
-    async sql(
-      sqlStrings: ReadonlyArray<string>,
-      sqlStringsRaw: ReadonlyArray<string>,
-      params: any[],
-    ) {
-      const sqlStringsFull = sqlStrings as ReadonlyArray<string> & {
-        raw: ReadonlyArray<string>
-      }
-      sqlStringsFull.raw = sqlStringsRaw
-      return await db.sql(sqlStringsFull, ...params)
-    },
-    async exec(query: string, options?: QueryOptions) {
-      return await db.exec(query, options)
-    },
-    async transactionStart() {
-      const txId = uuid()
-      const { promise: txPromise, resolve: resolveTxPromise } = makePromise<{
-        tx: Transaction
-        resolve: () => void
-        reject: (error: any) => void
-      }>()
-      transactions.set(txId, txPromise)
-      db.transaction((newTx) => {
-        return new Promise<void>((resolveTx, rejectTx) => {
-          resolveTxPromise({
-            tx: newTx,
-            resolve: resolveTx,
-            reject: rejectTx,
-          })
-        })
-      })
-      return txId
-    },
-    async transactionCommit(id: string) {
-      if (!transactions.has(id)) {
-        throw new Error('No transaction')
-      }
-      const trnasaction = await transactions.get(id)!
-      trnasaction.resolve()
-
-      transactions.delete(id)
-    },
-    async transactionQuery<T>(
-      id: string,
-      query: string,
-      params?: any[],
-      options?: QueryOptions,
-    ) {
-      if (!transactions.has(id)) {
-        throw new Error('No transaction')
-      }
-      const tx = (await transactions.get(id)!).tx
-      return await tx.query<T>(query, params, options)
-    },
-    async transactionSql<T>(
-      id: string,
-      sqlStrings: ReadonlyArray<string>,
-      sqlStringsRaw: ReadonlyArray<string>,
-      params: any[],
-    ) {
-      if (!transactions.has(id)) {
-        throw new Error('No transaction')
-      }
-      const sqlStringsFull = sqlStrings as ReadonlyArray<string> & {
-        raw: ReadonlyArray<string>
-      }
-      sqlStringsFull.raw = sqlStringsRaw
-      const tx = (await transactions.get(id)!).tx
-      return await tx.sql<T>(sqlStringsFull, ...params)
-    },
-    async transactionExec(id: string, query: string, options?: QueryOptions) {
-      if (!transactions.has(id)) {
-        throw new Error('No transaction')
-      }
-      const tx = (await transactions.get(id)!).tx
-      return tx.exec(query, options)
-    },
-    async transactionRollback(id: string) {
-      if (!transactions.has(id)) {
-        throw new Error('No transaction')
-      }
-      const tx = await transactions.get(id)!
-      await tx.tx.rollback()
-      tx.reject(new Error('Transaction rolled back'))
-      transactions.delete(id)
-    },
     async execProtocol(message: Uint8Array) {
-      return await db.execProtocol(message)
+      const result = await db.execProtocol(message)
+      return result.map(([message, data]) => {
+        if (data.byteLength !== data.buffer.byteLength) {
+          // The data is a slice of a larger buffer, this is potentially the whole
+          // memory of the WASM module. We copy it to a new Uint8Array and return that.
+          const buffer = new ArrayBuffer(data.byteLength)
+          const dataCopy = new Uint8Array(buffer)
+          dataCopy.set(data)
+          return [message, dataCopy]
+        } else {
+          return [message, data]
+        }
+      })
     },
     async execProtocolRaw(message: Uint8Array) {
-      return await db.execProtocolRaw(message)
+      const result = await db.execProtocolRaw(message)
+      if (result.byteLength !== result.buffer.byteLength) {
+        // The data is a slice of a larger buffer, this is potentially the whole
+        // memory of the WASM module. We copy it to a new Uint8Array and return that.
+        const buffer = new ArrayBuffer(result.byteLength)
+        const resultCopy = new Uint8Array(buffer)
+        resultCopy.set(result)
+        return resultCopy
+      } else {
+        return result
+      }
     },
     async dumpDataDir() {
       return await db.dumpDataDir()
+    },
+    async syncToFs() {
+      return await db.syncToFs()
+    },
+    async _handleBlob(blob?: File | Blob) {
+      return await db._handleBlob(blob)
+    },
+    async _getWrittenBlob() {
+      return await db._getWrittenBlob()
+    },
+    async _cleanupBlob() {
+      return await db._cleanupBlob()
+    },
+    async _checkReady() {
+      return await db._checkReady()
+    },
+    async _acquireQueryLock() {
+      return new Promise<void>((resolve) => {
+        db._runExclusiveQuery(() => {
+          return new Promise<void>((release) => {
+            queryLockRelease = release
+            resolve()
+          })
+        })
+      })
+    },
+    async _releaseQueryLock() {
+      queryLockRelease?.()
+      queryLockRelease = null
+    },
+    async _acquireTransactionLock() {
+      return new Promise<void>((resolve) => {
+        db._runExclusiveTransaction(() => {
+          return new Promise<void>((release) => {
+            transactionLockRelease = release
+            resolve()
+          })
+        })
+      })
+    },
+    async _releaseTransactionLock() {
+      transactionLockRelease?.()
+      transactionLockRelease = null
     },
   }
 }
@@ -800,16 +711,6 @@ async function acquireLock(lockId: string) {
     })
   })
   return release
-}
-
-function makePromise<T>() {
-  let resolve: (value: T) => void
-  let reject: (error: any) => void
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  return { promise, resolve: resolve!, reject: reject! }
 }
 
 type WorkerApi = ReturnType<typeof makeWorkerApi>
