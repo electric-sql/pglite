@@ -51,13 +51,13 @@ npm i @electric-sql/pglite knex knex-pglite
 Then you can setup a regular Knex instance:
 
 ```javascript
-import { knex } from "knex"
-import ClientPgLite from "knex-pglite"
+import { knex } from 'knex'
+import ClientPgLite from 'knex-pglite'
 
 export const db = knex({
-    client: ClientPgLite,
-    dialect: "postgres",
-    connection: { connectionString: 'idb://my-database' },
+  client: ClientPgLite,
+  dialect: 'postgres',
+  connection: { connectionString: 'idb://my-database' },
 })
 ```
 
