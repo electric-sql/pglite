@@ -534,8 +534,10 @@ PDEBUG("# 330");
     /* We can now handle ereport(ERROR) */
     PG_exception_stack = &local_sigjmp_buf;
 
-    if (!ignore_till_sync)
+    if (!ignore_till_sync) {
+        printf("---538 send_ready_for_query = true\n");
         send_ready_for_query = true;	/* initially, or after error */
+    }
 
 #endif
 
@@ -996,8 +998,10 @@ exception_handler:
 		RESUME_INTERRUPTS();
 	}
 	PG_exception_stack = &local_sigjmp_buf;
-	if (!ignore_till_sync)
+	if (!ignore_till_sync) {
+        printf("---1001 send_ready_for_query = true\n");
 		send_ready_for_query = true;	/* initially, or after error */
+    }
 #endif
 
 	/*

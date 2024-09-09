@@ -23,6 +23,7 @@
 			    else
 				    exec_simple_query(query_string);
 
+			    printf("---26 send_ready_for_query = true\n");
 			    send_ready_for_query = true;
                 if (!single_mode_feed)
                     fprintf(stdout,"pg> %c\n", 4);
@@ -126,6 +127,7 @@
 
 	        // valgrind_report_error_query("fastpath function call");
 
+				printf("---130 send_ready_for_query = true\n");
 		    send_ready_for_query = true;
 		    break;
 
@@ -219,6 +221,7 @@
 		    pq_getmsgend(&input_message);
 		    finish_xact_command();
 		    //valgrind_report_error_query("SYNC message");
+				printf("---224 send_ready_for_query = true\n");
 		    send_ready_for_query = true;
 		    break;
 

@@ -318,6 +318,7 @@ interactive_one() {
 PDEBUG("# 324 : TODO: set a pg_main started flag");
                             sf_connected++;
 // CHECK ME see 538 / 563
+                            printf("---321 send_ready_for_query = true\n");
                             send_ready_for_query = true;
                         } // auth
                     } else {
@@ -493,6 +494,7 @@ incoming:
         }
         RESUME_INTERRUPTS();
 
+        printf("---497 send_ready_for_query = true\n");
         send_ready_for_query = true;
         return;
     }
@@ -536,6 +538,7 @@ wire_flush:
                 PDEBUG("# 537: end packet - sending rfq");
                 if (send_ready_for_query) {
                     ReadyForQuery(DestRemote);
+                    printf("---541 send_ready_for_query = false\n");
                     send_ready_for_query = false;
                 }
             } else {
