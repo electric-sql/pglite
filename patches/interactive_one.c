@@ -344,12 +344,11 @@ PDEBUG("# 324 : TODO: set a pg_main started flag");
                     if (!firstchar || (firstchar==112)) {
                         PDEBUG("# 351: handshake/auth skip");
                         goto wire_flush;
-//                        return;
                     }
 
                     /* else it is wire msg */
 #if PGDEBUG
-printf("# 362 : node+repl is wire : %c\n", firstchar);
+printf("# 352 : node+repl is wire : %c\n", firstchar);
                     force_echo = true;
 #endif
                     is_socket = true;
@@ -534,12 +533,13 @@ incoming:
 wire_flush:
         if (SOCKET_DATA>0) {
             if (!ClientAuthInProgress) {
-                PDEBUG("# 533: end packet - sending rfq");
+                PDEBUG("# 537: end packet - sending rfq");
                 if (send_ready_for_query) {
                     ReadyForQuery(DestRemote);
+                    send_ready_for_query = false;
                 }
             } else {
-                PDEBUG("# 537: end packet (ClientAuthInProgress - no rfq) ");
+                PDEBUG("# 542: end packet (ClientAuthInProgress - no rfq) ");
             }
 
             if (sockfiles) {
@@ -554,14 +554,14 @@ wire_flush:
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
                 if (cma_wsize)
-                    PDEBUG("# 552: cma and sockfile ???");
+                    PDEBUG("# 557: cma and sockfile ???");
                 if (sockfiles) {
-                    PDEBUG("# 554: setting sockfile lock, ready to read");
+                    PDEBUG("# 559: setting sockfile lock, ready to read");
                     PDEBUG(PGS_OLOCK);
                     c_lock = fopen(PGS_OLOCK, "w");
                     fclose(c_lock);
                 }
-// CHECK ME 320 / 538 . only initially or after error
+// CHECK ME 320 / 540 . only initially or after error
                 // send_ready_for_query = true;
             }
 
