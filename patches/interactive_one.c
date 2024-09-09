@@ -533,18 +533,18 @@ incoming:
 
     if (is_wire) {
 wire_flush:
-        if (SOCKET_DATA>0) {
-            if (!ClientAuthInProgress) {
-                PDEBUG("# 537: end packet - sending rfq");
-                if (send_ready_for_query) {
-                    ReadyForQuery(DestRemote);
-                    printf("---541 send_ready_for_query = false\n");
-                    send_ready_for_query = false;
-                }
-            } else {
-                PDEBUG("# 542: end packet (ClientAuthInProgress - no rfq) ");
+        if (!ClientAuthInProgress) {
+            PDEBUG("# 537: end packet - sending rfq");
+            if (send_ready_for_query) {
+                ReadyForQuery(DestRemote);
+                printf("---541 send_ready_for_query = false\n");
+                send_ready_for_query = false;
             }
-
+        } else {
+            PDEBUG("# 542: end packet (ClientAuthInProgress - no rfq) ");
+        }
+        
+        if (SOCKET_DATA>0) {
             if (sockfiles) {
                 if (cma_wsize)
                     puts("ERROR: cma was not flushed before socketfile interface");
