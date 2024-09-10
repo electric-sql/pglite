@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- 09b356c: Fixed extended query wire protocol
+- 4238595: Fix `incrementalQuery` and `changes` APIs not working when keyed on non-integer primary keys like `TEXT` and `UUID`.
 - ef57e10: Refactor PGliteWorker so parsing happens on the main thread, fixes query options with custom parser
 
 ## 0.2.5

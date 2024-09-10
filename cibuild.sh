@@ -222,9 +222,9 @@ END
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
-export CDEBUG=$CDEBUG
-export LDEBUG=$LDEBUG
-export PGDEBUG=$PGDEBUG
+export CDEBUG="$CDEBUG"
+export LDEBUG="$LDEBUG"
+export PGDEBUG="$PGDEBUG"
 export PG_DEBUG_HEADER=$PG_DEBUG_HEADER
 export PGOPTS="\\
  -c log_checkpoints=false \\
