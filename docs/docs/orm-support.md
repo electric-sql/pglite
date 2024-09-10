@@ -48,7 +48,7 @@ To use Knex.js with PGlite, add the following dependencies to your project:
 npm i @electric-sql/pglite knex knex-pglite
 ```
 
-    Note: knex-pglite is a 3rd-party knex dialect and currently experimental. 
+    Note: knex-pglite is a 3rd-party knex dialect and currently experimental.
 
 Then you can setup a regular Knex instance:
 
