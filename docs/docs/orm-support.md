@@ -1,6 +1,6 @@
 # ORM/Query Builder Support
 
-The following ORM/Query Builder frameworks are known to work properly with
+The following ORMs and Query Builders are known to work properly with
 PGlite:
 
 ## Drizzle
@@ -47,6 +47,8 @@ To use Knex.js with PGlite, add the following dependencies to your project:
 ```bash
 npm i @electric-sql/pglite knex knex-pglite
 ```
+
+    Note: knex-pglite is a 3rd-party knex dialect and currently experimental. 
 
 Then you can setup a regular Knex instance:
 
