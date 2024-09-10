@@ -166,7 +166,7 @@ export abstract class BasePGlite
       const parsedParams =
         params.map((p) => serializeType(p, options?.setAllTypes))
       
-      let results: BackendMessage[] = []
+      const results: BackendMessage[] = []
 
       try {
         for (const [msg] of await this.#execProtocolNoSync(
@@ -191,7 +191,7 @@ export abstract class BasePGlite
           const pgOid = dataTypeIds[i]
           const value = params[i]
 
-          if (parsedOid !== pgOid) {
+          if (parsedOid !== pgOid && value !== null && value !== undefined) {
             return serializerForOid(pgOid)(value)
           }
           return parsedParam
