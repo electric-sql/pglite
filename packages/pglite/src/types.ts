@@ -86,7 +86,7 @@ export const arrayTypes = {
 export const types = {
   string: {
     to: 0,
-    from: [TEXT, VARCHAR],
+    from: [TEXT, VARCHAR, BPCHAR],
     serialize: (x: string) => x,
     parse: (x: string) => x,
     forceTo: TEXT,
