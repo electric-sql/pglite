@@ -3,6 +3,7 @@ import {
   RowDescriptionMessage,
   DataRowMessage,
   CommandCompleteMessage,
+  ParameterDescriptionMessage,
 } from '@electric-sql/pg-protocol/messages'
 import type { Results, QueryOptions } from './interface.js'
 import { parseType } from './types.js'
@@ -98,4 +99,15 @@ function retrieveRowCount(msg: CommandCompleteMessage): number {
     default:
       return 0
   }
+}
+
+/** Get the dataTypeIDs from a list of messages, if it's available. */
+export function parseDescribeStatementResults(messages: Array<BackendMessage>): number[] {
+  const message = messages.find((msg): msg is ParameterDescriptionMessage => msg.name === 'parameterDescription')
+
+  if (message) {
+    return message.dataTypeIDs
+  }
+
+  return []
 }

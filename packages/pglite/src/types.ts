@@ -204,6 +204,18 @@ export function serializerFor(x: any): Serializer {
   return serializers.json
 }
 
+export function serializerForOid(oid: number): Serializer {
+  const handler: TypeHandler | undefined = Object.values(types).find(
+    (handler) => handler.from.includes(oid),
+  )
+  if (handler) {
+    return (x: any) => {
+      return [handler.serialize(x), oid]
+    }
+  }
+  return serializers.json
+}
+
 export function serializeType(
   x: any,
   setAllTypes = false,
