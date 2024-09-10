@@ -1,6 +1,6 @@
 import { query as queryTemplate } from './templating.js'
 import { parseResults } from './parse.js'
-import { serializeType } from './types.js'
+import { serializeType, types } from './types.js'
 import type {
   DebugLevel,
   PGliteInterface,
@@ -11,7 +11,7 @@ import type {
 } from './interface.js'
 
 import { serialize } from '@electric-sql/pg-protocol'
-import { BackendMessage } from '@electric-sql/pg-protocol/messages'
+import { BackendMessage, ParameterDescriptionMessage } from '@electric-sql/pg-protocol/messages'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -165,31 +165,65 @@ export abstract class BasePGlite
       await this._handleBlob(options?.blob)
       const parsedParams =
         params?.map((p) => serializeType(p, options?.setAllTypes)) || []
-      let results
+      
+      let results: [BackendMessage, Uint8Array][] = [];
+
       try {
-        results = [
-          ...(await this.#execProtocolNoSync(
-            serialize.parse({
-              text: query,
-              types: parsedParams.map(([, type]) => type),
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serialize.bind({
-              values: parsedParams.map(([val]) => val),
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serialize.describe({ type: 'P' }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(serialize.execute({}), options)),
-        ]
+        for (const result of await this.#execProtocolNoSync(
+          serialize.parse({
+            text: query,
+            types: parsedParams.map(([, type]) => type),
+          }),
+          options,
+        )) {
+          results.push(result)
+        }
+
+        const describeResults = await this.#execProtocolNoSync(
+          serialize.describe({ type: 'S' }),
+          options,
+        );
+
+        const dataTypeIds = (describeResults.find(([msg]) => msg.name === 'parameterDescription')?.[0] as ParameterDescriptionMessage | undefined)?.dataTypeIDs ?? [];
+
+        const fixedParams = parsedParams.map(([, oid], i): [string, number] => {
+          const value = params?.[i];
+          if (value && oid !== dataTypeIds[i]) {
+            const serialize = Object.values(types).find((t) => t.from.includes(dataTypeIds[i]))?.serialize as (x: unknown) => string | undefined;
+            if (serialize) {
+              const v = serialize(value);
+              if (v) {
+                return [v, dataTypeIds[i]];
+              }
+            }
+          }
+          return [value!, oid];
+        });
+
+        for (const result of await this.#execProtocolNoSync(
+          serialize.bind({
+            values: fixedParams.map(([val]) => val),
+          }),
+          options,
+        )) {
+          results.push(result)
+        }
+
+        for (const result of await this.#execProtocolNoSync(
+          serialize.describe({ type: 'P' }),
+          options,
+        )) {
+          results.push(result)
+        }
+
+        for (const result of await this.#execProtocolNoSync(serialize.execute({}), options)) {
+          results.push(result)
+        }
+
       } finally {
         await this.#execProtocolNoSync(serialize.sync(), options)
       }
+
       await this._cleanupBlob()
       if (!this.#inTransaction) {
         await this.syncToFs()
