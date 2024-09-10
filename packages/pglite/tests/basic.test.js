@@ -325,8 +325,12 @@ await testEsmAndCjs(async (importType) => {
       )
 
       const res = await db.query(`
-        SELECT * FROM test;
-      `)
+        SELECT * FROM test WHERE id = ANY($1);
+      `,
+        [
+          [0, 1, 2, 3],
+        ],
+      )
     
       expect(res).toEqual({
         rows: [

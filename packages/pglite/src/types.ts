@@ -226,6 +226,17 @@ export function serializeType(
   return serializerFor(x)(x, setAllTypes)
 }
 
+/** Try to guess a Postgres type based on the JavaScript data type. */
+export function inferType(x: unknown): number {
+  return (
+    x instanceof Date ? TIMESTAMPTZ :
+    x instanceof Uint8Array ? BYTEA :
+    typeof x === 'boolean' ? BOOL :
+    typeof x === 'bigint' ? INT8 :
+    0
+  )
+}
+
 function escapeElement(elementRepresentation: string) {
   const escaped = elementRepresentation
     .replace(/\\/g, '\\\\')

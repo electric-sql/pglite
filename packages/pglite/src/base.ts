@@ -1,6 +1,6 @@
 import { query as queryTemplate } from './templating.js'
 import { parseDescribeStatementResults, parseResults } from './parse.js'
-import { serializeType, serializerForOid } from './types.js'
+import { inferType, serializerForOid } from './types.js'
 import type {
   DebugLevel,
   PGliteInterface,
@@ -163,8 +163,6 @@ export abstract class BasePGlite
       // We need to parse, bind and execute a query with parameters
       this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
-      const parsedParams =
-        params.map((p) => serializeType(p, options?.setAllTypes))
       
       const results: BackendMessage[] = []
 
@@ -172,7 +170,7 @@ export abstract class BasePGlite
         for (const [msg] of await this.#execProtocolNoSync(
           serialize.parse({
             text: query,
-            types: parsedParams.map(([, type]) => type),
+            types: params.map((p) => inferType(p)),
           }),
           options,
         )) {
@@ -186,20 +184,22 @@ export abstract class BasePGlite
           )).map(([msg]) => msg)
         )
 
-        const fixedParams = parsedParams.map((parsedParam, i): [string | null, number] => {
-          const parsedOid = parsedParam[1]
-          const pgOid = dataTypeIds[i]
-          const value = params[i]
-
-          if (parsedOid !== pgOid && value !== null && value !== undefined) {
-            return serializerForOid(pgOid)(value)
+        const values = params.map((param, i) => {
+          const oid = dataTypeIds[i]
+          if (param === null || param === undefined) {
+            return null;
           }
-          return parsedParam
+          const serialize = serializerForOid(oid)
+          if (serialize) {
+            const [encoded] = serialize(param)
+            return encoded
+          }
+          return param
         })
 
         for (const [msg] of await this.#execProtocolNoSync(
           serialize.bind({
-            values: fixedParams.map(([val]) => val),
+            values,
           }),
           options,
         )) {
