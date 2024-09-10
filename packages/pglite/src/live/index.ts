@@ -182,7 +182,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                         if (column_name === key) {
                           return `prev."${column_name}" AS "${column_name}"`
                         } else {
-                          return `NULL::${data_type === 'USER-DEFINED' ? udt_name : data_type} AS "${column_name}"`
+                          return `NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``} AS "${column_name}"`
                         }
                       })
                       .join(',\n')},
@@ -201,7 +201,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                           : `CASE 
                               WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
                               THEN curr."${column_name}"
-                              ELSE NULL::${data_type === 'USER-DEFINED' ? udt_name : data_type} 
+                              ELSE NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``}
                               END AS "${column_name}"`,
                       )
                       .join(',\n')},
