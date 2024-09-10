@@ -67,6 +67,7 @@ export const BOOL = 16,
 export const arrayTypes = {
   1001: BYTEA,
   1002: CHAR,
+  1014: BPCHAR,
   1016: INT8,
   1005: INT2,
   1007: INT4,
