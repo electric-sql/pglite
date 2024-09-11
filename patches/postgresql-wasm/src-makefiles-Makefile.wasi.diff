@@ -1,0 +1,11 @@
+--- postgresql/src/makefiles/Makefile.wasi
++++ postgresql-wasm/src/makefiles/Makefile.wasi
+@@ -0,0 +1,8 @@
++# Use --enable-new-dtags to generate DT_RUNPATH instead of DT_RPATH.
++# This allows LD_LIBRARY_PATH to still work when needed.
++rpath = 
++AROPT = crs
++
++# Rule for building a shared library from a single .o file
++%.so: %.o
++	$(CC) $(CFLAGS) $< $(LDFLAGS) $(LDFLAGS_SL) -shared -o $@

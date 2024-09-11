@@ -76,6 +76,8 @@ _TopMemoryContext
     if sym and not sym in matches:
         matches.append(sym)
 
+#__ZNSt13runtime_errorD1Ev
+
 matches.sort()
 
 for sym in matches:

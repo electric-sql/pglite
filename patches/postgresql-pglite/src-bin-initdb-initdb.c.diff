@@ -9,31 +9,15 @@
  #include "postgres_fe.h"
  
  #include <dirent.h>
-@@ -81,6 +81,23 @@
+@@ -81,7 +81,6 @@
  #include "mb/pg_wchar.h"
  #include "miscadmin.h"
  
-+#if defined(PG_INITDB_MAIN)
-+
-+// FIXME: get PGDATA from env.
-+
-+/*
-+EMSCRIPTEN_KEEPALIVE void
-+pg_logging_init(const char *argv0) {
-+    puts("pg_logging_init");
-+}
-+
-+EMSCRIPTEN_KEEPALIVE void
-+pg_log_generic(enum pg_log_level level, enum pg_log_part part,
-+			   const char *pg_restrict fmt,...) {
-+    puts("pg_log_generic");
-+}
-+*/
-+#endif
- 
+-
  /* Ideally this would be in a .h file, but it hardly seems worth the trouble */
  extern const char *select_default_timezone(const char *share_path);
-@@ -168,7 +185,11 @@
+ 
+@@ -168,7 +167,11 @@
  
  
  /* internal vars */
@@ -45,7 +29,7 @@
  static int	encodingid;
  static char *bki_file;
  static char *hba_file;
-@@ -752,6 +773,7 @@
+@@ -752,6 +755,7 @@
  static char *
  get_id(void)
  {
@@ -53,7 +37,7 @@
  	const char *username;
  
  #ifndef WIN32
-@@ -762,10 +784,12 @@
+@@ -762,10 +766,12 @@
  		exit(1);
  	}
  #endif
@@ -67,7 +51,17 @@
  }
  
  static char *
-@@ -1615,9 +1639,11 @@
+@@ -1011,6 +1017,9 @@
+ static const char *
+ choose_dsm_implementation(void)
+ {
++#if defined(__wasi__) || defined(__EMSCRIPTEN__)
++    return "posix";
++#endif
+ #if defined(HAVE_SHM_OPEN) && !defined(__sun__)
+ 	int			ntries = 10;
+ 	pg_prng_state prng_state;
+@@ -1615,9 +1624,11 @@
  			if (ferror(pwf))
  				pg_fatal("could not read password from file \"%s\": %m",
  						 pwfilename);
@@ -81,7 +75,7 @@
  		}
  		fclose(pwf);
  
-@@ -2562,8 +2588,13 @@
+@@ -2562,8 +2573,13 @@
  			strlcpy(full_path, progname, sizeof(full_path));
  
  		if (ret == -1)
@@ -95,7 +89,7 @@
  		else
  			pg_fatal("program \"%s\" was found by \"%s\" but was not the same version as %s",
  					 "postgres", full_path, progname);
-@@ -2617,22 +2648,22 @@
+@@ -2617,22 +2633,22 @@
  			   lc_numeric,
  			   lc_time);
  	}
@@ -123,7 +117,7 @@
  			/* Couldn't recognize the locale's codeset */
  			pg_log_error("could not find suitable encoding for locale \"%s\"",
  						 lc_ctype);
-@@ -2641,7 +2672,7 @@
+@@ -2641,7 +2657,7 @@
  			exit(1);
  		}
  		else if (!pg_valid_server_encoding_id(ctype_enc))
@@ -132,7 +126,7 @@
  			/*
  			 * We recognized it, but it's not a legal server encoding. On
  			 * Windows, UTF-8 works with any locale, so we can fall back to
-@@ -2664,15 +2695,17 @@
+@@ -2664,15 +2680,17 @@
  #endif
  		}
  		else
@@ -153,7 +147,7 @@
  	if (!check_locale_encoding(lc_ctype, encodingid) ||
  		!check_locale_encoding(lc_collate, encodingid))
  		exit(1);				/* check_locale_encoding printed the error */
-@@ -2991,7 +3024,11 @@
+@@ -2991,7 +3009,11 @@
  
  	/* Select suitable configuration settings */
  	set_null_conf();
@@ -165,12 +159,12 @@
  
  	/* Now create all the text config files */
  	setup_config();
-@@ -3056,9 +3093,30 @@
+@@ -3056,9 +3078,30 @@
  	check_ok();
  }
  
 +#if defined(PG_INITDB_MAIN)
-+
+ 
 +extern void MemoryContextInit(void);
 +
 +// FIXME: get PGDATA from env.
@@ -186,7 +180,7 @@
 +};
 +
 +int argc = sizeof(argv) / sizeof(char*) - 1;
- 
++
 +EMSCRIPTEN_KEEPALIVE int
 +pg_initdb_main()
 +#else
@@ -196,7 +190,7 @@
  {
  	static struct option long_options[] = {
  		{"pgdata", required_argument, NULL, 'D'},
-@@ -3118,10 +3176,16 @@
+@@ -3118,10 +3161,16 @@
  	 */
  	setvbuf(stdout, NULL, PG_IOLBF, 0);
  
@@ -214,7 +208,7 @@
  	if (argc > 1)
  	{
  		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
-@@ -3377,11 +3441,11 @@
+@@ -3377,11 +3426,11 @@
  	set_info_version();
  
  	setup_data_file_paths();
@@ -229,7 +223,7 @@
  	printf("\n");
  
  	if (data_checksums)
-@@ -3393,9 +3457,11 @@
+@@ -3393,9 +3442,11 @@
  		get_su_pwd();
  
  	printf("\n");
@@ -243,7 +237,7 @@
  	if (do_sync)
  	{
  		fputs(_("syncing data to disk ... "), stdout);
-@@ -3413,7 +3479,7 @@
+@@ -3413,7 +3464,7 @@
  		pg_log_warning_hint("You can change this by editing pg_hba.conf or using the option -A, or "
  							"--auth-local and --auth-host, the next time you run initdb.");
  	}
@@ -252,7 +246,7 @@
  	if (!noinstructions)
  	{
  		/*
-@@ -3448,8 +3514,7 @@
+@@ -3448,8 +3499,7 @@
  
  		destroyPQExpBuffer(start_db_cmd);
  	}

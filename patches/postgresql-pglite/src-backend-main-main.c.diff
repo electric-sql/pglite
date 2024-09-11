@@ -1,6 +1,6 @@
 --- postgresql/src/backend/main/main.c
 +++ postgresql-wasm/src/backend/main/main.c
-@@ -41,20 +41,20 @@
+@@ -41,20 +41,26 @@
  #include "utils/pg_locale.h"
  #include "utils/ps_status.h"
  
@@ -18,14 +18,20 @@
  /*
   * Any Postgres server process begins execution here.
   */
-+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++#if defined(__wasi__)
++static bool
++is_web_env() {
++    return false;
++}
++#include PG_MAIN_INCLUDE
++#elif defined(__EMSCRIPTEN__)
 +#include PG_MAIN_INCLUDE
 +#else
 +const char* progname;
  int
  main(int argc, char *argv[])
  {
-@@ -199,6 +199,7 @@
+@@ -199,6 +205,7 @@
  	/* the functions above should not return */
  	abort();
  }

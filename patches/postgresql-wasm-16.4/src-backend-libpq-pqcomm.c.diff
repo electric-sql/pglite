@@ -66,11 +66,20 @@
  	/*
  	 * The event positions match the order we added them, but let's sanity
  	 * check them to be sure.
+@@ -632,7 +643,7 @@
+ 	Assert(Unix_socket_group);
+ 	if (Unix_socket_group[0] != '\0')
+ 	{
+-#ifdef WIN32
++#if defined(WIN32) || defined(__wasi__)
+ 		elog(WARNING, "configuration item unix_socket_group is not supported on this platform");
+ #else
+ 		char	   *endptr;
 @@ -1148,6 +1159,20 @@
   *		This must be called before any of the pq_get* functions.
   * --------------------------------
   */
-+#if defined(I_EMSCRIPTEN)
++#if defined(I_EMSCRIPTEN) || defined(I_WASI)
 +EMSCRIPTEN_KEEPALIVE void
 +pq_recvbuf_fill(FILE* fp, int packetlen) {
 +    fread( PqRecvBuffer, packetlen, 1, fp);
@@ -91,7 +100,7 @@
  		ereport(FATAL,
  				(errcode(ERRCODE_PROTOCOL_VIOLATION),
  				 errmsg("terminating connection because protocol synchronization was lost")));
-+#if defined(I_EMSCRIPTEN)
++#if defined(I_EMSCRIPTEN) || defined(I_WASI)
 +    if (cma_rsize) {
 +        PqRecvPointer = 0;
 +        PqRecvLength = cma_rsize;
@@ -119,7 +128,7 @@
  
  	return 0;
  }
-+#if defined(__EMSCRIPTEN__) || defined(__wasm__)
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +
 +extern FILE* SOCKET_FILE;
 +extern int SOCKET_DATA;

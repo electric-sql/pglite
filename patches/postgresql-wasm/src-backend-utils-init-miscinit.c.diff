@@ -1,5 +1,14 @@
 --- postgresql/src/backend/utils/init/miscinit.c
 +++ postgresql-wasm/src/backend/utils/init/miscinit.c
+@@ -143,7 +143,7 @@
+ 	 * children, but for consistency we make all postmaster child processes do
+ 	 * this.
+ 	 */
+-#ifdef HAVE_SETSID
++#if defined(HAVE_SETSID) && !defined(__wasi__)
+ 	if (setsid() < 0)
+ 		elog(FATAL, "setsid() failed: %m");
+ #endif
 @@ -209,7 +209,7 @@
  	if (my_exec_path[0] == '\0')
  	{

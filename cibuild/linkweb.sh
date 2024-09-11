@@ -218,14 +218,15 @@ _________________________________________________________
 
     mkdir -p ${WEBROOT}
 
-    cp -v postgres.* ${WEBROOT}/
+    cp -vf postgres.* ${WEBROOT}/
     #cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
-    cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
-    for tarf in ${WEBROOT}/*.tar
+
+    for tarf in ${PGROOT}/sdk/*.tar
     do
         gzip -f -9 $tarf
     done
 
+    cp ${PGROOT}/sdk/*.tar.gz ${WEBROOT}/
 
     cp $WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
 

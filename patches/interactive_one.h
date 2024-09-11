@@ -1,2 +1,2 @@
 
-EMSCRIPTEN_KEEPALIVE int interactive_read();
+EMSCRIPTEN_KEEPALIVE int interactive_read(void);

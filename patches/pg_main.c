@@ -8,7 +8,7 @@
 
 #if defined(PG_MAIN)
 
-#if defined(PG_EC_STATIC)
+#if defined(PG_EC_STATIC) || defined(__wasi__)
 #warning "PG_EC_STATIC"
 
 EMSCRIPTEN_KEEPALIVE void
@@ -62,7 +62,7 @@ simple_prompt(const char *prompt, bool echo) {
 
 
 
-#endif
+#endif // PG_EC_STATIC
 
 
 bool is_node = false;
@@ -119,16 +119,16 @@ AsyncPostgresSingleUserMain(int argc, char *argv[],
 					   const char *username, int async_restart)
 {
 	const char *dbname = NULL;
-
+PDEBUG("# 122");
 	/* Initialize startup process environment. */
 	InitStandaloneProcess(argv[0]);
 
 	/* Set default values for command-line options.	 */
 	InitializeGUCOptions();
-PDEBUG("# 125");
+PDEBUG("# 128");
 	/* Parse command-line options. */
 	process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
-PDEBUG("# 128");
+PDEBUG("# 131");
 	/* Must have gotten a database name, or have a default (the username) */
 	if (dbname == NULL)
 	{
@@ -163,7 +163,7 @@ if (async_restart) goto async_db_change;
 
 	/* Initialize MaxBackends */
 	InitializeMaxBackends();
-PDEBUG("# 163");
+PDEBUG("# 166");
 	/*
 	 * Give preloaded libraries a chance to request additional shared memory.
 	 */
@@ -202,6 +202,7 @@ PDEBUG("# 163");
 	/* Early initialization */
 	BaseInit();
 async_db_change:;
+PDEBUG("# 205");
 	/*
 	 * General initialization.
 	 *
@@ -291,7 +292,7 @@ void
 RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username)
 {
 #if PGDEBUG
-printf("# 291: RePostgresSingleUserMain progname=%s for %s\n", progname, single_argv[0]);
+printf("# 295: RePostgresSingleUserMain progname=%s for %s feed=%s\n", progname, single_argv[0], IDB_PIPE_SINGLE);
 #endif
     single_mode_feed = fopen(IDB_PIPE_SINGLE, "r");
 
@@ -302,14 +303,13 @@ printf("# 291: RePostgresSingleUserMain progname=%s for %s\n", progname, single_
     /* Parse command-line options. */
     process_postgres_switches(single_argc, single_argv, PGC_POSTMASTER, &dbname);
 #if PGDEBUG
-printf("# 301: dbname=%s\n", dbname);
+printf("# 306: dbname=%s\n", dbname);
 #endif
     LocalProcessControlFile(false);
 
     process_shared_preload_libraries();
 
 //	                InitializeMaxBackends();
-PDEBUG("# 308 ?");
 
 // ? IgnoreSystemIndexes = true;
 IgnoreSystemIndexes = false;
@@ -322,7 +322,9 @@ IgnoreSystemIndexes = false;
     PgStartTime = GetCurrentTimestamp();
 
     SetProcessingMode(InitProcessing);
-PDEBUG("# 321: Re-InitPostgres");
+PDEBUG("# 326: Re-InitPostgres");
+if (am_walsender)
+    PDEBUG("# 327: am_walsender == true");
 //      BaseInit();
 
     InitPostgres(dbname, InvalidOid,	/* database to connect to */
@@ -330,8 +332,9 @@ PDEBUG("# 321: Re-InitPostgres");
                  !am_walsender, /* honor session_preload_libraries? */
                  false,			/* don't ignore datallowconn */
                  NULL);			/* no out_dbname */
+
+PDEBUG("# 334");
 /*
-PDEBUG("# 330");
     if (PostmasterContext)
     {
         PDEBUG("# 103");
@@ -351,10 +354,7 @@ PDEBUG("# 330");
     /* Perform initialization specific to a WAL sender process. */
     if (am_walsender)
         InitWalSender();
-
-    /*
-     * Send this backend's cancellation info to the frontend.
-     */
+/*
     if (whereToSendOutput == DestRemote)
     {
         StringInfoData buf;
@@ -363,10 +363,13 @@ PDEBUG("# 330");
         pq_sendint32(&buf, (int32) MyProcPid);
         pq_sendint32(&buf, (int32) MyCancelKey);
         pq_endmessage(&buf);
-        /* Need not flush since ReadyForQuery will do it. */
+        // Need not flush since ReadyForQuery will do it.
     }
+*/
+#if PGDEBUG
+    whereToSendOutput = DestDebug;
+#endif
 
-    /* Welcome banner for standalone case */
     if (whereToSendOutput == DestDebug)
         printf("\nPostgreSQL stand-alone backend %s\n", PG_VERSION);
 
@@ -393,30 +396,8 @@ PDEBUG("# 330");
     initStringInfo(&row_description_buf);
     MemoryContextSwitchTo(TopMemoryContext);
 
-    /*
-     * POSTGRES main processing loop begins here
-     *
-     * If an exception is encountered, processing resumes here so we abort the
-     * current transaction and start a new one.
-     *
-     * You might wonder why this isn't coded as an infinite loop around a
-     * PG_TRY construct.  The reason is that this is the bottom of the
-     * exception stack, and so with PG_TRY there would be no exception handler
-     * in force at all during the CATCH part.  By leaving the outermost setjmp
-     * always active, we have at least some chance of recovering from an error
-     * during error recovery.  (If we get into an infinite loop thereby, it
-     * will soon be stopped by overflow of elog.c's internal state stack.)
-     *
-     * Note that we use sigsetjmp(..., 1), so that this function's signal mask
-     * (to wit, UnBlockSig) will be restored when longjmp'ing to here.  This
-     * is essential in case we longjmp'd out of a signal handler on a platform
-     * where that leaves the signal blocked.  It's not redundant with the
-     * unblock in AbortTransaction() because the latter is only called if we
-     * were inside a transaction.
-     */
-
-#if 0 //PGDEBUG
-    #warning "exception handler off"
+#if 1 //PGDEBUG
+    PDEBUG("# 415: exception handler off");
 #else
     if (sigsetjmp(local_sigjmp_buf, 1) != 0)
     {
@@ -534,14 +515,14 @@ PDEBUG("# 330");
     /* We can now handle ereport(ERROR) */
     PG_exception_stack = &local_sigjmp_buf;
 
+#endif
+
     if (!ignore_till_sync)
         send_ready_for_query = true;	/* initially, or after error */
 
-#endif
-
     if (!inloop) {
         inloop = true;
-        PDEBUG("# 311: REPL(initdb-single):Begin " __FILE__ );
+        PDEBUG("# 545: REPL(initdb-single):Begin " __FILE__ );
 
         while (repl) { interactive_file(); }
     } else {
@@ -552,7 +533,7 @@ PDEBUG("# 330");
     fclose(single_mode_feed);
 
     if (strlen(getenv("REPL")) && getenv("REPL")[0]=='Y') {
-        PDEBUG("# 551: REPL(initdb-single):End " __FILE__ );
+        PDEBUG("# 556: REPL(initdb-single):End " __FILE__ );
 
         /* now use stdin as source */
         repl = true;
@@ -562,13 +543,13 @@ PDEBUG("# 330");
 
         if (!is_node) {
 #if PGDEBUG
-            fprintf(stdout,"# 560: now in webloop(RAF)\npg> %c\n", 4);
+            fprintf(stdout,"# 566: now in webloop(RAF)\npg> %c\n", 4);
 #endif
             emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
         } else {
-            PDEBUG("# 563: REPL(single after initdb):Begin(NORETURN)");
+            PDEBUG("# 570: REPL(single after initdb):Begin(NORETURN)");
             while (repl) { interactive_file(); }
-            PDEBUG("# 5685 REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+            PDEBUG("# 572: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
             {
                 void (*npe)() = NULL;
                 npe();
@@ -578,7 +559,7 @@ PDEBUG("# 330");
         // unreachable.
     }
 
-    PDEBUG("# 575: no line-repl requested, exiting and keeping runtime alive");
+    PDEBUG("# 582: no line-repl requested, exiting and keeping runtime alive");
 }
 
 
@@ -605,7 +586,7 @@ pg_repl_raf(){
             while (1) {
                 interactive_one();
             }
-            PDEBUG("# 1529 REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+            PDEBUG("# 609: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
             {
                 void (*npe)() = NULL;
                 npe();
@@ -614,18 +595,25 @@ pg_repl_raf(){
         }
     }
     if (is_repl) {
-PDEBUG("# 611: pg_repl_raf(REPL)");
+PDEBUG("# 618: pg_repl_raf(REPL)");
         repl = true;
         single_mode_feed = NULL;
         force_echo = true;
         whereToSendOutput = DestNone;
         emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
     } else {
-        PDEBUG("# 602: TODO: headless wire mode");
+        PDEBUG("# 625: TODO: headless wire mode");
     }
 
     if (is_node) {
-PDEBUG("# 622: pg_repl_raf(NODE) EXIT!!!");
+#if defined(__wasi__)
+    PDEBUG("# 629: pg_repl_raf(WASI) endless loop");
+    while (1) {
+        interactive_one();
+    }
+#else
+    PDEBUG("# 629: pg_repl_raf(NODE) EXIT!!!");
+#endif
     }
 
 }
@@ -633,7 +621,7 @@ PDEBUG("# 622: pg_repl_raf(NODE) EXIT!!!");
 
 EMSCRIPTEN_KEEPALIVE void
 pg_shutdown() {
-    PDEBUG("pg_shutdown");
+    PDEBUG("# 637: pg_shutdown");
     proc_exit(66);
 }
 
@@ -760,264 +748,10 @@ void
 PostgresSingleUserMain(int argc, char *argv[],
 					   const char *username)
 {
-	const char *dbname = NULL;
 
-	Assert(!IsUnderPostmaster);
-
-	progname = get_progname(argv[0]);
-
-	/* Initialize startup process environment. */
-	InitStandaloneProcess(argv[0]);
-
-	/* Set default values for command-line options.	 */
-	InitializeGUCOptions();
-
-	/* Parse command-line options. */
-	process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
-
-	/* Must have gotten a database name, or have a default (the username) */
-	if (dbname == NULL)
-	{
-		dbname = username;
-		if (dbname == NULL)
-			ereport(FATAL,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: no database nor user name specified",
-							progname)));
-	}
-
-	/* Acquire configuration parameters */
-	if (!SelectConfigFiles(userDoption, progname))
-		proc_exit(1);
-
-	checkDataDir();
-	ChangeToDataDir();
-
-	/*
-	 * Create lockfile for data directory.
-	 */
-	CreateDataDirLockFile(false);
-
-	/* read control file (error checking and contains config ) */
-	LocalProcessControlFile(false);
-
-	/*
-	 * process any libraries that should be preloaded at postmaster start
-	 */
-	process_shared_preload_libraries();
-
-	/* Initialize MaxBackends */
-	InitializeMaxBackends();
-PDEBUG("784");
-	/*
-	 * Give preloaded libraries a chance to request additional shared memory.
-	 */
-	process_shmem_requests();
-
-	/*
-	 * Now that loadable modules have had their chance to request additional
-	 * shared memory, determine the value of any runtime-computed GUCs that
-	 * depend on the amount of shared memory required.
-	 */
-	InitializeShmemGUCs();
-
-	/*
-	 * Now that modules have been loaded, we can process any custom resource
-	 * managers specified in the wal_consistency_checking GUC.
-	 */
-	InitializeWalConsistencyChecking();
-
-	CreateSharedMemoryAndSemaphores();
-
-	/*
-	 * Remember stand-alone backend startup time,roughly at the same point
-	 * during startup that postmaster does so.
-	 */
-	PgStartTime = GetCurrentTimestamp();
-
-	/*
-	 * Create a per-backend PGPROC struct in shared memory. We must do this
-	 * before we can use LWLocks.
-	 */
-	InitProcess();
-
-// main
-	SetProcessingMode(InitProcessing);
-
-	/* Early initialization */
-	BaseInit();
-
-	/*
-	 * General initialization.
-	 *
-	 * NOTE: if you are tempted to add code in this vicinity, consider putting
-	 * it inside InitPostgres() instead.  In particular, anything that
-	 * involves database access should be there, not here.
-	 */
-	InitPostgres(dbname, InvalidOid,	/* database to connect to */
-				 username, InvalidOid,	/* role to connect as */
-				 !am_walsender, /* honor session_preload_libraries? */
-				 false,			/* don't ignore datallowconn */
-				 NULL);			/* no out_dbname */
-
-	/*
-	 * If the PostmasterContext is still around, recycle the space; we don't
-	 * need it anymore after InitPostgres completes.  Note this does not trash
-	 * *MyProcPort, because ConnCreate() allocated that space with malloc()
-	 * ... else we'd need to copy the Port data first.  Also, subsidiary data
-	 * such as the username isn't lost either; see ProcessStartupPacket().
-	 */
-	if (PostmasterContext)
-	{
-		MemoryContextDelete(PostmasterContext);
-		PostmasterContext = NULL;
-	}
-
-	SetProcessingMode(NormalProcessing);
-
-	/*
-	 * Now all GUC states are fully set up.  Report them to client if
-	 * appropriate.
-	 */
-	BeginReportingGUCOptions();
-
-	/*
-	 * Also set up handler to log session end; we have to wait till now to be
-	 * sure Log_disconnections has its final value.
-	 */
-	if (IsUnderPostmaster && Log_disconnections)
-		on_proc_exit(log_disconnections, 0);
-
-	pgstat_report_connect(MyDatabaseId);
-
-	/* Perform initialization specific to a WAL sender process. */
-	if (am_walsender)
-		InitWalSender();
-
-	/*
-	 * Send this backend's cancellation info to the frontend.
-	 */
-	if (whereToSendOutput == DestRemote)
-	{
-		StringInfoData buf;
-
-		pq_beginmessage(&buf, 'K');
-		pq_sendint32(&buf, (int32) MyProcPid);
-		pq_sendint32(&buf, (int32) MyCancelKey);
-		pq_endmessage(&buf);
-		/* Need not flush since ReadyForQuery will do it. */
-	}
-
-	/* Welcome banner for standalone case */
-	if (whereToSendOutput == DestDebug)
-		printf("\nPostgreSQL stand-alone backend %s\n", PG_VERSION);
-
-	/*
-	 * Create the memory context we will use in the main loop.
-	 *
-	 * MessageContext is reset once per iteration of the main loop, ie, upon
-	 * completion of processing of each command message from the client.
-	 */
-	MessageContext = AllocSetContextCreate(TopMemoryContext,
-										   "MessageContext",
-										   ALLOCSET_DEFAULT_SIZES);
-
-	/*
-	 * Create memory context and buffer used for RowDescription messages. As
-	 * SendRowDescriptionMessage(), via exec_describe_statement_message(), is
-	 * frequently executed for ever single statement, we don't want to
-	 * allocate a separate buffer every time.
-	 */
-	row_description_context = AllocSetContextCreate(TopMemoryContext,
-													"RowDescriptionContext",
-													ALLOCSET_DEFAULT_SIZES);
-	MemoryContextSwitchTo(row_description_context);
-	initStringInfo(&row_description_buf);
-	MemoryContextSwitchTo(TopMemoryContext);
-
-	/*
-	 * POSTGRES main processing loop begins here
-	 *
-	 * If an exception is encountered, processing resumes here so we abort the
-	 * current transaction and start a new one.
-	 *
-	 * You might wonder why this isn't coded as an infinite loop around a
-	 * PG_TRY construct.  The reason is that this is the bottom of the
-	 * exception stack, and so with PG_TRY there would be no exception handler
-	 * in force at all during the CATCH part.  By leaving the outermost setjmp
-	 * always active, we have at least some chance of recovering from an error
-	 * during error recovery.  (If we get into an infinite loop thereby, it
-	 * will soon be stopped by overflow of elog.c's internal state stack.)
-	 *
-	 * Note that we use sigsetjmp(..., 1), so that this function's signal mask
-	 * (to wit, UnBlockSig) will be restored when longjmp'ing to here.  This
-	 * is essential in case we longjmp'd out of a signal handler on a platform
-	 * where that leaves the signal blocked.  It's not redundant with the
-	 * unblock in AbortTransaction() because the latter is only called if we
-	 * were inside a transaction.
-	 */
-
-exception_handler:
-
-#if 0 // PGDEBUG
-    #warning "exception handler off"
-#else
-	if (sigsetjmp(local_sigjmp_buf, 1) != 0)
-	{
-		error_context_stack = NULL;
-		HOLD_INTERRUPTS();
-		disable_all_timeouts(false);	/* do first to avoid race condition */
-		QueryCancelPending = false;
-		idle_in_transaction_timeout_enabled = false;
-		idle_session_timeout_enabled = false;
-		DoingCommandRead = false;
-		pq_comm_reset();
-		EmitErrorReport();
-		valgrind_report_error_query(debug_query_string);
-		debug_query_string = NULL;
-		AbortCurrentTransaction();
-		if (am_walsender)
-			WalSndErrorCleanup();
-		PortalErrorCleanup();
-		if (MyReplicationSlot != NULL)
-			ReplicationSlotRelease();
-		ReplicationSlotCleanup();
-		jit_reset_after_error();
-		MemoryContextSwitchTo(TopMemoryContext);
-		FlushErrorState();
-		if (doing_extended_query_message)
-			ignore_till_sync = true;
-		xact_started = false;
-		if (pq_is_reading_msg()) {
-			ereport(FATAL,
-					(errcode(ERRCODE_PROTOCOL_VIOLATION),
-					 errmsg("terminating connection because protocol synchronization was lost")));
-        }
-		RESUME_INTERRUPTS();
-	}
-	PG_exception_stack = &local_sigjmp_buf;
-	if (!ignore_till_sync)
-		send_ready_for_query = true;	/* initially, or after error */
-#endif
-
-	/*
-	 * Non-error queries loop here.
-	 */
-
-printf("# 943: hybrid loop:Begin CI=%s\n", getenv("CI") );
-    fprintf(stdout,"pg> %c\n", 4);
-	while (repl && !proc_exit_inprogress) {
-        interactive_one();
-	}
-    PDEBUG("\n\n# 996: REPL:End " __FILE__);
-
-    abort();
-#if !defined(PG_INITDB_MAIN)
-    proc_exit(0);
-#endif
 }
 
-#else
+#else  // defined(PG_MAIN)
 
 extern bool is_node;
 extern bool is_repl;
@@ -1036,7 +770,7 @@ void mkdirp(const char *p) {
 #endif /* wasm */
 
 
-#if defined(PG_INITDB_MAIN)
+#if defined(PG_INITDB_MAIN) || defined(__wasi__)
 extern int pg_initdb_main();
 
 extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
@@ -1046,6 +780,7 @@ extern void proc_exit(int code);
 
 extern volatile int pg_idb_status;
 #if PGDEBUG
+void print_bits(size_t const size, void const * const ptr);
 void print_bits(size_t const size, void const * const ptr)
 {
     unsigned char *b = (unsigned char*) ptr;
@@ -1060,10 +795,10 @@ void print_bits(size_t const size, void const * const ptr)
     }
     puts("");
 }
-#endif
+#endif // PGDEBUG
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
-    PDEBUG("# 1022: pg_initdb()");
+    PDEBUG("# 1066: pg_initdb()");
     optind = 1;
     int async_restart = 1;
     pg_idb_status |= IDB_FAILED;
@@ -1077,9 +812,9 @@ pg_initdb() {
             /* assume auth success for now */
             pg_idb_status |= IDB_HASUSER;
 #if PGDEBUG
-            printf("# 1054: pg_initdb: db exists at : %s TODO: test for db name : %s \n", getenv("PGDATA"), getenv("PGDATABASE"));
+            printf("# 1080: pg_initdb: db exists at : %s TODO: test for db name : %s \n", getenv("PGDATA"), getenv("PGDATABASE"));
             print_bits(sizeof(pg_idb_status), &pg_idb_status);
-#endif
+#endif // PGDEBUG
             main_post();
             async_restart = 0;
             {
@@ -1103,19 +838,19 @@ pg_initdb() {
     	chdir("/");
 #if PGDEBUG
         printf("pg_initdb: no db found at : %s\n", getenv("PGDATA") );
-#endif
+#endif // PGDEBUG
     }
 #if PGDEBUG
     PDEBUG("# 1080");
     printf("# pg_initdb_main result = %d\n", pg_initdb_main() );
 #else
     pg_initdb_main();
-#endif
+#endif // PGDEBUG
 
     /* save stdin and use previous initdb output to feed boot mode */
     int saved_stdin = dup(STDIN_FILENO);
     {
-        PDEBUG("# 1087: restarting in boot mode for initdb");
+        PDEBUG("# 1118: restarting in boot mode for initdb");
         freopen(IDB_PIPE_BOOT, "r", stdin);
 
         char *boot_argv[] = {
@@ -1134,7 +869,11 @@ pg_initdb() {
         optind = 1;
         BootstrapModeMain(boot_argc, boot_argv, false);
         fclose(stdin);
+#if PGDEBUG
+        puts("# 886: keep " IDB_PIPE_BOOT );
+#else
         remove(IDB_PIPE_BOOT);
+#endif
         stdin = fdopen(saved_stdin, "r");
         /* fake a shutdown to comlplete WAL/OID states */
         proc_exit(66);
@@ -1147,7 +886,7 @@ pg_initdb() {
 
 
     {
-        PDEBUG("# 1119: restarting in single mode for initdb");
+        PDEBUG("# 1150: restarting in single mode for initdb");
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -1179,7 +918,7 @@ initdb_done:;
 }
 
 
-#endif
+#endif // PG_INITDB_MAIN
 
 #define PGDB WASM_PREFIX "/base"
 
@@ -1249,7 +988,7 @@ extra_env:;
             console.warn("prerun(C-node) worker=", Module.is_worker);
 #endif
             Module['postMessage'] = function custom_postMessage(event) {
-                console.log("# 1219: onCustomMessage:",__FILE__, event);
+                console.log("# 1252: onCustomMessage:",__FILE__, event);
             };
         });
 
@@ -1391,14 +1130,100 @@ void main_post() {
          */
         unsetenv("LC_ALL");
 }
-
+EMSCRIPTEN_KEEPALIVE void __cxa_throw(void *thrown_exception, void *tinfo, void *dest);
 EMSCRIPTEN_KEEPALIVE void
 __cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
 
+/*
+EMSCRIPTEN_KEEPALIVE void *
+_ZNSt13runtime_errorD1Ev(void * int32) {
+    return NULL;
+}
+*/
+
+
 extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
 
+
+#if defined(__wasi__)
+
+#include "../patches/wasi_signal.c"
+
+/*
+static void
+__SIG_IGN(int) {
+}
+*/
+#define PG_INITDB_MAIN
+#define PG_MAIN
+
+#define FRONTEND
+    #include "../postgresql/src/common/logging.c"
+#undef FRONTEND
+
+    #define icu_language_tag(loc_str) icu_language_tag_idb(loc_str)
+    #define icu_validate_locale(loc_str) icu_validate_locale_idb(loc_str)
+    #include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
+    #define fsync_pgdata(...)
+
+    unsigned int alarm(unsigned int seconds) {
+        return 0;
+    }
+
+
+
+    #include <stdio.h> // FILE+fprintf
+    extern FILE* IDB_PIPE_FP;
+    extern FILE* SOCKET_FILE;
+    extern int SOCKET_DATA;
+    extern int IDB_STAGE;
+
+
+
+
+    static int
+    ends_with(const char *str, const char *suffix)
+    {
+        if (!str || !suffix)
+            return 0;
+        size_t lenstr = strlen(str);
+        size_t lensuffix = strlen(suffix);
+        if (lensuffix >  lenstr)
+            return 0;
+        return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+    }
+
+    FILE *pg_popen(const char *command, const char *type) {
+        if ( ends_with(command,"-V") || (IDB_STAGE>1)) {
+        	fprintf(stderr,"# wasi-popen[%s] STUB\n", command);
+        	return stderr;
+        }
+
+        if (!IDB_STAGE) {
+            fprintf(stderr,"# wasi-popen[%s] (BOOT)\n", command);
+            IDB_PIPE_FP = fopen( IDB_PIPE_BOOT, "w");
+            IDB_STAGE = 1;
+        } else {
+            fprintf(stderr,"# wasi-popen[%s] (SINGLE)\n", command);
+            IDB_PIPE_FP = fopen( IDB_PIPE_SINGLE, "w");
+            IDB_STAGE = 2;
+        }
+
+        return IDB_PIPE_FP;
+
+    }
+    //void __SIG_IGN(int) {}
+    //void __SIG_ERR(int) {}
+
+    #include "../postgresql/src/bin/initdb/initdb.c"
+
+
+#undef PG_INITDB_MAIN
+#undef PG_MAIN
+#endif // __wasi__
+
 EMSCRIPTEN_KEEPALIVE int
-main_repl(int async) {
+main_repl() {
     bool hadloop_error = false;
 
     whereToSendOutput = DestNone;
@@ -1410,10 +1235,13 @@ main_repl(int async) {
 #endif
         #if defined(PG_INITDB_MAIN)
             #warning "web build"
+puts("1168");
             hadloop_error = pg_initdb() & IDB_FAILED;
-
         #else
             #warning "node build"
+            #if defined(__wasi__)
+                hadloop_error = pg_initdb() & IDB_FAILED;
+            #endif
         #endif
 
     } else {
@@ -1476,10 +1304,7 @@ main_repl(int async) {
         }
 
         PDEBUG("# 1415: single: " __FILE__ );
-        if (async>0)
-            AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
-        else
-            PostgresSingleUserMain(g_argc, g_argv, strdup( getenv("PGUSER")));
+        AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
     }
     return 0;
 }
@@ -1494,7 +1319,8 @@ main(int argc, char **argv)
 
     main_pre(argc, argv);
 #if PGDEBUG
-    printf("# 1434 argv0 (%s) PGUSER=%s PGDATA=%s\n PGDATABASE=%s\n", argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"));
+    printf("# 1249: argv0 (%s) PGUSER=%s PGDATA=%s\n PGDATABASE=%s REPL=%s\n",
+        argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"), getenv("REPL") );
 #endif
 	progname = get_progname(argv[0]);
 
@@ -1533,13 +1359,14 @@ main(int argc, char **argv)
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
     if (!is_repl) {
-        PDEBUG("# 1473: exit with live runtime (nodb)");
+        PDEBUG("# 1289: exit with live runtime (nodb)");
         return 0;
     }
-
+    PDEBUG("# 1292: repl");
     // so it is repl
-    main_repl(1);
+    main_repl();
     if (is_node) {
+        PDEBUG("# 1296: node repl");
         pg_repl_raf();
     }
     emscripten_force_exit(ret);

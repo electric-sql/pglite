@@ -1,6 +1,6 @@
 --- postgresql/src/backend/catalog/index.c
 +++ postgresql-wasm/src/backend/catalog/index.c
-@@ -2994,7 +2994,7 @@
+@@ -2995,7 +2995,7 @@
  		indexInfo->ii_ParallelWorkers =
  			plan_create_index_workers(RelationGetRelid(heapRelation),
  									  RelationGetRelid(indexRelation));
@@ -9,7 +9,7 @@
  	if (indexInfo->ii_ParallelWorkers == 0)
  		ereport(DEBUG1,
  				(errmsg_internal("building index \"%s\" on table \"%s\" serially",
-@@ -3006,7 +3006,7 @@
+@@ -3007,7 +3007,7 @@
  								 RelationGetRelationName(indexRelation),
  								 RelationGetRelationName(heapRelation),
  								 indexInfo->ii_ParallelWorkers)));

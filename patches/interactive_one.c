@@ -317,9 +317,8 @@ interactive_one() {
 
 PDEBUG("# 324 : TODO: set a pg_main started flag");
                             sf_connected++;
-// CHECK ME see 538 / 563
                             send_ready_for_query = true;
-                        } // auth
+                        } /* auth */
                     } else {
 #if PGDEBUG
                         fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
@@ -530,9 +529,11 @@ incoming:
     ProcessClientReadInterrupt(true);
 
     if (is_wire) {
+
 wire_flush:
+
         if (!ClientAuthInProgress) {
-            PDEBUG("# 537: end packet - sending rfq");
+            PDEBUG("# 536: end packet - sending rfq");
             if (send_ready_for_query) {
                 ReadyForQuery(DestRemote);
                 send_ready_for_query = false;
@@ -554,15 +555,13 @@ wire_flush:
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
                 if (cma_wsize)
-                    PDEBUG("# 557: cma and sockfile ???");
+                    PDEBUG("# 558: cma and sockfile ???");
                 if (sockfiles) {
-                    PDEBUG("# 559: setting sockfile lock, ready to read");
+                    PDEBUG("# 560: setting sockfile lock, ready to read");
                     PDEBUG(PGS_OLOCK);
                     c_lock = fopen(PGS_OLOCK, "w");
                     fclose(c_lock);
                 }
-// CHECK ME 320 / 540 . only initially or after error
-                // send_ready_for_query = true;
             }
 
         } else {
