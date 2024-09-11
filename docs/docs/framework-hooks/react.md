@@ -48,7 +48,7 @@ const MyComponent = () => {
 
   return (
     <>
-      <button click={insertItem}
+      <button onClick={insertItem}
     </>
   )
 }
