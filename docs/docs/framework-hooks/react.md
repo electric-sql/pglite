@@ -42,7 +42,7 @@ import { usePGlite } from "@electric-sql/pglite-react"
 const MyComponent = () => {
   const db = usePGlite()
 
-  const insertItem = () = {
+  const insertItem = () => {
     db.query("INSERT INTO my_table (name, number) VALUES ('Arthur', 42);")
   }
 
