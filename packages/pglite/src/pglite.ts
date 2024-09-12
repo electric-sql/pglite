@@ -534,7 +534,11 @@ export class PGlite
    */
   async execProtocol(
     message: Uint8Array,
-    { syncToFs = true, onNotice }: ExecProtocolOptions = {},
+    {
+      syncToFs = true,
+      throwOnError = true,
+      onNotice,
+    }: ExecProtocolOptions = {},
   ): Promise<Array<[BackendMessage, Uint8Array]>> {
     const data = await this.execProtocolRaw(message, { syncToFs })
     const results: Array<[BackendMessage, Uint8Array]> = []
@@ -542,7 +546,9 @@ export class PGlite
     this.#parser.parse(data, (msg) => {
       if (msg instanceof DatabaseError) {
         this.#parser = new Parser() // Reset the parser
-        throw msg
+        if (throwOnError) {
+          throw msg
+        }
         // TODO: Do we want to wrap the error in a custom error?
       } else if (msg instanceof NoticeMessage) {
         if (this.debug > 0) {
