@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/emscripten.h
 +++ postgresql-wasm/src/include/port/emscripten.h
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,50 @@
 +/* src/include/port/emscripten.h */
 +
 +#ifndef I_EMSCRIPTEN
@@ -12,8 +12,6 @@
 +
 +#include "/tmp/pglite/include/wasm_common.h"
 +
-+#include <stdbool.h>
-+extern PGDLLIMPORT bool fe_utils_quote_all_identifiers;
 +
 +#define BOOT_END_MARK "build indices"
 +#define FD_BUFFER_MAX 16384

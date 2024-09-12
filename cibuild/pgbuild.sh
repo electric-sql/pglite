@@ -72,9 +72,37 @@ fi
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    cat > ${PGROOT}/config.site <<END
+
+    mkdir -p bin
+
+
+
+
+    if $WASI
+    then
+        export EXT=wasi
+        cat > ${PGROOT}/config.site <<END
+ac_cv_exeext=.wasi
+END
+        cat > bin/zic <<END
+#!/bin/bash
+#. /opt/python-wasm-sdk/wasm32-wasi-shell.sh
+TZ=UTC PGTZ=UTC wasi-run $(pwd)/src/timezone/zic.wasi \$@
+END
+
+    else
+        export EXT=wasm
+        cat > ${PGROOT}/config.site <<END
 ac_cv_exeext=.cjs
 END
+        cat > bin/zic <<END
+#!/bin/bash
+#. /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
+TZ=UTC PGTZ=UTC node $(pwd)/src/timezone/zic.cjs \$@
+END
+    fi
+
+
 
     if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE=${PGROOT}/config.site emconfigure $CNF --with-template=$BUILD
     then
@@ -98,14 +126,6 @@ END
     fi
 
 
-    mkdir -p bin
-
-    cat > bin/zic <<END
-#!/bin/bash
-#. /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
-TZ=UTC PGTZ=UTC node $(pwd)/src/timezone/zic.cjs \$@
-END
-
     # --disable-shared not supported so be able to use a fake linker
 
     > /tmp/disable-shared.log
@@ -122,7 +142,7 @@ END
 echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
 # shared build
 echo ===================================================================================
-echo -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared \$@ -Wno-unused-function
+wasi-c -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared \$@ -Wno-unused-function
 echo ===================================================================================
 END
 
@@ -160,7 +180,12 @@ END
 	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
-        cp -vf src/backend/postgres src/backend/postgres.cjs
+        if $WASI
+        then
+            cp -vf src/backend/postgres src/backend/postgres.wasi
+        else
+            cp -vf src/backend/postgres src/backend/postgres.cjs
+        fi
 
         # if running a 32bits zic from current build
         unset LD_PRELOAD
@@ -194,12 +219,12 @@ END
 	fi
 
     # wip
-    mv -vf ./src/bin/psql/psql.wasm ./src/bin/pg_config/pg_config.wasm ${PGROOT}/bin/
-    mv -vf ./src/bin/pg_dump/pg_restore.wasm ./src/bin/pg_dump/pg_dump.wasm ./src/bin/pg_dump/pg_dumpall.wasm ${PGROOT}/bin/
-	mv -vf ./src/bin/pg_resetwal/pg_resetwal.wasm  ./src/bin/initdb/initdb.wasm ./src/backend/postgres.wasm ${PGROOT}/bin/
+    mv -vf ./src/bin/psql/psql.$EXT ./src/bin/pg_config/pg_config.$EXT ${PGROOT}/bin/
+    mv -vf ./src/bin/pg_dump/pg_restore.$EXT ./src/bin/pg_dump/pg_dump.$EXT ./src/bin/pg_dump/pg_dumpall.$EXT ${PGROOT}/bin/
+	mv -vf ./src/bin/pg_resetwal/pg_resetwal.$EXT  ./src/bin/initdb/initdb.$EXT ./src/backend/postgres.$EXT ${PGROOT}/bin/
 
 
-    if [ -f $PGROOT/bin/pg_config.wasm ]
+    if [ -f $PGROOT/bin/pg_config.$EXT ]
     then
         echo pg_config installed
     else

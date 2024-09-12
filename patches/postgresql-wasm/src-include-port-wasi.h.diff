@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasi.h
 +++ postgresql-wasm/src/include/port/wasi.h
-@@ -0,0 +1,267 @@
+@@ -0,0 +1,271 @@
 +#ifndef I_WASI
 +#define I_WASI
 +
@@ -11,7 +11,6 @@
 +#if defined(HAVE_GETRLIMIT)
 +#undef HAVE_GETRLIMIT
 +#endif
-+
 +
 +
 +#define PLATFORM_DEFAULT_SYNC_METHOD    SYNC_METHOD_FDATASYNC
@@ -158,11 +157,6 @@
 +    return -1;
 +}
 +
-+static int
-+system_wasi(const char *command) {
-+    fprintf(stderr, "# 164: system('%s')\n", command);
-+    return -1;
-+}
 +
 +static const char *gai_strerror_msg = "# 168: gai_strerror_msg";
 +static const char *
@@ -252,6 +246,8 @@
 +
 +
 +
++#define system(command) system_wasi(command)
++extern int system_wasi(const char *command);
 +
 +
 +
@@ -263,7 +259,15 @@
 +}
 +
 +
++// HACK TODO FIXME !
 +
++// #define getpwuid(...) (NULL)
++
++#if defined(PG_INITDB) || defined(FE_UTILS_PRINT) || defined(PG_DUMP_PARALLEL)
++static void
++__SIG_IGN(int param) {
++}
++#endif
 +
 +
 +#endif // I_WASI

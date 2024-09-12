@@ -1,0 +1,10 @@
+--- postgresql/src/fe_utils/print.c
++++ postgresql-wasm/src/fe_utils/print.c
+@@ -15,6 +15,7 @@
+  *
+  *-------------------------------------------------------------------------
+  */
++#define FE_UTILS_PRINT
+ #include "postgres_fe.h"
+ 
+ #include <limits.h>

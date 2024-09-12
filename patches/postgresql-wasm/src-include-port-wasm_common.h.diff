@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasm_common.h
 +++ postgresql-wasm/src/include/port/wasm_common.h
-@@ -0,0 +1,308 @@
+@@ -0,0 +1,311 @@
 +#define WAIT_USE_POLL 1
 +
 +#define HAVE_LINUX_EIDRM_BUG
@@ -79,6 +79,9 @@
 +extern const char *progname;
 +#endif
 +
++// exported in ./src/fe_utils/string_utils.c
++#include <stdbool.h>
++extern PGDLLIMPORT bool fe_utils_quote_all_identifiers;
 +
 +extern int	pg_char_to_encoding_private(const char *name);
 +extern const char *pg_encoding_to_char_private(int encoding);

@@ -267,3 +267,96 @@ unsigned int alarm(unsigned int seconds) {
 }
 
 
+
+
+
+
+
+
+#include <stdio.h> // FILE+fprintf
+extern FILE* IDB_PIPE_FP;
+extern FILE* SOCKET_FILE;
+extern int SOCKET_DATA;
+extern int IDB_STAGE;
+
+
+static inline int
+ends_with(const char *str, const char *suffix)
+{
+    if (!str || !suffix)
+        return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+FILE *pg_popen(const char *command, const char *type) {
+    if ( ends_with(command,"-V") || (IDB_STAGE>1)) {
+    	fprintf(stderr,"# wasi-popen[%s] STUB\n", command);
+    	return stderr;
+    }
+
+    if (!IDB_STAGE) {
+        fprintf(stderr,"# wasi-popen[%s] (BOOT)\n", command);
+        IDB_PIPE_FP = fopen( IDB_PIPE_BOOT, "w");
+        IDB_STAGE = 1;
+    } else {
+        fprintf(stderr,"# wasi-popen[%s] (SINGLE)\n", command);
+        IDB_PIPE_FP = fopen( IDB_PIPE_SINGLE, "w");
+        IDB_STAGE = 2;
+    }
+
+    return IDB_PIPE_FP;
+}
+
+int
+system_wasi(const char *command) {
+    fprintf(stderr, "# 164: system('%s')\n", command);
+    return -1;
+}
+
+// pthread.h
+
+
+int pthread_create(pthread_t *restrict thread,
+                          const pthread_attr_t *restrict attr,
+                          void *(*start_routine)(void *),
+                          void *restrict arg) {
+    puts("# 327: pthread_create STUB");
+    return 0;
+}
+
+int pthread_join(pthread_t thread, void **retval) {
+    return 0;
+}
+
+int pthread_mutex_lock(pthread_mutex_t *mutex) {
+    return 0;
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *mutex) {
+    return 0;
+}
+
+void wait();
+
+// present in share/wasi-sysroot/lib/wasm32-wasi/libwasi-emulated-signal.a(signal.o)
+// void __SIG_IGN(int param) { }
+
+
+FILE *tmpfile(void) {
+    return fopen(mktemp("/tmp/tmpfile"),"w");
+}
+
+
+
+
+
+
+
+
+
+
+

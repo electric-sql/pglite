@@ -1162,52 +1162,6 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
     #include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
     #define fsync_pgdata(...)
 
-
-
-
-    #include <stdio.h> // FILE+fprintf
-    extern FILE* IDB_PIPE_FP;
-    extern FILE* SOCKET_FILE;
-    extern int SOCKET_DATA;
-    extern int IDB_STAGE;
-
-
-
-
-    static int
-    ends_with(const char *str, const char *suffix)
-    {
-        if (!str || !suffix)
-            return 0;
-        size_t lenstr = strlen(str);
-        size_t lensuffix = strlen(suffix);
-        if (lensuffix >  lenstr)
-            return 0;
-        return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-    }
-
-    FILE *pg_popen(const char *command, const char *type) {
-        if ( ends_with(command,"-V") || (IDB_STAGE>1)) {
-        	fprintf(stderr,"# wasi-popen[%s] STUB\n", command);
-        	return stderr;
-        }
-
-        if (!IDB_STAGE) {
-            fprintf(stderr,"# wasi-popen[%s] (BOOT)\n", command);
-            IDB_PIPE_FP = fopen( IDB_PIPE_BOOT, "w");
-            IDB_STAGE = 1;
-        } else {
-            fprintf(stderr,"# wasi-popen[%s] (SINGLE)\n", command);
-            IDB_PIPE_FP = fopen( IDB_PIPE_SINGLE, "w");
-            IDB_STAGE = 2;
-        }
-
-        return IDB_PIPE_FP;
-
-    }
-    //void __SIG_IGN(int) {}
-    //void __SIG_ERR(int) {}
-
     #include "../postgresql/src/bin/initdb/initdb.c"
 
 
