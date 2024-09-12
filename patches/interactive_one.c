@@ -487,16 +487,20 @@ incoming:
 	                (errcode(ERRCODE_PROTOCOL_VIOLATION),
 	                 errmsg("terminating connection because protocol synchronization was lost")));
 
-        send_ready_for_query = true;
-
-        if (!is_wire) {
-            pg_prompt();
-        } else {
-            goto wire_flush;
-        }
         RESUME_INTERRUPTS();
 
-        return;
+        /*
+         * If we were handling an extended-query-protocol message, skip till next Sync.
+         * This also causes us not to issue ReadyForQuery (until we get Sync).
+         */
+
+        if (!ignore_till_sync)
+            send_ready_for_query = true;
+
+        if (!is_wire)
+            pg_prompt();
+
+        goto wire_flush;
     }
 
 	PG_exception_stack = &local_sigjmp_buf;
