@@ -486,6 +486,9 @@ incoming:
             ereport(FATAL,
 	                (errcode(ERRCODE_PROTOCOL_VIOLATION),
 	                 errmsg("terminating connection because protocol synchronization was lost")));
+
+        send_ready_for_query = true;
+
         if (!is_wire) {
             pg_prompt();
         } else {
@@ -493,7 +496,6 @@ incoming:
         }
         RESUME_INTERRUPTS();
 
-        send_ready_for_query = true;
         return;
     }
 
