@@ -262,5 +262,8 @@ int sigwait(const sigset_t *restrict set, int *restrict sig) {
     return 0;
 }
 
+unsigned int alarm(unsigned int seconds) {
+    return 0;
+}
 
 

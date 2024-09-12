@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasm_common.h
 +++ postgresql-wasm/src/include/port/wasm_common.h
-@@ -0,0 +1,307 @@
+@@ -0,0 +1,308 @@
 +#define WAIT_USE_POLL 1
 +
 +#define HAVE_LINUX_EIDRM_BUG
@@ -160,6 +160,7 @@
 +#include <unistd.h> // access+F_OK
 +#include <stdio.h> // FILE+fprintf
 +
++FILE *wasm_OpenPipeStream(const char *command, const char *mode);
 +FILE *
 +wasm_OpenPipeStream(const char *command, const char *mode) {
 +

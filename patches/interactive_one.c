@@ -317,8 +317,9 @@ interactive_one() {
 
 PDEBUG("# 324 : TODO: set a pg_main started flag");
                             sf_connected++;
+// CHECK ME see 538 / 563
                             send_ready_for_query = true;
-                        } /* auth */
+                        } // auth
                     } else {
 #if PGDEBUG
                         fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
@@ -485,15 +486,21 @@ incoming:
             ereport(FATAL,
 	                (errcode(ERRCODE_PROTOCOL_VIOLATION),
 	                 errmsg("terminating connection because protocol synchronization was lost")));
-        if (!is_wire) {
-            pg_prompt();
-        } else {
-            goto wire_flush;
-        }
+
         RESUME_INTERRUPTS();
 
-        send_ready_for_query = true;
-        return;
+        /*
+         * If we were handling an extended-query-protocol message, skip till next Sync.
+         * This also causes us not to issue ReadyForQuery (until we get Sync).
+         */
+
+        if (!ignore_till_sync)
+            send_ready_for_query = true;
+
+        if (!is_wire)
+            pg_prompt();
+
+        goto wire_flush;
     }
 
 	PG_exception_stack = &local_sigjmp_buf;
@@ -529,11 +536,9 @@ incoming:
     ProcessClientReadInterrupt(true);
 
     if (is_wire) {
-
 wire_flush:
-
         if (!ClientAuthInProgress) {
-            PDEBUG("# 536: end packet - sending rfq");
+            PDEBUG("# 537: end packet - sending rfq");
             if (send_ready_for_query) {
                 ReadyForQuery(DestRemote);
                 send_ready_for_query = false;
@@ -555,13 +560,15 @@ wire_flush:
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
                 if (cma_wsize)
-                    PDEBUG("# 558: cma and sockfile ???");
+                    PDEBUG("# 557: cma and sockfile ???");
                 if (sockfiles) {
-                    PDEBUG("# 560: setting sockfile lock, ready to read");
+                    PDEBUG("# 559: setting sockfile lock, ready to read");
                     PDEBUG(PGS_OLOCK);
                     c_lock = fopen(PGS_OLOCK, "w");
                     fclose(c_lock);
                 }
+// CHECK ME 320 / 540 . only initially or after error
+                // send_ready_for_query = true;
             }
 
         } else {

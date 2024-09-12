@@ -1148,28 +1148,20 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
 
 #if defined(__wasi__)
 
-#include "../patches/wasi_signal.c"
+//#   include "../patches/wasi_signal.c"
 
-/*
-static void
-__SIG_IGN(int) {
-}
-*/
-#define PG_INITDB_MAIN
-#define PG_MAIN
+#   define PG_INITDB_MAIN
+#   define PG_MAIN
 
-#define FRONTEND
+#   define FRONTEND
     #include "../postgresql/src/common/logging.c"
-#undef FRONTEND
+#   undef FRONTEND
 
     #define icu_language_tag(loc_str) icu_language_tag_idb(loc_str)
     #define icu_validate_locale(loc_str) icu_validate_locale_idb(loc_str)
     #include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
     #define fsync_pgdata(...)
 
-    unsigned int alarm(unsigned int seconds) {
-        return 0;
-    }
 
 
 

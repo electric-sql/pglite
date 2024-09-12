@@ -1,0 +1,11 @@
+--- postgresql/src/port/pqsignal.c
++++ postgresql-wasm/src/port/pqsignal.c
+@@ -60,3 +60,8 @@
+ 	return signal(signo, func);
+ #endif
+ }
++
++/* sneak stubs into libpgport */
++#if defined(__wasi__)
++#   include "../../../patches/wasi_port.c"
++#endif

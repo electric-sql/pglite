@@ -34,3 +34,16 @@
  
  ##
  ## BUILD
+@@ -248,8 +275,11 @@
+ endif
+ 
+ all-static-lib: $(stlib)
+-
++ifdef wasi
++all-shared-lib: all-static-lib
++else
+ all-shared-lib: $(shlib)
++endif
+ 
+ # In this rule, "touch $@" works around a problem on some platforms wherein
+ # ar updates the library file's mod time with a value calculated to
