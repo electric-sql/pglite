@@ -748,7 +748,7 @@ void
 PostgresSingleUserMain(int argc, char *argv[],
 					   const char *username)
 {
-
+    while(1){};
 }
 
 #else  // defined(PG_MAIN)
@@ -771,11 +771,11 @@ void mkdirp(const char *p) {
 
 
 #if defined(PG_INITDB_MAIN) || defined(__wasi__)
-extern int pg_initdb_main();
+extern int pg_initdb_main(void);
 
 extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
 extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
-extern void main_post();
+extern void main_post(void);
 extern void proc_exit(int code);
 
 extern volatile int pg_idb_status;
@@ -1082,6 +1082,7 @@ extra_env:;
 int g_argc;
 char **g_argv;
 
+void main_post();
 void main_post() {
         /*
          * Fire up essential subsystems: error and memory management
@@ -1221,7 +1222,7 @@ __SIG_IGN(int) {
 #undef PG_INITDB_MAIN
 #undef PG_MAIN
 #endif // __wasi__
-
+EMSCRIPTEN_KEEPALIVE int main_repl();
 EMSCRIPTEN_KEEPALIVE int
 main_repl() {
     bool hadloop_error = false;

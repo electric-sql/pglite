@@ -110,19 +110,27 @@ END
 
     > /tmp/disable-shared.log
 
-    cat > bin/wasm-shared <<END
+    cat > bin/emsdk-shared <<END
 #!/bin/bash
 echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
 # shared build
 \${PG_LINK:-emcc} -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared -sSIDE_MODULE=1 \$@ -Wno-unused-function
 END
 
-    # FIXME: workaround for /conversion_procs/ make
-    # cp bin/wasm-shared bin/o
-    ZIC=${ZIC:-$(realpath bin/zic)}
-    chmod +x bin/zic bin/wasm-shared
+    cat > bin/wasi-shared <<END
+#!/bin/bash
+echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
+# shared build
+echo ===================================================================================
+echo -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared \$@ -Wno-unused-function
+echo ===================================================================================
+END
 
-    # for zic and wasm-shared
+
+
+    chmod +x bin/zic bin/wasi-shared bin/emsdk-shared
+
+    # for zic and emsdk-shared/wasi-shared called from makefile
     export PATH=$(pwd)/bin:$PATH
 
     EMCC_NODE="-sEXIT_RUNTIME=1 -DEXIT_RUNTIME -sNODERAWFS -sENVIRONMENT=node"
@@ -145,9 +153,10 @@ END
 
     export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
 
-    export WASI_CFLAGS="${CC_PGLITE}-DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function"
+    export WASI_CFLAGS="${CC_PGLITE}-DPREFIX=${PGROOT} -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
 
-#ZIC=$ZIC
+    ZIC=${ZIC:-$(realpath bin/zic)}
+
 	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
@@ -160,7 +169,7 @@ END
         then
             echo install ok
             pushd ${PGROOT}
-            #find ./lib/postgresql ./share/postgresql/extension -type f > ${PGROOT}/pg.installed
+
             find . -type f | grep -v plpgsql > ${PGROOT}/pg.installed
             popd
 
@@ -189,10 +198,6 @@ END
     mv -vf ./src/bin/pg_dump/pg_restore.wasm ./src/bin/pg_dump/pg_dump.wasm ./src/bin/pg_dump/pg_dumpall.wasm ${PGROOT}/bin/
 	mv -vf ./src/bin/pg_resetwal/pg_resetwal.wasm  ./src/bin/initdb/initdb.wasm ./src/backend/postgres.wasm ${PGROOT}/bin/
 
-#    mv -vf ${PGROOT}/bin/pg_config ${PGROOT}/bin/pg_config.js
-#	mv -vf ./src/bin/initdb/initdb ${PGROOT}/bin/initdb.js
-#	mv -vf ./src/bin/pg_resetwal/pg_resetwal ${PGROOT}/bin/pg_resetwal.js
-#	mv -vf ./src/backend/postgres ${PGROOT}/bin/postgres.js
 
     if [ -f $PGROOT/bin/pg_config.wasm ]
     then

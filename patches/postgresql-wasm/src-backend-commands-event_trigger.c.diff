@@ -1,6 +1,6 @@
 --- postgresql/src/backend/commands/event_trigger.c
 +++ postgresql-wasm/src/backend/commands/event_trigger.c
-@@ -643,6 +643,8 @@ EventTriggerDDLCommandStart(Node *parsetree)
+@@ -642,6 +642,8 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
@@ -9,7 +9,7 @@
  	/*
  	 * Event Triggers are completely disabled in standalone mode.  There are
  	 * (at least) two reasons for this:
-@@ -661,6 +663,7 @@ EventTriggerDDLCommandStart(Node *parsetree)
+@@ -660,6 +662,7 @@
  	 */
  	if (!IsUnderPostmaster)
  		return;
@@ -17,7 +17,7 @@
  
  	runlist = EventTriggerCommonSetup(parsetree,
  									  EVT_DDLCommandStart,
-@@ -691,12 +694,15 @@ EventTriggerDDLCommandEnd(Node *parsetree)
+@@ -690,12 +693,15 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
@@ -33,7 +33,7 @@
  
  	/*
  	 * Also do nothing if our state isn't set up, which it won't be if there
-@@ -739,12 +745,15 @@ EventTriggerSQLDrop(Node *parsetree)
+@@ -738,12 +744,15 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  
@@ -49,7 +49,7 @@
  
  	/*
  	 * Use current state to determine whether this event fires at all.  If
-@@ -810,12 +819,15 @@ EventTriggerTableRewrite(Node *parsetree, Oid tableOid, int reason)
+@@ -809,12 +818,15 @@
  	List	   *runlist;
  	EventTriggerData trigdata;
  

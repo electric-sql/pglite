@@ -267,7 +267,7 @@ UTF-8
 END
 
 
-    # to get same path for wasm-shared link tool in the path
+    # to get same path for wasm shared link tools in the path
     # for extensions building.
     # we always symlink in-tree build to "postgresql" folder
     if echo $PG_VERSION|grep -q ^16
@@ -277,9 +277,9 @@ END
         . cibuild/pg-git.sh
     fi
 
-    # install wasm-shared along with pg config  tool
+    # install emsdk-shared along with pg config  tool
     # for building user ext.
-    cp build/postgres/bin/wasm-shared $PGROOT/bin/
+    cp build/postgres/bin/emsdk-shared $PGROOT/bin/
 
     export PGLITE=$(pwd)/packages/pglite
 
@@ -289,7 +289,7 @@ END
 
 fi
 
-# put wasm-shared the pg extension linker from build dir in the path
+# put emsdk-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
 export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 

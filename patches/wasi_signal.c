@@ -10,7 +10,7 @@ typedef void (*sa_handler_t) (int);
 /* Return the handler of a signal, as a sa_handler_t value regardless
    of its true type.  The resulting function can be compared to
    special values like SIG_IGN but it is not portable to call it.  */
-static inline sa_handler_t;
+// static inline sa_handler_t;
 
 /*
 struct sigaction {
@@ -88,8 +88,8 @@ struct sigaction_x
    that signal is not currently handled by the sigaction handler.  */
 struct sigaction volatile action_array[NSIG] /* = 0 */;
 
+// typedef void (*__sighandler_t) (int);
 
-typedef void (*__sighandler_t) (int);
 # define _SIGSET_NWORDS        (1024 / (8 * sizeof (unsigned long int)))
 
 
