@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PGlite } from '../dist/index.js'
 import { serialize } from '@electric-sql/pg-protocol'
 
-describe('XML functionality', () => {
+describe('exec protocol', () => {
   let db: PGlite
 
   beforeAll(async () => {
