@@ -37,3 +37,6 @@ We have a number of examples showing how to use PGlite along with its capabiliti
 
 - <a href="./examples/worker.html" target="_blank">Multi Tab Worker</a><br>
   Demonstration of the multi tab worker, enabling multiple browser tabs to share a PGlite database.
+
+- <a href="https://nextjs-boilerplate.com" target="_blank">Next.js</a><br>
+  An example showing an alternative to Docker for local development using Next.js and PGlite.
