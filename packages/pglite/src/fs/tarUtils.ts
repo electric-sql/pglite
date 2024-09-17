@@ -50,9 +50,14 @@ export async function loadTar(
   const files = untar(tarball)
   for (const file of files) {
     const filePath = pgDataDir + file.name
+    const dirPath = filePath.split('/')
+    const fileName = dirPath.pop()
+
+    if (fileName?.startsWith('.')) {
+      continue
+    }
 
     // Ensure the directory structure exists
-    const dirPath = filePath.split('/').slice(0, -1)
     for (let i = 1; i <= dirPath.length; i++) {
       const dir = dirPath.slice(0, i).join('/')
       if (!FS.analyzePath(dir).exists) {
@@ -80,7 +85,7 @@ function readDirectory(FS: FS, path: string) {
   const traverseDirectory = (currentPath: string) => {
     const entries = FS.readdir(currentPath)
     entries.forEach((entry) => {
-      if (entry === '.' || entry === '..') {
+      if (entry === '.' || entry === '..' || entry.startsWith('.')) {
         return
       }
       const fullPath = currentPath + '/' + entry

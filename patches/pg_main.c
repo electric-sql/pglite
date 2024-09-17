@@ -1182,13 +1182,15 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
 
     #include "../postgresql/src/bin/initdb/initdb.c"
 
-    void use_socketfile(void) {
-        is_repl = true;
-        is_node = true;
-    }
 #undef PG_INITDB_MAIN
 #undef PG_MAIN
 #endif // __wasi__
+
+EMSCRIPTEN_KEEPALIVE void use_socketfile(void) {
+    is_repl = true;
+    is_node = true;
+}
+
 EMSCRIPTEN_KEEPALIVE int main_repl();
 EMSCRIPTEN_KEEPALIVE int
 main_repl() {

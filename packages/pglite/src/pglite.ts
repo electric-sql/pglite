@@ -25,6 +25,13 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+const SOCKET_FILE = {
+  ILOCK: '/tmp/pglite/.s.PGSQL.5432.lock.in',
+  IN: '/tmp/pglite/.s.PGSQL.5432.in',
+  OLOCK: '/tmp/pglite/.s.PGSQL.5432.lock.out',
+  OUT: '/tmp/pglite/.s.PGSQL.5432.out',
+}
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -54,13 +61,19 @@ export class PGlite
 
   #protocolParser = new ProtocolParser()
 
-  // These are the current ArrayBuffer that is being read or written to
+  #queryInBuffer?: ArrayBuffer
+  #queryOutChunks?: Uint8Array[]
+
+  // These are the current /dev/blob ArrayBuffer that is being read or written to
   // during a query, such as COPY FROM or COPY TO.
-  #queryReadBuffer?: ArrayBuffer
-  #queryWriteChunks?: Uint8Array[]
+  #devBlobReadBuffer?: ArrayBuffer
+  #devBlobWriteChunks?: Uint8Array[]
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+
+  #socketInDevId?: number
+  #socketOutDevId?: number
 
   /**
    * Create a new PGlite instance
@@ -228,6 +241,11 @@ export class PGlite
       },
       preRun: [
         (mod: any) => {
+          console.log('preRun: clearing socket files')
+          this.#clearSocketFiles(mod)
+          console.log('preRun: socket files cleared')
+        },
+        (mod: any) => {
           // Register /dev/blob device
           // This is used to read and write blobs when used in COPY TO/FROM
           // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
@@ -243,7 +261,7 @@ export class PGlite
               length: number,
               position: number,
             ) => {
-              const buf = this.#queryReadBuffer
+              const buf = this.#devBlobReadBuffer
               if (!buf) {
                 throw new Error(
                   'No /dev/blob File or Blob provided to read from',
@@ -264,12 +282,14 @@ export class PGlite
               length: number,
               _position: number,
             ) => {
-              this.#queryWriteChunks ??= []
-              this.#queryWriteChunks.push(buffer.slice(offset, offset + length))
+              this.#devBlobWriteChunks ??= []
+              this.#devBlobWriteChunks.push(
+                buffer.slice(offset, offset + length),
+              )
               return length
             },
             llseek: (stream: any, offset: number, whence: number) => {
-              const buf = this.#queryReadBuffer
+              const buf = this.#devBlobReadBuffer
               if (!buf) {
                 throw new Error('No /dev/blob File or Blob provided to llseek')
               }
@@ -355,6 +375,11 @@ export class PGlite
       await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
     }
 
+    // Clear the socket files
+    console.log('init: clearing socket files')
+    this.#clearSocketFiles()
+    console.log('init: socket files cleared')
+
     // Check and log if the database exists
     if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
       this.#log('pglite: found DB, resuming')
@@ -412,6 +437,9 @@ export class PGlite
     // TODO: only sync here if initdb did init db.
     await this.syncToFs()
 
+    // Setup the socket files for the query protocol IO
+    this.#setupSocketDevices()
+
     this.#ready = true
 
     // Set the search path to public for this connection
@@ -424,6 +452,126 @@ export class PGlite
     for (const initFn of extensionInitFns) {
       await initFn()
     }
+  }
+
+  #clearSocketFiles(mod?: PostgresMod) {
+    mod = mod ?? this.mod!
+    // Remove any existing socket files - could be left over from a previous run
+    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
+      mod.FS.unlink(SOCKET_FILE.OLOCK)
+    }
+    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
+      mod.FS.unlink(SOCKET_FILE.OLOCK)
+    }
+    if (mod.FS.analyzePath(SOCKET_FILE.IN).exists) {
+      mod.FS.unlink(SOCKET_FILE.IN)
+    }
+    if (mod.FS.analyzePath(SOCKET_FILE.OUT).exists) {
+      mod.FS.unlink(SOCKET_FILE.OUT)
+    }
+  }
+
+  #setupSocketDevices() {
+    const mod = this.mod!
+
+    // Register SOCKET_FILE.IN device
+    this.#socketInDevId = mod.FS.makedev(63, 0)
+    const inDevOpt = {
+      open: (_stream: any) => {},
+      close: (_stream: any) => {},
+      read: (
+        _stream: any,
+        buffer: Uint8Array,
+        offset: number,
+        length: number,
+        position: number,
+      ) => {
+        const buf = this.#queryInBuffer
+        if (!buf) {
+          throw new Error(`No ${SOCKET_FILE.IN} Buffer provided to read from`)
+        }
+        const contents = new Uint8Array(buf)
+        if (position >= contents.length) return 0
+        const size = Math.min(contents.length - position, length)
+        for (let i = 0; i < size; i++) {
+          buffer[offset + i] = contents[position + i]
+        }
+        return size
+      },
+      write: (
+        _stream: any,
+        _buffer: Uint8Array,
+        _offset: number,
+        _length: number,
+        _position: number,
+      ) => {
+        throw new Error('Not implemented')
+      },
+      llseek: (stream: any, offset: number, whence: number) => {
+        const buf = this.#queryInBuffer
+        if (!buf) {
+          throw new Error(`No ${SOCKET_FILE.IN} Buffer provided to llseek`)
+        }
+        let position = offset
+        if (whence === 1) {
+          position += stream.position
+        } else if (whence === 2) {
+          position = new Uint8Array(buf).length
+        }
+        if (position < 0) {
+          throw new mod.FS.ErrnoError(28)
+        }
+        return position
+      },
+    }
+    mod.FS.registerDevice(this.#socketInDevId!, inDevOpt)
+
+    // Register SOCKET_FILE.OUT devicex
+    this.#socketOutDevId = mod.FS.makedev(62, 0)
+    const outDevOpt = {
+      open: (_stream: any) => {},
+      close: (_stream: any) => {},
+      read: (
+        _stream: any,
+        _buffer: Uint8Array,
+        _offset: number,
+        _length: number,
+        _position: number,
+      ) => {
+        throw new Error('Not implemented')
+      },
+      write: (
+        _stream: any,
+        buffer: Uint8Array,
+        offset: number,
+        length: number,
+        _position: number,
+      ) => {
+        this.#queryOutChunks ??= []
+        this.#queryOutChunks.push(buffer.slice(offset, offset + length))
+        return length
+      },
+      llseek: (_stream: any, _offset: number, _whence: number) => {
+        throw new Error('Not implemented')
+      },
+    }
+    mod.FS.registerDevice(this.#socketOutDevId!, outDevOpt)
+
+    this.#makeSocketFiles()
+
+    mod._use_socketfile()
+  }
+
+  #makeSocketFiles() {
+    console.log('pglite: making socket files')
+    const mod = this.mod!
+    if (!mod.FS.analyzePath(SOCKET_FILE.IN).exists) {
+      mod.FS.mkdev(SOCKET_FILE.IN, this.#socketInDevId!)
+    }
+    if (!mod.FS.analyzePath(SOCKET_FILE.OUT).exists) {
+      mod.FS.mkdev(SOCKET_FILE.OUT, this.#socketOutDevId!)
+    }
+    console.log('pglite: socket files made')
   }
 
   /**
@@ -496,14 +644,14 @@ export class PGlite
    * @param file The file to handle
    */
   async _handleBlob(blob?: File | Blob) {
-    this.#queryReadBuffer = blob ? await blob.arrayBuffer() : undefined
+    this.#devBlobReadBuffer = blob ? await blob.arrayBuffer() : undefined
   }
 
   /**
    * Cleanup the current file
    */
   async _cleanupBlob() {
-    this.#queryReadBuffer = undefined
+    this.#devBlobReadBuffer = undefined
   }
 
   /**
@@ -511,11 +659,11 @@ export class PGlite
    * @returns The written blob
    */
   async _getWrittenBlob(): Promise<Blob | undefined> {
-    if (!this.#queryWriteChunks) {
+    if (!this.#devBlobWriteChunks) {
       return undefined
     }
-    const blob = new Blob(this.#queryWriteChunks)
-    this.#queryWriteChunks = undefined
+    const blob = new Blob(this.#devBlobWriteChunks)
+    this.#devBlobWriteChunks = undefined
     return blob
   }
 
@@ -551,29 +699,33 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const msg_len = message.length
+    // Make query available at /dev/query-in
+    this.#queryInBuffer = message
+
+    // Remove the lock files if they exist
     const mod = this.mod!
+    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
+      mod.FS.unlink(SOCKET_FILE.OLOCK)
+    }
+    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
+      mod.FS.unlink(SOCKET_FILE.OLOCK)
+    }
 
-    // >0 set buffer content type to wire protocol
-    // set buffer size so answer will be at size+0x2 pointer addr
-    mod._interactive_write(msg_len)
-
-    // copy whole buffer at addr 0x1
-    mod.HEAPU8.set(message, 1)
+    this.#makeSocketFiles()
 
     // execute the message
-    mod._interactive_one()
+    this.#queryOutChunks = []
+    this.mod!._interactive_one()
 
-    // Read responses from the buffer
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
+    // Read responses from SOCKET_FILE.OUT
+    const data = await new Blob(this.#queryOutChunks).arrayBuffer()
+    this.#queryOutChunks = undefined
 
     if (syncToFs) {
       await this.syncToFs()
     }
 
-    return data
+    return new Uint8Array(data)
   }
 
   /**

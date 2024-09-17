@@ -21,7 +21,7 @@ import { PGlite } from "@electric-sql/pglite";
 console.log("Starting...");
 
 // In-memory database:
-const pg = new PGlite();
+const pg = new PGlite({ debug: 2 });
 // Or, stored in indexedDB:
 // const pg = new PGlite('pgdata');
 
