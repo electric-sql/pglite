@@ -60,7 +60,7 @@ export PGSRC=$(realpath postgresql-${PG_VERSION})
 if [ -f ${PGROOT}/pg.installed ]
 then
     echo "
-        skipping pg build, using previous install from ${PGROOT}
+        skipping pg build, using previous install because ${PGROOT}/pg.installed
 
 "
 else

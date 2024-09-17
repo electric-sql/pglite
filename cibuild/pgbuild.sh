@@ -173,15 +173,18 @@ END
 
     EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
 
-    WASI_CFLAGS="${CC_PGLITE}-DPREFIX=${PGROOT} -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
+    WASI_CFLAGS="${CC_PGLITE}-DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
 
     ZIC=${ZIC:-$(realpath bin/zic)}
+
+
 
 	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
         if $WASI
         then
+            echo "will need to link postgres to extensions statically"
             cp -vf src/backend/postgres src/backend/postgres.wasi
         else
             cp -vf src/backend/postgres src/backend/postgres.cjs
@@ -193,6 +196,17 @@ END
         if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 install 2>&1 > /tmp/install.log
         then
             echo install ok
+            if $WASI
+            then
+                # remove unlinked server
+                rm src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                pushd ../..
+                    chmod +x ./cibuild/linkwasi.sh
+                    WASI_CFLAGS="$WASI_CFLAGS" ./cibuild/linkwasi.sh || exit 190
+                popd
+                cp src/backend/postgres.wasi $PGROOT/bin/ || exit 205
+            fi
+
             pushd ${PGROOT}
 
             find . -type f | grep -v plpgsql > ${PGROOT}/pg.installed
@@ -210,12 +224,12 @@ END
         else
             cat /tmp/install.log
             echo "install failed"
-            exit 164
+            exit 225
         fi
     else
         cat /tmp/build.log
         echo "build failed"
-        exit 169
+        exit 230
 	fi
 
     # wip
@@ -224,11 +238,23 @@ END
 	mv -vf ./src/bin/pg_resetwal/pg_resetwal.$EXT  ./src/bin/initdb/initdb.$EXT ./src/backend/postgres.$EXT ${PGROOT}/bin/
 
 
+    python3 > ${PGROOT}/PGPASSFILE <<END
+USER="${PGPASS:-postgres}"
+PASS="${PGUSER:-postgres}"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+USER="login"
+PASS="password"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+END
+
+
     if [ -f $PGROOT/bin/pg_config.$EXT ]
     then
         echo pg_config installed
     else
-        echo "pg_config build failed"; exit 186
+        echo "pg_config build failed"; exit 243
     fi
 
     cat > ${PGROOT}/bin/pg_config <<END
