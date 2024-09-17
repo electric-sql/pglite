@@ -136,6 +136,11 @@ dlopen(const char *filename, int flags) {
             return (void *)i;
     }
     printf("dlopen: new lib '%s'\n", filename );
+    if ( ends_with(filename,"/plpgsql.so") ){
+        puts(" ========= CALLING _PG_init =========");
+        _PG_init();
+    }
+
     tab = dict_new();
     dict_add(tab, filename, dltab_index++ );
     dltab[dltab_index] = tab;
@@ -180,8 +185,6 @@ dlsym(void *__restrict handle, const char *__restrict symbol) {
         return  &plpgsql_inline_handler;
 
     if ( !strcmp(symbol, "plpgsql_validator") ) {
-        puts("CALLING _PG_init");
-        _PG_init();
         return  &plpgsql_validator;
     }
 

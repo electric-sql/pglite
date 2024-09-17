@@ -142,7 +142,7 @@
 +
 +    if (!cma_rsize) {
 +        int wc=      fwrite(s, 1, len, SOCKET_FILE);
-+#if PGDEBUG
++#if 0
 +        fprintf(stderr,"# 1334: sockfile %d +%d top=%p %d/%d\n", SOCKET_DATA, wc, PqSendBuffer, PqSendPointer,PqSendBufferSize);
 +#endif
 +        SOCKET_DATA+=wc;
@@ -166,7 +166,7 @@
 +		    len -= amount;
 +            SOCKET_DATA+=amount;
 +	    }
-+#if PGDEBUG
++#if 0
 +        fprintf(stderr,"# 1359: cma buffer wire: %d +%zu top=%p %d/%d\n", SOCKET_DATA, amount, PqSendBuffer, PqSendPointer,PqSendBufferSize);
 +#endif
 +    }

@@ -790,7 +790,9 @@ $CC -o postgres \
     ../../src/backend/snowball/libdict_snowball.a \
     ../../src/pl/plpgsql/src/libplpgsql.a \
  \
- -lz -lm -lwasi-emulated-mman -lwasi-emulated-signal -lc -Wl,--export=dsnowball_init
+ -lz -lm -lwasi-emulated-mman -lwasi-emulated-signal -lc \
+ -Wl,--export=pg_initdb \
+ -Wl,--export=interactive_one
 
 
 cp -vf postgres postgres.wasi || exit 192
