@@ -402,10 +402,14 @@ then
 
     # remove versionned symlinks
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
-    if $CI
+
+    if $WASI
     then
-        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}.tar.gz
+        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}-wasisdk.tar.gz
+    else
+        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}-emsdk.tar.gz
     fi
+
 fi
 
 # run linkweb after node build because it may remove some wasm .so used by node from fs

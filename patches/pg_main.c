@@ -607,12 +607,12 @@ PDEBUG("# 618: pg_repl_raf(REPL)");
 
     if (is_node) {
 #if defined(__wasi__)
-    PDEBUG("# 629: pg_repl_raf(WASI) endless loop");
-    while (1) {
-        interactive_one();
-    }
+        PDEBUG("# 629: pg_repl_raf(WASI) endless loop");
+        while (1) {
+            interactive_one();
+        }
 #else
-    PDEBUG("# 629: pg_repl_raf(NODE) EXIT!!!");
+        PDEBUG("# 629: pg_repl_raf(NODE) EXIT!!!");
 #endif
     }
 
@@ -1164,7 +1164,10 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
 
     #include "../postgresql/src/bin/initdb/initdb.c"
 
-
+    void use_socketfile(void) {
+        is_repl = true;
+        is_node = true;
+    }
 #undef PG_INITDB_MAIN
 #undef PG_MAIN
 #endif // __wasi__

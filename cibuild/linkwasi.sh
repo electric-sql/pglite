@@ -390,7 +390,6 @@ $CC -o postgres \
  libpq/pqformat.o \
  libpq/pqmq.o \
  libpq/pqsignal.o \
- main/main.o \
  nodes/bitmapset.o \
  nodes/copyfuncs.o \
  nodes/equalfuncs.o \
@@ -786,13 +785,18 @@ $CC -o postgres \
  -L../../src/port \
  -L../../src/common \
  \
+ main/main.o \
+ \
  ../../wasi_dlfcn.o \
+ \
     ../../src/backend/snowball/libdict_snowball.a \
     ../../src/pl/plpgsql/src/libplpgsql.a \
  \
  -lz -lm -lwasi-emulated-mman -lwasi-emulated-signal -lc \
  -Wl,--export=pg_initdb \
- -Wl,--export=interactive_one
+ -Wl,--export=interactive_one \
+ -Wl,--export=use_socketfile
+
 
 
 cp -vf postgres postgres.wasi || exit 192
