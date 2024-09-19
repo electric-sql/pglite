@@ -1,6 +1,6 @@
 import { query as queryTemplate } from './templating.js'
 import { parseDescribeStatementResults, parseResults } from './parse.js'
-import { inferType, serializerForOid } from './types.js'
+import { serializerForOid } from './types.js'
 import type {
   DebugLevel,
   PGliteInterface,
@@ -168,10 +168,7 @@ export abstract class BasePGlite
 
       try {
         for (const [msg] of await this.#execProtocolNoSync(
-          serialize.parse({
-            text: query,
-            types: params.map((p) => inferType(p)),
-          }),
+          serialize.parse({ text: query }),
           options,
         )) {
           results.push(msg)
