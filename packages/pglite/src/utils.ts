@@ -27,8 +27,12 @@ export async function instantiateWasm(
   module: WebAssembly.Module
 }> {
   if (module || cachedWasmModule) {
+    WebAssembly.instantiate(module || cachedWasmModule!, imports)
     return {
-      instance: new WebAssembly.Instance(module || cachedWasmModule!, imports),
+      instance: await WebAssembly.instantiate(
+        module || cachedWasmModule!,
+        imports,
+      ),
       module: module || cachedWasmModule!,
     }
   }
