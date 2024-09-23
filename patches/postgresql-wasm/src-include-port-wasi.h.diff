@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasi.h
 +++ postgresql-wasm/src/include/port/wasi.h
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,247 @@
 +#ifndef I_WASI
 +#define I_WASI
 +
@@ -199,9 +199,11 @@
 +static int
 +shm_open(const char *name, int oflag, mode_t mode) {
 +    char tmpnam[128];
++    int fd;
 +    snprintf(tmpnam, 128, "/tmp%s", name);
-+    fprintf(stderr, "# 194: shm_open(%s)\n", tmpnam);
-+    return fileno(fopen(tmpnam, "w+"));
++    fd=fileno(fopen(tmpnam, "w+"));
++    fprintf(stderr, "# 194: shm_open(%s) => %d\n", tmpnam, fd);
++    return fd;
 +}
 +
 +static int
