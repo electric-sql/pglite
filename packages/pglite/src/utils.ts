@@ -5,31 +5,14 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
-export async function makeLocateFile() {
-  const PGWASM_URL = new URL('../release/postgres.wasm', import.meta.url)
-  const PGSHARE_URL = new URL('../release/postgres.data', import.meta.url)
-  let fileURLToPath = (fileUrl: URL) => fileUrl.pathname
-  if (IN_NODE) {
-    fileURLToPath = (await import('url')).fileURLToPath
-  }
-  return (base: string) => {
-    let url: URL | null = null
-    switch (base) {
-      case 'postgres.data':
-        url = PGSHARE_URL
-        break
-      case 'postgres.wasm':
-        url = PGWASM_URL
-        break
-      default:
-        console.error('makeLocateFile', base)
-    }
+let wasmDownloadPromise: Promise<Response> | undefined
 
-    if (url?.protocol === 'file:') {
-      return fileURLToPath(url)
-    }
-    return url?.toString() ?? ''
+export async function startWasmDownload() {
+  if (IN_NODE) {
+    return
   }
+  const moduleUrl = new URL('../release/postgres.wasm', import.meta.url)
+  wasmDownloadPromise = fetch(moduleUrl)
 }
 
 // This is a global cache of the PGlite Wasm module to avoid having to re-download or
@@ -63,7 +46,10 @@ export async function instantiateWasm(
       module: newModule,
     }
   } else {
-    const response = await fetch(moduleUrl)
+    if (!wasmDownloadPromise) {
+      wasmDownloadPromise = fetch(moduleUrl)
+    }
+    const response = await wasmDownloadPromise
     const { module: newModule, instance } =
       await WebAssembly.instantiateStreaming(response, imports)
     cachedWasmModule = newModule
@@ -71,6 +57,18 @@ export async function instantiateWasm(
       instance,
       module: newModule,
     }
+  }
+}
+
+export async function getFsBundle(): Promise<ArrayBuffer> {
+  const fsBundleUrl = new URL('../release/postgres.data', import.meta.url)
+  if (IN_NODE) {
+    const fs = await import('fs/promises')
+    const fileData = await fs.readFile(fsBundleUrl)
+    return fileData.buffer
+  } else {
+    const response = await fetch(fsBundleUrl)
+    return response.arrayBuffer()
   }
 }
 
