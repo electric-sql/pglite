@@ -101,4 +101,59 @@ describe('pglite-sync', () => {
 
     await shape.unsubscribe()
   })
+
+  it('performs operations within a transaction', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb(messages)
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/todo',
+      table: 'todo',
+      primaryKey: ['id'],
+    })
+
+    const numInserts = 10000
+    feedMessages(
+      Array.from({ length: numInserts }, (_, idx) => ({
+        headers: { operation: 'insert' },
+        offset: `1_${idx}`,
+        key: `id${idx}`,
+        value: {
+          id: idx,
+          task: `task${idx}`,
+          done: false,
+        },
+      })),
+    )
+
+    let timeToProcessMicrotask = Infinity
+    const startTime = performance.now()
+    Promise.resolve().then(() => {
+      timeToProcessMicrotask = performance.now() - startTime
+    })
+
+    await vi.waitUntil(async () => {
+      expect(
+        (
+          await pg.sql<{
+            count: number
+          }>`SELECT COUNT(*) as count FROM todo;`
+        ).rows[0]?.['count'],
+      ).greaterThan(0)
+      return true
+    })
+
+    // should have exact number of inserts added transactionally
+    expect((await pg.sql`SELECT * FROM todo;`).rows).toHaveLength(numInserts)
+
+    // should have processed microtask within 5ms, not blocking main loop
+    expect(timeToProcessMicrotask).toBeLessThan(5)
+
+    await shape.unsubscribe()
+  })
 })
