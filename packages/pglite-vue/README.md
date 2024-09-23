@@ -1,6 +1,6 @@
 # PGlite Vue Bindings
 
-This package implements Vue hooks for [PGLite](https://pglite.dev/) on top of the [live query plugin](https://pglite.dev/docs/live-queries). Full documentation is available at [https://pglite.dev/docs/framework-hooks/vue](https://pglite.dev/docs/framework-hooks/vue).
+This package implements Vue hooks for [PGLite](https://pglite.dev/) on top of the [live query plugin](https://pglite.dev/docs/live-queries). Full documentation is available at [pglite.dev/docs/framework-hooks/vue](https://pglite.dev/docs/framework-hooks/vue).
 
 To install:
 
