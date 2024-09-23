@@ -58,6 +58,10 @@ Path to the directory for storing the Postgres database. You can provide a URI s
   The database from the Postgres cluster within the `dataDir` to connect to.
 - `initialMemory?: number`<br />
   The initial amount of memory in bytes to allocate for the PGlite instance. PGlite will grow the memory automatically, but if you have a particularly large database you can set this higher to prevent the pause during memory growth.
+- `wasmModule?: WebAssembly.Module`<br />
+  A precompiled WASM module to use instead of downloading the default version, or when using a bundler that either can, or requires, loading the WASM module with a ESM import.
+- `fsBundle?: Blob | File`<br />
+  A filesystem bundle to use instead of downloading the default version. This is useful if in a restricted environment such as an edge worker.
 
 #### `options.extensions`
 
