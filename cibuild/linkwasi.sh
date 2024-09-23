@@ -770,19 +770,24 @@ llvm-ar cr ../../libpglite.a $PGOBJ
 
 # just linking
 
+
+
 $CC -o postgres \
- -O2 -g0 main/main.o \
-  ../../libpglite.a \
+ -fno-strict-aliasing \
+ -fwrapv \
  \
-    ../../src/common/libpgcommon_srv.a \
-    ../../src/port/libpgport_srv.a \
-  ../../wasi_dlfcn.o \
+ -O2 ../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a \
+ \
+ ../../libpglite.a  main/main.o ../../wasi_dlfcn.o \
+ \
     ../../src/backend/snowball/libdict_snowball.a \
     ../../src/pl/plpgsql/src/libplpgsql.a \
  -lz -lm -lwasi-emulated-mman -lwasi-emulated-signal -lc \
  -Wl,--export=pg_initdb \
  -Wl,--export=interactive_one \
  -Wl,--export=use_socketfile \
+ -Wl,--export=interactive_write \
+ -Wl,--export=interactive_read
  -Wl,--global-base=33554432
 
 cp -vf postgres postgres.wasi || exit 192

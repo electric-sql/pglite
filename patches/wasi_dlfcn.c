@@ -151,9 +151,10 @@ dlopen(const char *filename, int flags) {
 void *
 dlsym(void *__restrict handle, const char *__restrict symbol) {
     void *sym = NULL;
-    if ( !strcmp(symbol, "Pg_magic_func") )
-        //sym = &STUB_Pg_magic_func;
-        return &STUB_Pg_magic_func;
+    if ( !strcmp(symbol, "Pg_magic_func") ) {
+        sym = &STUB_Pg_magic_func;
+        goto report;
+    }
 
     if ( !strcmp(symbol, "_PG_init") )
         // sym = &STUB__PG_init;
@@ -185,10 +186,11 @@ dlsym(void *__restrict handle, const char *__restrict symbol) {
         return  &plpgsql_inline_handler;
 
     if ( !strcmp(symbol, "plpgsql_validator") ) {
-        return  &plpgsql_validator;
+        sym = &plpgsql_validator;
+        goto report;
     }
 
-
+report:;
     fprintf(stderr, "void *dlsym(void *handle = %p, const char *symbol = %s) => %p\n", handle, symbol, sym);
     return sym;
 }

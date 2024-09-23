@@ -208,7 +208,7 @@ interactive_one() {
         }
 
 
-    } // is_node
+    } // is_node && is_repl
 
 
     doing_extended_query_message = false;
@@ -362,7 +362,7 @@ printf("# 352 : node+repl is wire : %c\n", firstchar);
 
         } // ok lck
 
-    } // is_node + is_repl
+    } // is_node && is_repl
 
     if (cma_rsize) {
         PDEBUG("wire message in cma buffer !");

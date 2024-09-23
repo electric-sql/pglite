@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasi.h
 +++ postgresql-wasm/src/include/port/wasi.h
-@@ -0,0 +1,271 @@
+@@ -0,0 +1,245 @@
 +#ifndef I_WASI
 +#define I_WASI
 +
@@ -181,7 +181,7 @@
 +
 +static int
 +semget(key_t key, int nsems, int semflg) {
-+#if PGDEBUG
++#if 0 // PGDEBUG
 +    printf("# 213: semget(key_t key = %d, int nsems=%d, int semflg=%d)\n", key, nsems, semflg);
 +#endif
 +    return 1;
@@ -194,29 +194,8 @@
 +
 +
 +
-+
-+
-+
-+
-+
 +#include <sys/mman.h>
-+/*
-+static void *
-+mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-+#if PGDEBUG
-+    printf("# 227: mmap(void* %p, size_t length=%d, int prot=%d, int flags=%d, int fd=%d, off_t offset=%d)\n", addr, length,prot,flags,fd,offset);
-+#endif
-+    return NULL;
 +
-+}
-+
-+static int
-+munmap(void *addr, size_t length) {
-+    puts("# 228: munmap");
-+    return 0;
-+}
-+
-+*/
 +static int
 +shm_open(const char *name, int oflag, mode_t mode) {
 +    char tmpnam[128];
@@ -257,11 +236,6 @@
 +tzset(void) {
 +    puts("# 259: tzset(void) STUB");
 +}
-+
-+
-+// HACK TODO FIXME !
-+
-+// #define getpwuid(...) (NULL)
 +
 +#if defined(PG_INITDB) || defined(FE_UTILS_PRINT) || defined(PG_DUMP_PARALLEL)
 +static void

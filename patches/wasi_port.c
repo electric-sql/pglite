@@ -112,7 +112,7 @@ sigemptyset(sigset_t *set) {
 
 int
 sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
-    puts("# 96: sigaction 0");
+    puts("# 96: sigaction STUB");
     return 0;
 }
 
