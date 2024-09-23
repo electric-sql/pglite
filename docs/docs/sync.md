@@ -52,7 +52,7 @@ To stop syncing you can call `unsubscribe` on the shape:
 shape.unsubscribe()
 ```
 
-There is a full example you can run locally in the [GitHib repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
+There is a full example you can run locally in the [GitHub repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
 
 ## syncShapeToTable API
 
