@@ -32,6 +32,48 @@ export async function makeLocateFile() {
   }
 }
 
+// This is a global cache of the PGlite Wasm module to avoid having to re-download or
+// compile it on subsequent calls.
+let cachedWasmModule: WebAssembly.Module | undefined
+
+export async function instantiateWasm(
+  imports: WebAssembly.Imports,
+  module?: WebAssembly.Module,
+): Promise<{
+  instance: WebAssembly.Instance
+  module: WebAssembly.Module
+}> {
+  if (module || cachedWasmModule) {
+    return {
+      instance: new WebAssembly.Instance(module || cachedWasmModule!, imports),
+      module: module || cachedWasmModule!,
+    }
+  }
+  const moduleUrl = new URL('../release/postgres.wasm', import.meta.url)
+  if (IN_NODE) {
+    const fs = await import('fs/promises')
+    const buffer = await fs.readFile(moduleUrl)
+    const { module: newModule, instance } = await WebAssembly.instantiate(
+      buffer,
+      imports,
+    )
+    cachedWasmModule = newModule
+    return {
+      instance,
+      module: newModule,
+    }
+  } else {
+    const response = await fetch(moduleUrl)
+    const { module: newModule, instance } =
+      await WebAssembly.instantiateStreaming(response, imports)
+    cachedWasmModule = newModule
+    return {
+      instance,
+      module: newModule,
+    }
+  }
+}
+
 export const uuid = (): string => {
   // best case, `crypto.randomUUID` is available
   if (globalThis.crypto?.randomUUID) {

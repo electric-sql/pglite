@@ -1,7 +1,7 @@
 import { Mutex } from 'async-mutex'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
-import { makeLocateFile } from './utils.js'
+import { makeLocateFile, instantiateWasm } from './utils.js'
 import type {
   DebugLevel,
   PGliteOptions,
@@ -189,6 +189,15 @@ export class PGlite
         ? { print: console.info, printErr: console.error }
         : { print: () => {}, printErr: () => {} }),
       locateFile: await makeLocateFile(),
+      instantiateWasm: (imports, successCallback) => {
+        instantiateWasm(imports, options.wasmModule).then(
+          ({ instance, module }) => {
+            // @ts-ignore wrong type in Emscripten typings
+            successCallback(instance, module)
+          },
+        )
+        return {}
+      },
       preRun: [
         (mod: any) => {
           // Register /dev/blob device
