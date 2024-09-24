@@ -8,7 +8,7 @@ export const IN_NODE =
 let wasmDownloadPromise: Promise<Response> | undefined
 
 export async function startWasmDownload() {
-  if (IN_NODE) {
+  if (IN_NODE || wasmDownloadPromise) {
     return
   }
   const moduleUrl = new URL('../release/postgres.wasm', import.meta.url)

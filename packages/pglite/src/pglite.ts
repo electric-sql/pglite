@@ -186,6 +186,11 @@ export class PGlite
     }
 
     // Get the fs bundle
+    // We don't await the loading of the fs bundle at this point as we can continue
+    // with other work.
+    // It's resolved value `fsBundleBuffer` is set and used in `getPreloadedPackage`
+    // which is called via `PostgresModFactory` after we have awaited
+    // `fsBundleBufferPromise` below.
     const fsBundleBufferPromise = options.fsBundle
       ? options.fsBundle.arrayBuffer()
       : getFsBundle()
@@ -326,7 +331,8 @@ export class PGlite
     }
     emscriptenOpts['pg_extensions'] = extensionBundlePromises
 
-    // Await the fs bundle
+    // Await the fs bundle - we do this just before calling PostgresModFactory
+    // as it needs the fs bundle to be ready.
     await fsBundleBufferPromise
 
     // Load the database engine
