@@ -13,11 +13,10 @@ import type {
 import { BasePGlite } from './base.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
 import { loadTar, DumpTarCompressionOptions } from './fs/tarUtils.js'
-
 import { PGDATA, WASM_PREFIX } from './fs/index.js'
 
 // Importing the source as the built version is not ESM compatible
-import { serialize, Parser } from '@electric-sql/pg-protocol'
+import { serialize, Parser as ProtocolParser } from '@electric-sql/pg-protocol'
 import {
   BackendMessage,
   DatabaseError,
@@ -53,7 +52,7 @@ export class PGlite
   #extensions: Extensions
   #extensionsClose: Array<() => Promise<void>> = []
 
-  #parser = new Parser()
+  #protocolParser = new ProtocolParser()
 
   // These are the current ArrayBuffer that is being read or written to
   // during a query, such as COPY FROM or COPY TO.
@@ -372,6 +371,9 @@ export class PGlite
     // Set the search path to public for this connection
     await this.exec('SET search_path TO public;')
 
+    // Init array types
+    await this._initArrayTypes()
+
     // Init extensions
     for (const initFn of extensionInitFns) {
       await initFn()
@@ -539,9 +541,9 @@ export class PGlite
     const data = await this.execProtocolRaw(message, { syncToFs })
     const results: Array<[BackendMessage, Uint8Array]> = []
 
-    this.#parser.parse(data, (msg) => {
+    this.#protocolParser.parse(data, (msg) => {
       if (msg instanceof DatabaseError) {
-        this.#parser = new Parser() // Reset the parser
+        this.#protocolParser = new ProtocolParser() // Reset the parser
         throw msg
         // TODO: Do we want to wrap the error in a custom error?
       } else if (msg instanceof NoticeMessage) {

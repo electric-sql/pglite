@@ -314,8 +314,9 @@ await testEsmAndCjs(async (importType) => {
           array_text TEXT[]
         );
       `)
-    
-      await db.query(`
+
+      await db.query(
+        `
         INSERT INTO test (json, array_text) VALUES ($1, $2);
       `,
         [
@@ -324,21 +325,20 @@ await testEsmAndCjs(async (importType) => {
         ],
       )
 
-      const res = await db.query(`
+      const res = await db.query(
+        `
         SELECT * FROM test WHERE id = ANY($1);
       `,
-        [
-          [0, 1, 2, 3],
-        ],
+        [[0, 1, 2, 3]],
       )
-    
+
       expect(res).toEqual({
         rows: [
           {
             id: 1,
             json: ['hello', 'world'],
             array_text: ['yolo', 'fam'],
-          }
+          },
         ],
         fields: [
           {

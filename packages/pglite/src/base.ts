@@ -1,6 +1,13 @@
 import { query as queryTemplate } from './templating.js'
 import { parseDescribeStatementResults, parseResults } from './parse.js'
-import { serializerForOid } from './types.js'
+import {
+  type Serializer,
+  type Parser,
+  serializers,
+  parsers,
+  arraySerializer,
+  arrayParser,
+} from './types.js'
 import type {
   DebugLevel,
   PGliteInterface,
@@ -10,12 +17,16 @@ import type {
   ExecProtocolOptions,
 } from './interface.js'
 
-import { serialize } from '@electric-sql/pg-protocol'
+import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
 import { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
 {
+  serializers: Record<number | string, Serializer> = { ...serializers }
+  parsers: Record<number | string, Parser> = { ...parsers }
+  #arrayTypesInitialized = false
+
   // # Abstract properties:
   abstract debug: DebugLevel
 
@@ -77,6 +88,27 @@ export abstract class BasePGlite
   abstract _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T>
 
   // # Concrete implementations:
+
+  async _initArrayTypes() {
+    if (this.#arrayTypesInitialized) return
+    this.#arrayTypesInitialized = true
+
+    const types = await this.query<{ oid: number; typarray: number }>(`
+      SELECT b.oid, b.typarray
+      FROM pg_catalog.pg_type a
+      LEFT JOIN pg_catalog.pg_type b ON b.oid = a.typelem
+      WHERE a.typcategory = 'A'
+      GROUP BY b.oid, b.typarray
+      ORDER BY b.oid
+    `)
+
+    for (const type of types.rows) {
+      this.serializers[type.typarray] = (x) =>
+        arraySerializer(x, this.serializers[type.oid], type.typarray)
+      this.parsers[type.typarray] = (x) =>
+        arrayParser(x, this.parsers[type.oid], type.typarray)
+    }
+  }
 
   async #execProtocolNoSync(
     message: Uint8Array,
@@ -163,39 +195,41 @@ export abstract class BasePGlite
       // We need to parse, bind and execute a query with parameters
       this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
-      
+
       const results: BackendMessage[] = []
 
       try {
         for (const [msg] of await this.#execProtocolNoSync(
-          serialize.parse({ text: query }),
+          serializeProtocol.parse({ text: query, types: options?.paramTypes }),
           options,
         )) {
           results.push(msg)
         }
 
-        const dataTypeIds = parseDescribeStatementResults(
-          (await this.#execProtocolNoSync(
-            serialize.describe({ type: 'S' }),
-            options,
-          )).map(([msg]) => msg)
+        const dataTypeIDs = parseDescribeStatementResults(
+          (
+            await this.#execProtocolNoSync(
+              serializeProtocol.describe({ type: 'S' }),
+              options,
+            )
+          ).map(([msg]) => msg),
         )
 
         const values = params.map((param, i) => {
-          const oid = dataTypeIds[i]
+          const oid = dataTypeIDs[i]
           if (param === null || param === undefined) {
-            return null;
+            return null
           }
-          const serialize = serializerForOid(oid)
+          const serialize = this.serializers[oid]
           if (serialize) {
-            const [encoded] = serialize(param)
-            return encoded
+            return serialize(param)
+          } else {
+            return param.toString()
           }
-          return param
         })
 
         for (const [msg] of await this.#execProtocolNoSync(
-          serialize.bind({
+          serializeProtocol.bind({
             values,
           }),
           options,
@@ -203,16 +237,19 @@ export abstract class BasePGlite
           results.push(msg)
         }
         for (const [msg] of await this.#execProtocolNoSync(
-          serialize.describe({ type: 'P' }),
+          serializeProtocol.describe({ type: 'P' }),
           options,
         )) {
           results.push(msg)
         }
-        for (const [msg] of await this.#execProtocolNoSync(serialize.execute({}), options)) {
+        for (const [msg] of await this.#execProtocolNoSync(
+          serializeProtocol.execute({}),
+          options,
+        )) {
           results.push(msg)
         }
       } finally {
-        await this.#execProtocolNoSync(serialize.sync(), options)
+        await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
 
       await this._cleanupBlob()
@@ -220,11 +257,7 @@ export abstract class BasePGlite
         await this.syncToFs()
       }
       const blob = await this._getWrittenBlob()
-      return parseResults(
-        results,
-        options,
-        blob,
-      )[0] as Results<T>
+      return parseResults(results, this.parsers, options, blob)[0] as Results<T>
     })
   }
 
@@ -246,11 +279,11 @@ export abstract class BasePGlite
       let results
       try {
         results = await this.#execProtocolNoSync(
-          serialize.query(query),
+          serializeProtocol.query(query),
           options,
         )
       } finally {
-        await this.#execProtocolNoSync(serialize.sync(), options)
+        await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
       this._cleanupBlob()
       if (!this.#inTransaction) {
@@ -259,6 +292,7 @@ export abstract class BasePGlite
       const blob = await this._getWrittenBlob()
       return parseResults(
         results.map(([msg]) => msg),
+        this.parsers,
         options,
         blob,
       ) as Array<Results>

@@ -184,6 +184,9 @@ export class PGliteWorker
     })
 
     this.#leaderNotifyLoop()
+
+    // Init array types
+    await this._initArrayTypes()
   }
 
   async #leaderNotifyLoop() {
