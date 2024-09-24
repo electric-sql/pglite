@@ -80,7 +80,7 @@ Although the PGlite REPL is built with React, it's also available as a web compo
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist-webcomponent/Repl.js"
+  src="https://cdn.jsdelivr.net/npm/@electric-sql/pglite-repl/dist-webcomponent/Repl.js"
   type="module"
 ></script>
 

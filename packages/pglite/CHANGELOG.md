@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.2.7
+
+### Patch Changes
+
+- 5e65236: Fix an issue where the protocol ready-for-query message was not returned after an error when using execProtocol.
+- 5e65236: Remove a double forward slash in bundled extension paths.
+
 ## 0.2.6
 
 ### Patch Changes

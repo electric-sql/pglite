@@ -45,12 +45,13 @@ async function createPlugin(
         ...options,
         signal: aborter.signal,
       })
+
       stream.subscribe(async (messages) => {
         if (debug) {
           console.log('sync messages received', messages)
         }
-        for (const message of messages) {
-          pg.transaction(async (tx) => {
+        await pg.transaction(async (tx) => {
+          for (const message of messages) {
             await applyMessageToTable({
               pg: tx,
               rawMessage: message,
@@ -60,8 +61,8 @@ async function createPlugin(
               primaryKey: options.primaryKey,
               debug,
             })
-          })
-        }
+          }
+        })
       })
       streams.push({
         stream,
