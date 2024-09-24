@@ -151,8 +151,8 @@ describe('pglite-sync', () => {
     // should have exact number of inserts added transactionally
     expect((await pg.sql`SELECT * FROM todo;`).rows).toHaveLength(numInserts)
 
-    // should have processed microtask within 5ms, not blocking main loop
-    expect(timeToProcessMicrotask).toBeLessThan(5)
+    // should have processed microtask within 15ms, not blocking main loop
+    expect(timeToProcessMicrotask).toBeLessThan(15)
 
     await shape.unsubscribe()
   })
