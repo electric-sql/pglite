@@ -74,6 +74,17 @@ export const uuid = (): string => {
   )
 }
 
+/**
+ * Formats a query with parameters
+ * Expects that any tables/relations referenced in the query exist in the database
+ * due to requiring them to be present to describe the parameters types.
+ * `tx` is optional, and to be used when formatQuery is called during a transaction.
+ * @param pg - The PGlite instance
+ * @param query - The query to format
+ * @param params - The parameters to format the query with
+ * @param tx - The transaction to use, defaults to the PGlite instance
+ * @returns The formatted query
+ */
 export async function formatQuery(
   pg: PGliteInterface,
   query: string,

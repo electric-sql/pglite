@@ -89,6 +89,14 @@ export abstract class BasePGlite
 
   // # Concrete implementations:
 
+  /**
+   * Initialize the array types
+   * The oid if the type of an element and the typarray is the oid of the type of the
+   * array.
+   * We extract these from the databaes then create the serializers/parsers for
+   * each type.
+   * This should be called at the end of #init() in the implementing class.
+   */
   async _initArrayTypes() {
     if (this.#arrayTypesInitialized) return
     this.#arrayTypesInitialized = true
