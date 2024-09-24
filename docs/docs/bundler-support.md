@@ -21,38 +21,37 @@ export default defineConfig({
   },
 })
 ```
+
 ### Additional configuration for the Multi-tab Worker
-When building for production, If using the Multi-tab Worker, you might encounter errors during build, related to workers being bundle in `iife` format, to resolve this, add/update the `worker.format` option inside `vite.config.js` to `es` (the default is iife)
-```diff
+
+When using the Multi-tab Worker, you might encounter errors during a production build related to workers being bundle in `iife` format, to resolve this modify the `worker.format` option in `vite.config.js` to `'es'` (the default is `'iife'`)
+
+```ts
 import { defineConfig } from 'vite'
 
 export default defineConfig({
   optimizeDeps: {
     exclude: ['@electric-sql/pglite'],
   },
-+ worker: {
-+   format: 'es',
--   rollupOptions: {
--     // no need to exclude pglite here
--   }
- }
+  worker: {
+    format: 'es',
+  },
 })
 ```
 
-When importing the worker in your script, use the recommended [?worker](https://vitejs.dev/guide/features#static-assets) import method from vite (Not in your `/public`) assets folder!
-```diff
-+ import PGWorker from './worker.js?worker'
+When importing the worker in your script, hou can use the recommended [?worker](https://vitejs.dev/guide/features#static-assets) import method from Vite:
 
-// your main page
-+ export const pglite = new PGliteWorker(
--   new Worker(new URL('./worker.js', document.baseURI), {
-+   new PGWorker({
--    type: 'module',
-     name: 'pglite-worker',
-   }),
-   {
-    ...your options here
-   }
+```ts
+import PGWorker from './worker.js?worker'
+
+export const pglite = new PGliteWorker(
+  new PGWorker({
+    type: 'module',
+      name: 'pglite-worker',
+    }),
+    {
+      // ...your options here
+    }
   },
 )
 ```
