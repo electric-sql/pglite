@@ -22,6 +22,40 @@ export default defineConfig({
 })
 ```
 
+### Additional configuration for the Multi-tab Worker
+
+When using the Multi-tab Worker, you might encounter errors during a production build related to workers being bundle in `iife` format, to resolve this modify the `worker.format` option in `vite.config.js` to `'es'` (the default is `'iife'`)
+
+```ts
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@electric-sql/pglite'],
+  },
+  worker: {
+    format: 'es',
+  },
+})
+```
+
+When importing the worker in your script, hou can use the recommended [?worker](https://vitejs.dev/guide/features#static-assets) import method from Vite:
+
+```ts
+import PGWorker from './worker.js?worker'
+
+export const pglite = new PGliteWorker(
+  new PGWorker({
+    type: 'module',
+      name: 'pglite-worker',
+    }),
+    {
+      // ...your options here
+    }
+  },
+)
+```
+
 ## Next.js
 
 When using [Next.js](https://nextjs.org/), make sure to add `@electric-sql/pglite` to the `transpilePackages` array in `next.config.js`:
