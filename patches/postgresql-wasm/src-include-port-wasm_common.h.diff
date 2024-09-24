@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasm_common.h
 +++ postgresql-wasm/src/include/port/wasm_common.h
-@@ -0,0 +1,311 @@
+@@ -0,0 +1,309 @@
 +#define WAIT_USE_POLL 1
 +
 +#define HAVE_LINUX_EIDRM_BUG
@@ -236,11 +236,11 @@
 +    if (!FAKE_KEY) {
 +    	FAKE_SHM =  malloc(__size);
 +        FAKE_KEY = 666;
-+        return FAKE_KEY;
++        return (int)FAKE_KEY;
 +    } else {
 +    	printf("# ERROR: int shmget (key_t __key=%d, size_t __size=%zu, int __shmflg=%d)\n", __key, __size, __shmflg);
 +        //abort();
-+        return FAKE_KEY;
++        return (int)FAKE_KEY;
 +    }
 +	return -1;
 +}
@@ -250,7 +250,7 @@
 +void *shmat (int __shmid, const void *__shmaddr, int __shmflg) {
 +	printf("# FIXING: void *shmat (int __shmid=%d, const void *__shmaddr=%p, int __shmflg=%d)\n", __shmid, __shmaddr, __shmflg);
 +	if (__shmid==666) {
-+		return FAKE_SHM;
++		return (void *)FAKE_SHM;
 +    } else {
 +    	printf("# ERROR: void *shmat (int __shmid=%d, const void *__shmaddr=%p, int __shmflg=%d)\n", __shmid, __shmaddr, __shmflg);
 +        abort();
@@ -265,8 +265,6 @@
 +	puts("# FIXME: int shmdt (const void *__shmaddr)");
 +	return 0;
 +}
-+
-+
 +
 +
 +/*
