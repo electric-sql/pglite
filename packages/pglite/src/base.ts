@@ -196,15 +196,13 @@ export abstract class BasePGlite
       this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
 
-      const results: BackendMessage[] = []
+      let results
 
       try {
-        for (const [msg] of await this.#execProtocolNoSync(
+        const parseResults = await this.#execProtocolNoSync(
           serializeProtocol.parse({ text: query, types: options?.paramTypes }),
           options,
-        )) {
-          results.push(msg)
-        }
+        )
 
         const dataTypeIDs = parseDescribeStatementResults(
           (
@@ -228,26 +226,23 @@ export abstract class BasePGlite
           }
         })
 
-        for (const [msg] of await this.#execProtocolNoSync(
-          serializeProtocol.bind({
-            values,
-          }),
-          options,
-        )) {
-          results.push(msg)
-        }
-        for (const [msg] of await this.#execProtocolNoSync(
-          serializeProtocol.describe({ type: 'P' }),
-          options,
-        )) {
-          results.push(msg)
-        }
-        for (const [msg] of await this.#execProtocolNoSync(
-          serializeProtocol.execute({}),
-          options,
-        )) {
-          results.push(msg)
-        }
+        results = [
+          ...parseResults,
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.bind({
+              values,
+            }),
+            options,
+          )),
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.describe({ type: 'P' }),
+            options,
+          )),
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.execute({}),
+            options,
+          )),
+        ]
       } finally {
         await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
@@ -257,7 +252,12 @@ export abstract class BasePGlite
         await this.syncToFs()
       }
       const blob = await this._getWrittenBlob()
-      return parseResults(results, this.parsers, options, blob)[0] as Results<T>
+      return parseResults(
+        results.map(([msg]) => msg),
+        this.parsers,
+        options,
+        blob,
+      )[0] as Results<T>
     })
   }
 
