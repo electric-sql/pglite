@@ -42,7 +42,7 @@ async function createPlugin(
       await pg.exec(subscriptionTableQuery)
       const shapeSubState = await getShapeSubscriptionState({
         pg,
-        table: options.table,
+        shapeOptions: options,
       })
       if (debug && shapeSubState) {
         console.log('resuming from shape state', shapeSubState)
@@ -91,9 +91,13 @@ async function createPlugin(
                 case 'must-refetch':
                   if (debug) console.log('clearing and refetching shape')
                   shapeId = undefined
-                  await cleanUpShapeSubscription({
+
+                  // TODO: sync into shadow table and reference count
+                  // for now just clear the whole table
+                  await tx.exec(`TRUNCATE ${options.table};`)
+                  await deleteShapeSubscriptionState({
                     pg: tx,
-                    table: options.table,
+                    shapeOptions: options,
                   })
                   break
 
@@ -107,7 +111,7 @@ async function createPlugin(
           if (lastOffsetAdded !== undefined && shapeId !== undefined) {
             await updateShapeSubscriptionState({
               pg: tx,
-              table: options.table,
+              shapeOptions: options,
               shapeId,
               lastOffset: lastOffsetAdded,
             })
@@ -267,83 +271,91 @@ async function applyMessageToTable({
 
 interface GetShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  table: string
+  shapeOptions: SyncShapeToTableOptions
 }
 
-interface ShapeSubscriptionState {
-  shapeId: string
-  lastOffset: string
-}
+type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'shapeId' | 'offset'>
 
 async function getShapeSubscriptionState({
   pg,
-  table,
+  shapeOptions,
 }: GetShapeSubscriptionStateOptions): Promise<ShapeSubscriptionState | null> {
   const result = await pg.query<{ shape_id: string; last_offset: string }>(
     `
     SELECT shape_id, last_offset
     FROM ${subscriptionTableName}
-    WHERE table_name = $1
+    WHERE shape_hash = $1
   `,
-    [table],
+    [sortedShapeHash(shapeOptions)],
   )
 
   if (result.rows.length === 0) return null
 
-  const { shape_id: shapeId, last_offset: lastOffset } = result.rows[0]
+  const { shape_id: shapeId, last_offset: offset } = result.rows[0]
   return {
     shapeId,
-    lastOffset,
+    offset: offset as Offset,
   }
 }
 
 interface UpdateShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  table: string
+  shapeOptions: SyncShapeToTableOptions
   shapeId: string
   lastOffset: string
 }
 
 async function updateShapeSubscriptionState({
   pg,
-  table,
+  shapeOptions,
   shapeId,
   lastOffset,
 }: UpdateShapeSubscriptionStateOptions) {
   await pg.query(
     `
-    INSERT INTO ${subscriptionTableName} (table_name, shape_id, last_offset)
+    INSERT INTO ${subscriptionTableName} (shape_hash, shape_id, last_offset)
     VALUES ($1, $2, $3)
-    ON CONFLICT(table_name)
+    ON CONFLICT(shape_hash)
     DO UPDATE SET
       shape_id = EXCLUDED.shape_id,
       last_offset = EXCLUDED.last_offset;
   `,
-    [table, shapeId, lastOffset],
+    [sortedShapeHash(shapeOptions), shapeId, lastOffset],
   )
 }
 
-interface CleanUpShapeSubscriptionOptions {
+interface DeleteShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  table: string
+  shapeOptions: SyncShapeToTableOptions
 }
 
-async function cleanUpShapeSubscription({
+async function deleteShapeSubscriptionState({
   pg,
-  table,
-}: CleanUpShapeSubscriptionOptions) {
-  // TODO: sync into shadow table and reference count
-  // for now just clear the whole table
-  await pg.exec(`TRUNCATE ${table};`)
-  await pg.query(`DELETE FROM ${subscriptionTableName} WHERE table_name = $1`, [
-    table,
+  shapeOptions,
+}: DeleteShapeSubscriptionStateOptions) {
+  const shapeHash = sortedShapeHash(shapeOptions)
+  await pg.query(`DELETE FROM ${subscriptionTableName} WHERE shape_hash = $1`, [
+    shapeHash,
   ])
+}
+
+/**
+ * Create hash to identify shape by url, where, schema, and table
+ */
+function sortedShapeHash(options: SyncShapeToTableOptions): string {
+  const coreShapeOpts = {
+    url: options.url,
+    where: options.where,
+    schema: options.schema,
+    table: options.table,
+  }
+  return JSON.stringify(coreShapeOpts, Object.keys(coreShapeOpts).sort())
 }
 
 const subscriptionTableName = `__electric_shape_subscriptions_metadata`
 const subscriptionTableQuery = `
 CREATE TABLE IF NOT EXISTS ${subscriptionTableName} (
-  table_name TEXT PRIMARY KEY,
+  shape_hash TEXT PRIMARY KEY,
   shape_id TEXT NOT NULL,
   last_offset TEXT NOT NULL
 )

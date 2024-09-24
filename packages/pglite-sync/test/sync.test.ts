@@ -219,13 +219,11 @@ describe('pglite-sync', () => {
       expect(shapeStreamInits).toHaveBeenCalledTimes(i + 1)
       if (i === 0) {
         expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty('shapeId')
-        expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty(
-          'lastOffset',
-        )
+        expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty('offset')
       } else {
         expect(shapeStreamInits.mock.calls[i][0]).toMatchObject({
           shapeId: shapeIds[i],
-          lastOffset: `1_${i * numInserts - 1}`,
+          offset: `1_${i * numInserts - 1}`,
         })
       }
     }
@@ -319,6 +317,6 @@ describe('pglite-sync', () => {
     expect(shapeStreamInits).toHaveBeenCalledTimes(2)
 
     expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('shapeId')
-    expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('lastOffset')
+    expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('offset')
   })
 })
