@@ -33,7 +33,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
-          const formattedQuery = await formatQuery(tx, query, params)
+          const formattedQuery = await formatQuery(pg, query, params, tx)
           await tx.query(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           )
@@ -124,7 +124,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
-          const formattedQuery = await formatQuery(tx, query, params)
+          const formattedQuery = await formatQuery(pg, query, params, tx)
           await tx.query(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           )

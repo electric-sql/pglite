@@ -41,8 +41,8 @@ describe('XML functionality', () => {
     `)
 
     expect(result.rows).toEqual([
-      { elements: '{value1}' },
-      { elements: '{value2}' },
+      { elements: ['value1'] },
+      { elements: ['value2'] },
     ])
   })
 

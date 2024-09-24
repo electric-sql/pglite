@@ -1,3 +1,10 @@
+/*
+Based on postgres.js types.js
+https://github.com/porsager/postgres/blob/master/src/types.js
+Published under the Unlicense:
+https://github.com/porsager/postgres/blob/master/UNLICENSE 
+*/
+
 import type { ParserOptions } from './interface.js'
 
 const JSON_parse = globalThis.JSON.parse
@@ -64,49 +71,22 @@ export const BOOL = 16,
   REGNAMESPACE = 4089,
   REGROLE = 4096
 
-export const arrayTypes = {
-  1001: BYTEA,
-  1002: CHAR,
-  1016: INT8,
-  1005: INT2,
-  1007: INT4,
-  1009: TEXT,
-  1028: OID,
-  199: JSON,
-  1021: FLOAT4,
-  1022: FLOAT8,
-  1015: VARCHAR,
-  3807: JSONB,
-  1182: DATE,
-  1115: TIMESTAMP,
-  1116: TIMESTAMPTZ,
-}
-
 export const types = {
   string: {
     to: 0,
-    from: [TEXT, VARCHAR],
+    from: [TEXT, VARCHAR, BPCHAR],
     serialize: (x: string) => x,
     parse: (x: string) => x,
-    forceTo: TEXT,
   },
   number: {
     to: 0,
     from: [INT2, INT4, OID, FLOAT4, FLOAT8],
     serialize: (x: number) => x.toString(),
     parse: (x: string) => +x,
-    forceTo: (x: number) => {
-      if (Number.isInteger(x)) {
-        return INT8
-      } else {
-        return FLOAT8
-      }
-    },
   },
   bigint: {
     to: INT8,
     from: [INT8],
-    js: [BigInt],
     serialize: (x: bigint) => x.toString(),
     parse: (x: string) => {
       const n = BigInt(x)
@@ -126,26 +106,44 @@ export const types = {
   boolean: {
     to: BOOL,
     from: [BOOL],
-    serialize: (x: boolean) => (x === true ? 't' : 'f'),
+    serialize: (x: boolean) => {
+      if (typeof x !== 'boolean') {
+        throw new Error('Invalid input for boolean type')
+      }
+      return x ? 't' : 'f'
+    },
     parse: (x: string) => x === 't',
   },
   date: {
-    to: 1184,
+    to: TIMESTAMPTZ,
     from: [DATE, TIMESTAMP, TIMESTAMPTZ],
-    js: [Date],
-    serialize: (x: Date | string | number) =>
-      (x instanceof Date ? x : new Date(x)).toISOString(),
+    serialize: (x: Date | string | number) => {
+      if (typeof x === 'string') {
+        return x
+      } else if (typeof x === 'number') {
+        return new Date(x).toISOString()
+      } else if (x instanceof Date) {
+        return x.toISOString()
+      } else {
+        throw new Error('Invalid input for date type')
+      }
+    },
     parse: (x: string | number) => new Date(x),
   },
   bytea: {
     to: BYTEA,
     from: [BYTEA],
-    js: [Uint8Array],
-    serialize: (x: Uint8Array) =>
-      '\\x' +
-      Array.from(x)
-        .map((byte) => byte.toString(16).padStart(2, '0'))
-        .join(''),
+    serialize: (x: Uint8Array) => {
+      if (!(x instanceof Uint8Array)) {
+        throw new Error('Invalid input for bytea type')
+      }
+      return (
+        '\\x' +
+        Array.from(x)
+          .map((byte) => byte.toString(16).padStart(2, '0'))
+          .join('')
+      )
+    },
     parse: (x: string): Uint8Array => {
       const hexString = x.slice(2)
       return Uint8Array.from({ length: hexString.length / 2 }, (_, idx) =>
@@ -153,27 +151,16 @@ export const types = {
       )
     },
   },
-  array: {
-    to: 0,
-    from: Object.keys(arrayTypes).map((x) => +x),
-    serialize: (x: any[]) => serializeArray(x),
-    parse: (x: string, typeId?: number) => {
-      let parser
-      if (typeId && typeId in arrayTypes) {
-        parser = parsers[arrayTypes[typeId as keyof typeof arrayTypes]]
-      }
-      return parseArray(x, parser)
-    },
-  },
 } satisfies TypeHandlers
+
+export type Parser = (x: string, typeId?: number) => any
+export type Serializer = (x: any) => string
 
 export type TypeHandler = {
   to: number
   from: number | number[]
-  js?: any
-  serialize: (x: any) => string
-  parse: (x: string, typeId?: number) => any
-  forceTo?: number | ((x: any) => number)
+  serialize: Serializer
+  parse: Parser
 }
 
 export type TypeHandlers = {
@@ -184,114 +171,6 @@ const defaultHandlers = typeHandlers(types)
 
 export const parsers = defaultHandlers.parsers
 export const serializers = defaultHandlers.serializers
-export const serializerInstanceof = defaultHandlers.serializerInstanceof
-
-export type Serializer = (x: any, setAllTypes?: boolean) => [string, number]
-
-export function serializerFor(x: any): Serializer {
-  if (Array.isArray(x)) {
-    return serializers.array
-  }
-  const handler = serializers[typeof x]
-  if (handler) {
-    return handler
-  }
-  for (const [Type, handler] of serializerInstanceof) {
-    if (x instanceof Type) {
-      return handler
-    }
-  }
-  return serializers.json
-}
-
-export function serializeType(
-  x: any,
-  setAllTypes = false,
-): [string | null, number] {
-  if (x === null || x === undefined) {
-    return [null, 0]
-  }
-  return serializerFor(x)(x, setAllTypes)
-}
-
-function escapeElement(elementRepresentation: string) {
-  const escaped = elementRepresentation
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-  return '"' + escaped + '"'
-}
-
-function serializeArray(x: any[]) {
-  let result = '{'
-  for (let i = 0; i < x.length; i++) {
-    if (i > 0) {
-      result = result + ','
-    }
-    if (x[i] === null || typeof x[i] === 'undefined') {
-      result = result + 'NULL'
-    } else if (Array.isArray(x[i])) {
-      result = result + serializeArray(x[i])
-    } else if (ArrayBuffer.isView(x[i]) || x[i] instanceof ArrayBuffer) {
-      const bufferView = ArrayBuffer.isView(x[i])
-        ? new Uint8Array(x[i].buffer, x[i].byteOffset, x[i].byteLength)
-        : new Uint8Array(x[i])
-
-      result += '\\' + types.bytea.serialize(bufferView)
-    } else {
-      result += escapeElement(serializeType(x[i])[0]!)
-    }
-  }
-  result = result + '}'
-  return result
-}
-
-export function parseArray(value: string, parser?: (s: string) => any) {
-  let i = 0
-  let char = null
-  let str = ''
-  let quoted = false
-  let last = 0
-  let p: string | undefined = undefined
-
-  function loop(x: string): any[] {
-    const xs = []
-    for (; i < x.length; i++) {
-      char = x[i]
-      if (quoted) {
-        if (char === '\\') {
-          str += x[++i]
-        } else if (char === '"') {
-          xs.push(parser ? parser(str) : str)
-          str = ''
-          quoted = x[i + 1] === '"'
-          last = i + 2
-        } else {
-          str += char
-        }
-      } else if (char === '"') {
-        quoted = true
-      } else if (char === '{') {
-        last = ++i
-        xs.push(loop(x))
-      } else if (char === '}') {
-        quoted = false
-        last < i &&
-          xs.push(parser ? parser(x.slice(last, i)) : x.slice(last, i))
-        last = i + 1
-        break
-      } else if (char === ',' && p !== '}' && p !== '"') {
-        xs.push(parser ? parser(x.slice(last, i)) : x.slice(last, i))
-        last = i + 1
-      }
-      p = char
-    }
-    last < i &&
-      xs.push(parser ? parser(x.slice(last, i + 1)) : x.slice(last, i + 1))
-    return xs
-  }
-
-  return loop(value)[0]
-}
 
 export function parseType(
   x: string | null,
@@ -311,34 +190,21 @@ export function parseType(
 
 function typeHandlers(types: TypeHandlers) {
   return Object.keys(types).reduce(
-    ({ parsers, serializers, serializerInstanceof }, k) => {
-      const { to, from, serialize, parse = null, forceTo } = types[k]
-      const theSerializer = (x: any, setAllTypes = false) => {
-        return [
-          serialize(x),
-          setAllTypes && forceTo
-            ? typeof forceTo === 'function'
-              ? forceTo(x)
-              : forceTo
-            : to,
-        ] as [string, number]
+    ({ parsers, serializers }, k) => {
+      const { to, from, serialize, parse } = types[k]
+      serializers[to] = serialize
+      serializers[k] = serialize
+      parsers[k] = parse
+      if (Array.isArray(from)) {
+        from.forEach((f) => {
+          parsers[f] = parse
+          serializers[f] = serialize
+        })
+      } else {
+        parsers[from] = parse
+        serializers[from] = serialize
       }
-      serializers[to] = theSerializer
-      serializers[k] = theSerializer
-      if (types[k].js) {
-        types[k].js.forEach((Type: any) =>
-          serializerInstanceof.push([Type, theSerializer]),
-        )
-      }
-      if (parse) {
-        if (Array.isArray(from)) {
-          from.forEach((f) => (parsers[f] = parse))
-        } else {
-          parsers[from] = parse
-        }
-        parsers[k] = parse
-      }
-      return { parsers, serializers, serializerInstanceof }
+      return { parsers, serializers }
     },
     {
       parsers: {} as {
@@ -347,7 +213,103 @@ function typeHandlers(types: TypeHandlers) {
       serializers: {} as {
         [key: number | string]: Serializer
       },
-      serializerInstanceof: [] as Array<[any, Serializer]>,
     },
   )
+}
+
+const escapeBackslash = /\\/g
+const escapeQuote = /"/g
+
+function arrayEscape(x: string) {
+  return x.replace(escapeBackslash, '\\\\').replace(escapeQuote, '\\"')
+}
+
+export function arraySerializer(
+  xs: any,
+  serializer: Serializer | undefined,
+  typarray: number,
+): string {
+  if (Array.isArray(xs) === false) return xs
+
+  if (!xs.length) return '{}'
+
+  const first = xs[0]
+  // Only _box (1020) has the ';' delimiter for arrays, all other types use the ',' delimiter
+  const delimiter = typarray === 1020 ? ';' : ','
+
+  if (Array.isArray(first)) {
+    return `{${xs.map((x) => arraySerializer(x, serializer, typarray)).join(delimiter)}}`
+  } else {
+    return `{${xs
+      .map((x) => {
+        if (x === undefined) {
+          x = null
+          // TODO: Add an option to specify how to handle undefined values
+        }
+        return x === null
+          ? 'null'
+          : '"' + arrayEscape(serializer ? serializer(x) : x.toString()) + '"'
+      })
+      .join(delimiter)}}`
+  }
+}
+
+const arrayParserState = {
+  i: 0,
+  char: null as string | null,
+  str: '',
+  quoted: false,
+  last: 0,
+  p: null as string | null,
+}
+
+export function arrayParser(x: string, parser: Parser, typarray: number) {
+  arrayParserState.i = arrayParserState.last = 0
+  return arrayParserLoop(arrayParserState, x, parser, typarray)[0]
+}
+
+function arrayParserLoop(
+  s: typeof arrayParserState,
+  x: string,
+  parser: Parser | undefined,
+  typarray: number,
+): any[] {
+  const xs = []
+  // Only _box (1020) has the ';' delimiter for arrays, all other types use the ',' delimiter
+  const delimiter = typarray === 1020 ? ';' : ','
+  for (; s.i < x.length; s.i++) {
+    s.char = x[s.i]
+    if (s.quoted) {
+      if (s.char === '\\') {
+        s.str += x[++s.i]
+      } else if (s.char === '"') {
+        xs.push(parser ? parser(s.str) : s.str)
+        s.str = ''
+        s.quoted = x[s.i + 1] === '"'
+        s.last = s.i + 2
+      } else {
+        s.str += s.char
+      }
+    } else if (s.char === '"') {
+      s.quoted = true
+    } else if (s.char === '{') {
+      s.last = ++s.i
+      xs.push(arrayParserLoop(s, x, parser, typarray))
+    } else if (s.char === '}') {
+      s.quoted = false
+      s.last < s.i &&
+        xs.push(parser ? parser(x.slice(s.last, s.i)) : x.slice(s.last, s.i))
+      s.last = s.i + 1
+      break
+    } else if (s.char === delimiter && s.p !== '}' && s.p !== '"') {
+      xs.push(parser ? parser(x.slice(s.last, s.i)) : x.slice(s.last, s.i))
+      s.last = s.i + 1
+    }
+    s.p = s.char
+  }
+  s.last < s.i &&
+    xs.push(
+      parser ? parser(x.slice(s.last, s.i + 1)) : x.slice(s.last, s.i + 1),
+    )
+  return xs
 }

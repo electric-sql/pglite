@@ -305,6 +305,59 @@ await testEsmAndCjs(async (importType) => {
       })
     })
 
+    it('array params', async () => {
+      const db = new PGlite()
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          json JSONB,
+          array_text TEXT[]
+        );
+      `)
+
+      await db.query(
+        `
+        INSERT INTO test (json, array_text) VALUES ($1, $2);
+      `,
+        [
+          ['hello', 'world'],
+          ['yolo', 'fam'],
+        ],
+      )
+
+      const res = await db.query(
+        `
+        SELECT * FROM test WHERE id = ANY($1);
+      `,
+        [[0, 1, 2, 3]],
+      )
+
+      expect(res).toEqual({
+        rows: [
+          {
+            id: 1,
+            json: ['hello', 'world'],
+            array_text: ['yolo', 'fam'],
+          },
+        ],
+        fields: [
+          {
+            name: 'id',
+            dataTypeID: 23,
+          },
+          {
+            name: 'json',
+            dataTypeID: 3802,
+          },
+          {
+            name: 'array_text',
+            dataTypeID: 1009,
+          },
+        ],
+        affectedRows: 0,
+      })
+    })
+
     it('error', async () => {
       const db = new PGlite()
       await expectToThrowAsync(async () => {

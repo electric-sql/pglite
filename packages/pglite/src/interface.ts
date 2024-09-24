@@ -20,7 +20,7 @@ export interface QueryOptions {
   parsers?: ParserOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
-  setAllTypes?: boolean
+  paramTypes?: number[]
 }
 
 export interface ExecProtocolOptions {

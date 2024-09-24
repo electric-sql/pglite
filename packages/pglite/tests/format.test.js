@@ -8,30 +8,62 @@ describe('format', () => {
   })
 
   it('boolean', async () => {
-    const ret1 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-      true,
-    ])
-    expect(ret1).toBe("SELECT * FROM test WHERE value = 't';")
+    await pg.exec(`
+      CREATE TABLE test1 (
+        id SERIAL PRIMARY KEY,
+        value BOOLEAN
+      );
+    `)
+    const ret1 = await formatQuery(
+      pg,
+      'SELECT * FROM test1 WHERE value = $1;',
+      [true],
+    )
+    expect(ret1).toBe("SELECT * FROM test1 WHERE value = 't';")
   })
 
   it('number', async () => {
-    const ret2 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-      1,
-    ])
-    expect(ret2).toBe("SELECT * FROM test WHERE value = '1';")
+    await pg.exec(`
+      CREATE TABLE test2 (
+        id SERIAL PRIMARY KEY,
+        value INTEGER
+      );
+    `)
+    const ret2 = await formatQuery(
+      pg,
+      'SELECT * FROM test2 WHERE value = $1;',
+      [1],
+    )
+    expect(ret2).toBe("SELECT * FROM test2 WHERE value = '1';")
   })
 
   it('string', async () => {
-    const ret3 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-      'test',
-    ])
-    expect(ret3).toBe("SELECT * FROM test WHERE value = 'test';")
+    await pg.exec(`
+      CREATE TABLE test3 (
+        id SERIAL PRIMARY KEY,
+        value VARCHAR
+      );
+    `)
+    const ret3 = await formatQuery(
+      pg,
+      'SELECT * FROM test3 WHERE value = $1;',
+      ['test'],
+    )
+    expect(ret3).toBe("SELECT * FROM test3 WHERE value = 'test';")
   })
 
   it('json', async () => {
-    const ret4 = await formatQuery(pg, 'SELECT * FROM test WHERE value = $1;', [
-      { test: 'test' },
-    ])
-    expect(ret4).toBe('SELECT * FROM test WHERE value = \'{"test":"test"}\';')
+    await pg.exec(`
+      CREATE TABLE test4 (
+        id SERIAL PRIMARY KEY,
+        value JSONB
+      );
+    `)
+    const ret4 = await formatQuery(
+      pg,
+      'SELECT * FROM test4 WHERE value = $1;',
+      [{ test: 'test' }],
+    )
+    expect(ret4).toBe('SELECT * FROM test4 WHERE value = \'{"test": "test"}\';')
   })
 })

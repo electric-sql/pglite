@@ -3,9 +3,10 @@ import {
   RowDescriptionMessage,
   DataRowMessage,
   CommandCompleteMessage,
+  ParameterDescriptionMessage,
 } from '@electric-sql/pg-protocol/messages'
 import type { Results, QueryOptions } from './interface.js'
-import { parseType } from './types.js'
+import { parseType, type Parser } from './types.js'
 
 /**
  * This function is used to parse the results of either a simple or extended query.
@@ -13,12 +14,14 @@ import { parseType } from './types.js'
  */
 export function parseResults(
   messages: Array<BackendMessage>,
+  defaultParsers: Record<number | string, Parser>,
   options?: QueryOptions,
   blob?: Blob,
 ): Array<Results> {
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
   let affectedRows = 0
+  const parsers = { ...defaultParsers, ...options?.parsers }
 
   const filteredMessages = messages.filter(
     (msg) =>
@@ -39,11 +42,7 @@ export function parseResults(
       if (options?.rowMode === 'array') {
         currentResultSet.rows.push(
           msg.fields.map((field, i) =>
-            parseType(
-              field,
-              currentResultSet!.fields[i].dataTypeID,
-              options?.parsers,
-            ),
+            parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
           ),
         )
       } else {
@@ -52,11 +51,7 @@ export function parseResults(
           Object.fromEntries(
             msg.fields.map((field, i) => [
               currentResultSet!.fields[i].name,
-              parseType(
-                field,
-                currentResultSet!.fields[i].dataTypeID,
-                options?.parsers,
-              ),
+              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
             ]),
           ),
         )
@@ -98,4 +93,20 @@ function retrieveRowCount(msg: CommandCompleteMessage): number {
     default:
       return 0
   }
+}
+
+/** Get the dataTypeIDs from a list of messages, if it's available. */
+export function parseDescribeStatementResults(
+  messages: Array<BackendMessage>,
+): number[] {
+  const message = messages.find(
+    (msg): msg is ParameterDescriptionMessage =>
+      msg.name === 'parameterDescription',
+  )
+
+  if (message) {
+    return message.dataTypeIDs
+  }
+
+  return []
 }

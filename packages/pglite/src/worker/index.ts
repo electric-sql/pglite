@@ -184,6 +184,11 @@ export class PGliteWorker
     })
 
     this.#leaderNotifyLoop()
+
+    // Init array types
+    // We don't await this as it will result in a deadlock
+    // It immediately takes out the transaction lock as so another query
+    this._initArrayTypes()
   }
 
   async #leaderNotifyLoop() {
