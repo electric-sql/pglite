@@ -14,12 +14,14 @@ import type { Offset, ShapeStreamOptions } from '@electric-sql/client'
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
 export type MapColumns = MapColumnsMap | MapColumnsFn
+export type ShapeKey = string
 
 export interface SyncShapeToTableOptions extends ShapeStreamOptions {
   table: string
   schema?: string
   mapColumns?: MapColumns
   primaryKey: string[]
+  shapeKey?: ShapeKey
 }
 
 export interface ElectricSyncOptions {
@@ -38,15 +40,23 @@ async function createPlugin(
 
   const namespaceObj = {
     syncShapeToTable: async (options: SyncShapeToTableOptions) => {
-      // create subscription metadata table
-      await pg.exec(subscriptionTableQuery)
-      const shapeSubState = await getShapeSubscriptionState({
-        pg,
-        shapeOptions: options,
-      })
-      if (debug && shapeSubState) {
-        console.log('resuming from shape state', shapeSubState)
+      let shapeSubState: ShapeSubscriptionState | null = null
+
+      // if shapeKey is provided, ensure persistence of shape subscription
+      // state is possible and check if it is already persisted
+      if (options.shapeKey) {
+        await pg.exec(subscriptionTableQuery)
+        shapeSubState = await getShapeSubscriptionState({
+          pg,
+          shapeKey: options.shapeKey,
+        })
+        if (debug && shapeSubState) {
+          console.log('resuming from shape state', shapeSubState)
+        }
       }
+
+      let lastOffsetAdded: Offset | void = shapeSubState?.offset
+      let shapeId: string | void = shapeSubState?.shapeId
 
       const aborter = new AbortController()
       if (options.signal) {
@@ -67,9 +77,6 @@ async function createPlugin(
           console.log('sync messages received', messages)
         }
         await pg.transaction(async (tx) => {
-          let lastOffsetAdded: Offset | void = undefined
-          let shapeId: string | void = undefined
-
           for (const message of messages) {
             shapeId ??= stream.shapeId
 
@@ -91,14 +98,17 @@ async function createPlugin(
                 case 'must-refetch':
                   if (debug) console.log('clearing and refetching shape')
                   shapeId = undefined
+                  lastOffsetAdded = undefined
 
                   // TODO: sync into shadow table and reference count
                   // for now just clear the whole table
                   await tx.exec(`TRUNCATE ${options.table};`)
-                  await deleteShapeSubscriptionState({
-                    pg: tx,
-                    shapeOptions: options,
-                  })
+                  if (options.shapeKey) {
+                    await deleteShapeSubscriptionState({
+                      pg: tx,
+                      shapeKey: options.shapeKey,
+                    })
+                  }
                   break
 
                 case 'up-to-date':
@@ -108,10 +118,14 @@ async function createPlugin(
             }
           }
 
-          if (lastOffsetAdded !== undefined && shapeId !== undefined) {
+          if (
+            options.shapeKey &&
+            lastOffsetAdded !== undefined &&
+            shapeId !== undefined
+          ) {
             await updateShapeSubscriptionState({
               pg: tx,
-              shapeOptions: options,
+              shapeKey: options.shapeKey,
               shapeId,
               lastOffset: lastOffsetAdded,
             })
@@ -135,8 +149,7 @@ async function createPlugin(
           return stream.shapeId
         },
         get lastOffset() {
-          // @ts-ignore - this is incorrectly marked as private
-          return stream.lastOffset
+          return lastOffsetAdded
         },
         subscribeOnceToUpToDate: (
           cb: () => void,
@@ -271,22 +284,22 @@ async function applyMessageToTable({
 
 interface GetShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  shapeOptions: SyncShapeToTableOptions
+  shapeKey: ShapeKey
 }
 
 type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'shapeId' | 'offset'>
 
 async function getShapeSubscriptionState({
   pg,
-  shapeOptions,
+  shapeKey,
 }: GetShapeSubscriptionStateOptions): Promise<ShapeSubscriptionState | null> {
   const result = await pg.query<{ shape_id: string; last_offset: string }>(
     `
     SELECT shape_id, last_offset
     FROM ${subscriptionTableName}
-    WHERE shape_hash = $1
+    WHERE shape_key = $1
   `,
-    [sortedShapeHash(shapeOptions)],
+    [shapeKey],
   )
 
   if (result.rows.length === 0) return null
@@ -300,62 +313,48 @@ async function getShapeSubscriptionState({
 
 interface UpdateShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  shapeOptions: SyncShapeToTableOptions
+  shapeKey: ShapeKey
   shapeId: string
   lastOffset: string
 }
 
 async function updateShapeSubscriptionState({
   pg,
-  shapeOptions,
+  shapeKey,
   shapeId,
   lastOffset,
 }: UpdateShapeSubscriptionStateOptions) {
   await pg.query(
     `
-    INSERT INTO ${subscriptionTableName} (shape_hash, shape_id, last_offset)
+    INSERT INTO ${subscriptionTableName} (shape_key, shape_id, last_offset)
     VALUES ($1, $2, $3)
-    ON CONFLICT(shape_hash)
+    ON CONFLICT(shape_key)
     DO UPDATE SET
       shape_id = EXCLUDED.shape_id,
       last_offset = EXCLUDED.last_offset;
   `,
-    [sortedShapeHash(shapeOptions), shapeId, lastOffset],
+    [shapeKey, shapeId, lastOffset],
   )
 }
 
 interface DeleteShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
-  shapeOptions: SyncShapeToTableOptions
+  shapeKey: ShapeKey
 }
 
 async function deleteShapeSubscriptionState({
   pg,
-  shapeOptions,
+  shapeKey,
 }: DeleteShapeSubscriptionStateOptions) {
-  const shapeHash = sortedShapeHash(shapeOptions)
-  await pg.query(`DELETE FROM ${subscriptionTableName} WHERE shape_hash = $1`, [
-    shapeHash,
+  await pg.query(`DELETE FROM ${subscriptionTableName} WHERE shape_key = $1`, [
+    shapeKey,
   ])
-}
-
-/**
- * Create hash to identify shape by url, where, schema, and table
- */
-function sortedShapeHash(options: SyncShapeToTableOptions): string {
-  const coreShapeOpts = {
-    url: options.url,
-    where: options.where,
-    schema: options.schema,
-    table: options.table,
-  }
-  return JSON.stringify(coreShapeOpts, Object.keys(coreShapeOpts).sort())
 }
 
 const subscriptionTableName = `__electric_shape_subscriptions_metadata`
 const subscriptionTableQuery = `
 CREATE TABLE IF NOT EXISTS ${subscriptionTableName} (
-  shape_hash TEXT PRIMARY KEY,
+  shape_key TEXT PRIMARY KEY,
   shape_id TEXT NOT NULL,
   last_offset TEXT NOT NULL
 )

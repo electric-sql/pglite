@@ -187,6 +187,7 @@ describe('pglite-sync', () => {
         url: 'http://localhost:3000/v1/shape/todo',
         table: 'todo',
         primaryKey: ['id'],
+        shapeKey: 'foo',
       })
 
       await feedMessages(
@@ -259,6 +260,7 @@ describe('pglite-sync', () => {
       url: 'http://localhost:3000/v1/shape/todo',
       table: 'todo',
       primaryKey: ['id'],
+      shapeKey: 'foo',
     })
 
     await feedMessages(
@@ -311,6 +313,7 @@ describe('pglite-sync', () => {
       url: 'http://localhost:3000/v1/shape/todo',
       table: 'todo',
       primaryKey: ['id'],
+      shapeKey: 'foo',
     })
     await resumedShape.unsubscribe()
 
