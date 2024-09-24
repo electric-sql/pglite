@@ -68,6 +68,8 @@ export interface PGliteOptions {
   extensions?: Extensions
   loadDataDir?: Blob | File
   initialMemory?: number
+  wasmModule?: WebAssembly.Module
+  fsBundle?: Blob | File
 }
 
 export type PGliteInterface = {
