@@ -1,5 +1,5 @@
 import { it, describe, vi, beforeEach, expect, Mock } from 'vitest'
-import { Message, ShapeStream } from '@electric-sql/client'
+import { Message, ShapeStream, ShapeStreamOptions } from '@electric-sql/client'
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { electricSync } from '../src/index.js'
 
@@ -155,5 +155,170 @@ describe('pglite-sync', () => {
     expect(timeToProcessMicrotask).toBeLessThan(5)
 
     await shape.unsubscribe()
+  })
+
+  it('persists shape stream state and automatically resumes', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    const shapeStreamInits = vi.fn()
+    let mockShapeId: string | void = undefined
+    MockShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
+      shapeStreamInits(initOpts)
+      return {
+        subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+          feedMessages = (messages) => {
+            mockShapeId ??= Math.random() + ''
+            return cb(messages)
+          }
+        }),
+        unsubscribeAll: vi.fn(),
+        get shapeId() {
+          return mockShapeId
+        },
+      }
+    })
+
+    let totalRowCount = 0
+    const numInserts = 100
+    const shapeIds: string[] = []
+
+    const numResumes = 3
+    for (let i = 0; i < numResumes; i++) {
+      const shape = await pg.electric.syncShapeToTable({
+        url: 'http://localhost:3000/v1/shape/todo',
+        table: 'todo',
+        primaryKey: ['id'],
+      })
+
+      await feedMessages(
+        Array.from({ length: numInserts }, (_, idx) => ({
+          headers: { operation: 'insert' },
+          offset: `1_${i * numInserts + idx}`,
+          key: `id${i * numInserts + idx}`,
+          value: {
+            id: i * numInserts + idx,
+            task: `task${idx}`,
+            done: false,
+          },
+        })),
+      )
+
+      await vi.waitUntil(async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+
+        if (result.rows[0]?.count > totalRowCount) {
+          totalRowCount = result.rows[0].count
+          return true
+        }
+        return false
+      })
+      shapeIds.push(mockShapeId!)
+      await shape.unsubscribe()
+
+      expect(shapeStreamInits).toHaveBeenCalledTimes(i + 1)
+      if (i === 0) {
+        expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty('shapeId')
+        expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty(
+          'lastOffset',
+        )
+      } else {
+        expect(shapeStreamInits.mock.calls[i][0]).toMatchObject({
+          shapeId: shapeIds[i],
+          lastOffset: `1_${i * numInserts - 1}`,
+        })
+      }
+    }
+  })
+
+  it('clears and restarts persisted shape stream state on refetch', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    const shapeStreamInits = vi.fn()
+    let mockShapeId: string | void = undefined
+    MockShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
+      shapeStreamInits(initOpts)
+
+      return {
+        subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+          feedMessages = (messages) => {
+            mockShapeId ??= Math.random() + ''
+            if (messages.find((m) => m.headers.control === 'must-refetch')) {
+              mockShapeId = undefined
+            }
+
+            return cb(messages)
+          }
+        }),
+        unsubscribeAll: vi.fn(),
+        get shapeId() {
+          return mockShapeId
+        },
+      }
+    })
+
+    const numInserts = 100
+    const shape = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/todo',
+      table: 'todo',
+      primaryKey: ['id'],
+    })
+
+    await feedMessages(
+      Array.from({ length: numInserts }, (_, idx) => ({
+        headers: { operation: 'insert' },
+        offset: `1_${idx}`,
+        key: `id${idx}`,
+        value: {
+          id: idx,
+          task: `task${idx}`,
+          done: false,
+        },
+      })),
+    )
+
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{
+        count: number
+      }>`SELECT COUNT(*) as count FROM todo;`
+      return result.rows[0]?.count === numInserts
+    })
+
+    // feed a must-refetch message that should clear the table
+    await feedMessages([
+      { headers: { control: 'must-refetch' } },
+      {
+        headers: { operation: 'insert' },
+        offset: `2_1`,
+        key: `id21`,
+        value: {
+          id: 21,
+          task: `task`,
+          done: false,
+        },
+      },
+    ])
+
+    const result = await pg.query(`SELECT * FROM todo;`)
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0]).toEqual({
+      id: 21,
+      done: false,
+      task: 'task',
+    })
+
+    await shape.unsubscribe()
+
+    // resuming should
+    const resumedShape = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/todo',
+      table: 'todo',
+      primaryKey: ['id'],
+    })
+    await resumedShape.unsubscribe()
+
+    expect(shapeStreamInits).toHaveBeenCalledTimes(2)
+
+    expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('shapeId')
+    expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('lastOffset')
   })
 })
