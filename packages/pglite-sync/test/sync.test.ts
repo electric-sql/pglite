@@ -357,4 +357,49 @@ describe('pglite-sync', () => {
     expect(result.rows).toHaveLength(1)
     expect(result.rows[0]).toEqual({ schema_name: metadataSchema })
   })
+
+  it('forbids multiple subscriptions to the same table', async () => {
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const table = 'foo'
+    const altTable = 'bar'
+
+    const shape1 = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/todo',
+      table: table,
+      primaryKey: ['id'],
+    })
+
+    // should throw if syncing more shapes into same table
+    await expect(
+      async () =>
+        await pg.electric.syncShapeToTable({
+          url: 'http://localhost:3000/v1/shape/todo_alt',
+          table: table,
+          primaryKey: ['id'],
+        }),
+    ).rejects.toThrowError(`Already syncing shape for table ${table}`)
+
+    // should be able to sync shape into other table
+    const altShape = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/bar',
+      table: altTable,
+      primaryKey: ['id'],
+    })
+    await altShape.unsubscribe()
+
+    // should be able to sync different shape if previous is unsubscribed
+    // (and we assume data has been cleaned up?)
+    await shape1.unsubscribe()
+
+    const shape2 = await pg.electric.syncShapeToTable({
+      url: 'http://localhost:3000/v1/shape/todo_alt',
+      table: table,
+      primaryKey: ['id'],
+    })
+    await shape2.unsubscribe()
+  })
 })

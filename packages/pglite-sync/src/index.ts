@@ -40,8 +40,17 @@ async function createPlugin(
     aborter: AbortController
   }> = []
 
+  // TODO: keeping an in-memory lock per table such that two
+  // shapes are not synced into one table - this will be
+  // resolved by using reference counting in shadow tables
+  const shapePerTableLock = new Map<string, void>()
+
   const namespaceObj = {
     syncShapeToTable: async (options: SyncShapeToTableOptions) => {
+      if (shapePerTableLock.has(options.table)) {
+        throw new Error('Already syncing shape for table ' + options.table)
+      }
+      shapePerTableLock.set(options.table)
       let shapeSubState: ShapeSubscriptionState | null = null
 
       // if shapeKey is provided, ensure persistence of shape subscription
@@ -159,6 +168,7 @@ async function createPlugin(
       const unsubscribe = () => {
         stream.unsubscribeAll()
         aborter.abort()
+        shapePerTableLock.delete(options.table)
       }
       return {
         unsubscribe,
