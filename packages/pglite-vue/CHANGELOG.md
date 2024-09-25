@@ -1,5 +1,20 @@
 # @electric-sql/pglite-vue
 
+## 0.2.8
+
+### Patch Changes
+
+- b6e963c: fix: add export providePGlite and injectPGlite
+- Updated dependencies [53ec60e]
+- Updated dependencies [880b60d]
+- Updated dependencies [058ed7c]
+- Updated dependencies [2831c34]
+- Updated dependencies [880b60d]
+- Updated dependencies [880b60d]
+- Updated dependencies [4aeb677]
+- Updated dependencies [19b3529]
+  - @electric-sql/pglite@0.2.8
+
 ## 0.2.7
 
 ### Patch Changes
