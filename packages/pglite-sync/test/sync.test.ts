@@ -52,7 +52,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
       table: 'todo',
       primaryKey: ['id'],
     })
@@ -121,7 +121,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
       table: 'todo',
       primaryKey: ['id'],
     })
@@ -201,7 +201,7 @@ describe('pglite-sync', () => {
     const numResumes = 3
     for (let i = 0; i < numResumes; i++) {
       const shape = await pg.electric.syncShapeToTable({
-        url: 'http://localhost:3000/v1/shape/todo',
+        shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
         table: 'todo',
         primaryKey: ['id'],
         shapeKey: 'foo',
@@ -274,7 +274,7 @@ describe('pglite-sync', () => {
 
     const numInserts = 100
     const shape = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
       table: 'todo',
       primaryKey: ['id'],
       shapeKey: 'foo',
@@ -327,7 +327,7 @@ describe('pglite-sync', () => {
 
     // resuming should
     const resumedShape = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
       table: 'todo',
       primaryKey: ['id'],
       shapeKey: 'foo',
@@ -368,7 +368,7 @@ describe('pglite-sync', () => {
     const altTable = 'bar'
 
     const shape1 = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo' },
       table: table,
       primaryKey: ['id'],
     })
@@ -377,7 +377,7 @@ describe('pglite-sync', () => {
     await expect(
       async () =>
         await pg.electric.syncShapeToTable({
-          url: 'http://localhost:3000/v1/shape/todo_alt',
+          shapeStream: { url: 'http://localhost:3000/v1/shape/todo_alt' },
           table: table,
           primaryKey: ['id'],
         }),
@@ -385,7 +385,7 @@ describe('pglite-sync', () => {
 
     // should be able to sync shape into other table
     const altShape = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/bar',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/bar' },
       table: altTable,
       primaryKey: ['id'],
     })
@@ -396,7 +396,7 @@ describe('pglite-sync', () => {
     await shape1.unsubscribe()
 
     const shape2 = await pg.electric.syncShapeToTable({
-      url: 'http://localhost:3000/v1/shape/todo_alt',
+      shapeStream: { url: 'http://localhost:3000/v1/shape/todo_alt' },
       table: table,
       primaryKey: ['id'],
     })
