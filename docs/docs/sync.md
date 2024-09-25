@@ -40,7 +40,7 @@ You can then use the `syncShapeToTable` method to sync a table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
-  url: 'http://localhost:3000/v1/shape/todo',
+  shape: { url: 'http://localhost:3000/v1/shape/todo' },
   table: 'todo',
   primaryKey: ['id'],
 })
@@ -54,11 +54,23 @@ shape.unsubscribe()
 
 There is a full example you can run locally in the [GitHub repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
 
+## electricSync API
+The `electricSync` plugin can be given some configuration options to allow customization of the sync process.
+
+- `metadataSchema?: string`<br>
+  The name of the Postgres schema that the shape metadata tables will be part of, defaults to `"electric"`.
+
+- `debug?: boolean`<br>
+  Enable debug logging, defaults to `false`.
+
 ## syncShapeToTable API
 
 The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeStream API](https://next.electric-sql.com/api/clients/typescript#shapestream) designed to do the minimal required to sync a shape _into_ a table.
 
 It takes the following options as an object:
+
+- `shape: ShapeStreamOptions`<br>
+  The shape stream specification to sync, described by [`ShapeStreamOptions`](#shapestreamoptions).
 
 - `table: string`<br>
   The name of the table to sync into.
@@ -72,26 +84,9 @@ It takes the following options as an object:
 - `primaryKey: string[]`<br>
   An array of column names that form the primary key of the table you are syncing into. Used for updates and deletes.
 
-- `url: string`<br>
-  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape/foo`
-
-- `where?: string`<br>
-  Where clauses for the shape.
-
-- `offset?: Offset`<br>
-  The "offset" on the shape log. This is typically not set as the ShapeStream will handle this automatically. A common scenario where you might pass an offset is if you're maintaining a local cache of the log. If you've gone offline and are re-starting a ShapeStream to catch-up to the latest state of the Shape, you'd pass in the last offset and shapeId you'd seen from the Electric server so it knows at what point in the shape to catch you up from.
-
-- `shapeId?: string`<br>
-  The server side `shapeId`, similar to `offset`, this isn't typically used unless you're maintaining a cache of the shape log.
-
-- `backoffOptions`<br>
-  Options to configure the backoff rules on failure
-
-- `subscribe?: boolean`<br>
-  Automatically fetch updates to the Shape. If you just want to sync the current shape and stop, pass false.
-
-- `signal?: AbortSignal`<br>
-  A `AbortSignal` instance to use to abort the sync.
+- `shapeKey: string`<br>
+  Optional identifier for the shape subscription - if provided the stream state will be persisted along with the data in order to allow resuming the stream between sessions.
+  
 
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
@@ -118,6 +113,35 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 
 - `unsubscribe()`<br>
   Unsubscribe from the shape. Note that this does not clear the state that has been synced into the table.
+
+### `ShapeStreamOptions`
+
+- `url: string`<br>
+  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape/foo`
+
+- `where?: string`<br>
+  Where clauses for the shape.
+
+- `offset?: Offset`<br>
+  The "offset" on the shape log. This is typically not set as the ShapeStream will handle this automatically. A common scenario where you might pass an offset is if you're maintaining a local cache of the log. If you've gone offline and are re-starting a ShapeStream to catch-up to the latest state of the Shape, you'd pass in the last offset and shapeId you'd seen from the Electric server so it knows at what point in the shape to catch you up from.
+
+- `shapeId?: string`<br>
+  The server side `shapeId`, similar to `offset`, this isn't typically used unless you're maintaining a cache of the shape log.
+
+- `backoffOptions`<br>
+  Options to configure the backoff rules on failure
+
+- `subscribe?: boolean`<br>
+  Automatically fetch updates to the Shape. If you just want to sync the current shape and stop, pass false.
+
+- `signal?: AbortSignal`<br>
+  A `AbortSignal` instance to use to abort the sync.
+
+## Limitations
+
+- It is currently not possible to sync multiple shapes into the same table, as shape subscriptions require being able to drop all data and start over. We are working on a fix for this case, but the current version will throw if a shape is synced into the same table more than once.
+
+- In order to maintain transactional consistency, data is aggregated in-memory until we can guarantee its consistency, which might create a lot of memory usage for very large shapes. We are working on resolving this issue, and it is only a problem for initial syncing.
 
 ## Sync using legacy Electric
 
