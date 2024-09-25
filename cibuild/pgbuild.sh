@@ -32,23 +32,38 @@ CC_PGLITE=$CC_PGLITE
 # TODO: --with-libxslt   add to sdk
 #  --disable-atomics https://github.com/WebAssembly/threads/pull/147  "Allow atomic operations on unshared memories"
 
-if $CI
+if ${WASI}
 then
-    # do not build obsolete ext xml2 on CI
-    XML2="--with-zlib --with-libxml"
+    echo "WASI BUILD: turning off xml/xslt support"
+    XML2=""
+    UUID=""
+    BUILD=wasi
+    export MAIN_MODULE="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
 else
-    XML2="--with-zlib --with-libxml --with-libxslt"
+    if $CI
+    then
+        # do not build obsolete ext xml2 on CI
+        XML2="--with-zlib --with-libxml"
+    else
+        XML2="--with-zlib --with-libxml --with-libxslt"
+    fi
+    UUID="--with-uuid=ossp"
+    BUILD=emscripten
+    export MAIN_MODULE="-sMAIN_MODULE=1"
 fi
-
 # --with-libxml does not fit with --without-zlib
 
+    export XML2_CONFIG=$PREFIX/bin/xml2-config
+    export ZIC=$(pwd)/bin/zic
+
+    cp ${PGSRC}/./src/include/port/wasm_common.h /tmp/pglite/include/wasm_common.h
+
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
-   XML2_CONFIG=$PREFIX/bin/xml2-config \
- --cache-file=${PGROOT}/config.cache.emsdk \
+ --cache-file=${PGROOT}/config.cache.${BUILD} \
  --disable-spinlocks --disable-largefile --without-llvm \
  --without-pam --disable-largefile --with-openssl=no \
- --without-readline --without-icu --with-uuid=ossp $XML2 \
- ${PGDEBUG}"
+ --without-readline --without-icu \
+ ${UUID} ${XML2} ${PGDEBUG}"
 
     echo "  ==== building wasm MVP:$MVP Debug=${PGDEBUG} with opts : $@  == "
 
@@ -57,12 +72,44 @@ fi
 
     # crash clang CFLAGS=-Wno-error=implicit-function-declaration
 
-    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE==${PGDATA}/config.site emconfigure $CNF --with-template=emscripten
+
+    mkdir -p bin
+
+
+
+
+    if $WASI
+    then
+        export EXT=wasi
+        cat > ${PGROOT}/config.site <<END
+ac_cv_exeext=.wasi
+END
+        cat > bin/zic <<END
+#!/bin/bash
+#. /opt/python-wasm-sdk/wasm32-wasi-shell.sh
+TZ=UTC PGTZ=UTC wasi-run $(pwd)/src/timezone/zic.wasi \$@
+END
+
+    else
+        export EXT=wasm
+        cat > ${PGROOT}/config.site <<END
+ac_cv_exeext=.cjs
+END
+        cat > bin/zic <<END
+#!/bin/bash
+#. /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
+TZ=UTC PGTZ=UTC node $(pwd)/src/timezone/zic.cjs \$@
+END
+    fi
+
+
+
+    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE=${PGROOT}/config.site emconfigure $CNF --with-template=$BUILD
     then
         echo configure ok
     else
         echo configure failed
-        exit 262
+        exit 76
     fi
 
     if grep -q MAIN_MODULE ${PGSRC}/src/backend/Makefile
@@ -72,31 +119,38 @@ fi
         echo "missing server dyld patch"
         exit 273
     fi
-    mkdir -p bin
 
-    cat > bin/zic <<END
-#!/bin/bash
-#. /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
-TZ=UTC PGTZ=UTC node $(pwd)/src/timezone/zic \$@
-END
+    if $WASI
+    then
+        sed -i 's|-pthread||g' ./src/Makefile.global
+    fi
+
 
     # --disable-shared not supported so be able to use a fake linker
 
     > /tmp/disable-shared.log
 
-    cat > bin/wasm-shared <<END
+    cat > bin/emsdk-shared <<END
 #!/bin/bash
 echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
 # shared build
 \${PG_LINK:-emcc} -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared -sSIDE_MODULE=1 \$@ -Wno-unused-function
 END
 
-    # FIXME: workaround for /conversion_procs/ make
-    # cp bin/wasm-shared bin/o
-    ZIC=${ZIC:-$(realpath bin/zic)}
-    chmod +x bin/zic bin/wasm-shared
+    cat > bin/wasi-shared <<END
+#!/bin/bash
+echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
+# shared build
+echo ===================================================================================
+wasi-c -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared \$@ -Wno-unused-function
+echo ===================================================================================
+END
 
-    # for zic and wasm-shared
+
+
+    chmod +x bin/zic bin/wasi-shared bin/emsdk-shared
+
+    # for zic and emsdk-shared/wasi-shared called from makefile
     export PATH=$(pwd)/bin:$PATH
 
     EMCC_NODE="-sEXIT_RUNTIME=1 -DEXIT_RUNTIME -sNODERAWFS -sENVIRONMENT=node"
@@ -113,23 +167,48 @@ END
     EMCC_ENV="${EMCC_NODE} -sERROR_ON_UNDEFINED_SYMBOLS"
 
     # only required for static initdb
-    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=0 ${CC_PGLITE}"
+    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE}"
     EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
     EMCC_CFLAGS="${EMCC_CFLAGS} -DPREFIX=${PGROOT}"
 
-    export EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
+    EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
+
+    WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
+
+    ZIC=${ZIC:-$(realpath bin/zic)}
 
 
-	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make ZIC=$ZIC -j $(nproc) 2>&1 > /tmp/build.log
+
+	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
-        # for 32bits zic
+        if $WASI
+        then
+            echo "will need to link postgres to extensions statically"
+            cp -vf src/backend/postgres src/backend/postgres.wasi
+        else
+            cp -vf src/backend/postgres src/backend/postgres.cjs
+        fi
+
+        # if running a 32bits zic from current build
         unset LD_PRELOAD
-        if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" emmake make ZIC=$ZIC install 2>&1 > /tmp/install.log
+
+        if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 install 2>&1 > /tmp/install.log
         then
             echo install ok
+            if $WASI
+            then
+                # remove unlinked server
+                rm src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                pushd ../..
+                    chmod +x ./cibuild/linkwasi.sh
+                    WASI_CFLAGS="$WASI_CFLAGS" ./cibuild/linkwasi.sh || exit 190
+                popd
+                cp src/backend/postgres.wasi $PGROOT/bin/ || exit 205
+            fi
+
             pushd ${PGROOT}
-            #find ./lib/postgresql ./share/postgresql/extension -type f > ${PGROOT}/pg.installed
+
             find . -type f | grep -v plpgsql > ${PGROOT}/pg.installed
             popd
 
@@ -145,33 +224,48 @@ END
         else
             cat /tmp/install.log
             echo "install failed"
-            exit 143
+            exit 225
         fi
     else
         cat /tmp/build.log
         echo "build failed"
-        exit 148
+        exit 230
 	fi
 
     # wip
-    mv -vf ./src/bin/psql/psql.wasm ./src/bin/pg_config/pg_config.wasm ${PGROOT}/bin/
-    mv -vf ./src/bin/pg_dump/pg_restore.wasm ./src/bin/pg_dump/pg_dump.wasm ./src/bin/pg_dump/pg_dumpall.wasm ${PGROOT}/bin/
-	mv -vf ./src/bin/pg_resetwal/pg_resetwal.wasm  ./src/bin/initdb/initdb.wasm ./src/backend/postgres.wasm ${PGROOT}/bin/
+    mv -vf ./src/bin/psql/psql.$EXT ./src/bin/pg_config/pg_config.$EXT ${PGROOT}/bin/
+    mv -vf ./src/bin/pg_dump/pg_restore.$EXT ./src/bin/pg_dump/pg_dump.$EXT ./src/bin/pg_dump/pg_dumpall.$EXT ${PGROOT}/bin/
+	mv -vf ./src/bin/pg_resetwal/pg_resetwal.$EXT  ./src/bin/initdb/initdb.$EXT ./src/backend/postgres.$EXT ${PGROOT}/bin/
 
-    mv -vf ${PGROOT}/bin/pg_config ${PGROOT}/bin/pg_config.js
-	mv -vf ./src/bin/initdb/initdb ${PGROOT}/bin/initdb.js
-	mv -vf ./src/bin/pg_resetwal/pg_resetwal ${PGROOT}/bin/pg_resetwal.js
-	mv -vf ./src/backend/postgres ${PGROOT}/bin/postgres.js
+
+    python3 > ${PGROOT}/PGPASSFILE <<END
+USER="${PGPASS:-postgres}"
+PASS="${PGUSER:-postgres}"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+USER="login"
+PASS="password"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+END
+
+
+    if [ -f $PGROOT/bin/pg_config.$EXT ]
+    then
+        echo pg_config installed
+    else
+        echo "pg_config build failed"; exit 243
+    fi
 
     cat > ${PGROOT}/bin/pg_config <<END
 #!/bin/bash
-node ${PGROOT}/bin/pg_config.js \$@
+$(which node) ${PGROOT}/bin/pg_config.cjs \$@
 END
 
     cat  > ${PGROOT}/postgres <<END
 #!/bin/bash
 . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
-TZ=UTC PGTZ=UTC PGDATA=${PGDATA} node ${PGROOT}/bin/postgres.js \$@
+TZ=UTC PGTZ=UTC PGDATA=${PGDATA} $(which node) ${PGROOT}/bin/postgres.cjs \$@
 END
 
 # remove the abort but stall prompt
@@ -183,7 +277,7 @@ END
 	cat  > ${PGROOT}/initdb <<END
 #!/bin/bash
 . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
-TZ=UTC PGTZ=UTC node ${PGROOT}/bin/initdb.js \$@
+TZ=UTC PGTZ=UTC $(which node) ${PGROOT}/bin/initdb.cjs \$@
 END
 
     chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres

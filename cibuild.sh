@@ -20,9 +20,13 @@ export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
 export TOTAL_MEMORY=${TOTAL_MEMORY:-128MB}
+export WASI=${WASI:-false}
+
 
 # exit on error
 EOE=false
+
+mkdir -p /tmp/sdk
 
 # the default is a user writeable path.
 if mkdir -p ${PGROOT}/sdk
@@ -97,14 +101,16 @@ else
     # pass the "kernel" contiguous memory zone size to the C compiler.
     CC_PGLITE="-DCMA_MB=${CMA_MB}"
 
-    # these are files that shadow original portion of pg core, with minimal changes
-    # to original code
-    # some may be included multiple time
-    CC_PGLITE="-DPATCH_MAIN=${WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_LOOP=${WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
-    CC_PGLITE="-DPATCH_PG_DEBUG=${PG_DEBUG_HEADER} ${CC_PGLITE}"
 fi
+
+# these are files that shadow original portion of pg core, with minimal changes
+# to original code
+# some may be included multiple time
+CC_PGLITE="-DPATCH_MAIN=${WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
+CC_PGLITE="-DPATCH_LOOP=${WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
+CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
+CC_PGLITE="-DPATCH_PG_DEBUG=${PG_DEBUG_HEADER} ${CC_PGLITE}"
+
 
 export CC_PGLITE
 export PGPRELOAD="\
@@ -261,7 +267,7 @@ UTF-8
 END
 
 
-    # to get same path for wasm-shared link tool in the path
+    # to get same path for wasm shared link tools in the path
     # for extensions building.
     # we always symlink in-tree build to "postgresql" folder
     if echo $PG_VERSION|grep -q ^16
@@ -271,9 +277,9 @@ END
         . cibuild/pg-git.sh
     fi
 
-    # install wasm-shared along with pg config  tool
+    # install emsdk-shared along with pg config  tool
     # for building user ext.
-    cp build/postgres/bin/wasm-shared $PGROOT/bin/
+    cp build/postgres/bin/emsdk-shared $PGROOT/bin/
 
     export PGLITE=$(pwd)/packages/pglite
 
@@ -283,7 +289,7 @@ END
 
 fi
 
-# put wasm-shared the pg extension linker from build dir in the path
+# put emsdk-shared the pg extension linker from build dir in the path
 # and also pg_config from the install dir.
 export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
@@ -349,56 +355,34 @@ then
 
 fi
 
-if ${EXTRA_EXT:-true}
+ if echo " $*"|grep -q " extra"
 then
-    if echo " $*"|grep -q " vector"
-    then
-        echo "====================== vector : $(pwd) ================="
-
-        pushd build
-
-            # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
-
-            if [ -d pgvector ]
+    for extra_ext in  ${EXTRA_EXT:-"vector"}
+    do
+        if $CI
+        then
+            if [ -d $PREFIX/include/X11 ]
             then
-                echo using local pgvector
+                echo -n
             else
-                wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
-                tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
-                mv pgvector-?.?.? pgvector
+                # install EXTRA sdk
+                . /etc/lsb-release
+                DISTRIB="${DISTRIB_ID}-${DISTRIB_RELEASE}"
+                CIVER=${CIVER:-$DISTRIB}
+                SDK_URL=https://github.com/pygame-web/python-wasm-sdk-extra/releases/download/$SDK_VERSION/python-emsdk-sdk-extra-${CIVER}.tar.lz4
+                echo "Installing $SDK_URL"
+                curl -sL --retry 5 $SDK_URL | tar xvP --use-compress-program=lz4 | pv -p -l -s 15000 >/dev/null
+                chmod +x ./extra/*.sh
             fi
+        fi
+        echo "======================= ${extra_ext} : $(pwd) ==================="
 
-            pushd pgvector
-                # path for wasm-shared already set to (pwd:pg build dir)/bin
-                # OPTFLAGS="" turns off arch optim (sse/neon).
-                PG_CONFIG=${PGROOT}/bin/pg_config emmake make OPTFLAGS="" install || exit 354
-                cp sql/vector.sql sql/vector--0.7.3.sql ${PGROOT}/share/postgresql/extension
-                rm ${PGROOT}/share/postgresql/extension/vector--?.?.?--?.?.?.sql ${PGROOT}/share/postgresql/extension/vector.sql
-            popd
-
-        popd
+        ./extra/${extra_ext}.sh || exit 400
 
         python3 cibuild/pack_extension.py
-
-    fi
-
-    if echo " $*"|grep -q " postgis"
-    then
-        echo "======================= postgis : $(pwd) ==================="
-
-        ./cibuild/postgis.sh || exit 369
-
-        python3 cibuild/pack_extension.py
-    fi
-
-    if echo " $*"|grep -q " quack"
-    then
-        echo "================================================="
-        ./cibuild/pg_quack.sh || exit 377
-        cp $PGROOT/lib/libduckdb.so /tmp/
-        python3 cibuild/pack_extension.py
-    fi
+    done
 fi
+
 # ===========================================================================
 # ===========================================================================
 #                               PGLite
@@ -418,10 +402,14 @@ then
 
     # remove versionned symlinks
     rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
-    if $CI
+
+    if $WASI
     then
-        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}.tar.gz
+        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}-wasisdk.tar.gz
+    else
+        tar -cpRz ${PGROOT} > /tmp/sdk/postgres-${PG_VERSION}-emsdk.tar.gz
     fi
+
 fi
 
 # run linkweb after node build because it may remove some wasm .so used by node from fs
@@ -457,35 +445,43 @@ do
                 mkdir -p $PGLITE/release
                 rm $PGLITE/release/* 2>/dev/null
 
-                # move packed extensions
-                mv ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+
+                # copy packed extensions for dist
+                echo "
+
+__________________________ enabled extensions (dlfcn)_____________________________
+"
+    cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+echo "
+__________________________________________________________________________________
+"
 
                 # copy wasm web prebuilt artifacts to release folder
                 # TODO: get them from web for nosdk systems.
 
-                cp ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
+                cp -vf ${WEBROOT}/postgres.{js,data,wasm} ${PGLITE}/release/
 
                 # debug CI does not use pnpm/npm for building pg, so call the typescript build
                 # part from here
                 pnpm --filter "pglite^..." build || exit 450
 
-                mkdir -p /tmp/sdk
                 pnpm pack || exit 31
                 packed=$(echo -n electric-sql-pglite-*.tgz)
 
                 mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}
 
                 # for repl demo
-                mkdir -p /tmp/web/pglite
-                cp -r ${PGLITE}/dist ${WEBROOT}/pglite/
-                cp -r ${PGLITE}/examples ${WEBROOT}/pglite/
+#                mkdir -p /tmp/web/pglite
 
-                for dir in /tmp/web ${WEBROOT}/pglite/examples
-                do
-                    pushd "$dir"
-                    cp ${PGLITE}/dist/postgres.data ./
-                    popd
-                done
+                #cp -r ${PGLITE}/dist ${WEBROOT}/pglite/
+                #cp -r ${PGLITE}/examples ${WEBROOT}/pglite/
+
+#                for dir in /tmp/web ${WEBROOT}/pglite/examples
+#                do
+#                    pushd "$dir"
+#                    cp ${PGLITE}/dist/postgres.data ./
+#                    popd
+#                done
 
                 echo "<html>
                 <body>
@@ -543,10 +539,10 @@ do
 
         pglite-prep) echo "==================== pglite-prep  =========================="
             mkdir -p $PGLITE/release
-            rm $PGLITE/release/*
+            #rm $PGLITE/release/*
 
             # copy packed extensions
-            cp ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+            cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
             cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
         ;;
 

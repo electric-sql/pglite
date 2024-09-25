@@ -22,65 +22,28 @@
  static void socket_comm_reset(void);
  static void socket_close(int code, Datum arg);
  static void socket_set_nonblocking(bool nonblocking);
-@@ -146,11 +151,44 @@
- static void socket_putmessage_noblock(char msgtype, const char *s, size_t len);
+@@ -147,9 +152,6 @@
  static int	internal_putbytes(const char *s, size_t len);
  static int	internal_flush(void);
-+#if 0
-+static void wasm_comm_reset() {
-+    puts(" ******************************** wasm_comm_reset");
-+}
  
 -static int	Lock_AF_UNIX(const char *unixSocketDir, const char *unixSocketPath);
 -static int	Setup_AF_UNIX(const char *sock_path);
-+static int wasm_flush() {
-+    puts(" ******************************** wasm_flush");
-+    return 0;
-+}
-+
-+static int wasm_flush_if_writable() {
-+    puts(" ******************************** wasm_flush_if_writable");
-+    return 0;
-+}
-+
-+static int wasm_putmessage(char msgtype, const char *s, size_t len) {
-+    puts(" ******************************** wasm_putmessage");
-+    return 0;
-+}
-+
-+static bool wasm_is_send_pending(void) {
-+    puts(" ******************************** wasm_is_send_pending");
-+    return false;
-+}
-+static void wasm_putmessage_noblock(char msgtype, const char *s, size_t len) {
-+    puts(" ******************************** wasm_putmessage_noblock");
-+}
- 
+-
  static const PQcommMethods PqCommSocketMethods = {
-+	wasm_comm_reset,
-+	wasm_flush,
-+	wasm_flush_if_writable,
-+	wasm_is_send_pending,
-+	wasm_putmessage,
-+    wasm_putmessage_noblock
-+};
-+#else
-+static const PQcommMethods PqCommSocketMethods = {
  	socket_comm_reset,
  	socket_flush,
- 	socket_flush_if_writable,
-@@ -158,6 +196,10 @@
- 	socket_putmessage,
+@@ -159,6 +161,10 @@
  	socket_putmessage_noblock
  };
-+#endif
+ 
 +static int	Lock_AF_UNIX(const char *unixSocketDir, const char *unixSocketPath);
 +static int	Setup_AF_UNIX(const char *sock_path);
 +
- 
++
  const PQcommMethods *PqCommMethods = &PqCommSocketMethods;
  
-@@ -180,7 +222,7 @@
+ WaitEventSet *FeBeWaitSet;
+@@ -180,7 +186,7 @@
  	PqSendPointer = PqSendStart = PqRecvPointer = PqRecvLength = 0;
  	PqCommBusy = false;
  	PqCommReadingMsg = false;
@@ -89,7 +52,7 @@
  	/* set up process-exit hook to close the socket */
  	on_proc_exit(socket_close, 0);
  
-@@ -210,7 +252,9 @@
+@@ -210,7 +216,9 @@
  								  MyLatch, NULL);
  	AddWaitEventToSet(FeBeWaitSet, WL_POSTMASTER_DEATH, PGINVALID_SOCKET,
  					  NULL, NULL);
@@ -100,7 +63,7 @@
  	/*
  	 * The event positions match the order we added them, but let's sanity
  	 * check them to be sure.
-@@ -1148,6 +1192,16 @@
+@@ -1148,6 +1156,16 @@
   *		This must be called before any of the pq_get* functions.
   * --------------------------------
   */
@@ -117,7 +80,7 @@
  void
  pq_startmsgread(void)
  {
-@@ -1159,7 +1213,24 @@
+@@ -1159,7 +1177,24 @@
  		ereport(FATAL,
  				(errcode(ERRCODE_PROTOCOL_VIOLATION),
  				 errmsg("terminating connection because protocol synchronization was lost")));
@@ -143,7 +106,7 @@
  	PqCommReadingMsg = true;
  }
  
-@@ -1282,9 +1353,62 @@
+@@ -1282,9 +1317,62 @@
  
  	return 0;
  }
@@ -156,7 +119,7 @@
 +internal_putbytes(const char *s, size_t len) {
 +	if (PqSendPointer >= PqSendBufferSize)
 +	{
-+        puts("# 1336: overflow");
++        puts("# 1329: overflow");
 +    }
 +
 +    if (!cma_rsize) {
@@ -206,12 +169,12 @@
  internal_putbytes(const char *s, size_t len)
  {
  	size_t		amount;
-@@ -1403,7 +1527,7 @@
+@@ -1403,7 +1491,7 @@
  	PqSendStart = PqSendPointer = 0;
  	return 0;
  }
 -
-+#endif
++#endif /* wasm */
  /* --------------------------------
   *		pq_flush_if_writable - flush pending output if writable without blocking
   *

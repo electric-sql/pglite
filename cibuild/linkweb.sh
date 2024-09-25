@@ -18,6 +18,13 @@ linkweb:begin
 
 mkdir -p $WEBROOT
 
+if $WASI
+then
+    echo "no wasi web linking yet"
+    exit 0
+fi
+
+
 NOWARN="-Wno-missing-prototypes -Wno-unused-function -Wno-declaration-after-statement -Wno-incompatible-pointer-types-discards-qualifiers"
 
 # client lib ( eg psycopg ) for websocketed pg server
@@ -137,16 +144,6 @@ pushd src/backend
     # --js-library
     # cp ${WORKSPACE}/patches/library_pgfs.js ${EMSDK}/upstream/emscripten/src/library_pgfs.js
 
-    python3 > ${PGROOT}/PGPASSFILE <<END
-USER="${PGPASS:-postgres}"
-PASS="${PGUSER:-postgres}"
-md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
-print(f"localhost:5432:postgres:{USER}:{md5pass}")
-USER="login"
-PASS="password"
-md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
-print(f"localhost:5432:postgres:{USER}:{md5pass}")
-END
 
     if $OBJDUMP
     then
@@ -218,14 +215,15 @@ _________________________________________________________
 
     mkdir -p ${WEBROOT}
 
-    cp -v postgres.* ${WEBROOT}/
+    cp -vf postgres.* ${WEBROOT}/
     #cp ${PGROOT}/lib/libecpg.so ${WEBROOT}/
-    cp ${PGROOT}/sdk/*.tar ${WEBROOT}/
-    for tarf in ${WEBROOT}/*.tar
+
+    for tarf in ${PGROOT}/sdk/*.tar
     do
         gzip -f -9 $tarf
     done
 
+    cp ${PGROOT}/sdk/*.tar.gz ${WEBROOT}/
 
     cp $WORKSPACE/{tests/vtx.js,patches/tinytar.min.js} ${WEBROOT}/
 

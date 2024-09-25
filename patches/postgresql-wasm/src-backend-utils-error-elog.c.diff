@@ -1,16 +1,23 @@
 --- postgresql/src/backend/utils/error/elog.c
 +++ postgresql-wasm/src/backend/utils/error/elog.c
-@@ -355,6 +355,9 @@
+@@ -349,12 +349,16 @@
+ 	ErrorData  *edata;
+ 	bool		output_to_server;
+ 	bool		output_to_client = false;
++#if defined(__EMSCRIPTEN__) || defined(__wasi__)
++#   warning "FIXME: error levels"
++#else
+ 	int			i;
+ 
+ 	/*
  	 * Check some cases in which we want to promote an error into a more
  	 * severe error.  None of this logic applies for non-error messages.
  	 */
-+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 +
-+#else
  	if (elevel >= ERROR)
  	{
  		/*
-@@ -395,7 +398,7 @@
+@@ -395,7 +399,7 @@
  		for (i = 0; i <= errordata_stack_depth; i++)
  			elevel = Max(elevel, errordata[i].elevel);
  	}
@@ -19,7 +26,7 @@
  	/*
  	 * Now decide whether we need to process this report at all; if it's
  	 * warning or less and not enabled for logging, just return false without
-@@ -540,7 +543,13 @@
+@@ -540,7 +544,13 @@
  		 */
  
  		recursion_depth--;
@@ -33,7 +40,7 @@
  	}
  
  	/* Emit the message to the right places */
-@@ -588,7 +597,11 @@
+@@ -588,7 +598,11 @@
  		 * FATAL termination.  The postmaster may or may not consider this
  		 * worthy of panic, depending on which subprocess returns it.
  		 */
@@ -45,7 +52,7 @@
  	}
  
  	if (elevel >= PANIC)
-@@ -698,6 +711,7 @@
+@@ -698,6 +712,7 @@
  	 */
  	if (edata->elevel >= ERROR)
  	{

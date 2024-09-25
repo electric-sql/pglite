@@ -1,6 +1,6 @@
 --- postgresql/src/backend/tcop/postgres.c
 +++ postgresql-wasm/src/backend/tcop/postgres.c
-@@ -3988,7 +3988,11 @@
+@@ -4052,7 +4052,11 @@
  #endif
  }
  
@@ -13,7 +13,7 @@
  /*
   * PostgresSingleUserMain
   *     Entry point for single user mode. argc/argv are the command line
-@@ -4884,7 +4888,7 @@
+@@ -4948,7 +4952,7 @@
  		}
  	}							/* end of input-reading loop */
  }
@@ -22,3 +22,12 @@
  /*
   * Throw an error if we're a WAL sender process.
   *
+@@ -5067,7 +5071,7 @@
+ 					 (long) user.tv_usec,
+ 					 (long) sys.tv_sec,
+ 					 (long) sys.tv_usec);
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(__wasi__)
+ 
+ 	/*
+ 	 * The following rusage fields are not defined by POSIX, but they're

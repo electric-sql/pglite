@@ -1,13 +1,17 @@
 --- postgresql/src/include/fe_utils/string_utils.h
 +++ postgresql-wasm/src/include/fe_utils/string_utils.h
-@@ -19,8 +19,12 @@
+@@ -16,11 +16,16 @@
+ #ifndef STRING_UTILS_H
+ #define STRING_UTILS_H
+ 
++#if !defined(__wasi__)
  #include "libpq-fe.h"
  #include "pqexpbuffer.h"
++#else
++#include "../interfaces/libpq/libpq-fe.h"
++#include "../interfaces/libpq/pqexpbuffer.h"
++#endif
  
-+/*#include "../interfaces/libpq/libpq-fe.h"*/
-+/*#include "../interfaces/libpq/pqexpbuffer.h"*/
-+
-+
  /* Global variables controlling behavior of fmtId() and fmtQualifiedId() */
 -extern PGDLLIMPORT int quote_all_identifiers;
 +extern PGDLLIMPORT bool quote_all_identifiers;

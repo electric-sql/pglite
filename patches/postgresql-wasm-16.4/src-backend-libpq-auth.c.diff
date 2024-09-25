@@ -1,0 +1,11 @@
+--- postgresql/src/backend/libpq/auth.c
++++ postgresql-wasm/src/backend/libpq/auth.c
+@@ -1866,7 +1866,7 @@
+ 		return STATUS_ERROR;
+ 	}
+ 
+-#ifndef WIN32
++#if !defined(WIN32) && !defined(__wasi__)
+ 	errno = 0;					/* clear errno before call */
+ 	pw = getpwuid(uid);
+ 	if (!pw)

@@ -1,0 +1,18 @@
+--- postgresql/src/bin/pg_upgrade/parallel.c
++++ postgresql-wasm/src/bin/pg_upgrade/parallel.c
+@@ -277,6 +277,7 @@
+ bool
+ reap_child(bool wait_for_child)
+ {
++#if !defined(__wasi__)
+ #ifndef WIN32
+ 	int			work_status;
+ 	pid_t		child;
+@@ -336,6 +337,6 @@
+ 
+ 	/* do this after job has been removed */
+ 	parallel_jobs--;
+-
++#endif /* __wasi__ */
+ 	return true;
+ }

@@ -1,0 +1,13 @@
+--- postgresql/src/common/logging.c
++++ postgresql-wasm/src/common/logging.c
+@@ -19,8 +19,9 @@
+ #include "common/logging.h"
+ 
+ enum pg_log_level __pg_log_level;
+-
++#if !defined(PG_MAIN)
+ static const char *progname;
++#endif
+ static int	log_flags;
+ 
+ static void (*log_pre_callback) (void);
