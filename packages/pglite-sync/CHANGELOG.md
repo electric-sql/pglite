@@ -1,5 +1,26 @@
 # @electric-sql/pglite-sync
 
+## 0.2.8
+
+### Patch Changes
+
+- 821a7c5: Commit `ShapeStream` message batches transactionally.
+  Implement `shapeKey` option to `syncShapeToTable` to persist stream.
+  Implement `metadataSchema` option to `electricSync` configuration to specify where stream metadata is peristed.
+  Implement in-memory lock to disallow multiple shapes on single table.
+  Fix `must-refetch` handling by truncating underlying table on refetch.
+  [BREAKING] Move `ShapeStreamOptions` as separate property of `SyncShapeToTableOptions` rather than extension
+- 6e116c6: Implement naive resumability which truncates the synced table on restart.
+- Updated dependencies [53ec60e]
+- Updated dependencies [880b60d]
+- Updated dependencies [058ed7c]
+- Updated dependencies [2831c34]
+- Updated dependencies [880b60d]
+- Updated dependencies [880b60d]
+- Updated dependencies [4aeb677]
+- Updated dependencies [19b3529]
+  - @electric-sql/pglite@0.2.8
+
 ## 0.2.7
 
 ### Patch Changes
