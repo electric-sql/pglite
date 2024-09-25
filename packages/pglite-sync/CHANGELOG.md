@@ -1,5 +1,11 @@
 # @electric-sql/pglite-sync
 
+## 0.2.9
+
+### Patch Changes
+
+- 95b41a1: Clear uncommitted aggregated messages upon receiving `must-refetch` message
+
 ## 0.2.8
 
 ### Patch Changes
