@@ -250,7 +250,8 @@
 		     * it will fail to be called during other backend-shutdown
 		     * scenarios.
 		     */
-// puts("# 697:proc_exit/repl/skip"); //proc_exit(0);
+// puts("# 697:proc_exit/repl/skip");
+            proc_exit(0);
             repl = false;
             return;
 
