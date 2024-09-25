@@ -88,7 +88,6 @@ async function createPlugin(
       // or use a separate connection to hold a long transaction
       let messageAggregator: ChangeMessage<any>[] = []
       let truncateNeeded = false
-      let lastOffsetAdded = shapeSubState?.offset
 
       stream.subscribe(async (messages) => {
         if (debug) console.log('sync messages received', messages)
@@ -145,14 +144,13 @@ async function createPlugin(
                   messageAggregator.length > 0 &&
                   stream.shapeId !== undefined
                 ) {
-                  lastOffsetAdded =
-                    messageAggregator[messageAggregator.length - 1].offset
                   await updateShapeSubscriptionState({
                     pg: tx,
                     metadataSchema,
                     shapeKey: options.shapeKey,
                     shapeId: stream.shapeId,
-                    lastOffset: lastOffsetAdded,
+                    lastOffset:
+                      messageAggregator[messageAggregator.length - 1].offset,
                   })
                 }
               })
@@ -178,9 +176,6 @@ async function createPlugin(
         },
         get shapeId() {
           return stream.shapeId
-        },
-        get lastOffset() {
-          return lastOffsetAdded
         },
         subscribeOnceToUpToDate: (
           cb: () => void,

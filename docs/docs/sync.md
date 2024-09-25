@@ -108,9 +108,6 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 - `unsubscribeMustRefresh(cb: () => void)`<br>
   Unsubscribe from the `mustRefresh` notification.
 
-- `lastOffset: string`<br>
-  The last offset that was committed to the database
-
 - `unsubscribe()`<br>
   Unsubscribe from the shape. Note that this does not clear the state that has been synced into the table.
 
