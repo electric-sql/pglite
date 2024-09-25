@@ -55,6 +55,7 @@ shape.unsubscribe()
 There is a full example you can run locally in the [GitHub repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
 
 ## electricSync API
+
 The `electricSync` plugin can be given some configuration options to allow customization of the sync process.
 
 - `metadataSchema?: string`<br>
@@ -86,7 +87,6 @@ It takes the following options as an object:
 
 - `shapeKey: string`<br>
   Optional identifier for the shape subscription - if provided the stream state will be persisted along with the data in order to allow resuming the stream between sessions.
-  
 
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
