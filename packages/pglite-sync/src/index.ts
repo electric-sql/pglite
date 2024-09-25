@@ -17,7 +17,7 @@ export type MapColumns = MapColumnsMap | MapColumnsFn
 export type ShapeKey = string
 
 export interface SyncShapeToTableOptions {
-  shapeStream: ShapeStreamOptions
+  shape: ShapeStreamOptions
   table: string
   schema?: string
   mapColumns?: MapColumns
@@ -68,19 +68,15 @@ async function createPlugin(
       }
 
       const aborter = new AbortController()
-      if (options.shapeStream.signal) {
+      if (options.shape.signal) {
         // we new to have our own aborter to be able to abort the stream
         // but still accept the signal from the user
-        options.shapeStream.signal.addEventListener(
-          'abort',
-          () => aborter.abort(),
-          {
-            once: true,
-          },
-        )
+        options.shape.signal.addEventListener('abort', () => aborter.abort(), {
+          once: true,
+        })
       }
       const stream = new ShapeStream({
-        ...options.shapeStream,
+        ...options.shape,
         ...(shapeSubState ?? {}),
         signal: aborter.signal,
       })
