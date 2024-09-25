@@ -26,6 +26,7 @@ export interface SyncShapeToTableOptions extends ShapeStreamOptions {
 
 export interface ElectricSyncOptions {
   debug?: boolean
+  metadataSchema?: string
 }
 
 async function createPlugin(
@@ -33,6 +34,7 @@ async function createPlugin(
   options?: ElectricSyncOptions,
 ) {
   const debug = options?.debug ?? false
+  const metadataSchema = options?.metadataSchema ?? 'electric'
   const streams: Array<{
     stream: ShapeStream
     aborter: AbortController
@@ -45,9 +47,9 @@ async function createPlugin(
       // if shapeKey is provided, ensure persistence of shape subscription
       // state is possible and check if it is already persisted
       if (options.shapeKey) {
-        await pg.exec(subscriptionTableQuery)
         shapeSubState = await getShapeSubscriptionState({
           pg,
+          metadataSchema,
           shapeKey: options.shapeKey,
         })
         if (debug && shapeSubState) {
@@ -106,6 +108,7 @@ async function createPlugin(
                   if (options.shapeKey) {
                     await deleteShapeSubscriptionState({
                       pg: tx,
+                      metadataSchema,
                       shapeKey: options.shapeKey,
                     })
                   }
@@ -125,6 +128,7 @@ async function createPlugin(
           ) {
             await updateShapeSubscriptionState({
               pg: tx,
+              metadataSchema,
               shapeKey: options.shapeKey,
               shapeId,
               lastOffset: lastOffsetAdded,
@@ -171,9 +175,17 @@ async function createPlugin(
     }
   }
 
+  const init = async () => {
+    await migrateShapeMetadataTables({
+      pg,
+      metadataSchema,
+    })
+  }
+
   return {
     namespaceObj,
     close,
+    init,
   }
 }
 
@@ -181,10 +193,11 @@ export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
     setup: async (pg: PGliteInterface) => {
-      const { namespaceObj, close } = await createPlugin(pg, options)
+      const { namespaceObj, close, init } = await createPlugin(pg, options)
       return {
         namespaceObj,
         close,
+        init,
       }
     },
   } satisfies Extension
@@ -284,6 +297,7 @@ async function applyMessageToTable({
 
 interface GetShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
+  metadataSchema: string
   shapeKey: ShapeKey
 }
 
@@ -291,12 +305,13 @@ type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'shapeId' | 'offset'>
 
 async function getShapeSubscriptionState({
   pg,
+  metadataSchema,
   shapeKey,
 }: GetShapeSubscriptionStateOptions): Promise<ShapeSubscriptionState | null> {
   const result = await pg.query<{ shape_id: string; last_offset: string }>(
     `
     SELECT shape_id, last_offset
-    FROM ${subscriptionTableName}
+    FROM ${subscriptionMetadataTableName(metadataSchema)}
     WHERE shape_key = $1
   `,
     [shapeKey],
@@ -313,6 +328,7 @@ async function getShapeSubscriptionState({
 
 interface UpdateShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
+  metadataSchema: string
   shapeKey: ShapeKey
   shapeId: string
   lastOffset: string
@@ -320,13 +336,14 @@ interface UpdateShapeSubscriptionStateOptions {
 
 async function updateShapeSubscriptionState({
   pg,
+  metadataSchema,
   shapeKey,
   shapeId,
   lastOffset,
 }: UpdateShapeSubscriptionStateOptions) {
   await pg.query(
     `
-    INSERT INTO ${subscriptionTableName} (shape_key, shape_id, last_offset)
+    INSERT INTO ${subscriptionMetadataTableName(metadataSchema)} (shape_key, shape_id, last_offset)
     VALUES ($1, $2, $3)
     ON CONFLICT(shape_key)
     DO UPDATE SET
@@ -339,23 +356,44 @@ async function updateShapeSubscriptionState({
 
 interface DeleteShapeSubscriptionStateOptions {
   pg: PGliteInterface | Transaction
+  metadataSchema: string
   shapeKey: ShapeKey
 }
 
 async function deleteShapeSubscriptionState({
   pg,
+  metadataSchema,
   shapeKey,
 }: DeleteShapeSubscriptionStateOptions) {
-  await pg.query(`DELETE FROM ${subscriptionTableName} WHERE shape_key = $1`, [
-    shapeKey,
-  ])
+  await pg.query(
+    `DELETE FROM ${subscriptionMetadataTableName(metadataSchema)} WHERE shape_key = $1`,
+    [shapeKey],
+  )
 }
 
-const subscriptionTableName = `__electric_shape_subscriptions_metadata`
-const subscriptionTableQuery = `
-CREATE TABLE IF NOT EXISTS ${subscriptionTableName} (
-  shape_key TEXT PRIMARY KEY,
-  shape_id TEXT NOT NULL,
-  last_offset TEXT NOT NULL
-)
-`
+interface MigrateShapeMetadataTablesOptions {
+  pg: PGliteInterface | Transaction
+  metadataSchema: string
+}
+
+async function migrateShapeMetadataTables({
+  pg,
+  metadataSchema,
+}: MigrateShapeMetadataTablesOptions) {
+  await pg.exec(
+    `
+    CREATE SCHEMA IF NOT EXISTS "${metadataSchema}";
+    CREATE TABLE IF NOT EXISTS ${subscriptionMetadataTableName(metadataSchema)} (
+      shape_key TEXT PRIMARY KEY,
+      shape_id TEXT NOT NULL,
+      last_offset TEXT NOT NULL
+    );
+    `,
+  )
+}
+
+function subscriptionMetadataTableName(metadatSchema: string) {
+  return `"${metadatSchema}"."${subscriptionTableName}"`
+}
+
+const subscriptionTableName = `shape_subscriptions_metadata`

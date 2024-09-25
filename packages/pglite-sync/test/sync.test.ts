@@ -322,4 +322,22 @@ describe('pglite-sync', () => {
     expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('shapeId')
     expect(shapeStreamInits.mock.calls[1][0]).not.toHaveProperty('offset')
   })
+
+  it('uses the specified metadata schema for subscription metadata', async () => {
+    const metadataSchema = 'foobar'
+    const db = await PGlite.create({
+      extensions: {
+        electric: electricSync({
+          metadataSchema,
+        }),
+      },
+    })
+
+    const result = await db.query(
+      `SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1`,
+      [metadataSchema],
+    )
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0]).toEqual({ schema_name: metadataSchema })
+  })
 })
