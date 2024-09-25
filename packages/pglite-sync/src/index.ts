@@ -106,6 +106,8 @@ async function createPlugin(
             case 'must-refetch':
               if (debug) console.log('refetching shape')
               truncateNeeded = true
+              messageAggregator = []
+
               break
 
             // perform all accumulated changes and store stream state
