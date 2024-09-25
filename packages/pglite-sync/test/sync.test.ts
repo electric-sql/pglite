@@ -1,5 +1,10 @@
 import { it, describe, vi, beforeEach, expect, Mock } from 'vitest'
-import { Message, ShapeStream, ShapeStreamOptions } from '@electric-sql/client'
+import {
+  ControlMessage,
+  Message,
+  ShapeStream,
+  ShapeStreamOptions,
+} from '@electric-sql/client'
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { electricSync } from '../src/index.js'
 
@@ -10,6 +15,10 @@ vi.mock('@electric-sql/client', async (importOriginal) => {
   }))
   return { ...mod, ShapeStream }
 })
+
+const upToDateMsg: ControlMessage = {
+  headers: { control: 'up-to-date' },
+}
 
 describe('pglite-sync', () => {
   let pg: PGlite &
@@ -37,7 +46,7 @@ describe('pglite-sync', () => {
     let feedMessage: (message: Message) => Promise<void> = async (_) => {}
     MockShapeStream.mockImplementation(() => ({
       subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessage = (message) => cb([message])
+        feedMessage = (message) => cb([message, upToDateMsg])
       }),
       unsubscribeAll: vi.fn(),
     }))
@@ -106,7 +115,7 @@ describe('pglite-sync', () => {
     let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
     MockShapeStream.mockImplementation(() => ({
       subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb(messages)
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
       }),
       unsubscribeAll: vi.fn(),
     }))
@@ -118,18 +127,25 @@ describe('pglite-sync', () => {
     })
 
     const numInserts = 10000
-    feedMessages(
-      Array.from({ length: numInserts }, (_, idx) => ({
-        headers: { operation: 'insert' },
-        offset: `1_${idx}`,
-        key: `id${idx}`,
-        value: {
-          id: idx,
-          task: `task${idx}`,
-          done: false,
-        },
-      })),
-    )
+    const numBatches = 5
+    for (let i = 0; i < numBatches; i++) {
+      const numBatchInserts = numInserts / numBatches
+      feedMessages(
+        Array.from({ length: numBatchInserts }, (_, idx) => {
+          const itemIdx = i * numBatchInserts + idx
+          return {
+            headers: { operation: 'insert' },
+            offset: `1_${itemIdx}`,
+            key: `id${itemIdx}`,
+            value: {
+              id: itemIdx,
+              task: `task${itemIdx}`,
+              done: false,
+            },
+          }
+        }),
+      )
+    }
 
     let timeToProcessMicrotask = Infinity
     const startTime = performance.now()
@@ -137,22 +153,23 @@ describe('pglite-sync', () => {
       timeToProcessMicrotask = performance.now() - startTime
     })
 
+    let numItemsInserted = 0
     await vi.waitUntil(async () => {
-      expect(
+      numItemsInserted =
         (
           await pg.sql<{
             count: number
           }>`SELECT COUNT(*) as count FROM todo;`
-        ).rows[0]?.['count'],
-      ).greaterThan(0)
-      return true
+        ).rows[0]?.['count'] ?? 0
+
+      return numItemsInserted > 0
     })
 
     // should have exact number of inserts added transactionally
-    expect((await pg.sql`SELECT * FROM todo;`).rows).toHaveLength(numInserts)
+    expect(numItemsInserted).toBe(numInserts)
 
-    // should have processed microtask within 15ms, not blocking main loop
-    expect(timeToProcessMicrotask).toBeLessThan(15)
+    // should have processed microtask within few ms, not blocking main loop
+    expect(timeToProcessMicrotask).toBeLessThan(5)
 
     await shape.unsubscribe()
   })
@@ -167,7 +184,7 @@ describe('pglite-sync', () => {
         subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
           feedMessages = (messages) => {
             mockShapeId ??= Math.random() + ''
-            return cb(messages)
+            return cb([...messages, upToDateMsg])
           }
         }),
         unsubscribeAll: vi.fn(),
@@ -245,7 +262,7 @@ describe('pglite-sync', () => {
               mockShapeId = undefined
             }
 
-            return cb(messages)
+            return cb([...messages, upToDateMsg])
           }
         }),
         unsubscribeAll: vi.fn(),

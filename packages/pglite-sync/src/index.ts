@@ -57,9 +57,6 @@ async function createPlugin(
         }
       }
 
-      let lastOffsetAdded: Offset | void = shapeSubState?.offset
-      let shapeId: string | void = shapeSubState?.shapeId
-
       const aborter = new AbortController()
       if (options.signal) {
         // we new to have our own aborter to be able to abort the stream
@@ -74,36 +71,43 @@ async function createPlugin(
         signal: aborter.signal,
       })
 
+      // TODO: this aggregates all messages in memory until an
+      // up-to-date message is received, which is not viable for
+      // _very_ large shapes - either we should commit batches to
+      // a temporary table and copy over the transactional result
+      // or use a separate connection to hold a long transaction
+      let messageAggregator: ChangeMessage<any>[] = []
+      let truncateNeeded = false
+      let lastOffsetAdded = shapeSubState?.offset
+
       stream.subscribe(async (messages) => {
-        if (debug) {
-          console.log('sync messages received', messages)
-        }
-        await pg.transaction(async (tx) => {
-          for (const message of messages) {
-            shapeId ??= stream.shapeId
+        if (debug) console.log('sync messages received', messages)
 
-            if (isChangeMessage(message)) {
-              await applyMessageToTable({
-                pg: tx,
-                message: message,
-                table: options.table,
-                schema: options.schema,
-                mapColumns: options.mapColumns,
-                primaryKey: options.primaryKey,
-                debug,
-              })
-              lastOffsetAdded = message.offset
-            }
+        for (const message of messages) {
+          // accumulate change messages for committing all at once
+          if (isChangeMessage(message)) {
+            messageAggregator.push(message)
+            continue
+          }
 
-            if (isControlMessage(message)) {
-              switch (message.headers.control) {
-                case 'must-refetch':
-                  if (debug) console.log('clearing and refetching shape')
-                  shapeId = undefined
-                  lastOffsetAdded = undefined
+          // perform actual DB operations upon receiving control messages
+          if (!isControlMessage(message)) continue
+          switch (message.headers.control) {
+            // mark table as needing truncation before next batch commit
+            case 'must-refetch':
+              if (debug) console.log('refetching shape')
+              truncateNeeded = true
+              break
 
+            // perform all accumulated changes and store stream state
+            case 'up-to-date':
+              await pg.transaction(async (tx) => {
+                if (debug) console.log('up-to-date, committing all messages')
+                if (truncateNeeded) {
+                  truncateNeeded = false
                   // TODO: sync into shadow table and reference count
-                  // for now just clear the whole table
+                  // for now just clear the whole table - will break
+                  // cases with multiple shapes on the same table
                   await tx.exec(`TRUNCATE ${options.table};`)
                   if (options.shapeKey) {
                     await deleteShapeSubscriptionState({
@@ -112,30 +116,42 @@ async function createPlugin(
                       shapeKey: options.shapeKey,
                     })
                   }
-                  break
+                }
 
-                case 'up-to-date':
-                  // no-op - we commit all messages at the end
-                  break
-              }
-            }
-          }
+                for (const changeMessage of messageAggregator) {
+                  await applyMessageToTable({
+                    pg: tx,
+                    table: options.table,
+                    schema: options.schema,
+                    message: changeMessage,
+                    mapColumns: options.mapColumns,
+                    primaryKey: options.primaryKey,
+                    debug,
+                  })
+                }
 
-          if (
-            options.shapeKey &&
-            lastOffsetAdded !== undefined &&
-            shapeId !== undefined
-          ) {
-            await updateShapeSubscriptionState({
-              pg: tx,
-              metadataSchema,
-              shapeKey: options.shapeKey,
-              shapeId,
-              lastOffset: lastOffsetAdded,
-            })
+                if (
+                  options.shapeKey &&
+                  messageAggregator.length > 0 &&
+                  stream.shapeId !== undefined
+                ) {
+                  lastOffsetAdded =
+                    messageAggregator[messageAggregator.length - 1].offset
+                  await updateShapeSubscriptionState({
+                    pg: tx,
+                    metadataSchema,
+                    shapeKey: options.shapeKey,
+                    shapeId: stream.shapeId,
+                    lastOffset: lastOffsetAdded,
+                  })
+                }
+              })
+              messageAggregator = []
+              break
           }
-        })
+        }
       })
+
       streams.push({
         stream,
         aborter,
@@ -331,7 +347,7 @@ interface UpdateShapeSubscriptionStateOptions {
   metadataSchema: string
   shapeKey: ShapeKey
   shapeId: string
-  lastOffset: string
+  lastOffset: Offset
 }
 
 async function updateShapeSubscriptionState({
