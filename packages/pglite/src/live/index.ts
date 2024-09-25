@@ -483,15 +483,15 @@ async function addNotifyTriggersToTables(
     )
     .map((table) => {
       return `
-      CREATE OR REPLACE FUNCTION _notify_${table.schema_name}_${table.table_name}() RETURNS TRIGGER AS $$
+      CREATE OR REPLACE FUNCTION "_notify_${table.schema_name}_${table.table_name}"() RETURNS TRIGGER AS $$
       BEGIN
         PERFORM pg_notify('table_change__${table.schema_name}__${table.table_name}', '');
         RETURN NULL;
       END;
       $$ LANGUAGE plpgsql;
-      CREATE OR REPLACE TRIGGER _notify_trigger_${table.schema_name}_${table.table_name}
-      AFTER INSERT OR UPDATE OR DELETE ON ${table.schema_name}.${table.table_name}
-      FOR EACH STATEMENT EXECUTE FUNCTION _notify_${table.schema_name}_${table.table_name}();
+      CREATE OR REPLACE TRIGGER "_notify_trigger_${table.schema_name}_${table.table_name}"
+      AFTER INSERT OR UPDATE OR DELETE ON "${table.schema_name}"."${table.table_name}"
+      FOR EACH STATEMENT EXECUTE FUNCTION "_notify_${table.schema_name}_${table.table_name}"();
       `
     })
     .join('\n')

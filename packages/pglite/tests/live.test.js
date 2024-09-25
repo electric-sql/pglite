@@ -19,14 +19,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     SELECT i*10 FROM generate_series(1, 5) i;
   `)
 
@@ -34,7 +34,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.query(
-        'SELECT * FROM test ORDER BY number;',
+        'SELECT * FROM testTable ORDER BY number;',
         [],
         (result) => {
           updatedResults = result
@@ -50,7 +50,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('INSERT INTO test (number) VALUES (25);')
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -65,7 +65,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('DELETE FROM test WHERE id = 6;')
+      db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -79,7 +79,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('UPDATE test SET number = 15 WHERE id = 3;')
+      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -95,7 +95,7 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
 
-      db.exec('INSERT INTO test (number) VALUES (35);')
+      db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -114,14 +114,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     SELECT i*10 FROM generate_series(1, 5) i;
   `)
 
@@ -129,7 +129,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.query(
-        'SELECT * FROM test WHERE number < $1 ORDER BY number;',
+        'SELECT * FROM testTable WHERE number < $1 ORDER BY number;',
         [40],
         (result) => {
           updatedResults = result
@@ -143,7 +143,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('INSERT INTO test (number) VALUES (25);')
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -156,7 +156,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('DELETE FROM test WHERE id = 6;')
+      db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -168,7 +168,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('UPDATE test SET number = 15 WHERE id = 3;')
+      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -182,7 +182,7 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
 
-      db.exec('INSERT INTO test (number) VALUES (35);')
+      db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -199,14 +199,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     VALUES (1), (2);
   `)
 
@@ -214,7 +214,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.incrementalQuery(
-        'SELECT * FROM test;',
+        'SELECT * FROM testTable;',
         [],
         'id',
         (result) => {
@@ -228,7 +228,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 2, number: 2 },
       ])
 
-      await db.exec('UPDATE test SET number = 10 WHERE id = 1;')
+      await db.exec('UPDATE testTable SET number = 10 WHERE id = 1;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -248,14 +248,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-        CREATE TABLE IF NOT EXISTS test (
+        CREATE TABLE IF NOT EXISTS testTable (
           id TEXT PRIMARY KEY,
           number INT
         );
       `)
 
       await db.exec(`
-        INSERT INTO test (id, number)
+        INSERT INTO testTable (id, number)
         VALUES ('potato', 1), ('banana', 2);
       `)
 
@@ -263,7 +263,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.incrementalQuery(
-        'SELECT * FROM test;',
+        'SELECT * FROM testTable;',
         [],
         'id',
         (result) => {
@@ -277,7 +277,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 'banana', number: 2 },
       ])
 
-      await db.exec(`UPDATE test SET number = 10 WHERE id = 'potato';`)
+      await db.exec(`UPDATE testTable SET number = 10 WHERE id = 'potato';`)
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -297,14 +297,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     SELECT i*10 FROM generate_series(1, 5) i;
   `)
 
@@ -312,7 +312,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.incrementalQuery(
-        'SELECT * FROM test ORDER BY number;',
+        'SELECT * FROM testTable ORDER BY number;',
         [],
         'id',
         (result) => {
@@ -329,7 +329,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      await db.exec('INSERT INTO test (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -344,7 +344,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      await db.exec('DELETE FROM test WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -358,7 +358,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      await db.exec('UPDATE test SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -374,7 +374,7 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
 
-      await db.exec('INSERT INTO test (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -393,14 +393,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     SELECT i*10 FROM generate_series(1, 5) i;
   `)
 
@@ -408,7 +408,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialResults, unsubscribe } = await db.live.incrementalQuery(
-        'SELECT * FROM test WHERE number < $1 ORDER BY number;',
+        'SELECT * FROM testTable WHERE number < $1 ORDER BY number;',
         [40],
         'id',
         (result) => {
@@ -423,7 +423,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      await db.exec('INSERT INTO test (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -436,7 +436,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      await db.exec('DELETE FROM test WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -448,7 +448,7 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      await db.exec('UPDATE test SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -462,7 +462,7 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
 
-      await db.exec('INSERT INTO test (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -479,14 +479,14 @@ await testEsmAndCjs(async (importType) => {
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
+    CREATE TABLE IF NOT EXISTS testTable (
       id SERIAL PRIMARY KEY,
       number INT
     );
   `)
 
       await db.exec(`
-    INSERT INTO test (number)
+    INSERT INTO testTable (number)
     SELECT i*10 FROM generate_series(1, 5) i;
   `)
 
@@ -494,7 +494,7 @@ await testEsmAndCjs(async (importType) => {
       const eventTarget = new EventTarget()
 
       const { initialChanges, unsubscribe } = await db.live.changes(
-        'SELECT * FROM test ORDER BY number;',
+        'SELECT * FROM testTable ORDER BY number;',
         [],
         'id',
         (changes) => {
@@ -541,7 +541,7 @@ await testEsmAndCjs(async (importType) => {
         },
       ])
 
-      db.exec('INSERT INTO test (number) VALUES (25);')
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -564,7 +564,7 @@ await testEsmAndCjs(async (importType) => {
         },
       ])
 
-      db.exec('DELETE FROM test WHERE id = 6;')
+      db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -587,7 +587,7 @@ await testEsmAndCjs(async (importType) => {
         },
       ])
 
-      db.exec('UPDATE test SET number = 15 WHERE id = 3;')
+      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -619,7 +619,7 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
 
-      db.exec('INSERT INTO test (number) VALUES (35);')
+      db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
