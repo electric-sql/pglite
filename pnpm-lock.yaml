@@ -252,8 +252,8 @@ importers:
   packages/pglite-sync:
     dependencies:
       '@electric-sql/client':
-        specifier: ^0.5.1
-        version: 0.5.1
+        specifier: ^0.6.0
+        version: 0.6.0
     devDependencies:
       '@electric-sql/pglite':
         specifier: workspace:*
@@ -630,8 +630,8 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@0.5.1':
-    resolution: {integrity: sha512-7SBuZGVYxhdi8mOUN5SwP4lXXfEw/1E/MdPrLyOIjnrfG4AGftMNfCTWBQwHhErAVxKf34mqoAIkCpuIVL3jVA==}
+  '@electric-sql/client@0.6.0':
+    resolution: {integrity: sha512-azAnhA6MlYnlammL6GIZKiD5AYgk6/Il4HTHYfk8WUDMoLWeqit35Pm95WnzJ6suFkAyeLhCFM2LaaBzPBBIIQ==}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -5095,7 +5095,7 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@0.5.1':
+  '@electric-sql/client@0.6.0':
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.20.0
 
