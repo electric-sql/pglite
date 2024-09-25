@@ -38,6 +38,20 @@ describe('templating', () => {
     })
   })
 
+  it('should parametrize templated values of null', () => {
+    expect(query`SELECT * FROM test WHERE value = ${null};`).toEqual({
+      query: 'SELECT * FROM test WHERE value = $1;',
+      params: [null],
+    })
+
+    expect(
+      query`SELECT * FROM test WHERE value = ${null} AND num = ${3};`,
+    ).toEqual({
+      query: 'SELECT * FROM test WHERE value = $1 AND num = $2;',
+      params: [null, 3],
+    })
+  })
+
   it('should correctly escape identifiers', () => {
     expect(
       query`
