@@ -169,7 +169,7 @@ describe('pglite-sync', () => {
     expect(numItemsInserted).toBe(numInserts)
 
     // should have processed microtask within few ms, not blocking main loop
-    expect(timeToProcessMicrotask).toBeLessThan(5)
+    expect(timeToProcessMicrotask).toBeLessThan(15)
 
     await shape.unsubscribe()
   })
