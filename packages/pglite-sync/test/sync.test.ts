@@ -301,7 +301,18 @@ describe('pglite-sync', () => {
     })
 
     // feed a must-refetch message that should clear the table
+    // and any aggregated messages
     await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: `1_${numInserts}`,
+        key: `id${numInserts}`,
+        value: {
+          id: numInserts,
+          task: `task`,
+          done: false,
+        },
+      },
       { headers: { control: 'must-refetch' } },
       {
         headers: { operation: 'insert' },
