@@ -69,7 +69,7 @@ export function sql(
     const nextStringIdx = i + 1
 
     // if value is a template tag, collapse into last string
-    if (value._templateType === TemplateType.part) {
+    if (value?._templateType === TemplateType.part) {
       addToLastAndPushWithSuffix(
         parsedStrings,
         strings[nextStringIdx],
@@ -84,7 +84,7 @@ export function sql(
     }
 
     // if value is an output of this method, append in place
-    if (value._templateType === TemplateType.container) {
+    if (value?._templateType === TemplateType.container) {
       addToLastAndPushWithSuffix(
         parsedStrings,
         strings[nextStringIdx],
