@@ -415,6 +415,7 @@ export class PGlite
     // Close the database
     try {
       await this.execProtocol(serialize.end())
+      this.mod!._pg_shutdown()
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
