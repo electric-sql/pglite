@@ -9,7 +9,7 @@ cp -rf /opt/patches ./patches
 . ./cibuild.sh
 
 . ./cibuild.sh contrib
-. ./cibuild.sh vector
+. ./cibuild.sh extra
 . ./cibuild.sh node
 . ./cibuild.sh linkweb
 . ./cibuild.sh pglite-prep
