@@ -96,7 +96,7 @@ await testEsmAndCjs(async (importType) => {
       // 16384 is the first none builtin object id
       // as the vector extension is the first thing we create it should be this
       // it certainly wont be lower.
-      // if it happens to be higher it may be that we have changed PGlite to create 
+      // if it happens to be higher it may be that we have changed PGlite to create
       // something with that oid before handing back to the user, if thats the case we
       // should check what we are doing, and then update this test.
       expect(res.rows[0].oid).toBe(16384)
