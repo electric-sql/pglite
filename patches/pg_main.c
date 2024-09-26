@@ -884,13 +884,13 @@ pg_initdb() {
 
     /* or resume a previous db */
 
-    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId))
+    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
     	ShmemVariableCache->nextOid = FirstNormalObjectId;
 	    ShmemVariableCache->oidCount = 0;
 #if PGDEBUG
         puts("# 891: resume db, oid base too low, setting OID range");
 #endif
-    };
+    }
 
     {
         PDEBUG("# 889: restarting in single mode for initdb");
@@ -912,7 +912,7 @@ pg_initdb() {
 
 initdb_done:;
     pg_idb_status |= IDB_CALLED;
-    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId))
+    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
     	ShmemVariableCache->nextOid = FirstNormalObjectId;
 	    ShmemVariableCache->oidCount = 0;
 #if PGDEBUG
