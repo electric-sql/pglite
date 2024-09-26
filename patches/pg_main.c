@@ -886,7 +886,10 @@ pg_initdb() {
 
 
     {
-        PDEBUG("# 1150: restarting in single mode for initdb");
+        PDEBUG("# 889: setting OID range and restarting in single mode for initdb");
+
+		ShmemVariableCache->nextOid = FirstNormalObjectId;
+		ShmemVariableCache->oidCount = 0;
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
