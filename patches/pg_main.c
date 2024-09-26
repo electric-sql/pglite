@@ -884,9 +884,16 @@ pg_initdb() {
 
     /* or resume a previous db */
 
+    if (ShmemVariableCache->nextOid < (FirstNormalObjectId-1)) {
+    	ShmemVariableCache->nextOid = FirstNormalObjectId - 1;
+	    ShmemVariableCache->oidCount = 0;
+#if PGDEBUG
+        puts("# 891: resume db, oid base too low, setting OID range");
+#endif
+    }
 
     {
-        PDEBUG("# 8891150: setting OID range and restarting in single mode for initdb");
+        PDEBUG("# 889: restarting in single mode for initdb");
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -905,11 +912,11 @@ pg_initdb() {
 
 initdb_done:;
     pg_idb_status |= IDB_CALLED;
-    if (ShmemVariableCache->nextOid >= FirstNormalObjectId) {
+    if (ShmemVariableCache->nextOid < (FirstNormalObjectId-1)) {
     	ShmemVariableCache->nextOid = FirstNormalObjectId - 1;
 	    ShmemVariableCache->oidCount = 0;
 #if PGDEBUG
-        puts("# 915: setting OID range");
+        puts("# 919: initdb done, oid base too low, setting OID range");
 #endif
     }
 
