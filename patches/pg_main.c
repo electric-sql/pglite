@@ -890,7 +890,7 @@ pg_initdb() {
 #if PGDEBUG
         puts("# 891: resume db, oid base too low, setting OID range");
 #endif
-    }
+    };
 
     {
         PDEBUG("# 889: restarting in single mode for initdb");
