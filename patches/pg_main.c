@@ -885,7 +885,7 @@ pg_initdb() {
     /* or resume a previous db */
 
     if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
-    	ShmemVariableCache->nextOid = FirstNormalObjectId;
+    	ShmemVariableCache->nextOid = FirstNormalObjectId -1;
 	    ShmemVariableCache->oidCount = 0;
 #if PGDEBUG
         puts("# 891: resume db, oid base too low, setting OID range");
