@@ -886,7 +886,7 @@ pg_initdb() {
 
 
     {
-        PDEBUG("# 889: setting OID range and restarting in single mode for initdb");
+        PDEBUG("# 8891150: setting OID range and restarting in single mode for initdb");
 
 		ShmemVariableCache->nextOid = FirstNormalObjectId;
 		ShmemVariableCache->oidCount = 0;
@@ -908,6 +908,14 @@ pg_initdb() {
 
 initdb_done:;
     pg_idb_status |= IDB_CALLED;
+    if (ShmemVariableCache->nextOid < FirstNormalObjectId) {
+    	ShmemVariableCache->nextOid = FirstNormalObjectId;
+	    ShmemVariableCache->oidCount = 0;
+#if PGDEBUG
+    puts("# 915: setting OID range");
+#endif
+    }
+
     if (optind>0) {
         /* RESET getopt */
         optind = 1;
