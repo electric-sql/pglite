@@ -66,7 +66,7 @@ await testEsmAndCjs(async (importType) => {
             },
             {
               name: 'vec',
-              dataTypeID: 12772,
+              dataTypeID: 16385,
             },
             {
               name: 'distance',
