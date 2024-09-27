@@ -101,5 +101,33 @@ await testEsmAndCjs(async (importType) => {
       // should check what we are doing, and then update this test.
       expect(res.rows[0].oid).toBe(16384)
     })
+
+    it('has correct oid after restart', async () => {
+      let pg = await PGlite.create({
+        dataDir: './pgdata-test-vector-oid',
+        extensions: {
+          vector,
+        },
+      })
+
+      await pg.close()
+
+      pg = await PGlite.create({
+        dataDir: './pgdata-test-vector-oid',
+        extensions: {
+          vector,
+        },
+      })
+
+      await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
+
+      const res = await pg.query(`
+        select oid 
+        from pg_extension
+        where extname = 'vector'
+      `)
+
+      expect(res.rows[0].oid).toBe(16384)
+    })
   })
 })
