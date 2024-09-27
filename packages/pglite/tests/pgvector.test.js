@@ -99,7 +99,7 @@ await testEsmAndCjs(async (importType) => {
       // if it happens to be higher it may be that we have changed PGlite to create
       // something with that oid before handing back to the user, if thats the case we
       // should check what we are doing, and then update this test.
-      expect(res.rows[0].oid).toBe(16385)
+      expect(res.rows[0].oid).toBe(16384)
     })
   })
 })
