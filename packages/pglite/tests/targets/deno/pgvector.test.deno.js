@@ -55,7 +55,7 @@ Deno.test('pgvector', async () => {
         },
         {
           name: 'vec',
-          dataTypeID: 12772,
+          dataTypeID: 16385,
         },
         {
           name: 'distance',
