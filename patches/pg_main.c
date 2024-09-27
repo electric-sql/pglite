@@ -777,6 +777,7 @@ extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const
 extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
 extern void main_post(void);
 extern void proc_exit(int code);
+extern bool IsPostmasterEnvironment;
 
 extern volatile int pg_idb_status;
 #if PGDEBUG
@@ -883,10 +884,15 @@ pg_initdb() {
 
 
     /* or resume a previous db */
-
+    //IsPostmasterEnvironment = true;
+    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
+#if PGDEBUG
+        puts("# 891: warning oid base too low, will need to set OID range after initdb(bootstrap/single)");
+#endif
+    }
 
     {
-        PDEBUG("# 1150: restarting in single mode for initdb");
+        PDEBUG("# 889: restarting in single mode for initdb");
 
         char *single_argv[] = {
             WASM_PREFIX "/bin/postgres",
@@ -905,6 +911,18 @@ pg_initdb() {
 
 initdb_done:;
     pg_idb_status |= IDB_CALLED;
+    IsPostmasterEnvironment = true;
+    if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
+        /* IsPostmasterEnvironment is now true
+         these will be executed when required in varsup.c/GetNewObjectId
+    	 ShmemVariableCache->nextOid = FirstNormalObjectId;
+	     ShmemVariableCache->oidCount = 0;
+        */
+#if PGDEBUG
+        puts("# 922: initdb done, oid base too low but OID range will be set because IsPostmasterEnvironment");
+#endif
+    }
+
     if (optind>0) {
         /* RESET getopt */
         optind = 1;
