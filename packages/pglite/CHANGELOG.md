@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.2.9
+
+### Patch Changes
+
+- 20008c2: Fix an issue where extensions where given an oid in the builtin range and so skipped by pg_dump when run via pg_gateway #352
+- a5712a8: Fix a bug where Postgres would hang after a "DROP DATABASE" followed by an unclean shutdown and restart
+
 ## 0.2.8
 
 ### Patch Changes
