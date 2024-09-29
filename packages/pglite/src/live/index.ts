@@ -1,16 +1,16 @@
 import type {
-    Extension,
-    PGliteInterface,
-    Results,
-    Transaction,
+  Extension,
+  PGliteInterface,
+  Results,
+  Transaction,
 } from '../interface'
-import { formatQuery, uuid } from '../utils.js'
 import type {
-    Change,
-    LiveChangesReturn,
-    LiveNamespace,
-    LiveQueryReturn,
+  LiveNamespace,
+  LiveQueryReturn,
+  LiveChangesReturn,
+  Change,
 } from './interface'
+import { uuid, formatQuery } from '../utils.js'
 
 const MAX_RETRIES = 5
 
@@ -138,7 +138,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             ...(
               await tx.query<any>(`
                 SELECT column_name, data_type, udt_name
-                FROM information_schema.columns
+                FROM information_schema.columns 
                 WHERE table_name = 'live_query_${id}_view'
               `)
             ).rows,
@@ -161,7 +161,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 curr AS (SELECT LAG("${key}") OVER () as __after__, * FROM live_query_${id}_state${curr}),
                 data_diff AS (
                   -- INSERT operations: Include all columns
-                  SELECT
+                  SELECT 
                     'INSERT' AS __op__,
                     ${columns
                       .map(
@@ -175,7 +175,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                   WHERE prev.${key} IS NULL
                 UNION ALL
                   -- DELETE operations: Include only the primary key
-                  SELECT
+                  SELECT 
                     'DELETE' AS __op__,
                     ${columns
                       .map(({ column_name, data_type, udt_name }) => {
@@ -192,14 +192,14 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                   WHERE curr.${key} IS NULL
                 UNION ALL
                   -- UPDATE operations: Include only changed columns
-                  SELECT
+                  SELECT 
                     'UPDATE' AS __op__,
                     ${columns
                       .map(({ column_name, data_type, udt_name }) =>
                         column_name === key
                           ? `curr."${column_name}" AS "${column_name}"`
-                          : `CASE
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
+                          : `CASE 
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
                               THEN curr."${column_name}"
                               ELSE NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``}
                               END AS "${column_name}"`,
@@ -210,9 +210,9 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                         .map(
                           ({ column_name }) =>
                             `CASE
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
-                              THEN '${column_name}'
-                              ELSE NULL
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
+                              THEN '${column_name}' 
+                              ELSE NULL 
                               END`,
                         )
                         .join(
@@ -238,7 +238,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               // Populate the state table
               await tx.exec(`
                 DELETE FROM live_query_${id}_state${stateSwitch};
-                INSERT INTO live_query_${id}_state${stateSwitch}
+                INSERT INTO live_query_${id}_state${stateSwitch} 
                   SELECT * FROM live_query_${id}_view;
               `)
 
