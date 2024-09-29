@@ -66,14 +66,14 @@ export interface DumpDataDirResult {
   filename: string
 }
 
-export interface PGliteOptions {
+export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
   database?: string
   fs?: Filesystem
   debug?: DebugLevel
   relaxedDurability?: boolean
-  extensions?: Extensions
+  extensions?: TExtensions
   loadDataDir?: Blob | File
   initialMemory?: number
   wasmModule?: WebAssembly.Module
