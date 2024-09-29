@@ -2,8 +2,8 @@ import type {
   BackendMessage,
   NoticeMessage,
 } from '@electric-sql/pg-protocol/messages'
-import type { Filesystem } from './fs/types.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
+import type { Filesystem } from './fs/types.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -29,28 +29,36 @@ export interface ExecProtocolOptions {
   onNotice?: (notice: NoticeMessage) => void
 }
 
-export interface ExtensionSetupResult {
+export interface ExtensionSetupResult<TNamespace = any> {
   emscriptenOpts?: any
-  namespaceObj?: any
+  namespaceObj?: TNamespace
   bundlePath?: URL
   init?: () => Promise<void>
   close?: () => Promise<void>
 }
 
-export type ExtensionSetup = (
+export type ExtensionSetup<TNamespace = any> = (
   pg: PGliteInterface,
   emscriptenOpts: any,
   clientOnly?: boolean,
-) => Promise<ExtensionSetupResult>
+) => Promise<ExtensionSetupResult<TNamespace>>
 
-export interface Extension {
+export interface Extension<TNamespace = any> {
   name: string
-  setup: ExtensionSetup
+  setup: ExtensionSetup<TNamespace>
 }
+
+export type ExtensionNamespace<T> =
+  T extends Extension<infer TNamespace> ? TNamespace : any
 
 export type Extensions = {
   [namespace: string]: Extension | URL
 }
+
+export type InitializedExtensions<TExtensions extends Extensions = Extensions> =
+  {
+    [K in keyof TExtensions]: ExtensionNamespace<TExtensions[K]>
+  }
 
 export interface DumpDataDirResult {
   tarball: Uint8Array
@@ -72,45 +80,49 @@ export interface PGliteOptions {
   fsBundle?: Blob | File
 }
 
-export type PGliteInterface = {
-  readonly waitReady: Promise<void>
-  readonly debug: DebugLevel
-  readonly ready: boolean
-  readonly closed: boolean
+export type PGliteInterface<T extends Extensions = Extensions> =
+  InitializedExtensions<T> & {
+    readonly waitReady: Promise<void>
+    readonly debug: DebugLevel
+    readonly ready: boolean
+    readonly closed: boolean
 
-  close(): Promise<void>
-  query<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>>
-  sql<T>(
-    sqlStrings: TemplateStringsArray,
-    ...params: any[]
-  ): Promise<Results<T>>
-  exec(query: string, options?: QueryOptions): Promise<Array<Results>>
-  transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
-  ): Promise<T | undefined>
-  execProtocolRaw(
-    message: Uint8Array,
-    options?: ExecProtocolOptions,
-  ): Promise<Uint8Array>
-  execProtocol(
-    message: Uint8Array,
-    options?: ExecProtocolOptions,
-  ): Promise<Array<[BackendMessage, Uint8Array]>>
-  listen(
-    channel: string,
-    callback: (payload: string) => void,
-  ): Promise<() => Promise<void>>
-  unlisten(channel: string, callback?: (payload: string) => void): Promise<void>
-  onNotification(
-    callback: (channel: string, payload: string) => void,
-  ): () => void
-  offNotification(callback: (channel: string, payload: string) => void): void
-  dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
-}
+    close(): Promise<void>
+    query<T>(
+      query: string,
+      params?: any[],
+      options?: QueryOptions,
+    ): Promise<Results<T>>
+    sql<T>(
+      sqlStrings: TemplateStringsArray,
+      ...params: any[]
+    ): Promise<Results<T>>
+    exec(query: string, options?: QueryOptions): Promise<Array<Results>>
+    transaction<T>(
+      callback: (tx: Transaction) => Promise<T>,
+    ): Promise<T | undefined>
+    execProtocolRaw(
+      message: Uint8Array,
+      options?: ExecProtocolOptions,
+    ): Promise<Uint8Array>
+    execProtocol(
+      message: Uint8Array,
+      options?: ExecProtocolOptions,
+    ): Promise<Array<[BackendMessage, Uint8Array]>>
+    listen(
+      channel: string,
+      callback: (payload: string) => void,
+    ): Promise<() => Promise<void>>
+    unlisten(
+      channel: string,
+      callback?: (payload: string) => void,
+    ): Promise<void>
+    onNotification(
+      callback: (channel: string, payload: string) => void,
+    ): () => void
+    offNotification(callback: (channel: string, payload: string) => void): void
+    dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
+  }
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions
   ? {
