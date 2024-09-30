@@ -73,9 +73,17 @@ export const BOOL = 16,
 
 export const types = {
   string: {
-    to: 0,
+    to: 25,
     from: [TEXT, VARCHAR, BPCHAR],
-    serialize: (x: string) => x,
+    serialize: (x: string | number) => {
+      if (typeof x === 'string') {
+        return x
+      } else if (typeof x === 'number') {
+        return x.toString()
+      } else {
+        throw new Error('Invalid input for string type')
+      }
+    },
     parse: (x: string) => x,
   },
   number: {
