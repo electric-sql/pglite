@@ -106,6 +106,7 @@
   },
   "browser": {
     "fs": false,
+    "fs/promises": false,
     "path": false,
     "url": false,
     "zlib": false,
