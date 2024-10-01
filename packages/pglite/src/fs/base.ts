@@ -1,4 +1,5 @@
-import type { PostgresMod, FS } from '../postgresMod.js'
+import type { PostgresMod } from '../postgresMod.js'
+import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 
 export const WASM_PREFIX = '/tmp/pglite'
@@ -22,25 +23,27 @@ export interface FilesystemFactory {
  */
 export interface Filesystem {
   /**
-   * Returns the options to pass to the emscripten module.
+   * Initiate the filesystem and return the options to pass to the emscripten module.
    */
-  emscriptenOpts(opts: Partial<PostgresMod>): Promise<Partial<PostgresMod>>
+  init(
+    pg: PGlite,
+    emscriptenOptions: Partial<PostgresMod>,
+  ): Promise<{ emscriptenOpts: Partial<PostgresMod> }>
 
   /**
    * Sync the filesystem to any underlying storage.
    */
-  syncToFs(mod: FS, relaxedDurability?: boolean): Promise<void>
+  syncToFs(relaxedDurability?: boolean): Promise<void>
 
   /**
    * Sync the filesystem from any underlying storage.
    */
-  initialSyncFs(FS: FS): Promise<void>
+  initialSyncFs(): Promise<void>
 
   /**
    * Dump the PGDATA dir from the filesystem to a gziped tarball.
    */
   dumpTar(
-    FS: FS,
     dbname: string,
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob>
@@ -48,7 +51,7 @@ export interface Filesystem {
   /**
    * Close the filesystem.
    */
-  closeFs(FS: FS): Promise<void>
+  closeFs(): Promise<void>
 }
 
 /**
@@ -56,27 +59,25 @@ export interface Filesystem {
  */
 export class EmscriptenBuiltinFilesystem implements Filesystem {
   protected dataDir?: string
+  protected pg?: PGlite
 
   constructor(dataDir?: string) {
     this.dataDir = dataDir
   }
 
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
-    return opts
+  async init(pg: PGlite, emscriptenOptions: Partial<PostgresMod>) {
+    this.pg = pg
+    return { emscriptenOpts: emscriptenOptions }
   }
 
-  async syncToFs(_mod: FS, _relaxedDurability?: boolean) {}
+  async syncToFs(_relaxedDurability?: boolean) {}
 
-  async initialSyncFs(_mod: FS) {}
+  async initialSyncFs() {}
 
-  async closeFs(_FS: FS) {}
+  async closeFs() {}
 
-  async dumpTar(
-    mod: FS,
-    dbname: string,
-    compression?: DumpTarCompressionOptions,
-  ) {
-    return dumpTar(mod, PGDATA, dbname, compression)
+  async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
+    return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
   }
 }
 
@@ -86,6 +87,7 @@ export class EmscriptenBuiltinFilesystem implements Filesystem {
  */
 export abstract class BaseFilesystem implements Filesystem {
   protected dataDir?: string
+  protected pg?: PGlite
   readonly debug: boolean
 
   constructor(dataDir?: string, { debug = false }: { debug?: boolean } = {}) {
@@ -93,25 +95,22 @@ export abstract class BaseFilesystem implements Filesystem {
     this.debug = debug
   }
 
-  async syncToFs(_mod: FS, _relaxedDurability?: boolean) {}
+  async syncToFs(_relaxedDurability?: boolean) {}
 
-  async initialSyncFs(_mod: FS) {}
+  async initialSyncFs() {}
 
-  async closeFs(_FS: FS) {}
+  async closeFs() {}
 
-  async dumpTar(
-    mod: FS,
-    dbname: string,
-    compression?: DumpTarCompressionOptions,
-  ) {
-    return dumpTar(mod, PGDATA, dbname, compression)
+  async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
+    return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
   }
 
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
+  async init(pg: PGlite, emscriptenOptions: Partial<PostgresMod>) {
+    this.pg = pg
     const options: Partial<PostgresMod> = {
-      ...opts,
+      ...emscriptenOptions,
       preRun: [
-        ...(opts.preRun || []),
+        ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
           const OPFS = createEmscriptenFS(mod, this)
           mod.FS.mkdir(PGDATA)
@@ -119,7 +118,7 @@ export abstract class BaseFilesystem implements Filesystem {
         },
       ],
     }
-    return options
+    return { emscriptenOpts: options }
   }
 
   // Filesystem API

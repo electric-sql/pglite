@@ -1,5 +1,6 @@
 import { BaseFilesystem, ERRNO_CODES, type FsStats } from './base.js'
-import type { PostgresMod, FS } from '../postgresMod.js'
+import type { PostgresMod } from '../postgresMod.js'
+import { PGlite } from '../pglite.js'
 
 export interface OpfsAhpOptions {
   initialPoolSize?: number
@@ -105,12 +106,12 @@ export class OpfsAhpFS extends BaseFilesystem {
     this.maintainedPoolSize = maintainedPoolSize
   }
 
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
+  async init(pg: PGlite, opts: Partial<PostgresMod>) {
     await this.#init()
-    return super.emscriptenOpts(opts)
+    return super.init(pg, opts)
   }
 
-  async syncToFs(_fs: FS, relaxedDurability = false) {
+  async syncToFs(relaxedDurability = false) {
     await this.maybeCheckpointState()
     await this.maintainPool()
     if (!relaxedDurability) {
@@ -118,13 +119,13 @@ export class OpfsAhpFS extends BaseFilesystem {
     }
   }
 
-  async closeFs(FS: FS): Promise<void> {
+  async closeFs(): Promise<void> {
     for (const sh of this.#sh.values()) {
       sh.close()
     }
     this.#stateSH.flush()
     this.#stateSH.close()
-    FS.quit()
+    this.pg!.Module.FS.quit()
   }
 
   async #init() {

@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
-import type { PostgresMod, FS } from '../postgresMod.js'
+import type { PostgresMod } from '../postgresMod.js'
+import { PGlite } from '../pglite.js'
 
 export class NodeFS extends EmscriptenBuiltinFilesystem {
   protected rootDir: string
@@ -14,7 +15,8 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
     }
   }
 
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
+  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+    this.pg = pg
     const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
@@ -26,10 +28,10 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
         },
       ],
     }
-    return options
+    return { emscriptenOpts: options }
   }
 
-  async closeFs(FS: FS): Promise<void> {
-    FS.quit()
+  async closeFs(): Promise<void> {
+    this.pg!.Module.FS.quit()
   }
 }

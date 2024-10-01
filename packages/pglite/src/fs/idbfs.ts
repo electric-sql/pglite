@@ -1,8 +1,10 @@
 import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
-import type { FS, PostgresMod } from '../postgresMod.js'
+import type { PostgresMod } from '../postgresMod.js'
+import { PGlite } from '../pglite.js'
 
 export class IdbFs extends EmscriptenBuiltinFilesystem {
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
+  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+    this.pg = pg
     const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
@@ -21,12 +23,12 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
         },
       ],
     }
-    return options
+    return { emscriptenOpts: options }
   }
 
-  initialSyncFs(fs: FS) {
+  initialSyncFs() {
     return new Promise<void>((resolve, reject) => {
-      fs.syncfs(true, (err: any) => {
+      this.pg!.Module.FS.syncfs(true, (err: any) => {
         if (err) {
           reject(err)
         } else {
@@ -36,9 +38,9 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
     })
   }
 
-  syncToFs(fs: FS, _relaxedDurability?: boolean) {
+  syncToFs(_relaxedDurability?: boolean) {
     return new Promise<void>((resolve, reject) => {
-      fs.syncfs(false, (err: any) => {
+      this.pg!.Module.FS.syncfs(false, (err: any) => {
         if (err) {
           reject(err)
         } else {
@@ -48,16 +50,16 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
     })
   }
 
-  async closeFs(FS: FS): Promise<void> {
+  async closeFs(): Promise<void> {
     // IDBDatabase.close() method is essentially async, but returns immediately,
     // the database will be closed when all transactions are complete.
     // This needs to be handled in application code if you want to delete the
     // database after it has been closed. If you try to delete the database
     // before it has fully closed it will throw a blocking error.
-    const indexedDb = FS.filesystems.IDBFS.dbs[this.dataDir!]
+    const indexedDb = this.pg!.Module.FS.filesystems.IDBFS.dbs[this.dataDir!]
     if (indexedDb) {
       indexedDb.close()
     }
-    FS.quit()
+    this.pg!.Module.FS.quit()
   }
 }
