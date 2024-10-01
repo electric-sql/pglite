@@ -2,9 +2,15 @@ import type { FsType, Filesystem } from './base.js'
 import { IdbFs } from './idbfs.js'
 import { MemoryFS } from './memoryfs.js'
 
-export type * from './base.js'
-
-export { PGDATA, WASM_PREFIX } from './base.js'
+export {
+  BaseFilesystem,
+  ERRNO_CODES,
+  PGDATA,
+  WASM_PREFIX,
+  type Filesystem,
+  type FsType,
+  type FsStats,
+} from './base.js'
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType

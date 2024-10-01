@@ -12,10 +12,6 @@ export type FsType =
   | 'opfs-worker'
   | 'opfs-ahp'
 
-export interface FilesystemFactory {
-  new (dataDir: string): Filesystem
-}
-
 /**
  * Filesystem interface.
  * All virtual filesystems that are compatible with PGlite must implement
@@ -250,10 +246,7 @@ export const ERRNO_CODES = {
  * @param baseFS The BaseFilesystem implementation
  * @returns The emscripten filesystem
  */
-export const createEmscriptenFS = (
-  Module: PostgresMod,
-  baseFS: BaseFilesystem,
-) => {
+const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
   const FS = Module.FS as EmscriptenFS
   const log = baseFS.debug ? console.log : null
   const EMFS = {
