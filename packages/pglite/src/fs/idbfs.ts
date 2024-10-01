@@ -1,9 +1,7 @@
-import { FilesystemBase } from './types.js'
+import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
 import type { FS, PostgresMod } from '../postgresMod.js'
-import { PGDATA } from './index.js'
-import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 
-export class IdbFs extends FilesystemBase {
+export class IdbFs extends EmscriptenBuiltinFilesystem {
   async emscriptenOpts(opts: Partial<PostgresMod>) {
     const options: Partial<PostgresMod> = {
       ...opts,
@@ -50,15 +48,7 @@ export class IdbFs extends FilesystemBase {
     })
   }
 
-  async dumpTar(
-    mod: FS,
-    dbname: string,
-    compression?: DumpTarCompressionOptions,
-  ) {
-    return dumpTar(mod, dbname, compression)
-  }
-
-  async close(FS: FS): Promise<void> {
+  async closeFs(FS: FS): Promise<void> {
     // IDBDatabase.close() method is essentially async, but returns immediately,
     // the database will be closed when all transactions are complete.
     // This needs to be handled in application code if you want to delete the

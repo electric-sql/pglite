@@ -1,22 +1,13 @@
-import { FilesystemBase } from './types.js'
+import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod, FS } from '../postgresMod.js'
-import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 
-export class MemoryFS extends FilesystemBase {
+export class MemoryFS extends EmscriptenBuiltinFilesystem {
   async emscriptenOpts(opts: Partial<PostgresMod>) {
     // Nothing to do for memoryfs
     return opts
   }
 
-  async dumpTar(
-    mod: FS,
-    dbname: string,
-    compression?: DumpTarCompressionOptions,
-  ) {
-    return dumpTar(mod, dbname, compression)
-  }
-
-  async close(FS: FS): Promise<void> {
+  async closeFs(FS: FS): Promise<void> {
     FS.quit()
   }
 }

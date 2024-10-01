@@ -348,7 +348,7 @@ export class PGlite
         throw new Error('Database already exists, cannot load from tarball')
       }
       this.#log('pglite: loading data from tarball')
-      await loadTar(this.mod.FS, options.loadDataDir)
+      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
     }
 
     // Check and log if the database exists
@@ -472,7 +472,7 @@ export class PGlite
     }
 
     // Close the filesystem
-    await this.fs!.close(this.mod!.FS)
+    await this.fs!.closeFs(this.mod!.FS)
 
     this.#closed = true
     this.#closing = false

@@ -50,9 +50,9 @@
       "types": "./dist/fs/nodefs.d.ts"
     },
     "./opfs-ahp": {
-      "import": "./dist/fs/opfs-ahp/index.js",
-      "require": "./dist/fs/opfs-ahp/index.cjs",
-      "types": "./dist/fs/opfs-ahp/index.d.ts"
+      "import": "./dist/fs/opfs-ahp.js",
+      "require": "./dist/fs/opfs-ahp.cjs",
+      "types": "./dist/fs/opfs-ahp.d.ts"
     },
     "./contrib/*": {
       "import": "./dist/contrib/*.js",

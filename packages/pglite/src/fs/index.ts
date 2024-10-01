@@ -1,11 +1,10 @@
-import type { FsType, Filesystem } from './types.js'
+import type { FsType, Filesystem } from './base.js'
 import { IdbFs } from './idbfs.js'
 import { MemoryFS } from './memoryfs.js'
 
-export type * from './types.js'
+export type * from './base.js'
 
-export const WASM_PREFIX = '/tmp/pglite'
-export const PGDATA = WASM_PREFIX + '/' + 'base'
+export { PGDATA, WASM_PREFIX } from './base.js'
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType
@@ -44,7 +43,7 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     fs = new IdbFs(dataDir)
   } else if (dataDir && fsType === 'opfs-ahp') {
     // Lazy load the opfs-ahp to so that it's optional in the bundle
-    const { OpfsAhpFS } = await import('./opfs-ahp/index.js')
+    const { OpfsAhpFS } = await import('./opfs-ahp.js')
     fs = new OpfsAhpFS(dataDir)
   } else {
     fs = new MemoryFS()
