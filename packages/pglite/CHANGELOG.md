@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.2.10
+
+### Patch Changes
+
+- 3113d56: Add `fs/promises: false` to the browser config in package.json to exclude it from browser builds.
+- 23cd31a: Improve type serialization so it matches exceptions from other libraries
+
 ## 0.2.9
 
 ### Patch Changes
