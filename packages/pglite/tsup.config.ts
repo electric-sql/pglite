@@ -25,6 +25,8 @@ const entryPoints = [
   'src/live/index.ts',
   'src/vector/index.ts',
   'src/worker/index.ts',
+  'src/sync-fetch/node.ts',
+  'src/sync-fetch/node-worker.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

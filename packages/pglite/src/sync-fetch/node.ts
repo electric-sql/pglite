@@ -1,12 +1,12 @@
 import { Worker } from 'worker_threads'
+import type { SyncFetch } from './types.js'
 
 const CHUNK_SIZE = 64 * 1024 // 64KB
 
-// Helper function to run the worker synchronously and receive data chunks
-export function runSyncFetch(
+export const syncFetchNode: SyncFetch = (
   url: string,
   range?: { start: number; end: number },
-): Uint8Array {
+): Uint8Array => {
   // Shared buffer for communication (chunk size + sync flag)
   const sharedBuffer = new SharedArrayBuffer(CHUNK_SIZE + 4) // 4 extra bytes for synchronization
   const int32View = new Int32Array(sharedBuffer, 0, 1) // Used for synchronization

@@ -11,7 +11,7 @@ worker({
       // debug: 1,
       fs: new HttpFs("/pglite/examples/pgdata", { 
         // debug: true 
-        fetchGranularity: 'file', // 'file' or 'page'
+        fetchGranularity: 'page', // 'file' or 'page'
       }),
     });
     console.log("PGlite initialized in", performance.now() - start, "ms");

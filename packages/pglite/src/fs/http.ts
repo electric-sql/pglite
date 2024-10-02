@@ -2,6 +2,7 @@ import type { PGlite } from '../pglite.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { BaseFilesystem, FsStats, ERRNO_CODES } from './base.js'
 import type { TarIndex, TarIndexFile } from './tarUtils.js'
+import { makeSyncFetch, type SyncFetch } from '../sync-fetch/index.js'
 
 type Node = TarIndexFile & {
   isDir: boolean
@@ -40,6 +41,7 @@ export class HttpFs extends BaseFilesystem {
   #handleMap: Map<number, Node> = new Map()
   #handleCounter = 0
   fetchGranularity: FetchGranularity
+  fetch?: SyncFetch
 
   constructor(
     baseUrl: string,
@@ -51,6 +53,7 @@ export class HttpFs extends BaseFilesystem {
 
   async init(pg: PGlite, opts: Partial<PostgresMod>) {
     await this.#init()
+    this.fetch = await makeSyncFetch()
     return super.init(pg, opts)
   }
 
@@ -188,6 +191,7 @@ export class HttpFs extends BaseFilesystem {
         `${this.dataDir}${path}`,
         node.size,
         this.fetchGranularity === 'file' || fileToFullyLoad.has(path),
+        this.fetch!,
       )
     } else if (!node.data) {
       node.data = new Filelike(new Uint8Array())
@@ -450,18 +454,25 @@ class HttpFilelike implements FilelikeInterface {
   private url: string
   private length: number
   private fullyLoad: boolean
+  private fetch: SyncFetch
 
-  constructor(url: string, length: number, fullyLoad: boolean) {
+  constructor(
+    url: string,
+    length: number,
+    fullyLoad: boolean,
+    fetch: SyncFetch,
+  ) {
     this.url = url
     this.length = length
     this.fullyLoad = fullyLoad
+    this.fetch = fetch
   }
 
   load() {
     if (this.data) {
       return
     }
-    this.data = syncFetch(this.url)
+    this.data = this.fetch(this.url)
   }
 
   read(
@@ -483,7 +494,7 @@ class HttpFilelike implements FilelikeInterface {
       }
       const end = Math.min(this.length, position + length) - 1
       const range = { start: position, end }
-      const data = syncFetch(this.url, range)
+      const data = this.fetch(this.url, range)
       buffer.set(data, offset)
       bytesRead = data.length
     } else {
@@ -627,21 +638,4 @@ class FsError extends Error {
       this.code = ERRNO_CODES[code]
     }
   }
-}
-
-function syncFetch(
-  url: string,
-  range?: { start: number; end: number },
-): Uint8Array {
-  const xhr = new XMLHttpRequest()
-  xhr.open('GET', url, false)
-  if (range) {
-    xhr.setRequestHeader('Range', `bytes=${range.start}-${range.end}`)
-  }
-  xhr.responseType = 'arraybuffer'
-  xhr.send(null)
-  if (xhr.status !== 200 && xhr.status !== 206) {
-    throw new Error('Failed to load file')
-  }
-  return new Uint8Array(xhr.response)
 }
