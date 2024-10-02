@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite Worker Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite/worker": "../dist/worker/index.js"
+        }
+      }
+    </script>
+  </head>
+<body>
+<h1>PGlite HTTP FS Example</h1>
+<div class="script-plus-log">
+<div class="scripts">
+<h2>Worker Thread - <code>httpfs-worker.js</code></h2>
+<div class="script" rel="./httpfs-worker.js"></div>
+<h2>Main Thread</h2>
+<script type="module">
+import { PGliteWorker } from "@electric-sql/pglite/worker";
+
+const pg = await PGliteWorker.create(
+  new Worker(new URL("./httpfs-worker.js", import.meta.url), {
+    type: "module",
+  })
+);
+
+const start = performance.now();
+console.log("Selecting data...");
+const res = await pg.exec(`
+  SELECT * FROM test;
+`);
+console.log(res);
+console.log("Query Took", performance.now() - start, "ms");
+
+const start2 = performance.now();
+console.log("Selecting data2...");
+const res2 = await pg.exec(`
+  SELECT * FROM test;
+`);
+console.log(res2);
+console.log("Query Took", performance.now() - start2, "ms");
+
+const start3 = performance.now();
+console.log("Selecting data3...");
+const res3 = await pg.exec(`
+  SELECT * FROM test;
+`);
+console.log(res3);
+console.log("Query Took", performance.now() - start3, "ms");
+</script>
+</div>
+<div id="log"></div>
+</div>
+</body>
+</html>

@@ -3,6 +3,18 @@ import type { FS } from '../postgresMod.js'
 
 export type DumpTarCompressionOptions = 'none' | 'gzip' | 'auto'
 
+export type TarIndex = {
+  files: TarIndexFile[]
+}
+
+export type TarIndexFile = {
+  name: string
+  mode: number
+  size: number
+  type: number
+  modifyTime: number
+}
+
 export async function dumpTar(
   FS: FS,
   pgDataDir: string,
@@ -49,6 +61,10 @@ export async function loadTar(
 
   const files = untar(tarball)
   for (const file of files) {
+    if (file.name === 'index.json') {
+      // Skip the index.json file
+      continue
+    }
     const filePath = pgDataDir + file.name
 
     // Ensure the directory structure exists
@@ -107,7 +123,32 @@ function readDirectory(FS: FS, path: string) {
 }
 
 export function createTarball(FS: FS, directoryPath: string) {
-  const files = readDirectory(FS, directoryPath)
+  const files = readDirectory(FS, directoryPath).filter(
+    (file) => file.name !== 'index.json',
+  )
+
+  // Create an index.json file with the list of files in the tarball
+  // This is used by the HTTP VFS to provide a list of files to the client that
+  // can be downloaded.
+  const index: TarIndex = {
+    files: files.map((file) => ({
+      name: file.name,
+      mode: file.mode!,
+      size: file.size!,
+      type: file.type!,
+      modifyTime: dateToUnixTimestamp(file.modifyTime),
+    })),
+  }
+  const indexData = new TextEncoder().encode(JSON.stringify(index))
+  files.push({
+    name: 'index.json',
+    mode: 33184,
+    size: indexData.length,
+    type: REGTYPE,
+    modifyTime: dateToUnixTimestamp(new Date()),
+    data: indexData,
+  })
+
   const tarball = tar(files)
   return tarball
 }

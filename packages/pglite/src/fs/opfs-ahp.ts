@@ -424,6 +424,7 @@ export class OpfsAhpFS extends BaseFilesystem {
   }
 
   readdir(path: string): string[] {
+    console.log('readdir', path)
     const node = this.#resolvePath(path)
     if (node.type !== 'directory') {
       throw new FsError('ENOTDIR', 'Not a directory')

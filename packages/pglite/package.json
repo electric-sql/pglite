@@ -54,6 +54,11 @@
       "require": "./dist/fs/opfs-ahp.cjs",
       "types": "./dist/fs/opfs-ahp.d.ts"
     },
+    "./httpfs": {
+      "import": "./dist/fs/http.js",
+      "require": "./dist/fs/http.cjs",
+      "types": "./dist/fs/http.d.ts"
+    },
     "./contrib/*": {
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs",
