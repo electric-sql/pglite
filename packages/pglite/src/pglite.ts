@@ -1,27 +1,32 @@
 import { Mutex } from 'async-mutex'
-import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
-import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
-import { instantiateWasm, getFsBundle, startWasmDownload } from './utils.js'
-import type {
-  DebugLevel,
-  PGliteOptions,
-  PGliteInterface,
-  ExecProtocolOptions,
-  PGliteInterfaceExtensions,
-  Extensions,
-} from './interface.js'
 import { BasePGlite } from './base.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
-import { loadTar, DumpTarCompressionOptions } from './fs/tarUtils.js'
-import { PGDATA, WASM_PREFIX } from './fs/index.js'
+import {
+  type Filesystem,
+  loadFs,
+  parseDataDir,
+  PGDATA,
+  WASM_PREFIX,
+} from './fs/index.js'
+import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
+import type {
+  DebugLevel,
+  ExecProtocolOptions,
+  Extensions,
+  PGliteInterface,
+  PGliteInterfaceExtensions,
+  PGliteOptions,
+} from './interface.js'
+import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
+import { getFsBundle, instantiateWasm, startWasmDownload } from './utils.js'
 
 // Importing the source as the built version is not ESM compatible
-import { serialize, Parser as ProtocolParser } from '@electric-sql/pg-protocol'
+import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
 import {
   BackendMessage,
+  CommandCompleteMessage,
   DatabaseError,
   NoticeMessage,
-  CommandCompleteMessage,
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
@@ -136,10 +141,10 @@ export class PGlite
     options?: O,
   ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>>
 
-  static async create<O extends PGliteOptions>(
-    dataDirOrPGliteOptions?: string | O,
-    options?: O,
-  ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>> {
+  static async create<TExtensions extends Extensions = Extensions>(
+    dataDirOrPGliteOptions?: string | PGliteOptions<TExtensions>,
+    options?: PGliteOptions<TExtensions>,
+  ): Promise<PGlite & PGliteInterface<TExtensions>> {
     const resolvedOpts: PGliteOptions =
       typeof dataDirOrPGliteOptions === 'string'
         ? {
