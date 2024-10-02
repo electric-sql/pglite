@@ -461,15 +461,7 @@ class HttpFilelike implements FilelikeInterface {
     if (this.data) {
       return
     }
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', this.url, false)
-    xhr.responseType = 'arraybuffer'
-    xhr.send(null)
-    if (xhr.status === 200) {
-      this.data = new Uint8Array(xhr.response)
-    } else {
-      throw new Error('Failed to load file')
-    }
+    this.data = syncFetch(this.url)
   }
 
   read(
@@ -489,21 +481,11 @@ class HttpFilelike implements FilelikeInterface {
       if (position >= this.length) {
         return 0
       }
-
       const end = Math.min(this.length, position + length) - 1
-      const xhr = new XMLHttpRequest()
-      xhr.open('GET', this.url, false)
-      xhr.responseType = 'arraybuffer'
-      xhr.setRequestHeader('Range', `bytes=${position}-${end}`)
-      xhr.send(null)
-
-      if (xhr.status === 206) {
-        const data = new Uint8Array(xhr.response)
-        buffer.set(data, offset)
-        bytesRead = data.length
-      } else {
-        throw new Error('Failed to load file')
-      }
+      const range = { start: position, end }
+      const data = syncFetch(this.url, range)
+      buffer.set(data, offset)
+      bytesRead = data.length
     } else {
       const bytesToRead = Math.min(length, this.length - position)
       buffer.set(this.data.slice(position, position + bytesToRead), offset)
@@ -645,4 +627,21 @@ class FsError extends Error {
       this.code = ERRNO_CODES[code]
     }
   }
+}
+
+function syncFetch(
+  url: string,
+  range?: { start: number; end: number },
+): Uint8Array {
+  const xhr = new XMLHttpRequest()
+  xhr.open('GET', url, false)
+  if (range) {
+    xhr.setRequestHeader('Range', `bytes=${range.start}-${range.end}`)
+  }
+  xhr.responseType = 'arraybuffer'
+  xhr.send(null)
+  if (xhr.status !== 200 && xhr.status !== 206) {
+    throw new Error('Failed to load file')
+  }
+  return new Uint8Array(xhr.response)
 }
