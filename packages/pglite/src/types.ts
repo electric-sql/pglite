@@ -73,7 +73,7 @@ export const BOOL = 16,
 
 export const types = {
   string: {
-    to: 25,
+    to: TEXT,
     from: [TEXT, VARCHAR, BPCHAR],
     serialize: (x: string | number) => {
       if (typeof x === 'string') {
