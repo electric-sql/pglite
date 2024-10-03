@@ -3,7 +3,7 @@ import { Results } from '@electric-sql/pglite'
 import { usePGlite } from './provider'
 import { query as buildQuery } from '@electric-sql/pglite/template'
 
-function arrayEqual(a1: any[], a2: any[]) {
+function arrayEqual(a1: unknown[], a2: unknown[]) {
   if (a1.length !== a2.length) return false
   for (let i = 0; i < a1.length; i++) {
     if (Object.is(a1[i], a2[i])) {
@@ -24,9 +24,10 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   // We manually check for changes to params so that we can support as change to the
   // number of params
   const paramsRef = useRef<unknown[] | undefined | null>(params)
-  if (!arrayEqual(paramsRef.current as any[], params as any[])) {
+  if (!arrayEqual(paramsRef.current as unknown[], params as unknown[])) {
     paramsRef.current = params
   }
+  const currentParams = paramsRef.current
 
   useEffect(() => {
     let cancelled = false
@@ -36,14 +37,14 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     }
     const ret =
       key !== undefined
-        ? db.live.incrementalQuery<T>(query, params, key, cb)
-        : db.live.query<T>(query, params, cb)
+        ? db.live.incrementalQuery<T>(query, currentParams, key, cb)
+        : db.live.query<T>(query, currentParams, cb)
 
     return () => {
       cancelled = true
       ret.then(({ unsubscribe }) => unsubscribe())
     }
-  }, [db, key, query, paramsRef.current])
+  }, [db, key, query, currentParams])
   return (
     results && {
       rows: results.rows,
