@@ -1,0 +1,20 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.PGliteRepl-root {
+  height: 60vh;
+  width: 100%;
+  text-align: left;
+}
+
+.intro {
+  max-width: 60rem;
+}
