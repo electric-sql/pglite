@@ -1,6 +1,6 @@
 import { PGlite } from "../dist/index.js";
 import { worker } from "../dist/worker/index.js";
-import { HttpFs } from "../dist/fs/http.js";
+import { HttpFs } from "../dist/fs/http/browser.js";
 
 console.log("Starting worker...");
 

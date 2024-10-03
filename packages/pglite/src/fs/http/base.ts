@@ -1,8 +1,8 @@
-import type { PGlite } from '../pglite.js'
-import type { PostgresMod } from '../postgresMod.js'
-import { BaseFilesystem, FsStats, ERRNO_CODES } from './base.js'
-import type { TarIndex, TarIndexFile } from './tarUtils.js'
-import { makeSyncFetch, type SyncFetch } from '../sync-fetch/index.js'
+import type { PGlite } from '../../pglite.js'
+import type { PostgresMod } from '../../postgresMod.js'
+import { SyncFetch } from '../../sync-fetch/index.js'
+import { BaseFilesystem, FsStats, ERRNO_CODES } from '../base.js'
+import type { TarIndex, TarIndexFile } from '../tarUtils.js'
 
 type Node = TarIndexFile & {
   isDir: boolean
@@ -34,14 +34,14 @@ export interface HttpFsOptions {
  * Requires an index.json file at the root of the filesystem with a list of
  * files available to fetch
  */
-export class HttpFs extends BaseFilesystem {
+export abstract class HttpFsBase extends BaseFilesystem {
   index?: TarIndex
   tree?: Node
   httpPaths = new Set<string>()
   #handleMap: Map<number, Node> = new Map()
   #handleCounter = 0
   fetchGranularity: FetchGranularity
-  fetch?: SyncFetch
+  abstract fetch: SyncFetch
 
   constructor(
     baseUrl: string,
@@ -53,7 +53,6 @@ export class HttpFs extends BaseFilesystem {
 
   async init(pg: PGlite, opts: Partial<PostgresMod>) {
     await this.#init()
-    this.fetch = await makeSyncFetch()
     return super.init(pg, opts)
   }
 

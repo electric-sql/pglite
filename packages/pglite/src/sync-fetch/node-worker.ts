@@ -1,7 +1,6 @@
 import { workerData } from 'worker_threads'
 import * as http from 'http'
 import * as https from 'https'
-import { URL } from 'url'
 
 function fetch(
   url: string,

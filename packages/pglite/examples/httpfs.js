@@ -1,5 +1,5 @@
 import { PGlite } from "../dist/index.js";
-import { HttpFs } from "../dist/fs/http.js";
+import { HttpFs } from "../dist/fs/http/node.js";
 
 console.log("Starting PGLite...");
 const pg = await PGlite.create({
