@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="svg">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="rect" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:attribute name="x" type="xs:integer" use="required" />
+                        <xs:attribute name="y" type="xs:integer" use="required" />
+                        <xs:attribute name="width" type="xs:integer" use="required" />
+                        <xs:attribute name="height" type="xs:integer" use="required" />
+                        <xs:attribute name="rx" type="xs:integer" use="required" />
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="fill" use="required" />
+            <xs:attribute name="width" type="xs:integer" use="required" />
+            <xs:attribute name="height" type="xs:integer" use="required" />
+            <xs:attribute name="viewBox" use="required" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
