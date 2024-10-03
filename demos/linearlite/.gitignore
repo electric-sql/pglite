@@ -1,0 +1,3 @@
+dist
+.env.local
+db/data/
