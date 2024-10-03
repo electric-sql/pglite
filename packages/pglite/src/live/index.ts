@@ -12,6 +12,13 @@ import type {
 } from './interface'
 import { uuid, formatQuery } from '../utils.js'
 
+export type {
+  LiveNamespace,
+  LiveQueryReturn,
+  LiveChangesReturn,
+  Change,
+} from './interface.js'
+
 const MAX_RETRIES = 5
 
 const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
