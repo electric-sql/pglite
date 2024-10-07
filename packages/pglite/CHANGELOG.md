@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.2.11
+
+### Patch Changes
+
+- 2aed553: Bump Emscripten to 3.1.68. Fixes issue #328 where some bundlers would fail to build with a "Failed to resolve './' from './node_modules/@electric-sql/pglite/dist/postgres.js'" error.
+
 ## 0.2.10
 
 ### Patch Changes

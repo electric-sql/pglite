@@ -1,5 +1,12 @@
 # @electric-sql/pglite-sync
 
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies [2aed553]
+  - @electric-sql/pglite@0.2.11
+
 ## 0.2.11
 
 ### Patch Changes
