@@ -1,12 +1,16 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Results } from '@electric-sql/pglite'
 import { usePGlite } from './provider'
 import { query as buildQuery } from '@electric-sql/pglite/template'
 
-function arrayEqual(a1: unknown[], a2: unknown[]) {
-  if (a1.length !== a2.length) return false
-  for (let i = 0; i < a1.length; i++) {
-    if (Object.is(a1[i], a2[i])) {
+function paramsEqual(
+  a1: unknown[] | undefined | null,
+  a2: unknown[] | undefined | null,
+) {
+  if (!a1 && !a2) return true
+  if (a1?.length !== a2?.length) return false
+  for (let i = 0; i < a1!.length; i++) {
+    if (!Object.is(a1![i], a2![i])) {
       return false
     }
   }
@@ -20,14 +24,15 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 ): Omit<Results<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const [results, setResults] = useState<Results<T>>()
+  const [currentParams, setCurrentParams] = useState(params)
 
-  // We manually check for changes to params so that we can support as change to the
-  // number of params
-  const paramsRef = useRef<unknown[] | undefined | null>(params)
-  if (!arrayEqual(paramsRef.current as unknown[], params as unknown[])) {
-    paramsRef.current = params
-  }
-  const currentParams = paramsRef.current
+  useEffect(
+    () =>
+      setCurrentParams((currentParams) =>
+        !paramsEqual(currentParams, params) ? params : currentParams,
+      ),
+    [params],
+  )
 
   useEffect(() => {
     let cancelled = false
