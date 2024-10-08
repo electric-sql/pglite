@@ -9,7 +9,6 @@ export type FsType =
   | 'nodefs'
   | 'idbfs'
   | 'memoryfs'
-  | 'opfs-worker'
   | 'opfs-ahp'
 
 /**
@@ -108,9 +107,9 @@ export abstract class BaseFilesystem implements Filesystem {
       preRun: [
         ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
-          const OPFS = createEmscriptenFS(mod, this)
+          const EMFS = createEmscriptenFS(mod, this)
           mod.FS.mkdir(PGDATA)
-          mod.FS.mount(OPFS, {}, PGDATA)
+          mod.FS.mount(EMFS, {}, PGDATA)
         },
       ],
     }
@@ -131,7 +130,7 @@ export abstract class BaseFilesystem implements Filesystem {
   abstract readdir(path: string): string[]
   abstract read(
     fd: number,
-    buffer: Int8Array, // Buffer to read into
+    buffer: Uint8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
@@ -146,12 +145,12 @@ export abstract class BaseFilesystem implements Filesystem {
   abstract utimes(path: string, atime: number, mtime: number): void
   abstract writeFile(
     path: string,
-    data: string | Int8Array,
+    data: string | Uint8Array,
     options?: { encoding?: string; mode?: number; flag?: string },
   ): void
   abstract write(
     fd: number,
-    buffer: Int8Array, // Buffer to read from
+    buffer: Uint8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
@@ -444,7 +443,7 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
         const ret = EMFS.tryFSOperation(() =>
           baseFS.read(
             stream.nfd!,
-            buffer as unknown as Int8Array,
+            buffer as unknown as Uint8Array,
             offset,
             length,
             position,
@@ -469,7 +468,7 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
         return EMFS.tryFSOperation(() =>
           baseFS.write(
             stream.nfd!,
-            buffer.buffer as unknown as Int8Array,
+            buffer.buffer as unknown as Uint8Array,
             offset,
             length,
             position,

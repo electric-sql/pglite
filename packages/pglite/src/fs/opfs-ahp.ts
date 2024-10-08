@@ -433,7 +433,7 @@ export class OpfsAhpFS extends BaseFilesystem {
 
   read(
     fd: number,
-    buffer: Int8Array, // Buffer to read into
+    buffer: Uint8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
@@ -444,7 +444,7 @@ export class OpfsAhpFS extends BaseFilesystem {
       throw new FsError('EISDIR', 'Is a directory')
     }
     const sh = this.#sh.get(node.backingFilename)!
-    return sh.read(new Int8Array(buffer.buffer, offset, length), {
+    return sh.read(new Uint8Array(buffer.buffer, offset, length), {
       at: position,
     })
   }
@@ -561,7 +561,7 @@ export class OpfsAhpFS extends BaseFilesystem {
 
   writeFile(
     path: string,
-    data: string | Int8Array,
+    data: string | Uint8Array,
     options?: { encoding?: string; mode?: number; flag?: string },
   ): void {
     const pathParts = this.#pathParts(path)
@@ -598,7 +598,7 @@ export class OpfsAhpFS extends BaseFilesystem {
       sh.write(
         typeof data === 'string'
           ? new TextEncoder().encode(data)
-          : new Int8Array(data),
+          : new Uint8Array(data),
         { at: 0 },
       )
       if (path.startsWith('/pg_wal')) {
@@ -627,7 +627,7 @@ export class OpfsAhpFS extends BaseFilesystem {
 
   write(
     fd: number,
-    buffer: Int8Array, // Buffer to read from
+    buffer: Uint8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
@@ -641,7 +641,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     if (!sh) {
       throw new FsError('EBADF', 'Bad file descriptor')
     }
-    const ret = sh.write(new Int8Array(buffer, offset, length), {
+    const ret = sh.write(new Uint8Array(buffer, offset, length), {
       at: position,
     })
     if (path.startsWith('/pg_wal')) {
