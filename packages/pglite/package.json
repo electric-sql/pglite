@@ -54,6 +54,16 @@
       "require": "./dist/fs/opfs-ahp.cjs",
       "types": "./dist/fs/opfs-ahp.d.ts"
     },
+    "./httpfs/browser": {
+      "import": "./dist/fs/http/browser.js",
+      "require": "./dist/fs/http/browser.cjs",
+      "types": "./dist/fs/http/browser.d.ts"
+    },
+    "./httpfs/node": {
+      "import": "./dist/fs/http/node.js",
+      "require": "./dist/fs/http/node.cjs",
+      "types": "./dist/fs/http/node.d.ts"
+    },
     "./contrib/*": {
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs",
@@ -115,6 +125,9 @@
     "crypto": false,
     "ws": false,
     "child_process": false,
-    "module": false
+    "module": false,
+    "worker_threads": false,
+    "http": false,
+    "https": false
   }
 }

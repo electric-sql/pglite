@@ -742,6 +742,8 @@ export class PGlite
   async dumpDataDir(
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob> {
+    // Do a CHECKPOINT before dumping the database to ensure that the WAL is applied
+    await this.exec(`CHECKPOINT`)
     const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
     return this.fs!.dumpTar(dbname, compression)
   }

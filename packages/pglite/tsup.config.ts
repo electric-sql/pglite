@@ -20,10 +20,14 @@ const entryPoints = [
   'src/index.ts',
   'src/fs/nodefs.ts',
   'src/fs/opfs-ahp.ts',
+  'src/fs/http/browser.ts',
+  'src/fs/http/node.ts',
   'src/templating.ts',
   'src/live/index.ts',
   'src/vector/index.ts',
   'src/worker/index.ts',
+  'src/sync-fetch/node.ts',
+  'src/sync-fetch/node-worker.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')
