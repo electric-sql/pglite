@@ -241,11 +241,6 @@ export class PGlite
       },
       preRun: [
         (mod: any) => {
-          console.log('preRun: clearing socket files')
-          this.#clearSocketFiles(mod)
-          console.log('preRun: socket files cleared')
-        },
-        (mod: any) => {
           // Register /dev/blob device
           // This is used to read and write blobs when used in COPY TO/FROM
           // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
@@ -375,11 +370,6 @@ export class PGlite
       await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
     }
 
-    // Clear the socket files
-    console.log('init: clearing socket files')
-    this.#clearSocketFiles()
-    console.log('init: socket files cleared')
-
     // Check and log if the database exists
     if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
       this.#log('pglite: found DB, resuming')
@@ -451,23 +441,6 @@ export class PGlite
     // Init extensions
     for (const initFn of extensionInitFns) {
       await initFn()
-    }
-  }
-
-  #clearSocketFiles(mod?: PostgresMod) {
-    mod = mod ?? this.mod!
-    // Remove any existing socket files - could be left over from a previous run
-    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
-      mod.FS.unlink(SOCKET_FILE.OLOCK)
-    }
-    if (mod.FS.analyzePath(SOCKET_FILE.OLOCK).exists) {
-      mod.FS.unlink(SOCKET_FILE.OLOCK)
-    }
-    if (mod.FS.analyzePath(SOCKET_FILE.IN).exists) {
-      mod.FS.unlink(SOCKET_FILE.IN)
-    }
-    if (mod.FS.analyzePath(SOCKET_FILE.OUT).exists) {
-      mod.FS.unlink(SOCKET_FILE.OUT)
     }
   }
 
@@ -563,7 +536,6 @@ export class PGlite
   }
 
   #makeSocketFiles() {
-    console.log('pglite: making socket files')
     const mod = this.mod!
     if (!mod.FS.analyzePath(SOCKET_FILE.IN).exists) {
       mod.FS.mkdev(SOCKET_FILE.IN, this.#socketInDevId!)
@@ -571,7 +543,6 @@ export class PGlite
     if (!mod.FS.analyzePath(SOCKET_FILE.OUT).exists) {
       mod.FS.mkdev(SOCKET_FILE.OUT, this.#socketOutDevId!)
     }
-    console.log('pglite: socket files made')
   }
 
   /**
