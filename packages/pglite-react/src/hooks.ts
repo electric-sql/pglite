@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Results } from '@electric-sql/pglite'
 import { usePGlite } from './provider'
 import { query as buildQuery } from '@electric-sql/pglite/template'
@@ -24,15 +24,13 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 ): Omit<Results<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const [results, setResults] = useState<Results<T>>()
-  const [currentParams, setCurrentParams] = useState(params)
+  const paramsRef = useRef(params)
 
-  useEffect(
-    () =>
-      setCurrentParams((currentParams) =>
-        !paramsEqual(currentParams, params) ? params : currentParams,
-      ),
-    [params],
-  )
+  let currentParams = paramsRef.current
+  if (!paramsEqual(paramsRef.current, params)) {
+    paramsRef.current = params
+    currentParams = params
+  }
 
   useEffect(() => {
     let cancelled = false
