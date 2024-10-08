@@ -5,11 +5,7 @@ import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 export const WASM_PREFIX = '/tmp/pglite'
 export const PGDATA = WASM_PREFIX + '/' + 'base'
 
-export type FsType =
-  | 'nodefs'
-  | 'idbfs'
-  | 'memoryfs'
-  | 'opfs-ahp'
+export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
 
 /**
  * Filesystem interface.
