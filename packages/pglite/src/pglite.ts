@@ -31,6 +31,7 @@ const SOCKET_FILE = {
   OLOCK: '/tmp/pglite/.s.PGSQL.5432.lock.out',
   OUT: '/tmp/pglite/.s.PGSQL.5432.out',
 }
+const PAGE_SIZE = 8192
 
 export class PGlite
   extends BasePGlite
@@ -465,7 +466,10 @@ export class PGlite
         }
         const contents = new Uint8Array(buf)
         if (position >= contents.length) return 0
-        const size = Math.min(contents.length - position, length)
+        const size = Math.min(
+          PAGE_SIZE,
+          Math.min(contents.length - position, length),
+        )
         for (let i = 0; i < size; i++) {
           buffer[offset + i] = contents[position + i]
         }
@@ -521,7 +525,9 @@ export class PGlite
         _position: number,
       ) => {
         this.#queryOutChunks ??= []
-        this.#queryOutChunks.push(buffer.slice(offset, offset + length))
+        if (length > 0) {
+          this.#queryOutChunks.push(buffer.slice(offset, offset + length))
+        }
         return length
       },
       llseek: (_stream: any, _offset: number, _whence: number) => {
