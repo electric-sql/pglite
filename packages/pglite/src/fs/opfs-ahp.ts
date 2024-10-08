@@ -1,13 +1,24 @@
-import { FsError } from './types.js'
-import type {
-  FsStats,
-  State,
-  FileSystemSyncAccessHandle,
-  Node,
-  FileNode,
-  DirectoryNode,
-  WALEntry,
-} from './types.js'
+import { BaseFilesystem, ERRNO_CODES, type FsStats } from './base.js'
+import type { PostgresMod } from '../postgresMod.js'
+import { PGlite } from '../pglite.js'
+
+export interface OpfsAhpOptions {
+  initialPoolSize?: number
+  maintainedPoolSize?: number
+  debug?: boolean
+}
+
+// TypeScript doesn't have a built-in type for FileSystemSyncAccessHandle
+export interface FileSystemSyncAccessHandle {
+  close(): void
+  flush(): void
+  getSize(): number
+  read(buffer: ArrayBuffer, options: { at: number }): number
+  truncate(newSize: number): void
+  write(buffer: ArrayBuffer, options: { at: number }): number
+}
+
+// State
 
 const STATE_FILE = 'state.txt'
 const DATA_DIR = 'data'
@@ -16,21 +27,48 @@ const INITIAL_MODE = {
   FILE: 32768,
 }
 
-export interface OpfsAhpOptions {
-  root: string
-  initialPoolSize?: number
-  maintainedPoolSize?: number
+export interface State {
+  root: DirectoryNode
+  pool: PoolFilenames
 }
 
-/**
- * An OPFS Access Handle Pool VFS that exports a Node.js-like FS interface.
- * This FS is then wrapped by an Emscripten FS interface in emscriptenFs.ts.
- */
-export class OpfsAhp {
-  readyPromise: Promise<void>
-  #ready = false
+export type PoolFilenames = Array<string>
 
-  readonly root: string
+// WAL
+
+export interface WALEntry {
+  opp: string
+  args: any[]
+}
+
+// Node tree
+
+export type NodeType = 'file' | 'directory'
+
+interface BaseNode {
+  type: NodeType
+  lastModified: number
+  mode: number
+}
+
+export interface FileNode extends BaseNode {
+  type: 'file'
+  backingFilename: string
+}
+
+export interface DirectoryNode extends BaseNode {
+  type: 'directory'
+  children: { [filename: string]: Node }
+}
+
+export type Node = FileNode | DirectoryNode
+
+/**
+ * PGlite OPFS access handle pool filesystem.
+ * Opens a pool of sync access handles and then allocates them as needed.
+ */
+export class OpfsAhpFS extends BaseFilesystem {
+  declare readonly dataDir: string
   readonly initialPoolSize: number
   readonly maintainedPoolSize: number
 
@@ -55,22 +93,44 @@ export class OpfsAhp {
 
   #unsyncedSH = new Set<FileSystemSyncAccessHandle>()
 
-  constructor({ root, initialPoolSize, maintainedPoolSize }: OpfsAhpOptions) {
-    this.root = root
-    this.initialPoolSize = initialPoolSize || 1000
-    this.maintainedPoolSize = maintainedPoolSize || 100
-    this.readyPromise = this.#init()
+  constructor(
+    dataDir: string,
+    {
+      initialPoolSize = 1000,
+      maintainedPoolSize = 100,
+      debug = false,
+    }: OpfsAhpOptions = {},
+  ) {
+    super(dataDir, { debug })
+    this.initialPoolSize = initialPoolSize
+    this.maintainedPoolSize = maintainedPoolSize
   }
 
-  static async create(options: OpfsAhpOptions) {
-    const instance = new OpfsAhp(options)
-    await instance.readyPromise
-    return instance
+  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+    await this.#init()
+    return super.init(pg, opts)
+  }
+
+  async syncToFs(relaxedDurability = false) {
+    await this.maybeCheckpointState()
+    await this.maintainPool()
+    if (!relaxedDurability) {
+      this.flush()
+    }
+  }
+
+  async closeFs(): Promise<void> {
+    for (const sh of this.#sh.values()) {
+      sh.close()
+    }
+    this.#stateSH.flush()
+    this.#stateSH.close()
+    this.pg!.Module.FS.quit()
   }
 
   async #init() {
     this.#opfsRootAh = await navigator.storage.getDirectory()
-    this.#rootAh = await this.#resolveOpfsDirectory(this.root, {
+    this.#rootAh = await this.#resolveOpfsDirectory(this.dataDir!, {
       create: true,
     })
     this.#dataDirAh = await this.#resolveOpfsDirectory(DATA_DIR, {
@@ -177,12 +237,6 @@ export class OpfsAhp {
     await this.maintainPool(
       isNewState ? this.initialPoolSize : this.maintainedPoolSize,
     )
-
-    this.#ready = true
-  }
-
-  get ready() {
-    return this.#ready
   }
 
   async maintainPool(size?: number) {
@@ -270,14 +324,6 @@ export class OpfsAhp {
       }
     }
     this.#unsyncedSH.clear()
-  }
-
-  exit(): void {
-    for (const sh of this.#sh.values()) {
-      sh.close()
-    }
-    this.#stateSH.flush()
-    this.#stateSH.close()
   }
 
   // Filesystem API:
@@ -387,7 +433,7 @@ export class OpfsAhp {
 
   read(
     fd: number,
-    buffer: Int8Array, // Buffer to read into
+    buffer: Uint8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
@@ -398,7 +444,7 @@ export class OpfsAhp {
       throw new FsError('EISDIR', 'Is a directory')
     }
     const sh = this.#sh.get(node.backingFilename)!
-    return sh.read(new Int8Array(buffer.buffer, offset, length), {
+    return sh.read(new Uint8Array(buffer.buffer, offset, length), {
       at: position,
     })
   }
@@ -515,7 +561,7 @@ export class OpfsAhp {
 
   writeFile(
     path: string,
-    data: string | Int8Array,
+    data: string | Uint8Array,
     options?: { encoding?: string; mode?: number; flag?: string },
   ): void {
     const pathParts = this.#pathParts(path)
@@ -552,7 +598,7 @@ export class OpfsAhp {
       sh.write(
         typeof data === 'string'
           ? new TextEncoder().encode(data)
-          : new Int8Array(data),
+          : new Uint8Array(data),
         { at: 0 },
       )
       if (path.startsWith('/pg_wal')) {
@@ -581,7 +627,7 @@ export class OpfsAhp {
 
   write(
     fd: number,
-    buffer: Int8Array, // Buffer to read from
+    buffer: Uint8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
@@ -595,7 +641,7 @@ export class OpfsAhp {
     if (!sh) {
       throw new FsError('EBADF', 'Bad file descriptor')
     }
-    const ret = sh.write(new Int8Array(buffer, offset, length), {
+    const ret = sh.write(new Uint8Array(buffer, offset, length), {
       at: position,
     })
     if (path.startsWith('/pg_wal')) {
@@ -674,5 +720,17 @@ export class OpfsAhp {
       ah = await ah.getDirectoryHandle(part, { create: options?.create })
     }
     return ah
+  }
+}
+
+class FsError extends Error {
+  code?: number
+  constructor(code: number | keyof typeof ERRNO_CODES | null, message: string) {
+    super(message)
+    if (typeof code === 'number') {
+      this.code = code
+    } else if (typeof code === 'string') {
+      this.code = ERRNO_CODES[code]
+    }
   }
 }

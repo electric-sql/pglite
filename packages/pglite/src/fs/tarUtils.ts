@@ -1,17 +1,17 @@
 import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from 'tinytar'
-import { FS } from '../postgresMod.js'
-import { PGDATA } from './index.js'
+import type { FS } from '../postgresMod.js'
 
 export type DumpTarCompressionOptions = 'none' | 'gzip' | 'auto'
 
 export async function dumpTar(
   FS: FS,
-  dbname?: string,
+  pgDataDir: string,
+  dbname: string = 'pgdata',
   compression: DumpTarCompressionOptions = 'auto',
 ): Promise<File | Blob> {
-  const tarball = createTarball(FS, PGDATA)
+  const tarball = createTarball(FS, pgDataDir)
   const [compressed, zipped] = await maybeZip(tarball, compression)
-  const filename = (dbname || 'pgdata') + (zipped ? '.tar.gz' : '.tar')
+  const filename = dbname + (zipped ? '.tar.gz' : '.tar')
   const type = zipped ? 'application/x-gzip' : 'application/x-tar'
   if (typeof File !== 'undefined') {
     return new File([compressed], filename, {
@@ -31,7 +31,11 @@ const compressedMimeTypes = [
   'application/gzip',
 ]
 
-export async function loadTar(FS: FS, file: File | Blob): Promise<void> {
+export async function loadTar(
+  FS: FS,
+  file: File | Blob,
+  pgDataDir: string,
+): Promise<void> {
   let tarball = new Uint8Array(await file.arrayBuffer())
   const filename =
     typeof File !== 'undefined' && file instanceof File ? file.name : undefined
@@ -45,7 +49,7 @@ export async function loadTar(FS: FS, file: File | Blob): Promise<void> {
 
   const files = untar(tarball)
   for (const file of files) {
-    const filePath = PGDATA + file.name
+    const filePath = pgDataDir + file.name
 
     // Ensure the directory structure exists
     const dirPath = filePath.split('/').slice(0, -1)

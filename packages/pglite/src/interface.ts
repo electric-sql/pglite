@@ -2,7 +2,7 @@ import type {
   BackendMessage,
   NoticeMessage,
 } from '@electric-sql/pg-protocol/messages'
-import type { Filesystem } from './fs/types.js'
+import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'

@@ -291,7 +291,11 @@ export class PGlite
       ],
     }
 
-    emscriptenOpts = await this.fs!.emscriptenOpts(emscriptenOpts)
+    const { emscriptenOpts: amendedEmscriptenOpts } = await this.fs!.init(
+      this,
+      emscriptenOpts,
+    )
+    emscriptenOpts = amendedEmscriptenOpts
 
     // # Setup extensions
     // This is the first step of loading PGlite extensions
@@ -338,7 +342,7 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // Sync the filesystem from any previous store
-    await this.fs!.initialSyncFs(this.mod.FS)
+    await this.fs!.initialSyncFs()
 
     // If the user has provided a tarball to load the database from, do that now.
     // We do this after the initial sync so that we can throw if the database
@@ -348,7 +352,7 @@ export class PGlite
         throw new Error('Database already exists, cannot load from tarball')
       }
       this.#log('pglite: loading data from tarball')
-      await loadTar(this.mod.FS, options.loadDataDir)
+      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
     }
 
     // Check and log if the database exists
@@ -472,7 +476,7 @@ export class PGlite
     }
 
     // Close the filesystem
-    await this.fs!.close(this.mod!.FS)
+    await this.fs!.closeFs()
 
     this.#closed = true
     this.#closing = false
@@ -655,7 +659,7 @@ export class PGlite
     const doSync = async () => {
       await this.#fsSyncMutex.runExclusive(async () => {
         this.#fsSyncScheduled = false
-        await this.fs!.syncToFs(this.mod!.FS, this.#relaxedDurability)
+        await this.fs!.syncToFs(this.#relaxedDurability)
       })
     }
 
@@ -739,7 +743,7 @@ export class PGlite
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob> {
     const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
-    return this.fs!.dumpTar(this.mod!.FS, dbname, compression)
+    return this.fs!.dumpTar(dbname, compression)
   }
 
   /**
