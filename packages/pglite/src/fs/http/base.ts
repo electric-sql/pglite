@@ -215,7 +215,7 @@ export abstract class HttpFsBase extends BaseFilesystem {
 
   read(
     fd: number,
-    buffer: Int8Array, // Buffer to read into
+    buffer: Uint8Array, // Buffer to read into
     offset: number, // Offset in buffer to start writing to
     length: number, // Number of bytes to read
     position: number, // Position in file to read from
@@ -295,19 +295,19 @@ export abstract class HttpFsBase extends BaseFilesystem {
 
   writeFile(
     path: string,
-    data: string | Int8Array,
+    data: string | Uint8Array,
     options?: { encoding?: string; mode?: number; flag?: string },
   ) {
     let node = this.getNode(path)
     if (!node) {
       node = this.createNode(path, options?.mode ?? 33184, 0)
     }
-    node.data = new Filelike(new Uint8Array(data as Int8Array))
+    node.data = new Filelike(new Uint8Array(data as Uint8Array))
   }
 
   write(
     fd: number,
-    buffer: Int8Array, // Buffer to read from
+    buffer: Uint8Array, // Buffer to read from
     offset: number, // Offset in buffer to start reading from
     length: number, // Number of bytes to write
     position: number, // Position in file to write to
@@ -371,13 +371,13 @@ function buildTree(index: TarIndex): Node {
 
 interface FilelikeInterface {
   read(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
   ): number
   write(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
@@ -397,7 +397,7 @@ class Filelike implements FilelikeInterface {
   }
 
   read(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
@@ -408,7 +408,7 @@ class Filelike implements FilelikeInterface {
   }
 
   write(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
@@ -475,7 +475,7 @@ class HttpFilelike implements FilelikeInterface {
   }
 
   read(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
@@ -527,7 +527,7 @@ class HttpFilelike implements FilelikeInterface {
   }
 
   write(
-    buffer: Int8Array,
+    buffer: Uint8Array,
     offset: number,
     length: number,
     position: number,
