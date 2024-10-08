@@ -97,4 +97,84 @@ describe('large query', () => {
     // sleep for GC to collect
     await new Promise((resolve) => setTimeout(resolve, 100))
   })
+
+  it('select 10k rows ~ 10mb', async () => {
+    const pg = await PGlite.create()
+
+    await pg.exec(`
+      CREATE TABLE test (id SERIAL PRIMARY KEY, data TEXT);
+    `)
+
+    // 1kb
+    const value = 'a'.repeat(1000)
+
+    await pg.exec(`
+      INSERT INTO test (data)
+      SELECT 'Row ' || generate_series || '${value}'
+      FROM generate_series(1, 10000);
+    `)
+
+    const res = await pg.query<{ data: string }>(`
+      SELECT * FROM test;
+    `)
+
+    expect(res.rows.length).toBe(10000)
+
+    pg.close()
+
+    // sleep for GC to collect
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  })
+
+  it('select 100k rows ~ 100mb', async () => {
+    const pg = await PGlite.create()
+
+    await pg.exec(`
+      CREATE TABLE test (id SERIAL PRIMARY KEY, data TEXT);
+    `)
+
+    // 1kb
+    const value = 'a'.repeat(1000)
+
+    await pg.exec(`
+      INSERT INTO test (data)
+      SELECT 'Row ' || generate_series || '${value}'
+      FROM generate_series(1, 100000);
+    `)
+
+    const res = await pg.query<{ data: string }>(`
+      SELECT * FROM test;
+    `)
+
+    expect(res.rows.length).toBe(100000)
+
+    pg.close()
+
+    // sleep for GC to collect
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  })
+
+  it('select 1m rows ~ 1gb', async () => {
+    const pg = await PGlite.create()
+
+    await pg.exec(`
+      CREATE TABLE test (id SERIAL PRIMARY KEY, data TEXT);
+    `)
+
+    // 1kb
+    const value = 'a'.repeat(1000)
+
+    // This time only select from the series, not insert into the table
+    const res = await pg.query(`
+      SELECT 'Row ' || generate_series || '${value}'
+      FROM generate_series(1, 1000000);
+    `)
+
+    expect(res.rows.length).toBe(1000000)
+
+    pg.close()
+
+    // sleep for GC to collect
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  })
 })
