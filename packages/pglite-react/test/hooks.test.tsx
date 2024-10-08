@@ -223,14 +223,25 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       await waitFor(() => expect(result.current?.rows).toHaveLength(1))
     })
 
-    it('updates when query parameter changes', async () => {
+    it('updates when query parameters change', async () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
 
+      const paramsArr = ['foo']
+
       const { result, rerender } = renderHook(
-        (props) =>
-          hookFn(`SELECT * FROM test WHERE name = $1;`, props.params, incKey),
-        { wrapper, initialProps: { params: ['test1'] } },
+        ({ params }) =>
+          hookFn(
+            `SELECT * FROM test WHERE name = $1;`,
+            [params[params.length - 1]],
+            incKey,
+          ),
+        { wrapper, initialProps: { params: paramsArr } },
       )
+
+      await waitFor(() => expect(result.current?.rows).toEqual([]))
+
+      // update when query parameter changes
+      rerender({ params: ['test1'] })
 
       await waitFor(() =>
         expect(result.current?.rows).toEqual([
@@ -241,7 +252,8 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         ]),
       )
 
-      rerender({ params: ['test2'] })
+      // update when number of query parameters changes
+      rerender({ params: ['test1', 'test2'] })
 
       await waitFor(() =>
         expect(result.current?.rows).toEqual([
