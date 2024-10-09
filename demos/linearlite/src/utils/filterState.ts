@@ -98,7 +98,8 @@ export function filterStateToSql(filterState: FilterState) {
     sqlParams.push(filterState.query)
   }
   const sql = `
-    SELECT * FROM issue
+    SELECT id, title, priority, status, modified, created, kanbanorder, username 
+    FROM issue
     ${sqlWhere.length ? `WHERE ${sqlWhere.join(' AND ')}` : ''}
     ORDER BY ${filterState.orderBy} ${filterState.orderDirection}
   `

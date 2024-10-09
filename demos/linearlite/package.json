@@ -5,10 +5,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "backend:up": "PROJECT_NAME=linearlite pnpm -C ../../ run example-backend:up && pnpm db:migrate && pnpm db:load-data",
-    "backend:down": "PROJECT_NAME=linearlite pnpm -C ../../ run example-backend:down",
-    "db:migrate": "dotenv -e ../../.env.dev -- pnpm exec pg-migrations apply --directory ./db/migrations",
-    "db:load-data": "dotenv -e ../../.env.dev -- node ./db/load_data.js",
+    "backend:up": "dotenv -- docker compose -f ./backend/docker-compose.yml up -d ",
+    "backend:down": "dotenv -- docker compose -f ./backend/docker-compose.yml down --volumes",
+    "db:migrate": "dotenv -- pnpm exec pg-migrations apply --directory ./db/migrations",
+    "db:load-data": "dotenv -- node ./db/load_data.js",
     "dev": "vite",
     "build": "vite build",
     "stylecheck": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@electric-sql/pglite-react": "workspace:*",
+    "@electric-sql/pglite-sync": "workspace:*",
     "@firefox-devtools/react-contextmenu": "^5.1.1",
     "@headlessui/react": "^1.7.17",
     "@svgr/plugin-jsx": "^8.1.0",

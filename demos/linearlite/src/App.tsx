@@ -40,10 +40,11 @@ async function issueListLoader({ request }: { request: Request }) {
   const url = new URL(request.url)
   const filterState = getFilterStateFromSearchParams(url.searchParams)
   const { sql, sqlParams } = filterStateToSql(filterState)
-  const liveIssues = await pg.live.query<IssueType>({
+  const liveIssues = await pg.live.incrementalQuery<IssueType>({
     query: sql,
     params: sqlParams,
     signal: request.signal,
+    key: 'id',
   })
   return { liveIssues }
 }
