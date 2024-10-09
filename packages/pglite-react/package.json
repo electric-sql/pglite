@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-react",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Hooks for using PGlite",
   "type": "module",
   "private": false,

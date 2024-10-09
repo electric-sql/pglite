@@ -1,5 +1,14 @@
 # benchmark
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [1495625]
+- Updated dependencies [d3905cf]
+- Updated dependencies [1f036dc]
+  - @electric-sql/pglite@0.2.12
+
 ## 0.0.11
 
 ### Patch Changes
