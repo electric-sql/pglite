@@ -1,5 +1,15 @@
 # @electric-sql/pglite-react
 
+## 0.2.12
+
+### Patch Changes
+
+- d3905cf: Enable the number of useLiveQuery params to change between renders, and for there to be none.
+- Updated dependencies [1495625]
+- Updated dependencies [d3905cf]
+- Updated dependencies [1f036dc]
+  - @electric-sql/pglite@0.2.12
+
 ## 0.2.11
 
 ### Patch Changes
