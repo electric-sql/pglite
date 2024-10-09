@@ -47,6 +47,9 @@ importers:
       '@electric-sql/pglite-react':
         specifier: workspace:*
         version: link:../../packages/pglite-react
+      '@electric-sql/pglite-sync':
+        specifier: workspace:*
+        version: link:../../packages/pglite-sync
       '@firefox-devtools/react-contextmenu':
         specifier: ^5.1.1
         version: 5.1.1(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

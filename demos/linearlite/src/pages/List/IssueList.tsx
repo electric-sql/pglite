@@ -45,4 +45,4 @@ const VirtualIssueRow = memo(
   areEqual
 )
 
-export default IssueList
+export default memo(IssueList)
