@@ -1,5 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate, useLoaderData } from 'react-router-dom'
 import { useState, useRef } from 'react'
+import { LiveQuery } from '@electric-sql/pglite/live'
+import { usePGlite, useLiveQuery } from '@electric-sql/pglite-react'
 import { BsTrash3 as DeleteIcon } from 'react-icons/bs'
 import { BsXLg as CloseIcon } from 'react-icons/bs'
 import PriorityMenu from '../../components/contextmenu/PriorityMenu'
@@ -12,18 +14,14 @@ import Editor from '../../components/editor/Editor'
 import DeleteModal from './DeleteModal'
 import Comments from './Comments'
 import debounce from 'lodash.debounce'
-import { usePGlite, useLiveQuery } from '@electric-sql/pglite-react'
 
 const debounceTime = 500
 
 function IssuePage() {
+  const { liveIssue } = useLoaderData() as { liveIssue: LiveQuery<Issue> }
+  const issue = useLiveQuery(liveIssue).rows[0]
   const navigate = useNavigate()
   const pg = usePGlite()
-  const params = useParams()
-  const issueResults = useLiveQuery.sql<Issue>`
-    SELECT * FROM issue WHERE id = ${params.id}
-  `
-  const issue = issueResults?.rows[0]
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
