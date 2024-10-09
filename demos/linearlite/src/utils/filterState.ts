@@ -8,11 +8,9 @@ interface FilterState {
   query?: string
 }
 
-export function useFilterState(): [
-  FilterState,
-  (state: Partial<FilterState>) => void,
-] {
-  const [searchParams, setSearchParams] = useSearchParams()
+export function getFilterStateFromSearchParams(
+  searchParams: URLSearchParams
+): FilterState {
   const orderBy = searchParams.get(`orderBy`) ?? `created`
   const orderDirection =
     (searchParams.get(`orderDirection`) as `asc` | `desc`) ?? `desc`
@@ -33,6 +31,16 @@ export function useFilterState(): [
     priority,
     query: query || undefined,
   }
+
+  return state
+}
+
+export function useFilterState(): [
+  FilterState,
+  (state: Partial<FilterState>) => void,
+] {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const state = getFilterStateFromSearchParams(searchParams)
 
   const setState = (state: Partial<FilterState>) => {
     const { orderBy, orderDirection, status, priority, query } = state
@@ -69,27 +77,30 @@ export function useFilterState(): [
   return [state, setState]
 }
 
-interface FilterStateWhere {
-  status?: { in: string[] }
-  priority?: { in: string[] }
-  title?: { contains: string }
-  OR?: [{ title: { contains: string } }, { description: { contains: string } }]
-}
-
-export function filterStateToWhere(filterState: FilterState) {
-  const { status, priority, query } = filterState
-  const where: FilterStateWhere = {}
-  if (status && status.length > 0) {
-    where.status = { in: status }
+export function filterStateToSql(filterState: FilterState) {
+  let i = 1
+  const sqlWhere = []
+  const sqlParams = []
+  if (filterState.status?.length) {
+    sqlWhere.push(
+      `status IN (${filterState.status.map(() => `$${i++}`).join(' ,')})`
+    )
+    sqlParams.push(...filterState.status)
   }
-  if (priority && priority.length > 0) {
-    where.priority = { in: priority }
+  if (filterState.priority?.length) {
+    sqlWhere.push(
+      `priority IN (${filterState.priority.map(() => `$${i++}`).join(' ,')})`
+    )
+    sqlParams.push(...filterState.priority)
   }
-  if (query) {
-    where.OR = [
-      { title: { contains: query } },
-      { description: { contains: query } },
-    ]
+  if (filterState.query) {
+    sqlWhere.push(`title ILIKE $${i++}`)
+    sqlParams.push(filterState.query)
   }
-  return where
+  const sql = `
+    SELECT * FROM issue
+    ${sqlWhere.length ? `WHERE ${sqlWhere.join(' AND ')}` : ''}
+    ORDER BY ${filterState.orderBy} ${filterState.orderDirection}
+  `
+  return { sql, sqlParams }
 }

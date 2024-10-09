@@ -26,11 +26,11 @@ export default function ({
   const { showMenu, setShowMenu } = useContext(MenuContext)!
   const [searchQuery, setSearchQuery] = useState(``)
 
-  const totalIssuesCount: number =
-    useLiveQuery<{ count: number }>(`SELECT COUNT(*) FROM issue`)?.rows[0]
-      .count ?? 0
+  const totalIssuesCount = useLiveQuery<{ count: number }>(
+    `SELECT COUNT(*) FROM issue`
+  )?.rows[0].count
 
-  const filteredIssuesCount = issues.length
+  const filteredIssuesCount = issues.length ?? 0
 
   const handleSearchInner = (query: string) => {
     setFilterState({
@@ -76,7 +76,8 @@ export default function ({
           {/* <span>{filteredIssuesCount}</span> */}
           <span>
             {filteredIssuesCount}
-            {filteredIssuesCount !== totalIssuesCount
+            {totalIssuesCount !== undefined &&
+            filteredIssuesCount !== totalIssuesCount
               ? ` of ${totalIssuesCount}`
               : ``}
           </span>
