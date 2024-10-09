@@ -115,6 +115,7 @@
     "crypto": false,
     "ws": false,
     "child_process": false,
-    "module": false
+    "module": false,
+    "util": false
   }
 }
