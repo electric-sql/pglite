@@ -17,7 +17,7 @@ worker({
       shape: {
         url: 'http://localhost:3000/v1/shape/issue',
       },
-      table: 'issue',
+      table: 'issue_synced',
       primaryKey: ['id'],
       shapeKey: 'issues',
     })
@@ -25,7 +25,7 @@ worker({
       shape: {
         url: 'http://localhost:3000/v1/shape/comment',
       },
-      table: 'comment',
+      table: 'comment_synced',
       primaryKey: ['id'],
       shapeKey: 'comments',
     })

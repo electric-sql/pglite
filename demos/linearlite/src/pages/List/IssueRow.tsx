@@ -66,6 +66,9 @@ function IssueRow({ issue, style }: Props) {
       <div className="flex-shrink-0 hidden ml-4 font-normal text-gray-500 sm:block w-15 md:block">
         <Avatar name={issue.username} />
       </div>
+      <div className="flex-shrink-0 hidden ml-4 font-normal text-gray-500 sm:block w-15 md:block">
+        {issue.synced ? 'synced' : 'unsynced'}
+      </div>
     </div>
   )
 }
