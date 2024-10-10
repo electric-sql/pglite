@@ -10,7 +10,7 @@
     "db:migrate": "dotenv -- pnpm exec pg-migrations apply --directory ./db/migrations-server",
     "db:load-data": "dotenv -- node ./db/load_data.js",
     "reset": "pnpm backend:down && pnpm backend:up && pnpm db:migrate && pnpm db:load-data",
-    "server": "dotenv -- tsx server.ts",
+    "write-server": "dotenv -- tsx server.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
