@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "issue_synced" (
     "created" TIMESTAMPTZ NOT NULL,
     "kanbanorder" TEXT NOT NULL,
     "username" TEXT NOT NULL,
+    "version" BIGINT NOT NULL,
     CONSTRAINT "issue_synced_pkey" PRIMARY KEY ("id")
 );
 
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS "comment_synced" (
     "username" TEXT NOT NULL,
     "issue_id" UUID NOT NULL,
     "created_at" TIMESTAMPTZ NOT NULL,
+    "version" BIGINT NOT NULL,
     CONSTRAINT "comment_synced_pkey" PRIMARY KEY ("id") --,
     -- FOREIGN KEY (issue_id) REFERENCES issue_synced(id) ON DELETE CASCADE
     -- There is currently no transactional integrity between shapes during sync, and as 
@@ -52,11 +54,13 @@ CREATE TABLE IF NOT EXISTS "issue_local" (
     "kanbanorder" TEXT,
     "username" TEXT,
     -- A text array of the column names that have changed.
-    "changed_columns" TEXT[] NOT NULL,
+    "changed_columns" TEXT[],
+    -- A columns to track is a row is new or an update.
+    "is_new" BOOLEAN DEFAULT FALSE,
     -- If a row is deleted, this is set to true.
     "is_deleted" BOOLEAN DEFAULT FALSE,
     -- A column to track the offset prefix at which the row was synced.
-    "synced_at" TEXT,
+    "synced_at" BIGINT,
     CONSTRAINT "issue_local_pkey" PRIMARY KEY ("id")
 );
 
@@ -67,11 +71,13 @@ CREATE TABLE IF NOT EXISTS "comment_local" (
     "issue_id" UUID,
     "created_at" TIMESTAMPTZ,
     -- A text array of the column names that have changed.
-    "changed_columns" TEXT[] NOT NULL,
+    "changed_columns" TEXT[],
+    -- A columns to track is a row is new or an update.
+    "is_new" BOOLEAN DEFAULT FALSE,
     -- If a row is deleted, this is set to true.
     "is_deleted" BOOLEAN DEFAULT FALSE,
     -- A column to track the offset prefix at which the row was synced.
-    "synced_at" TEXT,
+    "synced_at" BIGINT,
     CONSTRAINT "comment_local_pkey" PRIMARY KEY ("id")
 );
 
@@ -145,6 +151,7 @@ BEGIN
         "kanbanorder",
         "username",
         "changed_columns",
+        "is_new",
         "synced_at"
     )
     VALUES (
@@ -158,6 +165,7 @@ BEGIN
         NEW."kanbanorder",
         NEW."username",
         ARRAY['title', 'description', 'priority', 'status', 'modified', 'created', 'kanbanorder', 'username'],
+        TRUE,
         NULL
     );
     RETURN NEW;
@@ -345,6 +353,7 @@ BEGIN
         "issue_id",
         "created_at",
         "changed_columns",
+        "is_new",
         "synced_at"
     )
     VALUES (
@@ -354,6 +363,7 @@ BEGIN
         NEW."issue_id",
         NEW."created_at",
         ARRAY['body', 'username', 'issue_id', 'created_at'],
+        TRUE,
         NULL
     );
     RETURN NEW;
@@ -458,3 +468,67 @@ CREATE OR REPLACE TRIGGER comment_delete
 INSTEAD OF DELETE ON "comment"
 FOR EACH ROW
 EXECUTE FUNCTION comment_delete_trigger();
+
+-- Add a trigger that deletes the row from the local table if the row in the synced table is deleted
+
+CREATE OR REPLACE FUNCTION delete_local_comment_row_on_synced_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM "comment_local" WHERE "id" = OLD."id";
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER delete_local_row_on_synced_delete
+AFTER DELETE ON "comment_synced"
+FOR EACH ROW
+EXECUTE FUNCTION delete_local_comment_row_on_synced_delete();
+
+CREATE OR REPLACE FUNCTION delete_local_issue_row_on_synced_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM "issue_local" WHERE "id" = OLD."id";
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER delete_local_row_on_synced_delete
+AFTER DELETE ON "issue_synced"
+FOR EACH ROW
+EXECUTE FUNCTION delete_local_issue_row_on_synced_delete();
+
+-- Add triggers to the synced tables that will remove the row from the local table if
+-- the row in the synced table has a version that is grater than the synced_at version
+-- in the local table.
+
+-- Function to remove local issue row when synced version is greater
+CREATE OR REPLACE FUNCTION remove_local_issue_row_on_sync()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM "issue_local"
+    WHERE "id" = NEW."id" AND "synced_at" IS NOT NULL AND NEW."version" >= "synced_at";
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to remove local issue row when synced version is greater
+CREATE OR REPLACE TRIGGER remove_local_issue_row_on_sync_trigger
+AFTER INSERT OR UPDATE ON "issue_synced"
+FOR EACH ROW
+EXECUTE FUNCTION remove_local_issue_row_on_sync();
+
+-- Function to remove local comment row when synced version is greater
+CREATE OR REPLACE FUNCTION remove_local_comment_row_on_sync()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM "comment_local"
+    WHERE "id" = NEW."id" AND "synced_at" IS NOT NULL AND NEW."version" >= "synced_at";
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to remove local comment row when synced version is greater
+CREATE OR REPLACE TRIGGER remove_local_comment_row_on_sync_trigger
+AFTER INSERT OR UPDATE ON "comment_synced"
+FOR EACH ROW
+EXECUTE FUNCTION remove_local_comment_row_on_sync();
