@@ -20,11 +20,11 @@ interface PGliteProviderSet<T extends PGliteWithLive> {
 function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
   const ctx = createContext<T | undefined>(undefined)
   return {
-    usePGlite: (db?: T) => {
+    usePGlite: ((db?: T) => {
       const dbProvided = useContext(ctx)
 
       // allow providing a db explicitly
-      if (db) return db
+      if (db !== undefined) return db
 
       if (!dbProvided)
         throw new Error(
@@ -32,7 +32,7 @@ function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
         )
 
       return dbProvided
-    },
+    }) as UsePGlite<T>,
     PGliteProvider: ({ children, db }: Props<T>) => {
       return <ctx.Provider value={db}>{children}</ctx.Provider>
     },
