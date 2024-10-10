@@ -5,17 +5,20 @@ import type {
   Transaction,
 } from '../interface'
 import type {
+  LiveQueryOptions,
+  LiveIncrementalQueryOptions,
+  LiveChangesOptions,
   LiveNamespace,
-  LiveQueryReturn,
-  LiveChangesReturn,
+  LiveQuery,
+  LiveChanges,
   Change,
 } from './interface'
 import { uuid, formatQuery } from '../utils.js'
 
 export type {
   LiveNamespace,
-  LiveQueryReturn,
-  LiveChangesReturn,
+  LiveQuery,
+  LiveChanges,
   Change,
 } from './interface.js'
 
@@ -28,14 +31,30 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
   const namespaceObj: LiveNamespace = {
     async query<T>(
-      query: string,
-      params: any[] | undefined | null,
-      callback: (results: Results<T>) => void,
+      query: string | LiveQueryOptions<T>,
+      params?: any[] | null,
+      callback?: (results: Results<T>) => void,
     ) {
+      let signal: AbortSignal | undefined
+      if (typeof query !== 'string') {
+        signal = query.signal
+        params = query.params
+        callback = query.callback
+        query = query.query
+      }
+      let callbacks: Array<(results: Results<T>) => void> = callback
+        ? [callback]
+        : []
       const id = uuid().replace(/-/g, '')
 
       let results: Results<T>
       let tables: { table_name: string; schema_name: string }[]
+
+      const runCallbacks = (results: Results<T>) => {
+        for (const callback of callbacks) {
+          callback(results)
+        }
+      }
 
       const init = async () => {
         await pg.transaction(async (tx) => {
@@ -63,6 +82,9 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       // Function to refresh the query
       const refresh = async (count = 0) => {
+        if (callbacks.length === 0) {
+          return
+        }
         try {
           results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
         } catch (e) {
@@ -81,7 +103,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             throw e
           }
         }
-        callback(results)
+        runCallbacks(results)
       }
 
       // Setup the listeners
@@ -96,37 +118,82 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ),
       )
 
+      // Function to subscribe to the query
+      const subscribe = (callback: (results: Results<T>) => void) => {
+        callbacks.push(callback)
+      }
+
       // Function to unsubscribe from the query
-      const unsubscribe = async () => {
-        await Promise.all(unsubList.map((unsub) => unsub()))
-        await pg.exec(`
+      // If no function is provided, unsubscribe all callbacks
+      // If there are no callbacks, unsubscribe from the notify triggers
+      const unsubscribe = async (callback?: (results: Results<T>) => void) => {
+        if (callback) {
+          callbacks = callbacks.filter((callback) => callback !== callback)
+        } else {
+          callbacks = []
+        }
+        if (callbacks.length === 0) {
+          await Promise.all(unsubList.map((unsub) => unsub()))
+          await pg.exec(`
             DROP VIEW IF EXISTS live_query_${id}_view;
             DEALLOCATE live_query_${id}_get;
           `)
+        }
+      }
+
+      // Add an event listener to unsubscribe if the signal is aborted
+      signal?.addEventListener('abort', () => {
+        unsubscribe()
+      })
+
+      // If the signal has already been aborted, unsubscribe
+      if (signal?.aborted) {
+        await unsubscribe()
       }
 
       // Run the callback with the initial results
-      callback(results!)
+      runCallbacks(results!)
 
       // Return the initial results
       return {
         initialResults: results!,
+        subscribe,
         unsubscribe,
         refresh,
-      } satisfies LiveQueryReturn<T>
+      } satisfies LiveQuery<T>
     },
 
     async changes<T>(
-      query: string,
-      params: any[] | undefined | null,
-      key: string,
-      callback: (changes: Array<Change<T>>) => void,
+      query: string | LiveChangesOptions<T>,
+      params?: any[] | null,
+      key?: string,
+      callback?: (changes: Array<Change<T>>) => void,
     ) {
+      let signal: AbortSignal | undefined
+      if (typeof query !== 'string') {
+        signal = query.signal
+        params = query.params
+        key = query.key
+        callback = query.callback
+        query = query.query
+      }
+      if (!key) {
+        throw new Error('key is required for changes queries')
+      }
+      let callbacks: Array<(changes: Array<Change<T>>) => void> = callback
+        ? [callback]
+        : []
       const id = uuid().replace(/-/g, '')
 
       let tables: { table_name: string; schema_name: string }[]
       let stateSwitch: 1 | 2 = 1
       let changes: Results<Change<T>>
+
+      const runCallbacks = (changes: Array<Change<T>>) => {
+        for (const callback of callbacks) {
+          callback(changes)
+        }
+      }
 
       const init = async () => {
         await pg.transaction(async (tx) => {
@@ -238,6 +305,9 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       await init()
 
       const refresh = async () => {
+        if (callbacks.length === 0) {
+          return
+        }
         let reset = false
         for (let i = 0; i < 5; i++) {
           try {
@@ -279,7 +349,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           }
         }
 
-        callback([
+        runCallbacks([
           ...(reset
             ? [
                 {
@@ -301,16 +371,40 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ),
       )
 
+      // Function to subscribe to the query
+      const subscribe = (callback: (changes: Array<Change<T>>) => void) => {
+        callbacks.push(callback)
+      }
+
       // Function to unsubscribe from the query
-      const unsubscribe = async () => {
-        await Promise.all(unsubList.map((unsub) => unsub()))
-        await pg.exec(`
-          DROP VIEW IF EXISTS live_query_${id}_view;
-          DROP TABLE IF EXISTS live_query_${id}_state1;
-          DROP TABLE IF EXISTS live_query_${id}_state2;
-          DEALLOCATE live_query_${id}_diff1;
-          DEALLOCATE live_query_${id}_diff2;
-        `)
+      const unsubscribe = async (
+        callback?: (changes: Array<Change<T>>) => void,
+      ) => {
+        if (callback) {
+          callbacks = callbacks.filter((callback) => callback !== callback)
+        } else {
+          callbacks = []
+        }
+        if (callbacks.length === 0) {
+          await Promise.all(unsubList.map((unsub) => unsub()))
+          await pg.exec(`
+            DROP VIEW IF EXISTS live_query_${id}_view;
+            DROP TABLE IF EXISTS live_query_${id}_state1;
+            DROP TABLE IF EXISTS live_query_${id}_state2;
+            DEALLOCATE live_query_${id}_diff1;
+            DEALLOCATE live_query_${id}_diff2;
+          `)
+        }
+      }
+
+      // Add an event listener to unsubscribe if the signal is aborted
+      signal?.addEventListener('abort', () => {
+        unsubscribe()
+      })
+
+      // If the signal has already been aborted, unsubscribe
+      if (signal?.aborted) {
+        await unsubscribe()
       }
 
       // Run the callback with the initial changes
@@ -326,104 +420,148 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       return {
         fields,
         initialChanges: changes!.rows,
+        subscribe,
         unsubscribe,
         refresh,
-      } satisfies LiveChangesReturn<T>
+      } satisfies LiveChanges<T>
     },
 
     async incrementalQuery<T>(
-      query: string,
-      params: any[] | undefined | null,
-      key: string,
-      callback: (results: Results<T>) => void,
+      query: string | LiveIncrementalQueryOptions<T>,
+      params?: any[] | null,
+      key?: string,
+      callback?: (results: Results<T>) => void,
     ) {
+      let signal: AbortSignal | undefined
+      if (typeof query !== 'string') {
+        signal = query.signal
+        params = query.params
+        key = query.key
+        callback = query.callback
+        query = query.query
+      }
+      if (!key) {
+        throw new Error('key is required for incremental queries')
+      }
+      let callbacks: Array<(results: Results<T>) => void> = callback
+        ? [callback]
+        : []
       const rowsMap: Map<any, any> = new Map()
       const afterMap: Map<any, any> = new Map()
       let lastRows: T[] = []
       let firstRun = true
 
-      const { fields, unsubscribe, refresh } = await namespaceObj.changes<T>(
-        query,
-        params,
-        key,
-        (changes) => {
-          // Process the changes
-          for (const change of changes) {
-            const {
-              __op__: op,
-              __changed_columns__: changedColumns,
-              ...obj
-            } = change as typeof change & { [key: string]: any }
-            switch (op) {
-              case 'RESET':
-                rowsMap.clear()
-                afterMap.clear()
-                break
-              case 'INSERT':
-                rowsMap.set(obj[key], obj)
-                afterMap.set(obj.__after__, obj[key])
-                break
-              case 'DELETE': {
-                const oldObj = rowsMap.get(obj[key])
-                rowsMap.delete(obj[key])
-                afterMap.delete(oldObj.__after__)
-                break
-              }
-              case 'UPDATE': {
-                const newObj = { ...(rowsMap.get(obj[key]) ?? {}) }
-                for (const columnName of changedColumns) {
-                  newObj[columnName] = obj[columnName]
-                  if (columnName === '__after__') {
-                    afterMap.set(obj.__after__, obj[key])
-                  }
-                }
-                rowsMap.set(obj[key], newObj)
-                break
-              }
-            }
-          }
+      const runCallbacks = (results: Results<T>) => {
+        for (const callback of callbacks) {
+          callback(results)
+        }
+      }
 
-          // Get the rows in order
-          const rows: T[] = []
-          let lastKey: any = null
-          for (let i = 0; i < rowsMap.size; i++) {
-            const nextKey = afterMap.get(lastKey)
-            const obj = rowsMap.get(nextKey)
-            if (!obj) {
+      const {
+        fields,
+        unsubscribe: unsubscribeChanges,
+        refresh,
+      } = await namespaceObj.changes<T>(query, params, key, (changes) => {
+        // Process the changes
+        for (const change of changes) {
+          const {
+            __op__: op,
+            __changed_columns__: changedColumns,
+            ...obj
+          } = change as typeof change & { [key: string]: any }
+          switch (op) {
+            case 'RESET':
+              rowsMap.clear()
+              afterMap.clear()
+              break
+            case 'INSERT':
+              rowsMap.set(obj[key], obj)
+              afterMap.set(obj.__after__, obj[key])
+              break
+            case 'DELETE': {
+              const oldObj = rowsMap.get(obj[key])
+              rowsMap.delete(obj[key])
+              afterMap.delete(oldObj.__after__)
               break
             }
-            // Remove the __after__ key from the exposed row
-            const cleanObj = { ...obj }
-            delete cleanObj.__after__
-            rows.push(cleanObj)
-            lastKey = nextKey
+            case 'UPDATE': {
+              const newObj = { ...(rowsMap.get(obj[key]) ?? {}) }
+              for (const columnName of changedColumns) {
+                newObj[columnName] = obj[columnName]
+                if (columnName === '__after__') {
+                  afterMap.set(obj.__after__, obj[key])
+                }
+              }
+              rowsMap.set(obj[key], newObj)
+              break
+            }
           }
-          lastRows = rows
+        }
 
-          // Run the callback
-          if (!firstRun) {
-            callback({
-              rows,
-              fields,
-            })
+        // Get the rows in order
+        const rows: T[] = []
+        let lastKey: any = null
+        for (let i = 0; i < rowsMap.size; i++) {
+          const nextKey = afterMap.get(lastKey)
+          const obj = rowsMap.get(nextKey)
+          if (!obj) {
+            break
           }
-        },
-      )
+          // Remove the __after__ key from the exposed row
+          const cleanObj = { ...obj }
+          delete cleanObj.__after__
+          rows.push(cleanObj)
+          lastKey = nextKey
+        }
+        lastRows = rows
+
+        // Run the callbacks
+        if (!firstRun) {
+          runCallbacks({
+            rows,
+            fields,
+          })
+        }
+      })
 
       firstRun = false
-      callback({
+      runCallbacks({
         rows: lastRows,
         fields,
       })
+
+      const subscribe = (callback: (results: Results<T>) => void) => {
+        callbacks.push(callback)
+      }
+
+      const unsubscribe = async (callback?: (results: Results<T>) => void) => {
+        if (callback) {
+          callbacks = callbacks.filter((callback) => callback !== callback)
+        } else {
+          callbacks = []
+        }
+        if (callbacks.length === 0) {
+          await unsubscribeChanges()
+        }
+      }
+
+      signal?.addEventListener('abort', () => {
+        unsubscribe()
+      })
+
+      if (signal?.aborted) {
+        await unsubscribe()
+      }
 
       return {
         initialResults: {
           rows: lastRows,
           fields,
         },
+        subscribe,
         unsubscribe,
         refresh,
-      } satisfies LiveQueryReturn<T>
+      } satisfies LiveQuery<T>
     },
   }
 
@@ -442,8 +580,8 @@ export type PGliteWithLive = PGliteInterface & {
 }
 
 /**
- * Get a list of all the tables used in a view
- * @param tx a transaction or or PGlite instance
+ * Get a list of all the tables used in a view, recursively
+ * @param tx a transaction or PGlite instance
  * @param viewName the name of the view
  * @returns list of tables used in the view
  */
@@ -451,15 +589,19 @@ async function getTablesForView(
   tx: Transaction | PGliteInterface,
   viewName: string,
 ): Promise<{ table_name: string; schema_name: string }[]> {
-  return (
-    await tx.query<{
+  const tables = new Map<string, { table_name: string; schema_name: string }>()
+
+  async function getTablesRecursive(currentViewName: string) {
+    const result = await tx.query<{
       table_name: string
       schema_name: string
+      is_view: boolean
     }>(
       `
         SELECT DISTINCT
           cl.relname AS table_name,
-          n.nspname AS schema_name
+          n.nspname AS schema_name,
+          cl.relkind = 'v' AS is_view
         FROM pg_rewrite r
         JOIN pg_depend d ON r.oid = d.objid
         JOIN pg_class cl ON d.refobjid = cl.oid
@@ -470,9 +612,27 @@ async function getTablesForView(
         )
         AND d.deptype = 'n';
       `,
-      [viewName],
+      [currentViewName],
     )
-  ).rows.filter((row) => row.table_name !== viewName)
+
+    for (const row of result.rows) {
+      if (row.table_name !== currentViewName && !row.is_view) {
+        const tableKey = `"${row.schema_name}"."${row.table_name}"`
+        if (!tables.has(tableKey)) {
+          tables.set(tableKey, {
+            table_name: row.table_name,
+            schema_name: row.schema_name,
+          })
+        }
+      } else if (row.is_view) {
+        await getTablesRecursive(row.table_name)
+      }
+    }
+  }
+
+  await getTablesRecursive(viewName)
+
+  return Array.from(tables.values())
 }
 
 /**
