@@ -284,6 +284,7 @@ async function applyMessageToTable({
         // we don't update the primary key, they are used to identify the row
         (column) => !primaryKey.includes(column),
       )
+      if (columns.length === 0) return // nothing to update
       return await pg.query(
         `
             UPDATE "${schema}"."${table}"
