@@ -2,6 +2,8 @@ import { type CSSProperties } from 'react'
 import classNames from 'classnames'
 import { useNavigate } from 'react-router-dom'
 import { DraggableProvided } from 'react-beautiful-dnd'
+import { BsCloudCheck as SyncedIcon } from 'react-icons/bs'
+import { BsCloudSlash as UnsyncedIcon } from 'react-icons/bs'
 import Avatar from '../../components/Avatar'
 import PriorityMenu from '../../components/contextmenu/PriorityMenu'
 import PriorityIcon from '../../components/PriorityIcon'
@@ -79,6 +81,11 @@ const IssueItem = ({ issue, style, isDragging, provided }: IssueProps) => {
           filterKeyword={true}
           // TODO: onSelect={(p) => updatePriority(p)}
         />
+        {issue.synced ? (
+          <SyncedIcon className="text-green-500 w-4 h-4 ms-2 mb-1" />
+        ) : (
+          <UnsyncedIcon className="text-orange-500 w-4 h-4 ms-2 mb-1" />
+        )}
       </div>
     </div>
   )
