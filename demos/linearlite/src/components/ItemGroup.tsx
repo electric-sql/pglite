@@ -13,6 +13,7 @@ function ItemGroup({ title, children }: Props) {
   return (
     <div className="flex flex-col w-full text-sm">
       <button
+        type="button"
         className="px-2 relative w-full mt-0.5 h-7 flex items-center rounded hover:bg-gray-100 cursor-pointer"
         onClick={() => setShowItems(!showItems)}
       >

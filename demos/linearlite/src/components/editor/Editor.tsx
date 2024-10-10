@@ -57,7 +57,7 @@ const Editor = ({
     if (editor && markdownValue.current !== value) {
       editor.commands.setContent(value)
     }
-  }, [value])
+  }, [editor, value])
 
   if (placeholder) {
     extensions.push(

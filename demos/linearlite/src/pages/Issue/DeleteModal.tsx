@@ -26,6 +26,7 @@ export default function AboutModal({
       </div>
       <div className="flex w-full border-t border-gray-200 px-4 py-3">
         <button
+          type="button"
           className="px-3 ml-auto text-white bg-gray-300 rounded hover:bg-gray-400 h-7"
           onClick={() => {
             setIsOpen(false)
@@ -35,6 +36,7 @@ export default function AboutModal({
           Cancel
         </button>
         <button
+          type="button"
           className="px-3 ml-3 text-white bg-indigo-600 rounded hover:bg-indigo-700 h-7"
           onClick={handleDelete}
         >

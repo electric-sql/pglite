@@ -100,6 +100,7 @@ function IssueModal({ isOpen, onDismiss }: Props) {
         </div>
         <div className="flex items-center">
           <button
+            type="button"
             className="inline-flex rounded items-center justify-center ml-2 text-gray-500 h-7 w-7 hover:bg-gray-100 rouned hover:text-gray-700"
             onClick={handleClickCloseBtn}
           >
@@ -113,7 +114,10 @@ function IssueModal({ isOpen, onDismiss }: Props) {
           <StatusMenu
             id="status-menu"
             button={
-              <button className="flex items-center justify-center w-6 h-6 border-none rounded hover:bg-gray-100">
+              <button
+                type="button"
+                className="flex items-center justify-center w-6 h-6 border-none rounded hover:bg-gray-100"
+              >
                 <StatusIcon status={status} />
               </button>
             }
@@ -146,7 +150,10 @@ function IssueModal({ isOpen, onDismiss }: Props) {
         <PriorityMenu
           id="priority-menu"
           button={
-            <button className="inline-flex items-center h-6 px-2 text-gray-500 bg-gray-200 border-none rounded hover:bg-gray-100 hover:text-gray-700">
+            <button
+              type="button"
+              className="inline-flex items-center h-6 px-2 text-gray-500 bg-gray-200 border-none rounded hover:bg-gray-100 hover:text-gray-700"
+            >
               <PriorityIcon priority={priority} className="mr-1" />
               <span>{PriorityDisplay[priority]}</span>
             </button>
@@ -160,6 +167,7 @@ function IssueModal({ isOpen, onDismiss }: Props) {
       {/* Footer */}
       <div className="flex items-center flex-shrink-0 px-4 pt-3">
         <button
+          type="button"
           className="px-3 ml-auto text-white bg-indigo-600 rounded hover:bg-indigo-700 h-7"
           onClick={handleSubmit}
         >

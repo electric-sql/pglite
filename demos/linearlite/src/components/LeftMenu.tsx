@@ -36,6 +36,7 @@ function LeftMenu() {
     <>
       <div className={classes} ref={ref}>
         <button
+          type="button"
           className="flex-shrink-0 px-5 ml-2 lg:hidden h-14"
           onClick={() => setShowMenu(!showMenu)}
         >
@@ -63,6 +64,7 @@ function LeftMenu() {
             {/* User avatar  */}
             <div className="relative">
               <button
+                type="button"
                 className="flex items-center justify-center p-2 rounded cursor-pointer hover:bg-gray-100"
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
               >
@@ -86,6 +88,7 @@ function LeftMenu() {
           {/* Create issue btn */}
           <div className="flex">
             <button
+              type="button"
               className="inline-flex w-full items-center px-2 py-2 mt-3 bg-white border border-gray-300 rounded hover:bg-gray-100 h-7"
               onClick={() => {
                 setShowIssueModal(true)
@@ -147,6 +150,7 @@ function LeftMenu() {
               ElectricSQL
             </a>
             <button
+              type="button"
               className="inline-flex mt-1"
               onClick={() => setShowAboutModal(true)}
             >

@@ -1,6 +1,6 @@
 import 'animate.css/animate.min.css'
 import Board from './pages/Board'
-import { useState, createContext, useEffect } from 'react'
+import { useState, createContext, useEffect, useMemo } from 'react'
 import {
   createBrowserRouter,
   RouterProvider,
@@ -29,7 +29,7 @@ export const MenuContext = createContext(null as MenuContextInterface | null)
 
 type PGliteWorkerWithLive = PGliteWorker & { live: LiveNamespace }
 
-let pgPromise = PGliteWorker.create(new PGWorker(), {
+const pgPromise = PGliteWorker.create(new PGWorker(), {
   extensions: {
     live,
   },
@@ -102,11 +102,16 @@ const App = () => {
     pgPromise.then(setPgForProvider)
   }, [])
 
+  const menuContextValue = useMemo(
+    () => ({ showMenu, setShowMenu }),
+    [showMenu]
+  )
+
   if (!pgForProvider) return <div>Loading...</div>
 
   return (
     <PGliteProvider db={pgForProvider}>
-      <MenuContext.Provider value={{ showMenu, setShowMenu }}>
+      <MenuContext.Provider value={menuContextValue}>
         <RouterProvider router={router} />
       </MenuContext.Provider>
     </PGliteProvider>

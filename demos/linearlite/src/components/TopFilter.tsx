@@ -66,6 +66,7 @@ export default function ({
         {/* left section */}
         <div className="flex items-center">
           <button
+            type="button"
             className="flex-shrink-0 h-full px-5 lg:hidden"
             onClick={() => setShowMenu(!showMenu)}
           >
@@ -83,7 +84,10 @@ export default function ({
           </span>
           <FilterMenu
             button={
-              <button className="px-1 py-0.5 ml-3 border border-gray-300 border-dashed rounded text-gray-500 hover:border-gray-400 hover:text-gray-800 flex items-center">
+              <button
+                type="button"
+                className="px-1 py-0.5 ml-3 border border-gray-300 border-dashed rounded text-gray-500 hover:border-gray-400 hover:text-gray-800 flex items-center"
+              >
                 <BsPlus className="inline" size="16" />
                 Filter
               </button>
@@ -95,6 +99,7 @@ export default function ({
         <div className="flex items-center">
           {!hideSort && (
             <button
+              type="button"
               className="p-2 rounded hover:bg-gray-100"
               onClick={() => setShowViewOption(true)}
             >
