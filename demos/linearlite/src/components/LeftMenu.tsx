@@ -10,10 +10,12 @@ import { BsSearch as SearchIcon } from 'react-icons/bs'
 import { BsFillGrid3X3GapFill as BoardIcon } from 'react-icons/bs'
 import { BsCollectionFill as IssuesIcon } from 'react-icons/bs'
 import { MdKeyboardArrowDown as ExpandMore } from 'react-icons/md'
+import { BsTerminalFill as ConsoleIcon } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import Avatar from './Avatar'
 import AboutModal from './AboutModal'
 import IssueModal from './IssueModal'
+import PGliteConsoleModal from './PGliteConsoleModal'
 import ItemGroup from './ItemGroup'
 import ProfileMenu from './ProfileMenu'
 
@@ -22,6 +24,7 @@ function LeftMenu() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showAboutModal, setShowAboutModal] = useState(false)
   const [showIssueModal, setShowIssueModal] = useState(false)
+  const [showPGliteConsoleModal, setShowPGliteConsoleModal] = useState(false)
   const { showMenu, setShowMenu } = useContext(MenuContext)!
 
   const classes = classnames(
@@ -144,7 +147,14 @@ function LeftMenu() {
 
           {/* bottom group */}
           <div className="flex flex-col px-2 pb-2 text-gray-500 mt-7">
-            <a className="inline-flex" href="https://electric-sql.com/">
+            <button
+              type="button"
+              className="inline-flex mt-1"
+              onClick={() => setShowPGliteConsoleModal(true)}
+            >
+              <ConsoleIcon className="w-3 mr-2 mt-1" /> PGlite Console
+            </button>
+            <a className="inline-flex mt-1" href="https://electric-sql.com/">
               <ElectricIcon className="w-3 h-3 mr-2 mt-1 scale-150" />
               {` `}
               ElectricSQL
@@ -170,6 +180,12 @@ function LeftMenu() {
         <IssueModal
           isOpen={showIssueModal}
           onDismiss={() => setShowIssueModal(false)}
+        />
+      }
+      {
+        <PGliteConsoleModal
+          isOpen={showPGliteConsoleModal}
+          onDismiss={() => setShowPGliteConsoleModal(false)}
         />
       }
     </>

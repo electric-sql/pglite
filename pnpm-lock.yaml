@@ -47,6 +47,9 @@ importers:
       '@electric-sql/pglite-react':
         specifier: workspace:*
         version: link:../../packages/pglite-react
+      '@electric-sql/pglite-repl':
+        specifier: workspace:*
+        version: link:../../packages/pglite-repl
       '@electric-sql/pglite-sync':
         specifier: workspace:*
         version: link:../../packages/pglite-sync
