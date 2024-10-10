@@ -7,7 +7,7 @@
   "scripts": {
     "backend:up": "dotenv -- docker compose -f ./backend/docker-compose.yml up -d ",
     "backend:down": "dotenv -- docker compose -f ./backend/docker-compose.yml down --volumes",
-    "db:migrate": "dotenv -- pnpm exec pg-migrations apply --directory ./db/migrations",
+    "db:migrate": "dotenv -- pnpm exec pg-migrations apply --directory ./db/migrations-server",
     "db:load-data": "dotenv -- node ./db/load_data.js",
     "dev": "vite",
     "build": "vite build",

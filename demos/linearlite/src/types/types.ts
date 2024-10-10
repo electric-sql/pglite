@@ -22,6 +22,7 @@ export type Issue = {
   created: Date
   kanbanorder: string
   username: string
+  synced: boolean
 }
 
 export type Comment = {

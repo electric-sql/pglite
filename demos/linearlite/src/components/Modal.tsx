@@ -53,14 +53,17 @@ function Modal({
     sizeClasses[size],
     className
   )
-  const handleClick = useCallback((event: MouseEvent) => {
-    event.stopPropagation()
-    event.preventDefault()
-    if (!onDismiss) return
-    if (ref.current && !ref.current.contains(event.target as Element)) {
-      onDismiss()
-    }
-  }, [onDismiss])
+  const handleClick = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation()
+      event.preventDefault()
+      if (!onDismiss) return
+      if (ref.current && !ref.current.contains(event.target as Element)) {
+        onDismiss()
+      }
+    },
+    [onDismiss]
+  )
 
   useLockBodyScroll()
 
