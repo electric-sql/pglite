@@ -39,12 +39,12 @@
     "stylecheck": "pnpm lint && prettier -c ./src"
   },
   "dependencies": {
-    "@electric-sql/pglite-react": "workspace:^",
     "@codemirror/autocomplete": "^6.16.2",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/lang-sql": "^6.6.4",
     "@codemirror/language": "^6.10.2",
     "@codemirror/view": "^6.28.1",
+    "@electric-sql/pglite-react": "workspace:^",
     "@uiw/codemirror-theme-github": "^4.23.0",
     "@uiw/codemirror-theme-xcode": "^4.22.2",
     "@uiw/codemirror-themes": "^4.23.0",
@@ -71,8 +71,8 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "terser": "^5.31.1",
-    "vite": "^5.2.0",
-    "vite-plugin-dts": "^4.0.1",
+    "vite": "^5.4.8",
+    "vite-plugin-dts": "^4.2.3",
     "vite-plugin-libcss": "^1.1.1"
   }
 }

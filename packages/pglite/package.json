@@ -102,7 +102,7 @@
     "playwright": "^1.42.1",
     "serve": "^14.2.3",
     "tinytar": "^0.1.0",
-    "vitest": "^2.0.5"
+    "vitest": "^2.1.2"
   },
   "browser": {
     "fs": false,
