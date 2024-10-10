@@ -34,10 +34,10 @@ function PriorityMenu({
     )
   }
 
-  const options = statusOpts.map(([Icon, priority, label], idx) => {
+  const options = statusOpts.map(([Icon, priority, label]) => {
     return (
       <Menu.Item
-        key={`priority-${idx}`}
+        key={`priority-${priority}`}
         onClick={() => handleSelect(priority as string)}
       >
         <Icon className="mr-3" /> <span>{label}</span>

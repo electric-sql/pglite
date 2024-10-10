@@ -60,7 +60,7 @@ function Modal({
     if (ref.current && !ref.current.contains(event.target as Element)) {
       onDismiss()
     }
-  }, [])
+  }, [onDismiss])
 
   useLockBodyScroll()
 

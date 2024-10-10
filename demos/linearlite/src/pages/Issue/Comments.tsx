@@ -79,6 +79,7 @@ function Comments({ issue }: CommentsProps) {
       </div>
       <div className="flex w-full py-3">
         <button
+          type="button"
           className="px-3 ml-auto text-white bg-indigo-600 rounded hover:bg-indigo-700 h-7"
           onClick={handlePost}
         >

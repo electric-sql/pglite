@@ -11,11 +11,12 @@
     "db:load-data": "dotenv -- node ./db/load_data.js",
     "dev": "vite",
     "build": "vite build",
-    "stylecheck": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "process-data": "node ./db/process_data.js",
-    "format": "prettier --write ./src"
+    "format": "prettier --write ./src",
+    "lint": "eslint ./src",
+    "stylecheck": "eslint ./src && prettier --check ./src ./db"
   },
   "dependencies": {
     "@electric-sql/pglite": "workspace:*",
@@ -69,8 +70,6 @@
     "@types/react-window": "^1.8.8",
     "@types/uuid": "^9.0.3",
     "@types/vite-plugin-react-svg": "^0.2.5",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "dotenv-cli": "^7.4.2",

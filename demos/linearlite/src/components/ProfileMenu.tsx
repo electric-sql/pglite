@@ -55,6 +55,7 @@ export default function ProfileMenu({
         className={classes}
       >
         <button
+          type="button"
           className="flex items-center h-8 px-3 hover:bg-gray-100"
           onClick={() => {
             setShowAboutModal?.(true)

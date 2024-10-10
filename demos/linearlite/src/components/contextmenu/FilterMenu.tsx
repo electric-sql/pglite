@@ -34,10 +34,10 @@ function FilterMenu({ id, button, className }: Props) {
     )
   }
 
-  const priorityOptions = priorities.map(([Icon, priority, label], idx) => {
+  const priorityOptions = priorities.map(([Icon, priority, label]) => {
     return (
       <Menu.Item
-        key={`priority-${idx}`}
+        key={`priority-${priority}`}
         onClick={() => handlePrioritySelect(priority as string)}
       >
         <Icon className="mr-3" />
@@ -49,10 +49,10 @@ function FilterMenu({ id, button, className }: Props) {
     )
   })
 
-  const statusOptions = statuses.map(([Icon, status, label], idx) => {
+  const statusOptions = statuses.map(([Icon, status, label]) => {
     return (
       <Menu.Item
-        key={`status-${idx}`}
+        key={`status-${status}`}
         onClick={() => handleStatusSelect(status as string)}
       >
         <Icon className="mr-3" />

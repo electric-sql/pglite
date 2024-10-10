@@ -21,7 +21,8 @@ interface Props {
 
 const itemSpacing = 8
 
-function IssueCol({ title, status, issues = [] }: Props) {
+function IssueCol({ title, status, issues }: Props) {
+  issues = issues || []
   const statusIcon = <StatusIcon status={status} />
 
   return (
