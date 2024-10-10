@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { DraggableProvided } from 'react-beautiful-dnd'
 import { BsCloudCheck as SyncedIcon } from 'react-icons/bs'
 import { BsCloudSlash as UnsyncedIcon } from 'react-icons/bs'
+import { usePGlite } from '@electric-sql/pglite-react'
 import Avatar from '../../components/Avatar'
 import PriorityMenu from '../../components/contextmenu/PriorityMenu'
 import PriorityIcon from '../../components/PriorityIcon'
@@ -31,6 +32,7 @@ function getStyle(
 }
 
 const IssueItem = ({ issue, style, isDragging, provided }: IssueProps) => {
+  const pg = usePGlite()
   const navigate = useNavigate()
   const priorityIcon = (
     <span className="inline-block m-0.5 rounded-sm border border-gray-100 hover:border-gray-200 p-0.5">
@@ -38,17 +40,13 @@ const IssueItem = ({ issue, style, isDragging, provided }: IssueProps) => {
     </span>
   )
 
-  // const updatePriority = (priority: string) => {
-  //   db.issue.update({
-  //     data: {
-  //       priority: priority,
-  //       modified: new Date(),
-  //     },
-  //     where: {
-  //       id: issue.id,
-  //     },
-  //   })
-  // }
+  const updatePriority = (priority: string) => {
+    pg.sql`
+      UPDATE issue 
+      SET priority = ${priority}, modified = ${new Date()} 
+      WHERE id = ${issue.id}
+    `
+  }
 
   return (
     <div
@@ -79,7 +77,7 @@ const IssueItem = ({ issue, style, isDragging, provided }: IssueProps) => {
           button={priorityIcon}
           id={`priority-menu-` + issue.id}
           filterKeyword={true}
-          // TODO: onSelect={(p) => updatePriority(p)}
+          onSelect={(p) => updatePriority(p)}
         />
         {issue.synced ? (
           <SyncedIcon className="text-green-500 w-4 h-4 ms-2 mb-1" />
