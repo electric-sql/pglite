@@ -108,7 +108,13 @@ export const types = {
   json: {
     to: JSON,
     from: [JSON, JSONB],
-    serialize: (x: any) => JSON_stringify(x),
+    serialize: (x: any) => {
+      if (typeof x === 'string') {
+        return x
+      } else {
+        return JSON_stringify(x)
+      }
+    },
     parse: (x: string) => JSON_parse(x),
   },
   boolean: {
