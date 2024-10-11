@@ -34,4 +34,19 @@ type PostgresFactory<T extends PostgresMod = PostgresMod> = (
   moduleOverrides?: Partial<T>,
 ) => Promise<T>
 
-export default PostgresModFactory as PostgresFactory<PostgresMod>
+const PGLITE_VERSION = 'v0.2.11'
+
+const PostgresModFactoryWithVersion: PostgresFactory<PostgresMod> = async (
+  moduleOverrides = {},
+) => {
+  const mod = await PostgresModFactory(moduleOverrides)
+  mod.preRun.push((mod) => {
+    mod.FS.writeFile(
+      '/confdefs.h',
+      `#define PG_VERSION_STR "PostgreSQL $PG_VERSION (PGlite ${PGLITE_VERSION}) on $host, compiled by $cc_string, \`expr $ac_cv_sizeof_void_p * 8\`-bit"`
+    )
+  })
+  return mod
+}
+
+export default PostgresModFactoryWithVersion

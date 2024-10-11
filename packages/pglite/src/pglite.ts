@@ -424,6 +424,9 @@ export class PGlite
     for (const initFn of extensionInitFns) {
       await initFn()
     }
+
+    // Write the PGlite version to a file
+    await this.writePGliteVersionFile()
   }
 
   /**
@@ -762,5 +765,15 @@ export class PGlite
    */
   _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
     return this.#transactionMutex.runExclusive(fn)
+  }
+
+  /**
+   * Write the PGlite version to a file
+   */
+  async writePGliteVersionFile() {
+    const version = await this.query<{ version: string }>('SELECT version()')
+    const versionString = `Created by: ${version.rows[0].version}`
+    const filePath = `${PGDATA}/PGLITE_VERSION`
+    this.mod!.FS.writeFile(filePath, versionString)
   }
 }
