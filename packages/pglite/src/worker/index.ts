@@ -212,7 +212,6 @@ export class PGliteWorker
       method,
       args,
     }
-    console.log('rpc-call', message)
     this.#tabChannel!.postMessage(message)
     return await new Promise<ReturnType<WorkerApi[Method]>>(
       (resolve, reject) => {
@@ -574,7 +573,6 @@ function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
           const result = (await api[method](...args)) as WorkerRpcResult<
             typeof method
           >['result']
-          console.log('rpc-return', { callId, result })
           tabChannel.postMessage({
             type: 'rpc-return',
             callId,
