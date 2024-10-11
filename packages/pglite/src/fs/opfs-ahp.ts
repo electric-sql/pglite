@@ -278,12 +278,10 @@ export class OpfsAhpFS extends BaseFilesystem {
           const fh = this.#fh.get(filename)!
           const sh = this.#sh.get(filename)
           sh?.close()
-          // @ts-ignore outdated type? need to check
-          await fh.remove().then(() => {
-            this.#fh.delete(filename)
-            this.#sh.delete(filename)
-            resolve()
-          })
+          await this.#dataDirAh.removeEntry(fh.name)
+          this.#fh.delete(filename)
+          this.#sh.delete(filename)
+          resolve()
         }),
       )
     }
