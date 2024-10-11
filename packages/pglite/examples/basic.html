@@ -17,67 +17,37 @@
 <div class="script-plus-log">
 <script type="module">
 import { PGlite } from "@electric-sql/pglite";
-// import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.8/dist/index.js";
 
 console.log("Starting...");
 
 // In-memory database:
-const pg = await PGlite.create();
+const pg = new PGlite();
 // Or, stored in indexedDB:
 // const pg = new PGlite('pgdata');
 
-// Create a table with JSON and JSONB columns
-await pg.query(`
-  CREATE TABLE json_test (
+console.log("Ready!");
+
+console.log("Creating table...");
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
-    json_data JSON,
-    jsonb_data JSONB
+    name TEXT
   );
 `);
 
-// Insert a row with JSON object
-const jsonObject = { text: "Hello", number: 42 };
-await pg.query(`
-  INSERT INTO json_test (json_data, jsonb_data)
-  VALUES ($1, $2);
-`, [JSON.stringify(jsonObject), JSON.stringify(jsonObject)]);
+console.log("Inserting data...");
 
-// Query and extract values using the -> operator
-const result = await pg.query(`
-  SELECT 
-    json_data->'text' AS json_text,
-    json_data->'number' AS json_number,
-    jsonb_data->'text' AS jsonb_text,
-    jsonb_data->'number' AS jsonb_number
-  FROM json_test;
+await pg.exec("INSERT INTO test (name) VALUES ('test');");
+
+console.log("Selecting data...");
+
+const res = await pg.exec(`
+  SELECT * FROM test;
 `);
 
-console.log("Extracted values:");
-console.log("JSON text:", result.rows[0].json_text);
-console.log("JSON number:", result.rows[0].json_number);
-console.log("JSONB text:", result.rows[0].jsonb_text);
-console.log("JSONB number:", result.rows[0].jsonb_number);
+console.log(res);
 
-// console.log(await pg.query("SELECT * FROM json_test;"));
-
-// const result2 = await pg.query(`
-//   SELECT
-//     '{"text": "Hello", "number": 42}'::json AS json,
-//     '{"text": "Hello", "number": 42}'::jsonb AS jsonb,
-//     '{"text": "Hello", "number": 42}'::json -> 'text' AS json_text,
-//     '{"text": "Hello", "number": 42}'::jsonb -> 'text' AS jsonb_text,
-//     '{"text": "Hello", "number": 42}'::json -> 'number' AS json_number,
-//     '{"text": "Hello", "number": 42}'::jsonb -> 'number' AS jsonb_number
-// `);
-
-// console.log("Extracted values 2:");
-// console.log("JSON:", result2.rows[0].json);
-// console.log("JSONB:", result2.rows[0].jsonb);
-// console.log("JSON text:", result2.rows[0].json_text);
-// console.log("JSON number:", result2.rows[0].json_number);
-// console.log("JSONB text:", result2.rows[0].jsonb_text);
-// console.log("JSONB number:", result2.rows[0].jsonb_number);
-
+console.log(await pg.exec("SELECT * FROM test;"));
 </script>
 <div id="log"></div>
 </div>
