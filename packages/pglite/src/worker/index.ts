@@ -1,5 +1,6 @@
 import type {
   DebugLevel,
+  ExecProtocolResult,
   Extensions,
   PGliteInterface,
   PGliteInterfaceExtensions,
@@ -8,7 +9,6 @@ import type {
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { uuid } from '../utils.js'
-import type { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export type PGliteWorkerOptions = PGliteOptions & {
   meta?: any
@@ -212,6 +212,7 @@ export class PGliteWorker
       method,
       args,
     }
+    console.log('rpc-call', message)
     this.#tabChannel!.postMessage(message)
     return await new Promise<ReturnType<WorkerApi[Method]>>(
       (resolve, reject) => {
@@ -337,12 +338,8 @@ export class PGliteWorker
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
    */
-  async execProtocol(
-    message: Uint8Array,
-  ): Promise<Array<[BackendMessage, Uint8Array]>> {
-    return (await this.#rpc('execProtocol', message)) as Array<
-      [BackendMessage, Uint8Array]
-    >
+  async execProtocol(message: Uint8Array): Promise<ExecProtocolResult> {
+    return await this.#rpc('execProtocol', message)
   }
 
   /**
@@ -577,6 +574,7 @@ function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
           const result = (await api[method](...args)) as WorkerRpcResult<
             typeof method
           >['result']
+          console.log('rpc-return', { callId, result })
           tabChannel.postMessage({
             type: 'rpc-return',
             callId,
@@ -623,19 +621,15 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       await db.close()
     },
     async execProtocol(message: Uint8Array) {
-      const result = await db.execProtocol(message)
-      return result.map(([message, data]) => {
-        if (data.byteLength !== data.buffer.byteLength) {
-          // The data is a slice of a larger buffer, this is potentially the whole
-          // memory of the WASM module. We copy it to a new Uint8Array and return that.
-          const buffer = new ArrayBuffer(data.byteLength)
-          const dataCopy = new Uint8Array(buffer)
-          dataCopy.set(data)
-          return [message, dataCopy]
-        } else {
-          return [message, data]
-        }
-      })
+      const { messages, data } = await db.execProtocol(message)
+      if (data.byteLength !== data.buffer.byteLength) {
+        const buffer = new ArrayBuffer(data.byteLength)
+        const dataCopy = new Uint8Array(buffer)
+        dataCopy.set(data)
+        return { messages, data: dataCopy }
+      } else {
+        return { messages, data }
+      }
     },
     async execProtocolRaw(message: Uint8Array) {
       const result = await db.execProtocolRaw(message)

@@ -154,7 +154,7 @@ export async function formatQuery(
         await pg.execProtocol(serializeProtocol.describe({ type: 'S' }), {
           syncToFs: false,
         })
-      ).map(([msg]) => msg),
+      ).messages,
     )
   } finally {
     await pg.execProtocol(serializeProtocol.sync(), { syncToFs: false })
