@@ -132,6 +132,12 @@ describe('serialize', () => {
     expect(types.serializers[114]({ test: 1 })).toEqual('{"test":1}')
   })
 
+  it('json from string', () => {
+    expect(types.serializers[114](JSON.stringify({ test: 1 }))).toEqual(
+      '{"test":1}',
+    )
+  })
+
   it('blob', () => {
     expect(types.serializers[17](Uint8Array.from([1, 2, 3]))).toEqual(
       '\\x010203',
