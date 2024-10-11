@@ -100,6 +100,7 @@ export function Repl({
           extractStyles()
         }, 0)
       }
+      // eslint-disable-next-line @eslint-react/web-api/no-leaked-event-listener
       window
         .matchMedia('(prefers-color-scheme: dark)')
         .addEventListener('change', listener)
