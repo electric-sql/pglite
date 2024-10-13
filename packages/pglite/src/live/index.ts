@@ -1,3 +1,4 @@
+import { Mutex } from 'async-mutex'
 import type {
   Extension,
   PGliteInterface,
@@ -12,6 +13,7 @@ import type {
   LiveQuery,
   LiveChanges,
   Change,
+  LiveQueryResults,
 } from './interface'
 import { uuid, formatQuery } from '../utils.js'
 
@@ -20,6 +22,7 @@ export type {
   LiveQuery,
   LiveChanges,
   Change,
+  LiveQueryResults,
 } from './interface.js'
 
 const MAX_RETRIES = 5
@@ -36,26 +39,65 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       callback?: (results: Results<T>) => void,
     ) {
       let signal: AbortSignal | undefined
+      let offset: number | undefined
+      let limit: number | undefined
       if (typeof query !== 'string') {
         signal = query.signal
         params = query.params
         callback = query.callback
+        offset = query.offset
+        limit = query.limit
         query = query.query
       }
+
+      // Offset and limit must be provided together
+      if ((offset === undefined) !== (limit === undefined)) {
+        throw new Error('offset and limit must be provided together')
+      }
+
+      const isWindowed = offset !== undefined && limit !== undefined
+
+      if (
+        isWindowed &&
+        (typeof offset !== 'number' || typeof limit !== 'number')
+      ) {
+        throw new Error('offset and limit must be numbers')
+      }
+
       let callbacks: Array<(results: Results<T>) => void> = callback
         ? [callback]
         : []
       const id = uuid().replace(/-/g, '')
       let dead = false
 
-      let results: Results<T>
+      let results: LiveQueryResults<T>
       let tables: { table_name: string; schema_name: string }[]
+
+      const processWindowedResults = (
+        results: Results<T & { __total_count__: number }>,
+      ): LiveQueryResults<T> => {
+        const totalCount =
+          results.rows.length > 0 ? results.rows[0].__total_count__ : 0
+        return {
+          ...results,
+          rows: results.rows.map((row) => {
+            const { __total_count__, ...rest } = row
+            return rest
+          }) as T[],
+          offset,
+          limit,
+          totalCount,
+        }
+      }
 
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
-          const formattedQuery = await formatQuery(pg, query, params, tx)
-          await tx.query(
+          const formattedQuery =
+            params && params.length > 0
+              ? await formatQuery(pg, query, params, tx)
+              : query
+          await tx.exec(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           )
 
@@ -63,42 +105,95 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
-          // Create prepared statement to get the results
-          await tx.exec(`
-            PREPARE live_query_${id}_get AS
-            SELECT * FROM live_query_${id}_view;
-          `)
+          if (isWindowed) {
+            // Option using a CTE to get the total count
+            await tx.exec(`
+              PREPARE live_query_${id}_get(int, int) AS
+              WITH full_query AS (
+                SELECT * FROM live_query_${id}_view
+              )
+              SELECT *, (SELECT COUNT(*) FROM full_query) AS __total_count__
+              FROM full_query
+              LIMIT $1 OFFSET $2;
+            `)
 
-          // Get the initial results
-          results = await tx.query<T>(`EXECUTE live_query_${id}_get;`)
+            // Option using a window function to get the total count
+            // await tx.exec(`
+            //   PREPARE live_query_${id}_get(int, int) AS
+            //   SELECT *, COUNT(*) OVER () AS __total_count__
+            //   FROM live_query_${id}_view
+            //   LIMIT $1 OFFSET $2;
+            // `)
+          } else {
+            await tx.exec(`
+              PREPARE live_query_${id}_get AS
+              SELECT * FROM live_query_${id}_view;
+            `)
+          }
+
+          results = isWindowed
+            ? processWindowedResults(
+                await tx.query<T & { __total_count__: number }>(
+                  `EXECUTE live_query_${id}_get(${limit}, ${offset})`,
+                ),
+              )
+            : await tx.query<T>(`EXECUTE live_query_${id}_get;`)
         })
       }
       await init()
 
       // Function to refresh the query
-      const refresh = async (count = 0) => {
-        if (callbacks.length === 0) {
-          return
-        }
-        try {
-          results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
-        } catch (e) {
-          const msg = (e as Error).message
+      const refreshMutex = new Mutex()
+      const refresh = async (newOffset?: number, newLimit?: number) => {
+        await refreshMutex.runExclusive(async () => {
+          // We can optionally provide new offset and limit values to refresh with
           if (
-            msg === `prepared statement "live_query_${id}_get" does not exist`
+            !isWindowed &&
+            (newOffset !== undefined || newLimit !== undefined)
           ) {
-            // If the prepared statement does not exist, reset and try again
-            // This can happen if using the multi-tab worker
-            if (count > MAX_RETRIES) {
-              throw e
-            }
-            await init()
-            refresh(count + 1)
-          } else {
-            throw e
+            throw new Error(
+              'offset and limit cannot be provided for non-windowed queries',
+            )
           }
-        }
-        runResultCallbacks(callbacks, results)
+          if ((newOffset === undefined) !== (newLimit === undefined)) {
+            throw new Error('offset and limit must be provided together')
+          }
+          offset = newOffset ?? offset
+          limit = newLimit ?? limit
+
+          const run = async (count = 0) => {
+            if (callbacks.length === 0) {
+              return
+            }
+            try {
+              results = isWindowed
+                ? processWindowedResults(
+                    await pg.query<T & { __total_count__: number }>(
+                      `EXECUTE live_query_${id}_get(${limit}, ${offset})`,
+                    ),
+                  )
+                : await pg.query<T>(`EXECUTE live_query_${id}_get;`)
+            } catch (e) {
+              const msg = (e as Error).message
+              if (
+                msg ===
+                `prepared statement "live_query_${id}_get" does not exist`
+              ) {
+                // If the prepared statement does not exist, reset and try again
+                // This can happen if using the multi-tab worker
+                if (count > MAX_RETRIES) {
+                  throw e
+                }
+                await init()
+                refresh(count + 1)
+              } else {
+                throw e
+              }
+            }
+            runResultCallbacks(callbacks, results)
+          }
+          await run()
+        })
       }
 
       // Setup the listeners
