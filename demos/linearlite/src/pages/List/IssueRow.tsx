@@ -13,7 +13,7 @@ import { formatDate } from '../../utils/date'
 import { Issue } from '../../types/types'
 
 interface Props {
-  issue: Issue
+  issue: Issue | undefined
   style: CSSProperties
 }
 
@@ -25,7 +25,7 @@ function IssueRow({ issue, style }: Props) {
     pg.sql`
       UPDATE issue 
       SET status = ${status}, modified = ${new Date()} 
-      WHERE id = ${issue.id}
+      WHERE id = ${issue!.id}
     `
   }
 
@@ -33,14 +33,25 @@ function IssueRow({ issue, style }: Props) {
     pg.sql`
       UPDATE issue 
       SET priority = ${priority}, modified = ${new Date()} 
-      WHERE id = ${issue.id}
+      WHERE id = ${issue!.id}
     `
+  }
+
+  if (!issue?.id) {
+    return (
+      <div
+        className="flex items-center flex-grow w-full min-w-0 pl-2 pr-8 text-sm border-b border-gray-100 hover:bg-gray-100 shrink-0"
+        style={style}
+      >
+        <div className="w-full h-full" />
+      </div>
+    )
   }
 
   return (
     <div
       key={issue.id}
-      className="flex items-center flex-grow w-full min-w-0 pl-2 pr-8 text-sm border-b border-gray-100 hover:bg-gray-100 h-11 shrink-0"
+      className="flex items-center flex-grow w-full min-w-0 pl-2 pr-8 text-sm border-b border-gray-100 hover:bg-gray-100 shrink-0"
       id={issue.id}
       onClick={() => navigate(`/issue/${issue.id}`)}
       style={style}

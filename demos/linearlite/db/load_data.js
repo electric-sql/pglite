@@ -12,42 +12,62 @@ const issues = generateIssues(ISSUES_TO_LOAD)
 console.info(`Connecting to Postgres at ${DATABASE_URL}`)
 const db = createPool(DATABASE_URL)
 
-async function makeInsertQuery(db, table, data) {
-  const columns = Object.keys(data)
-  const columnsNames = columns.join(`, `)
-  const values = columns.map((column) => data[column])
-  return await db.query(sql`
-    INSERT INTO ${sql.ident(table)} (${sql(columnsNames)})
-    VALUES (${sql.join(values.map(sql.value), `, `)})
-  `)
-}
+function createBatchInsertQuery(table, columns, dataArray) {
+  const valuesSql = dataArray.map(
+    (data) =>
+      sql`(${sql.join(
+        columns.map((column) => sql.value(data[column])),
+        sql`, `
+      )})`
+  )
 
-async function importIssue(db, issue) {
-  const { comments: _, ...rest } = issue
-  return await makeInsertQuery(db, `issue`, rest)
-}
-
-async function importComment(db, comment) {
-  return await makeInsertQuery(db, `comment`, comment)
+  return sql`
+    INSERT INTO ${sql.ident(table)} (${sql.join(
+      columns.map((col) => sql.ident(col)),
+      sql`, `
+    )})
+    VALUES ${sql.join(valuesSql, sql`, `)}
+  `
 }
 
 const issueCount = issues.length
 let commentCount = 0
-const batchSize = 100
-for (let i = 0; i < issueCount; i += batchSize) {
-  await db.tx(async (db) => {
-    db.query(sql`SET CONSTRAINTS ALL DEFERRED;`) // disable FK checks
-    for (let j = i; j < i + batchSize && j < issueCount; j++) {
-      process.stdout.write(`Loading issue ${j + 1} of ${issueCount}\r`)
-      const issue = issues[j]
-      await importIssue(db, issue)
-      for (const comment of issue.comments) {
-        commentCount++
-        await importComment(db, comment)
-      }
-    }
-  })
-}
+
+await db.tx(async (db) => {
+  await db.query(sql`SET CONSTRAINTS ALL DEFERRED;`) // disable FK checks
+
+  const batchSize = 1000
+  for (let i = 0; i < issueCount; i += batchSize) {
+    const issueBatch = issues
+      .slice(i, i + batchSize)
+      .map(({ comments: _, ...rest }) => rest)
+    await db.query(
+      createBatchInsertQuery('issue', Object.keys(issueBatch[0]), issueBatch)
+    )
+
+    process.stdout.write(
+      `Loaded ${Math.min(i + batchSize, issueCount)} of ${issueCount} issues\r`
+    )
+  }
+
+  const allComments = issues.flatMap((issue) => issue.comments)
+  commentCount = allComments.length
+
+  for (let i = 0; i < allComments.length; i += batchSize) {
+    const commentBatch = allComments.slice(i, i + batchSize)
+    await db.query(
+      createBatchInsertQuery(
+        'comment',
+        Object.keys(commentBatch[0]),
+        commentBatch
+      )
+    )
+
+    process.stdout.write(
+      `Loaded ${Math.min(i + batchSize, commentCount)} of ${commentCount} comments\r`
+    )
+  }
+})
 
 process.stdout.write(`\n`)
 

@@ -6,17 +6,17 @@ import ViewOptionMenu from './ViewOptionMenu'
 import { MenuContext } from '../App'
 import FilterMenu from './contextmenu/FilterMenu'
 import { useFilterState } from '../utils/filterState'
-import { Issue, PriorityDisplay, StatusDisplay } from '../types/types'
+import { PriorityDisplay, StatusDisplay } from '../types/types'
 
 interface Props {
-  issues: Issue[]
+  filteredIssuesCount: number
   hideSort?: boolean
   showSearch?: boolean
   title?: string
 }
 
 export default function ({
-  issues,
+  filteredIssuesCount,
   hideSort,
   showSearch,
   title = `All issues`,
@@ -29,8 +29,6 @@ export default function ({
   const totalIssuesCount = useLiveQuery<{ count: number }>(
     `SELECT COUNT(id) FROM issue`
   )?.rows[0].count
-
-  const filteredIssuesCount = issues.length ?? 0
 
   const handleSearchInner = (query: string) => {
     setFilterState({

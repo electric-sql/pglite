@@ -34,14 +34,14 @@ worker({
       primaryKey: ['id'],
       shapeKey: 'issues',
     })
-    await pg.sync.syncShapeToTable({
-      shape: {
-        url: `${ELECTRIC_URL}/v1/shape/comment`,
-      },
-      table: 'comment_synced',
-      primaryKey: ['id'],
-      shapeKey: 'comments',
-    })
+    // await pg.sync.syncShapeToTable({
+    //   shape: {
+    //     url: `${ELECTRIC_URL}/v1/shape/comment`,
+    //   },
+    //   table: 'comment_synced',
+    //   primaryKey: ['id'],
+    //   shapeKey: 'comments',
+    // })
     startWritePath(pg)
     return pg
   },

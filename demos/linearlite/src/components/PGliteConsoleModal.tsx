@@ -15,7 +15,7 @@ export default function PGliteConsoleModal({ isOpen, onDismiss }: Props) {
       size="large"
     >
       <div className="flex flex-col w-full h-100">
-        <Repl />
+        <Repl showTime={true} />
       </div>
     </Modal>
   )

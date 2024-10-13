@@ -31,6 +31,17 @@ CREATE TABLE IF NOT EXISTS "comment_synced" (
     -- the comments when the delete is synced.
 );
 
+-- # Indexes for the synced tables
+CREATE INDEX IF NOT EXISTS "issue_synced_id_idx" ON "issue_synced" ("id");
+CREATE INDEX IF NOT EXISTS "issue_synced_created_idx" ON "issue_synced" ("created");
+CREATE INDEX IF NOT EXISTS "issue_synced_modified_idx" ON "issue_synced" ("modified");
+CREATE INDEX IF NOT EXISTS "issue_synced_status_idx" ON "issue_synced" ("status");
+CREATE INDEX IF NOT EXISTS "issue_synced_priority_idx" ON "issue_synced" ("priority");
+
+CREATE INDEX IF NOT EXISTS "comment_synced_id_idx" ON "comment_synced" ("id");
+CREATE INDEX IF NOT EXISTS "comment_synced_created_at_idx" ON "comment_synced" ("created_at");
+CREATE INDEX IF NOT EXISTS "comment_synced_issue_id_idx" ON "comment_synced" ("issue_id");
+
 -- # Tables for the local changes
 -- All changes are applied to these local only tables, and synced back to the server.
 -- These tables mirror the server tables, but have nullable columns, along with a 
@@ -80,6 +91,23 @@ CREATE TABLE IF NOT EXISTS "comment_local" (
     "synced_at" BIGINT,
     CONSTRAINT "comment_local_pkey" PRIMARY KEY ("id")
 );
+
+
+-- # Indexes for the local tables
+CREATE INDEX IF NOT EXISTS "issue_local_id_idx" ON "issue_local" ("id");
+CREATE INDEX IF NOT EXISTS "issue_local_synced_at_idx" ON "issue_local" ("synced_at");
+CREATE INDEX IF NOT EXISTS "issue_local_created_idx" ON "issue_local" ("created");
+CREATE INDEX IF NOT EXISTS "issue_local_modified_idx" ON "issue_local" ("modified");
+CREATE INDEX IF NOT EXISTS "issue_local_status_idx" ON "issue_local" ("status");
+CREATE INDEX IF NOT EXISTS "issue_local_priority_idx" ON "issue_local" ("priority");
+CREATE INDEX IF NOT EXISTS "issue_local_is_deleted_idx" ON "issue_local" ("is_deleted");
+CREATE INDEX IF NOT EXISTS "issue_local_is_new_idx" ON "issue_local" ("is_new");
+
+CREATE INDEX IF NOT EXISTS "comment_local_id_idx" ON "comment_local" ("id");
+CREATE INDEX IF NOT EXISTS "comment_local_created_at_idx" ON "comment_local" ("created_at");
+CREATE INDEX IF NOT EXISTS "comment_local_issue_id_idx" ON "comment_local" ("issue_id");
+CREATE INDEX IF NOT EXISTS "comment_local_is_deleted_idx" ON "comment_local" ("is_deleted");
+CREATE INDEX IF NOT EXISTS "comment_local_is_new_idx" ON "comment_local" ("is_new");
 
 
 -- # Views of the unified sync tables and local changes
