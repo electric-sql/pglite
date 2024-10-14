@@ -552,6 +552,7 @@ PDEBUG("# 334");
 #endif
             emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
         } else {
+
             PDEBUG("# 570: REPL(single after initdb):Begin(NORETURN)");
             while (repl) { interactive_file(); }
             PDEBUG("# 572: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
@@ -1096,7 +1097,8 @@ setup() {
     PDEBUG("=setup=");
 
     // default for web is embed ( CMA )
-    is_embed = is_web_env();
+PDEBUG(" >>>>>>>>>>>>> FORCING EMBED MODE <<<<<<<<<<<<<<<<");
+    is_embed = true; // is_web_env();
 
 #if PGDEBUG
     printf("# 1095: argv0 (%s) PGUSER=%s PGDATA=%s PGDATABASE=%s PGEMBED=%s REPL=%s\n",

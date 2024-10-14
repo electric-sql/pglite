@@ -2,7 +2,7 @@
 
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
-export CMA_MB=${CMA_MB:-2}
+export CMA_MB=${CMA_MB:-32}
 
 export CI=${CI:-false}
 
