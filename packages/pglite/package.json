@@ -92,17 +92,17 @@
   "devDependencies": {
     "@electric-sql/pg-protocol": "workspace:*",
     "@types/emscripten": "^1.39.13",
-    "@types/node": "^20.11.18",
+    "@types/node": "^20.16.11",
     "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",
     "buffer": "^6.0.3",
-    "bun": "^1.1.18",
+    "bun": "^1.1.30",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
-    "playwright": "^1.42.1",
+    "playwright": "^1.48.0",
     "serve": "^14.2.3",
     "tinytar": "^0.1.0",
-    "vitest": "^2.0.5"
+    "vitest": "^2.1.2"
   },
   "browser": {
     "fs": false,

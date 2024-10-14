@@ -39,19 +39,19 @@
     "stylecheck": "pnpm lint && prettier -c ./src"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.1",
+    "@codemirror/commands": "^6.7.0",
+    "@codemirror/lang-sql": "^6.8.0",
+    "@codemirror/language": "^6.10.3",
+    "@codemirror/view": "^6.34.1",
     "@electric-sql/pglite-react": "workspace:^",
-    "@codemirror/autocomplete": "^6.16.2",
-    "@codemirror/commands": "^6.6.0",
-    "@codemirror/lang-sql": "^6.6.4",
-    "@codemirror/language": "^6.10.2",
-    "@codemirror/view": "^6.28.1",
-    "@uiw/codemirror-theme-github": "^4.23.0",
-    "@uiw/codemirror-theme-xcode": "^4.22.2",
-    "@uiw/codemirror-themes": "^4.23.0",
-    "@uiw/react-codemirror": "^4.22.2",
+    "@uiw/codemirror-theme-github": "^4.23.5",
+    "@uiw/codemirror-theme-xcode": "^4.23.5",
+    "@uiw/codemirror-themes": "^4.23.5",
+    "@uiw/react-codemirror": "^4.23.5",
     "psql-describe": "^0.1.5",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "peerDependencies": {
     "@electric-sql/pglite": "workspace:^"
@@ -63,16 +63,16 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:^",
-    "@types/node": "^20.11.18",
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
+    "@types/node": "^20.16.11",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.2",
     "eslint-plugin-react-compiler": "0.0.0-experimental-9ed098e-20240725",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
-    "terser": "^5.31.1",
-    "vite": "^5.2.0",
-    "vite-plugin-dts": "^4.0.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.12",
+    "terser": "^5.34.1",
+    "vite": "^5.4.8",
+    "vite-plugin-dts": "^4.2.3",
     "vite-plugin-libcss": "^1.1.1"
   }
 }

@@ -21,6 +21,8 @@ export default [
       'react-hooks/exhaustive-deps': 'error',
       'react-hooks/rules-of-hooks': 'error',
       'react-refresh/only-export-components': 'off',
+      '@eslint-react/hooks-extra/no-direct-set-state-in-use-effect': 'off',
+      '@eslint-react/web-api/no-leaked-timeout': 'off',
     },
   },
   {
