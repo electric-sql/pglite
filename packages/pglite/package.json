@@ -100,7 +100,6 @@
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "playwright": "^1.48.0",
-    "serve": "^14.2.3",
     "tinytar": "^0.1.0",
     "vitest": "^2.1.2"
   },

@@ -498,6 +498,48 @@ await testEsmAndCjs(async (importType) => {
       ])
     })
 
+    it('basic live incremental query with limit 1', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number) VALUES (10);
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        'SELECT * FROM testTable ORDER BY number ASC LIMIT 1;',
+        [],
+        'id',
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([{ id: 1, number: 10 }])
+
+      await db.exec('INSERT INTO testTable (number) VALUES (5);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([{ id: 2, number: 5 }])
+
+      unsubscribe()
+    })
+
     it('live incremental query on view', async () => {
       const db = await PGlite.create({
         extensions: { live },
@@ -921,6 +963,72 @@ await testEsmAndCjs(async (importType) => {
         { id: 3, number: 30 },
         { id: 4, number: 40 },
         { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
+    })
+
+    it('live changes limit 1', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number) VALUES (10);
+      `)
+
+      let updatedChanges
+      const eventTarget = new EventTarget()
+
+      const { initialChanges, subscribe, unsubscribe } = await db.live.changes({
+        query: 'SELECT * FROM testTable ORDER BY number ASC LIMIT 1;',
+        params: [],
+        key: 'id',
+      })
+
+      expect(initialChanges).toEqual([
+        {
+          __op__: 'INSERT',
+          id: 1,
+          number: 10,
+          __after__: null,
+          __changed_columns__: [],
+        },
+      ])
+
+      subscribe((changes) => {
+        updatedChanges = changes
+        eventTarget.dispatchEvent(new Event('change'))
+      })
+
+      await db.exec('INSERT INTO testTable (number) VALUES (5);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedChanges).toEqual([
+        {
+          __op__: 'INSERT',
+          id: 2,
+          number: 5,
+          __after__: null,
+          __changed_columns__: [],
+        },
+        {
+          __op__: 'DELETE',
+          id: 1,
+          number: null,
+          __after__: null,
+          __changed_columns__: [],
+        },
       ])
 
       unsubscribe()

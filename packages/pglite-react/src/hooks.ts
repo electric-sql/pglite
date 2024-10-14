@@ -25,14 +25,10 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 ): Omit<Results<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const paramsRef = useRef(params)
-  const [liveQueryFromPromise, setLiveQueryFromPromise] = useState<
-    LiveQuery<T> | undefined
-  >()
+  const liveQueryRef = useRef<LiveQuery<T> | undefined>()
   let liveQuery: LiveQuery<T> | undefined
   if (!(typeof query === 'string') && !(query instanceof Promise)) {
     liveQuery = query
-  } else if (liveQueryFromPromise) {
-    liveQuery = liveQueryFromPromise
   }
   const [results, setResults] = useState<Results<T> | undefined>(
     liveQuery?.initialResults,
@@ -63,11 +59,13 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     } else if (query instanceof Promise) {
       query.then((liveQuery) => {
         if (cancelled) return
-        setLiveQueryFromPromise(liveQuery)
+        liveQueryRef.current = liveQuery
+        setResults(liveQuery.initialResults)
+        liveQuery.subscribe(cb)
       })
       return () => {
         cancelled = true
-        liveQuery?.unsubscribe(cb)
+        liveQueryRef.current?.unsubscribe(cb)
       }
     } else if (liveQuery) {
       setResults(liveQuery.initialResults)
