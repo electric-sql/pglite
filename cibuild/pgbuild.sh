@@ -32,26 +32,30 @@ CC_PGLITE=$CC_PGLITE
 # TODO: --with-libxslt   add to sdk
 #  --disable-atomics https://github.com/WebAssembly/threads/pull/147  "Allow atomic operations on unshared memories"
 
-if ${WASI}
-then
-    echo "WASI BUILD: turning off xml/xslt support"
-    XML2=""
-    UUID=""
-    BUILD=wasi
-    export MAIN_MODULE="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
-else
-    if $CI
+
+
+    if ${WASI}
     then
-        # do not build obsolete ext xml2 on CI
-        XML2="--with-zlib --with-libxml"
+        echo "WASI BUILD: turning off xml/xslt support"
+        XML2=""
+        UUID=""
+        BUILD=wasi
+        export MAIN_MODULE="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
     else
-        XML2="--with-zlib --with-libxml --with-libxslt"
+        # --with-libxml does not fit with --without-zlib
+        if $CI
+        then
+            # do not build obsolete ext xml2 on CI
+            XML2="--with-zlib --with-libxml"
+        else
+            XML2="--with-zlib --with-libxml --with-libxslt"
+        fi
+        UUID="--with-uuid=ossp"
+        BUILD=emscripten
+        export MAIN_MODULE="-sMAIN_MODULE=1"
     fi
-    UUID="--with-uuid=ossp"
-    BUILD=emscripten
-    export MAIN_MODULE="-sMAIN_MODULE=1"
-fi
-# --with-libxml does not fit with --without-zlib
+
+
 
     export XML2_CONFIG=$PREFIX/bin/xml2-config
     export ZIC=$(pwd)/bin/zic
@@ -102,8 +106,6 @@ TZ=UTC PGTZ=UTC node $(pwd)/src/timezone/zic.cjs \$@
 END
     fi
 
-
-
     if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE=${PGROOT}/config.site emconfigure $CNF --with-template=$BUILD
     then
         echo configure ok
@@ -130,14 +132,16 @@ END
 
     > /tmp/disable-shared.log
 
-    cat > bin/emsdk-shared <<END
+    cat > $PGROOT/bin/emsdk-shared <<END
 #!/bin/bash
 echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
 # shared build
 \${PG_LINK:-emcc} -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared -sSIDE_MODULE=1 \$@ -Wno-unused-function
 END
+    ln -sf $PGROOT/bin/emsdk-shared bin/emsdk-shared
 
-    cat > bin/wasi-shared <<END
+
+    cat > $PGROOT/bin/wasi-shared <<END
 #!/bin/bash
 echo "[\$(pwd)] $0 \$@" >> /tmp/disable-shared.log
 # shared build
@@ -145,10 +149,9 @@ echo ===========================================================================
 wasi-c -L${PREFIX}/lib -DPREFIX=${PGROOT} -shared \$@ -Wno-unused-function
 echo ===================================================================================
 END
+    ln -sf $PGROOT/bin/wasi-shared bin/wasi-shared
 
-
-
-    chmod +x bin/zic bin/wasi-shared bin/emsdk-shared
+    chmod +x bin/zic $PGROOT/bin/wasi-shared $PGROOT/bin/emsdk-shared
 
     # for zic and emsdk-shared/wasi-shared called from makefile
     export PATH=$(pwd)/bin:$PATH
@@ -168,7 +171,7 @@ END
 
     # only required for static initdb
     EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE}"
-    EMCC_CFLAGS="${EMCC_CFLAGS} -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=5MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sGLOBAL_BASE=${CMA_MB}MB"
+    EMCC_CFLAGS="${EMCC_CFLAGS} $MEMORY"
     EMCC_CFLAGS="${EMCC_CFLAGS} -DPREFIX=${PGROOT}"
 
     EMCC_CFLAGS="${EMCC_CFLAGS} -Wno-macro-redefined -Wno-unused-function"
@@ -243,6 +246,12 @@ USER="${PGPASS:-postgres}"
 PASS="${PGUSER:-postgres}"
 md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
 print(f"localhost:5432:postgres:{USER}:{md5pass}")
+
+USER="postgres"
+PASS="postgres"
+md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()
+print(f"localhost:5432:postgres:{USER}:{md5pass}")
+
 USER="login"
 PASS="password"
 md5pass =  "md5" + __import__('hashlib').md5(USER.encode() + PASS.encode()).hexdigest()

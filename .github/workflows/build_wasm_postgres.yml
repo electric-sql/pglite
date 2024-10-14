@@ -21,7 +21,7 @@ jobs:
       TOTAL_MEMORY: 128MB
       DEBUG: false
       OBJDUMP: true
-      EXTRA_EXT: vector
+      EXTRA_EXT: vector postgis
 
     steps:
       - uses: actions/checkout@v4
