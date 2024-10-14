@@ -30,7 +30,7 @@ worker({
       shape: {
         url: `${ELECTRIC_URL}/v1/shape/issue`,
       },
-      table: 'issue_synced',
+      table: 'issue',
       primaryKey: ['id'],
       shapeKey: 'issues',
     })
@@ -38,11 +38,11 @@ worker({
     //   shape: {
     //     url: `${ELECTRIC_URL}/v1/shape/comment`,
     //   },
-    //   table: 'comment_synced',
+    //   table: 'comment',
     //   primaryKey: ['id'],
     //   shapeKey: 'comments',
     // })
-    startWritePath(pg)
+    // startWritePath(pg)
     return pg
   },
 })
@@ -57,8 +57,8 @@ async function startWritePath(pg: PGliteWithLive) {
   }>(
     `
       SELECT * FROM
-        (SELECT count(id) as issue_count FROM issue_local WHERE synced_at IS NULL),
-        (SELECT count(id) as comment_count FROM comment_local WHERE synced_at IS NULL)
+        (SELECT count(id) as issue_count FROM issue WHERE synced = false),
+        (SELECT count(id) as comment_count FROM comment WHERE synced = false)
     `,
     [],
     async (results) => {
@@ -94,8 +94,8 @@ async function doSyncToServer(pg: PGliteWithLive) {
         changed_columns,
         is_new,
         is_deleted
-      FROM issue_local 
-      WHERE synced_at IS NULL
+      FROM issue
+      WHERE synced = false
     `)
     const commentRes = await tx.query<CommentChange>(`
       SELECT
@@ -107,7 +107,7 @@ async function doSyncToServer(pg: PGliteWithLive) {
         changed_columns,
         is_new,
         is_deleted
-      FROM comment_local WHERE synced_at IS NULL
+      FROM comment WHERE synced = false
     `)
     issueChanges = issueRes.rows
     commentChanges = commentRes.rows
@@ -128,12 +128,12 @@ async function doSyncToServer(pg: PGliteWithLive) {
   await pg.transaction(async (tx) => {
     for (const { id, version } of issueVersions) {
       await tx.sql`
-        UPDATE issue_local SET synced_at = ${version} WHERE id = ${id}
+        UPDATE issue SET synced = true, version = ${version} WHERE id = ${id}
       `
     }
     for (const { id, version } of commentVersions) {
       await tx.sql`
-        UPDATE comment_local SET synced_at = ${version} WHERE id = ${id}
+        UPDATE comment SET synced = true, version = ${version} WHERE id = ${id}
       `
     }
   })
