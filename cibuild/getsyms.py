@@ -8,8 +8,7 @@ def dbg(*argv, **kw):
     return print(*argv,**kw)
 
 
-SNIFF="_ZNSt14overflow_errorD1Ev"
-# SNIFF=""
+SNIFF=""
 
 
 # we use output from wasi `wasm-objdump -x` run

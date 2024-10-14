@@ -244,6 +244,7 @@ sigprocmask (int operation, const sigset_t *set, sigset_t *old_set) {
   return 0;
 }
 
+
 // STUBS
 int sigismember(const sigset_t *set, int signum) {
     return -1;
@@ -267,10 +268,43 @@ unsigned int alarm(unsigned int seconds) {
 }
 
 
+// WIP : shm
+// ========================================================================================
+volatile int shm_index = 0;
+
+#include <sys/mman.h>
+void get_shm_path(char *tmpnam, const char *name) {
+    const char *shm = getenv("SHM");
+    if (shm) {
+        printf("# 281 SHM=%s.%d", shm, shm_index);
+        snprintf(tmpnam, 128, "%s.%d", shm, shm_index++);
+    } else {
+        snprintf(tmpnam, 128, "/tmp%s", name);
+    }
+}
+
+int shm_open(const char *name, int oflag, mode_t mode) {
+    char tmpnam[128];
+    int fd;
+    get_shm_path(&tmpnam, name);
+    fd=fileno(fopen(tmpnam, "w+"));
+    fprintf(stderr, "# 287: shm_open(%s) => %d\n", tmpnam, fd);
+    return fd;
+}
+
+int shm_unlink(const char *name) {
+    char tmpnam[128];
+    if (getenv("SHM")) {
+        fprintf(stderr, "# 294: shm_unlink(%s) STUB\n", name);
+        return 0;
+    }
+    get_shm_path(&tmpnam, name);
+    return remove(tmpnam);
+}
 
 
-
-
+// popen
+// ========================================================================================
 
 
 #include <stdio.h> // FILE+fprintf
@@ -318,6 +352,8 @@ system_wasi(const char *command) {
 }
 
 // pthread.h
+// ========================================================================================
+
 
 
 int pthread_create(pthread_t *restrict thread,
@@ -349,5 +385,94 @@ void wait();
 FILE *tmpfile(void) {
     return fopen(mktemp("/tmp/tmpfile"),"w");
 }
+
+
+
+
+
+// unix socket via file emulation
+// =================================================================================================
+
+
+
+volatile int fd_queue = 0;
+volatile int fd_out=2;
+volatile FILE *fd_FILE = NULL;
+
+// default fd is stderr
+int socket(int domain, int type, int protocol) {
+    printf("# 360 : domain =%d type=%d proto=%d\n", domain , type, protocol);
+    if (domain|AF_UNIX) {
+        fd_FILE = fopen(PGS_ILOCK, "w+");
+        fd_out = fileno(fd_FILE);
+        printf("# 361 AF_UNIX sock=%d (fd_sock) FILE=%s\n", fd_out, PGS_ILOCK);
+    }
+    return fd_out;
+}
+
+int connect(int socket, void *address, socklen_t address_len) {
+#if 1
+    puts("# 370: connect STUB");
+    return 0;
+#else
+    puts("# 370: connect EINPROGRESS");
+    errno = EINPROGRESS;
+    return -1;
+#endif
+}
+
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, void *dest_addr, socklen_t addrlen) {
+    int sent = write( fd_out, buf, len);
+    printf("# 375: sendto(%d/%d sock=%d fno=%d fd_out=%d)\n", ftell(fd_FILE), len, sockfd, fileno(fd_FILE), fd_out);
+    fd_queue+=sent;
+    return sent;
+}
+
+
+void sock_flush() {
+    if (fd_queue) {
+        printf("#       385: SENT=%d/%d fd_out=%d fno=%d\n", ftell(fd_FILE), fd_queue, fd_out, fileno(fd_FILE));
+        fclose(fd_FILE);
+        fd_queue = 0;
+
+        rename(PGS_ILOCK, PGS_IN);
+        //freopen(PGS_ILOCK, "w", fd_FILE);
+        fd_FILE = fopen(PGS_ILOCK, "w+");
+        printf("#       390: fd_out=%d fno=%d\n", fd_out, fileno(fd_FILE));
+    }
+}
+
+ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
+    return sendto(sockfd, buf, len, flags, NULL, 0);
+}
+
+
+ssize_t recvfrom(int socket, void *buffer, size_t length, int flags, void *address, socklen_t *address_len) {
+    sock_flush();
+    int busy = 0;
+
+    while (access(PGS_OUT, F_OK) != 0) {
+        if (!(busy++ % 555111))
+            printf("# 403: FIXME: busy wait (%s) for input stream %s\n", busy, PGS_OUT);
+        if (busy>1665334) {
+            errno = EINTR;
+            return -1;
+        }
+    }
+
+    FILE *sock_in = fopen(PGS_OUT,"r");
+    char *buf = buffer;
+    buf[0] = 0;
+    int rcv = fread(buf, 1, length, sock_in);
+    printf("# 408: recvfrom(%s max=%d) read=%d\n", PGS_OUT, length, rcv);
+    fclose(sock_in);
+    unlink(PGS_OUT);
+    return rcv;
+}
+
+ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
+    return recvfrom(sockfd, buf, len, flags, NULL, NULL);
+}
+
 
 

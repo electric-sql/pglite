@@ -1,0 +1,34 @@
+--- postgresql/src/interfaces/libpq/fe-misc.c
++++ postgresql-wasm/src/interfaces/libpq/fe-misc.c
+@@ -827,7 +827,12 @@
+ 		int			sent;
+ 
+ #ifndef WIN32
++#if defined(__wasi__)
++        sent = send(conn->sock, ptr, len, 0);
++        printf("pqSendSome in progress %d/%d\n", sent, len);
++#else
+ 		sent = pqsecure_write(conn, ptr, len);
++#endif /* __wasi__ */
+ #else
+ 
+ 		/*
+@@ -861,6 +866,7 @@
+ 					/* Absorb input data if any, and detect socket closure */
+ 					if (conn->sock != PGINVALID_SOCKET)
+ 					{
++PDEBUG("# 868: pqReadData ???????????????????????????????????");
+ 						if (pqReadData(conn) < 0)
+ 							return -1;
+ 					}
+@@ -960,7 +966,9 @@
+ 
+ 		return pqSendSome(conn, conn->outCount);
+ 	}
+-
++#if defined(__wasi__)
++    sock_flush();
++#endif /* __wasi__ */
+ 	return 0;
+ }
+ 
