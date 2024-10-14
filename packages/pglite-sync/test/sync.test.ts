@@ -413,4 +413,58 @@ describe('pglite-sync', () => {
     })
     await shape2.unsubscribe()
   })
+
+  it('handles an update message with no columns to update', async () => {
+    let feedMessage: (message: Message) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessage = (message) => cb([message, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+    })
+
+    // insert
+    await feedMessage({
+      headers: { operation: 'insert' },
+      offset: '-1',
+      key: 'id1',
+      value: {
+        id: 1,
+        task: 'task1',
+        done: false,
+      },
+    })
+    expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
+      {
+        id: 1,
+        task: 'task1',
+        done: false,
+      },
+    ])
+
+    // update with no columns to update
+    await feedMessage({
+      headers: { operation: 'update' },
+      offset: '-1',
+      key: 'id1',
+      value: {
+        id: 1,
+      },
+    })
+    expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
+      {
+        id: 1,
+        task: 'task1',
+        done: false,
+      },
+    ])
+
+    await shape.unsubscribe()
+  })
 })
