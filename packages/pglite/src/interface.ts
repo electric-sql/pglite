@@ -52,6 +52,11 @@ export type Extensions = {
   [namespace: string]: Extension | URL
 }
 
+export interface ExecProtocolResult {
+  messages: BackendMessage[]
+  data: Uint8Array
+}
+
 export interface DumpDataDirResult {
   tarball: Uint8Array
   extension: '.tar' | '.tgz'
@@ -99,7 +104,7 @@ export type PGliteInterface = {
   execProtocol(
     message: Uint8Array,
     options?: ExecProtocolOptions,
-  ): Promise<Array<[BackendMessage, Uint8Array]>>
+  ): Promise<ExecProtocolResult>
   listen(
     channel: string,
     callback: (payload: string) => void,
