@@ -46,15 +46,10 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ? [callback]
         : []
       const id = uuid().replace(/-/g, '')
+      let dead = false
 
       let results: Results<T>
       let tables: { table_name: string; schema_name: string }[]
-
-      const runCallbacks = (results: Results<T>) => {
-        for (const callback of callbacks) {
-          callback(results)
-        }
-      }
 
       const init = async () => {
         await pg.transaction(async (tx) => {
@@ -103,7 +98,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             throw e
           }
         }
-        runCallbacks(results)
+        runResultCallbacks(callbacks, results)
       }
 
       // Setup the listeners
@@ -120,6 +115,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       // Function to subscribe to the query
       const subscribe = (callback: (results: Results<T>) => void) => {
+        if (dead) {
+          throw new Error(
+            'Live query is no longer active and cannot be subscribed to',
+          )
+        }
         callbacks.push(callback)
       }
 
@@ -133,6 +133,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           callbacks = []
         }
         if (callbacks.length === 0) {
+          dead = true
           await Promise.all(unsubList.map((unsub) => unsub()))
           await pg.exec(`
             DROP VIEW IF EXISTS live_query_${id}_view;
@@ -141,18 +142,22 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
       }
 
-      // Add an event listener to unsubscribe if the signal is aborted
-      signal?.addEventListener('abort', () => {
-        unsubscribe()
-      })
-
       // If the signal has already been aborted, unsubscribe
       if (signal?.aborted) {
         await unsubscribe()
+      } else {
+        // Add an event listener to unsubscribe if the signal is aborted
+        signal?.addEventListener(
+          'abort',
+          () => {
+            unsubscribe()
+          },
+          { once: true },
+        )
       }
 
       // Run the callback with the initial results
-      runCallbacks(results!)
+      runResultCallbacks(callbacks, results!)
 
       // Return the initial results
       return {
@@ -184,16 +189,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ? [callback]
         : []
       const id = uuid().replace(/-/g, '')
+      let dead = false
 
       let tables: { table_name: string; schema_name: string }[]
       let stateSwitch: 1 | 2 = 1
       let changes: Results<Change<T>>
-
-      const runCallbacks = (changes: Array<Change<T>>) => {
-        for (const callback of callbacks) {
-          callback(changes)
-        }
-      }
 
       const init = async () => {
         await pg.transaction(async (tx) => {
@@ -349,7 +349,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           }
         }
 
-        runCallbacks([
+        runChangeCallbacks(callbacks, [
           ...(reset
             ? [
                 {
@@ -373,6 +373,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       // Function to subscribe to the query
       const subscribe = (callback: (changes: Array<Change<T>>) => void) => {
+        if (dead) {
+          throw new Error(
+            'Live query is no longer active and cannot be subscribed to',
+          )
+        }
         callbacks.push(callback)
       }
 
@@ -386,6 +391,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           callbacks = []
         }
         if (callbacks.length === 0) {
+          dead = true
           await Promise.all(unsubList.map((unsub) => unsub()))
           await pg.exec(`
             DROP VIEW IF EXISTS live_query_${id}_view;
@@ -397,14 +403,18 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
       }
 
-      // Add an event listener to unsubscribe if the signal is aborted
-      signal?.addEventListener('abort', () => {
-        unsubscribe()
-      })
-
       // If the signal has already been aborted, unsubscribe
       if (signal?.aborted) {
         await unsubscribe()
+      } else {
+        // Add an event listener to unsubscribe if the signal is aborted
+        signal?.addEventListener(
+          'abort',
+          () => {
+            unsubscribe()
+          },
+          { once: true },
+        )
       }
 
       // Run the callback with the initial changes
@@ -450,12 +460,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       const afterMap: Map<any, any> = new Map()
       let lastRows: T[] = []
       let firstRun = true
-
-      const runCallbacks = (results: Results<T>) => {
-        for (const callback of callbacks) {
-          callback(results)
-        }
-      }
 
       const {
         fields,
@@ -517,7 +521,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
         // Run the callbacks
         if (!firstRun) {
-          runCallbacks({
+          runResultCallbacks(callbacks, {
             rows,
             fields,
           })
@@ -525,7 +529,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       })
 
       firstRun = false
-      runCallbacks({
+      runResultCallbacks(callbacks, {
         rows: lastRows,
         fields,
       })
@@ -545,12 +549,16 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
       }
 
-      signal?.addEventListener('abort', () => {
-        unsubscribe()
-      })
-
       if (signal?.aborted) {
         await unsubscribe()
+      } else {
+        signal?.addEventListener(
+          'abort',
+          () => {
+            unsubscribe()
+          },
+          { once: true },
+        )
       }
 
       return {
@@ -672,4 +680,22 @@ async function addNotifyTriggersToTables(
   tables.map((table) =>
     tableNotifyTriggersAdded.add(`${table.schema_name}_${table.table_name}`),
   )
+}
+
+const runResultCallbacks = <T>(
+  callbacks: Array<(results: Results<T>) => void>,
+  results: Results<T>,
+) => {
+  for (const callback of callbacks) {
+    callback(results)
+  }
+}
+
+const runChangeCallbacks = <T>(
+  callbacks: Array<(changes: Array<Change<T>>) => void>,
+  changes: Array<Change<T>>,
+) => {
+  for (const callback of callbacks) {
+    callback(changes)
+  }
 }

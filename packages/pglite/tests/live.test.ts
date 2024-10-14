@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { testEsmAndCjs } from './test-utils.js'
 
 await testEsmAndCjs(async (importType) => {
-  const { PGlite } =
+  const { PGlite } = (
     importType === 'esm'
       ? await import('../dist/index.js')
       : await import('../dist/index.cjs')
+  ) as typeof import('../dist/index.js')
 
   const { live } =
     importType === 'esm'
@@ -14,21 +15,21 @@ await testEsmAndCjs(async (importType) => {
 
   describe(`live ${importType}`, () => {
     it('basic live query', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    SELECT i*10 FROM generate_series(1, 5) i;
-  `)
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
 
       let updatedResults
       const eventTarget = new EventTarget()
@@ -108,22 +109,132 @@ await testEsmAndCjs(async (importType) => {
       ])
     })
 
-    it('live query with params', async () => {
-      const db = new PGlite({
+    it('live query on view', async () => {
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    SELECT i*10 FROM generate_series(1, 5) i;
-  `)
+        CREATE OR REPLACE VIEW testView2 AS
+        SELECT * FROM testTable;
+      `)
+
+      await db.exec(`
+        CREATE OR REPLACE VIEW testView1 AS
+        SELECT * FROM testView2;
+      `)
+
+      await db.exec(`
+        CREATE OR REPLACE VIEW testView AS
+        SELECT * FROM testView1;
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.query(
+        'SELECT * FROM testView ORDER BY number;',
+        [],
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('DELETE FROM testTable WHERE id = 6;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
+
+      db.exec('INSERT INTO testTable (number) VALUES (35);')
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+    })
+
+    it('live query with params', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
 
       let updatedResults
       const eventTarget = new EventTarget()
@@ -194,21 +305,21 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('incremental query unordered', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    VALUES (1), (2);
-  `)
+        INSERT INTO testTable (number)
+        VALUES (1), (2);
+      `)
 
       let updatedResults
       const eventTarget = new EventTarget()
@@ -243,7 +354,7 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('incremental query with non-integer key', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
@@ -292,21 +403,132 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('basic live incremental query', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    SELECT i*10 FROM generate_series(1, 5) i;
-  `)
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        'SELECT * FROM testTable ORDER BY number;',
+        [],
+        'id',
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
+
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+    })
+
+    it('live incremental query on view', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        CREATE OR REPLACE VIEW testView2 AS
+        SELECT * FROM testTable;
+      `)
+
+      await db.exec(`
+        CREATE OR REPLACE VIEW testView1 AS
+        SELECT * FROM testView2;
+      `)
+
+      await db.exec(`
+        CREATE OR REPLACE VIEW testView AS
+        SELECT * FROM testView1;
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
 
       let updatedResults
       const eventTarget = new EventTarget()
@@ -388,21 +610,21 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('live incremental query with params', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    SELECT i*10 FROM generate_series(1, 5) i;
-  `)
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
 
       let updatedResults
       const eventTarget = new EventTarget()
@@ -474,21 +696,21 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('basic live changes', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         extensions: { live },
       })
 
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS testTable (
-      id SERIAL PRIMARY KEY,
-      number INT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
 
       await db.exec(`
-    INSERT INTO testTable (number)
-    SELECT i*10 FROM generate_series(1, 5) i;
-  `)
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
 
       let updatedChanges
       const eventTarget = new EventTarget()
@@ -646,6 +868,121 @@ await testEsmAndCjs(async (importType) => {
           number: null,
         },
       ])
+    })
+
+    it('subscribe to live query after creation', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      const eventTarget = new EventTarget()
+      let updatedResults
+
+      const { initialResults, subscribe, unsubscribe } = await db.live.query(
+        'SELECT * FROM testTable ORDER BY number;',
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      // Subscribe after creation
+      subscribe((result) => {
+        updatedResults = result
+        eventTarget.dispatchEvent(new Event('change'))
+      })
+
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
+    })
+
+    it('subscribe to live changes after creation', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      const eventTarget = new EventTarget()
+      let updatedResults
+
+      const { initialResults, subscribe, unsubscribe } =
+        await db.live.incrementalQuery(
+          'SELECT * FROM testTable ORDER BY number;',
+          [],
+          'id',
+        )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      // Subscribe after creation
+      subscribe((result) => {
+        updatedResults = result
+        eventTarget.dispatchEvent(new Event('change'))
+      })
+
+      db.exec('INSERT INTO testTable (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
     })
   })
 })
