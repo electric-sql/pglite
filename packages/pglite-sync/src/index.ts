@@ -114,6 +114,12 @@ async function createPlugin(
             case 'up-to-date':
               await pg.transaction(async (tx) => {
                 if (debug) console.log('up-to-date, committing all messages')
+
+                // Set the syncing flag to true during this transaction so that
+                // user defined triggers on the table are able to chose how to run
+                // during a sync
+                tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
+
                 if (truncateNeeded) {
                   truncateNeeded = false
                   // TODO: sync into shadow table and reference count
@@ -407,6 +413,7 @@ async function migrateShapeMetadataTables({
 }: MigrateShapeMetadataTablesOptions) {
   await pg.exec(
     `
+    SET ${metadataSchema}.syncing = false;
     CREATE SCHEMA IF NOT EXISTS "${metadataSchema}";
     CREATE TABLE IF NOT EXISTS ${subscriptionMetadataTableName(metadataSchema)} (
       shape_key TEXT PRIMARY KEY,

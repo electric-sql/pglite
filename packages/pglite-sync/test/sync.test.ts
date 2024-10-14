@@ -467,4 +467,67 @@ describe('pglite-sync', () => {
 
     await shape.unsubscribe()
   })
+
+  it('sets the syncing flag to true when syncing begins', async () => {
+    let feedMessage: (message: Message) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessage = (message) => cb([message, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    await pg.exec(`
+      CREATE TABLE test_syncing (
+        id TEXT PRIMARY KEY,
+        value TEXT,
+        is_syncing BOOLEAN
+      );
+
+      CREATE OR REPLACE FUNCTION check_syncing()
+      RETURNS TRIGGER AS $$
+      DECLARE
+        is_syncing BOOLEAN;
+      BEGIN
+        is_syncing := COALESCE(current_setting('electric.syncing', true)::boolean, false);
+        IF is_syncing THEN
+          NEW.is_syncing := TRUE;
+        ELSE
+          NEW.is_syncing := FALSE;
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER test_syncing_trigger
+      BEFORE INSERT ON test_syncing
+      FOR EACH ROW EXECUTE FUNCTION check_syncing();
+    `)
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape/test_syncing' },
+      table: 'test_syncing',
+      primaryKey: ['id'],
+    })
+
+    await feedMessage({
+      headers: { operation: 'insert' },
+      offset: '-1',
+      key: 'id1',
+      value: {
+        id: 'id1',
+        value: 'test value',
+      },
+    })
+
+    const result = await pg.sql`SELECT * FROM test_syncing WHERE id = 'id1'`
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0]).toEqual({
+      id: 'id1',
+      value: 'test value',
+      is_syncing: true,
+    })
+
+    await shape.unsubscribe()
+  })
 })
