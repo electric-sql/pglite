@@ -305,7 +305,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       await init()
 
       const refresh = async () => {
-        if (callbacks.length === 0) {
+        if (callbacks.length === 0 && changes) {
           return
         }
         let reset = false
@@ -485,7 +485,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             case 'DELETE': {
               const oldObj = rowsMap.get(obj[key])
               rowsMap.delete(obj[key])
-              afterMap.delete(oldObj.__after__)
+              // null is the starting point, we don't delete it as another insert
+              // may have happened thats replacing it
+              if (oldObj.__after__ !== null) {
+                afterMap.delete(oldObj.__after__)
+              }
               break
             }
             case 'UPDATE': {
