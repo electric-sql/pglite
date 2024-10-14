@@ -244,7 +244,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             await pg.transaction(async (tx) => {
               // Populate the state table
               await tx.exec(`
-                DELETE FROM live_query_${id}_state${stateSwitch};
                 INSERT INTO live_query_${id}_state${stateSwitch} 
                   SELECT * FROM live_query_${id}_view;
               `)
@@ -253,6 +252,14 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               changes = await tx.query<any>(
                 `EXECUTE live_query_${id}_diff${stateSwitch};`,
               )
+
+              // Switch state
+              stateSwitch = stateSwitch === 1 ? 2 : 1
+
+              // Truncate the old state table
+              await tx.exec(`
+                TRUNCATE live_query_${id}_state${stateSwitch};
+              `)
             })
             break
           } catch (e) {
@@ -271,9 +278,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             }
           }
         }
-
-        // Switch state
-        stateSwitch = stateSwitch === 1 ? 2 : 1
 
         callback([
           ...(reset
