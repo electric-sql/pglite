@@ -4,7 +4,7 @@
  #ifndef STRING_UTILS_H
  #define STRING_UTILS_H
  
-+#if !defined(__wasi__)
++#if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
  #include "libpq-fe.h"
  #include "pqexpbuffer.h"
 +#else

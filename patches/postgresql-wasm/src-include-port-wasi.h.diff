@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasi.h
 +++ postgresql-wasm/src/include/port/wasi.h
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,255 @@
 +#ifndef I_WASI
 +#define I_WASI
 +
@@ -195,7 +195,10 @@
 +
 +
 +#include <sys/mman.h>
-+
++#if defined(PYDK)
++extern int shm_open(const char *name, int oflag, mode_t mode);
++extern int shm_unlink(const char *name);
++#else
 +static int
 +shm_open(const char *name, int oflag, mode_t mode) {
 +    char tmpnam[128];
@@ -213,6 +216,8 @@
 +    fprintf(stderr, "# 200: shm_unlink(%s) STUB\n", tmpnam);
 +    return remove(tmpnam); // -1
 +}
++
++#endif
 +
 +// initdb chmod
 +#if defined(__wasi__)
@@ -244,6 +249,9 @@
 +__SIG_IGN(int param) {
 +}
 +#endif
++
++
++extern void sock_flush();
 +
 +
 +#endif // I_WASI

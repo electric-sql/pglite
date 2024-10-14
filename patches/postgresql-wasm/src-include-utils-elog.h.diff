@@ -29,3 +29,11 @@
  #define ereport(elevel, ...)	\
  	ereport_domain(elevel, TEXTDOMAIN, __VA_ARGS__)
  
+@@ -177,6 +190,7 @@
+ extern int	errcode_for_socket_access(void);
+ 
+ extern int	errmsg(const char *fmt,...) pg_attribute_printf(1, 2);
++// #define errmsg(...) { printf("%s:%d ", __FILE__, __LINE__); pg_errmsg(##__VA_ARGS__); }
+ extern int	errmsg_internal(const char *fmt,...) pg_attribute_printf(1, 2);
+ 
+ extern int	errmsg_plural(const char *fmt_singular, const char *fmt_plural,
