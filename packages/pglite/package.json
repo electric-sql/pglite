@@ -20,44 +20,44 @@
   "main": "dist/index.js",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./template": {
+      "types": "./dist/templating.d.ts",
       "import": "./dist/templating.js",
-      "require": "./dist/templating.cjs",
-      "types": "./dist/templating.d.ts"
+      "require": "./dist/templating.cjs"
     },
     "./live": {
+      "types": "./dist/live/index.d.ts",
       "import": "./dist/live/index.js",
-      "require": "./dist/live/index.cjs",
-      "types": "./dist/live/index.d.ts"
+      "require": "./dist/live/index.cjs"
     },
     "./worker": {
+      "types": "./dist/worker/index.d.ts",
       "import": "./dist/worker/index.js",
-      "require": "./dist/worker/index.cjs",
-      "types": "./dist/worker/index.d.ts"
+      "require": "./dist/worker/index.cjs"
     },
     "./vector": {
+      "types": "./dist/vector/index.d.ts",
       "import": "./dist/vector/index.js",
-      "require": "./dist/vector/index.cjs",
-      "types": "./dist/vector/index.d.ts"
+      "require": "./dist/vector/index.cjs"
     },
     "./nodefs": {
+      "types": "./dist/fs/nodefs.d.ts",
       "import": "./dist/fs/nodefs.js",
-      "require": "./dist/fs/nodefs.cjs",
-      "types": "./dist/fs/nodefs.d.ts"
+      "require": "./dist/fs/nodefs.cjs"
     },
     "./opfs-ahp": {
+      "types": "./dist/fs/opfs-ahp.d.ts",
       "import": "./dist/fs/opfs-ahp.js",
-      "require": "./dist/fs/opfs-ahp.cjs",
-      "types": "./dist/fs/opfs-ahp.d.ts"
+      "require": "./dist/fs/opfs-ahp.cjs"
     },
     "./contrib/*": {
+      "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
-      "require": "./dist/contrib/*.cjs",
-      "types": "./dist/contrib/*.d.ts"
+      "require": "./dist/contrib/*.cjs"
     }
   },
   "type": "module",
