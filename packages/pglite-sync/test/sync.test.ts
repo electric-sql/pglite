@@ -504,6 +504,11 @@ describe('pglite-sync', () => {
       FOR EACH ROW EXECUTE FUNCTION check_syncing();
     `)
 
+    // Check the flag is not set outside of a sync
+    const result0 =
+      await pg.sql`SELECT current_setting('electric.syncing', true)`
+    expect(result0.rows[0]).toEqual({ current_setting: 'false' })
+
     const shape = await pg.electric.syncShapeToTable({
       shape: { url: 'http://localhost:3000/v1/shape/test_syncing' },
       table: 'test_syncing',
@@ -520,6 +525,7 @@ describe('pglite-sync', () => {
       },
     })
 
+    // Check the flag is set during a sync
     const result = await pg.sql`SELECT * FROM test_syncing WHERE id = 'id1'`
     expect(result.rows).toHaveLength(1)
     expect(result.rows[0]).toEqual({
@@ -527,6 +533,11 @@ describe('pglite-sync', () => {
       value: 'test value',
       is_syncing: true,
     })
+
+    // Check the flag is not set outside of a sync
+    const result2 =
+      await pg.sql`SELECT current_setting('electric.syncing', true)`
+    expect(result2.rows[0]).toEqual({ current_setting: 'false' })
 
     await shape.unsubscribe()
   })
