@@ -3,12 +3,7 @@ import { PGlite, Mutex } from '@electric-sql/pglite'
 import { live, type PGliteWithLive } from '@electric-sql/pglite/live'
 import { electricSync } from '@electric-sql/pglite-sync'
 import { migrate } from './migrations'
-import type {
-  IssueChange,
-  CommentChange,
-  ChangeSet,
-  ChangeResponse,
-} from './utils/changes'
+import type { IssueChange, CommentChange, ChangeSet } from './utils/changes'
 
 const WRITE_SERVER_URL = import.meta.env.VITE_WRITE_SERVER_URL
 const ELECTRIC_URL = import.meta.env.VITE_ELECTRIC_URL
@@ -34,15 +29,15 @@ worker({
       primaryKey: ['id'],
       shapeKey: 'issues',
     })
-    // await pg.sync.syncShapeToTable({
-    //   shape: {
-    //     url: `${ELECTRIC_URL}/v1/shape/comment`,
-    //   },
-    //   table: 'comment',
-    //   primaryKey: ['id'],
-    //   shapeKey: 'comments',
-    // })
-    // startWritePath(pg)
+    await pg.sync.syncShapeToTable({
+      shape: {
+        url: `${ELECTRIC_URL}/v1/shape/comment`,
+      },
+      table: 'comment',
+      primaryKey: ['id'],
+      shapeKey: 'comments',
+    })
+    startWritePath(pg)
     return pg
   },
 })
@@ -91,11 +86,11 @@ async function doSyncToServer(pg: PGliteWithLive) {
         created,
         kanbanorder,
         username,
-        changed_columns,
-        is_new,
-        is_deleted
+        modified_columns,
+        deleted,
+        new
       FROM issue
-      WHERE synced = false
+      WHERE synced = false AND sent_to_server = false
     `)
     const commentRes = await tx.query<CommentChange>(`
       SELECT
@@ -103,11 +98,13 @@ async function doSyncToServer(pg: PGliteWithLive) {
         body,
         username,
         issue_id,
-        created_at,
-        changed_columns,
-        is_new,
-        is_deleted
-      FROM comment WHERE synced = false
+        modified,
+        created,
+        modified_columns,
+        deleted,
+        new
+      FROM comment
+      WHERE synced = false AND sent_to_server = false
     `)
     issueChanges = issueRes.rows
     commentChanges = commentRes.rows
@@ -123,18 +120,35 @@ async function doSyncToServer(pg: PGliteWithLive) {
     },
     body: JSON.stringify(changeSet),
   })
-  const changeResponse = (await response.json()) as ChangeResponse
-  const { issueVersions, commentVersions } = changeResponse
+  if (!response.ok) {
+    throw new Error('Failed to apply changes')
+  }
   await pg.transaction(async (tx) => {
-    for (const { id, version } of issueVersions) {
-      await tx.sql`
-        UPDATE issue SET synced = true, version = ${version} WHERE id = ${id}
-      `
+    // Mark all changes as sent to server, but check that the modified timestamp
+    // has not changed in the meantime
+
+    tx.exec('SET LOCAL electric.bypass_triggers = true')
+
+    for (const issue of issueChanges!) {
+      await tx.query(
+        `
+        UPDATE issue
+        SET sent_to_server = true
+        WHERE id = $1 AND modified = $2
+      `,
+        [issue.id, issue.modified]
+      )
     }
-    for (const { id, version } of commentVersions) {
-      await tx.sql`
-        UPDATE comment SET synced = true, version = ${version} WHERE id = ${id}
-      `
+
+    for (const comment of commentChanges!) {
+      await tx.query(
+        `
+        UPDATE comment
+        SET sent_to_server = true
+        WHERE id = $1 AND modified = $2
+      `,
+        [comment.id, comment.modified]
+      )
     }
   })
 }

@@ -68,6 +68,7 @@
     "@databases/pg-migrations": "^5.0.3",
     "@faker-js/faker": "^8.4.1",
     "@tailwindcss/typography": "^0.5.10",
+    "@types/body-parser": "^1.19.5",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.12",
     "@types/lodash.debounce": "^4.0.9",

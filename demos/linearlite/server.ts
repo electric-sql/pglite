@@ -7,8 +7,6 @@ import {
   changeSetSchema,
   CommentChange,
   IssueChange,
-  ChangeResponse,
-  RowChange,
 } from './src/utils/changes'
 
 const DATABASE_URL = process.env.DATABASE_URL
@@ -48,18 +46,17 @@ app.listen(3001, () => {
   console.log('Server is running on port 3001')
 })
 
-async function applyChanges(changes: ChangeSet): Promise<ChangeResponse> {
+async function applyChanges(changes: ChangeSet): Promise<void> {
   const { issues, comments } = changes
   client.query('BEGIN')
   try {
     await client.query('COMMIT')
-    const issueVersions = (
-      await Promise.all(issues.map(applyIssueChange))
-    ).filter((v) => v !== null)
-    const commentVersions = (
-      await Promise.all(comments.map(applyCommentChange))
-    ).filter((v) => v !== null)
-    return { issueVersions, commentVersions }
+    for (const issue of issues) {
+      await applyTableChange('issue', issue)
+    }
+    for (const comment of comments) {
+      await applyTableChange('comment', comment)
+    }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -67,137 +64,50 @@ async function applyChanges(changes: ChangeSet): Promise<ChangeResponse> {
 }
 
 /**
- * Apply an issue change to the database and return the version of the row after
- * the change.
- * @param issueChange
+ * Apply a change to the specified table in the database.
+ * @param tableName The name of the table to apply the change to
+ * @param change The change object containing the data to be applied
  */
-async function applyIssueChange(
-  issueChange: IssueChange
-): Promise<RowChange | null> {
+async function applyTableChange(
+  tableName: 'issue' | 'comment',
+  change: IssueChange | CommentChange
+): Promise<void> {
   const {
     id,
-    title,
-    description,
-    priority,
-    status,
-    modified,
-    created,
-    kanbanorder,
-    username,
-    changed_columns,
-    is_new,
-    is_deleted,
-  } = issueChange
+    modified_columns,
+    new: isNew,
+    deleted,
+  } = change
 
-  if (is_new) {
-    const result = await client.query(
-      `
-      INSERT INTO issue
-      (id, title, description, priority, status, modified, created, kanbanorder, username)
-      VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING version
-    `,
-      [
-        id,
-        title,
-        description,
-        priority,
-        status,
-        modified,
-        created,
-        kanbanorder,
-        username,
-      ]
-    )
-    return { id, version: result.rows[0].version }
-  } else if (is_deleted) {
+  if (deleted) {
     await client.query(
       `
-      DELETE FROM issue WHERE id = $1
-    `,
+        DELETE FROM ${tableName} WHERE id = $1
+        -- ON CONFLICT (id) DO NOTHING
+      `,
       [id]
     )
-    return null
-  } else if (changed_columns) {
-    const setClause = changed_columns
-      .map((column, index) => `${column} = $${index + 1}`)
-      .join(', ')
-    const values = changed_columns.map((column) => issueChange[column])
-    values.push(id)
-
-    const result = await client.query(
-      `
-        UPDATE issue
-        SET ${setClause}
-        WHERE id = $${changed_columns.length + 1}
-        RETURNING version
-      `,
-      values
-    )
-    return { id, version: result.rows[0].version }
-  } else {
-    return null
-  }
-}
-
-/**
- * Apply a comment change to the database and return the version of the row after
- * the change.
- * @param commentChange
- */
-async function applyCommentChange(
-  commentChange: CommentChange
-): Promise<RowChange | null> {
-  const {
-    id,
-    issue_id,
-    body,
-    username,
-    created_at,
-    changed_columns,
-    is_new,
-    is_deleted,
-  } = commentChange
-
-  if (is_new) {
-    const result = await client.query(
-      `
-        INSERT INTO comment
-          (id, issue_id, body, username, created_at)
-        VALUES
-          ($1, $2, $3, $4, $5)
-        RETURNING version
-      `,
-      [id, issue_id, body, username, created_at]
-    )
-    return { id, version: result.rows[0].version }
-  } else if (is_deleted) {
+  } else if (isNew) {
+    const columns = modified_columns || [];
+    const values = columns.map(col => change[col]);
     await client.query(
       `
-      DELETE FROM comment WHERE id = $1
-    `,
-      [id]
-    )
-    return null
-  } else if (changed_columns) {
-    const setClause = changed_columns
-      .map((column, index) => `${column} = $${index + 1}`)
-      .join(', ')
-    const values = changed_columns.map((column) => commentChange[column])
-    values.push(id)
-
-    const result = await client.query(
-      `
-        UPDATE comment
-        SET ${setClause}
-        WHERE id = $${changed_columns.length + 1}
-        RETURNING version
+        INSERT INTO ${tableName} (id, ${columns.join(', ')})
+        VALUES ($1, ${columns.map((_, index) => `$${index + 2}`).join(', ')})
+        -- ON CONFLICT (id) DO NOTHING
       `,
-      values
-    )
-    return { id, version: result.rows[0].version }
+      [id, ...values]
+    );
   } else {
-    return null
+    const columns = modified_columns || [];
+    const values = columns.map(col => change[col]);
+    const updateSet = columns.map((col, index) => `${col} = $${index + 2}`).join(', ');
+    await client.query(
+      `
+        UPDATE ${tableName} SET ${updateSet} WHERE id = $1
+        -- ON CONFLICT (id) DO NOTHING
+      `,
+      [id, ...values]
+    );
   }
 }

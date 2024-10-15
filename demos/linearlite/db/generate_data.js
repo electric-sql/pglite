@@ -41,13 +41,13 @@ function generateIssue(kanbanKey) {
 }
 
 function generateComment(issueId, issueCreatedAt) {
+  const createdAt = faker.date.between({ from: issueCreatedAt, to: new Date() })
   return {
     id: uuidv4(),
     body: faker.lorem.text(),
     username: faker.internet.userName(),
     issue_id: issueId,
-    created_at: faker.date
-      .between({ from: issueCreatedAt, to: new Date() })
-      .toISOString(),
+    created: createdAt.toISOString(),
+    modified: createdAt.toISOString(), // comments are never modified
   }
 }

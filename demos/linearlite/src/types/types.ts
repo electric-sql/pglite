@@ -30,7 +30,8 @@ export type Comment = {
   body: string
   username: string
   issue_id: string
-  created_at: Date
+  created: Date
+  synced: boolean
 }
 
 export const Priority = {

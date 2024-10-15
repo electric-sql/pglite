@@ -177,6 +177,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.10
         version: 0.5.15(tailwindcss@3.4.13)
+      '@types/body-parser':
+        specifier: ^1.19.5
+        version: 1.19.5
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.0
@@ -2621,6 +2624,7 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
+    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 

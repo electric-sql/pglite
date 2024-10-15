@@ -5,6 +5,8 @@ import Avatar from '../../components/Avatar'
 import { formatDate } from '../../utils/date'
 import { showWarning } from '../../utils/notification'
 import { Comment, Issue } from '../../types/types'
+import { BsCloudCheck as SyncedIcon } from 'react-icons/bs'
+import { BsCloudSlash as UnsyncedIcon } from 'react-icons/bs'
 import { useLiveQuery, usePGlite } from '@electric-sql/pglite-react'
 
 export interface CommentsProps {
@@ -32,7 +34,15 @@ function Comments({ issue }: CommentsProps) {
               {comment.username}
             </span>
             <span className=" ms-auto text-sm text-gray-400 ml-2">
-              {formatDate(comment.created_at)}
+              {formatDate(comment.created)}
+            </span>
+            <span className="ms-2">
+              {/* Synced status */}
+              {comment.synced ? (
+                <SyncedIcon className="text-green-500 w-4 h-4" />
+              ) : (
+                <UnsyncedIcon className="text-orange-500 w-4 h-4" />
+              )}
             </span>
           </div>
           <div className="mt-2 text-md prose w-full max-w-full">
@@ -53,7 +63,7 @@ function Comments({ issue }: CommentsProps) {
     }
 
     pg.sql`
-      INSERT INTO comment (id, issue_id, body, created_at, username)
+      INSERT INTO comment (id, issue_id, body, created, username)
       VALUES (
         ${crypto.randomUUID()},
         ${issue.id},

@@ -27,7 +27,7 @@ export default function ({
   const [searchQuery, setSearchQuery] = useState(``)
 
   const totalIssuesCount = useLiveQuery<{ count: number }>(
-    `SELECT COUNT(id) FROM issue`
+    `SELECT COUNT(id) FROM issue WHERE deleted = false`
   )?.rows[0].count
 
   const handleSearchInner = (query: string) => {

@@ -100,7 +100,9 @@ export function filterStateToSql(filterState: FilterState) {
   const sql = `
     SELECT id, title, priority, status, modified, created, kanbanorder, username, synced
     FROM issue
-    ${sqlWhere.length ? `WHERE ${sqlWhere.join(' AND ')}` : ''}
+    WHERE
+      ${sqlWhere.length ? `${sqlWhere.join(' AND ')} AND ` : ''}
+      deleted = false
     ORDER BY
       ${filterState.orderBy} ${filterState.orderDirection},
       id ASC

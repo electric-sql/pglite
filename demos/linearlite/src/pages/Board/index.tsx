@@ -6,13 +6,19 @@ import { useLiveQuery } from '@electric-sql/pglite-react'
 
 function Board() {
   const [_filterState] = useFilterState()
-  const issuesResults = useLiveQuery.sql<Issue>`SELECT * FROM issue`
+  const issuesResults = useLiveQuery<Issue>(
+    `SELECT * FROM issue WHERE deleted = false`
+  )
   const issues = issuesResults?.rows ?? []
   // TODO: apply filter state
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <TopFilter title="Board" issues={issues} hideSort={true} />
+      <TopFilter
+        title="Board"
+        filteredIssuesCount={issues.length}
+        hideSort={true}
+      />
       <IssueBoard issues={issues} />
     </div>
   )
