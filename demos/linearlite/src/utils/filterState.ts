@@ -95,7 +95,7 @@ export function filterStateToSql(filterState: FilterState) {
   }
   if (filterState.query) {
     sqlWhere.push(`title ILIKE $${i++}`)
-    sqlParams.push(filterState.query)
+    sqlParams.push(`%${filterState.query}%`)
   }
   const sql = `
     SELECT id, title, priority, status, modified, created, kanbanorder, username, synced
