@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 
-interface FilterState {
+export interface FilterState {
   orderBy: string
   orderDirection: `asc` | `desc`
   status?: string[]

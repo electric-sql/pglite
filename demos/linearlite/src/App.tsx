@@ -46,10 +46,10 @@ async function issueListLoader({ request }: { request: Request }) {
     params: sqlParams,
     signal: request.signal,
     offset: 0,
-    limit: 300,
+    limit: 100,
     // key: 'id',
   })
-  return { liveIssues }
+  return { liveIssues, filterState }
 }
 
 async function issueLoader({

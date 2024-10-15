@@ -5,7 +5,7 @@ import { useLiveQuery } from '@electric-sql/pglite-react'
 import ViewOptionMenu from './ViewOptionMenu'
 import { MenuContext } from '../App'
 import FilterMenu from './contextmenu/FilterMenu'
-import { useFilterState } from '../utils/filterState'
+import { FilterState, useFilterState } from '../utils/filterState'
 import { PriorityDisplay, StatusDisplay } from '../types/types'
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
   hideSort?: boolean
   showSearch?: boolean
   title?: string
+  filterState?: FilterState
 }
 
 export default function ({
@@ -20,11 +21,14 @@ export default function ({
   hideSort,
   showSearch,
   title = `All issues`,
+  filterState,
 }: Props) {
-  const [filterState, setFilterState] = useFilterState()
+  const [usedFilterState, setFilterState] = useFilterState()
   const [showViewOption, setShowViewOption] = useState(false)
   const { showMenu, setShowMenu } = useContext(MenuContext)!
   const [searchQuery, setSearchQuery] = useState(``)
+
+  filterState ??= usedFilterState
 
   const totalIssuesCount = useLiveQuery<{ count: number }>(
     `SELECT COUNT(id) FROM issue WHERE deleted = false`
