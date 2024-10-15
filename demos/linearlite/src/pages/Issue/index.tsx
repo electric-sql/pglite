@@ -1,5 +1,5 @@
 import { useNavigate, useLoaderData } from 'react-router-dom'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { BsCloudCheck as SyncedIcon } from 'react-icons/bs'
 import { BsCloudSlash as UnsyncedIcon } from 'react-icons/bs'
 import { LiveQuery } from '@electric-sql/pglite/live'
@@ -65,15 +65,19 @@ function IssuePage() {
     `
   }
 
-  const handleTitleChangeDebounced = debounce(async (title: string) => {
-    pg.sql`
+  const handleTitleChangeDebounced = useCallback(
+    debounce(async (title: string) => {
+      console.log(`handleTitleChangeDebounced`, title)
+      pg.sql`
       UPDATE issue 
       SET title = ${title}, modified = ${new Date()} 
       WHERE id = ${issue.id}
     `
-    // We can't set titleIsDirty.current = false here because we haven't yet received
-    // the updated issue from the db
-  }, debounceTime)
+      // We can't set titleIsDirty.current = false here because we haven't yet received
+      // the updated issue from the db
+    }, debounceTime),
+    [pg]
+  )
 
   const handleTitleChange = (title: string) => {
     setDirtyTitle(title)
@@ -82,8 +86,8 @@ function IssuePage() {
     handleTitleChangeDebounced(title)
   }
 
-  const handleDescriptionChangeDebounced = debounce(
-    async (description: string) => {
+  const handleDescriptionChangeDebounced = useCallback(
+    debounce(async (description: string) => {
       pg.sql`
         UPDATE issue 
         SET description = ${description}, modified = ${new Date()} 
@@ -91,8 +95,8 @@ function IssuePage() {
       `
       // We can't set descriptionIsDirty.current = false here because we haven't yet received
       // the updated issue from the db
-    },
-    debounceTime
+    }, debounceTime),
+    [pg]
   )
 
   const handleDescriptionChange = (description: string) => {
