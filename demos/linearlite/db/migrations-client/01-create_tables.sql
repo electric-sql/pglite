@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS "issue" (
     "sent_to_server" BOOLEAN NOT NULL DEFAULT FALSE, -- Flag to track if the row has been sent to the server
     "synced" BOOLEAN GENERATED ALWAYS AS (ARRAY_LENGTH(modified_columns, 1) IS NULL AND NOT deleted AND NOT new) STORED,
     "backup" JSONB, -- JSONB column to store the backup of the row data for modified columns
+    "search_vector" tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('simple', coalesce(title, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(description, '')), 'B')
+    ) STORED,
     CONSTRAINT "issue_pkey" PRIMARY KEY ("id")
 );
 
@@ -42,6 +46,7 @@ CREATE INDEX IF NOT EXISTS "issue_created_idx" ON "issue" ("created");
 CREATE INDEX IF NOT EXISTS "issue_kanbanorder_idx" ON "issue" ("kanbanorder");
 CREATE INDEX IF NOT EXISTS "issue_deleted_idx" ON "issue" ("deleted");
 CREATE INDEX IF NOT EXISTS "issue_synced_idx" ON "issue" ("synced");
+CREATE INDEX IF NOT EXISTS "issue_search_idx" ON "issue" USING GIN ("search_vector");
 
 CREATE INDEX IF NOT EXISTS "comment_id_idx" ON "comment" ("id");
 CREATE INDEX IF NOT EXISTS "comment_issue_id_idx" ON "comment" ("issue_id");

@@ -94,8 +94,8 @@ export function filterStateToSql(filterState: FilterState) {
     sqlParams.push(...filterState.priority)
   }
   if (filterState.query) {
-    sqlWhere.push(`title ILIKE $${i++}`)
-    sqlParams.push(`%${filterState.query}%`)
+    sqlWhere.push(`search_vector @@ plainto_tsquery('simple', $${i++})`)
+    sqlParams.push(filterState.query)
   }
   const sql = `
     SELECT id, title, priority, status, modified, created, kanbanorder, username, synced
