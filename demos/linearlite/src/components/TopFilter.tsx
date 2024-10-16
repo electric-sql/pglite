@@ -79,10 +79,10 @@ export default function ({
           <div className="p-1 font-semibold me-1">{title}</div>
           {/* <span>{filteredIssuesCount}</span> */}
           <span>
-            {filteredIssuesCount}
+            {filteredIssuesCount.toLocaleString()}
             {totalIssuesCount !== undefined &&
             filteredIssuesCount !== totalIssuesCount
-              ? ` of ${totalIssuesCount}`
+              ? ` of ${totalIssuesCount.toLocaleString()}`
               : ``}
           </span>
           <FilterMenu

@@ -138,7 +138,7 @@ BEGIN
             FOR col_name IN SELECT column_name 
                                FROM information_schema.columns 
                                WHERE table_name = TG_TABLE_NAME AND
-                                     column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server') LOOP
+                                     column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server', 'search_vector') LOOP
                 EXECUTE format('SELECT $1.%I', col_name) USING NEW INTO new_value;
                 EXECUTE format('SELECT %I FROM %I WHERE id = $1', col_name, TG_TABLE_NAME) USING NEW.id INTO old_value;
                 IF new_value IS DISTINCT FROM old_value THEN
@@ -161,7 +161,7 @@ BEGIN
         SELECT array_agg(column_name) INTO modified_columns
         FROM information_schema.columns 
         WHERE table_name = TG_TABLE_NAME
-        AND column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server');
+        AND column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server', 'search_vector');
         NEW.modified_columns := modified_columns;
         NEW.new := TRUE;
     END IF;
@@ -223,7 +223,7 @@ BEGIN
             FOR column_name IN SELECT columns.column_name 
                                FROM information_schema.columns 
                                WHERE columns.table_name = TG_TABLE_NAME 
-                               AND columns.column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server') LOOP
+                               AND columns.column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server', 'search_vector') LOOP
                 IF column_name != ANY(OLD.modified_columns) THEN
                     EXECUTE format('SELECT ($1).%I', column_name) USING NEW INTO new_value;
                     EXECUTE format('SELECT ($1).%I', column_name) USING OLD INTO old_value;
@@ -240,7 +240,7 @@ BEGIN
         FOR column_name IN SELECT columns.column_name 
                            FROM information_schema.columns 
                            WHERE columns.table_name = TG_TABLE_NAME 
-                           AND columns.column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server') LOOP
+                           AND columns.column_name NOT IN ('id', 'synced', 'modified_columns', 'backup', 'deleted', 'new', 'sent_to_server', 'search_vector') LOOP
             EXECUTE format('SELECT ($1).%I', column_name) USING NEW INTO new_value;
             EXECUTE format('SELECT ($1).%I', column_name) USING OLD INTO old_value;
             IF new_value IS DISTINCT FROM old_value THEN
