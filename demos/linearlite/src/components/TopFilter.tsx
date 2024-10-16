@@ -7,6 +7,7 @@ import { MenuContext } from '../App'
 import FilterMenu from './contextmenu/FilterMenu'
 import { FilterState, useFilterState } from '../utils/filterState'
 import { PriorityDisplay, StatusDisplay } from '../types/types'
+import debounce from 'lodash.debounce'
 
 interface Props {
   filteredIssuesCount: number
@@ -34,12 +35,12 @@ export default function ({
     `SELECT COUNT(id) FROM issue WHERE deleted = false`
   )?.rows[0].count
 
-  const handleSearchInner = (query: string) => {
+  const handleSearchInner = debounce((query: string) => {
     setFilterState({
       ...filterState,
       query: query,
     })
-  }
+  }, 300)
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
