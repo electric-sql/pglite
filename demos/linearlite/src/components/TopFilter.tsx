@@ -118,7 +118,10 @@ export default function ({
               <span className="px-1 bg-gray-300 rounded-l">Priority is</span>
               <span className="px-1 bg-gray-300 ">
                 {filterState.priority
-                  ?.map((priority) => PriorityDisplay[priority])
+                  ?.map(
+                    (priority) =>
+                      PriorityDisplay[priority as keyof typeof PriorityDisplay]
+                  )
                   .join(`, `)}
               </span>
               <span
@@ -139,7 +142,10 @@ export default function ({
               <span className="px-1 bg-gray-300 rounded-l">Status is</span>
               <span className="px-1 bg-gray-300 ">
                 {filterState.status
-                  ?.map((status) => StatusDisplay[status])
+                  ?.map(
+                    (status) =>
+                      StatusDisplay[status as keyof typeof StatusDisplay]
+                  )
                   .join(`, `)}
               </span>
               <span

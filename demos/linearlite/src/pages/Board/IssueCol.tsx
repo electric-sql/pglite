@@ -8,22 +8,55 @@ import {
   DraggableProvided,
   DraggableStateSnapshot,
 } from 'react-beautiful-dnd'
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList as List, ListOnItemsRenderedProps } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import IssueItem, { itemHeight } from './IssueItem'
 import { Issue } from '../../types/types'
+import { LiveQuery } from '@electric-sql/pglite/live'
+import { useLiveQuery } from '@electric-sql/pglite-react'
+
+const CHUNK_SIZE = 25
+
+function calculateWindow(
+  startIndex: number,
+  stopIndex: number
+): { offset: number; limit: number } {
+  const offset = Math.max(
+    0,
+    Math.floor(startIndex / CHUNK_SIZE) * CHUNK_SIZE - CHUNK_SIZE
+  )
+  const endOffset = Math.ceil(stopIndex / CHUNK_SIZE) * CHUNK_SIZE + CHUNK_SIZE
+  const limit = endOffset - offset
+  return { offset, limit }
+}
 
 interface Props {
   status: string
   title: string
   issues: Array<Issue> | undefined
+  liveQuery: LiveQuery<Issue>
 }
 
 const itemSpacing = 8
 
-function IssueCol({ title, status, issues }: Props) {
+function IssueCol({ title, status, issues, liveQuery }: Props) {
   issues = issues || []
   const statusIcon = <StatusIcon status={status} />
+
+  const issuesRes = useLiveQuery(liveQuery)
+
+  const offset = liveQuery.initialResults.offset ?? issuesRes.offset ?? 0
+  const limit = liveQuery.initialResults.limit ?? issuesRes.limit ?? CHUNK_SIZE
+
+  const handleOnItemsRendered = (props: ListOnItemsRenderedProps) => {
+    const { offset: newOffset, limit: newLimit } = calculateWindow(
+      props.overscanStartIndex,
+      props.overscanStopIndex
+    )
+    if (newOffset !== offset || newLimit !== limit) {
+      liveQuery.refresh(newOffset, newLimit)
+    }
+  }
 
   return (
     <div className="flex flex-col flex-shrink-0 mr-3 select-none w-90">
@@ -77,6 +110,7 @@ function IssueCol({ title, status, issues }: Props) {
                     outerRef={droppableProvided.innerRef}
                     itemData={issues}
                     className="w-full border-gray-200 pt-0.5"
+                    onItemsRendered={handleOnItemsRendered}
                     // ref={provided.innerRef}
                     // {...provided.droppableProps}
                   >

@@ -7,7 +7,7 @@ import {
   type Params,
 } from 'react-router-dom'
 import 'react-toastify/dist/ReactToastify.css'
-import { live, LiveNamespace } from '@electric-sql/pglite/live'
+import { live, LiveNamespace, LiveQuery } from '@electric-sql/pglite/live'
 import { PGliteWorker } from '@electric-sql/pglite/worker'
 import { PGliteProvider } from '@electric-sql/pglite-react'
 import PGWorker from './pglite-worker.js?worker'
@@ -17,8 +17,9 @@ import Issue from './pages/Issue'
 import {
   getFilterStateFromSearchParams,
   filterStateToSql,
+  FilterState,
 } from './utils/filterState'
-import { Issue as IssueType } from './types/types'
+import { Issue as IssueType, Status, StatusValue } from './types/types'
 
 interface MenuContextInterface {
   showMenu: boolean
@@ -50,6 +51,43 @@ async function issueListLoader({ request }: { request: Request }) {
     // key: 'id',
   })
   return { liveIssues, filterState }
+}
+
+async function boardIssueListLoader({ request }: { request: Request }) {
+  const pg = await pgPromise
+  const url = new URL(request.url)
+  const filterState = getFilterStateFromSearchParams(url.searchParams)
+
+  const columnsLiveIssues: Partial<Record<StatusValue, LiveQuery<IssueType>>> =
+    {}
+
+  for (const status of Object.values(Status)) {
+    const colFilterState: FilterState = {
+      ...filterState,
+      orderBy: 'kanbanorder',
+      orderDirection: 'asc',
+      status: [status],
+    }
+    const { sql: colSql, sqlParams: colSqlParams } =
+      filterStateToSql(colFilterState)
+    const colLiveIssues = await pg.live.query<IssueType>({
+      query: colSql,
+      params: colSqlParams,
+      signal: request.signal,
+      offset: 0,
+      limit: 10,
+      // key: 'id',
+    })
+    columnsLiveIssues[status] = colLiveIssues
+  }
+
+  return {
+    columnsLiveIssues: columnsLiveIssues as Record<
+      StatusValue,
+      LiveQuery<IssueType>
+    >,
+    filterState,
+  }
 }
 
 async function issueLoader({
@@ -86,6 +124,7 @@ const router = createBrowserRouter([
       {
         path: `/board`,
         element: <Board />,
+        loader: boardIssueListLoader,
       },
       {
         path: `/issue/:id`,
