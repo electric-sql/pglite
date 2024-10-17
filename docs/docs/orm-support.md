@@ -29,7 +29,7 @@ const db = drizzle(client);
 await db.select().from(...);
 ```
 
-See the [Drizzle documentation](https://orm.drizzle.team/docs/get-started-postgresql#pglite)
+See the [Drizzle documentation](https://orm.drizzle.team/docs/connect-pglite)
 for more details.
 
 ## Knex.js
