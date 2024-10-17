@@ -59,25 +59,30 @@ _getenv
 _interactive_one
 _interactive_read
 _interactive_write
+_loop
 _lowerstr
 _main
-_main_repl
 _pg_initdb
 _pg_repl_raf
 _pg_shutdown
 _readstoplist
 _searchstoplist
 _setenv
+_setup
 _shmem_request_hook
 _shmem_startup_hook
 _stderr
 _TopMemoryContext
+__ZNSt12length_errorD1Ev
+__ZNSt20bad_array_new_lengthD1Ev
+__ZNSt16invalid_argumentD1Ev
 """.splitlines():
     if sym and not sym in matches:
         matches.append(sym)
 
-#__ZNSt13runtime_errorD1Ev
-
+# __ZNSt13runtime_errorD1Ev  : i32 std::length_error::~length_error(i32)
+# __ZNSt20bad_array_new_lengthD1Ev : std::bad_array_new_length::~bad_array_new_length()
+# __ZNSt16invalid_argumentD1Ev : std::invalid_argument::~invalid_argument()
 matches.sort()
 
 for sym in matches:
