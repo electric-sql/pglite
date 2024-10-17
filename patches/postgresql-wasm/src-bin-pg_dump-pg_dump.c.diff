@@ -23,6 +23,15 @@
  		{"load-via-partition-root", no_argument, &dopt.load_via_partition_root, 1},
  		{"role", required_argument, NULL, 3},
  		{"section", required_argument, NULL, 5},
+@@ -1154,7 +1161,7 @@
+ 	DumpOptions *dopt = AH->dopt;
+ 	PGconn	   *conn = GetConnection(AH);
+ 	const char *std_strings;
+-
++puts("# 1164 : setup_connection");
+ 	PQclear(ExecuteSqlQueryForSingleRow(AH, ALWAYS_SECURE_SEARCH_PATH_SQL));
+ 
+ 	/*
 @@ -1239,8 +1246,8 @@
  	/*
  	 * Quote all identifiers, if requested.

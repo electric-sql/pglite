@@ -138,11 +138,12 @@ static void io_init(bool in_auth, bool out_auth) {
 
         SOCKET_FILE = NULL;
         SOCKET_DATA = 0;
-        PDEBUG("# 141: io_init  --------- CLIENT (ready) ---------");
+        PDEBUG("\n\n\n\n# 141: io_init  --------- Ready for CLIENT ---------");
 
 
 }
 
+/*
 static void wait_unlock() {
     int busy = 0;
     while (access(PGS_OLOCK, F_OK) == 0) {
@@ -150,6 +151,7 @@ static void wait_unlock() {
             printf("# 150: FIXME: busy wait lock removed %d\n", busy);
     }
 }
+*/
 
 EMSCRIPTEN_KEEPALIVE int
 cma_wsize = 0;
@@ -182,15 +184,14 @@ interactive_one() {
 	StringInfoData input_message;
 	StringInfoData *inBuf;
     FILE *stream ;
-    FILE *c_lock;
     FILE *fp;
     int packetlen;
     bool is_socket = false;
     bool is_wire = true;
 
-    if (is_node && is_repl) {
+    if (!is_embed && is_repl) {
 
-        wait_unlock();
+        //wait_unlock();
 
         if (!MyProcPort) {
             io_init(false, false);
@@ -203,7 +204,7 @@ interactive_one() {
 
 
         if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OUT,"w") ;
+            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 
@@ -226,14 +227,13 @@ interactive_one() {
     // in web mode, client call the wire loop itself waiting synchronously for the results
     // in repl mode, the wire loop polls a pseudo socket made from incoming and outgoing files.
 
-    if (is_node && is_repl) {
+    if (!is_embed || is_repl) {
 
-        // ready to read marker
-        if (access(PGS_ILOCK, R_OK) != 0) {
+        // do not try to read when lock/buffer file still there
+        if (!access(PGS_ILOCK, R_OK)) {
 
             packetlen = 0;
 
-            // TODO: lock file
             fp = fopen(PGS_IN, "r");
 
             // read as a socket.
@@ -333,13 +333,14 @@ PDEBUG("# 324 : TODO: set a pg_main started flag");
                         fprintf(stderr, "]\n");
 #endif
                     }
-                    // when using lock files
-                    //ftruncate(filenum(fp), 0);
+                    // when using locks
+                    // ftruncate(filenum(fp), 0);
                 }
 /* FD CLEANUP */
                 fclose(fp);
                 unlink(PGS_IN);
 
+                // Check if auth bypass work with socketfiles
                 if (packetlen) {
                     if (!firstchar || (firstchar==112)) {
                         PDEBUG("# 351: handshake/auth skip");
@@ -348,7 +349,7 @@ PDEBUG("# 324 : TODO: set a pg_main started flag");
 
                     /* else it is wire msg */
 #if PGDEBUG
-printf("# 352 : node+repl is wire : %c\n", firstchar);
+printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
                     force_echo = true;
 #endif
                     is_socket = true;
@@ -362,7 +363,7 @@ printf("# 352 : node+repl is wire : %c\n", firstchar);
 
         } // ok lck
 
-    } // is_node && is_repl
+    } // !is_embed || is_repl
 
     if (cma_rsize) {
         PDEBUG("wire message in cma buffer !");
@@ -376,11 +377,11 @@ printf("# 352 : node+repl is wire : %c\n", firstchar);
         }
 
         if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OUT,"w") ;
+            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# fd %s: %s fd=%d\n", PGS_OUT, IO, MyProcPort->sock);
+        printf("# 385: fd %s: %s fd=%d\n", PGS_OLOCK, IO, MyProcPort->sock);
 #endif
         goto incoming;
 
@@ -415,11 +416,11 @@ printf("# 352 : node+repl is wire : %c\n", firstchar);
         }
 
         if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OUT,"w") ;
+            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# fd %s: %s fd=%d\n", PGS_OUT, IO, MyProcPort->sock);
+        printf("# 424: fd %s: %s fd=%d\n", PGS_OLOCK, IO, MyProcPort->sock);
 #endif
 
     }
@@ -445,8 +446,8 @@ printf("# 352 : node+repl is wire : %c\n", firstchar);
     IO[0] = 0;
 
 incoming:
-#if 0 //PGDEBUG
-    #warning "exception handler off"
+#if defined(__wasi__) //PGDEBUG
+    PDEBUG("# 451: sjlj exception handler off");
 #else
 	if (sigsetjmp(local_sigjmp_buf, 1) != 0)
 	{
@@ -507,7 +508,7 @@ incoming:
 #endif
 
     if (force_echo) {
-        printf("# 501: wire=%d socket=%d repl=%c: %s", is_wire, is_socket, firstchar, inBuf->data);
+        printf("# 512: wire=%d socket=%d 1stchar=%c Q: %s", is_wire, is_socket, firstchar, inBuf->data);
     }
 
 
@@ -538,13 +539,13 @@ incoming:
     if (is_wire) {
 wire_flush:
         if (!ClientAuthInProgress) {
-            PDEBUG("# 537: end packet - sending rfq");
+            PDEBUG("# 543: end packet - sending rfq");
             if (send_ready_for_query) {
                 ReadyForQuery(DestRemote);
                 send_ready_for_query = false;
             }
         } else {
-            PDEBUG("# 542: end packet (ClientAuthInProgress - no rfq) ");
+            PDEBUG("# 549: end packet (ClientAuthInProgress - no rfq) ");
         }
 
         if (SOCKET_DATA>0) {
@@ -556,19 +557,18 @@ wire_flush:
                 cma_wsize = SOCKET_DATA;
             }
             if (SOCKET_FILE) {
+                int outb = SOCKET_DATA;
                 fclose(SOCKET_FILE);
                 SOCKET_FILE = NULL;
                 SOCKET_DATA = 0;
                 if (cma_wsize)
-                    PDEBUG("# 557: cma and sockfile ???");
+                    PDEBUG("# 566: cma and sockfile ???");
                 if (sockfiles) {
-                    PDEBUG("# 559: setting sockfile lock, ready to read");
-                    PDEBUG(PGS_OLOCK);
-                    c_lock = fopen(PGS_OLOCK, "w");
-                    fclose(c_lock);
+#if PGDEBUG
+                    printf("# 569: client:ready -> read(%d) " PGS_OLOCK "->" PGS_OUT"\n", outb);
+#endif
+                    rename(PGS_OLOCK, PGS_OUT);
                 }
-// CHECK ME 320 / 540 . only initially or after error
-                // send_ready_for_query = true;
             }
 
         } else {
@@ -579,7 +579,6 @@ wire_flush:
     // always free kernel buffer !!!
     cma_rsize = 0;
     IO[0] = 0;
-
 
     #undef IO
 }

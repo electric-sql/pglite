@@ -75,3 +75,21 @@
  	shmem_exit_inprogress = false;
  }
  
+@@ -364,6 +405,17 @@
+ void
+ on_shmem_exit(pg_on_exit_callback function, Datum arg)
+ {
++#if defined(__wasi__) || defined(__EMSCRIPTEN__)
++    if (!atexit_callback_setup) {
++        PDEBUG("# 410:" __FILE__ " on_shmem_exit(pg_on_exit_callback function, Datum arg) FIRST CALL");
++        if (on_shmem_exit_index >= MAX_ON_EXITS) {
++            PDEBUG("# 412:" __FILE__ " on_shmem_exit(pg_on_exit_callback function, Datum arg) OVERFLOW");
++        }
++    } else {
++        PDEBUG("# 415:" __FILE__ " on_shmem_exit(pg_on_exit_callback function, Datum arg) STUB");
++        return;
++    }
++#endif
+ 	if (on_shmem_exit_index >= MAX_ON_EXITS)
+ 		ereport(FATAL,
+ 				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),

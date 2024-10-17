@@ -35,26 +35,34 @@ emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
 
 # this override completely pg server main loop for web use purpose
 pushd src
+
     rm pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
 
-    emcc -DPG_INITDB_MAIN=1 -sFORCE_FILESYSTEM -DPREFIX=${PGROOT} ${CC_PGLITE} \
+    # replace initdb redundant object by platform support
+    emcc -DPG_INITDB_MAIN=1 -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
-     -c -o ../pg_initdb.o ${PGSRC}/src/bin/initdb/initdb.c $NOWARN || exit 34
+     -c -o pg_initdb.o ${WORKSPACE}/patches/emsdk_port.c $NOWARN || exit 43
 
-    #
+    # merge initdb code into main and override main
     emcc -DPG_LINK_MAIN=1 -DPREFIX=${PGROOT} ${CC_PGLITE} -DPG_EC_STATIC \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
-     -c -o ./backend/tcop/postgres.o ${PGSRC}/src/backend/tcop/postgres.c $NOWARN|| exit 39
+     -c -o ./backend/tcop/postgres.o ${PGSRC}/src/backend/tcop/postgres.c $NOWARN|| exit 48
 
-    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_INITDB_MAIN=1 $NOWARN" \
-     emmake make backend/main/main.o backend/utils/init/postinit.o || exit 41
+    # relink pg core
+    EMCC_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPG_LINKWEB=1 -DPG_INITDB_MAIN=1 $NOWARN" \
+     emmake make backend/main/main.o backend/utils/init/postinit.o || exit 51
 popd
 
 
-echo "========================================================"
-echo -DPREFIX=${PGROOT} $CC_PGLITE
-file ${WEBROOT}/libpgc.so pg_initdb.o src/backend/main/main.o src/backend/tcop/postgres.o src/backend/utils/init/postinit.o
-echo "========================================================"
+echo "
+============================ changes applied ====================================
+    -DPREFIX=${PGROOT}
+    $CC_PGLITE
+================== These have been replaced with web versions ====================
+
+"
+file ${WEBROOT}/libpgc.so src/pg_initdb.o src/backend/main/main.o src/backend/tcop/postgres.o src/backend/utils/init/postinit.o
+echo "=================== clean up before rebuilding non-web ==========================="
 
 
 pushd src/backend
@@ -67,7 +75,7 @@ pushd src/backend
     echo " ---------- building web test PREFIX=$PGROOT ------------"
     du -hs ${WEBROOT}/libpg?.*
 
-    PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
+    export PG_O="../../src/fe_utils/string_utils.o ../../src/common/logging.o \
      $(find . -type f -name "*.o" \
      | grep -v ./utils/mb/conversion_procs \
      | grep -v ./replication/pgoutput \
@@ -76,7 +84,7 @@ pushd src/backend
      ../../src/timezone/localtime.o \
      ../../src/timezone/pgtz.o \
      ../../src/timezone/strftime.o \
-     ../../pg_initdb.o"
+     ../../src/pg_initdb.o"
 
     PG_L="../../src/common/libpgcommon_srv.a ../../src/port/libpgport_srv.a ../.././src/interfaces/libpq/libpq.a -L$PREFIX/lib -lxml2 -lz"
     # -lz for xml2
@@ -149,8 +157,9 @@ pushd src/backend
     then
     echo "
 
-    Linking to : $PG_L
+        Linking to : $PG_L
 
+        calling cibuild/linkexport.sh
 
 "
 
@@ -159,7 +168,12 @@ pushd src/backend
 
         if [ -f ${WORKSPACE}/patches/exports/pgcore ]
         then
-            echo "PGLite can export $(wc -l ${WORKSPACE}/patches/exports/pgcore) core symbols"
+            echo "
+
+        PGLite can export $(wc -l ${WORKSPACE}/patches/exports/pgcore) core symbols
+
+        Calling cibuild/linkimports.sh
+"
             . ${WORKSPACE}/cibuild/linkimports.sh || exit 163
 
         else
@@ -197,10 +211,9 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
-    emcc $EMCC_WEB $LINKER $MODULE  \
-     -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
+    emcc $EMCC_WEB $LINKER $MODULE $MEMORY \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
-     -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
+     -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
      -lnodefs.js -lidbfs.js \
      -sEXPORTED_RUNTIME_METHODS=FS,setValue,getValue,UTF8ToString,stringToNewUTF8,stringToUTF8OnStack,ccall,cwrap,callMain \
      $PGPRELOAD \
