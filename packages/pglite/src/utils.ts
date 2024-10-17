@@ -174,3 +174,46 @@ export async function formatQuery(
   )
   return ret.rows[0].query
 }
+
+export function debounceMutex<A extends any[], R>(
+  fn: (...args: A) => Promise<R>,
+): (...args: A) => Promise<R | void> {
+  let next:
+    | {
+        args: A
+        resolve: (value: R | void) => void
+        reject: (reason?: any) => void
+      }
+    | undefined = undefined
+
+  let isRunning = false
+  const processNext = async () => {
+    if (!next) {
+      isRunning = false
+      return
+    }
+    isRunning = true
+    const { args, resolve, reject } = next
+    next = undefined
+    try {
+      const ret = await fn(...args)
+      resolve(ret)
+    } catch (e) {
+      reject(e)
+    } finally {
+      processNext()
+    }
+  }
+  return async (...args: A) => {
+    if (next) {
+      next.resolve(undefined)
+    }
+    const promise = new Promise<R | void>((resolve, reject) => {
+      next = { args, resolve, reject }
+    })
+    if (!isRunning) {
+      processNext()
+    }
+    return promise
+  }
+}

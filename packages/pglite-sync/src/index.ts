@@ -16,6 +16,10 @@ export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
 export type MapColumns = MapColumnsMap | MapColumnsFn
 export type ShapeKey = string
 
+type InsertChangeMessage = ChangeMessage<any> & {
+  headers: { operation: 'insert' }
+}
+
 export interface SyncShapeToTableOptions {
   shape: ShapeStreamOptions
   table: string
@@ -66,6 +70,12 @@ async function createPlugin(
           console.log('resuming from shape state', shapeSubState)
         }
       }
+
+      // If its a new subscription there is no state to resume from
+      const isNewSubscription = shapeSubState === null
+
+      // If its a new subscription we can do a `COPY FROM` to insert the initial data
+      let doCopy = isNewSubscription
 
       const aborter = new AbortController()
       if (options.shape.signal) {
@@ -125,13 +135,54 @@ async function createPlugin(
                   // TODO: sync into shadow table and reference count
                   // for now just clear the whole table - will break
                   // cases with multiple shapes on the same table
-                  await tx.exec(`TRUNCATE ${options.table};`)
+                  await tx.exec(`DELETE FROM ${options.table};`)
                   if (options.shapeKey) {
                     await deleteShapeSubscriptionState({
                       pg: tx,
                       metadataSchema,
                       shapeKey: options.shapeKey,
                     })
+                  }
+                }
+
+                if (doCopy) {
+                  // We can do a `COPY FROM` to insert the initial data
+                  // Split messageAggregator into initial inserts and remaining messages
+                  const initialInserts: InsertChangeMessage[] = []
+                  const remainingMessages: ChangeMessage<any>[] = []
+                  let foundNonInsert = false
+                  for (const message of messageAggregator) {
+                    if (
+                      !foundNonInsert &&
+                      message.headers.operation === 'insert'
+                    ) {
+                      initialInserts.push(message as InsertChangeMessage)
+                    } else {
+                      foundNonInsert = true
+                      remainingMessages.push(message)
+                    }
+                  }
+                  if (initialInserts.length > 0) {
+                    // As `COPY FROM` doesn't trigger a NOTIFY, we pop
+                    // the last insert message and and add it to the be beginning
+                    // of the remaining messages to be applied after the `COPY FROM`
+                    remainingMessages.unshift(initialInserts.pop()!)
+                  }
+                  messageAggregator = remainingMessages
+
+                  // Do the `COPY FROM` with initial inserts
+                  if (initialInserts.length > 0) {
+                    applyMessagesToTableWithCopy({
+                      pg: tx,
+                      table: options.table,
+                      schema: options.schema,
+                      messages: initialInserts as InsertChangeMessage[],
+                      mapColumns: options.mapColumns,
+                      primaryKey: options.primaryKey,
+                      debug,
+                    })
+                    // We don't want to do a `COPY FROM` again after that
+                    doCopy = false
                   }
                 }
 
@@ -324,6 +375,69 @@ async function applyMessageToTable({
       )
     }
   }
+}
+
+interface ApplyMessagesToTableWithCopyOptions {
+  pg: PGliteInterface | Transaction
+  table: string
+  schema?: string
+  messages: InsertChangeMessage[]
+  mapColumns?: MapColumns
+  primaryKey: string[]
+  debug: boolean
+}
+
+async function applyMessagesToTableWithCopy({
+  pg,
+  table,
+  schema = 'public',
+  messages,
+  mapColumns,
+  debug,
+}: ApplyMessagesToTableWithCopyOptions) {
+  if (debug) console.log('applying messages with COPY')
+
+  // Map the messages to the data to be inserted
+  const data: Record<string, any>[] = messages.map((message) =>
+    mapColumns ? doMapColumns(mapColumns, message) : message.value,
+  )
+
+  // Get column names from the first message
+  const columns = Object.keys(data[0])
+
+  // Create CSV data
+  const csvData = data
+    .map((message) => {
+      return columns
+        .map((column) => {
+          const value = message[column]
+          // Escape double quotes and wrap in quotes if necessary
+          if (
+            typeof value === 'string' &&
+            (value.includes(',') || value.includes('"') || value.includes('\n'))
+          ) {
+            return `"${value.replace(/"/g, '""')}"`
+          }
+          return value === null ? '\\N' : value
+        })
+        .join(',')
+    })
+    .join('\n')
+
+  // Perform COPY FROM
+  await pg.query(
+    `
+      COPY "${schema}"."${table}" (${columns.map((c) => `"${c}"`).join(', ')})
+      FROM '/dev/blob'
+      WITH (FORMAT csv, NULL '\\N')
+    `,
+    [],
+    {
+      blob: new Blob([csvData], { type: 'text/csv' }),
+    },
+  )
+
+  if (debug) console.log(`Inserted ${messages.length} rows using COPY`)
 }
 
 interface GetShapeSubscriptionStateOptions {

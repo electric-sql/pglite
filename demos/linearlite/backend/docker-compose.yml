@@ -1,0 +1,32 @@
+version: "3.3"
+name: "pglite-linearlite"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: linearlite
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - 54321:5432
+    volumes:
+      - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
+    tmpfs:
+      - /var/lib/postgresql/data
+      - /tmp
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+
+  backend:
+    image: electricsql/electric:canary
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/linearlite?sslmode=disable
+    ports:
+      - 3000:3000
+    build:
+      context: ../packages/sync-service/
+    depends_on:
+      - postgres
