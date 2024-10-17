@@ -271,6 +271,44 @@ await testEsmAndCjs(async (importType) => {
       )
     })
 
+    it('custom parser and serializer', async () => {
+      const db = new PGlite({
+        serializers: { 1700: (x) => x.toString() },
+        parsers: { 1700: (x) => BigInt(x) },
+      })
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          numeric NUMERIC
+        );
+      `)
+      await db.query('INSERT INTO test (numeric) VALUES ($1);', [100n])
+      const res = await db.query(`
+        SELECT * FROM test;
+      `)
+
+      expect(res).toEqual({
+        rows: [
+          {
+            id: 1,
+            numeric: 100n,
+          },
+        ],
+        fields: [
+          {
+            name: 'id',
+            dataTypeID: 23,
+          },
+          {
+            name: 'numeric',
+            dataTypeID: 1700,
+          },
+        ],
+        affectedRows: 0,
+      })
+    })
+
+
     it('params', async () => {
       const db = new PGlite()
       await db.query(`
