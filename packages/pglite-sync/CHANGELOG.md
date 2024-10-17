@@ -1,5 +1,22 @@
 # @electric-sql/pglite-sync
 
+## 0.2.14
+
+### Patch Changes
+
+- f4f8a42: Filter out update messages that don't modify any columns
+- 3d8efbb: Bump dependencies to address Dependabot alerts
+- 1685b91: Set an `electric.syncing` config flag in Postgres during a sync transaction to enable user defined triggers to chose how to run during a sync.
+- Updated dependencies [5e39036]
+- Updated dependencies [3d8efbb]
+- Updated dependencies [16d2296]
+- Updated dependencies [cf50f47]
+- Updated dependencies [bd1b3b9]
+- Updated dependencies [5e39036]
+- Updated dependencies [16d2296]
+- Updated dependencies [e9bd9a7]
+  - @electric-sql/pglite@0.2.13
+
 ## 0.2.13
 
 ### Patch Changes
