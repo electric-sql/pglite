@@ -451,7 +451,7 @@ do
 
 __________________________ enabled extensions (dlfcn)_____________________________
 "
-    cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+    cp -vf ${WEBROOT}/*.tar.gz ${WORKSPACE}/extra/*.tar.gz ${PGLITE}/release/
 echo "
 __________________________________________________________________________________
 "
@@ -542,7 +542,7 @@ ________________________________________________________________________________
             #rm $PGLITE/release/*
 
             # copy packed extensions
-            cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
+            cp -vf ${WEBROOT}/*.tar.gz ${WORKSPACE}/extra/*.tar.gz ${PGLITE}/release/
             cp -vf ${WEBROOT}/postgres.{js,data,wasm} $PGLITE/release/
         ;;
 
