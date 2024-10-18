@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: .buildconfig
-      SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
+      SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
@@ -22,6 +22,7 @@ jobs:
       DEBUG: false
       OBJDUMP: true
       EXTRA_EXT: vector
+      PYBUILD: 3.13
 
     steps:
       - uses: actions/checkout@v4

@@ -2,7 +2,7 @@
 
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
-export CMA_MB=${CMA_MB:-64}
+export CMA_MB=${CMA_MB:-32}
 
 export CI=${CI:-false}
 
@@ -19,9 +19,15 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-export TOTAL_MEMORY=${TOTAL_MEMORY:-128MB}
+export TOTAL_MEMORY=${TOTAL_MEMORY:-512MB}
 export WASI=${WASI:-false}
+# 72 - 144228352
+# -sINITIAL_HEAP not compatible with IMPORTED_MEMORY (which is enabled indirectly via SHARED_MEMORY, RELOCATABLE, ASYNCIFY_LAZY_LOAD_CODE)
+export MEMORY="-sINITIAL_MEMORY=128MB -sMAXIMUM_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=2MB -sGLOBAL_BASE=${CMA_MB}MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH"
+#export MEMORY="-sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=2MB -sGLOBAL_BASE=${CMA_MB}MB -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH"
 
+
+export PYDK_CFLAGS="-Wno-missing-prototypes"
 
 # exit on error
 EOE=false
@@ -78,7 +84,7 @@ then
 else
     if which emcc
     then
-        echo "emcc found in PATH=$PATH"
+        echo "emcc found in PATH=$PATH (please set PREFIX)"
     else
         . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
     fi
@@ -92,9 +98,9 @@ else
         node : $(which node) $($(which node) -v)
         PNPM : $(which pnpm)
 
+    PREFIX=$PREFIX
 
 "
-
     # custom code for node/web builds that modify pg main/tools behaviour
     # this used by both node/linkweb build stages
 
@@ -219,10 +225,17 @@ END
 #define PGDEBUG 0
 #endif
 END
+    cat >> ${PG_DEBUG_HEADER} <<END
+#if defined(PG_VERSION_STR)
+#undef PG_VERSION_STR
+#endif
+#define PG_VERSION_STR "PostgreSQL ${PG_VERSION} (PGlite PGLITE_VERSION) on wasm32"
+END
+
     fi
 
     mkdir -p ${PGROOT}/include/postgresql/server
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/
+    #cp ${PG_DEBUG_HEADER} ${PGROOT}/include/
     cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql
     cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql/server
 
@@ -376,8 +389,20 @@ then
             fi
         fi
         echo "======================= ${extra_ext} : $(pwd) ==================="
+        if [ -f ./extra/${extra_ext}.sh ]
+        then
+            ./extra/${extra_ext}.sh || exit 400
+        else
+            echo "
 
-        ./extra/${extra_ext}.sh || exit 400
+    WARNING: Current source tree has not support ./extra/${extra_ext}.sh
+             for building ${extra_ext}
+
+
+
+"
+        fi
+
 
         python3 cibuild/pack_extension.py
     done

@@ -8,7 +8,6 @@ def dbg(*argv, **kw):
     return print(*argv,**kw)
 
 
-SNIFF="clock_gettime"
 SNIFF=""
 
 
@@ -89,7 +88,17 @@ if 1:
 
         if SNIFF:
             if line.find(SNIFF)>=0:
-                dbg(line)
+                dbg(f"""
+
+-------------------------------------------------------------------------------------
+
+{line=}
+{typ=}
+
+
+-------------------------------------------------------------------------------------
+
+""")
 
         try:
             if typ in ('def','var'):
@@ -129,7 +138,7 @@ if 1:
                 elif left.find('::')> 0:
                     if VERBOSE:
                         raise Exception("bad export (c++)")
-                    continue
+                    #continue
                 elif left.find(' ')> 0:
                     if VERBOSE:
                         raise Exception("bad export (space)")
