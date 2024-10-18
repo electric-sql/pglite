@@ -28,6 +28,7 @@ export interface PostgresMod
   _interactive_write: (msgLength: number) => void
   _interactive_one: () => void
   _interactive_read: () => number
+  _use_socketfile: () => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
