@@ -93,6 +93,14 @@ export class PGlite
     }
     this.dataDir = options.dataDir
 
+    // Override default parsers and serializers if requested
+    if (options.parsers !== undefined) {
+      this.parsers = { ...this.parsers, ...options.parsers }
+    }
+    if (options.serializers !== undefined) {
+      this.serializers = { ...this.serializers, ...options.serializers }
+    }
+
     // Enable debug logging if requested
     if (options?.debug !== undefined) {
       this.debug = options.debug

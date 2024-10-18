@@ -15,9 +15,14 @@ export interface ParserOptions {
   [pgType: number]: (value: string) => any
 }
 
+export interface SerializerOptions {
+  [pgType: number]: (value: any) => string
+}
+
 export interface QueryOptions {
   rowMode?: RowMode
   parsers?: ParserOptions
+  serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
   paramTypes?: number[]
@@ -75,6 +80,8 @@ export interface PGliteOptions {
   initialMemory?: number
   wasmModule?: WebAssembly.Module
   fsBundle?: Blob | File
+  parsers?: ParserOptions
+  serializers?: SerializerOptions
 }
 
 export type PGliteInterface = {
