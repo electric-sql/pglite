@@ -4,6 +4,7 @@ import type {
 } from '@electric-sql/pg-protocol/messages'
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
+import type { Parser, Serializer } from './types.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -94,6 +95,7 @@ export type PGliteInterface = {
     ...params: any[]
   ): Promise<Results<T>>
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
+  describeQuery(query: string): Promise<DescribeQueryResult>
   transaction<T>(
     callback: (tx: Transaction) => Promise<T>,
   ): Promise<T | undefined>
@@ -151,4 +153,9 @@ export interface Transaction {
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   rollback(): Promise<void>
   get closed(): boolean
+}
+
+export type DescribeQueryResult = {
+  queryParams: { dataTypeID: number; serializer: Serializer }[]
+  resultFields: { name: string; dataTypeID: number; parser: Parser }[]
 }
