@@ -308,7 +308,6 @@ await testEsmAndCjs(async (importType) => {
       })
     })
 
-
     it('params', async () => {
       const db = new PGlite()
       await db.query(`
