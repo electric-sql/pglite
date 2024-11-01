@@ -23,6 +23,7 @@ export interface PostgresMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
+  _process_shared_preload_libraries_in_progress : number
   _pg_initdb: () => number
   _pg_shutdown: () => void
   _interactive_write: (msgLength: number) => void
