@@ -54,6 +54,7 @@ export async function loadExtensions(
   mod: PostgresMod,
   log: (...args: any[]) => void,
 ) {
+  mod.HEAPU8[mod._process_shared_preload_libraries_in_progress] = 1
   for (const ext in mod.pg_extensions) {
     let blob
     try {
