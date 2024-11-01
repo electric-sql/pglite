@@ -375,11 +375,11 @@ export class PGlite
     }
 
     // preloading is finished
-    // NOTE: if shm init was not in plugin constructor we may have to call 
+    // NOTE: if shm init was not in plugin constructor we may have to call
     // process_shared_preload_libraries after filling shared_preload_libraries_string
     // from here because right now postgres.conf exists (if initdb did not fail ofc).
     this.mod.HEAPU8[this.mod._process_shared_preload_libraries_in_progress] = 0
-    
+
     // initdb states:
     // - populating pgdata
     // - reconnect a previous db
