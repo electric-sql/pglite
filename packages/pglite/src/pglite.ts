@@ -368,7 +368,7 @@ export class PGlite
 
     // Initialize the database
     const idb = this.mod._pg_initdb()
-    
+
     if (!idb) {
       // This would be a sab worker crash before pg_initdb can be called
       throw new Error('INITDB failed to return value')
