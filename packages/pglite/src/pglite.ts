@@ -1,3 +1,70 @@
+// @ts-nocheck
+// @ts-ignore
+// import "./wip.js"
+
+/*
+config sample expected in options.config :
+
+    {
+        "shared_preload_libraries" : ["pg_stat_statements"],
+        "compute_query_id" : "on",
+        "pg_stat_statements.max" : "10000",
+        "pg_stat_statements.track": "all",
+    }
+
+*/
+
+async function pglite_conf(vm, kv) {
+    var lines = vm.os.codec.decode(vm.FS.readFile(vm.PGDATA + "/postgresql.conf")).split('\n');
+
+    var buf = []
+    var newlines = [];
+
+    for (var k in kv)
+    {
+        var old = ""
+        for (var line = 0; line < lines.length; line++) {
+            if (lines[line].startsWith(k)) {
+                old = lines[line];
+            } else {
+                buf.push(lines[line])
+            }
+        }
+        var values = []
+        if (kv[k] instanceof Array) {
+            // TODO extract array of , from old
+            // would need a lexer because eg:  'opt1',opt2 and opt1,'opt2'
+            if (old.length) {
+                console.warn("// TODO extract array from old")
+            }
+            values = kv[k]
+        } else {
+            values.push(kv[k].toString())
+        }
+
+
+        const newline = `${k} = ${values.join(',')}\n`
+
+        if (!old.length) {
+            console.log("NEW :", newline)
+        } else {
+            if (old==newline)
+                console.log("no conf change :", newline)
+            else
+                console.error("EDIT :",old,'->', newline)
+        }
+        newlines.push(newline)
+    }
+    if (newlines.length) {
+        buf.push(...newlines)
+        vm.FS.writeFile( vm.PGDATA + "/postgresql.conf", buf.join("") )
+        vm.FS.syncfs(false, (e) => { if (e) console.error("pglite_conf error:", e)})
+    }
+}
+
+// wip js
+
+
 import { Mutex } from 'async-mutex'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import { type Filesystem, parseDataDir, loadFs } from './fs/index.js'
@@ -406,6 +473,11 @@ export class PGlite
             'INITDB created a new datadir, but an alternative db/user was requested',
           )
         }
+        // time to mark extensions that need special treatment on startup.
+
+        if (options.config)
+            pglite_conf(this.mod, options.config )
+
       }
     }
 
