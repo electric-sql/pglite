@@ -27,7 +27,7 @@ describe('exec protocol', () => {
   it('should perform an extended query', async () => {
     const r1 = await db.execProtocol(serialize.parse({ text: 'SELECT $1' }))
     const messageNames1 = r1.messages.map((msg) => msg.name)
-    expect(messageNames1).toEqual(['notice', 'parseComplete'])
+    expect(messageNames1).toEqual(['notice', 'parseComplete', 'readyForQuery'])
 
     const r2 = await db.execProtocol(serialize.bind({ values: ['1'] }))
     const messageNames2 = r2.messages.map((msg) => msg.name)
