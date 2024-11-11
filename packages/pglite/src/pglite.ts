@@ -15,7 +15,8 @@ config sample expected in options.config :
 */
 
 async function pglite_conf(vm, kv) {
-    var lines = vm.os.codec.decode(vm.FS.readFile(vm.PGDATA + "/postgresql.conf")).split('\n');
+    const codec = new TextDecoder()
+    var lines = codec.decode(vm.FS.readFile(vm.PGDATA + "/postgresql.conf")).split('\n');
 
     var buf = []
     var newlines = [];
