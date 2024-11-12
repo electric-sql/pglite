@@ -65,3 +65,38 @@ export const db = knex({
 Now you can check [Knex documentation](https://knexjs.org/guide/query-builder.html)
 and [knex-pglite](https://github.com/czeidler/knex-pglite) documentation for
 more details.
+
+## TypeORM
+
+[TypeORM](https://typeorm.io/) is an ORM that can run in NodeJS, the Browser, and many other platforms. Key features include:
+
+- Clean object-relational model
+- Eager and lazy associations (relations)
+- Automatic migration generation
+- Elegant-syntax, flexible and powerful QueryBuilder.
+
+To use TypeORM with PGlite, add the third party [typeorm-pglite](https://www.npmjs.com/package/typeorm-pglite)
+library to your project:
+
+```bash
+npm i @electric-sql/pglite typeorm-pglite
+```
+
+typeorm-pglite works with TypeORM's existing postgres dialect. Just provide the PGliteDriver to the driver data source option:
+
+```javascript
+import { PGliteDriver, getPGliteInstance } from 'typeorm-pglite'
+import { DataSource } from 'typeorm'
+
+const PGliteDataSource = new DataSource({
+  type: 'postgres',
+  driver: new PGliteDriver().driver,
+})
+
+// You can access the internal PGlite instance using getPGliteInstance function
+const pgliteDb = await getPGliteInstance()
+```
+
+Check [TypeORM documentation](https://typeorm.io/data-source)
+and [typeorm-pglite](https://github.com/muraliprajapati/typeorm-pglite) documentation for
+more details.

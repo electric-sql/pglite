@@ -541,4 +541,152 @@ describe('pglite-sync', () => {
 
     await shape.unsubscribe()
   })
+
+  it('uses COPY FROM for initial batch of inserts', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      useCopy: true,
+    })
+
+    // Create a batch of insert messages followed by an update
+    const numInserts = 1000
+    const messages: Message[] = [
+      ...Array.from(
+        { length: numInserts },
+        (_, idx) =>
+          ({
+            headers: { operation: 'insert' as const },
+            offset: `1_${idx}`,
+            key: `id${idx}`,
+            value: {
+              id: idx,
+              task: `task${idx}`,
+              done: idx % 2 === 0,
+            },
+          }) as Message,
+      ),
+      {
+        headers: { operation: 'update' as const },
+        offset: `1_${numInserts}`,
+        key: `id0`,
+        value: {
+          id: 0,
+          task: 'updated task',
+          done: true,
+        },
+      },
+    ]
+
+    await feedMessages(messages)
+
+    // Wait for all inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === numInserts
+    })
+
+    // Verify the data was inserted correctly
+    const result = await pg.sql`
+      SELECT * FROM todo ORDER BY id LIMIT 5;
+    `
+    expect(result.rows).toEqual([
+      { id: 0, task: 'updated task', done: true },
+      { id: 1, task: 'task1', done: false },
+      { id: 2, task: 'task2', done: true },
+      { id: 3, task: 'task3', done: false },
+      { id: 4, task: 'task4', done: true },
+    ])
+
+    // Verify total count
+    const countResult = await pg.sql<{ count: number }>`
+      SELECT COUNT(*) as count FROM todo;
+    `
+    expect(countResult.rows[0].count).toBe(numInserts)
+
+    await shape.unsubscribe()
+  })
+
+  it('handles special characters in COPY FROM data', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      useCopy: true,
+    })
+
+    const specialCharMessages: Message[] = [
+      {
+        headers: { operation: 'insert' },
+        offset: '1_0',
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'task with, comma',
+          done: false,
+        },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '2_0',
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'task with "quotes"',
+          done: true,
+        },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '3_0',
+        key: 'id3',
+        value: {
+          id: 3,
+          task: 'task with\nnewline',
+          done: false,
+        },
+      },
+    ]
+
+    await feedMessages(specialCharMessages)
+
+    // Wait for inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === specialCharMessages.length
+    })
+
+    // Verify the data was inserted correctly with special characters preserved
+    const result = await pg.sql`
+      SELECT * FROM todo ORDER BY id;
+    `
+    expect(result.rows).toEqual([
+      { id: 1, task: 'task with, comma', done: false },
+      { id: 2, task: 'task with "quotes"', done: true },
+      { id: 3, task: 'task with\nnewline', done: false },
+    ])
+
+    await shape.unsubscribe()
+  })
 })

@@ -16,9 +16,14 @@ import type {
   QueryOptions,
   ExecProtocolOptions,
   ExecProtocolResult,
+  DescribeQueryResult,
 } from './interface.js'
 
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
+import {
+  RowDescriptionMessage,
+  ParameterDescriptionMessage,
+} from '@electric-sql/pg-protocol/messages'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -226,7 +231,7 @@ export abstract class BasePGlite
           if (param === null || param === undefined) {
             return null
           }
-          const serialize = this.serializers[oid]
+          const serialize = options?.serializers?.[oid] ?? this.serializers[oid]
           if (serialize) {
             return serialize(param)
           } else {
@@ -308,6 +313,52 @@ export abstract class BasePGlite
         blob,
       ) as Array<Results>
     })
+  }
+
+  /**
+   * Describe a query
+   * @param query The query to describe
+   * @returns A description of the result types for the query
+   */
+  async describeQuery(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<DescribeQueryResult> {
+    try {
+      await this.#execProtocolNoSync(
+        serializeProtocol.parse({ text: query, types: options?.paramTypes }),
+        options,
+      )
+
+      const describeResults = await this.#execProtocolNoSync(
+        serializeProtocol.describe({ type: 'S' }),
+        options,
+      )
+      const paramDescription = describeResults.messages.find(
+        (msg): msg is ParameterDescriptionMessage =>
+          msg.name === 'parameterDescription',
+      )
+      const resultDescription = describeResults.messages.find(
+        (msg): msg is RowDescriptionMessage => msg.name === 'rowDescription',
+      )
+
+      const queryParams =
+        paramDescription?.dataTypeIDs.map((dataTypeID) => ({
+          dataTypeID,
+          serializer: this.serializers[dataTypeID],
+        })) ?? []
+
+      const resultFields =
+        resultDescription?.fields.map((field) => ({
+          name: field.name,
+          dataTypeID: field.dataTypeID,
+          parser: this.parsers[field.dataTypeID],
+        })) ?? []
+
+      return { queryParams, resultFields }
+    } finally {
+      await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+    }
   }
 
   /**

@@ -4,6 +4,7 @@ import type {
 } from '@electric-sql/pg-protocol/messages'
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
+import type { Parser, Serializer } from './types.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -15,9 +16,14 @@ export interface ParserOptions {
   [pgType: number]: (value: string) => any
 }
 
+export interface SerializerOptions {
+  [pgType: number]: (value: any) => string
+}
+
 export interface QueryOptions {
   rowMode?: RowMode
   parsers?: ParserOptions
+  serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
   paramTypes?: number[]
@@ -29,28 +35,36 @@ export interface ExecProtocolOptions {
   onNotice?: (notice: NoticeMessage) => void
 }
 
-export interface ExtensionSetupResult {
+export interface ExtensionSetupResult<TNamespace = any> {
   emscriptenOpts?: any
-  namespaceObj?: any
+  namespaceObj?: TNamespace
   bundlePath?: URL
   init?: () => Promise<void>
   close?: () => Promise<void>
 }
 
-export type ExtensionSetup = (
+export type ExtensionSetup<TNamespace = any> = (
   pg: PGliteInterface,
   emscriptenOpts: any,
   clientOnly?: boolean,
-) => Promise<ExtensionSetupResult>
+) => Promise<ExtensionSetupResult<TNamespace>>
 
-export interface Extension {
+export interface Extension<TNamespace = any> {
   name: string
-  setup: ExtensionSetup
+  setup: ExtensionSetup<TNamespace>
 }
+
+export type ExtensionNamespace<T> =
+  T extends Extension<infer TNamespace> ? TNamespace : any
 
 export type Extensions = {
   [namespace: string]: Extension | URL
 }
+
+export type InitializedExtensions<TExtensions extends Extensions = Extensions> =
+  {
+    [K in keyof TExtensions]: ExtensionNamespace<TExtensions[K]>
+  }
 
 export interface ExecProtocolResult {
   messages: BackendMessage[]
@@ -63,60 +77,67 @@ export interface DumpDataDirResult {
   filename: string
 }
 
-export interface PGliteOptions {
+export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
   database?: string
   fs?: Filesystem
   debug?: DebugLevel
   relaxedDurability?: boolean
-  extensions?: Extensions
+  extensions?: TExtensions
   loadDataDir?: Blob | File
   initialMemory?: number
   wasmModule?: WebAssembly.Module
   fsBundle?: Blob | File
+  parsers?: ParserOptions
+  serializers?: SerializerOptions
   postgresqlConf?: Record<string, string | string[]>
 }
 
-export type PGliteInterface = {
-  readonly waitReady: Promise<void>
-  readonly debug: DebugLevel
-  readonly ready: boolean
-  readonly closed: boolean
+export type PGliteInterface<T extends Extensions = Extensions> =
+  InitializedExtensions<T> & {
+    readonly waitReady: Promise<void>
+    readonly debug: DebugLevel
+    readonly ready: boolean
+    readonly closed: boolean
 
-  close(): Promise<void>
-  query<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>>
-  sql<T>(
-    sqlStrings: TemplateStringsArray,
-    ...params: any[]
-  ): Promise<Results<T>>
-  exec(query: string, options?: QueryOptions): Promise<Array<Results>>
-  transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
-  ): Promise<T | undefined>
-  execProtocolRaw(
-    message: Uint8Array,
-    options?: ExecProtocolOptions,
-  ): Promise<Uint8Array>
-  execProtocol(
-    message: Uint8Array,
-    options?: ExecProtocolOptions,
-  ): Promise<ExecProtocolResult>
-  listen(
-    channel: string,
-    callback: (payload: string) => void,
-  ): Promise<() => Promise<void>>
-  unlisten(channel: string, callback?: (payload: string) => void): Promise<void>
-  onNotification(
-    callback: (channel: string, payload: string) => void,
-  ): () => void
-  offNotification(callback: (channel: string, payload: string) => void): void
-  dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
-}
+    close(): Promise<void>
+    query<T>(
+      query: string,
+      params?: any[],
+      options?: QueryOptions,
+    ): Promise<Results<T>>
+    sql<T>(
+      sqlStrings: TemplateStringsArray,
+      ...params: any[]
+    ): Promise<Results<T>>
+    exec(query: string, options?: QueryOptions): Promise<Array<Results>>
+    describeQuery(query: string): Promise<DescribeQueryResult>
+    transaction<T>(
+      callback: (tx: Transaction) => Promise<T>,
+    ): Promise<T | undefined>
+    execProtocolRaw(
+      message: Uint8Array,
+      options?: ExecProtocolOptions,
+    ): Promise<Uint8Array>
+    execProtocol(
+      message: Uint8Array,
+      options?: ExecProtocolOptions,
+    ): Promise<ExecProtocolResult>
+    listen(
+      channel: string,
+      callback: (payload: string) => void,
+    ): Promise<() => Promise<void>>
+    unlisten(
+      channel: string,
+      callback?: (payload: string) => void,
+    ): Promise<void>
+    onNotification(
+      callback: (channel: string, payload: string) => void,
+    ): () => void
+    offNotification(callback: (channel: string, payload: string) => void): void
+    dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
+  }
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions
   ? {
@@ -152,4 +173,9 @@ export interface Transaction {
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   rollback(): Promise<void>
   get closed(): boolean
+}
+
+export type DescribeQueryResult = {
+  queryParams: { dataTypeID: number; serializer: Serializer }[]
+  resultFields: { name: string; dataTypeID: number; parser: Parser }[]
 }
