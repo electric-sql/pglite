@@ -75,6 +75,7 @@ export interface PGliteOptions {
   initialMemory?: number
   wasmModule?: WebAssembly.Module
   fsBundle?: Blob | File
+  postgresqlConf?: Record<string, string | string[]>
 }
 
 export type PGliteInterface = {
