@@ -161,7 +161,7 @@ onMounted(async () => {
 <div class="row">
   <div class="postgres-new">
     <div class="info">
-      <h3>Experience PGlite with <a href="https://postgres.new">postgres.new</a></h3>
+      <h3>Experience PGlite with <a href="https://database.build">database.build</a></h3>
       <p>
         Create and publish a Postgres database using AI
         <br class="hide-xs" />
@@ -171,7 +171,7 @@ onMounted(async () => {
     <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
       <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
     </video>
-    <a class="link-btn" href="https://postgres.new">
+    <a class="link-btn" href="https://database.build">
       What would you like to create?</a>
   </div>
   <div class="try-it-now">
