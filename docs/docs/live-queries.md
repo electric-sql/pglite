@@ -33,19 +33,53 @@ const ret = pg.live.query('SELECT * FROM test ORDER BY rand;', [], (res) => {
 })
 ```
 
+You can also pass an options object with `offset` and `limit` to implement efficient windowed queries:
+
+```js
+const ret = pg.live.query({
+  query: 'SELECT * FROM test ORDER BY rand;',
+  offset: 0,
+  limit: 10,
+  callback: (res) => {
+    // res includes:
+    // - rows: the rows for the current window
+    // - offset: the current offset
+    // - limit: the current limit
+    // - totalCount: total number of rows in the full result set
+  },
+})
+```
+
+The windowed query is optimized to:
+
+- Only transfer the rows within the requested window
+- Efficiently update when rows enter/leave the window
+- Track the total count separately to avoid slow COUNT(\*) queries blocking updates
+
+You can update the window position by calling refresh with new offset/limit values:
+
+```js
+// Move to page 2
+await ret.refresh(10, 10)
+```
+
 The returned value from the call is an object with this interface:
 
 ```ts
 interface LiveQueryReturn<T> {
-  initialResults: Results<T>
+  initialResults: Results<T> & {
+    offset?: number // Current offset (if windowed)
+    limit?: number // Current limit (if windowed)
+    totalCount?: number // Total row count (if windowed)
+  }
   unsubscribe: () => Promise<void>
-  refresh: () => Promise<void>
+  refresh: (options?: { offset?: number; limit?: number }) => Promise<void>
 }
 ```
 
 - `initialResults` is the initial results set (also sent to the callback)
 - `unsubscribe` allows you to unsubscribe from the live query
-- `refresh` allows you to force a refresh of the query with the updated results sent to the callback
+- `refresh` allows you to force a refresh of the query with the updated results sent to the callback. For windowed queries you can optionally provide new offset/limit values.
 
 Internally it watches the tables that the query depends on, and reruns the query whenever they are changed.
 

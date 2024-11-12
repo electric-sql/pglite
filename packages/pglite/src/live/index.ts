@@ -12,14 +12,16 @@ import type {
   LiveQuery,
   LiveChanges,
   Change,
+  LiveQueryResults,
 } from './interface'
-import { uuid, formatQuery } from '../utils.js'
+import { uuid, formatQuery, debounceMutex } from '../utils.js'
 
 export type {
   LiveNamespace,
   LiveQuery,
   LiveChanges,
   Change,
+  LiveQueryResults,
 } from './interface.js'
 
 const MAX_RETRIES = 5
@@ -36,26 +38,52 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       callback?: (results: Results<T>) => void,
     ) {
       let signal: AbortSignal | undefined
+      let offset: number | undefined
+      let limit: number | undefined
       if (typeof query !== 'string') {
         signal = query.signal
         params = query.params
         callback = query.callback
+        offset = query.offset
+        limit = query.limit
         query = query.query
       }
+
+      // Offset and limit must be provided together
+      if ((offset === undefined) !== (limit === undefined)) {
+        throw new Error('offset and limit must be provided together')
+      }
+
+      const isWindowed = offset !== undefined && limit !== undefined
+      let totalCount: number | undefined = undefined
+
+      if (
+        isWindowed &&
+        (typeof offset !== 'number' ||
+          isNaN(offset) ||
+          typeof limit !== 'number' ||
+          isNaN(limit))
+      ) {
+        throw new Error('offset and limit must be numbers')
+      }
+
       let callbacks: Array<(results: Results<T>) => void> = callback
         ? [callback]
         : []
       const id = uuid().replace(/-/g, '')
       let dead = false
 
-      let results: Results<T>
+      let results: LiveQueryResults<T>
       let tables: { table_name: string; schema_name: string }[]
 
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
-          const formattedQuery = await formatQuery(pg, query, params, tx)
-          await tx.query(
+          const formattedQuery =
+            params && params.length > 0
+              ? await formatQuery(pg, query, params, tx)
+              : query
+          await tx.exec(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
           )
 
@@ -63,43 +91,128 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
-          // Create prepared statement to get the results
-          await tx.exec(`
-            PREPARE live_query_${id}_get AS
-            SELECT * FROM live_query_${id}_view;
-          `)
-
-          // Get the initial results
-          results = await tx.query<T>(`EXECUTE live_query_${id}_get;`)
+          if (isWindowed) {
+            await tx.exec(`
+              PREPARE live_query_${id}_get(int, int) AS
+              SELECT * FROM live_query_${id}_view
+              LIMIT $1 OFFSET $2;
+            `)
+            await tx.exec(`
+              PREPARE live_query_${id}_get_total_count AS
+              SELECT COUNT(*) FROM live_query_${id}_view;
+            `)
+            totalCount = (
+              await tx.query<{ count: number }>(
+                `EXECUTE live_query_${id}_get_total_count;`,
+              )
+            ).rows[0].count
+            results = {
+              ...(await tx.query<T>(
+                `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
+              )),
+              offset,
+              limit,
+              totalCount,
+            }
+          } else {
+            await tx.exec(`
+              PREPARE live_query_${id}_get AS
+              SELECT * FROM live_query_${id}_view;
+            `)
+            results = await tx.query<T>(`EXECUTE live_query_${id}_get;`)
+          }
         })
       }
       await init()
 
       // Function to refresh the query
-      const refresh = async (count = 0) => {
-        if (callbacks.length === 0) {
-          return
-        }
-        try {
-          results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
-        } catch (e) {
-          const msg = (e as Error).message
+      const refresh = debounceMutex(
+        async ({
+          offset: newOffset,
+          limit: newLimit,
+        }: {
+          offset?: number
+          limit?: number
+        } = {}) => {
+          // We can optionally provide new offset and limit values to refresh with
           if (
-            msg === `prepared statement "live_query_${id}_get" does not exist`
+            !isWindowed &&
+            (newOffset !== undefined || newLimit !== undefined)
           ) {
-            // If the prepared statement does not exist, reset and try again
-            // This can happen if using the multi-tab worker
-            if (count > MAX_RETRIES) {
-              throw e
-            }
-            await init()
-            refresh(count + 1)
-          } else {
-            throw e
+            throw new Error(
+              'offset and limit cannot be provided for non-windowed queries',
+            )
           }
-        }
-        runResultCallbacks(callbacks, results)
-      }
+          if (
+            (newOffset &&
+              (typeof newOffset !== 'number' || isNaN(newOffset))) ||
+            (newLimit && (typeof newLimit !== 'number' || isNaN(newLimit)))
+          ) {
+            throw new Error('offset and limit must be numbers')
+          }
+          offset = newOffset ?? offset
+          limit = newLimit ?? limit
+
+          const run = async (count = 0) => {
+            if (callbacks.length === 0) {
+              return
+            }
+            try {
+              if (isWindowed) {
+                // For a windowed query we defer the refresh of the total count until
+                // after we have returned the results with the old total count. This
+                // is due to a count(*) being a fairly slow query and we want to update
+                // the rows on screen as quickly as possible.
+                results = {
+                  ...(await pg.query<T>(
+                    `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
+                  )),
+                  offset,
+                  limit,
+                  totalCount, // This is the old total count
+                }
+              } else {
+                results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
+              }
+            } catch (e) {
+              const msg = (e as Error).message
+              if (
+                msg.startsWith(`prepared statement "live_query_${id}`) &&
+                msg.endsWith('does not exist')
+              ) {
+                // If the prepared statement does not exist, reset and try again
+                // This can happen if using the multi-tab worker
+                if (count > MAX_RETRIES) {
+                  throw e
+                }
+                await init()
+                run(count + 1)
+              } else {
+                throw e
+              }
+            }
+
+            runResultCallbacks(callbacks, results)
+
+            // Update the total count
+            // If the total count has changed, refresh the query
+            if (isWindowed) {
+              const newTotalCount = (
+                await pg.query<{ count: number }>(
+                  `EXECUTE live_query_${id}_get_total_count;`,
+                )
+              ).rows[0].count
+              if (newTotalCount !== totalCount) {
+                console.log('newTotalCount', newTotalCount)
+                // The total count has changed, refresh the query
+                totalCount = newTotalCount
+                refresh()
+              }
+            }
+          }
+          await run()
+        },
+      )
 
       // Setup the listeners
       const unsubList: Array<() => Promise<void>> = await Promise.all(
@@ -304,7 +417,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       await init()
 
-      const refresh = async () => {
+      const refresh = debounceMutex(async () => {
         if (callbacks.length === 0 && changes) {
           return
         }
@@ -359,7 +472,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             : []),
           ...changes!.rows,
         ])
-      }
+      })
 
       // Setup the listeners
       const unsubList: Array<() => Promise<void>> = await Promise.all(
@@ -587,9 +700,9 @@ export const live = {
   setup,
 } satisfies Extension
 
-export type PGliteWithLive = PGliteInterface<{
-  live: typeof live
-}>
+export type PGliteWithLive = PGliteInterface & {
+  live: LiveNamespace
+}
 
 /**
  * Get a list of all the tables used in a view, recursively

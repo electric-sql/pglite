@@ -3,6 +3,8 @@ import type { Results } from '../interface'
 export interface LiveQueryOptions<T = { [key: string]: any }> {
   query: string
   params?: any[] | null
+  offset?: number
+  limit?: number
   callback?: (results: Results<T>) => void
   signal?: AbortSignal
 }
@@ -99,11 +101,19 @@ export interface LiveNamespace {
   ): Promise<LiveQuery<T>>
 }
 
+export interface LiveQueryResults<T> extends Results<T> {
+  totalCount?: number
+  offset?: number
+  limit?: number
+}
+
 export interface LiveQuery<T> {
-  initialResults: Results<T>
-  subscribe: (callback: (results: Results<T>) => void) => void
-  unsubscribe: (callback?: (results: Results<T>) => void) => Promise<void>
-  refresh: () => Promise<void>
+  initialResults: LiveQueryResults<T>
+  subscribe: (callback: (results: LiveQueryResults<T>) => void) => void
+  unsubscribe: (
+    callback?: (results: LiveQueryResults<T>) => void,
+  ) => Promise<void>
+  refresh: (options?: { offset?: number; limit?: number }) => Promise<void>
 }
 
 export interface LiveChanges<T = { [key: string]: any }> {
