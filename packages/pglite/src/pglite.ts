@@ -786,7 +786,7 @@ export class PGlite
    */
   async updateConf(config: Record<string, string | string[]>) {
     const codec = new TextDecoder()
-    const configPath =  `${PGDATA}/postgresql.conf`
+    const configPath = `${PGDATA}/postgresql.conf`
     const lines = codec.decode(this.mod!.FS.readFile(configPath)).split('\n')
 
     const updatedLines = new Set<string>()
