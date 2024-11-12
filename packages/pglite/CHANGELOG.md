@@ -1,5 +1,21 @@
 # @electric-sql/pglite
 
+## 0.2.13
+
+### Patch Changes
+
+- 5e39036: Fix live queries can query a view by recursively finding all tables they depend on.
+- 3d8efbb: Bump dependencies to address Dependabot alerts
+- 1844b10: Add a new `describeQuery` method to get type information about a query's parameters and result fields without executing it.
+- 79e6082: Changed PGlite interface to automatically add typing for extensions.
+- 16d2296: Fix bug where Firefox was unable to remove OPFS files
+- cf50f47: Change interface of execProtocol return value to remove duplication of data buffer
+- bd1b3b9: Fix a bug in live.incrementalQuery where if it was set to `limit 1` it would return no rows
+- 5e39036: Extend the return value of live queries to be subscribed to multiple times, and make the callback optional on initiation.
+- 16d2296: Fix an issue with live.incrementalQuery where the order would be incorrect with rapid consecutive queries
+- e9bd9a7: Fix the types exports spesified in package.json
+- c442c88: Added custom parser and serializer options to `PGliteOptions`. Added custom serializer option to `QueryOptions`.
+
 ## 0.2.12
 
 ### Patch Changes
