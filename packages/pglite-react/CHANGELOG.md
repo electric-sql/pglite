@@ -1,5 +1,24 @@
 # @electric-sql/pglite-react
 
+## 0.2.13
+
+### Patch Changes
+
+- 3d8efbb: Bump dependencies to address Dependabot alerts
+- bd1b3b9: Enable passing the return value of a live query directly to `useLiveQuery`. This allows you to create a live query in a react-router loader, then pass it to the route component where it is then attached with `useLiveQuery`.
+- Updated dependencies [5e39036]
+- Updated dependencies [3d8efbb]
+- Updated dependencies [1844b10]
+- Updated dependencies [79e6082]
+- Updated dependencies [16d2296]
+- Updated dependencies [cf50f47]
+- Updated dependencies [bd1b3b9]
+- Updated dependencies [5e39036]
+- Updated dependencies [16d2296]
+- Updated dependencies [e9bd9a7]
+- Updated dependencies [c442c88]
+  - @electric-sql/pglite@0.2.13
+
 ## 0.2.12
 
 ### Patch Changes
