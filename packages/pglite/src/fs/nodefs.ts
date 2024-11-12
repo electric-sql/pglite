@@ -1,11 +1,10 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { FilesystemBase } from './types.js'
-import { PGDATA } from './index.js'
-import type { PostgresMod, FS } from '../postgresMod.js'
-import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
+import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
+import type { PostgresMod } from '../postgresMod.js'
+import { PGlite } from '../pglite.js'
 
-export class NodeFS extends FilesystemBase {
+export class NodeFS extends EmscriptenBuiltinFilesystem {
   protected rootDir: string
 
   constructor(dataDir: string) {
@@ -16,7 +15,8 @@ export class NodeFS extends FilesystemBase {
     }
   }
 
-  async emscriptenOpts(opts: Partial<PostgresMod>) {
+  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+    this.pg = pg
     const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
@@ -28,18 +28,10 @@ export class NodeFS extends FilesystemBase {
         },
       ],
     }
-    return options
+    return { emscriptenOpts: options }
   }
 
-  async dumpTar(
-    mod: FS,
-    dbname: string,
-    compression?: DumpTarCompressionOptions,
-  ) {
-    return dumpTar(mod, dbname, compression)
-  }
-
-  async close(FS: FS): Promise<void> {
-    FS.quit()
+  async closeFs(): Promise<void> {
+    this.pg!.Module.FS.quit()
   }
 }

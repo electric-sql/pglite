@@ -2,9 +2,7 @@
 
 At [ElectricSQL](https://electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
 
-We recently started on a [new version of the Electric sync engine](https://next.electric-sql.com) that is more loosely coupled, and will have improved scalability. You can read more about the work we are doing here: [next.electric-sql.com](https://next.electric-sql.com)
-
-To accompany the new sync engine, we are developing a sync extension for PGlite that will enable you to synchronise a remote Postgres with PGlite. As the new Electric sync engine continues to be developed, additional functionality will be added to the sync plugin.
+To accompany Electric, we are developing a sync extension for PGlite that will enable you to synchronise a remote Postgres with PGlite.
 
 The first _alpha_ version of the sync plugin can sync a "shape" from Electric into a table in your PGlite. We don't yet support local writes being synced out, or conflict resolution, but we are actively exploring the best way to enable this in a layered and extendable way.
 

@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.2.9",
+  "version": "0.2.12",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -20,44 +20,44 @@
   "main": "dist/index.js",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./template": {
+      "types": "./dist/templating.d.ts",
       "import": "./dist/templating.js",
-      "require": "./dist/templating.cjs",
-      "types": "./dist/templating.d.ts"
+      "require": "./dist/templating.cjs"
     },
     "./live": {
+      "types": "./dist/live/index.d.ts",
       "import": "./dist/live/index.js",
-      "require": "./dist/live/index.cjs",
-      "types": "./dist/live/index.d.ts"
+      "require": "./dist/live/index.cjs"
     },
     "./worker": {
+      "types": "./dist/worker/index.d.ts",
       "import": "./dist/worker/index.js",
-      "require": "./dist/worker/index.cjs",
-      "types": "./dist/worker/index.d.ts"
+      "require": "./dist/worker/index.cjs"
     },
     "./vector": {
+      "types": "./dist/vector/index.d.ts",
       "import": "./dist/vector/index.js",
-      "require": "./dist/vector/index.cjs",
-      "types": "./dist/vector/index.d.ts"
+      "require": "./dist/vector/index.cjs"
     },
     "./nodefs": {
+      "types": "./dist/fs/nodefs.d.ts",
       "import": "./dist/fs/nodefs.js",
-      "require": "./dist/fs/nodefs.cjs",
-      "types": "./dist/fs/nodefs.d.ts"
+      "require": "./dist/fs/nodefs.cjs"
     },
     "./opfs-ahp": {
-      "import": "./dist/fs/opfs-ahp/index.js",
-      "require": "./dist/fs/opfs-ahp/index.cjs",
-      "types": "./dist/fs/opfs-ahp/index.d.ts"
+      "types": "./dist/fs/opfs-ahp.d.ts",
+      "import": "./dist/fs/opfs-ahp.js",
+      "require": "./dist/fs/opfs-ahp.cjs"
     },
     "./contrib/*": {
+      "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
-      "require": "./dist/contrib/*.cjs",
-      "types": "./dist/contrib/*.d.ts"
+      "require": "./dist/contrib/*.cjs"
     }
   },
   "type": "module",
@@ -92,20 +92,20 @@
   "devDependencies": {
     "@electric-sql/pg-protocol": "workspace:*",
     "@types/emscripten": "^1.39.13",
-    "@types/node": "^20.11.18",
+    "@types/node": "^20.16.11",
     "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",
     "buffer": "^6.0.3",
-    "bun": "^1.1.18",
+    "bun": "^1.1.30",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
-    "playwright": "^1.42.1",
-    "serve": "^14.2.3",
+    "playwright": "^1.48.0",
     "tinytar": "^0.1.0",
-    "vitest": "^2.0.5"
+    "vitest": "^2.1.2"
   },
   "browser": {
     "fs": false,
+    "fs/promises": false,
     "path": false,
     "url": false,
     "zlib": false,
@@ -114,6 +114,7 @@
     "crypto": false,
     "ws": false,
     "child_process": false,
-    "module": false
+    "module": false,
+    "util": false
   }
 }

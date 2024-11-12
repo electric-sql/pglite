@@ -1,5 +1,27 @@
 # @electric-sql/pglite
 
+## 0.2.12
+
+### Patch Changes
+
+- 1495625: add `util` to package.json browser config to exclude it in browser builds
+- d3905cf: Export LiveNamespace type from the live extension
+- 1f036dc: The VFS API has been refactored, along with the OPFS implementation, in order to prepare it for becoming a public API.
+- 52ddcb0: Fix issue where a string passed as a parameter expecting JSON would not treat the string as a json encoded string
+
+## 0.2.11
+
+### Patch Changes
+
+- 2aed553: Bump Emscripten to 3.1.68. Fixes issue #328 where some bundlers would fail to build with a "Failed to resolve './' from './node_modules/@electric-sql/pglite/dist/postgres.js'" error.
+
+## 0.2.10
+
+### Patch Changes
+
+- 3113d56: Add `fs/promises: false` to the browser config in package.json to exclude it from browser builds.
+- 23cd31a: Improve type serialization so it matches exceptions from other libraries
+
 ## 0.2.9
 
 ### Patch Changes

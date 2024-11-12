@@ -73,9 +73,17 @@ export const BOOL = 16,
 
 export const types = {
   string: {
-    to: 0,
+    to: TEXT,
     from: [TEXT, VARCHAR, BPCHAR],
-    serialize: (x: string) => x,
+    serialize: (x: string | number) => {
+      if (typeof x === 'string') {
+        return x
+      } else if (typeof x === 'number') {
+        return x.toString()
+      } else {
+        throw new Error('Invalid input for string type')
+      }
+    },
     parse: (x: string) => x,
   },
   number: {
@@ -100,7 +108,13 @@ export const types = {
   json: {
     to: JSON,
     from: [JSON, JSONB],
-    serialize: (x: any) => JSON_stringify(x),
+    serialize: (x: any) => {
+      if (typeof x === 'string') {
+        return x
+      } else {
+        return JSON_stringify(x)
+      }
+    },
     parse: (x: string) => JSON_parse(x),
   },
   boolean: {

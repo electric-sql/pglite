@@ -15,10 +15,10 @@ import type {
   Transaction,
   QueryOptions,
   ExecProtocolOptions,
+  ExecProtocolResult,
 } from './interface.js'
 
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
-import { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -43,7 +43,7 @@ export abstract class BasePGlite
   abstract execProtocol(
     message: Uint8Array,
     { syncToFs, onNotice }: ExecProtocolOptions,
-  ): Promise<Array<[BackendMessage, Uint8Array]>>
+  ): Promise<ExecProtocolResult>
 
   /**
    * Execute a postgres wire protocol message directly without wrapping the response.
@@ -121,7 +121,7 @@ export abstract class BasePGlite
   async #execProtocolNoSync(
     message: Uint8Array,
     options: ExecProtocolOptions = {},
-  ): Promise<Array<[BackendMessage, Uint8Array]>> {
+  ): Promise<ExecProtocolResult> {
     return await this.execProtocol(message, { ...options, syncToFs: false })
   }
 
@@ -207,7 +207,7 @@ export abstract class BasePGlite
       let results
 
       try {
-        const parseResults = await this.#execProtocolNoSync(
+        const { messages: parseResults } = await this.#execProtocolNoSync(
           serializeProtocol.parse({ text: query, types: options?.paramTypes }),
           options,
         )
@@ -218,7 +218,7 @@ export abstract class BasePGlite
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
-          ).map(([msg]) => msg),
+          ).messages,
         )
 
         const values = params.map((param, i) => {
@@ -226,7 +226,7 @@ export abstract class BasePGlite
           if (param === null || param === undefined) {
             return null
           }
-          const serialize = this.serializers[oid]
+          const serialize = options?.serializers?.[oid] ?? this.serializers[oid]
           if (serialize) {
             return serialize(param)
           } else {
@@ -236,20 +236,26 @@ export abstract class BasePGlite
 
         results = [
           ...parseResults,
-          ...(await this.#execProtocolNoSync(
-            serializeProtocol.bind({
-              values,
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serializeProtocol.describe({ type: 'P' }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
-            serializeProtocol.execute({}),
-            options,
-          )),
+          ...(
+            await this.#execProtocolNoSync(
+              serializeProtocol.bind({
+                values,
+              }),
+              options,
+            )
+          ).messages,
+          ...(
+            await this.#execProtocolNoSync(
+              serializeProtocol.describe({ type: 'P' }),
+              options,
+            )
+          ).messages,
+          ...(
+            await this.#execProtocolNoSync(
+              serializeProtocol.execute({}),
+              options,
+            )
+          ).messages,
         ]
       } finally {
         await this.#execProtocolNoSync(serializeProtocol.sync(), options)
@@ -260,12 +266,7 @@ export abstract class BasePGlite
         await this.syncToFs()
       }
       const blob = await this._getWrittenBlob()
-      return parseResults(
-        results.map(([msg]) => msg),
-        this.parsers,
-        options,
-        blob,
-      )[0] as Results<T>
+      return parseResults(results, this.parsers, options, blob)[0] as Results<T>
     })
   }
 
@@ -286,10 +287,12 @@ export abstract class BasePGlite
       await this._handleBlob(options?.blob)
       let results
       try {
-        results = await this.#execProtocolNoSync(
-          serializeProtocol.query(query),
-          options,
-        )
+        results = (
+          await this.#execProtocolNoSync(
+            serializeProtocol.query(query),
+            options,
+          )
+        ).messages
       } finally {
         await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
@@ -299,7 +302,7 @@ export abstract class BasePGlite
       }
       const blob = await this._getWrittenBlob()
       return parseResults(
-        results.map(([msg]) => msg),
+        results,
         this.parsers,
         options,
         blob,

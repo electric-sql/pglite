@@ -2,8 +2,8 @@ import type {
   BackendMessage,
   NoticeMessage,
 } from '@electric-sql/pg-protocol/messages'
+import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
-import type { Filesystem } from './fs/types.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -15,9 +15,14 @@ export interface ParserOptions {
   [pgType: number]: (value: string) => any
 }
 
+export interface SerializerOptions {
+  [pgType: number]: (value: any) => string
+}
+
 export interface QueryOptions {
   rowMode?: RowMode
   parsers?: ParserOptions
+  serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
   paramTypes?: number[]
@@ -60,6 +65,11 @@ export type InitializedExtensions<TExtensions extends Extensions = Extensions> =
     [K in keyof TExtensions]: ExtensionNamespace<TExtensions[K]>
   }
 
+export interface ExecProtocolResult {
+  messages: BackendMessage[]
+  data: Uint8Array
+}
+
 export interface DumpDataDirResult {
   tarball: Uint8Array
   extension: '.tar' | '.tgz'
@@ -78,6 +88,8 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   initialMemory?: number
   wasmModule?: WebAssembly.Module
   fsBundle?: Blob | File
+  parsers?: ParserOptions
+  serializers?: SerializerOptions
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
@@ -108,7 +120,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     execProtocol(
       message: Uint8Array,
       options?: ExecProtocolOptions,
-    ): Promise<Array<[BackendMessage, Uint8Array]>>
+    ): Promise<ExecProtocolResult>
     listen(
       channel: string,
       callback: (payload: string) => void,

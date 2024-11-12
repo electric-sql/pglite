@@ -223,14 +223,25 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       await waitFor(() => expect(result.current?.rows).toHaveLength(1))
     })
 
-    it('updates when query parameter changes', async () => {
+    it('updates when query parameters change', async () => {
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
 
+      const paramsArr = ['foo']
+
       const { result, rerender } = renderHook(
-        (props) =>
-          hookFn(`SELECT * FROM test WHERE name = $1;`, props.params, incKey),
-        { wrapper, initialProps: { params: ['test1'] } },
+        ({ params }) =>
+          hookFn(
+            `SELECT * FROM test WHERE name = $1;`,
+            [params[params.length - 1]],
+            incKey,
+          ),
+        { wrapper, initialProps: { params: paramsArr } },
       )
+
+      await waitFor(() => expect(result.current?.rows).toEqual([]))
+
+      // update when query parameter changes
+      rerender({ params: ['test1'] })
 
       await waitFor(() =>
         expect(result.current?.rows).toEqual([
@@ -241,7 +252,8 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         ]),
       )
 
-      rerender({ params: ['test2'] })
+      // update when number of query parameters changes
+      rerender({ params: ['test1', 'test2'] })
 
       await waitFor(() =>
         expect(result.current?.rows).toEqual([
@@ -251,6 +263,117 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
           },
         ]),
       )
+    })
+
+    if (queryHook !== 'useLiveQuery') {
+      return
+    }
+
+    it('can take a live query return value directly', async () => {
+      await db.exec(`
+        CREATE TABLE live_test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`INSERT INTO live_test (name) VALUES ('initial');`)
+
+      const liveQuery = await db.live.query(
+        `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
+      )
+      const { result } = renderHook(() => useLiveQuery(liveQuery), { wrapper })
+
+      await waitFor(() => expect(result.current?.rows).toHaveLength(1))
+      expect(result.current?.rows[0]).toEqual({ id: 1, name: 'initial' })
+
+      // Trigger an update
+      await db.exec(`INSERT INTO live_test (name) VALUES ('updated');`)
+      await waitFor(() => expect(result.current?.rows[0].name).toBe('updated'))
+      expect(result.current?.rows[0]).toEqual({ id: 2, name: 'updated' })
+    })
+
+    it('can take a live query returned promise directly', async () => {
+      await db.exec(`
+        CREATE TABLE live_test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`INSERT INTO live_test (name) VALUES ('initial');`)
+
+      const liveQueryPromise = db.live.query(
+        `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
+      )
+      const { result } = renderHook(() => useLiveQuery(liveQueryPromise), {
+        wrapper,
+      })
+
+      expect(result.current).toBe(undefined)
+
+      await waitFor(() => expect(result.current).not.toBe(undefined))
+
+      await waitFor(() => expect(result.current?.rows).toHaveLength(1))
+      expect(result.current?.rows[0]).toEqual({ id: 1, name: 'initial' })
+
+      // Trigger an update
+      await db.exec(`INSERT INTO live_test (name) VALUES ('updated');`)
+      await waitFor(() => expect(result.current?.rows[0].name).toBe('updated'))
+      expect(result.current?.rows[0]).toEqual({ id: 2, name: 'updated' })
+    })
+
+    it('can take a live incremental query return value directly', async () => {
+      await db.exec(`
+        CREATE TABLE live_test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`INSERT INTO live_test (name) VALUES ('initial');`)
+
+      const liveQuery = await db.live.incrementalQuery(
+        `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
+        [],
+        incKey,
+      )
+      const { result } = renderHook(() => useLiveQuery(liveQuery), { wrapper })
+
+      await waitFor(() => expect(result.current?.rows).toHaveLength(1))
+      expect(result.current?.rows[0]).toEqual({ id: 1, name: 'initial' })
+
+      // Trigger an update
+      await db.exec(`INSERT INTO live_test (name) VALUES ('updated');`)
+      await waitFor(() => expect(result.current?.rows[0].name).toBe('updated'))
+      expect(result.current?.rows[0]).toEqual({ id: 2, name: 'updated' })
+    })
+
+    it('can take a live incremental query returned promise directly', async () => {
+      await db.exec(`
+        CREATE TABLE live_test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`INSERT INTO live_test (name) VALUES ('initial');`)
+
+      const liveQueryPromise = db.live.incrementalQuery(
+        `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
+        [],
+        incKey,
+      )
+      const { result } = renderHook(() => useLiveQuery(liveQueryPromise), {
+        wrapper,
+      })
+
+      expect(result.current).toBe(undefined)
+
+      await waitFor(() => expect(result.current).not.toBe(undefined))
+
+      await waitFor(() => expect(result.current?.rows).toHaveLength(1))
+      expect(result.current?.rows[0]).toEqual({ id: 1, name: 'initial' })
+
+      // Trigger an update
+      await db.exec(`INSERT INTO live_test (name) VALUES ('updated');`)
+      await waitFor(() => expect(result.current?.rows[0].name).toBe('updated'))
     })
   })
 }
