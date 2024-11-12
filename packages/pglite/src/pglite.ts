@@ -142,10 +142,12 @@ export class PGlite
     options?: O,
   ): Promise<PGlite & PGliteInterfaceExtensions<O['extensions']>> {
     const resolvedOpts: PGliteOptions =
-      typeof dataDirOrPGliteOptions === 'string' ? {
+      typeof dataDirOrPGliteOptions === 'string'
+        ? {
             dataDir: dataDirOrPGliteOptions,
             ...(options ?? {}),
-          } : (dataDirOrPGliteOptions ?? {})
+          }
+        : (dataDirOrPGliteOptions ?? {})
 
     const pg = new PGlite(resolvedOpts)
     await pg.waitReady
