@@ -37,8 +37,6 @@ jobs:
   build-and-test-pglite-dependencies:
     name: Build and Test PGLite dependencies
     runs-on: ubuntu-22.04
-    needs: [stylecheck]
-    if: ${{ always() }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
