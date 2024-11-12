@@ -64,6 +64,7 @@ Path to the directory for storing the Postgres database. You can provide a URI s
   A filesystem bundle to use instead of downloading the default version. This is useful if in a restricted environment such as an edge worker.
 - `parsers: ParserOptions` <br />
   An object of type `{ [pgType: number]: (value: string) => any; }` mapping Postgres data type IDs to parser functions. For convenience, the `pglite` package exports a constant for most common Postgres types.
+
   ```ts
   import { PGlite, types } from '@electric-sql/pglite'
 
@@ -73,8 +74,10 @@ Path to the directory for storing the Postgres database. You can provide a URI s
     },
   })
   ```
+
 - `serializers: SerializerOptions` <br />
   An object of type `{ [pgType: number]: (value: any) => string; }` mapping Postgres data type IDs to serializer functions.
+
   ```ts
   import { PGlite, types } from '@electric-sql/pglite'
 
@@ -139,29 +142,21 @@ The `query` and `exec` methods take an optional `options` objects with the follo
   An object mapping Postgres data type IDs to parser functions. This option overrides any parsers set at the instance level.
   ```ts
   import { types } from '@electric-sql/pglite'
-  await pg.query(
-    `SELECT * FROM test WHERE name = $1;`,
-    ['test'],
-    {
-      parsers: {
-        [types.TEXT]: (value) => value.toUpperCase(),
-      },
+  await pg.query(`SELECT * FROM test WHERE name = $1;`, ['test'], {
+    parsers: {
+      [types.TEXT]: (value) => value.toUpperCase(),
     },
-  )
+  })
   ```
 - `serializers: SerializerOptions` <br />
   An object mapping Postgres data type IDs to serializer functions. This option overrides any serializers set at the instance level.
   ```ts
   import { types } from '@electric-sql/pglite'
-  await pg.query(
-    `INSERT INTO test (numeric) VALUES ($1);`,
-    [100n],
-    {
-      serializers: {
-        [types.NUMERIC]: (value: number | bigint) => value.toString(),
-      },
+  await pg.query(`INSERT INTO test (numeric) VALUES ($1);`, [100n], {
+    serializers: {
+      [types.NUMERIC]: (value: number | bigint) => value.toString(),
     },
-  )
+  })
   ```
 - `blob: Blob | File` <br />
   Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
