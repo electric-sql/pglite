@@ -68,7 +68,7 @@ more details.
 
 ## TypeORM
 
-[TypeORM](https://typeorm.io/) is an ORM that can run in NodeJS, Browser, Cordova, PhoneGap, Ionic, React Native, NativeScript, Expo, and Electron platforms and can be used with TypeScript and JavaScript (ES2021). Key features include:
+[TypeORM](https://typeorm.io/) is an ORM that can run in NodeJS, the Browser, and many other platforms. Key features include:
 
 - Clean object-relational model
 - Eager and lazy associations (relations)
