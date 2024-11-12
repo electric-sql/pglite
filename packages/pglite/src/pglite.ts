@@ -12,6 +12,7 @@ config sample expected in options.config :
         "pg_stat_statements.track": "all",
     }
 
+note: pglite_conf this must be explicitely called for editing options, it will only auto run on initdb 
 */
 
 async function pglite_conf(vm, kv) {
