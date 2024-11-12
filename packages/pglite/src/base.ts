@@ -231,7 +231,7 @@ export abstract class BasePGlite
           if (param === null || param === undefined) {
             return null
           }
-          const serialize = this.serializers[oid]
+          const serialize = options?.serializers?.[oid] ?? this.serializers[oid]
           if (serialize) {
             return serialize(param)
           } else {

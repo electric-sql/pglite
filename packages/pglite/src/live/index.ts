@@ -587,9 +587,9 @@ export const live = {
   setup,
 } satisfies Extension
 
-export type PGliteWithLive = PGliteInterface & {
-  live: LiveNamespace
-}
+export type PGliteWithLive = PGliteInterface<{
+  live: typeof live
+}>
 
 /**
  * Get a list of all the tables used in a view, recursively
