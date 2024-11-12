@@ -59,8 +59,10 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       if (
         isWindowed &&
-        ((typeof offset !== 'number' || isNaN(offset)) ||
-          (typeof limit !== 'number' || isNaN(limit)))
+        (typeof offset !== 'number' ||
+          isNaN(offset) ||
+          typeof limit !== 'number' ||
+          isNaN(limit))
       ) {
         throw new Error('offset and limit must be numbers')
       }
@@ -142,7 +144,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             )
           }
           if (
-            (newOffset && (typeof newOffset !== 'number' || isNaN(newOffset))) ||
+            (newOffset &&
+              (typeof newOffset !== 'number' || isNaN(newOffset))) ||
             (newLimit && (typeof newLimit !== 'number' || isNaN(newLimit)))
           ) {
             throw new Error('offset and limit must be numbers')
