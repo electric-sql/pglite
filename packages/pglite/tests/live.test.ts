@@ -1092,5 +1092,139 @@ await testEsmAndCjs(async (importType) => {
 
       unsubscribe()
     })
+
+    it('live query with windowing', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe, refresh } = await db.live.query({
+        query: 'SELECT * FROM testTable ORDER BY number',
+        offset: 1,
+        limit: 2,
+        callback: (result) => {
+          console.log('result', JSON.stringify(result, null, 2))
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      })
+
+      // Check initial results include windowing metadata
+      expect(initialResults.rows).toEqual([
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+      ])
+      expect(initialResults.offset).toBe(1)
+      expect(initialResults.limit).toBe(2)
+      expect(initialResults.totalCount).toBe(5)
+
+      // Insert a row that affects the window
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+      ])
+      expect(updatedResults.totalCount).toBe(5) // initially its still 5
+
+      // We wait again for the total count to update, this is done lazily
+      // as it can be slower to calculate, we want the UI to update fast.
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.totalCount).toBe(6) // now its 6
+
+      // Test changing window position
+      await refresh(3, 2)
+
+      expect(updatedResults.rows).toEqual([
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+      ])
+      expect(updatedResults.offset).toBe(3)
+      expect(updatedResults.limit).toBe(2)
+      expect(updatedResults.totalCount).toBe(6)
+
+      // Delete rows to affect totalCount
+      await db.exec('DELETE FROM testTable WHERE number > 30;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([{ id: 3, number: 30 }])
+      expect(updatedResults.totalCount).toBe(6) // initially its still 6
+
+      // We wait again for the total count to update
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.totalCount).toBe(4) // now its 4
+
+      unsubscribe()
+    })
+
+    it('throws error when only one of offset/limit is provided', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await expect(
+        db.live.query({
+          query: 'SELECT * FROM (VALUES (1)) t',
+          offset: 0,
+        }),
+      ).rejects.toThrow('offset and limit must be provided together')
+
+      await expect(
+        db.live.query({
+          query: 'SELECT * FROM (VALUES (1)) t',
+          limit: 10,
+        }),
+      ).rejects.toThrow('offset and limit must be provided together')
+    })
+
+    it('throws error when offset/limit are not numbers', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await expect(
+        db.live.query({
+          query: 'SELECT * FROM (VALUES (1)) t',
+          offset: '0' as any,
+          limit: 10,
+        }),
+      ).rejects.toThrow('offset and limit must be numbers')
+
+      await expect(
+        db.live.query({
+          query: 'SELECT * FROM (VALUES (1)) t',
+          offset: 0,
+          limit: '10' as any,
+        }),
+      ).rejects.toThrow('offset and limit must be numbers')
+    })
   })
 })
