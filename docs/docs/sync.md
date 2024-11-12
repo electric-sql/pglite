@@ -86,6 +86,9 @@ It takes the following options as an object:
 - `shapeKey: string`<br>
   Optional identifier for the shape subscription - if provided the stream state will be persisted along with the data in order to allow resuming the stream between sessions.
 
+- `useCopy: boolean`<br>
+  Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
+
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
 - `isUpToDate: boolean`<br>
