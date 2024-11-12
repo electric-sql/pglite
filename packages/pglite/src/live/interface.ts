@@ -113,7 +113,7 @@ export interface LiveQuery<T> {
   unsubscribe: (
     callback?: (results: LiveQueryResults<T>) => void,
   ) => Promise<void>
-  refresh: (offset?: number, limit?: number) => Promise<void>
+  refresh: (options?: { offset?: number; limit?: number }) => Promise<void>
 }
 
 export interface LiveChanges<T = { [key: string]: any }> {

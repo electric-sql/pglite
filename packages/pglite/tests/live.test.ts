@@ -1118,7 +1118,6 @@ await testEsmAndCjs(async (importType) => {
         offset: 1,
         limit: 2,
         callback: (result) => {
-          console.log('result', JSON.stringify(result, null, 2))
           updatedResults = result
           eventTarget.dispatchEvent(new Event('change'))
         },
@@ -1155,7 +1154,7 @@ await testEsmAndCjs(async (importType) => {
       expect(updatedResults.totalCount).toBe(6) // now its 6
 
       // Test changing window position
-      await refresh(3, 2)
+      await refresh({ offset: 3, limit: 2 })
 
       expect(updatedResults.rows).toEqual([
         { id: 3, number: 30 },

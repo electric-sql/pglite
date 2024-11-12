@@ -59,7 +59,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       if (
         isWindowed &&
-        (typeof offset !== 'number' || typeof limit !== 'number')
+        ((typeof offset !== 'number' || isNaN(offset)) ||
+          (typeof limit !== 'number' || isNaN(limit)))
       ) {
         throw new Error('offset and limit must be numbers')
       }
@@ -124,7 +125,13 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       // Function to refresh the query
       const refresh = debounceMutex(
-        async (newOffset?: number, newLimit?: number) => {
+        async ({
+          offset: newOffset,
+          limit: newLimit,
+        }: {
+          offset?: number
+          limit?: number
+        } = {}) => {
           // We can optionally provide new offset and limit values to refresh with
           if (
             !isWindowed &&
@@ -134,8 +141,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               'offset and limit cannot be provided for non-windowed queries',
             )
           }
-          if ((newOffset === undefined) !== (newLimit === undefined)) {
-            throw new Error('offset and limit must be provided together')
+          if (
+            (newOffset && (typeof newOffset !== 'number' || isNaN(newOffset))) ||
+            (newLimit && (typeof newLimit !== 'number' || isNaN(newLimit)))
+          ) {
+            throw new Error('offset and limit must be numbers')
           }
           offset = newOffset ?? offset
           limit = newLimit ?? limit
@@ -173,7 +183,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                   throw e
                 }
                 await init()
-                refresh(count + 1)
+                run(count + 1)
               } else {
                 throw e
               }

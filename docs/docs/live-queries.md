@@ -73,7 +73,7 @@ interface LiveQueryReturn<T> {
     totalCount?: number // Total row count (if windowed)
   }
   unsubscribe: () => Promise<void>
-  refresh: (offset?: number, limit?: number) => Promise<void>
+  refresh: (options?: {offset?: number, limit?: number}) => Promise<void>
 }
 ```
 
