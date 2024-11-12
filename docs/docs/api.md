@@ -304,6 +304,32 @@ transactions, and notification listeners. Only use if you need to bypass these w
 
 :::
 
+### describeQuery
+
+`.describeQuery(query: string, options?: QueryOptions): Promise<DescribeQueryResult>`
+
+Get type information about a query's parameters and result fields without executing it. This is useful for understanding the expected parameter types and the structure of the results that would be returned. It can be used to build a type inference system for queries using PGlite.
+
+Returns an object with:
+
+- `queryParams: Array<{ dataTypeID: number, serializer: Function }>` <br/>
+  Information about each parameter's Postgres type ID and the serializer function used to convert JavaScript values to Postgres format.
+
+- `resultFields: Array<{ name: string, dataTypeID: number, parser: Function }>` <br/>
+  Information about each result field including its name, Postgres type ID, and the parser function used to convert Postgres values to JavaScript format.
+
+##### Example
+
+```ts
+await pg.describeQuery('SELECT * FROM test WHERE name = $1', ['test'])
+
+// returns:
+{
+  queryParams: [{ dataTypeID: 25, serializer: Function }],
+  resultFields: [{ name: "id", dataTypeID: 23, parser: Function }],
+}
+```
+
 ## Properties
 
 ### ready
