@@ -13,7 +13,7 @@ test('describeQuery returns parameter and result types', async () => {
   `)
 
   const description = await db.describeQuery(
-    'SELECT name, age FROM users WHERE id = $1 AND active = $2'
+    'SELECT name, age FROM users WHERE id = $1 AND active = $2',
   )
 
   // Check parameter types
@@ -35,7 +35,7 @@ test('describeQuery returns parameter and result types', async () => {
 
 test('describeQuery handles queries with no parameters or results', async () => {
   const db = await PGlite.create()
-  
+
   const description = await db.describeQuery('SELECT 1')
 
   expect(description.queryParams).toHaveLength(0)
@@ -53,7 +53,7 @@ test('describeQuery handles INSERT queries', async () => {
   `)
 
   const description = await db.describeQuery(
-    'INSERT INTO test (id, value) VALUES ($1, $2)'
+    'INSERT INTO test (id, value) VALUES ($1, $2)',
   )
 
   expect(description.queryParams).toHaveLength(2)
@@ -65,7 +65,7 @@ test('describeQuery handles INSERT queries', async () => {
 test('describeQuery handles invalid queries', async () => {
   const db = await PGlite.create()
 
-  await expect(db.describeQuery('SELECT * FROM nonexistent_table'))
-    .rejects
-    .toThrow(/relation "nonexistent_table" does not exist/)
-}) 
+  await expect(
+    db.describeQuery('SELECT * FROM nonexistent_table'),
+  ).rejects.toThrow(/relation "nonexistent_table" does not exist/)
+})
