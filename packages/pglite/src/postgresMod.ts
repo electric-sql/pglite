@@ -1,4 +1,4 @@
-import PostgresModFactory from '../release/postgres.js'
+import PostgresModFactory from '../release/postgres'
 
 type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
