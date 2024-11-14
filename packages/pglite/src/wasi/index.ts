@@ -1073,7 +1073,6 @@ export class WasiPreview1 {
       const mem = new Uint8Array(this.wasm.memory.buffer)
 
       let offset = 0
-      let entriesWritten = 0
 
       // Skip entries according to cookie
       const startIndex = Number(cookie)
@@ -1105,7 +1104,6 @@ export class WasiPreview1 {
         mem.set(nameBytes, buf + offset + 24)
 
         offset += direntSize
-        entriesWritten++
       }
 
       view.setUint32(bufusedPtr, offset, true)
