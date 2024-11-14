@@ -1,85 +1,104 @@
-import * as defs from './defs.js'
+import defs from './defs.js'
+import { FSInterface, FileDescriptor, WASIOptions } from './types'
 
 export { defs }
+export * from './types'
 
 export class WASIProcExit extends Error {
   code: number
 
-  constructor (code: number) {
+  constructor(code: number) {
     super(`Exit with code ${code}`)
     this.code = code
   }
 }
 
-// FS interface that is used here. Implement your own, if you want, or use zenfs or node fs!
-export class FSDummy {
-  appendFileSync (path, data, options = {}) {
+export class FSDummy implements FSInterface {
+  appendFileSync(
+    _path: string,
+    _data: Uint8Array | string,
+    _options: any = {},
+  ): void {
     throw new Error('appendFileSync not implemented. This is a dummy fs.')
   }
 
-  fsyncSync (fd) {
+  fsyncSync(_fd: number | string): void {
     throw new Error('fsyncSync not implemented. This is a dummy fs.')
   }
 
-  linkSync (existingPath, newPath) {
+  linkSync(_existingPath: string, _newPath: string): void {
     throw new Error('linkSync not implemented. This is a dummy fs.')
   }
 
-  mkdirSync (path, options = {}) {
+  mkdirSync(_path: string, _options: any = {}): void {
     throw new Error('mkdirSync not implemented. This is a dummy fs.')
   }
 
-  readdirSync (path, options = {}) {
+  readdirSync(_path: string, _options: any = {}): any[] {
     throw new Error('readdirSync not implemented. This is a dummy fs.')
   }
 
-  readFileSync (path, options = {}) {
+  readFileSync(_path: string, _options: any = {}): Uint8Array {
     throw new Error('readFileSync not implemented. This is a dummy fs.')
   }
 
-  readlinkSync (path, options = {}) {
+  readlinkSync(_path: string, _options: any = {}): string {
     throw new Error('readlinkSync not implemented. This is a dummy fs.')
   }
 
-  renameSync (oldPath, newPath) {
+  renameSync(_oldPath: string, _newPath: string): void {
     throw new Error('renameSync not implemented. This is a dummy fs.')
   }
 
-  rmdirSync (path, options = {}) {
+  rmdirSync(_path: string, _options: any = {}): void {
     throw new Error('rmdirSync not implemented. This is a dummy fs.')
   }
 
-  setFlagsSync (path, flags) {
+  setFlagsSync(_path: string, _flags: number): void {
     throw new Error('setFlagsSync not implemented. This is a dummy fs.')
   }
 
-  statSync (path, options = {}) {
+  statSync(_path: string, _options: any = {}): any {
     throw new Error('statSync not implemented. This is a dummy fs.')
   }
 
-  symlinkSync (target, path, type = 'file') {
+  symlinkSync(_target: string, _path: string, _type: string = 'file'): void {
     throw new Error('symlinkSync not implemented. This is a dummy fs.')
   }
 
-  truncateSync (path, len = 0) {
+  truncateSync(_path: string, _len: number = 0): void {
     throw new Error('truncateSync not implemented. This is a dummy fs.')
   }
 
-  unlinkSync (path) {
+  unlinkSync(_path: string): void {
     throw new Error('unlinkSync not implemented. This is a dummy fs.')
   }
 
-  utimesSync (path, atime, mtime) {
+  utimesSync(_path: string, _atime: number, _mtime: number): void {
     throw new Error('utimesSync not implemented. This is a dummy fs.')
   }
 
-  writeFileSync (path, data, options = {}) {
+  writeFileSync(
+    _path: string,
+    _data: Uint8Array | string,
+    _options: any = {},
+  ): void {
     throw new Error('writeFileSync not implemented. This is a dummy fs.')
   }
 }
 
 export class WasiPreview1 {
-  constructor (options = {}) {
+  private args: string[]
+  private env: Record<string, string>
+  private fs: FSInterface
+  private debug: boolean
+  private fds: Map<number, FileDescriptor>
+  private nextFd: number
+  private textDecoder: TextDecoder
+  private textEncoder: TextEncoder
+  private wasm: any // Type for WebAssembly instance - could be more specific
+
+  constructor(options: WASIOptions = {}) {
     this.args = options?.args || []
     this.env = options?.env || {}
     this.fs = options?.fs || new FSDummy()
@@ -88,10 +107,13 @@ export class WasiPreview1 {
     // Initialize file descriptors with stdin(0), stdout(1), stderr(2), /
     // fd is first number
     this.fds = new Map([
-      [0, { type: 'stdio' }], // stdin
-      [1, { type: 'stdio' }], // stdout
-      [2, { type: 'stdio' }], // stderr
-      [3, { type: 'directory', preopenPath: '/' }] // root directory
+      [0, { fd: 0, type: 'stdio' }], // stdin
+      [1, { fd: 1, type: 'stdio' }], // stdout
+      [2, { fd: 2, type: 'stdio' }], // stderr
+      [
+        3,
+        { fd: 3, type: 'directory', preopenPath: '/', handle: { path: '/' } },
+      ], // root directory
     ])
 
     this.nextFd = this.fds.size
@@ -99,16 +121,17 @@ export class WasiPreview1 {
     this.textEncoder = new TextEncoder()
 
     // Bind all WASI functions to maintain correct 'this' context
-    const doBind = (...names) => {
+    const doBind = (...names: (keyof WasiPreview1)[]) => {
+      // TODO: there is probably a better way to do this
       for (const name of names) {
         if (this.debug) {
-          const orig = this[name].bind(this)
-          this[name] = (...a) => {
-            console.log(name, a)
-            return orig(...a)
-          }
+          const orig: (...args: any[]) => any = this[name].bind(this)
+          this[name] = ((...args: any[]) => {
+            console.log(name, args)
+            return orig(...args)
+          }) as any
         } else {
-          this[name] = this[name].bind(this)
+          this[name] = this[name].bind(this) as any
         }
       }
     }
@@ -156,20 +179,20 @@ export class WasiPreview1 {
       'sock_send',
       'sock_shutdown',
       'random_get',
-      'sched_yield'
+      'sched_yield',
     )
   }
 
   // Helper methods
 
   // this binds the wasm to this WASI implementation
-  setup (wasm) {
+  setup(wasm: any): void {
     this.wasm = wasm
   }
 
   // this binds the wasm to this WASI implementation
   // and calls it's main()'
-  start (wasm) {
+  start(wasm: any): number {
     this.setup(wasm)
     try {
       if (wasm._start) {
@@ -184,32 +207,35 @@ export class WasiPreview1 {
     }
   }
 
-  allocateFd (fileHandle, type = 'file') {
+  private allocateFd(
+    fileHandle: any,
+    type: 'file' | 'directory' = 'file',
+  ): number {
     const fd = this.nextFd++
-    const descriptor = { type, handle: fileHandle, fd }
+    const descriptor: FileDescriptor = { type, handle: fileHandle, fd }
     this.fds.set(fd, descriptor)
     return fd
   }
 
   // Standard input (for fd_read)
-  stdin () {
+  stdin(): Uint8Array {
     return new Uint8Array()
   }
 
   // Standard output handling (for fd_write)
-  stdout (buffer) {
+  stdout(buffer: Uint8Array): void {
     const text = this.textDecoder.decode(buffer).replace(/\n$/g, '')
     if (text) console.log(text)
   }
 
   // Standard error handling (for fd_write)
-  stderr (buffer) {
+  stderr(buffer: Uint8Array): void {
     const text = this.textDecoder.decode(buffer).replace(/\n$/g, '')
     if (text) console.error(text)
   }
 
   // Args functions
-  args_get (argvP, argvBufP) {
+  args_get(argvP: number, argvBufP: number): number {
     const view = new DataView(this.wasm.memory.buffer)
     const mem = new Uint8Array(this.wasm.memory.buffer)
 
@@ -224,7 +250,7 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  args_sizes_get (argcPtr, argvBufSizePtr) {
+  args_sizes_get(argcPtr: number, argvBufSizePtr: number): number {
     const view = new DataView(this.wasm.memory.buffer)
     view.setUint32(argcPtr, this.args.length, true)
     const bufSize = this.args.reduce((acc, arg) => acc + arg.length + 1, 0)
@@ -233,7 +259,7 @@ export class WasiPreview1 {
   }
 
   // Environment functions
-  environ_get (environP, environBufP) {
+  environ_get(environP: number, environBufP: number): number {
     const view = new DataView(this.wasm.memory.buffer)
     const mem = new Uint8Array(this.wasm.memory.buffer)
 
@@ -248,17 +274,23 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  environ_sizes_get (environCountPtr, environBufSizePtr) {
+  environ_sizes_get(
+    environCountPtr: number,
+    environBufSizePtr: number,
+  ): number {
     const view = new DataView(this.wasm.memory.buffer)
     const count = Object.keys(this.env).length
     view.setUint32(environCountPtr, count, true)
-    const bufSize = Object.entries(this.env).reduce((acc, [k, v]) => acc + k.length + v.length + 2, 0)
+    const bufSize = Object.entries(this.env).reduce(
+      (acc, [k, v]) => acc + k.length + v.length + 2,
+      0,
+    )
     view.setUint32(environBufSizePtr, bufSize, true)
     return defs.ERRNO_SUCCESS
   }
 
   // Clock functions
-  clock_res_get (id, resPtr) {
+  clock_res_get(id: number, resPtr: number): number {
     const view = new DataView(this.wasm.memory.buffer)
     let resolution
     switch (id) {
@@ -275,7 +307,7 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_filestat_get(fd, filestatPtr) {
+  fd_filestat_get(fd: number, filestatPtr: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -291,18 +323,20 @@ export class WasiPreview1 {
           size: 0n,
           atim: 0n,
           mtim: 0n,
-          ctim: 0n
+          ctim: 0n,
         }
       } else if (fileDesc.type === 'file' || fileDesc.type === 'directory') {
         // Get actual file stats
         const fsStats = this.fs.statSync(fileDesc.handle.path)
-        
+
         // Determine file type
-        let filetype = defs.FILETYPE_UNKNOWN
+        let filetype: number = defs.FILETYPE_UNKNOWN
         if (fsStats.isFile()) filetype = defs.FILETYPE_REGULAR_FILE
         else if (fsStats.isDirectory()) filetype = defs.FILETYPE_DIRECTORY
-        else if (fsStats.isSymbolicLink()) filetype = defs.FILETYPE_SYMBOLIC_LINK
-        else if (fsStats.isCharacterDevice()) filetype = defs.FILETYPE_CHARACTER_DEVICE
+        else if (fsStats.isSymbolicLink())
+          filetype = defs.FILETYPE_SYMBOLIC_LINK
+        else if (fsStats.isCharacterDevice())
+          filetype = defs.FILETYPE_CHARACTER_DEVICE
         else if (fsStats.isBlockDevice()) filetype = defs.FILETYPE_BLOCK_DEVICE
         else if (fsStats.isFIFO()) filetype = defs.FILETYPE_SOCKET_STREAM
 
@@ -314,7 +348,7 @@ export class WasiPreview1 {
           size: BigInt(fsStats.size || 0),
           atim: BigInt(fsStats.atimeMs * 1_000_000), // Convert to nanoseconds
           mtim: BigInt(fsStats.mtimeMs * 1_000_000),
-          ctim: BigInt(fsStats.ctimeMs * 1_000_000)
+          ctim: BigInt(fsStats.ctimeMs * 1_000_000),
         }
       } else {
         return defs.ERRNO_BADF
@@ -322,28 +356,28 @@ export class WasiPreview1 {
 
       // Write filestat struct to memory
       const view = new DataView(this.wasm.memory.buffer)
-      
+
       // device ID - u64
       view.setBigUint64(filestatPtr, stats.dev, true)
-      
+
       // inode - u64
       view.setBigUint64(filestatPtr + 8, stats.ino, true)
-      
+
       // filetype - u8
       view.setUint8(filestatPtr + 16, stats.filetype)
-      
+
       // nlink - u64
       view.setBigUint64(filestatPtr + 24, stats.nlink, true)
-      
+
       // size - u64
       view.setBigUint64(filestatPtr + 32, stats.size, true)
-      
+
       // atime - u64
       view.setBigUint64(filestatPtr + 40, stats.atim, true)
-      
+
       // mtime - u64
       view.setBigUint64(filestatPtr + 48, stats.mtim, true)
-      
+
       // ctime - u64
       view.setBigUint64(filestatPtr + 56, stats.ctim, true)
 
@@ -353,7 +387,7 @@ export class WasiPreview1 {
     }
   }
 
-  clock_time_get (id, precision, timePtr) {
+  clock_time_get(id: number, _precision: number, timePtr: number): number {
     const view = new DataView(this.wasm.memory.buffer)
     let time
     switch (id) {
@@ -374,17 +408,23 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_close (fd) {
+  fd_close(fd: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     this.fds.delete(fd)
     return defs.ERRNO_SUCCESS
   }
 
-  fd_seek (fd, offset, whence, newOffsetPtr) {
+  fd_seek(
+    fd: number,
+    offset: number,
+    whence: number,
+    newOffsetPtr: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type === 'stdio') return defs.ERRNO_SPIPE
+    if (fileDesc.type === 'directory') return defs.ERRNO_BADF
 
     let stats = null
     let newPosition = 0
@@ -398,16 +438,16 @@ export class WasiPreview1 {
 
     switch (whence) {
       case defs.WHENCE_SET:
-          newPosition = noffset
-          break
+        newPosition = noffset
+        break
       case defs.WHENCE_CUR:
-          newPosition = Number(fileDesc.handle.position) + noffset
-          break
+        newPosition = Number(fileDesc.handle.position) + noffset
+        break
       case defs.WHENCE_END:
-          newPosition = Number(stats.size) + noffset
-          break
+        newPosition = Number(stats.size) + noffset
+        break
       default:
-          return defs.ERRNO_INVAL
+        return defs.ERRNO_INVAL
     }
 
     // Update position
@@ -418,7 +458,12 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_write (fd, iovs, iovsLen, nwrittenPtr) {
+  fd_write(
+    fd: number,
+    iovs: number,
+    iovsLen: number,
+    nwrittenPtr: number,
+  ): number {
     let written = 0
     const chunks = []
     const view = new DataView(this.wasm.memory.buffer)
@@ -453,7 +498,7 @@ export class WasiPreview1 {
       this.stderr(buffer)
     } else {
       const fileDesc = this.fds.get(fd)
-      if (!fileDesc) {
+      if (!fileDesc || fileDesc.type !== 'file') {
         return defs.ERRNO_BADF
       }
       fileDesc.handle.position += written
@@ -469,9 +514,10 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_read (fd, iovs, iovsLen, nreadPtr) {
+  fd_read(fd: number, iovs: number, iovsLen: number, nreadPtr: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
+    if (fileDesc.type === 'directory') return defs.ERRNO_BADF
 
     let totalRead = 0
     const view = new DataView(this.wasm.memory.buffer)
@@ -481,8 +527,10 @@ export class WasiPreview1 {
       let content
       if (fd === 0) {
         content = this.stdin()
-      } else {
+      } else if (fileDesc.type === 'file') {
         content = this.fs.readFileSync(fileDesc.handle.path)
+      } else {
+        return defs.ERRNO_BADF
       }
 
       for (let i = 0; i < iovsLen; i++) {
@@ -490,7 +538,7 @@ export class WasiPreview1 {
         const buf = view.getUint32(ptr, true)
         const bufLen = view.getUint32(ptr + 4, true)
 
-        const start = fileDesc.handle.position
+        const start = fileDesc.type === 'stdio' ? 0 : fileDesc.handle.position
         const end = Math.min(start + bufLen, content.length)
         const bytesToRead = end - start
 
@@ -498,7 +546,9 @@ export class WasiPreview1 {
 
         mem.set(new Uint8Array(content.slice(start, end)), buf)
         totalRead += bytesToRead
-        fileDesc.handle.position += bytesToRead
+        if (fileDesc.type === 'file') {
+          fileDesc.handle.position += bytesToRead
+        }
 
         if (bytesToRead < bufLen) break
       }
@@ -510,7 +560,17 @@ export class WasiPreview1 {
     }
   }
 
-  path_open (dirfd, dirflags, path, pathLen, oflags, fsRightsBase, fsRightsInheriting, fdflags, fdPtr) {
+  path_open(
+    dirfd: number,
+    _dirflags: number,
+    path: number,
+    pathLen: number,
+    _oflags: number,
+    _fsRightsBase: number,
+    _fsRightsInheriting: number,
+    _fdflags: number,
+    fdPtr: number,
+  ): number {
     const fileDesc = this.fds.get(dirfd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -525,7 +585,10 @@ export class WasiPreview1 {
         if (pathString.startsWith('/')) {
           resolvedPath = pathString.slice(1)
         }
-        resolvedPath = fileDesc.preopenPath + (fileDesc.preopenPath.endsWith('/') ? '' : '/') + resolvedPath
+        resolvedPath =
+          fileDesc.preopenPath +
+          (fileDesc.preopenPath.endsWith('/') ? '' : '/') +
+          resolvedPath
       }
 
       // Verify file exists
@@ -542,11 +605,11 @@ export class WasiPreview1 {
     }
   }
 
-  proc_exit (code) {
+  proc_exit(code: number): void {
     throw new WASIProcExit(code)
   }
 
-  fd_fdstat_get (fd, statPtr) {
+  fd_fdstat_get(fd: number, statPtr: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -577,11 +640,21 @@ export class WasiPreview1 {
 
     // fs_rights_base - u64
     // Set basic rights depending on file type
-    let fsRightsBase = 0n
+    let fsRightsBase: bigint | number = 0n
     if (fileDesc.type === 'file') {
-      fsRightsBase = defs.RIGHTS_FD_READ | defs.RIGHTS_FD_WRITE | defs.RIGHTS_FD_SEEK | defs.RIGHTS_FD_TELL | defs.RIGHTS_FD_FILESTAT_GET
+      fsRightsBase =
+        defs.RIGHTS_FD_READ |
+        defs.RIGHTS_FD_WRITE |
+        defs.RIGHTS_FD_SEEK |
+        defs.RIGHTS_FD_TELL |
+        defs.RIGHTS_FD_FILESTAT_GET
     } else if (fileDesc.type === 'directory') {
-      fsRightsBase = defs.RIGHTS_PATH_OPEN | defs.RIGHTS_FD_READDIR | defs.RIGHTS_PATH_CREATE_DIRECTORY | defs.RIGHTS_PATH_UNLINK_FILE | defs.RIGHTS_PATH_REMOVE_DIRECTORY
+      fsRightsBase =
+        defs.RIGHTS_PATH_OPEN |
+        defs.RIGHTS_FD_READDIR |
+        defs.RIGHTS_PATH_CREATE_DIRECTORY |
+        defs.RIGHTS_PATH_UNLINK_FILE |
+        defs.RIGHTS_PATH_REMOVE_DIRECTORY
     }
     const bf = BigInt(fsRightsBase)
     view.setBigUint64(statPtr + 8, bf, true)
@@ -593,12 +666,17 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_fdstat_set_flags (fd, flags) {
+  fd_fdstat_set_flags(fd: number, flags: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
     // Check if flags are valid
-    const validFlags = defs.FDFLAGS_APPEND | defs.FDFLAGS_DSYNC | defs.FDFLAGS_NONBLOCK | defs.FDFLAGS_RSYNC | defs.FDFLAGS_SYNC
+    const validFlags =
+      defs.FDFLAGS_APPEND |
+      defs.FDFLAGS_DSYNC |
+      defs.FDFLAGS_NONBLOCK |
+      defs.FDFLAGS_RSYNC |
+      defs.FDFLAGS_SYNC
 
     if (flags & ~validFlags) {
       return defs.ERRNO_INVAL // Invalid flags specified
@@ -616,7 +694,7 @@ export class WasiPreview1 {
       // Try to apply flags to the underlying file system
       // Note: Many flags might not be supported by the underlying fs
       if (fileDesc.handle && typeof this.fs.setFlagsSync === 'function') {
-        this.fs.setFlagsSync(fileDesc.handle, flags)
+        this.fs.setFlagsSync(fileDesc.handle.path, flags)
       }
 
       return defs.ERRNO_SUCCESS
@@ -625,7 +703,7 @@ export class WasiPreview1 {
     }
   }
 
-  fd_prestat_get (fd, prestatPtr) {
+  fd_prestat_get(fd: number, prestatPtr: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -657,7 +735,7 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_prestat_dir_name (fd, pathPtr, pathLen) {
+  fd_prestat_dir_name(fd: number, pathPtr: number, pathLen: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -684,7 +762,13 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  path_filestat_get (fd, flags, pathPtr, pathLen, filestatPtr) {
+  path_filestat_get(
+    fd: number,
+    flags: number,
+    pathPtr: number,
+    pathLen: number,
+    filestatPtr: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -702,12 +786,15 @@ export class WasiPreview1 {
           resolvedPath = pathString.slice(1) // Remove leading '/'
         }
         // Combine preopenPath with the relative path
-        resolvedPath = fileDesc.preopenPath + (fileDesc.preopenPath.endsWith('/') ? '' : '/') + resolvedPath
+        resolvedPath =
+          fileDesc.preopenPath +
+          (fileDesc.preopenPath.endsWith('/') ? '' : '/') +
+          resolvedPath
       }
 
       // Get stats from filesystem
       const stats = this.fs.statSync(resolvedPath, {
-        followSymlinks: (flags & defs.LOOKUPFLAGS_SYMLINK_FOLLOW) !== 0
+        followSymlinks: (flags & defs.LOOKUPFLAGS_SYMLINK_FOLLOW) !== 0,
       })
 
       const view = new DataView(this.wasm.memory.buffer)
@@ -731,11 +818,12 @@ export class WasiPreview1 {
       view.setBigUint64(filestatPtr + 8, BigInt(stats.ino || 0), true)
 
       // Filetype
-      let filetype = defs.FILETYPE_UNKNOWN
+      let filetype: number = defs.FILETYPE_UNKNOWN
       if (stats.isFile()) filetype = defs.FILETYPE_REGULAR_FILE
       else if (stats.isDirectory()) filetype = defs.FILETYPE_DIRECTORY
       else if (stats.isSymbolicLink()) filetype = defs.FILETYPE_SYMBOLIC_LINK
-      else if (stats.isCharacterDevice()) filetype = defs.FILETYPE_CHARACTER_DEVICE
+      else if (stats.isCharacterDevice())
+        filetype = defs.FILETYPE_CHARACTER_DEVICE
       else if (stats.isBlockDevice()) filetype = defs.FILETYPE_BLOCK_DEVICE
       else if (stats.isFIFO()) filetype = defs.FILETYPE_SOCKET_STREAM
       view.setUint8(filestatPtr + 16, filetype)
@@ -747,16 +835,29 @@ export class WasiPreview1 {
       view.setBigUint64(filestatPtr + 32, BigInt(stats.size || 0), true)
 
       // Access time (in nanoseconds)
-      view.setBigUint64(filestatPtr + 40, BigInt(stats.atimeMs * 1_000_000), true)
+      view.setBigUint64(
+        filestatPtr + 40,
+        BigInt(stats.atimeMs * 1_000_000),
+        true,
+      )
 
       // Modification time (in nanoseconds)
-      view.setBigUint64(filestatPtr + 48, BigInt(stats.mtimeMs * 1_000_000), true)
+      view.setBigUint64(
+        filestatPtr + 48,
+        BigInt(stats.mtimeMs * 1_000_000),
+        true,
+      )
 
       // Change time (in nanoseconds)
-      view.setBigUint64(filestatPtr + 56, BigInt(stats.ctimeMs * 1_000_000), true)
+      view.setBigUint64(
+        filestatPtr + 56,
+        BigInt(stats.ctimeMs * 1_000_000),
+        true,
+      )
 
       return defs.ERRNO_SUCCESS
-    } catch (e) {
+    } catch (error) {
+      const e = error as Error & { code: string }
       if (e.code === 'ENOENT') return defs.ERRNO_NOENT
       if (e.code === 'EACCES') return defs.ERRNO_ACCES
       return defs.ERRNO_IO
@@ -764,7 +865,12 @@ export class WasiPreview1 {
   }
 
   // File/Directory Operations
-  fd_advise (fd, offset, len, advice) {
+  fd_advise(
+    fd: number,
+    _offset: number,
+    _len: number,
+    _advice: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -774,7 +880,7 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_allocate (fd, offset, len) {
+  fd_allocate(fd: number, offset: number, len: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -794,7 +900,7 @@ export class WasiPreview1 {
     }
   }
 
-  fd_datasync (fd) {
+  fd_datasync(fd: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -811,7 +917,7 @@ export class WasiPreview1 {
     }
   }
 
-  fd_filestat_set_size (fd, size) {
+  fd_filestat_set_size(fd: number, size: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -824,7 +930,12 @@ export class WasiPreview1 {
     }
   }
 
-  fd_filestat_set_times (fd, atim, mtim, fst_flags) {
+  fd_filestat_set_times(
+    fd: number,
+    atim: number,
+    mtim: number,
+    _fst_flags: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -832,7 +943,7 @@ export class WasiPreview1 {
     try {
       const times = {
         atime: Number(atim) / 1_000_000_000,
-        mtime: Number(mtim) / 1_000_000_000
+        mtime: Number(mtim) / 1_000_000_000,
       }
 
       this.fs.utimesSync(fileDesc.handle.path, times.atime, times.mtime)
@@ -842,7 +953,13 @@ export class WasiPreview1 {
     }
   }
 
-  fd_pread (fd, iovs, iovsLen, offset, nreadPtr) {
+  fd_pread(
+    fd: number,
+    iovs: number,
+    iovsLen: number,
+    offset: number,
+    nreadPtr: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -879,7 +996,13 @@ export class WasiPreview1 {
     }
   }
 
-  fd_pwrite (fd, iovs, iovsLen, offset, nwrittenPtr) {
+  fd_pwrite(
+    fd: number,
+    iovs: number,
+    iovsLen: number,
+    offset: number,
+    nwrittenPtr: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -912,7 +1035,9 @@ export class WasiPreview1 {
 
       // Read existing file content
       const content = this.fs.readFileSync(fileDesc.handle.path)
-      const newContent = new Uint8Array(Math.max(Number(offset) + buffer.length, content.length))
+      const newContent = new Uint8Array(
+        Math.max(Number(offset) + buffer.length, content.length),
+      )
 
       // Copy existing content
       newContent.set(content)
@@ -929,14 +1054,20 @@ export class WasiPreview1 {
     }
   }
 
-  fd_readdir (fd, buf, bufLen, cookie, bufusedPtr) {
+  fd_readdir(
+    fd: number,
+    buf: number,
+    bufLen: number,
+    cookie: number,
+    bufusedPtr: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'directory') return defs.ERRNO_NOTDIR
 
     try {
       const entries = this.fs.readdirSync(fileDesc.handle.path, {
-        withFileTypes: true
+        withFileTypes: true,
       })
       const view = new DataView(this.wasm.memory.buffer)
       const mem = new Uint8Array(this.wasm.memory.buffer)
@@ -965,7 +1096,7 @@ export class WasiPreview1 {
         view.setUint32(buf + offset + 16, nameBytes.length, true) // d_namlen
 
         // d_type
-        let filetype = defs.FILETYPE_UNKNOWN
+        let filetype: number = defs.FILETYPE_UNKNOWN
         if (entry.isFile()) filetype = defs.FILETYPE_REGULAR_FILE
         else if (entry.isDirectory()) filetype = defs.FILETYPE_DIRECTORY
         view.setUint8(buf + offset + 20, filetype)
@@ -984,7 +1115,7 @@ export class WasiPreview1 {
     }
   }
 
-  fd_renumber (from, to) {
+  fd_renumber(from: number, to: number): number {
     const fromDesc = this.fds.get(from)
     if (!fromDesc) return defs.ERRNO_BADF
 
@@ -998,7 +1129,7 @@ export class WasiPreview1 {
     return defs.ERRNO_SUCCESS
   }
 
-  fd_sync (fd) {
+  fd_sync(fd: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -1014,7 +1145,7 @@ export class WasiPreview1 {
     }
   }
 
-  fd_tell (fd, offsetPtr) {
+  fd_tell(fd: number, offsetPtr: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
@@ -1025,11 +1156,13 @@ export class WasiPreview1 {
   }
 
   // Path Operations
-  path_create_directory (fd, path, pathLen) {
+  path_create_directory(fd: number, path: number, pathLen: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const pathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, path, pathLen))
+    const pathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, path, pathLen),
+    )
 
     try {
       let resolvedPath = pathString
@@ -1047,11 +1180,21 @@ export class WasiPreview1 {
     }
   }
 
-  path_filestat_set_times (fd, flags, path, pathLen, atim, mtim, fst_flags) {
+  path_filestat_set_times(
+    fd: number,
+    _flags: number,
+    path: number,
+    pathLen: number,
+    atim: number,
+    mtim: number,
+    _fst_flags: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const pathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, path, pathLen))
+    const pathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, path, pathLen),
+    )
 
     try {
       let resolvedPath = pathString
@@ -1064,7 +1207,7 @@ export class WasiPreview1 {
 
       const times = {
         atime: Number(atim) / 1_000_000_000,
-        mtime: Number(mtim) / 1_000_000_000
+        mtime: Number(mtim) / 1_000_000_000,
       }
 
       this.fs.utimesSync(resolvedPath, times.atime, times.mtime)
@@ -1074,13 +1217,25 @@ export class WasiPreview1 {
     }
   }
 
-  path_link (old_fd, old_flags, old_path, old_path_len, new_fd, new_path, new_path_len) {
+  path_link(
+    old_fd: number,
+    _old_flags: number,
+    old_path: number,
+    old_path_len: number,
+    new_fd: number,
+    new_path: number,
+    new_path_len: number,
+  ): number {
     const oldFileDesc = this.fds.get(old_fd)
     const newFileDesc = this.fds.get(new_fd)
     if (!oldFileDesc || !newFileDesc) return defs.ERRNO_BADF
 
-    const oldPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len))
-    const newPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len))
+    const oldPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+    )
+    const newPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+    )
 
     try {
       let resolvedOldPath = oldPathString
@@ -1107,11 +1262,20 @@ export class WasiPreview1 {
     }
   }
 
-  path_readlink (fd, path, path_len, buf, buf_len, bufused) {
+  path_readlink(
+    fd: number,
+    path: number,
+    path_len: number,
+    buf: number,
+    buf_len: number,
+    bufused: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const pathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, path, path_len))
+    const pathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+    )
 
     try {
       let resolvedPath = pathString
@@ -1141,11 +1305,13 @@ export class WasiPreview1 {
     }
   }
 
-  path_remove_directory (fd, path, path_len) {
+  path_remove_directory(fd: number, path: number, path_len: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const pathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, path, path_len))
+    const pathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+    )
 
     try {
       let resolvedPath = pathString
@@ -1163,13 +1329,24 @@ export class WasiPreview1 {
     }
   }
 
-  path_rename (old_fd, old_path, old_path_len, new_fd, new_path, new_path_len) {
+  path_rename(
+    old_fd: number,
+    old_path: number,
+    old_path_len: number,
+    new_fd: number,
+    new_path: number,
+    new_path_len: number,
+  ): number {
     const oldFileDesc = this.fds.get(old_fd)
     const newFileDesc = this.fds.get(new_fd)
     if (!oldFileDesc || !newFileDesc) return defs.ERRNO_BADF
 
-    const oldPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len))
-    const newPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len))
+    const oldPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+    )
+    const newPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+    )
 
     try {
       let resolvedOldPath = oldPathString
@@ -1196,12 +1373,22 @@ export class WasiPreview1 {
     }
   }
 
-  path_symlink (old_path, old_path_len, fd, new_path, new_path_len) {
+  path_symlink(
+    old_path: number,
+    old_path_len: number,
+    fd: number,
+    new_path: number,
+    new_path_len: number,
+  ): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const oldPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len))
-    const newPathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len))
+    const oldPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+    )
+    const newPathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+    )
 
     try {
       let resolvedNewPath = newPathString
@@ -1219,11 +1406,13 @@ export class WasiPreview1 {
     }
   }
 
-  path_unlink_file (fd, path, path_len) {
+  path_unlink_file(fd: number, path: number, path_len: number): number {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const pathString = this.textDecoder.decode(new Uint8Array(this.wasm.memory.buffer, path, path_len))
+    const pathString = this.textDecoder.decode(
+      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+    )
 
     try {
       let resolvedPath = pathString
@@ -1242,7 +1431,12 @@ export class WasiPreview1 {
   }
 
   // Poll Operations
-  poll_oneoff (in_, out, nsubscriptions, nevents) {
+  poll_oneoff(
+    in_: number,
+    out: number,
+    nsubscriptions: number,
+    nevents: number,
+  ): number {
     // Basic implementation that just processes all subscriptions immediately
     const view = new DataView(this.wasm.memory.buffer)
     let numEvents = 0
@@ -1267,34 +1461,32 @@ export class WasiPreview1 {
   }
 
   // Random Number Generation
-  random_get (buf, buf_len) {
+  random_get(buf: number, buf_len: number): number {
     const bytes = new Uint8Array(this.wasm.memory.buffer, buf, buf_len)
     crypto.getRandomValues(bytes)
     return defs.ERRNO_SUCCESS
   }
 
   // Scheduling Operations
-  sched_yield () {
+  sched_yield(): number {
     // Can't really yield in JavaScript, just return success
     return defs.ERRNO_SUCCESS
   }
 
   // STUB
-  sock_accept (fd, flags) {
+  sock_accept(_fd: number, _flags: number): number {
     return defs.ERRNO_NOSYS
   }
 
-  sock_recv (fd, riData, riFlags) {
+  sock_recv(_fd: number, _riData: number, _riFlags: number): number {
     return defs.ERRNO_NOSYS
   }
 
-  sock_send (fd, siData, riFlags) {
+  sock_send(_fd: number, _siData: number, _riFlags: number): number {
     return defs.ERRNO_NOSYS
   }
 
-  sock_shutdown (fd, how) {
+  sock_shutdown(_fd: number, _how: number): number {
     return defs.ERRNO_NOSYS
   }
 }
-
-export default WasiPreview1
