@@ -63,6 +63,11 @@
       "types": "./dist/wasi/index.d.ts",
       "import": "./dist/wasi/index.js",
       "require": "./dist/wasi/index.cjs"
+    },
+    "./tools/pg_dump": {
+      "types": "./dist/tools/pg_dump.d.ts",
+      "import": "./dist/tools/pg_dump.js",
+      "require": "./dist/tools/pg_dump.cjs"
     }
   },
   "type": "module",
