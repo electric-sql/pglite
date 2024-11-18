@@ -10,6 +10,8 @@
   "scripts": {
     "ci:version": "pnpm exec changeset version",
     "ci:publish": "pnpm changeset publish",
+    "build:all": "pnpm wasm:build && pnpm ts:build",
+    "ts:build": "pnpm --dir ./packages/pglite build",
     "wasm:build": "bash ./cibuild/build-with-docker.sh"
   },
   "devDependencies": {
