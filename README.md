@@ -133,7 +133,7 @@ You will also need the Postgres WASM build files, which you download from a comm
 Once the requirements are met, you can install dependencies and build the workspace projects:
 ```bash
 pnpm install
-pnpm build
+pnpm wasm:build
 ```
 
 This will build all packages in the correct order based on their dependency relationships. You can now develop any individual package using the `build` and `test` scripts, as well as the `stylecheck` and `typecheck` scripts to ensure style and type validity.

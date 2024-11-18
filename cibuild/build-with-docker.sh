@@ -18,10 +18,11 @@ IMG_TAG="${PG_VERSION}_${SDK_VERSION}"
 docker run \
   --rm \
   -e OBJDUMP=${OBJDUMP:-true} \
-  -v ./cibuild.sh:/workspace/cibuild.sh \
-  -v ./cibuild:/workspace/cibuild \
-  -v ./patches:/opt/patches \
-  -v ./tests:/workspace/tests \
-  -v ./packages/pglite:/workspace/packages/pglite \
+  -v ./cibuild.sh:/workspace/cibuild.sh:ro \
+  -v ./extra:/workspace/extra:ro \
+  -v ./cibuild:/workspace/cibuild:ro \
+  -v ./patches:/opt/patches:ro \
+  -v ./tests:/workspace/tests:ro \
+  -v ./packages/pglite:/workspace/packages/pglite:rw \
   $IMG_NAME:$IMG_TAG \
   bash ./cibuild/build-all.sh
