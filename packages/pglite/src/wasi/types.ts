@@ -64,3 +64,12 @@ export type FileDescriptor =
   | FileDescriptorStdio
   | FileDescriptorFile
   | FileDescriptorDirectory
+
+export type WASIInstanceExports = WebAssembly.Exports & {
+  memory: WebAssembly.Memory
+  _start: () => void
+}
+
+export type WASIInstance = WebAssembly.Instance & {
+  exports: WASIInstanceExports
+}

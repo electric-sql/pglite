@@ -1,5 +1,5 @@
 import defs from './defs.js'
-import { FSInterface, FileDescriptor, WASIOptions } from './types'
+import { FSInterface, FileDescriptor, WASIInstance, WASIOptions } from './types'
 
 export { defs }
 export * from './types'
@@ -96,7 +96,7 @@ export class WasiPreview1 {
   private nextFd: number
   private textDecoder: TextDecoder
   private textEncoder: TextEncoder
-  private wasm: any // Type for WebAssembly instance - could be more specific
+  private wasm?: WASIInstance
 
   constructor(options: WASIOptions = {}) {
     this.args = options?.args || []
@@ -186,17 +186,17 @@ export class WasiPreview1 {
   // Helper methods
 
   // this binds the wasm to this WASI implementation
-  setup(wasm: any): void {
-    this.wasm = wasm
+  setup(wasm: WASIInstance): void {
+    this.wasm! = wasm
   }
 
   // this binds the wasm to this WASI implementation
   // and calls it's main()'
-  start(wasm: any): number {
+  start(wasm: WASIInstance): number {
     this.setup(wasm)
     try {
-      if (wasm._start) {
-        wasm._start()
+      if (wasm.exports._start) {
+        wasm.exports._start()
       }
       return 0
     } catch (e) {
@@ -236,8 +236,8 @@ export class WasiPreview1 {
 
   // Args functions
   args_get(argvP: number, argvBufP: number): number {
-    const view = new DataView(this.wasm.memory.buffer)
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
     for (const arg of this.args) {
       view.setUint32(argvP, argvBufP, true)
@@ -251,7 +251,7 @@ export class WasiPreview1 {
   }
 
   args_sizes_get(argcPtr: number, argvBufSizePtr: number): number {
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     view.setUint32(argcPtr, this.args.length, true)
     const bufSize = this.args.reduce((acc, arg) => acc + arg.length + 1, 0)
     view.setUint32(argvBufSizePtr, bufSize, true)
@@ -260,8 +260,8 @@ export class WasiPreview1 {
 
   // Environment functions
   environ_get(environP: number, environBufP: number): number {
-    const view = new DataView(this.wasm.memory.buffer)
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
     for (const [key, value] of Object.entries(this.env)) {
       view.setUint32(environP, environBufP, true)
@@ -278,7 +278,7 @@ export class WasiPreview1 {
     environCountPtr: number,
     environBufSizePtr: number,
   ): number {
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     const count = Object.keys(this.env).length
     view.setUint32(environCountPtr, count, true)
     const bufSize = Object.entries(this.env).reduce(
@@ -291,7 +291,7 @@ export class WasiPreview1 {
 
   // Clock functions
   clock_res_get(id: number, resPtr: number): number {
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     let resolution
     switch (id) {
       case defs.CLOCKID_REALTIME:
@@ -355,7 +355,7 @@ export class WasiPreview1 {
       }
 
       // Write filestat struct to memory
-      const view = new DataView(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
 
       // device ID - u64
       view.setBigUint64(filestatPtr, stats.dev, true)
@@ -388,7 +388,7 @@ export class WasiPreview1 {
   }
 
   clock_time_get(id: number, _precision: number, timePtr: number): number {
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     let time
     switch (id) {
       case defs.CLOCKID_REALTIME: {
@@ -453,7 +453,7 @@ export class WasiPreview1 {
     // Update position
     fileDesc.handle.position = newPosition
 
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     view.setBigUint64(newOffsetPtr, BigInt(newPosition), true)
     return defs.ERRNO_SUCCESS
   }
@@ -466,8 +466,8 @@ export class WasiPreview1 {
   ): number {
     let written = 0
     const chunks = []
-    const view = new DataView(this.wasm.memory.buffer)
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
     // Gather all the chunks from the vectors
     for (let i = 0; i < iovsLen; i++) {
@@ -520,8 +520,8 @@ export class WasiPreview1 {
     if (fileDesc.type === 'directory') return defs.ERRNO_BADF
 
     let totalRead = 0
-    const view = new DataView(this.wasm.memory.buffer)
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
     try {
       let content
@@ -574,7 +574,7 @@ export class WasiPreview1 {
     const fileDesc = this.fds.get(dirfd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
     const pathBuffer = mem.slice(path, path + pathLen)
     const pathString = this.textDecoder.decode(pathBuffer)
 
@@ -597,7 +597,7 @@ export class WasiPreview1 {
       // Store path and initial position in handle
       const fd = this.allocateFd({ path: resolvedPath, position: 0 }, 'file')
 
-      const view = new DataView(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
       view.setUint32(fdPtr, fd, true)
       return defs.ERRNO_SUCCESS
     } catch (e) {
@@ -613,7 +613,7 @@ export class WasiPreview1 {
     const fileDesc = this.fds.get(fd)
     if (!fileDesc) return defs.ERRNO_BADF
 
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
 
     // filetype - u8
     let filetype
@@ -717,7 +717,7 @@ export class WasiPreview1 {
       return defs.ERRNO_BADF
     }
 
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
 
     // Write prestat struct:
     // struct prestat {
@@ -755,7 +755,7 @@ export class WasiPreview1 {
     }
 
     // Write the path to memory
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
     const pathBytes = this.textEncoder.encode(fileDesc.preopenPath)
     mem.set(pathBytes, pathPtr)
 
@@ -773,7 +773,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     // Read the path from memory
-    const mem = new Uint8Array(this.wasm.memory.buffer)
+    const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
     const pathBytes = new Uint8Array(mem.buffer, pathPtr, pathLen)
     const pathString = this.textDecoder.decode(pathBytes)
 
@@ -797,7 +797,7 @@ export class WasiPreview1 {
         followSymlinks: (flags & defs.LOOKUPFLAGS_SYMLINK_FOLLOW) !== 0,
       })
 
-      const view = new DataView(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
 
       // Write filestat struct:
       // struct filestat {
@@ -967,8 +967,8 @@ export class WasiPreview1 {
     try {
       const content = this.fs.readFileSync(fileDesc.handle.path)
       let totalRead = 0
-      const view = new DataView(this.wasm.memory.buffer)
-      const mem = new Uint8Array(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
+      const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
       const position = Number(offset)
 
@@ -1010,8 +1010,8 @@ export class WasiPreview1 {
     try {
       let written = 0
       const chunks = []
-      const view = new DataView(this.wasm.memory.buffer)
-      const mem = new Uint8Array(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
+      const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
       for (let i = 0; i < iovsLen; i++) {
         const ptr = iovs + i * 8
@@ -1069,8 +1069,8 @@ export class WasiPreview1 {
       const entries = this.fs.readdirSync(fileDesc.handle.path, {
         withFileTypes: true,
       })
-      const view = new DataView(this.wasm.memory.buffer)
-      const mem = new Uint8Array(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
+      const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
 
       let offset = 0
 
@@ -1148,7 +1148,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
     if (fileDesc.type !== 'file') return defs.ERRNO_BADF
 
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     view.setBigUint64(offsetPtr, BigInt(fileDesc.handle.position), true)
     return defs.ERRNO_SUCCESS
   }
@@ -1159,7 +1159,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const pathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, path, pathLen),
+      new Uint8Array(this.wasm!.exports.memory.buffer, path, pathLen),
     )
 
     try {
@@ -1191,7 +1191,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const pathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, path, pathLen),
+      new Uint8Array(this.wasm!.exports.memory.buffer, path, pathLen),
     )
 
     try {
@@ -1229,10 +1229,10 @@ export class WasiPreview1 {
     if (!oldFileDesc || !newFileDesc) return defs.ERRNO_BADF
 
     const oldPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, old_path, old_path_len),
     )
     const newPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, new_path, new_path_len),
     )
 
     try {
@@ -1272,7 +1272,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const pathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, path, path_len),
     )
 
     try {
@@ -1291,10 +1291,10 @@ export class WasiPreview1 {
         return defs.ERRNO_OVERFLOW
       }
 
-      const mem = new Uint8Array(this.wasm.memory.buffer)
+      const mem = new Uint8Array(this.wasm!.exports.memory.buffer)
       mem.set(linkBytes, buf)
 
-      const view = new DataView(this.wasm.memory.buffer)
+      const view = new DataView(this.wasm!.exports.memory.buffer)
       view.setUint32(bufused, linkBytes.length, true)
 
       return defs.ERRNO_SUCCESS
@@ -1308,7 +1308,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const pathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, path, path_len),
     )
 
     try {
@@ -1340,10 +1340,10 @@ export class WasiPreview1 {
     if (!oldFileDesc || !newFileDesc) return defs.ERRNO_BADF
 
     const oldPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, old_path, old_path_len),
     )
     const newPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, new_path, new_path_len),
     )
 
     try {
@@ -1382,10 +1382,10 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const oldPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, old_path, old_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, old_path, old_path_len),
     )
     const newPathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, new_path, new_path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, new_path, new_path_len),
     )
 
     try {
@@ -1409,7 +1409,7 @@ export class WasiPreview1 {
     if (!fileDesc) return defs.ERRNO_BADF
 
     const pathString = this.textDecoder.decode(
-      new Uint8Array(this.wasm.memory.buffer, path, path_len),
+      new Uint8Array(this.wasm!.exports.memory.buffer, path, path_len),
     )
 
     try {
@@ -1436,7 +1436,7 @@ export class WasiPreview1 {
     nevents: number,
   ): number {
     // Basic implementation that just processes all subscriptions immediately
-    const view = new DataView(this.wasm.memory.buffer)
+    const view = new DataView(this.wasm!.exports.memory.buffer)
     let numEvents = 0
 
     for (let i = 0; i < nsubscriptions; i++) {
@@ -1460,7 +1460,7 @@ export class WasiPreview1 {
 
   // Random Number Generation
   random_get(buf: number, buf_len: number): number {
-    const bytes = new Uint8Array(this.wasm.memory.buffer, buf, buf_len)
+    const bytes = new Uint8Array(this.wasm!.exports.memory.buffer, buf, buf_len)
     crypto.getRandomValues(bytes)
     return defs.ERRNO_SUCCESS
   }
