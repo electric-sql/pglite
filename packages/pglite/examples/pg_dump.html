@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite Basic Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../dist/index.js",
+          "@electric-sql/pglite/tools/pg_dump": "../dist/tools/pg_dump.js"
+        }
+      }
+    </script>
+  </head>
+<body>
+<h1>PGlite Basic Example</h1>
+<div class="script-plus-log">
+<script type="module">
+import { PGlite } from "@electric-sql/pglite";
+import { pgDump } from "@electric-sql/pglite/tools/pg_dump";
+
+console.log("Starting...");
+
+// In-memory database:
+const pg = new PGlite();
+// Or, stored in indexedDB:
+// const pg = new PGlite('pgdata');
+
+console.log("Ready!");
+
+console.log("Creating table...");
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`);
+
+console.log("Inserting data...");
+
+await pg.exec("INSERT INTO test (name) VALUES ('test');");
+
+console.log("Selecting data...");
+
+const res = await pg.exec(`
+  SELECT * FROM test;
+`);
+
+const dump = await pgDump({ pg })
+console.log(dump)
+</script>
+<div id="log"></div>
+</div>
+</body>
+</html>

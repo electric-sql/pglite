@@ -3,6 +3,7 @@ export interface WASIOptions {
   env?: Record<string, string>
   fs?: FSInterface
   debug?: boolean
+  onSchedYield?: () => void
 }
 
 export interface FSInterface {

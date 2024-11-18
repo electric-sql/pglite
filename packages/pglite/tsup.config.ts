@@ -25,6 +25,7 @@ const entryPoints = [
   'src/vector/index.ts',
   'src/worker/index.ts',
   'src/wasi/index.ts',
+  'src/tools/pg_dump.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

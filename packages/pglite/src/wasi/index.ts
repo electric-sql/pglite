@@ -97,12 +97,14 @@ export class WasiPreview1 {
   private textDecoder: TextDecoder
   private textEncoder: TextEncoder
   private wasm?: WASIInstance
+  private onSchedYield?: () => void
 
   constructor(options: WASIOptions = {}) {
     this.args = options?.args || []
     this.env = options?.env || {}
     this.fs = options?.fs || new FSDummy()
     this.debug = !!options?.debug
+    this.onSchedYield = options?.onSchedYield
 
     // Initialize file descriptors with stdin(0), stdout(1), stderr(2), /
     // fd is first number
@@ -1467,6 +1469,8 @@ export class WasiPreview1 {
 
   // Scheduling Operations
   sched_yield(): number {
+    // Call the user-provided callback if it exists
+    this.onSchedYield?.()
     // Can't really yield in JavaScript, just return success
     return defs.ERRNO_SUCCESS
   }
