@@ -88,6 +88,7 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
       console.log('sched_yield - no aio')
     }
     console.log('onSchedYield done')
+    return 0
   },
 
   await FS.writeFile('/pg_dump', '\0', { mode: 18 })
