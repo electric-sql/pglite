@@ -3,7 +3,7 @@
   <head>
     <title>PGlite Basic Example</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script src="./utils.js"></script>
+    <!-- <script src="./utils.js"></script> -->
     <script type="importmap">
       {
         "imports": {
@@ -22,12 +22,7 @@ import { pgDump } from "@electric-sql/pglite/tools/pg_dump";
 
 console.log("Starting...");
 
-// In-memory database:
-const pg = new PGlite();
-// Or, stored in indexedDB:
-// const pg = new PGlite('pgdata');
-
-console.log("Ready!");
+const pg = await PGlite.create({ debug: 1 });
 
 console.log("Creating table...");
 await pg.exec(`
@@ -37,16 +32,9 @@ await pg.exec(`
   );
 `);
 
-console.log("Inserting data...");
-
 await pg.exec("INSERT INTO test (name) VALUES ('test');");
 
-console.log("Selecting data...");
-
-const res = await pg.exec(`
-  SELECT * FROM test;
-`);
-
+console.log('Dumping database...')
 const dump = await pgDump({ pg })
 console.log(dump)
 </script>
