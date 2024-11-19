@@ -1,6 +1,6 @@
 // Based on https://github.com/konsumer/easywasi and converted to typescript
 
-import defs from './defs.js'
+import defs from './_defs.js'
 import { FSInterface, FileDescriptor, WASIInstance, WASIOptions } from './types'
 
 export { defs }
