@@ -27,13 +27,16 @@ export default function IssueBoard({ columnsLiveIssues }: IssueBoardProps) {
 
   useEffect(() => {
     // Reset moved issues when issues change
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setMovedIssues({})
   }, [columnsLiveIssues])
 
   const issuesByStatus: Record<string, Issue[]> = {}
   const issuesResByStatus: Record<string, LiveQueryResults<Issue>> = {}
   Object.entries(columnsLiveIssues).forEach(([status, liveQuery]) => {
-    let issuesRes = useLiveQuery(liveQuery)
+    // eslint-disable-next-line react-compiler/react-compiler
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const issuesRes = useLiveQuery(liveQuery)
     issuesResByStatus[status] = issuesRes
     issuesRes.rows.forEach((issue) => {
       // If the issue has been moved, patch with new status and kanbanorder for sorting
@@ -164,6 +167,7 @@ export default function IssueBoard({ columnsLiveIssues }: IssueBoardProps) {
    */
   const getNewKanbanOrder = (issueBefore: Issue, issueAfter: Issue) => {
     const prevKanbanOrder = issueBefore?.kanbanorder
+    // eslint-disable-next-line prefer-const
     let nextKanbanOrder = issueAfter?.kanbanorder
     // if (nextKanbanOrder && nextKanbanOrder === prevKanbanOrder) {
     //   // If the next issue has the same kanbanorder as the previous issue,

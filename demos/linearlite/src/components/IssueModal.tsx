@@ -84,10 +84,14 @@ function IssueModal({ isOpen, onDismiss }: Props) {
     }, 250)
   }
 
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
+    if (isOpen && !timeoutRef.current) {
+      // eslint-disable-next-line @eslint-react/web-api/no-leaked-timeout
+      timeoutRef.current = setTimeout(() => {
         ref.current?.focus()
+        timeoutRef.current = undefined
       }, 250)
     }
   }, [isOpen])

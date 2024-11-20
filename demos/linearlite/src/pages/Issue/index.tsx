@@ -1,3 +1,4 @@
+/* eslint-disable react-compiler/react-compiler */
 import { useNavigate, useLoaderData } from 'react-router-dom'
 import { useState, useRef, useCallback } from 'react'
 import { BsCloudCheck as SyncedIcon } from 'react-icons/bs'
@@ -32,6 +33,35 @@ function IssuePage() {
   const [dirtyDescription, setDirtyDescription] = useState<string | null>(null)
   const descriptionIsDirty = useRef(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleTitleChangeDebounced = useCallback(
+    debounce(async (title: string) => {
+      console.log(`handleTitleChangeDebounced`, title)
+      pg.sql`
+      UPDATE issue 
+      SET title = ${title}, modified = ${new Date()} 
+      WHERE id = ${issue.id}
+    `
+      // We can't set titleIsDirty.current = false here because we haven't yet received
+      // the updated issue from the db
+    }, debounceTime),
+    [pg]
+  )
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleDescriptionChangeDebounced = useCallback(
+    debounce(async (description: string) => {
+      pg.sql`
+        UPDATE issue 
+        SET description = ${description}, modified = ${new Date()} 
+        WHERE id = ${issue.id}
+      `
+      // We can't set descriptionIsDirty.current = false here because we haven't yet received
+      // the updated issue from the db
+    }, debounceTime),
+    [pg]
+  )
+
   if (issue === undefined) {
     return <div className="p-8 w-full text-center">Loading...</div>
   } else if (issue === null) {
@@ -65,39 +95,12 @@ function IssuePage() {
     `
   }
 
-  const handleTitleChangeDebounced = useCallback(
-    debounce(async (title: string) => {
-      console.log(`handleTitleChangeDebounced`, title)
-      pg.sql`
-      UPDATE issue 
-      SET title = ${title}, modified = ${new Date()} 
-      WHERE id = ${issue.id}
-    `
-      // We can't set titleIsDirty.current = false here because we haven't yet received
-      // the updated issue from the db
-    }, debounceTime),
-    [pg]
-  )
-
   const handleTitleChange = (title: string) => {
     setDirtyTitle(title)
     titleIsDirty.current = true
     // We debounce the title change so that we don't spam the db with updates
     handleTitleChangeDebounced(title)
   }
-
-  const handleDescriptionChangeDebounced = useCallback(
-    debounce(async (description: string) => {
-      pg.sql`
-        UPDATE issue 
-        SET description = ${description}, modified = ${new Date()} 
-        WHERE id = ${issue.id}
-      `
-      // We can't set descriptionIsDirty.current = false here because we haven't yet received
-      // the updated issue from the db
-    }, debounceTime),
-    [pg]
-  )
 
   const handleDescriptionChange = (description: string) => {
     setDirtyDescription(description)

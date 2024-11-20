@@ -7,6 +7,7 @@ export function Portal(props: { children: ReactNode }) {
   const { children } = props
   const [mounted, setMounted] = useState(false)
 
+  // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
   useEffect(() => setMounted(true), [])
 
   if (!mounted) return null
