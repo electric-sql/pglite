@@ -126,14 +126,14 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 
 ## How to contribute
 
-You will need [pnpm](https://pnpm.io/) installed, and a recent version of Node.js (v20 and above).
+You will need [pnpm](https://pnpm.io/) installed, and a recent version of Node.js (v20 and above). Docker is also needed to build PGlite.
 
-You will also need the Postgres WASM build files, which you download from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. These are necessary to build PGlite and the dependent workspace projects. We plan to enable a local build in the future to streamline this step.
+~~You will also need the Postgres WASM build files, which you download from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. These are necessary to build PGlite and the dependent workspace projects. We plan to enable a local build in the future to streamline this step.~~
 
 Once the requirements are met, you can install dependencies and build the workspace projects:
 ```bash
 pnpm install
-pnpm wasm:build
+pnpm build:all
 ```
 
 This will build all packages in the correct order based on their dependency relationships. You can now develop any individual package using the `build` and `test` scripts, as well as the `stylecheck` and `typecheck` scripts to ensure style and type validity.
