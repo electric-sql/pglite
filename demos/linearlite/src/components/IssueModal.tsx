@@ -12,7 +12,13 @@ import StatusIcon from './StatusIcon'
 import PriorityMenu from './contextmenu/PriorityMenu'
 import StatusMenu from './contextmenu/StatusMenu'
 
-import { Priority, Status, PriorityDisplay } from '../types/types'
+import {
+  Priority,
+  Status,
+  PriorityDisplay,
+  StatusValue,
+  PriorityValue,
+} from '../types/types'
 import { showInfo, showWarning } from '../utils/notification'
 import { usePGlite } from '@electric-sql/pglite-react'
 import { Issue } from '../types/types'
@@ -27,8 +33,8 @@ function IssueModal({ isOpen, onDismiss }: Props) {
   const ref = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState(``)
   const [description, setDescription] = useState<string>()
-  const [priority, setPriority] = useState(Priority.NONE)
-  const [status, setStatus] = useState(Status.BACKLOG)
+  const [priority, setPriority] = useState<PriorityValue>(Priority.NONE)
+  const [status, setStatus] = useState<StatusValue>(Status.BACKLOG)
   const pg = usePGlite()
 
   const handleSubmit = async () => {
@@ -122,7 +128,7 @@ function IssueModal({ isOpen, onDismiss }: Props) {
               </button>
             }
             onSelect={(st) => {
-              setStatus(st)
+              setStatus(st as StatusValue)
             }}
           />
           <input
@@ -159,8 +165,7 @@ function IssueModal({ isOpen, onDismiss }: Props) {
             </button>
           }
           onSelect={(val) => {
-            console.log(val)
-            setPriority(val)
+            setPriority(val as PriorityValue)
           }}
         />
       </div>

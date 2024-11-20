@@ -38,7 +38,7 @@ function List({ showSearch = false }) {
       itemsRendered.overscanStopIndex
     )
     if (newOffset !== offset || newLimit !== limit) {
-      liveIssues.refresh(newOffset, newLimit)
+      liveIssues.refresh({ offset: newOffset, limit: newLimit })
     }
   }
 

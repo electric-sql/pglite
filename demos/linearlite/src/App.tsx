@@ -41,14 +41,12 @@ async function issueListLoader({ request }: { request: Request }) {
   const url = new URL(request.url)
   const filterState = getFilterStateFromSearchParams(url.searchParams)
   const { sql, sqlParams } = filterStateToSql(filterState)
-  // const liveIssues = await pg.live.incrementalQuery<IssueType>({
   const liveIssues = await pg.live.query<IssueType>({
     query: sql,
     params: sqlParams,
     signal: request.signal,
     offset: 0,
     limit: 100,
-    // key: 'id',
   })
   return { liveIssues, filterState }
 }
@@ -76,7 +74,6 @@ async function boardIssueListLoader({ request }: { request: Request }) {
       signal: request.signal,
       offset: 0,
       limit: 10,
-      // key: 'id',
     })
     columnsLiveIssues[status] = colLiveIssues
   }

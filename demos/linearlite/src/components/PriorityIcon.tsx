@@ -1,5 +1,5 @@
 import classNames from 'classnames'
-import { PriorityIcons } from '../types/types'
+import { PriorityIcons, PriorityValue } from '../types/types'
 
 interface Props {
   priority: string
@@ -8,6 +8,6 @@ interface Props {
 
 export default function PriorityIcon({ priority, className }: Props) {
   const classes = classNames(`w-4 h-4`, className)
-  const Icon = PriorityIcons[priority.toLowerCase()]
+  const Icon = PriorityIcons[priority.toLowerCase() as PriorityValue]
   return <Icon className={classes} />
 }

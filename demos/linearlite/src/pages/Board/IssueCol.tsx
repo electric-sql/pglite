@@ -54,7 +54,7 @@ function IssueCol({ title, status, issues, liveQuery }: Props) {
       props.overscanStopIndex
     )
     if (newOffset !== offset || newLimit !== limit) {
-      liveQuery.refresh(newOffset, newLimit)
+      liveQuery.refresh({ offset: newOffset, limit: newLimit })
     }
   }
 
