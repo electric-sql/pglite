@@ -1,4 +1,4 @@
-// 2024-11-14
+// 2024-11-21
 
 import * as defs from './defs.js'
 
@@ -158,14 +158,10 @@ export class WasiPreview1 {
   // this binds the wasm to this WASI implementation
   // and calls it's main()'
   start (wasm) {
-    console.log('start - setup')
     this.setup(wasm)
-    console.log('start - setup done')
     try {
       if (wasm._start) {
-        console.log('start - calling _start')
         wasm._start()
-        console.log('start - _start done')
       }
       return 0
     } catch (e) {
@@ -176,12 +172,6 @@ export class WasiPreview1 {
     }
   }
 
-  allocateFd (fileHandle, type = 'file') {
-    const fd = this.nextFd++
-    const descriptor = { type, handle: fileHandle, fd }
-    this.fds.set(fd, descriptor)
-    return fd
-  }
 
   // Standard input (for fd_read)
   stdin () {
@@ -470,7 +460,12 @@ console.error("fd_seek invalid mode", whence)
     }
 
     // Store path and initial position in handle TODO: could be BIGINT
-    fd = this.allocateFd({ path: resolvedPath, position: 0 }, 'file')
+    // fd = this.allocateFd({ path: resolvedPath, position: 0 }, 'file')
+    const fileHandle = { path: resolvedPath, position: 0 }
+    const type = 'file'
+    fd = this.nextFd++
+    const descriptor = { type, handle: fileHandle, fd }
+    this.fds.set(fd, descriptor)
 
     fileDesc = this.fds.get(fd)
 

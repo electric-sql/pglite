@@ -74,7 +74,7 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
   wasi.sched_yield = () => {
     console.log('onSchedYield')
     const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-    const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+    // const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
     if (FS.analyzePath(pg_in).exists) {
       // call interactive one
       console.log('sched_yield - calling interactive_one')
@@ -82,8 +82,8 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
       console.log('sched_yield - readFileSync', sf_data.length)
       pg.Module._interactive_one()
       console.log('sched_yield - interactive_one done')
-      const fstat = FS.stat(pg_out)
-      console.log('sched_yield socket file', sf_data.length, 'pgreply', fstat.size)
+      // const fstat = FS.stat(pg_out)
+      // console.log('sched_yield socket file', sf_data.length, 'pgreply', fstat.size)
     } else {
       console.log('sched_yield - no aio')
     }
