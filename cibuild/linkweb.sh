@@ -107,8 +107,9 @@ pushd src/backend
         MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
 
     else
+        export COPTS="-O0 -g3"
         # local debug always fast build
-        MODULE="-g3 -O0 -sMODULARIZE=0 -sEXPORT_ES6=0"
+        MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
     MODULE="$MODULE  --shell-file ${WORKSPACE}/tests/repl.html"
