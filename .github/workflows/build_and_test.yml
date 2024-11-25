@@ -207,7 +207,7 @@ jobs:
 
       - name: Build demo site
         run: |
-          bash ./cibuild.sh demo-site
+          NO_SDK_CHECK=true bash ./cibuild.sh demo-site
 
       - name: Build docs
         working-directory: ./docs

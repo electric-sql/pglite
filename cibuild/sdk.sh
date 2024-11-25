@@ -1,5 +1,9 @@
 #!/bin/bash
 mkdir -p /tmp/sdk
+if ${NO_SDK_CHECK:-false}
+then
+    exit 0
+fi
 
 if [ -f $SDKROOT/VERSION ]
 then
