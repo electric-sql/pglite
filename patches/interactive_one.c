@@ -239,7 +239,7 @@ interactive_one() {
 
 
 //    #define IO ((char *)(1))
-    #define IO cma_port
+    #define IO (cma_port+1)
 
 /*
  * in web mode, client call the wire loop itself waiting synchronously for the results
