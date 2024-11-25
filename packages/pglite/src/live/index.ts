@@ -715,8 +715,8 @@ async function getTablesForView(
   viewName: string,
 ): Promise<{ table_name: string; schema_name: string }[]> {
   const result = await tx.query<{
-    table_name: string;
-    schema_name: string;
+    table_name: string
+    schema_name: string
   }>(
     `
       WITH RECURSIVE view_dependencies AS (
