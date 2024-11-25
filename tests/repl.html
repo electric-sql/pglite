@@ -218,7 +218,13 @@
                     break
 
                 case 2:
-                    data = "SELECT now(), current_database(), session_user, current_user;"
+                      data = `CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      number INT
+    );
+    INSERT INTO test (number) VALUES (42);
+`;
+
                     break
 
 /*
