@@ -15,7 +15,6 @@ jobs:
     env:
       BUILD_CONFIG_FILE: .buildconfig
       SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
-      WASI_SDK_VERSION: 24.0.3
       WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
