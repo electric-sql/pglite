@@ -35,7 +35,7 @@ describe('exec protocol', () => {
 
     const r3 = await db.execProtocol(serialize.describe({ type: 'P' }))
     const messageNames3 = r3.messages.map((msg) => msg.name)
-    expect(messageNames3).toEqual(['rowDescription'])
+    expect(messageNames3).toEqual(['rowDescription', 'readyForQuery'])
 
     const r4 = await db.execProtocol(serialize.execute({}))
     const messageNames4 = r4.messages.map((msg) => msg.name)
