@@ -183,11 +183,13 @@ export class PGlite
     const extensionInitFns: Array<() => Promise<void>> = []
 
     const args = [
+      "--single",
+      "postgres",
+      "--",
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
       `PGUSER=${options.username ?? 'postgres'}`,
       `PGDATABASE=${options.database ?? 'template1'}`,
-      'MODE=REACT',
       'REPL=N',
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ['-d', this.debug.toString()] : []),
