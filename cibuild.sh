@@ -494,9 +494,8 @@ do
             pushd ${PGLITE}
                 pnpm install --frozen-lockfile
 
-                mkdir -p $PGLITE/release
-                rm $PGLITE/release/* 2>/dev/null
-
+                #mkdir -p $PGLITE/release
+                #rm $PGLITE/release/* 2>/dev/null
 
                 # copy packed extensions for dist
                 echo "
@@ -509,6 +508,7 @@ echo "
 __________________________________________________________________________________
 "
 
+
                 # copy wasm web prebuilt artifacts to release folder
                 # TODO: get them from web for nosdk systems.
 
@@ -516,9 +516,9 @@ ________________________________________________________________________________
 
                 # debug CI does not use pnpm/npm for building pg, so call the typescript build
                 # part from here
-                pnpm --filter "pglite^..." build || exit 450
-
-                pnpm pack || exit 31
+                #pnpm --filter "pglite^..." build || exit 450
+                pnpm run build || exit 520
+                pnpm pack || exit 521
                 packed=$(echo -n electric-sql-pglite-*.tgz)
 
                 mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}

@@ -1453,7 +1453,7 @@ main(int argc, char **argv) {
     g_argv =argv;
     setup();
     if (is_embed) {
-        printf("\n\n\n   @@@@@@@@@@@@@@@@@@@@@@@@@ EXITING with live runtime port %d @@@@@@@@@@@@@@@@\n\n\n", pg_getport());
+        fprintf(stderr, "\n\n\n   @@@@@@@@@@@@@@@@@@@@@@@@@ EXITING with live runtime port %d @@@@@@@@@@@@@@@@\n\n\n", pg_getport());
         whereToSendOutput = DestNone;
         cma_rsize = 0;
 
