@@ -8,7 +8,7 @@
 
 #if defined(PG_MAIN)
 
-#if defined(PG_EC_STATIC) || defined(__wasi__)
+#if defined(PG_EC_STATIC) || defined(__wasi__) || defined(__EMSCRIPTEN__)
 #warning "PG_EC_STATIC"
 
 EMSCRIPTEN_KEEPALIVE void
@@ -35,6 +35,11 @@ EMSCRIPTEN_KEEPALIVE void *
 pg_realloc(void *ptr, size_t size) {
     return realloc(ptr, size);
 }
+
+EMSCRIPTEN_KEEPALIVE void pg_free(void *ptr) {
+	free(ptr);
+}
+
 
 EMSCRIPTEN_KEEPALIVE char *
 pg_strdup(const char *in) {
@@ -65,7 +70,7 @@ simple_prompt(const char *prompt, bool echo) {
 #endif // PG_EC_STATIC
 
 
-bool is_node = false;
+bool is_embed = true;
 bool is_repl = true;
 
 EMSCRIPTEN_KEEPALIVE bool
@@ -396,8 +401,8 @@ PDEBUG("# 334");
     initStringInfo(&row_description_buf);
     MemoryContextSwitchTo(TopMemoryContext);
 
-#if 1 //PGDEBUG
-    PDEBUG("# 415: exception handler off");
+#if defined(__wasi__) //PGDEBUG
+    puts("# 400: sjlj exception handler off");
 #else
     if (sigsetjmp(local_sigjmp_buf, 1) != 0)
     {
@@ -541,15 +546,16 @@ PDEBUG("# 334");
 
         force_echo = true;
 
-        if (!is_node) {
+        if (is_embed) {
 #if PGDEBUG
-            fprintf(stdout,"# 566: now in webloop(RAF)\npg> %c\n", 4);
+            fprintf(stdout,"# 551: now in webloop(RAF)\npg> %c\n", 4);
 #endif
             emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
         } else {
-            PDEBUG("# 570: REPL(single after initdb):Begin(NORETURN)");
+
+            PDEBUG("# 556: REPL(single after initdb):Begin(NORETURN)");
             while (repl) { interactive_file(); }
-            PDEBUG("# 572: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+            PDEBUG("# 558: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
             {
                 void (*npe)() = NULL;
                 npe();
@@ -573,51 +579,6 @@ PDEBUG("# 334");
 
 extern int cma_rsize;
 
-EMSCRIPTEN_KEEPALIVE void
-pg_repl_raf(){
-
-    is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
-    if (is_node) {
-        PDEBUG(WASM_PREFIX "/bin/postgres.js");
-        printf("cma_rsize was %d\n now set to 0\n", cma_rsize);
-        // force wire socket emulation
-        cma_rsize = 0;
-        if (!strcmp(getenv("_"), WASM_PREFIX "/bin/postgres.js")) {
-            while (1) {
-                interactive_one();
-            }
-            PDEBUG("# 609: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
-            {
-                void (*npe)() = NULL;
-                npe();
-            }
-
-        }
-    }
-    if (is_repl) {
-PDEBUG("# 618: pg_repl_raf(REPL)");
-        repl = true;
-        single_mode_feed = NULL;
-        force_echo = true;
-        whereToSendOutput = DestNone;
-        emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
-    } else {
-        PDEBUG("# 625: TODO: headless wire mode");
-    }
-
-    if (is_node) {
-#if defined(__wasi__)
-        PDEBUG("# 629: pg_repl_raf(WASI) endless loop");
-        while (1) {
-            interactive_one();
-        }
-#else
-        PDEBUG("# 629: pg_repl_raf(NODE) EXIT!!!");
-#endif
-    }
-
-}
-
 
 EMSCRIPTEN_KEEPALIVE void
 pg_shutdown() {
@@ -626,17 +587,6 @@ pg_shutdown() {
 }
 
 int loops = 0;
-
-
-
-EM_JS(int, peek_fd, (int fd), {
-    return test_data.length;
-});
-
-EM_JS(int, fnc_getfd, (int fd), {
-    return fnc_stdin()
-});
-
 
 EMSCRIPTEN_KEEPALIVE void
 interactive_file() {
@@ -743,17 +693,14 @@ interactive_file() {
 
 #include "./interactive_one.c"
 
-
 void
-PostgresSingleUserMain(int argc, char *argv[],
-					   const char *username)
-{
+PostgresSingleUserMain(int argc, char *argv[], const char *username) {
     while(1){};
 }
 
 #else  // defined(PG_MAIN)
 
-extern bool is_node;
+extern bool is_embed;
 extern bool is_repl;
 
 extern bool quote_all_identifiers;
@@ -770,7 +717,6 @@ void mkdirp(const char *p) {
 #endif /* wasm */
 
 
-#if defined(PG_INITDB_MAIN) || defined(__wasi__)
 extern int pg_initdb_main(void);
 
 extern void RePostgresSingleUserMain(int single_argc, char *single_argv[], const char *username);
@@ -780,6 +726,8 @@ extern void proc_exit(int code);
 extern bool IsPostmasterEnvironment;
 
 extern volatile int pg_idb_status;
+
+
 #if PGDEBUG
 void print_bits(size_t const size, void const * const ptr);
 void print_bits(size_t const size, void const * const ptr)
@@ -797,6 +745,8 @@ void print_bits(size_t const size, void const * const ptr)
     puts("");
 }
 #endif // PGDEBUG
+
+
 EMSCRIPTEN_KEEPALIVE int
 pg_initdb() {
     PDEBUG("# 1066: pg_initdb()");
@@ -807,6 +757,41 @@ pg_initdb() {
     if (!chdir(getenv("PGDATA"))){
         if (access("PG_VERSION", F_OK) == 0) {
         	chdir("/");
+
+/* TODO: fill in empty dirs from db template
+    if (mkdir(PGDB, 0700)) {
+
+        // download a db case ?
+    	mkdirp(PGDB);
+
+        // db fixup because empty dirs may not packaged (eg git)
+
+	    // mkdirp(WASM_PREFIX "/lib");
+	    // mkdirp(WASM_PREFIX "/lib/postgresql");
+
+	    mkdirp(PGDB "/pg_wal");
+	    mkdirp(PGDB "/pg_wal/archive_status");
+	    mkdirp(PGDB "/pg_wal/summaries");
+
+	    mkdirp(PGDB "/pg_tblspc");
+	    mkdirp(PGDB "/pg_snapshots");
+	    mkdirp(PGDB "/pg_commit_ts");
+	    mkdirp(PGDB "/pg_notify");
+	    mkdirp(PGDB "/pg_replslot");
+	    mkdirp(PGDB "/pg_twophase");
+
+
+	    mkdirp(PGDB "/pg_logical");
+	    mkdirp(PGDB "/pg_logical/snapshots");
+	    mkdirp(PGDB "/pg_logical/mappings");
+    } else {
+        // no db : run initdb now.
+
+    }
+
+
+*/
+
 
             pg_idb_status |= IDB_HASDB;
 
@@ -909,8 +894,10 @@ pg_initdb() {
         RePostgresSingleUserMain(single_argc, single_argv, strdup( getenv("PGUSER")));
     }
 
-initdb_done:;
     pg_idb_status |= IDB_CALLED;
+    puts("        @@@@@@@@@@@@@@@@@@@@@ write version @@@@@@@@@@@@@@@@@@@@@@@@ ");
+
+initdb_done:;
     IsPostmasterEnvironment = true;
     if (ShmemVariableCache->nextOid < ((Oid) FirstNormalObjectId)) {
         /* IsPostmasterEnvironment is now true
@@ -936,8 +923,6 @@ initdb_done:;
 }
 
 
-#endif // PG_INITDB_MAIN
-
 #define PGDB WASM_PREFIX "/base"
 
 EM_JS(int, is_web_env, (), {
@@ -946,20 +931,166 @@ EM_JS(int, is_web_env, (), {
     } catch(x) {return 0}
 });
 
-static void
-main_pre(int argc, char *argv[]) {
 
+int g_argc;
+char **g_argv;
+
+
+
+
+
+void main_post() {
+    /*
+     * Fire up essential subsystems: error and memory management
+     *
+     * Code after this point is allowed to use elog/ereport, though
+     * localization of messages may not work right away, and messages won't go
+     * anywhere but stderr until GUC settings get loaded.
+     */
+    MemoryContextInit();
+
+    /*
+     * Set up locale information
+     */
+    set_pglocale_pgservice(g_argv[0], PG_TEXTDOMAIN("postgres"));
+
+    /*
+     * In the postmaster, absorb the environment values for LC_COLLATE and
+     * LC_CTYPE.  Individual backends will change these later to settings
+     * taken from pg_database, but the postmaster cannot do that.  If we leave
+     * these set to "C" then message localization might not work well in the
+     * postmaster.
+     */
+    init_locale("LC_COLLATE", LC_COLLATE, "");
+    init_locale("LC_CTYPE", LC_CTYPE, "");
+
+    /*
+     * LC_MESSAGES will get set later during GUC option processing, but we set
+     * it here to allow startup error messages to be localized.
+     */
+#ifdef LC_MESSAGES
+    init_locale("LC_MESSAGES", LC_MESSAGES, "");
+#endif
+
+    /*
+     * We keep these set to "C" always, except transiently in pg_locale.c; see
+     * that file for explanations.
+     */
+    init_locale("LC_MONETARY", LC_MONETARY, "C");
+    init_locale("LC_NUMERIC", LC_NUMERIC, "C");
+    init_locale("LC_TIME", LC_TIME, "C");
+
+    /*
+     * Now that we have absorbed as much as we wish to from the locale
+     * environment, remove any LC_ALL setting, so that the environment
+     * variables installed by pg_perm_setlocale have force.
+     */
+    unsetenv("LC_ALL");
+}
+
+EMSCRIPTEN_KEEPALIVE void
+__cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
+
+/*
+EMSCRIPTEN_KEEPALIVE void *
+_ZNSt13runtime_errorD1Ev(void * int32) {
+    return NULL;
+}
+*/
+
+
+extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
+
+
+#if defined(__wasi__) || defined(__EMSCRIPTEN__)
+
+#   define PG_INITDB_MAIN
+#   define PG_MAIN
+
+#if !defined(PG_LINKWEB)
+#   define FRONTEND
+#   include "../postgresql/src/common/logging.c"
+#   undef FRONTEND
+#endif
+
+#   define icu_language_tag(loc_str) icu_language_tag_idb(loc_str)
+#   define icu_validate_locale(loc_str) icu_validate_locale_idb(loc_str)
+
+#if !defined(PG_LINKWEB)
+#   include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
+#endif
+#   define fsync_pgdata(...)
+
+#   include "../postgresql/src/bin/initdb/initdb.c"
+
+    void use_socketfile(void) {
+        is_repl = true;
+        is_embed = false;
+    }
+#undef PG_INITDB_MAIN
+#undef PG_MAIN
+
+#endif // __wasi__
+
+
+
+int exit_code = 0;
+
+
+extern char *cma_port ;
+
+EMSCRIPTEN_KEEPALIVE void
+setup() {
+    PDEBUG("=setup=");
+
+    // default for web is embed ( CMA )
+PDEBUG(" >>>>>>>>>>>>> FORCING EMBED MODE <<<<<<<<<<<<<<<<");
+    is_embed = true; // is_web_env();
+
+
+/*
+// and now for some undisclosed reason
+// we may not use CMA https://github.com/llvm/llvm-project/blob/f78610af3feb88f0e1edb2482dc77490fb4cad77/lld/wasm/Driver.cpp#L767
+
+// check https://github.com/llvm/llvm-project/issues?q=is%3Aissue+is%3Aopen+global-base+label%3Abackend%3AWebAssembly
+#define IO ((char *)(0))
+{
+    for (int i=0;i<64;i++)
+        if ( IO[i] )
+            printf("%c", IO[i] );
+        else
+            printf(".");
+    puts("");
+}
+*/
+
+
+
+#if PGDEBUG
+    printf("# 1095: argv0 (%s) PGUSER=%s PGDATA=%s PGDATABASE=%s PGEMBED=%s REPL=%s\n",
+        g_argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"), getenv("PGEMBED"), getenv("REPL") );
+#endif
+
+    int argc = g_argc;
 
     char key[256];
     int i=0;
 // extra env is always after normal args
-    PDEBUG("# ============= extra argv dump ==================");
+    PDEBUG("# ============= argv dump ==================");
     {
         for (;i<argc;i++) {
-            const char *kv = argv[i];
+            const char *kv = g_argv[i];
+            if (!strcmp(kv,"--")) {
+                g_argc = i;
+                goto extra_env;
+            }
+/*
             for (int sk=0;sk<strlen(kv);sk++)
-                if(kv[sk]=='=')
+                if(kv[sk]=='=') {
+                    g_argc = i;
                     goto extra_env;
+                }
+*/
 #if PGDEBUG
             printf("%s ", kv);
 #endif
@@ -969,7 +1100,7 @@ extra_env:;
     PDEBUG("\n# ============= arg->env dump ==================");
     {
         for (;i<argc;i++) {
-            const char *kv = argv[i];
+            const char *kv = g_argv[i];
             for (int sk=0;sk<strlen(kv);sk++) {
                 if (sk>255) {
                     puts("buffer overrun on extra env at:");
@@ -989,17 +1120,18 @@ extra_env:;
     }
     PDEBUG("\n# =========================================");
 
-	argv[0] = strdup(WASM_PREFIX "/bin/postgres");
-
+	g_argv[0] = strdup(WASM_PREFIX "/bin/postgres");
+	progname = get_progname(g_argv[0]);
 
 #if defined(__EMSCRIPTEN__)
     EM_ASM({
         Module.is_worker = (typeof WorkerGlobalScope !== 'undefined') && self instanceof WorkerGlobalScope;
         Module.FD_BUFFER_MAX = $0;
+        Module.cma_port = $1;
         Module.emscripten_copy_to = console.warn;
-    }, FD_BUFFER_MAX);  /* ( global mem start / num fd max ) */
+    }, FD_BUFFER_MAX, &cma_port[0]);  /* ( global mem start / num fd max ) */
 
-    if (is_node) {
+    if (!is_embed) {
     	setenv("ENVIRONMENT", "node" , 1);
         EM_ASM({
 #if PGDEBUG
@@ -1017,7 +1149,6 @@ extra_env:;
             console.warn("prerun(C-web) worker=", Module.is_worker);
         });
 #endif
-        is_repl = true;
     }
 
     EM_ASM({
@@ -1041,7 +1172,7 @@ extra_env:;
                     }
 
                     case "stdin" :  {
-                        stringToUTF8( event.data, 1, Module.FD_BUFFER_MAX);
+                        stringToUTF8( event.data, Module.cma_port, Module.FD_BUFFER_MAX);
                         break;
                     }
                     case "rcon" :  {
@@ -1051,8 +1182,6 @@ extra_env:;
                     default : console.warn("custom_postMessage?", event);
                 }
             };
-            //if (!window.vm)
-              //  window.vm = Module;
         };
     });
 
@@ -1087,6 +1216,19 @@ extra_env:;
 	setenv("PGDATABASE", "template1" , 0);
     setenv("PG_COLOR", "always", 0);
 
+    /*
+    PGDATESTYLE
+    TZ
+    PG_SHMEM_ADDR
+
+    PGCTLTIMEOUT
+    PG_TEST_USE_UNIX_SOCKETS
+    INITDB_TEMPLATE
+    PSQL_HISTORY
+    TMPDIR
+    PGOPTIONS
+    */
+
 #if PGDEBUG
     puts("# ============= env dump ==================");
     for (char **env = environ; *env != 0; env++) {
@@ -1095,151 +1237,61 @@ extra_env:;
     }
     puts("# =========================================");
 #endif
-}
 
-int g_argc;
-char **g_argv;
-
-void main_post();
-void main_post() {
-        /*
-         * Fire up essential subsystems: error and memory management
-         *
-         * Code after this point is allowed to use elog/ereport, though
-         * localization of messages may not work right away, and messages won't go
-         * anywhere but stderr until GUC settings get loaded.
-         */
-        MemoryContextInit();
-
-        /*
-         * Set up locale information
-         */
-        set_pglocale_pgservice(g_argv[0], PG_TEXTDOMAIN("postgres"));
-
-        /*
-         * In the postmaster, absorb the environment values for LC_COLLATE and
-         * LC_CTYPE.  Individual backends will change these later to settings
-         * taken from pg_database, but the postmaster cannot do that.  If we leave
-         * these set to "C" then message localization might not work well in the
-         * postmaster.
-         */
-        init_locale("LC_COLLATE", LC_COLLATE, "");
-        init_locale("LC_CTYPE", LC_CTYPE, "");
-
-        /*
-         * LC_MESSAGES will get set later during GUC option processing, but we set
-         * it here to allow startup error messages to be localized.
-         */
-    #ifdef LC_MESSAGES
-        init_locale("LC_MESSAGES", LC_MESSAGES, "");
-    #endif
-
-        /*
-         * We keep these set to "C" always, except transiently in pg_locale.c; see
-         * that file for explanations.
-         */
-        init_locale("LC_MONETARY", LC_MONETARY, "C");
-        init_locale("LC_NUMERIC", LC_NUMERIC, "C");
-        init_locale("LC_TIME", LC_TIME, "C");
-
-        /*
-         * Now that we have absorbed as much as we wish to from the locale
-         * environment, remove any LC_ALL setting, so that the environment
-         * variables installed by pg_perm_setlocale have force.
-         */
-        unsetenv("LC_ALL");
-}
-EMSCRIPTEN_KEEPALIVE void __cxa_throw(void *thrown_exception, void *tinfo, void *dest);
-EMSCRIPTEN_KEEPALIVE void
-__cxa_throw(void *thrown_exception, void *tinfo, void *dest) {}
-
-/*
-EMSCRIPTEN_KEEPALIVE void *
-_ZNSt13runtime_errorD1Ev(void * int32) {
-    return NULL;
-}
-*/
+#if PGDEBUG
+    printf("# 1267: argv0 (%s) PGUSER=%s PGDATA=%s PGDATABASE=%s PGEMBED=%s REPL=%s\n",
+        g_argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"), getenv("PGEMBED"), getenv("REPL"));
+#endif
 
 
-extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
+    /*
+     * Platform-specific startup hacks
+     */
+    startup_hacks(progname);
 
+    /*
+     * Remember the physical location of the initially given argv[] array for
+     * possible use by ps display.  On some platforms, the argv[] storage must
+     * be overwritten in order to set the process title for ps. In such cases
+     * save_ps_display_args makes and returns a new copy of the argv[] array.
+     *
+     * save_ps_display_args may also move the environment strings to make
+     * extra room. Therefore this should be done as early as possible during
+     * startup, to avoid entanglements with code that might save a getenv()
+     * result pointer.
+     */
+    g_argv = save_ps_display_args(g_argc, g_argv);
 
-#if defined(__wasi__)
+    if (getenv("REPL") && strlen(getenv("REPL")))
+        is_repl = getenv("REPL")[0]=='Y';
 
-//#   include "../patches/wasi_signal.c"
+    if (getenv("PGEMBED") && strlen(getenv("PGEMBED")))
+        is_embed = getenv("PGEMBED")[0]=='Y';
 
-#   define PG_INITDB_MAIN
-#   define PG_MAIN
-
-#   define FRONTEND
-    #include "../postgresql/src/common/logging.c"
-#   undef FRONTEND
-
-    #define icu_language_tag(loc_str) icu_language_tag_idb(loc_str)
-    #define icu_validate_locale(loc_str) icu_validate_locale_idb(loc_str)
-    #include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
-    #define fsync_pgdata(...)
-
-    #include "../postgresql/src/bin/initdb/initdb.c"
-
-    void use_socketfile(void) {
-        is_repl = true;
-        is_node = true;
+    if (!is_repl) {
+        PDEBUG("# 1360: exit with live runtime (norepl, (no)db)");
+        exit_code = 0;
+        return;
     }
-#undef PG_INITDB_MAIN
-#undef PG_MAIN
-#endif // __wasi__
-EMSCRIPTEN_KEEPALIVE int main_repl();
-EMSCRIPTEN_KEEPALIVE int
-main_repl() {
+
+    // repl required, run initdb now if needed.
     bool hadloop_error = false;
 
     whereToSendOutput = DestNone;
 
-    if (!mkdir(PGDB, 0700)) {
-        /* no db : run initdb now. */
-#if PGDEBUG
-        fprintf(stderr, "PGDATA=%s not found, running initdb with defaults\n", PGDB );
-#endif
-        #if defined(PG_INITDB_MAIN)
-            #warning "web build"
-puts("1168");
-            hadloop_error = pg_initdb() & IDB_FAILED;
-        #else
-            #warning "node build"
-            #if defined(__wasi__)
-                hadloop_error = pg_initdb() & IDB_FAILED;
-            #endif
-        #endif
-
-    } else {
-        // download a db case ?
-    	mkdirp(PGDB);
-
-        // db fixup because empty dirs are not packaged
-	    /*
-	    mkdirp(WASM_PREFIX "/lib");
-	    mkdirp(WASM_PREFIX "/lib/postgresql");
-	    */
-	    mkdirp(PGDB "/pg_wal");
-	    mkdirp(PGDB "/pg_wal/archive_status");
-	    mkdirp(PGDB "/pg_wal/summaries");
-
-	    mkdirp(PGDB "/pg_tblspc");
-	    mkdirp(PGDB "/pg_snapshots");
-	    mkdirp(PGDB "/pg_commit_ts");
-	    mkdirp(PGDB "/pg_notify");
-	    mkdirp(PGDB "/pg_replslot");
-	    mkdirp(PGDB "/pg_twophase");
-
-
-	    mkdirp(PGDB "/pg_logical");
-	    mkdirp(PGDB "/pg_logical/snapshots");
-	    mkdirp(PGDB "/pg_logical/mappings");
-
+    if (is_embed) {
+        puts("\n\n    setup: is_embed : not running initdb\n\n");
+        return ;
     }
 
+    int initdb_code = pg_initdb();
+
+    hadloop_error = initdb_code & IDB_FAILED;
+
     if (!hadloop_error) {
+
+        int async_restart = (pg_idb_status | IDB_CALLED) > 0;
+
         main_post();
 
         /*
@@ -1262,83 +1314,154 @@ puts("1168");
 
         if (g_argc > 1 && strcmp(g_argv[1], "--check") == 0) {
 	        BootstrapModeMain(g_argc, g_argv, true);
-            return 0;
+            exit_code = 0;
+            return;
         }
 
         if (g_argc > 1 && strcmp(g_argv[1], "--boot") == 0) {
             PDEBUG("# 1410: boot: " __FILE__ );
             BootstrapModeMain(g_argc, g_argv, false);
-            return 0;
+            exit_code = 0;
+            return;
         }
 
         PDEBUG("# 1415: single: " __FILE__ );
-        AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), 0);
+        if (async_restart)
+            puts("restart from initdb");
+        AsyncPostgresSingleUserMain(g_argc, g_argv, strdup(getenv("PGUSER")), async_restart);
     }
-    return 0;
+
 }
 
-extern void pg_repl_raf(void);
 
-int
-main(int argc, char **argv)
-{
-    int ret=0;
-    is_node = !is_web_env();
 
-    main_pre(argc, argv);
-#if PGDEBUG
-    printf("# 1249: argv0 (%s) PGUSER=%s PGDATA=%s\n PGDATABASE=%s REPL=%s\n",
-        argv[0], getenv("PGUSER"), getenv("PGDATA"),  getenv("PGDATABASE"), getenv("REPL") );
-#endif
-	progname = get_progname(argv[0]);
-
-    /*
-    PGDATESTYLE
-    TZ
-    PG_SHMEM_ADDR
-
-    PGCTLTIMEOUT
-    PG_TEST_USE_UNIX_SOCKETS
-    INITDB_TEMPLATE
-    PSQL_HISTORY
-    TMPDIR
-    PGOPTIONS
-    */
-
-    /*
-     * Platform-specific startup hacks
-     */
-    startup_hacks(progname);
-
-    /*
-     * Remember the physical location of the initially given argv[] array for
-     * possible use by ps display.  On some platforms, the argv[] storage must
-     * be overwritten in order to set the process title for ps. In such cases
-     * save_ps_display_args makes and returns a new copy of the argv[] array.
-     *
-     * save_ps_display_args may also move the environment strings to make
-     * extra room. Therefore this should be done as early as possible during
-     * startup, to avoid entanglements with code that might save a getenv()
-     * result pointer.
-     */
-    argv = save_ps_display_args(argc, argv);
-    g_argv = argv;
-    g_argc = argc;
+/*
+EMSCRIPTEN_KEEPALIVE void
+pg_repl_raf(){
 
     is_repl = strlen(getenv("REPL")) && getenv("REPL")[0]=='Y';
-    if (!is_repl) {
-        PDEBUG("# 1289: exit with live runtime (nodb)");
-        return 0;
+    if (!is_embed) {
+        PDEBUG(WASM_PREFIX "/bin/postgres.js");
+        printf("cma_rsize was %d\n now set to 0\n", cma_rsize);
+        // force wire socket emulation
+        cma_rsize = 0;
+        if (!strcmp(getenv("_"), WASM_PREFIX "/bin/postgres.js")) {
+            while (1) {
+                interactive_one();
+            }
+            PDEBUG("# 609: REPL:End Raising a 'RuntimeError Exception' to halt program NOW");
+            {
+                void (*npe)() = NULL;
+                npe();
+            }
+
+        }
     }
-    PDEBUG("# 1292: repl");
+    if (is_repl) {
+PDEBUG("# 618: pg_repl_raf(REPL)");
+        repl = true;
+        single_mode_feed = NULL;
+        force_echo = true;
+        whereToSendOutput = DestNone;
+        emscripten_set_main_loop( (em_callback_func)interactive_one, 0, 0);
+    } else {
+        PDEBUG("# 625: TODO: headless wire mode");
+    }
+
+    if (!is_embed) {
+#if defined(__wasi__)
+        if (!getenv("EMBED")) {
+            PDEBUG("# 610: pg_repl_raf(WASI) endless loop");
+            while (1) {
+                interactive_one();
+            }
+        }
+#else
+        PDEBUG("# 615: pg_repl_raf(NODE) EXIT!!!");
+#endif
+    }
+
+}
+
+*/
+
+extern void interactive_one(void);
+
+EMSCRIPTEN_KEEPALIVE void
+loop() {
+    PDEBUG("=loop=");
     // so it is repl
-    main_repl();
-    if (is_node) {
-        PDEBUG("# 1296: node repl");
-        pg_repl_raf();
+    if (!is_embed) {
+        PDEBUG("# 1344: node repl");
+        //pg_repl_raf();
     }
-    emscripten_force_exit(ret);
-	return ret;
+    //interactive_one();
+}
+
+
+EMSCRIPTEN_KEEPALIVE void
+set_repl(int value) {
+    if (value) {
+        setenv("REPL","Y",1);
+        is_repl = true;
+    } else {
+        setenv("REPL","N",1);
+        is_repl = false;
+    }
+}
+
+/*
+char **copy_argv(int argc, char *argv[]) {
+    // calculate the contiguous argv buffer size
+    int length=0;
+    size_t ptr_args = argc + 1;
+    for (int i = 0; i < argc; i++) {
+        length += (strlen(argv[i]) + 1);
+    }
+    char** new_argv = (char**)malloc((ptr_args) * sizeof(char*) + length);
+
+    // copy argv into the contiguous buffer
+    length = 0;
+    for (int i = 0; i < argc; i++) {
+        new_argv[i] = &(((char*)new_argv)[(ptr_args * sizeof(char*)) + length]);
+        strcpy(new_argv[i], argv[i]);
+        length += (strlen(argv[i]) + 1);
+    }
+
+    // insert NULL terminating ptr at the end of the ptr array
+    new_argv[ptr_args-1] = NULL;
+    return (new_argv);
+}
+*/
+
+//extern void *_ZNSt12length_errorD1Ev(void *p);
+
+char *cma_port;
+extern int cma_rsize;
+
+EMSCRIPTEN_KEEPALIVE int
+pg_getport() {
+    return (int)(&cma_port[0]);
+}
+
+
+int
+main(int argc, char **argv) {
+//    void *hold = &_ZNSt12length_errorD1Ev;
+    cma_port = malloc(16384*1024);
+    g_argc =argc;
+    g_argv =argv;
+    setup();
+    if (is_embed) {
+        printf("\n\n\n   @@@@@@@@@@@@@@@@@@@@@@@@@ EXITING with live runtime port %d @@@@@@@@@@@@@@@@\n\n\n", pg_getport());
+        whereToSendOutput = DestNone;
+        cma_rsize = 0;
+
+    } else {
+        loop();
+        emscripten_force_exit(exit_code);
+    }
+	return exit_code;
 }
 
 #endif // PG_MAIN
