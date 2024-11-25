@@ -1,3 +1,6 @@
+___stack_pointer
+___memory_base
+___table_base
 _SearchSysCache1
 _errstart_cold
 _errmsg_internal
@@ -248,9 +251,6 @@ _internalerrquery
 _strchr
 _scanner_init
 _scanner_finish
-___stack_pointer
-___memory_base
-___table_base
 _error_context_stack
 _TopMemoryContext
 _CurrentMemoryContext

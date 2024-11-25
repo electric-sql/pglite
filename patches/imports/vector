@@ -1,3 +1,6 @@
+___stack_pointer
+___memory_base
+___table_base
 _palloc0
 _pg_detoast_datum
 _errstart_cold
@@ -168,9 +171,6 @@ _pg_qsort
 _pg_ltoa
 _pq_getmsgfloat4
 _pq_sendfloat4
-___stack_pointer
-___memory_base
-___table_base
 _pg_number_of_ones
 _numeric_float4
 _MainLWLockArray

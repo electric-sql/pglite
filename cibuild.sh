@@ -19,7 +19,7 @@ export DEBUG=${DEBUG:-false}
 export PGDATA=${PGROOT}/base
 export PGUSER=${PGUSER:-postgres}
 export PGPATCH=${WORKSPACE}/patches
-export TOTAL_MEMORY=${TOTAL_MEMORY:-512MB}
+export TOTAL_MEMORY=${TOTAL_MEMORY:-256MB}
 export WASI=${WASI:-false}
 # 72 - 144228352
 # -sINITIAL_HEAP not compatible with IMPORTED_MEMORY (which is enabled indirectly via SHARED_MEMORY, RELOCATABLE, ASYNCIFY_LAZY_LOAD_CODE)
