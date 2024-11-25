@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
 import type { LiveQuery, LiveQueryResults } from '@electric-sql/pglite/live'
-import { usePGlite } from './provider'
 import { query as buildQuery } from '@electric-sql/pglite/template'
+import { useEffect, useRef, useState } from 'react'
+import { usePGlite } from './provider'
 
 function paramsEqual(
   a1: unknown[] | undefined | null,
@@ -42,6 +42,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     currentParams = params
   }
 
+  /* eslint-disable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
   useEffect(() => {
     let cancelled = false
     const cb = (results: LiveQueryResults<T>) => {
@@ -80,6 +81,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       throw new Error('Should never happen')
     }
   }, [db, key, query, currentParams, liveQuery])
+  /* eslint-enable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
 
   if (liveQueryChanged && liveQuery) {
     return liveQuery.initialResults
