@@ -24,9 +24,6 @@ const entryPoints = [
   'src/live/index.ts',
   'src/vector/index.ts',
   'src/worker/index.ts',
-  // 'src/wasi/index.ts',
-  'src/wasi/dev.js',
-  'src/tools/pg_dump.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

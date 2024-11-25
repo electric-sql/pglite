@@ -1,9 +1,10 @@
 // import { WASIInstance, WasiPreview1, FSInterface } from '../wasi'
 // import { WASIInstance, FSInterface } from '../wasi'
-import { WasiPreview1 } from '../wasi/dev'
-import { FS } from '../postgresMod'
-import { PGlite } from '../pglite'
+import { WasiPreview1 } from './wasi/dev'
+// import { FS } from '../postgresMod'
+import { PGlite } from '@electric-sql/pglite'
 
+type FS = any
 type FSInterface = any
 
 /**
@@ -59,19 +60,33 @@ function emscriptenFsToWasiFS(fs: FS): FSInterface & FS {
  */
 async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
   console.log('execPgDump', args)
-  const bin = new URL('../../release/pg_dump.wasm', import.meta.url).href
+  const bin = new URL('./pg_dump.wasm', import.meta.url).href
   const FS = emscriptenFsToWasiFS(pg.Module.FS)
 
   const wasi = new WasiPreview1({
     fs: FS,
     // args: ['pg_dump', ...args],
-    args: ["pg_dump", "-U", "postgres", "--inserts", "-j", "1", "-v", "-c", "-C", "-f", "/tmp/out.sql", "--disable-dollar-quoting", "postgres"],
+    args: [
+      'pg_dump',
+      '-U',
+      'postgres',
+      '--inserts',
+      '-j',
+      '1',
+      '-v',
+      '-c',
+      '-C',
+      '-f',
+      '/tmp/out.sql',
+      '--disable-dollar-quoting',
+      'postgres',
+    ],
     env: {
       PWD: '/',
     },
   })
 
-  wasi.sched_yield = () => {
+  ;(wasi.sched_yield = () => {
     console.log('onSchedYield')
     const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
     const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
@@ -83,15 +98,19 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
       pg.Module._interactive_one()
       console.log('sched_yield - interactive_one done')
       const fstat = FS.stat(pg_out)
-      console.log('sched_yield socket file', sf_data.length, 'pgreply', fstat.size)
+      console.log(
+        'sched_yield socket file',
+        sf_data.length,
+        'pgreply',
+        fstat.size,
+      )
     } else {
       console.log('sched_yield - no aio')
     }
     console.log('onSchedYield done')
     return 0
-  },
-
-  await FS.writeFile('/pg_dump', '\0', { mode: 18 })
+  }),
+    await FS.writeFile('/pg_dump', '\0', { mode: 18 })
 
   const app = await WebAssembly.instantiateStreaming(fetch(bin), {
     wasi_snapshot_preview1: wasi as any,

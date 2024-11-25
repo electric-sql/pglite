@@ -1,0 +1,31 @@
+{
+  "name": "pglite-tools",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "exports": {
+    "./pg_dump": {
+      "types": "./dist/pg_dump.d.ts",
+      "import": "./dist/pg_dump.mjs",
+      "require": "./dist/pg_dump.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && tsx ./scripts/bundle-wasm.ts",
+    "lint": "eslint ./src ./test --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src",
+    "typecheck": "tsc",
+    "stylecheck": "pnpm lint && prettier --check ./src ./test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@electric-sql/pglite": "workspace:*",
+    "@types/emscripten": "^1.39.13",
+    "@types/node": "^20.16.11"
+  },
+  "dependencies": {
+    "tsx": "^4.19.2"
+  }
+}

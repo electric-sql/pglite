@@ -7,8 +7,7 @@
     <script type="importmap">
       {
         "imports": {
-          "@electric-sql/pglite": "../dist/index.js",
-          "@electric-sql/pglite/tools/pg_dump": "../dist/tools/pg_dump.js"
+          "@electric-sql/pglite": "../dist/index.js"
         }
       }
     </script>
@@ -18,7 +17,7 @@
 <div class="script-plus-log">
 <script type="module">
 import { PGlite } from "@electric-sql/pglite";
-import { pgDump } from "@electric-sql/pglite/tools/pg_dump";
+import { pgDump } from "../../../pglite-tools/dist/pg_dump.mjs";
 
 console.log("Starting...");
 
