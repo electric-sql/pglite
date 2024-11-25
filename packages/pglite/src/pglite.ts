@@ -597,7 +597,7 @@ export class PGlite
     mod._interactive_one()
 
     // Read responses from the buffer
-    const msg_start = msg_len + 2
+    const msg_start = this.#cma_port! + msg_len + 2
     const msg_end = msg_start + mod._interactive_read()
     const data = mod.HEAPU8.subarray(msg_start, msg_end)
 
