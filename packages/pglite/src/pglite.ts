@@ -1,6 +1,3 @@
-// @ts-ignore
-// import "./wip.js"  //eval( await fetch("wip.js") )
-
 import { Mutex } from 'async-mutex'
 import { BasePGlite } from './base.js'
 import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'

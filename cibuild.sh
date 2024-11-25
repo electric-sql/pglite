@@ -494,7 +494,7 @@ do
             pushd ${PGLITE}
                 pnpm install --frozen-lockfile
 
-                #mkdir -p $PGLITE/release
+                mkdir -p $PGLITE/release
                 #rm $PGLITE/release/* 2>/dev/null
 
                 # copy packed extensions for dist
@@ -516,8 +516,8 @@ ________________________________________________________________________________
 
                 # debug CI does not use pnpm/npm for building pg, so call the typescript build
                 # part from here
-                #pnpm --filter "pglite^..." build || exit 450
-                pnpm run build || exit 520
+                #pnpm --filter "pglite^..." build || exit 519
+                pnpm run build:js || exit 520
                 pnpm pack || exit 521
                 packed=$(echo -n electric-sql-pglite-*.tgz)
 
@@ -526,11 +526,6 @@ ________________________________________________________________________________
                 echo "<html>
                 <body>
                     <ul>
-                        <li><a href=./pglite/examples/repl.html>PGlite REPL (in-memory)</a></li>
-                        <li><a href=./pglite/examples/repl-idb.html>PGlite REPL (indexedDB)</a></li>
-                        <li><a href=./pglite/examples/notify.html>list/notify test</a></li>
-                        <li><a href=./pglite/examples/index.html>All PGlite Examples</a></li>
-                        <li><a href=./pglite/benchmark/index.html>Benchmarks</a> / <a href=./pglite/benchmark/rtt.html>RTT Benchmarks</a></li>
                         <li><a href=./postgres.html>Postgres xterm REPL</a></li>
                     </ul>
                 </body>
@@ -538,12 +533,14 @@ ________________________________________________________________________________
 
             popd
 
-            mkdir -p ${PGROOT}/sdk/packages/ /tmp/web/pglite /tmp/web/repl/
+            mkdir -p ${PGROOT}/sdk/packages/
             cp -r $PGLITE ${PGROOT}/sdk/packages/
 
             if $CI
             then
                 tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
+
+                cp ${WORKSPACE}/extra/*.js ${WEBROOT}/
 
                 # build sdk (node)
                 cp /tmp/sdk/postgres-${PG_VERSION}.tar.gz ${WEBROOT}/
