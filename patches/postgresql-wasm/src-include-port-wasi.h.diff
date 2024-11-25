@@ -1,6 +1,6 @@
 --- postgresql/src/include/port/wasi.h
 +++ postgresql-wasm/src/include/port/wasi.h
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,259 @@
 +#ifndef I_WASI
 +#define I_WASI
 +
@@ -15,7 +15,9 @@
 +
 +#define PLATFORM_DEFAULT_SYNC_METHOD    SYNC_METHOD_FDATASYNC
 +
-+#define EMSCRIPTEN_KEEPALIVE
++#define EMSCRIPTEN_KEEPALIVE __attribute__((used))
++#define __declspec( dllimport ) __attribute__((used))
++
 +#define em_callback_func void
 +#define emscripten_set_main_loop(...)
 +#define emscripten_force_exit(...)
@@ -23,9 +25,10 @@
 +
 +#include "/tmp/pglite/include/wasm_common.h"
 +
++
 +static pid_t
 +fork(void) {
-+    puts("# 16: fork -1");
++    puts("# 31: fork -1");
 +    return -1;
 +}
 +
@@ -54,14 +57,15 @@
 +                   const char *restrict service,
 +                   void *restrict hints,
 +                   void **restrict res) {
-+    puts("# 45: getaddrinfo");
++    puts("# 60: getaddrinfo");
 +    return -1;
 +}
 +static void
 +freeaddrinfo(void *res) {
-+    puts("# 50: freeaddrinfo");
++    puts("# 65: freeaddrinfo");
 +}
 +
++extern ssize_t recvfrom_bc(int socket, void *buffer, size_t length, int flags, void *address, socklen_t *address_len);
 +
 +// ======== signal ========================
 +#define SA_RESTART 4
@@ -113,7 +117,7 @@
 +
 +static void
 +siglongjmp(sigjmp_buf env, int val) {
-+    puts("# 140: siglongjmp");
++    puts("# 120: siglongjmp");
 +}
 +
 +
@@ -128,17 +132,17 @@
 +
 +static int
 +dup(int fd) {
-+    puts("# 134: dup");
++    puts("# 128: dup");
 +    return fd;
 +}
 +static int
 +dup2(int old, int new) {
-+    puts("# 139: dup2");
++    puts("# 140: dup2");
 +    return -1;
 +}
 +static int
 +pipe(int fd[2]) {
-+    puts("# 144: pipe");
++    puts("# 145: pipe");
 +    abort();
 +    return -1;
 +}
@@ -158,7 +162,7 @@
 +}
 +
 +
-+static const char *gai_strerror_msg = "# 168: gai_strerror_msg";
++static const char *gai_strerror_msg = "# 165: gai_strerror_msg";
 +static const char *
 +gai_strerror(int errcode) {
 +    return gai_strerror_msg;
@@ -195,14 +199,17 @@
 +
 +
 +#include <sys/mman.h>
-+
++#if defined(PYDK)
++extern int shm_open(const char *name, int oflag, mode_t mode);
++extern int shm_unlink(const char *name);
++#else
 +static int
 +shm_open(const char *name, int oflag, mode_t mode) {
 +    char tmpnam[128];
 +    int fd;
 +    snprintf(tmpnam, 128, "/tmp%s", name);
 +    fd=fileno(fopen(tmpnam, "w+"));
-+    fprintf(stderr, "# 194: shm_open(%s) => %d\n", tmpnam, fd);
++    fprintf(stderr, "# 212: shm_open(%s) => %d\n", tmpnam, fd);
 +    return fd;
 +}
 +
@@ -210,9 +217,11 @@
 +shm_unlink(const char *name) {
 +    char tmpnam[128];
 +    snprintf(tmpnam, 128, "/tmp%s", name);
-+    fprintf(stderr, "# 200: shm_unlink(%s) STUB\n", tmpnam);
++    fprintf(stderr, "# 220: shm_unlink(%s) STUB\n", tmpnam);
 +    return remove(tmpnam); // -1
 +}
++
++#endif
 +
 +// initdb chmod
 +#if defined(__wasi__)
@@ -236,7 +245,7 @@
 +
 +static void
 +tzset(void) {
-+    puts("# 259: tzset(void) STUB");
++    puts("# 241: tzset(void) STUB");
 +}
 +
 +#if defined(PG_INITDB) || defined(FE_UTILS_PRINT) || defined(PG_DUMP_PARALLEL)
@@ -244,6 +253,9 @@
 +__SIG_IGN(int param) {
 +}
 +#endif
++
++
++extern void sock_flush();
 +
 +
 +#endif // I_WASI

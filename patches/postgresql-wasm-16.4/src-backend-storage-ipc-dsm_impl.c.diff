@@ -9,15 +9,14 @@
  						name, request_size)));
  		return false;
  	}
-@@ -350,7 +350,14 @@
+@@ -350,7 +350,13 @@
  static int
  dsm_impl_posix_resize(int fd, off_t size)
  {
 -	int			rc;
 +	int			rc=0;
 +
-+fprintf(stderr, "# 356: dsm_impl_posix_resize(fd= %d, size = %lld) rc = %d good=%d\n", fd, size, rc, (bool)(rc || size));
-+fprintf(stderr, "!!!!!!!!!!!!!!!!!!! ret=%d dsm_impl_posix_resize(fd= %d, size= %lld)\n", rc, fd, size);
++fprintf(stderr, "!!!!!!!!!!! ret=%d dsm_impl_posix_resize(fd= %d, size= %jd)\n", rc, fd, size);
 +if (rc)
 +    abort();
 +
@@ -25,15 +24,20 @@
  	int			save_errno;
  	sigset_t	save_sigmask;
  
-@@ -404,7 +411,10 @@
+@@ -404,8 +410,15 @@
  		sigprocmask(SIG_SETMASK, &save_sigmask, NULL);
  		errno = save_errno;
  	}
--
 +#else
 +    rc = (int)ftruncate(fd, size);
 +#endif
-+printf("# 413: ftruncate(fd=%d, size=%ld) = %d\n", (int)fd, (unsigned long)size, (int)rc);
- 	return rc;
+ 
+-	return rc;
++#if defined(__wasi__)
++    printf("# 419: MAYBE CLANG BUG ftruncate(fd=%d, size=%jd) = %d\n", (int)fd, size, (int)rc);
++    return 0;
++#endif
++	return (int)rc;
  }
  
+ #endif							/* USE_DSM_POSIX */
