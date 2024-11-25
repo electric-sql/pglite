@@ -38,7 +38,7 @@ You can then use the `syncShapeToTable` method to sync a table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
-  shape: { url: 'http://localhost:3000/v1/shape/todo' },
+  shape: { url: 'http://localhost:3000/v1/shape' },
   table: 'todo',
   primaryKey: ['id'],
 })
@@ -97,11 +97,8 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 - `shapeId: string`<br>
   The server side `shapeId`
 
-- `subscribeOnceToUpToDate(cb: () => void, error: (err: FetchError | Error) => void)`<br>
+- `subscribe(cb: () => void, error: (err: FetchError | Error) => void)`<br>
   A callback to indicate that the shape caught up to the main Postgres.
-
-- `unsubscribeAllUpToDateSubscribers()`<br>
-  Unsubscribe all `subscribeOnceToUpToDate` listeners.
 
 - `subscribeMustRefresh(cb: () => void)`<br>
   A callback that is called when the stream emits a `must-refresh` message.
@@ -115,7 +112,7 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 ### `ShapeStreamOptions`
 
 - `url: string`<br>
-  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape/foo`
+  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape`
 
 - `where?: string`<br>
   Where clauses for the shape.

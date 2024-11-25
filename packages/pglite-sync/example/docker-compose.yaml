@@ -22,7 +22,7 @@ services:
       - wal_level=logical
 
   electric:
-    image: electricsql/electric:0.2.8
+    image: electricsql/electric:0.9.2
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/electric
     ports:

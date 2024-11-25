@@ -1,15 +1,15 @@
+import type { Offset, ShapeStreamOptions } from '@electric-sql/client'
+import {
+  ChangeMessage,
+  ShapeStream,
+  isChangeMessage,
+  isControlMessage,
+} from '@electric-sql/client'
 import type {
   Extension,
   PGliteInterface,
   Transaction,
 } from '@electric-sql/pglite'
-import {
-  ShapeStream,
-  ChangeMessage,
-  isChangeMessage,
-  isControlMessage,
-} from '@electric-sql/client'
-import type { Offset, ShapeStreamOptions } from '@electric-sql/client'
 
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
@@ -205,13 +205,13 @@ async function createPlugin(
                 if (
                   options.shapeKey &&
                   messageAggregator.length > 0 &&
-                  stream.shapeId !== undefined
+                  stream.shapeHandle !== undefined
                 ) {
                   await updateShapeSubscriptionState({
                     pg: tx,
                     metadataSchema,
                     shapeKey: options.shapeKey,
-                    shapeId: stream.shapeId,
+                    shapeId: stream.shapeHandle,
                     lastOffset:
                       messageAggregator[messageAggregator.length - 1].offset,
                   })
@@ -238,16 +238,17 @@ async function createPlugin(
           return stream.isUpToDate
         },
         get shapeId() {
-          return stream.shapeId
+          return stream.shapeHandle
         },
-        subscribeOnceToUpToDate: (
+        subscribe: (
           cb: () => void,
           error: (err: Error) => void,
         ) => {
-          return stream.subscribeOnceToUpToDate(cb, error)
-        },
-        unsubscribeAllUpToDateSubscribers: () => {
-          stream.unsubscribeAllUpToDateSubscribers()
+          return stream.subscribe(()=> {
+            if (stream.isUpToDate) {
+              cb()
+            }
+          }, error)
         },
       }
     },
@@ -446,12 +447,12 @@ async function applyMessagesToTableWithCopy({
 }
 
 interface GetShapeSubscriptionStateOptions {
-  pg: PGliteInterface | Transaction
-  metadataSchema: string
-  shapeKey: ShapeKey
+  readonly pg: PGliteInterface | Transaction
+  readonly metadataSchema: string
+  readonly shapeKey: ShapeKey
 }
 
-type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'shapeId' | 'offset'>
+type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'handle' | 'offset'>
 
 async function getShapeSubscriptionState({
   pg,
@@ -469,9 +470,9 @@ async function getShapeSubscriptionState({
 
   if (result.rows.length === 0) return null
 
-  const { shape_id: shapeId, last_offset: offset } = result.rows[0]
+  const { shape_id: handle, last_offset: offset } = result.rows[0]
   return {
-    shapeId,
+    handle,
     offset: offset as Offset,
   }
 }

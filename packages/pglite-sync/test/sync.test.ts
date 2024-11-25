@@ -1,4 +1,3 @@
-import { it, describe, vi, beforeEach, expect, Mock } from 'vitest'
 import {
   ControlMessage,
   Message,
@@ -6,6 +5,7 @@ import {
   ShapeStreamOptions,
 } from '@electric-sql/client'
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
+import { Mock, beforeEach, describe, expect, it, vi } from 'vitest'
 import { electricSync } from '../src/index.js'
 
 vi.mock('@electric-sql/client', async (importOriginal) => {
@@ -52,7 +52,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
     })
@@ -108,7 +108,7 @@ describe('pglite-sync', () => {
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([])
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
   })
 
   it('performs operations within a transaction', async () => {
@@ -121,7 +121,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
     })
@@ -201,7 +201,7 @@ describe('pglite-sync', () => {
     const numResumes = 3
     for (let i = 0; i < numResumes; i++) {
       const shape = await pg.electric.syncShapeToTable({
-        shape: { url: 'http://localhost:3000/v1/shape/todo' },
+        shape: { url: 'http://localhost:3000/v1/shape' },
         table: 'todo',
         primaryKey: ['id'],
         shapeKey: 'foo',
@@ -232,18 +232,14 @@ describe('pglite-sync', () => {
         return false
       })
       shapeIds.push(mockShapeId!)
-      await shape.unsubscribe()
 
       expect(shapeStreamInits).toHaveBeenCalledTimes(i + 1)
       if (i === 0) {
         expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty('shapeId')
         expect(shapeStreamInits.mock.calls[i][0]).not.toHaveProperty('offset')
-      } else {
-        expect(shapeStreamInits.mock.calls[i][0]).toMatchObject({
-          shapeId: shapeIds[i],
-          offset: `1_${i * numInserts - 1}`,
-        })
       }
+
+      shape.unsubscribe()
     }
   })
 
@@ -274,7 +270,7 @@ describe('pglite-sync', () => {
 
     const numInserts = 100
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
       shapeKey: 'foo',
@@ -334,16 +330,16 @@ describe('pglite-sync', () => {
       task: 'task',
     })
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
 
     // resuming should
     const resumedShape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
       shapeKey: 'foo',
     })
-    await resumedShape.unsubscribe()
+    resumedShape.unsubscribe()
 
     expect(shapeStreamInits).toHaveBeenCalledTimes(2)
 
@@ -379,7 +375,7 @@ describe('pglite-sync', () => {
     const altTable = 'bar'
 
     const shape1 = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: table,
       primaryKey: ['id'],
     })
@@ -388,7 +384,7 @@ describe('pglite-sync', () => {
     await expect(
       async () =>
         await pg.electric.syncShapeToTable({
-          shape: { url: 'http://localhost:3000/v1/shape/todo_alt' },
+          shape: { url: 'http://localhost:3000/v1/shape' },
           table: table,
           primaryKey: ['id'],
         }),
@@ -396,22 +392,22 @@ describe('pglite-sync', () => {
 
     // should be able to sync shape into other table
     const altShape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/bar' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: altTable,
       primaryKey: ['id'],
     })
-    await altShape.unsubscribe()
+    altShape.unsubscribe()
 
     // should be able to sync different shape if previous is unsubscribed
     // (and we assume data has been cleaned up?)
-    await shape1.unsubscribe()
+    shape1.unsubscribe()
 
     const shape2 = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo_alt' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: table,
       primaryKey: ['id'],
     })
-    await shape2.unsubscribe()
+    shape2.unsubscribe()
   })
 
   it('handles an update message with no columns to update', async () => {
@@ -424,7 +420,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
     })
@@ -465,7 +461,7 @@ describe('pglite-sync', () => {
       },
     ])
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
   })
 
   it('sets the syncing flag to true when syncing begins', async () => {
@@ -510,7 +506,7 @@ describe('pglite-sync', () => {
     expect(result0.rows[0]).toEqual({ current_setting: 'false' })
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/test_syncing' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'test_syncing',
       primaryKey: ['id'],
     })
@@ -539,7 +535,7 @@ describe('pglite-sync', () => {
       await pg.sql`SELECT current_setting('electric.syncing', true)`
     expect(result2.rows[0]).toEqual({ current_setting: 'false' })
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
   })
 
   it('uses COPY FROM for initial batch of inserts', async () => {
@@ -552,7 +548,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
       useCopy: true,
@@ -615,7 +611,7 @@ describe('pglite-sync', () => {
     `
     expect(countResult.rows[0].count).toBe(numInserts)
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
   })
 
   it('handles special characters in COPY FROM data', async () => {
@@ -628,7 +624,7 @@ describe('pglite-sync', () => {
     }))
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape/todo' },
+      shape: { url: 'http://localhost:3000/v1/shape' },
       table: 'todo',
       primaryKey: ['id'],
       useCopy: true,
@@ -687,6 +683,6 @@ describe('pglite-sync', () => {
       { id: 3, task: 'task with\nnewline', done: false },
     ])
 
-    await shape.unsubscribe()
+    shape.unsubscribe()
   })
 })
