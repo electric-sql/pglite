@@ -714,17 +714,15 @@ async function getTablesForView(
   tx: Transaction | PGliteInterface,
   viewName: string,
 ): Promise<{ table_name: string; schema_name: string }[]> {
-  const tables = new Map<string, { table_name: string; schema_name: string }>()
-
-  async function getTablesRecursive(currentViewName: string) {
-    const result = await tx.query<{
-      table_name: string
-      schema_name: string
-      is_view: boolean
-    }>(
-      `
+  const result = await tx.query<{
+    table_name: string
+    schema_name: string
+  }>(
+    `
+      WITH RECURSIVE view_dependencies AS (
+        -- Base case: Get the initial view's dependencies
         SELECT DISTINCT
-          cl.relname AS table_name,
+          cl.relname AS dependent_name,
           n.nspname AS schema_name,
           cl.relkind = 'v' AS is_view
         FROM pg_rewrite r
@@ -732,32 +730,40 @@ async function getTablesForView(
         JOIN pg_class cl ON d.refobjid = cl.oid
         JOIN pg_namespace n ON cl.relnamespace = n.oid
         WHERE
-        r.ev_class = (
-            SELECT oid FROM pg_class WHERE relname = $1 AND relkind = 'v'
+          r.ev_class = (
+              SELECT oid FROM pg_class WHERE relname = $1 AND relkind = 'v'
+          )
+          AND d.deptype = 'n'
+
+        UNION ALL
+
+        -- Recursive case: Traverse dependencies for views
+        SELECT DISTINCT
+          cl.relname AS dependent_name,
+          n.nspname AS schema_name,
+          cl.relkind = 'v' AS is_view
+        FROM view_dependencies vd
+        JOIN pg_rewrite r ON vd.dependent_name = (
+          SELECT relname FROM pg_class WHERE oid = r.ev_class AND relkind = 'v'
         )
-        AND d.deptype = 'n';
-      `,
-      [currentViewName],
-    )
+        JOIN pg_depend d ON r.oid = d.objid
+        JOIN pg_class cl ON d.refobjid = cl.oid
+        JOIN pg_namespace n ON cl.relnamespace = n.oid
+        WHERE d.deptype = 'n'
+      )
+      SELECT DISTINCT
+        dependent_name AS table_name,
+        schema_name
+      FROM view_dependencies
+      WHERE NOT is_view; -- Exclude intermediate views
+    `,
+    [viewName],
+  )
 
-    for (const row of result.rows) {
-      if (row.table_name !== currentViewName && !row.is_view) {
-        const tableKey = `"${row.schema_name}"."${row.table_name}"`
-        if (!tables.has(tableKey)) {
-          tables.set(tableKey, {
-            table_name: row.table_name,
-            schema_name: row.schema_name,
-          })
-        }
-      } else if (row.is_view) {
-        await getTablesRecursive(row.table_name)
-      }
-    }
-  }
-
-  await getTablesRecursive(viewName)
-
-  return Array.from(tables.values())
+  return result.rows.map((row) => ({
+    table_name: row.table_name,
+    schema_name: row.schema_name,
+  }))
 }
 
 /**
