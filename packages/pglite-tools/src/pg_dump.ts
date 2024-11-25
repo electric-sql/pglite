@@ -7,6 +7,11 @@ import { PGlite } from '@electric-sql/pglite'
 type FS = any
 type FSInterface = any
 
+const IN_NODE =
+  typeof process === 'object' &&
+  typeof process.versions === 'object' &&
+  typeof process.versions.node === 'string'
+
 /**
  * Emscripten FS is not quite compatible with WASI
  * so we need to patch it
@@ -60,7 +65,7 @@ function emscriptenFsToWasiFS(fs: FS): FSInterface & FS {
  */
 async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
   console.log('execPgDump', args)
-  const bin = new URL('./pg_dump.wasm', import.meta.url).href
+  const bin = new URL('./pg_dump.wasm', import.meta.url)
   const FS = emscriptenFsToWasiFS(pg.Module.FS)
 
   const wasi = new WasiPreview1({
@@ -111,10 +116,20 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
     return 0
   }),
     await FS.writeFile('/pg_dump', '\0', { mode: 18 })
+  
+  let app: WebAssembly.WebAssemblyInstantiatedSource
 
-  const app = await WebAssembly.instantiateStreaming(fetch(bin), {
-    wasi_snapshot_preview1: wasi as any,
-  })
+  if (IN_NODE) {
+    const fs = await import('fs/promises')
+    const blob = await fs.readFile(bin.toString().slice(7))
+    app = await WebAssembly.instantiate(blob, {
+      wasi_snapshot_preview1: wasi as any,
+    })
+  } else {
+    app = await WebAssembly.instantiateStreaming(fetch(bin), {
+      wasi_snapshot_preview1: wasi as any,
+    })
+  }
 
   console.log('/tmp/pglite/base/', FS.readdir('/tmp/pglite/base/'))
   // FS.writeFile('/tmp/pglite/base/.s.PGSQL.5432.lock.in', '\0', { mode: 18 })
