@@ -32,7 +32,7 @@ You can then use the syncShapeToTable method to sync a table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
-  shape: { url: 'http://localhost:3000/v1/shape?table=todo' },
+  shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
   table: 'todo',
   primaryKey: ['id'],
 })
