@@ -758,14 +758,13 @@ async function getTablesForView(
       WHERE NOT is_view; -- Exclude intermediate views
     `,
     [viewName],
-  );
+  )
 
   return result.rows.map((row) => ({
     table_name: row.table_name,
     schema_name: row.schema_name,
-  }));
+  }))
 }
-
 
 /**
  * Add triggers to tables to notify when they change
