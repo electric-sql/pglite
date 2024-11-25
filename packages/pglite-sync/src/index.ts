@@ -240,11 +240,8 @@ async function createPlugin(
         get shapeId() {
           return stream.shapeHandle
         },
-        subscribe: (
-          cb: () => void,
-          error: (err: Error) => void,
-        ) => {
-          return stream.subscribe(()=> {
+        subscribe: (cb: () => void, error: (err: Error) => void) => {
+          return stream.subscribe(() => {
             if (stream.isUpToDate) {
               cb()
             }
