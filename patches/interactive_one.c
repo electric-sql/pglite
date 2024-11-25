@@ -143,16 +143,6 @@ static void io_init(bool in_auth, bool out_auth) {
 
 }
 
-/*
-static void wait_unlock() {
-    int busy = 0;
-    while (access(PGS_OLOCK, F_OK) == 0) {
-        if (!(busy++ % 1110222))
-            printf("# 150: FIXME: busy wait lock removed %d\n", busy);
-    }
-}
-*/
-
 EMSCRIPTEN_KEEPALIVE int
 cma_wsize = 0;
 
@@ -635,6 +625,5 @@ wire_flush:
 
     #undef IO
 }
-
 
 
