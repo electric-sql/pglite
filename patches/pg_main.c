@@ -1036,8 +1036,9 @@ extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], co
 
 int exit_code = 0;
 
-
+#if defined(EMUL_CMA)
 extern char *cma_port ;
+#endif
 
 EMSCRIPTEN_KEEPALIVE void
 setup() {
@@ -1129,7 +1130,14 @@ extra_env:;
         Module.FD_BUFFER_MAX = $0;
         Module.cma_port = $1;
         Module.emscripten_copy_to = console.warn;
-    }, FD_BUFFER_MAX, &cma_port[0]);  /* ( global mem start / num fd max ) */
+    }, FD_BUFFER_MAX,
+#if defined(EMUL_CMA)
+&cma_port[0]
+#else
+0
+#endif
+
+);  /* ( global mem start / num fd max ) */
 
     if (!is_embed) {
     	setenv("ENVIRONMENT", "node" , 1);
@@ -1434,21 +1442,29 @@ char **copy_argv(int argc, char *argv[]) {
 }
 */
 
-//extern void *_ZNSt12length_errorD1Ev(void *p);
-
-char *cma_port;
 extern int cma_rsize;
 
+#if defined(EMUL_CMA)
+#error "EMUL_CMA"
+char *cma_port;
 EMSCRIPTEN_KEEPALIVE int
 pg_getport() {
+    // when using low mem, memory addr of index 0 would not be accessible.
+    cma_port[1]=0;
     return (int)(&cma_port[0]);
 }
-
+#else
+EMSCRIPTEN_KEEPALIVE int
+pg_getport() {
+    return 0;
+}
+#endif
 
 int
 main(int argc, char **argv) {
-//    void *hold = &_ZNSt12length_errorD1Ev;
+    #if defined(EMUL_CMA)
     cma_port = malloc(16384*1024);
+    #endif
     g_argc =argc;
     g_argv =argv;
     setup();

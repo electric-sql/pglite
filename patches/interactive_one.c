@@ -181,7 +181,6 @@ interactive_one() {
     bool is_wire = true;
 
 //    if (!is_embed && is_repl) {
-
         //wait_unlock();
 
         if (!MyProcPort) {
@@ -198,7 +197,6 @@ interactive_one() {
             SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
-
 
 //    } // is_node && is_repl
 
@@ -237,9 +235,12 @@ interactive_one() {
 // postgres.c 4627
     DoingCommandRead = true;
 
+#if defined(EMUL_CMA)
+    #define IO ((char *)(1+(int)cma_port))  //  temp fix for -O0 but less efficient than literal
+#else
+    #define IO ((char *)(1))
+#endif
 
-//    #define IO ((char *)(1))
-    #define IO (cma_port+1)
 
 /*
  * in web mode, client call the wire loop itself waiting synchronously for the results
@@ -625,5 +626,6 @@ wire_flush:
 
     #undef IO
 }
+
 
 
