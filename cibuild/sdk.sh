@@ -108,4 +108,3 @@ END
 fi
 
 cat $SDKROOT/VERSION
-
