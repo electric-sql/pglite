@@ -99,8 +99,8 @@ pushd src/backend
     if ${PGES6:-true}
     then
         # es6
-        MODULE="$LDEBUG --closure 1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        export COPTS="-O2 -g0"
+        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        export COPTS="-O3 -g0"
     else
         export COPTS="-O0 -g3"
         # local debug always fast build
