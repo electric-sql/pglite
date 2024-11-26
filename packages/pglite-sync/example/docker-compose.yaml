@@ -3,7 +3,7 @@ name: "electric_quickstart"
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     environment:
       POSTGRES_DB: electric
       POSTGRES_USER: postgres
@@ -22,12 +22,10 @@ services:
       - wal_level=logical
 
   electric:
-    image: electricsql/electric:0.2.8
+    image: electricsql/electric
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/electric
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/electric?sslmode=disable
     ports:
       - "3000:3000"
-    build:
-      context: ../packages/sync-service/
     depends_on:
       - postgres

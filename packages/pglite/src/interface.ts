@@ -123,6 +123,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
       message: Uint8Array,
       options?: ExecProtocolOptions,
     ): Promise<ExecProtocolResult>
+    runExclusive<T>(fn: () => Promise<T>): Promise<T>
     listen(
       channel: string,
       callback: (payload: string) => void,
