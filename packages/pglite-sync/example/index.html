@@ -56,7 +56,7 @@
   window.pg = pg;
   
   await pg.electric.syncShapeToTable({
-    shape: { url: "http://localhost:3000/v1/shape?table=todo" },
+    shape: { url: "http://localhost:3000/v1/shape", table: "test" },
     table: "test",
     primaryKey: ["id"],
   });
