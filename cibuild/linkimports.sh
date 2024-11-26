@@ -63,7 +63,6 @@ _interactive_read
 _interactive_write
 _lowerstr
 _main
-_pg_getport
 _pg_initdb
 _pg_shutdown
 _readstoplist
