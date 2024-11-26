@@ -58,11 +58,6 @@
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
-    },
-    "./wasi": {
-      "types": "./dist/wasi/index.d.ts",
-      "import": "./dist/wasi/index.js",
-      "require": "./dist/wasi/index.cjs"
     }
   },
   "type": "module",
