@@ -14,18 +14,13 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: .buildconfig
-      SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
-      WASI_SDK_VERSION: 24.0.3
-      WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
+      SDK_ARCHIVE: python3.12-wasm-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
       SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
       TOTAL_MEMORY: 128MB
-      CMA_MB: 16
       DEBUG: false
       OBJDUMP: true
-      contrib: contrib
-      extra: extra
       EXTRA_EXT: vector
 
     steps:
@@ -56,9 +51,7 @@ jobs:
         run: |
           sudo apt-get install -y lz4 wget pv bash
           echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
-          curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 34500 >/dev/null
-          echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
-          curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
+          curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 24400 >/dev/null
 
       - name: Build postgres WASM via emsdk
         if: steps.cache-restore.outputs.cache-hit != 'true'
