@@ -61,10 +61,6 @@
     "pglite" : "./postgres.js",
     "browser_wasi_shim" : "./browser_wasi_shim/dist/index.js",
     "easywasi": "./easywasi.js",
-    "wip" : "/pygbag/wip.js",
-    "@zenfs/core": "https://esm.sh/@zenfs/core",
-    "@zenfs/dom": "https://esm.sh/@zenfs/dom",
-    "@zenfs/zip": "https://esm.sh/@zenfs/zip"
   }
 }
 </script>
@@ -75,7 +71,56 @@
     import initModule from "pglite";
     window.initModule = initModule //(Module)
 
-    import "wip";
+async function pglite_conf(vm, kv) {
+    var lines = vm.os.codec.decode(vm.FS.readFile(vm.PGDATA + "/postgresql.conf")).split('\n');
+
+    var buf = []
+    var newlines = [];
+
+    for (var k in kv)
+    {
+        var old = ""
+        for (var line = 0; line < lines.length; line++) {
+            if (lines[line].startsWith(k)) {
+                old = lines[line];
+            } else {
+                buf.push(lines[line])
+            }
+        }
+        var values = []
+        if (kv[k] instanceof Array) {
+            // TODO extract array of , from old
+            if (old.length) {
+                console.warn("// TODO extract array from old")
+            }
+            values = kv[k]
+        } else {
+            values.push(kv[k].toString())
+        }
+
+
+        const newline = `${k} = ${values.join(',')}\n`
+
+        if (!old.length) {
+            console.log("NEW :", newline)
+        } else {
+            if (old==newline)
+                console.log("no conf change :", newline)
+            else
+                console.error("EDIT :",old,'->', newline)
+        }
+        newlines.push(newline)
+    }
+    if (newlines.length) {
+        buf.push(...newlines)
+        vm.FS.writeFile( vm.PGDATA + "/postgresql.conf", buf.join("") )
+        vm.FS.syncfs(false, (e) => { if (e) console.error("pglite_conf error:", e)})
+    }
+}
+
+globalThis.pglite_conf = pglite_conf
+
+
 #endif
 </script>
 </head>
@@ -884,7 +929,6 @@ globalThis.async_wasi_init = async_wasi_init
     console.log("---------------------")
 
     import { WasiPreview1 } from 'easywasi'
-    //import { configure, InMemory, fs } from '@zenfs/core'
 
     async function os_exec(bin, ...stack) {
         var kw = {PWD: '/'}
@@ -909,7 +953,7 @@ globalThis.async_wasi_init = async_wasi_init
         const exe = `bin/${bin}.wasm`
         console.log("Loading wasi bin : ", bin, "from", exe, "in", vm )
 
-        await os.FS.writeFile('/pg_dump', '\0', {mode:os.umask})
+        // await os.FS.writeFile('/pg_dump', '\0', {mode:os.umask})
         // await os.FS.writeFile('/tmp/pglite/base/.s.PGSQL.5432.lock.in', '\0', {mode:os.umask})
 
         os.PATH[bin] = await WebAssembly.instantiateStreaming(fetch(exe), {wasi_snapshot_preview1:wasi})

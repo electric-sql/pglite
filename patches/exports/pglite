@@ -6059,7 +6059,6 @@ _pg_hmac_init
 _pg_hmac_update
 _pg_inet_net_ntop
 _pg_initdb
-_pg_initdb_main
 _pg_is_ascii
 _pg_lsn_in
 _pg_ltoa
