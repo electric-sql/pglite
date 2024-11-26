@@ -112,7 +112,10 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 ### `ShapeStreamOptions`
 
 - `url: string`<br>
-  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape?table=table_name`
+  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape`
+
+- `table: string`<br>
+  The name of the table in the remote database to sync from
 
 - `where?: string`<br>
   Where clauses for the shape.
