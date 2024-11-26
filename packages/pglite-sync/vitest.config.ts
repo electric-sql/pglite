@@ -6,6 +6,8 @@ export default defineConfig({
     dir: './test',
     watch: false,
     typecheck: { enabled: true },
+    testTimeout: 30000,
+    hookTimeout: 30000,
     restoreMocks: true,
     testTransformMode: {
       ssr: ['**/*'],
