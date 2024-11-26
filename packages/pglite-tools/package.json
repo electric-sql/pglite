@@ -14,6 +14,10 @@
     "pg_dump",
     "pg_restore"
   ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "index.js",
   "exports": {
