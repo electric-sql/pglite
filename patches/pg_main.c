@@ -1006,7 +1006,7 @@ extra_env:;
             console.warn("prerun(C-node) worker=", Module.is_worker);
 #endif
             Module['postMessage'] = function custom_postMessage(event) {
-                console.log("# 1252: onCustomMessage:",__FILE__, event);
+                console.log("# 1009: onCustomMessage:", event);
             };
         });
 
@@ -1035,17 +1035,8 @@ extra_env:;
 #endif
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
-                    case "raw" :  {
-                        stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
-                        break;
-                    }
-
                     case "stdin" :  {
                         stringToUTF8( event.data, 1, Module.FD_BUFFER_MAX);
-                        break;
-                    }
-                    case "rcon" :  {
-                        stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
                         break;
                     }
                     default : console.warn("custom_postMessage?", event);
