@@ -99,20 +99,15 @@ pushd src/backend
     if ${PGES6:-true}
     then
         # es6
-        MODULE="-g3 -O0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK
-        MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # no plpgsql 7.2M
-        MODULE="-g0 -O2 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" #OK 7.4M
-        #MODULE="-g0 -O3 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO
-        # MODULE="-g0 -Os -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module" # NO  08-23 3.1.65
         MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-
+        export COPTS="-O2 -g0"
     else
         export COPTS="-O0 -g3"
         # local debug always fast build
         MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
-    MODULE="$MODULE  --shell-file ${WORKSPACE}/tests/repl.html"
+    MODULE="$MODULE --shell-file ${WORKSPACE}/tests/repl.html"
     # closure -sSIMPLE_OPTIMIZATION ?
 
     # =======================================================

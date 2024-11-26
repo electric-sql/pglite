@@ -420,7 +420,7 @@ globalThis.pglite_conf = pglite_conf
             // vm._setenv(vm.stringToUTF8OnStack("REPL"),vm.stringToUTF8OnStack("Y"),1)
 
 
-            // console.log("XXXXXX CMA ADDR REPLACEMENT ( for -O0 ) XXXXXXXXXXXX", vm.cma_port );
+            console.log("XXXXXX CMA ADDR REPLACEMENT ( for -O0 ) XXXXXXXXXXXX", vm._pg_getport() );
 
             const idb = vm._pg_initdb()
 
