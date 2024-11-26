@@ -18,7 +18,7 @@ Then connect with `psql` and insert, update, or delete rows in
 the `test` table.
 
 ```sh
-psql -h localhost -p 5432 -U postgres -d postgres
+psql postgresql://postgres:password@localhost:54321/electric
 ```
 
 ```sql
