@@ -1,11 +1,9 @@
-// import { WASIInstance, WasiPreview1, FSInterface } from '../wasi'
-// import { WASIInstance, FSInterface } from '../wasi'
-import { WasiPreview1 } from './wasi/dev'
-// import { FS } from '../postgresMod'
+import { WasiPreview1 } from './wasi/easywasi'
+import { postgresMod } from '@electric-sql/pglite'
 import { PGlite } from '@electric-sql/pglite'
 
-type FS = any
-type FSInterface = any
+type FS = postgresMod.FS
+type FSInterface = any // WASI FS interface
 
 const IN_NODE =
   typeof process === 'object' &&
@@ -16,7 +14,7 @@ const IN_NODE =
  * Emscripten FS is not quite compatible with WASI
  * so we need to patch it
  */
-function emscriptenFsToWasiFS(fs: FS): FSInterface & FS {
+function emscriptenFsToWasiFS(fs: FS, acc: any[]): FSInterface & FS {
   const requiredMethods = [
     'appendFileSync',
     'fsyncSync',
@@ -51,7 +49,15 @@ function emscriptenFsToWasiFS(fs: FS): FSInterface & FS {
               },
             ]
           }
-          return [method, (fs as any)[target].bind(fs)]
+          return [
+            method,
+            (...args: any[]) => {
+              if (method === 'writeFileSync' && args[0] === '/tmp/out.sql') {
+                acc.push(args[1])
+              }
+              return (fs as any)[target](...args)
+            },
+          ]
         })
         .filter(
           (entry): entry is [string, (fs: FS) => any] => entry !== undefined,
@@ -63,60 +69,63 @@ function emscriptenFsToWasiFS(fs: FS): FSInterface & FS {
 /**
  * Inner function to execute pg_dump
  */
-async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
-  console.log('execPgDump', args)
+async function execPgDump({
+  pg,
+  args,
+}: {
+  pg: PGlite
+  args: string[]
+}): Promise<[number, Uint8Array[]]> {
   const bin = new URL('./pg_dump.wasm', import.meta.url)
-  const FS = emscriptenFsToWasiFS(pg.Module.FS)
+  const acc: Uint8Array[] = []
+  const FS = emscriptenFsToWasiFS(pg.Module.FS, acc)
 
   const wasi = new WasiPreview1({
     fs: FS,
-    // args: ['pg_dump', ...args],
-    args: [
-      'pg_dump',
-      '-U',
-      'postgres',
-      '--inserts',
-      '-j',
-      '1',
-      '-v',
-      '-c',
-      '-C',
-      '-f',
-      '/tmp/out.sql',
-      '--disable-dollar-quoting',
-      'postgres',
-    ],
+    args: ['pg_dump', ...args],
     env: {
       PWD: '/',
     },
   })
 
-  ;(wasi.sched_yield = () => {
-    console.log('onSchedYield')
-    const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-    const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-    if (FS.analyzePath(pg_in).exists) {
+  wasi.stdout = (_buffer) => {
+    // console.log('stdout', buffer)
+  }
+  wasi.stderr = (_buffer) => {
+    // console.error('stderr', buffer)
+  }
+  wasi.sched_yield = () => {
+    const pgIn = '/tmp/pglite/base/.s.PGSQL.5432.in'
+    const pgOut = '/tmp/pglite/base/.s.PGSQL.5432.out'
+    if (FS.analyzePath(pgIn).exists) {
       // call interactive one
-      console.log('sched_yield - calling interactive_one')
-      const sf_data = FS.readFileSync(pg_in)
-      console.log('sched_yield - readFileSync', sf_data.length)
-      pg.Module._interactive_one()
-      console.log('sched_yield - interactive_one done')
-      const fstat = FS.stat(pg_out)
-      console.log(
-        'sched_yield socket file',
-        sf_data.length,
-        'pgreply',
-        fstat.size,
-      )
-    } else {
-      console.log('sched_yield - no aio')
+      const msgIn = FS.readFileSync(pgIn)
+
+      // BYPASS the file socket emulation in PGlite
+      FS.unlinkSync(pgIn)
+
+      // Handle auth request
+      if (msgIn[0] === 0) {
+        const reply = new Uint8Array([
+          ...authOk,
+          ...versionParam,
+          ...readyForQuery,
+        ])
+        FS.writeFileSync(pgOut, reply)
+        return 0
+      }
+
+      // Handle query
+      const reply = pg.execProtocolRawSync(msgIn)
+      FS.writeFileSync(pgOut, reply)
     }
-    console.log('onSchedYield done')
     return 0
-  }),
-    await FS.writeFile('/pg_dump', '\0', { mode: 18 })
-  
+  }
+
+  // Postgres can complain if the binary is not on the filesystem
+  // so we create a dummy file
+  await FS.writeFile('/pg_dump', '\0', { mode: 18 })
+
   let app: WebAssembly.WebAssemblyInstantiatedSource
 
   if (IN_NODE) {
@@ -131,16 +140,11 @@ async function execPgDump({ pg, args }: { pg: PGlite; args: string[] }) {
     })
   }
 
-  console.log('/tmp/pglite/base/', FS.readdir('/tmp/pglite/base/'))
-  // FS.writeFile('/tmp/pglite/base/.s.PGSQL.5432.lock.in', '\0', { mode: 18 })
-
   let exitCode: number
   await pg.runExclusive(async () => {
-    console.log('starting pg_dump')
     exitCode = wasi.start(app.instance.exports)
-    console.log('pg_dump finished with exit code', exitCode)
   })
-  return exitCode!
+  return [exitCode!, acc]
 }
 
 interface PgDumpOptions {
@@ -164,20 +168,69 @@ export async function pgDump({
       '--inserts',
       '-j',
       '1',
-      '-v',
-      '-c',
-      '-C',
+      // '-v',
+      // '-c',
+      // '-C',
       '--disable-dollar-quoting',
       'postgres',
     ]
   }
-  const FS = pg.Module.FS
-  const exitCode = await execPgDump({ pg, args: ['-f', 'out.sql', ...args] })
+
+  const [exitCode, acc] = await execPgDump({
+    pg,
+    args: ['-f', '/tmp/out.sql', ...args],
+  })
+
   if (exitCode !== 0) {
     throw new Error(`pg_dump failed with exit code ${exitCode}`)
   }
-  // TODO: delete out.sql after reading
-  return new File([FS.readFile('out.sql')], fileName, {
+
+  const file = new File(acc, fileName, {
     type: 'text/plain',
   })
+  pg.Module.FS.unlink('/tmp/out.sql')
+
+  return file
 }
+
+// Wire protocol messages for simulating auth handshake:
+
+function charToByte(char: string) {
+  return char.charCodeAt(0)
+}
+
+// Function to convert an integer to a 4-byte array (Int32)
+function int32ToBytes(value: number) {
+  const buffer = new ArrayBuffer(4)
+  const view = new DataView(buffer)
+  view.setInt32(0, value, false) // false for big-endian
+  return new Uint8Array(buffer)
+}
+
+// Convert a string to a Uint8Array with a null terminator (C string)
+function stringToBytes(str: string) {
+  const utf8Encoder = new TextEncoder()
+  const strBytes = utf8Encoder.encode(str) // UTF-8 encoding
+  return new Uint8Array([...strBytes, 0]) // Append null terminator
+}
+
+const authOk = new Uint8Array([
+  charToByte('R'),
+  ...int32ToBytes(8),
+  ...int32ToBytes(0),
+])
+const readyForQuery = new Uint8Array([
+  charToByte('Z'),
+  ...int32ToBytes(5),
+  charToByte('I'),
+])
+
+const svParamName = stringToBytes('server_version')
+const svParamValue = stringToBytes('16.3 (PGlite 0.2.0)')
+const svTotalLength = 4 + svParamName.length + svParamValue.length
+const versionParam = new Uint8Array([
+  charToByte('S'),
+  ...int32ToBytes(svTotalLength),
+  ...svParamName,
+  ...svParamValue,
+])

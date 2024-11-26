@@ -21,7 +21,7 @@ import { pgDump } from "../../../pglite-tools/dist/pg_dump.mjs";
 
 console.log("Starting...");
 
-const pg = await PGlite.create({ debug: 1 });
+const pg = await PGlite.create();
 
 console.log("Creating table...");
 await pg.exec(`
@@ -33,9 +33,40 @@ await pg.exec(`
 
 await pg.exec("INSERT INTO test (name) VALUES ('test');");
 
+await pg.exec(`
+  CREATE TABLE IF NOT EXISTS test2 (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`);
+
+await pg.exec("INSERT INTO test2 (name) VALUES ('test2');");
+
+for (let i = 0; i < 50; i++) {
+  await pg.exec(`INSERT INTO test2 (name) VALUES ('test2-${i}');`);
+}
+
 console.log('Dumping database...')
 const dump = await pgDump({ pg })
 console.log(dump)
+
+// Create a download link for the dump file
+const downloadLink = document.createElement('a');
+downloadLink.href = URL.createObjectURL(dump);
+downloadLink.download = dump.name;
+downloadLink.textContent = 'Download SQL Dump';
+downloadLink.style.display = 'block';
+downloadLink.style.marginTop = '20px';
+document.body.appendChild(downloadLink);
+
+console.log('Restoring database...')
+const pg2 = await PGlite.create();
+const sql = await dump.text()
+await pg2.exec(sql)
+
+console.log('Querying restored database...')
+const rows = await pg2.query('SELECT * FROM public.test2')
+console.log(rows)
 </script>
 <div id="log"></div>
 </div>

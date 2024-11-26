@@ -1,4 +1,4 @@
-// 2024-11-14
+// 2024-11-21
 
 import * as defs from './defs.js'
 
@@ -158,14 +158,10 @@ export class WasiPreview1 {
   // this binds the wasm to this WASI implementation
   // and calls it's main()'
   start(wasm) {
-    console.log('start - setup')
     this.setup(wasm)
-    console.log('start - setup done')
     try {
       if (wasm._start) {
-        console.log('start - calling _start')
         wasm._start()
-        console.log('start - _start done')
       }
       return 0
     } catch (e) {
@@ -174,13 +170,6 @@ export class WasiPreview1 {
       }
       throw e
     }
-  }
-
-  allocateFd(fileHandle, type = 'file') {
-    const fd = this.nextFd++
-    const descriptor = { type, handle: fileHandle, fd }
-    this.fds.set(fd, descriptor)
-    return fd
   }
 
   // Standard input (for fd_read)
@@ -441,18 +430,6 @@ export class WasiPreview1 {
     fdflags,
     fdPtr,
   ) {
-    console.log(
-      'path_open 1',
-      dirfd,
-      dirflags,
-      path,
-      pathLen,
-      oflags,
-      fsRightsBase,
-      fsRightsInheriting,
-      fdflags,
-      fdPtr,
-    )
     var fileDesc = this.fds.get(dirfd)
     if (!fileDesc) return defs.ERRNO_BADF
 
@@ -486,9 +463,7 @@ export class WasiPreview1 {
       // Verify file exists
       stats = this.fs.statSync(resolvedPath)
       exists = true
-    } catch (e) {
-      console.error('path_open 2', e)
-    }
+    } catch (e) {}
 
     if (o_exclusive || o_truncate) {
       if (o_exclusive && exists) {
@@ -499,7 +474,12 @@ export class WasiPreview1 {
     }
 
     // Store path and initial position in handle TODO: could be BIGINT
-    fd = this.allocateFd({ path: resolvedPath, position: 0 }, 'file')
+    // fd = this.allocateFd({ path: resolvedPath, position: 0 }, 'file')
+    const fileHandle = { path: resolvedPath, position: 0 }
+    const type = 'file'
+    fd = this.nextFd++
+    const descriptor = { type, handle: fileHandle, fd }
+    this.fds.set(fd, descriptor)
 
     fileDesc = this.fds.get(fd)
 
@@ -511,13 +491,9 @@ export class WasiPreview1 {
       fileDesc.handle.size = 0
     }
 
-    console.log(
-      `path_open[${fd}] : ${resolvedPath} o_directory=${o_directory} exists=${exists} o_exclusive=${o_exclusive} o_create=${o_create} o_truncate=${o_truncate}`,
-    )
+    // console.log(`path_open[${fd}] : ${resolvedPath} o_directory=${o_directory} exists=${exists} o_exclusive=${o_exclusive} o_create=${o_create} o_truncate=${o_truncate}`)
     // if (stats)
-    console.log(
-      `path_open[${fd}] : ${fileDesc.handle.position} / ${stats?.size}`,
-    )
+    // console.log(`path_open[${fd}] : ${fileDesc.handle.position} / ${stats.size}`)
 
     //  o_directory - ERRNO_NOTDIR
 
