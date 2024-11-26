@@ -357,6 +357,8 @@ _close
 _strncmp
 ___errno_location
 _time
+_pg_printf
+_abort
 _memset
 _getenv
 _strlcpy

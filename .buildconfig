@@ -2,7 +2,3 @@ PG_VERSION=16.4
 SDK_VERSION=3.1.72.3bi
 WASI_SDK_VERSION=24.0.4
 SDKROOT=/opt/python-wasm-sdk
-WASI_SDK_VERSION=24.0.4
-SDKROOT=/opt/python-wasm-sdk
-
-

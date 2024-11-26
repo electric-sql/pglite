@@ -7,6 +7,7 @@ WASI_CFLAGS="-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=/tmp/pglit
  -Ipostgresql/src/backend \
  -c -o build/postgres/wasi_dlfcn.o \
  -Ibuild/postgres/src/include patches/wasi_dlfcn.c || exit 8
+
 #  -L./build/postgres/src/backend/snowball -ldict_snowball
 # ./build/postgres/src/backend/snowball/dict_snowball.o
 # ./build/postgres/src/backend/snowball/libdict_snowball.a
@@ -770,7 +771,7 @@ llvm-ar cr ../../libpglite.a $PGOBJ
 
 # just linking
 
-
+# -Wl,--no-entry -mexec-model=reactor
 
 $CC -o postgres \
  -fno-strict-aliasing \
@@ -784,11 +785,13 @@ $CC -o postgres \
     ../../src/pl/plpgsql/src/libplpgsql.a \
  -lz -lm -lwasi-emulated-mman -lwasi-emulated-signal -lc \
  -Wl,--export=pg_initdb \
+ -Wl,--export=setup \
+ -Wl,--export=loop \
  -Wl,--export=interactive_one \
  -Wl,--export=use_socketfile \
  -Wl,--export=interactive_write \
- -Wl,--export=interactive_read
- -Wl,--global-base=33554432
+ -Wl,--export=interactive_read \
+ -Wl,--global-base=33333333
 
 cp -vf postgres postgres.wasi || exit 192
 #cp -vf postgres.wasi /tmp/pglite/bin/postgres.wasi

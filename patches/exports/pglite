@@ -471,6 +471,7 @@ __hash_getbuf_with_strategy
 __hash_ovflblkno_to_bitno
 __hash_relbuf
 __length_code
+_abort
 _access
 _accumArrayResult
 _aclcheck_error
