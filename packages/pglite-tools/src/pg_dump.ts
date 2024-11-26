@@ -161,24 +161,21 @@ export async function pgDump({
   args,
   fileName = 'dump.sql',
 }: PgDumpOptions) {
-  if (!args) {
-    args = [
-      '-U',
-      'postgres',
-      '--inserts',
-      '-j',
-      '1',
-      // '-v',
-      // '-c',
-      // '-C',
-      '--disable-dollar-quoting',
-      'postgres',
-    ]
-  }
+  const outFile = `/tmp/out.sql`
+  const baseArgs = [
+    '-U',
+    'postgres',
+    '--inserts',
+    '-j',
+    '1',
+    '-f',
+    outFile,
+    'postgres',
+  ]
 
   const [exitCode, acc] = await execPgDump({
     pg,
-    args: ['-f', '/tmp/out.sql', ...args],
+    args: [...(args ?? []), ...baseArgs],
   })
 
   if (exitCode !== 0) {
@@ -188,7 +185,7 @@ export async function pgDump({
   const file = new File(acc, fileName, {
     type: 'text/plain',
   })
-  pg.Module.FS.unlink('/tmp/out.sql')
+  pg.Module.FS.unlink(outFile)
 
   return file
 }

@@ -1,7 +1,8 @@
 {
   "name": "pglite-tools",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.2.0",
+  "description": "Tools for working with PGlite databases",
+  "type": "module",
   "main": "index.js",
   "exports": {
     "./pg_dump": {
@@ -12,10 +13,10 @@
   },
   "scripts": {
     "build": "tsup && tsx ./scripts/bundle-wasm.ts",
-    "lint": "eslint ./src ./test --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint ./src --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src",
     "typecheck": "tsc",
-    "stylecheck": "pnpm lint && prettier --check ./src ./test"
+    "stylecheck": "pnpm lint && prettier --check ./src"
   },
   "keywords": [],
   "author": "",

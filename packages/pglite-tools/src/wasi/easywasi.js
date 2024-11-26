@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 // 2024-11-21
 
 import * as defs from './defs.js'
