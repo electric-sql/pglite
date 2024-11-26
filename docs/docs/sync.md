@@ -117,9 +117,6 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 - `table: string`<br>
   The name of the table in the remote database to sync from
 
-- `table: string`<br>
-  The name of the table in the remote database to sync from
-
 - `where?: string`<br>
   Where clauses for the shape.
 
