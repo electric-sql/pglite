@@ -439,6 +439,18 @@ export abstract class BasePGlite
   }
 
   /**
+   * Run a function exclusively, no other transactions or queries will be allowed
+   * while the function is running.
+   * This is useful when working with the execProtocol methods as they are not blocked,
+   * and do not block the locks used by transactions and queries.
+   * @param fn The function to run
+   * @returns The result of the function
+   */
+  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    return await this._runExclusiveQuery(fn)
+  }
+
+  /**
    * Internal log function
    */
   #log(...args: any[]) {

@@ -551,6 +551,23 @@ export class PGlite
   }
 
   /**
+   * Execute a postgres wire protocol synchronously
+   * @param message The postgres wire protocol message to execute
+   * @returns The direct message data response produced by Postgres
+   */
+  execProtocolRawSync(message: Uint8Array) {
+    const msg_len = message.length
+    const mod = this.mod!
+    mod._interactive_write(msg_len)
+    mod.HEAPU8.set(message, 1)
+    mod._interactive_one()
+    const msg_start = msg_len + 2
+    const msg_end = msg_start + mod._interactive_read()
+    const data = mod.HEAPU8.subarray(msg_start, msg_end)
+    return data
+  }
+
+  /**
    * Execute a postgres wire protocol message directly without wrapping the response.
    * Only use if `execProtocol()` doesn't suite your needs.
    *
