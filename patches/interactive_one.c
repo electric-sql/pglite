@@ -143,6 +143,16 @@ static void io_init(bool in_auth, bool out_auth) {
 
 }
 
+
+
+
+
+
+
+
+
+
+
 EMSCRIPTEN_KEEPALIVE int
 cma_wsize = 0;
 
@@ -180,8 +190,8 @@ interactive_one() {
     bool is_socket = false;
     bool is_wire = true;
 
-//    if (!is_embed && is_repl) {
-        //wait_unlock();
+    if (!is_node && is_repl) {
+
 
         if (!MyProcPort) {
             io_init(false, false);
@@ -198,7 +208,7 @@ interactive_one() {
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 
-//    } // is_node && is_repl
+    } // is_node && is_repl
 
 
     doing_extended_query_message = false;
@@ -235,12 +245,9 @@ interactive_one() {
 // postgres.c 4627
     DoingCommandRead = true;
 
-#if defined(EMUL_CMA)
-    #define IO ((char *)(1+(int)cma_port))  //  temp fix for -O0 but less efficient than literal
-#else
-    #define IO ((char *)(1))
-#endif
 
+    #define IO ((char *)(1))
+//    #define IO cma_port    this would be a temp fix for -O0 but less efficient than a
 
 /*
  * in web mode, client call the wire loop itself waiting synchronously for the results
@@ -345,7 +352,7 @@ PDEBUG("# 324 : TODO: set a pg_main started flag");
                             send_ready_for_query = true;
                         } // auth
                     } else {
-#if 0 // PGDEBUG
+#if PGDEBUG
                         fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
                         for (int i=0;i<packetlen;i++) {
                             int b = getc(fp);
@@ -404,7 +411,7 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, 1);
 #endif
         goto incoming;
 
@@ -445,7 +452,7 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, 1);
 #endif
 
     }
