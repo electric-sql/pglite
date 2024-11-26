@@ -1,4 +1,4 @@
-
+#if defined(PG_MAIN)
 
 bool is_node = false;
 bool is_repl = true;
@@ -1099,30 +1099,6 @@ _ZNSt13runtime_errorD1Ev(void * int32) {
 extern void AsyncPostgresSingleUserMain(int single_argc, char *single_argv[], const char *username, int async_restart);
 
 
-#if defined(__wasi__)
-
-
-#   define PG_INITDB_MAIN
-#   define PG_MAIN
-
-#   define FRONTEND
-    #include "../postgresql/src/common/logging.c"
-#   undef FRONTEND
-
-    #define icu_language_tag(loc_str) icu_language_tag_idb(loc_str)
-    #define icu_validate_locale(loc_str) icu_validate_locale_idb(loc_str)
-    #include "../postgresql/src/interfaces/libpq/pqexpbuffer.c"
-    #define fsync_pgdata(...)
-
-    #include "../postgresql/src/bin/initdb/initdb.c"
-
-    void use_socketfile(void) {
-        is_repl = true;
-        is_node = true;
-    }
-#undef PG_INITDB_MAIN
-#undef PG_MAIN
-#endif // __wasi__
 EMSCRIPTEN_KEEPALIVE int main_repl();
 EMSCRIPTEN_KEEPALIVE int
 main_repl() {
@@ -1275,4 +1251,4 @@ main(int argc, char **argv)
 	return ret;
 }
 
-
+#endif // PG_MAIN

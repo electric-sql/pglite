@@ -6,9 +6,7 @@
 #define IDB_HASDB   0b0100
 #define IDB_HASUSER 0b1000
 
-#if defined(PG_MAIN)
-
-#if defined(PG_EC_STATIC) || defined(__wasi__)
+#if defined(PG_MAIN) && ( defined(PG_EC_STATIC) || defined(__wasi__) )
 #   warning "PG_EC_STATIC"
 
 EMSCRIPTEN_KEEPALIVE void
@@ -69,4 +67,3 @@ simple_prompt(const char *prompt, bool echo) {
 #   include "pg_main_wasi.c"
 #endif
 
-#endif // PG_MAIN
