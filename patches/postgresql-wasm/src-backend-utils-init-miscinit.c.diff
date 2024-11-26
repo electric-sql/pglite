@@ -45,17 +45,3 @@
  	SetDataDirectoryCreatePerm(stat_buf.st_mode);
  
  	umask(pg_mode_mask);
-@@ -1223,7 +1223,13 @@
- 		 * Think not to make the file protection weaker than 0600/0640.  See
- 		 * comments below.
- 		 */
-+
-+#if defined(__wasi__)
-+printf("# 1228: CreateLockFile(%s) w+ (forced)\n", filename);
-+		fd = fileno(fopen(filename, "w+"));
-+#else
- 		fd = open(filename, O_RDWR | O_CREAT | O_EXCL, pg_file_create_mode);
-+#endif
- 		if (fd >= 0)
- 			break;				/* Success; exit the retry loop */
- 

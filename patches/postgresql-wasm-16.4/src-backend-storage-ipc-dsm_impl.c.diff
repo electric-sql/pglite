@@ -1,0 +1,39 @@
+--- postgresql/src/backend/storage/ipc/dsm_impl.c
++++ postgresql-wasm/src/backend/storage/ipc/dsm_impl.c
+@@ -306,7 +306,7 @@
+ 
+ 		ereport(elevel,
+ 				(errcode_for_dynamic_shared_memory(),
+-				 errmsg("could not resize shared memory segment \"%s\" to %zu bytes: %m",
++				 errmsg("# 309: could not resize shared memory segment \"%s\" to %zu bytes: %m",
+ 						name, request_size)));
+ 		return false;
+ 	}
+@@ -350,7 +350,14 @@
+ static int
+ dsm_impl_posix_resize(int fd, off_t size)
+ {
+-	int			rc;
++	int			rc=0;
++
++fprintf(stderr, "# 356: dsm_impl_posix_resize(fd= %d, size = %lld) rc = %d good=%d\n", fd, size, rc, (bool)(rc || size));
++fprintf(stderr, "!!!!!!!!!!!!!!!!!!! ret=%d dsm_impl_posix_resize(fd= %d, size= %lld)\n", rc, fd, size);
++if (rc)
++    abort();
++
++#if 0
+ 	int			save_errno;
+ 	sigset_t	save_sigmask;
+ 
+@@ -404,7 +411,10 @@
+ 		sigprocmask(SIG_SETMASK, &save_sigmask, NULL);
+ 		errno = save_errno;
+ 	}
+-
++#else
++    rc = (int)ftruncate(fd, size);
++#endif
++printf("# 413: ftruncate(fd=%d, size=%ld) = %d\n", (int)fd, (unsigned long)size, (int)rc);
+ 	return rc;
+ }
+ 

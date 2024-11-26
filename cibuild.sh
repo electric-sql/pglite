@@ -6,11 +6,10 @@ export CMA_MB=${CMA_MB:-64}
 
 export CI=${CI:-false}
 
-chmod +x ./extra/*.sh cibuild/*.sh
-
-. .buildconfig
-
-export PG_VERSION SDK_VERSION WASI_SDK_VERSION SDKROOT
+if $CI
+then
+    . .buildconfig
+fi
 
 export PG_VERSION=${PG_VERSION:-16.4}
 export WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
@@ -27,15 +26,7 @@ export WASI=${WASI:-false}
 # exit on error
 EOE=false
 
-
-if ./cibuild/sdk.sh
-then
-    echo "sdk check passed (emscripten)"
-else
-    echo sdk failed
-    exit 44
-fi
-
+mkdir -p /tmp/sdk
 
 # the default is a user writeable path.
 if mkdir -p ${PGROOT}/sdk

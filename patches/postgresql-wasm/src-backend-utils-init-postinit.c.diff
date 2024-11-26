@@ -1,14 +1,6 @@
 --- postgresql/src/backend/utils/init/postinit.c
 +++ postgresql-wasm/src/backend/utils/init/postinit.c
-@@ -13,6 +13,7 @@
-  *
-  *-------------------------------------------------------------------------
-  */
-+#define PG_POSTINIT
- #include "postgres.h"
- 
- #include <ctype.h>
-@@ -714,6 +715,7 @@
+@@ -714,6 +714,7 @@
   *		Be very careful with the order of calls in the InitPostgres function.
   * --------------------------------
   */
@@ -16,7 +8,7 @@
  void
  InitPostgres(const char *in_dbname, Oid dboid,
  			 const char *username, Oid useroid,
-@@ -883,8 +885,18 @@
+@@ -883,8 +884,18 @@
  	}
  	else if (!IsUnderPostmaster)
  	{
@@ -35,7 +27,7 @@
  		if (!ThereIsAtLeastOneRole())
  			ereport(WARNING,
  					(errcode(ERRCODE_UNDEFINED_OBJECT),
-@@ -1239,6 +1251,32 @@
+@@ -1239,6 +1250,32 @@
  		CommitTransactionCommand();
  }
  
@@ -68,7 +60,7 @@
  /*
   * Process any command-line switches and any additional GUC variable
   * settings passed in the startup packet.
-@@ -1345,14 +1383,15 @@
+@@ -1345,14 +1382,15 @@
  static void
  ShutdownPostgres(int code, Datum arg)
  {

@@ -1,10 +1,25 @@
 --- postgresql/src/include/common/logging.h
 +++ postgresql-wasm/src/include/common/logging.h
-@@ -91,7 +91,6 @@
+@@ -85,16 +85,21 @@
+  */
+ #define PG_LOG_FLAG_TERSE	1
+ 
++#if defined(PG_INITDB) &&  defined(PG_MAIN)
++#else
+ void		pg_logging_init(const char *argv0);
++#endif
+ void		pg_logging_config(int new_flags);
+ void		pg_logging_set_level(enum pg_log_level new_level);
  void		pg_logging_increase_verbosity(void);
  void		pg_logging_set_pre_callback(void (*cb) (void));
  void		pg_logging_set_locus_callback(void (*cb) (const char **filename, uint64 *lineno));
 -
++#if defined(PG_INITDB) &&  defined(PG_MAIN)
++#else
  void		pg_log_generic(enum pg_log_level level, enum pg_log_part part,
  						   const char *pg_restrict fmt,...)
  			pg_attribute_printf(3, 4);
++#endif
+ void		pg_log_generic_v(enum pg_log_level level, enum pg_log_part part,
+ 							 const char *pg_restrict fmt, va_list ap)
+ 			pg_attribute_printf(3, 0);

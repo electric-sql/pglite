@@ -44,7 +44,7 @@
  	char	   *buf;
  	ProtocolVersion proto;
  	MemoryContext oldcontext;
-@@ -1988,15 +2000,15 @@
+@@ -1988,15 +2000,16 @@
  		return STATUS_ERROR;
  	}
  
@@ -54,6 +54,7 @@
  	len -= 4;
 -
 -	if (len < (int32) sizeof(ProtocolVersion) ||
++printf("len %d proto %d max %d\n", len,(uint32) sizeof(ProtocolVersion) , MAX_STARTUP_PACKET_LENGTH) ;
 +	if (len < (uint32) sizeof(ProtocolVersion) ||
  		len > MAX_STARTUP_PACKET_LENGTH)
  	{
@@ -64,7 +65,7 @@
  		return STATUS_ERROR;
  	}
  
-@@ -2029,7 +2041,7 @@
+@@ -2029,7 +2042,7 @@
  		{
  			ereport(COMMERROR,
  					(errcode(ERRCODE_PROTOCOL_VIOLATION),
