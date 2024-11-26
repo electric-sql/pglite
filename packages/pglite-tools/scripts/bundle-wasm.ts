@@ -19,6 +19,24 @@ const copyFiles = async (srcDir: string, destDir: string) => {
 };
 
 async function main() {
+  // pg_dump is not yet available from CI, so we download as precompiled 
+  try {
+    await fs.access("./release");
+  } catch {
+    await fs.mkdir("./release", { recursive: true });
+  }
+
+  try {
+    await fs.access("./release/pg_dump.wasm");
+    console.log("pg_dump.wasm already exists in release directory");
+  } catch {
+    const response = await fetch("https://static.pglite.dev/pg_tools/pg_dump_26-11-24.wasm");
+    const wasmBuffer = await response.arrayBuffer();
+    
+    await fs.writeFile("./release/pg_dump.wasm", new Uint8Array(wasmBuffer));
+    console.log("Downloaded pg_dump.wasm to release directory");
+  }
+  
   await copyFiles("./release", "./dist");
 }
 

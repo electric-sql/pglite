@@ -1,5 +1,5 @@
 import { PGlite } from "../dist/index.js";
-import { pgDump } from "../../pglite-tools/dist/pg_dump.mjs";
+import { pgDump } from "../../pglite-tools/dist/pg_dump.js";
 
 console.log("Starting...");
 

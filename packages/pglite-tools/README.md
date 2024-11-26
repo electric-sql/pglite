@@ -1,6 +1,6 @@
 # pglite-tools
 
-A selection of tools for working with PGlite databases, including pg_dump.
+A selection of tools for working with [PGlite](https://github.com/electric-sql/pglite) databases, including pg_dump.
 
 Install with:
 

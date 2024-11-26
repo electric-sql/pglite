@@ -2,13 +2,25 @@
   "name": "pglite-tools",
   "version": "0.2.0",
   "description": "Tools for working with PGlite databases",
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "pglite",
+    "pg_dump",
+    "pg_restore"
+  ],
   "type": "module",
   "main": "index.js",
   "exports": {
     "./pg_dump": {
       "types": "./dist/pg_dump.d.ts",
-      "import": "./dist/pg_dump.mjs",
-      "require": "./dist/pg_dump.js"
+      "import": "./dist/pg_dump.js",
+      "require": "./dist/pg_dump.cjs"
     }
   },
   "scripts": {
@@ -18,15 +30,10 @@
     "typecheck": "tsc",
     "stylecheck": "pnpm lint && prettier --check ./src"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@types/emscripten": "^1.39.13",
-    "@types/node": "^20.16.11"
-  },
-  "dependencies": {
+    "@types/node": "^20.16.11",
     "tsx": "^4.19.2"
   }
 }
