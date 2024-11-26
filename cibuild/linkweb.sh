@@ -100,7 +100,7 @@ pushd src/backend
     then
         # es6
         MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        export COPTS="-Os -g0"
+        export COPTS="-O2 -g0"
     else
         export COPTS="-O0 -g3"
         # local debug always fast build
