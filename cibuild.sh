@@ -472,8 +472,8 @@ ________________________________________________________________________________
 
                 # debug CI does not use pnpm/npm for building pg, so call the typescript build
                 # part from here
-                pnpm --filter "pglite^..." build || exit 450
-
+                #pnpm --filter "pglite^..." build || exit 450
+                pnpm run build:js || exit 476
                 pnpm pack || exit 31
                 packed=$(echo -n electric-sql-pglite-*.tgz)
 

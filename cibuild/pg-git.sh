@@ -42,7 +42,6 @@ else
     if $WASI
     then
 
-        echo "TODO $(which clang)"
     CNF="${PGSRC}/configure --prefix=${PGROOT} \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
@@ -55,7 +54,7 @@ else
      ZIC=/usr/sbin/zic \
      CC=wasi-c \
      CXX=wasi-c++ \
-     CONFIG_SITE==${PGDATA}/config.site CONFIGURE=true \
+     CONFIG_SITE=${PGDATA}/config.site \
      $CNF \
      --host=$(arch) --target=wasm32-unknown-wasi --with-template=wasi
     then
