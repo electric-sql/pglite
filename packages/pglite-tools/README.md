@@ -10,7 +10,7 @@ npm install @electric-sql/pglite-tools
 
 ## `pgDump`
 
-pg_dump is a tool for dumping a PGlite database to a SQL file, this is a WSAM build of PGdump that can be used in a browser or other JavaScript environments. You can read more about pg_dump [in the Postgres docs](https://www.postgresql.org/docs/current/app-pgdump.html).
+pg_dump is a tool for dumping a PGlite database to a SQL file, this is a WASM build of pg_dump that can be used in a browser or other JavaScript environments. You can read more about pg_dump [in the Postgres docs](https://www.postgresql.org/docs/current/app-pgdump.html).
 
 ### Options
 
@@ -21,7 +21,7 @@ pg_dump is a tool for dumping a PGlite database to a SQL file, this is a WSAM bu
 There are a number of arguments that are automatically added to the end of the command, these are:
 
 - `--inserts` - use inserts format for the output, this ensures that the dump can be restored by simply passing the output to `pg.exec()`.
-- `-j 1` - concurrency level, set to 1 as we multithreading isn't supported.
+- `-j 1` - concurrency level, set to 1 as multithreading isn't supported.
 - `-f /tmp/out.sql` - the output file is always written to `/tmp/out.sql` in the virtual file system.
 - `-U postgres` - use the postgres user is hard coded.
 
