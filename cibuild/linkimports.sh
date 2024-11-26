@@ -65,7 +65,6 @@ _lowerstr
 _main
 _pg_getport
 _pg_initdb
-_pg_initdb_main
 _pg_shutdown
 _readstoplist
 _searchstoplist
