@@ -1038,7 +1038,6 @@ _pg_get_indexdef_columns_extended
 _pg_get_user_home_dir
 _pg_getaddrinfo_all
 _pg_getnameinfo_all
-_pg_getport
 _pg_global_prng_state
 _pg_hmac_create
 _pg_hmac_error
