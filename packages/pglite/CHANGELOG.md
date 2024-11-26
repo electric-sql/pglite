@@ -1,5 +1,17 @@
 # @electric-sql/pglite
 
+## 0.2.14
+
+### Patch Changes
+
+- 6547374: New `runExclusive` method on PGlite that allows you to hold an exclusive lock on the database, for use with `execProtocol*` methods
+- 6547374: A new `execProtocolRawSync` method that can execute a postgres wire protocol synchronously
+- df5c290: Make pglite compatible with @jest-environment: node
+- 1784d04: Bump Emscripten to 3.1.72
+- ae36974: Fix a bug with pipelining prepared statements.
+- 75f9f6d: Add a `offset` and `limit` option to live queries, when used it will return the total count for the query along with efficient updating of the offset. This works well with windowed or virtualised scrolling components.
+- ce212cf: Use PG "WITH RECURSIVE" to traverse the live query dependencies
+
 ## 0.2.13
 
 ### Patch Changes
