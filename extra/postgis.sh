@@ -68,6 +68,7 @@ END
     PATH=/tmp/pglite/bin:$PATH PG_LINK="em++ $PREFIX/lib/libgeos.a $EMSDK/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/pic/libsqlite3.a"  emmake make install
     rm $PGROOT/share/postgresql/extension/postgis*.sql
     cp ./extensions/postgis/sql/postgis--3.5.0.sql $PGROOT/share/postgresql/extension/postgis--3.5.0.sql
-
+    rm -rf /tmp/pglite/share/postgresql/contrib
+    rm -rf /tmp/pglite/lib/postgresql/pgxs
 popd
 

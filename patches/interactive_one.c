@@ -411,7 +411,7 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, 1);
 #endif
         goto incoming;
 
@@ -452,7 +452,7 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
 #if PGDEBUG
-        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, 1);
 #endif
 
     }

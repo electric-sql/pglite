@@ -24,6 +24,8 @@ else
 
     pushd /tmp/sdk
 
+if false
+then
     ${SDKROOT}/emsdk/upstream/bin/wasm-opt --version > ${SDKROOT}/wasm-opt.version
     cat > ${SDKROOT}/emsdk/upstream/bin/wasm-opt <<END
 #!/bin/bash
@@ -36,7 +38,7 @@ else
 fi
 END
         chmod +x ${SDKROOT}/emsdk/upstream/bin/wasm-opt
-
+fi
 
     ALL="-m32 \
 -D_FILE_OFFSET_BITS=64 \

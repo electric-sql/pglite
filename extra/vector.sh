@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir -p build
+mkdir -p build src
 
 pushd build
     # [ -d pgvector ] || git clone --no-tags --depth 1 --single-branch --branch master https://github.com/pgvector/pgvector
@@ -9,8 +9,8 @@ pushd build
     then
         echo using local pgvector
     else
-        wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.7.3.tar.gz -Opgvector.tar.gz
-        tar xvfz pgvector.tar.gz && rm pgvector.tar.gz
+        [ -f ../src/pgvector.tar.gz ] || wget -c -q https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.0.tar.gz -O../src/pgvector.tar.gz
+        tar xvfz ../src/pgvector.tar.gz
         mv pgvector-?.?.? vector
     fi
 popd
