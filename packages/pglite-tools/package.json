@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-tools",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Tools for working with PGlite databases",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
