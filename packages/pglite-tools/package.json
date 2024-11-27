@@ -35,6 +35,10 @@
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
     "test": "vitest"
   },
+  "browser": {
+    "fs": false,
+    "fs/promises": false
+  },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@types/emscripten": "^1.39.13",
