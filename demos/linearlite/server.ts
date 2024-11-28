@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import pg from 'pg'
+import postgres from 'postgres'
 import {
   ChangeSet,
   changeSetSchema,
@@ -9,11 +9,12 @@ import {
 } from './src/utils/changes'
 import { serve } from '@hono/node-server'
 
-const DATABASE_URL = process.env.DATABASE_URL
+const DATABASE_URL =
+  process.env.DATABASE_URL ??
+  'postgresql://postgres:password@localhost:54321/linearlite'
 
-const { Client } = pg
-const client = new Client(DATABASE_URL)
-client.connect()
+// Create postgres connection
+const sql = postgres(DATABASE_URL)
 
 const app = new Hono()
 
@@ -22,10 +23,10 @@ app.use('/*', cors())
 
 // Routes
 app.get('/', async (c) => {
-  const result = await client.query(
-    "SELECT 'ok' as status, version() as postgres_version, now() as server_time"
-  )
-  return c.json(result.rows[0])
+  const result = await sql`
+    SELECT 'ok' as status, version() as postgres_version, now() as server_time
+  `
+  return c.json(result[0])
 })
 
 app.post('/apply-changes', async (c) => {
@@ -48,72 +49,57 @@ console.log(`Server is running on port ${port}`)
 
 serve({
   fetch: app.fetch,
-  port
+  port,
 })
 
 async function applyChanges(changes: ChangeSet): Promise<{ success: boolean }> {
   const { issues, comments } = changes
-  client.query('BEGIN')
+
   try {
-    await client.query('COMMIT')
-    for (const issue of issues) {
-      await applyTableChange('issue', issue)
-    }
-    for (const comment of comments) {
-      await applyTableChange('comment', comment)
-    }
+    await sql.begin(async (sql) => {
+      for (const issue of issues) {
+        await applyTableChange('issue', issue, sql)
+      }
+      for (const comment of comments) {
+        await applyTableChange('comment', comment, sql)
+      }
+    })
     return { success: true }
   } catch (error) {
-    await client.query('ROLLBACK')
     throw error
   }
 }
 
-/**
- * Apply a change to the specified table in the database.
- * @param tableName The name of the table to apply the change to
- * @param change The change object containing the data to be applied
- */
 async function applyTableChange(
   tableName: 'issue' | 'comment',
-  change: IssueChange | CommentChange
+  change: IssueChange | CommentChange,
+  sql: postgres.TransactionSql
 ): Promise<void> {
-  const {
-    id,
-    modified_columns,
-    new: isNew,
-    deleted,
-  } = change
+  const { id, modified_columns, new: isNew, deleted } = change
 
   if (deleted) {
-    await client.query(
-      `
-        DELETE FROM ${tableName} WHERE id = $1
-        -- ON CONFLICT (id) DO NOTHING
-      `,
-      [id]
-    )
+    await sql`
+      DELETE FROM ${sql(tableName)} WHERE id = ${id}
+    `
   } else if (isNew) {
-    const columns = modified_columns || [];
-    const values = columns.map(col => change[col]);
-    await client.query(
-      `
-        INSERT INTO ${tableName} (id, ${columns.join(', ')})
-        VALUES ($1, ${columns.map((_, index) => `$${index + 2}`).join(', ')})
-        -- ON CONFLICT (id) DO NOTHING
-      `,
-      [id, ...values]
-    );
+    const columns = modified_columns || []
+    const values = columns.map((col) => change[col])
+
+    await sql`
+      INSERT INTO ${sql(tableName)} (id, ${sql(columns)})
+      VALUES (${id}, ${sql(values)})
+    `
   } else {
-    const columns = modified_columns || [];
-    const values = columns.map(col => change[col]);
-    const updateSet = columns.map((col, index) => `${col} = $${index + 2}`).join(', ');
-    await client.query(
-      `
-        UPDATE ${tableName} SET ${updateSet} WHERE id = $1
-        -- ON CONFLICT (id) DO NOTHING
-      `,
-      [id, ...values]
-    );
+    const columns = modified_columns || []
+    const values = columns.map((col) => change[col])
+    const updates = columns
+      .map((col) => ({ [col]: change[col] }))
+      .reduce((acc, curr) => ({ ...acc, ...curr }), {})
+
+    await sql`
+      UPDATE ${sql(tableName)} 
+      SET ${sql(updates)}
+      WHERE id = ${id}
+    `
   }
 }
