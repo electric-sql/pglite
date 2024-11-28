@@ -23,7 +23,8 @@ worker({
     await migrate(pg)
     await pg.sync.syncShapeToTable({
       shape: {
-        url: `${ELECTRIC_URL}/v1/shape/issue`,
+        url: `${ELECTRIC_URL}/v1/shape`,
+        table: 'issue',
       },
       table: 'issue',
       primaryKey: ['id'],
@@ -31,7 +32,8 @@ worker({
     })
     await pg.sync.syncShapeToTable({
       shape: {
-        url: `${ELECTRIC_URL}/v1/shape/comment`,
+        url: `${ELECTRIC_URL}/v1/shape`,
+        table: 'comment',
       },
       table: 'comment',
       primaryKey: ['id'],

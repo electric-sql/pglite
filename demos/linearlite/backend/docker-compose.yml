@@ -21,12 +21,10 @@ services:
       - config_file=/etc/postgresql/postgresql.conf
 
   backend:
-    image: electricsql/electric:canary
+    image: electricsql/electric
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/linearlite?sslmode=disable
     ports:
       - 3000:3000
-    build:
-      context: ../packages/sync-service/
     depends_on:
       - postgres

@@ -1,6 +1,5 @@
-import express from 'express'
-import bodyParser from 'body-parser'
-import cors from 'cors'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import pg from 'pg'
 import {
   ChangeSet,
@@ -8,6 +7,7 @@ import {
   CommentChange,
   IssueChange,
 } from './src/utils/changes'
+import { serve } from '@hono/node-server'
 
 const DATABASE_URL = process.env.DATABASE_URL
 
@@ -15,38 +15,43 @@ const { Client } = pg
 const client = new Client(DATABASE_URL)
 client.connect()
 
-const app = express()
+const app = new Hono()
 
-app.use(bodyParser.json())
-app.use(cors())
+// Middleware
+app.use('/*', cors())
 
-app.get('/', async (_req, res) => {
+// Routes
+app.get('/', async (c) => {
   const result = await client.query(
     "SELECT 'ok' as status, version() as postgres_version, now() as server_time"
   )
-  res.send(result.rows[0])
+  return c.json(result.rows[0])
 })
 
-app.post('/apply-changes', async (req, res) => {
-  const content = req.body
+app.post('/apply-changes', async (c) => {
+  const content = await c.req.json()
   let parsedChanges: ChangeSet
   try {
     parsedChanges = changeSetSchema.parse(content)
     // Any additional validation of the changes can be done here!
   } catch (error) {
     console.error(error)
-    res.status(400).send('Invalid changes')
-    return
+    return c.json({ error: 'Invalid changes' }, 400)
   }
   const changeResponse = await applyChanges(parsedChanges)
-  res.send(changeResponse)
+  return c.json(changeResponse)
 })
 
-app.listen(3001, () => {
-  console.log('Server is running on port 3001')
+// Start the server
+const port = 3001
+console.log(`Server is running on port ${port}`)
+
+serve({
+  fetch: app.fetch,
+  port
 })
 
-async function applyChanges(changes: ChangeSet): Promise<void> {
+async function applyChanges(changes: ChangeSet): Promise<{ success: boolean }> {
   const { issues, comments } = changes
   client.query('BEGIN')
   try {
@@ -57,6 +62,7 @@ async function applyChanges(changes: ChangeSet): Promise<void> {
     for (const comment of comments) {
       await applyTableChange('comment', comment)
     }
+    return { success: true }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
