@@ -5,6 +5,18 @@ then
     exit 0
 fi
 
+# wasi sdk 24
+
+if [ -f extra/native/sdk-fix.tar ]
+then
+    pushd ${SDKROOT}/wasisdk/upstream
+      tar xf ${WORKSPACE}/sdk-fix.tar
+    popd
+fi
+
+
+# emsdk
+
 if [ -f $SDKROOT/VERSION ]
 then
     echo "Using installed sdk from $SDKROOT"

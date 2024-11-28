@@ -86,6 +86,7 @@ _EncodeTimeOnly
 _EndCopyFrom
 _EnsurePortalSnapshotExists
 _EnterParallelMode
+_ErrorContext
 _ExecAsyncRequestDone
 _ExecAsyncRequestPending
 _ExecAsyncResponse
@@ -5928,7 +5929,6 @@ _macaddr_gt
 _macaddr_le
 _macaddr_lt
 _main
-_main_repl
 _maintenance_work_mem
 _makeArrayResult
 _makeBoolean
@@ -6086,7 +6086,6 @@ _pg_reg_getnumoutarcs
 _pg_reg_getoutarcs
 _pg_regcomp
 _pg_regerror
-_pg_repl_raf
 _pg_saslprep
 _pg_scram_mech
 _pg_server_to_any

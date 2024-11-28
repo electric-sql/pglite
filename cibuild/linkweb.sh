@@ -100,9 +100,14 @@ pushd src/backend
     then
         # es6
         MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        export COPTS="-O2 -g0"
+        if $DEBUG
+        then
+            export COPTS=${COPTS:-"-O2 -g3"}
+        else
+            export COPTS=${COPTS:-"-O3 -g3"}
+        fi
     else
-        export COPTS="-O0 -g3"
+        export COPTS="-O2 -g3"
         # local debug always fast build
         MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
@@ -227,7 +232,7 @@ popd
 
 
 echo "
-============= link web : end ===============
+============= link web : end COPTS=$COPTS ===============
 
 
 
