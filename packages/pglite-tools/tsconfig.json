@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "@types/emscripten",
+      "node"
+    ]
+  },
+  "include": ["src", "tsup.config.ts", "vitest.config.ts"]
+}

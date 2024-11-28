@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "0.2.14",
+  "version": "0.2.16",
   "description": "ElectricSQL Sync for PGlite",
   "type": "module",
   "private": false,
@@ -45,7 +45,7 @@
     "dist"
   ],
   "dependencies": {
-    "@electric-sql/client": "^0.6.2"
+    "@electric-sql/client": "~0.8.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",

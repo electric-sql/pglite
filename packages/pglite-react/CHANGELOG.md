@@ -1,5 +1,19 @@
 # @electric-sql/pglite-react
 
+## 0.2.14
+
+### Patch Changes
+
+- 75f9f6d: Add a `offset` and `limit` option to live queries, when used it will return the total count for the query along with efficient updating of the offset. This works well with windowed or virtualised scrolling components.
+- Updated dependencies [6547374]
+- Updated dependencies [6547374]
+- Updated dependencies [df5c290]
+- Updated dependencies [1784d04]
+- Updated dependencies [ae36974]
+- Updated dependencies [75f9f6d]
+- Updated dependencies [ce212cf]
+  - @electric-sql/pglite@0.2.14
+
 ## 0.2.13
 
 ### Patch Changes
