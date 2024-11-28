@@ -47,7 +47,7 @@
     "fractional-indexing": "^3.2.0",
     "jsonwebtoken": "^9.0.2",
     "lodash.debounce": "^4.0.8",
-    "pg": "^8.13.0",
+    "postgres": "^3.4.3",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
@@ -65,7 +65,6 @@
     "@hono/node-server": "^1.8.0"
   },
   "devDependencies": {
-    "@databases/pg": "^5.5.0",
     "@databases/pg-migrations": "^5.0.3",
     "@faker-js/faker": "^8.4.1",
     "@tailwindcss/typography": "^0.5.10",
