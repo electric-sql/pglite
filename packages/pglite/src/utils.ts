@@ -136,7 +136,7 @@ export async function formatQuery(
   tx?: Transaction | PGliteInterface,
 ) {
   if (Array.isArray(params)) {
-    params = params.filter(p => typeof p !== "undefined" && p !== null)
+    params = params.filter((p) => typeof p !== 'undefined' && p !== null)
   }
 
   if (!params?.length) {
