@@ -135,7 +135,11 @@ export async function formatQuery(
   params?: any[] | null,
   tx?: Transaction | PGliteInterface,
 ) {
-  if (!params || params.length === 0) {
+  if (Array.isArray(params)) {
+    params = params.filter(p => typeof p !== "undefined" && p !== null)
+  }
+
+  if (!params?.length) {
     // no params so no formatting needed
     return query
   }
