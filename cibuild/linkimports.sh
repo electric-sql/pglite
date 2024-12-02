@@ -59,6 +59,7 @@ _getenv
 _interactive_one
 _interactive_read
 _interactive_write
+_use_socketfile
 _lowerstr
 _main
 _main_repl
