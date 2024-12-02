@@ -30,6 +30,13 @@ export interface SyncShapeToTableOptions {
   useCopy?: boolean
 }
 
+export interface SyncShapeToTableResult {
+  unsubscribe: () => void
+  readonly isUpToDate: boolean
+  readonly shapeId: string
+  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+}
+
 export interface ElectricSyncOptions {
   debug?: boolean
   metadataSchema?: string
@@ -52,7 +59,9 @@ async function createPlugin(
   const shapePerTableLock = new Map<string, void>()
 
   const namespaceObj = {
-    syncShapeToTable: async (options: SyncShapeToTableOptions) => {
+    syncShapeToTable: async (
+      options: SyncShapeToTableOptions,
+    ): Promise<SyncShapeToTableResult> => {
       if (shapePerTableLock.has(options.table)) {
         throw new Error('Already syncing shape for table ' + options.table)
       }
