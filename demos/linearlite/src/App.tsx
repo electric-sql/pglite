@@ -20,6 +20,9 @@ import {
   FilterState,
 } from './utils/filterState'
 import { Issue as IssueType, Status, StatusValue } from './types/types'
+import { startSync, useSyncStatus, waitForInitialSyncDone } from './sync'
+import { electricSync } from '@electric-sql/pglite-sync'
+import { ImSpinner8 } from 'react-icons/im'
 
 interface MenuContextInterface {
   showMenu: boolean
@@ -30,13 +33,36 @@ export const MenuContext = createContext(null as MenuContextInterface | null)
 
 type PGliteWorkerWithLive = PGliteWorker & { live: LiveNamespace }
 
-const pgPromise = PGliteWorker.create(new PGWorker(), {
-  extensions: {
-    live,
-  },
+async function createPGlite() {
+  return PGliteWorker.create(new PGWorker(), {
+    extensions: {
+      live,
+      sync: electricSync(),
+    },
+  })
+}
+
+const pgPromise = createPGlite()
+
+let syncStarted = false
+pgPromise.then(async (pg) => {
+  console.log('PGlite worker started')
+  pg.onLeaderChange(() => {
+    console.log('Leader changed, isLeader:', pg.isLeader)
+    if (pg.isLeader && !syncStarted) {
+      syncStarted = true
+      startSync(pg)
+    }
+  })
+})
+
+let resolveFirstLoaderPromise: (value: void | PromiseLike<void>) => void
+const firstLoaderPromise = new Promise<void>((resolve) => {
+  resolveFirstLoaderPromise = resolve
 })
 
 async function issueListLoader({ request }: { request: Request }) {
+  await waitForInitialSyncDone()
   const pg = await pgPromise
   const url = new URL(request.url)
   const filterState = getFilterStateFromSearchParams(url.searchParams)
@@ -48,10 +74,12 @@ async function issueListLoader({ request }: { request: Request }) {
     offset: 0,
     limit: 100,
   })
+  resolveFirstLoaderPromise()
   return { liveIssues, filterState }
 }
 
 async function boardIssueListLoader({ request }: { request: Request }) {
+  await waitForInitialSyncDone()
   const pg = await pgPromise
   const url = new URL(request.url)
   const filterState = getFilterStateFromSearchParams(url.searchParams)
@@ -77,6 +105,8 @@ async function boardIssueListLoader({ request }: { request: Request }) {
     })
     columnsLiveIssues[status] = colLiveIssues
   }
+
+  resolveFirstLoaderPromise()
 
   return {
     columnsLiveIssues: columnsLiveIssues as Record<
@@ -132,21 +162,52 @@ const router = createBrowserRouter([
   },
 ])
 
+const LoadingScreen = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center gap-4">
+      <ImSpinner8 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="text-gray-600 text-center" style={{ minHeight: '100px' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 const App = () => {
   const [showMenu, setShowMenu] = useState(false)
   const [pgForProvider, setPgForProvider] =
     useState<PGliteWorkerWithLive | null>(null)
+  const [syncStatus, syncMessage] = useSyncStatus()
+  const [firstLoaderDone, setFirstLoaderDone] = useState(false)
 
   useEffect(() => {
     pgPromise.then(setPgForProvider)
   }, [])
+
+  useEffect(() => {
+    if (firstLoaderDone) return
+    firstLoaderPromise.then(() => {
+      setFirstLoaderDone(true)
+    })
+  }, [firstLoaderDone])
 
   const menuContextValue = useMemo(
     () => ({ showMenu, setShowMenu }),
     [showMenu]
   )
 
-  if (!pgForProvider) return <div>Loading...</div>
+  if (!pgForProvider) return <LoadingScreen>Starting PGlite...</LoadingScreen>
+
+  if (syncStatus === 'initial-sync')
+    return (
+      <LoadingScreen>
+        Performing initial sync...
+        <br />
+        {syncMessage}
+      </LoadingScreen>
+    )
+
+  if (!firstLoaderDone) return <LoadingScreen>Loading...</LoadingScreen>
 
   return (
     <PGliteProvider db={pgForProvider}>

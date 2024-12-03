@@ -35,7 +35,7 @@ function generateIssue(kanbanKey) {
     username: faker.internet.userName(),
     comments: faker.helpers.multiple(
       () => generateComment(issueId, createdAt),
-      { count: faker.number.int({ min: 0, max: 10 }) }
+      { count: faker.number.int({ min: 0, max: 1 }) }
     ),
   }
 }

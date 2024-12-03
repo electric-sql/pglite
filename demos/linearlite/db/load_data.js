@@ -34,7 +34,7 @@ try {
   // Process data in batches
   for (let i = 0; i < issues.length; i += BATCH_SIZE) {
     const issueBatch = issues.slice(i, i + BATCH_SIZE)
-    
+
     await sql.begin(async (sql) => {
       // Disable FK checks
       await sql`SET CONSTRAINTS ALL DEFERRED`
@@ -47,12 +47,20 @@ try {
       // Insert related comments
       const batchComments = issueBatch.flatMap((issue) => issue.comments)
       const commentColumns = Object.keys(batchComments[0])
-      await batchInsert(sql, 'comment', commentColumns, batchComments, BATCH_SIZE)
+      await batchInsert(
+        sql,
+        'comment',
+        commentColumns,
+        batchComments,
+        BATCH_SIZE
+      )
 
       commentCount += batchComments.length
     })
 
-    process.stdout.write(`\nProcessed batch ${Math.floor(i / BATCH_SIZE) + 1}: ${Math.min(i + BATCH_SIZE, issues.length)} of ${issues.length} issues\n`)
+    process.stdout.write(
+      `\nProcessed batch ${Math.floor(i / BATCH_SIZE) + 1}: ${Math.min(i + BATCH_SIZE, issues.length)} of ${issues.length} issues\n`
+    )
   }
 
   console.info(`Loaded ${issueCount} issues with ${commentCount} comments.`)

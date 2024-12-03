@@ -44,6 +44,7 @@ export interface SyncShapeToTableOptions {
   useCopy?: boolean
   commitGranularity?: CommitGranularity
   commitThrottle?: number
+  onInitialSync?: () => void
 }
 
 export interface ElectricSyncOptions {
@@ -69,6 +70,7 @@ async function createPlugin(
 
   const namespaceObj = {
     syncShapeToTable: async (options: SyncShapeToTableOptions) => {
+      await firstRun()
       options = {
         commitGranularity: 'up-to-date',
         ...options,
@@ -128,7 +130,10 @@ async function createPlugin(
       const commit = async () => {
         if (messageAggregator.length === 0 && !truncateNeeded) return
         await pg.transaction(async (tx) => {
-          if (debug) console.log('up-to-date, committing all messages')
+          if (debug) {
+            console.log('committing message batch', messageAggregator.length)
+            console.time('commit')
+          }
 
           // Set the syncing flag to true during this transaction so that
           // user defined triggers on the table are able to chose how to run
@@ -215,6 +220,7 @@ async function createPlugin(
             })
           }
         })
+        if (debug) console.timeEnd('commit')
         messageAggregator = []
         // Await a timeout to start a new task and  allow other connections to do work
         await new Promise((resolve) => setTimeout(resolve, 0))
@@ -272,6 +278,9 @@ async function createPlugin(
               case 'up-to-date':
                 // perform all accumulated changes and store stream state
                 await commit() // not throttled, we want this to happen ASAP
+                if (isNewSubscription && options.onInitialSync) {
+                  options.onInitialSync()
+                }
                 break
             }
           }
@@ -313,7 +322,11 @@ async function createPlugin(
     }
   }
 
-  const init = async () => {
+  let firstRunDone = false
+
+  const firstRun = async () => {
+    if (firstRunDone) return
+    firstRunDone = true
     await migrateShapeMetadataTables({
       pg,
       metadataSchema,
@@ -323,7 +336,6 @@ async function createPlugin(
   return {
     namespaceObj,
     close,
-    init,
   }
 }
 
@@ -339,11 +351,10 @@ export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
     setup: async (pg: PGliteInterface) => {
-      const { namespaceObj, close, init } = await createPlugin(pg, options)
+      const { namespaceObj, close } = await createPlugin(pg, options)
       return {
         namespaceObj,
         close,
-        init,
       }
     },
   } satisfies Extension
