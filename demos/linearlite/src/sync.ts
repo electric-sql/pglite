@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react'
 
 const WRITE_SERVER_URL = import.meta.env.VITE_WRITE_SERVER_URL
 const ELECTRIC_URL = import.meta.env.VITE_ELECTRIC_URL
+const ELECTRIC_DATABASE_ID = import.meta.env.VITE_ELECTRIC_DATABASE_ID
+const ELECTRIC_TOKEN = import.meta.env.VITE_ELECTRIC_TOKEN
 const APPLY_CHANGES_URL = `${WRITE_SERVER_URL}/apply-changes`
 
 type SyncStatus = 'initial-sync' | 'done'
@@ -50,11 +52,17 @@ async function startSyncToDatabase(pg: PGliteWithExtensions) {
     }
   }
 
+  const issueUrl = new URL(`${ELECTRIC_URL}/v1/shape`)
+  if (ELECTRIC_TOKEN) {
+    issueUrl.searchParams.set('token', ELECTRIC_TOKEN)
+  }
+
   // Issues Sync
   const issuesSync = await pg.sync.syncShapeToTable({
     shape: {
-      url: `${ELECTRIC_URL}/v1/shape`,
+      url: issueUrl.toString(),
       table: 'issue',
+      databaseId: ELECTRIC_DATABASE_ID,
     },
     table: 'issue',
     primaryKey: ['id'],
@@ -78,11 +86,17 @@ async function startSyncToDatabase(pg: PGliteWithExtensions) {
     }
   )
 
+  const commentUrl = new URL(`${ELECTRIC_URL}/v1/shape`)
+  if (ELECTRIC_TOKEN) {
+    commentUrl.searchParams.set('token', ELECTRIC_TOKEN)
+  }
+
   // Comments Sync
   const commentsSync = await pg.sync.syncShapeToTable({
     shape: {
-      url: `${ELECTRIC_URL}/v1/shape`,
+      url: commentUrl.toString(),
       table: 'comment',
+      databaseId: ELECTRIC_DATABASE_ID,
     },
     table: 'comment',
     primaryKey: ['id'],
