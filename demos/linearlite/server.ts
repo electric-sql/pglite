@@ -91,7 +91,6 @@ async function applyTableChange(
     `
   } else {
     const columns = modified_columns || []
-    const values = columns.map((col) => change[col])
     const updates = columns
       .map((col) => ({ [col]: change[col] }))
       .reduce((acc, curr) => ({ ...acc, ...curr }), {})

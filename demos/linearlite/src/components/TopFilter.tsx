@@ -1,13 +1,14 @@
 import { ReactComponent as MenuIcon } from '../assets/icons/menu.svg'
-import { useState, useContext } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import { BsSortUp, BsPlus, BsX, BsSearch as SearchIcon } from 'react-icons/bs'
-import { useLiveQuery } from '@electric-sql/pglite-react'
+import { useLiveQuery, usePGlite } from '@electric-sql/pglite-react'
 import ViewOptionMenu from './ViewOptionMenu'
 import { MenuContext } from '../App'
 import FilterMenu from './contextmenu/FilterMenu'
 import { FilterState, useFilterState } from '../utils/filterState'
 import { PriorityDisplay, StatusDisplay } from '../types/types'
 import debounce from 'lodash.debounce'
+import { createFTSIndex } from '../migrations'
 
 interface Props {
   filteredIssuesCount: number
@@ -28,6 +29,8 @@ export default function ({
   const [showViewOption, setShowViewOption] = useState(false)
   const { showMenu, setShowMenu } = useContext(MenuContext)!
   const [searchQuery, setSearchQuery] = useState(``)
+  const [FTSIndexReady, setFTSIndexReady] = useState(true)
+  const pg = usePGlite()
 
   filterState ??= usedFilterState
 
@@ -62,6 +65,24 @@ export default function ({
       title = `Active`
     }
   }
+
+  useEffect(() => {
+    if (!showSearch) return
+    const checkFTSIndex = async () => {
+      const res = await pg.query(
+        `SELECT 1 FROM pg_indexes WHERE indexname = 'issue_search_idx';`
+      )
+      const indexReady = res.rows.length > 0
+      if (!indexReady) {
+        setFTSIndexReady(false)
+        await createFTSIndex(pg)
+      }
+      setFTSIndexReady(true)
+    }
+    checkFTSIndex()
+  }, [showSearch, pg])
+
+  const showFTSIndexProgress = showSearch && !FTSIndexReady
 
   return (
     <>
@@ -174,6 +195,15 @@ export default function ({
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
           />
+        </div>
+      )}
+
+      {showFTSIndexProgress && (
+        <div className="flex items-center justify-between flex-shrink-0 pl-2 pr-6 border-b border-gray-200 lg:pl-9 py-2">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+            <span>Building full text search index... (only happens once)</span>
+          </div>
         </div>
       )}
 

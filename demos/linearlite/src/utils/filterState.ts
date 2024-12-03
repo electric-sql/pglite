@@ -94,7 +94,11 @@ export function filterStateToSql(filterState: FilterState) {
     sqlParams.push(...filterState.priority)
   }
   if (filterState.query) {
-    sqlWhere.push(`search_vector @@ plainto_tsquery('simple', $${i++})`)
+    sqlWhere.push(`
+      (setweight(to_tsvector('simple', coalesce(title, '')), 'A') || 
+       setweight(to_tsvector('simple', coalesce(description, '')), 'B'))
+      @@ plainto_tsquery('simple', $${i++})
+    `)
     sqlParams.push(filterState.query)
   }
   const sql = `
