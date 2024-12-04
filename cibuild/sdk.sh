@@ -10,7 +10,7 @@ fi
 if [ -f extra/native/sdk-fix.tar ]
 then
     pushd ${SDKROOT}/wasisdk/upstream
-      tar xf ${WORKSPACE}/sdk-fix.tar
+      tar xf ${WORKSPACE}/extra/native/sdk-fix.tar
     popd
 fi
 
