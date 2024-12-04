@@ -45,7 +45,7 @@ END
     # --without-raster --without-topology --without-address-standardizer
     # --without-raster => --with-gdalconfig=
     # --with-gdalconfig=$PREFIX/bin/gdal-config
-    CONFIG_SITE=config.site emconfigure ./configure \
+    CONFIG_SITE=config.site emconfigure ./configure FLEX=`which flex` \
         --without-raster --without-topology --without-address-standardizer \
      --with-gdalconfig=$PREFIX/bin/gdal-config \
      --without-gui --without-phony-revision --without-protobuf \

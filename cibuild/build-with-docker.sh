@@ -26,7 +26,7 @@ docker run \
   -v ./.buildconfig:/workspace/.buildconfig:rw \
   -v ./extra:/workspace/extra:rw \
   -v ./cibuild:/workspace/cibuild:rw \
-  -v ./patches:/opt/patches:rw \
+  -v ./patches:/workspace/patches:rw \
   -v ./tests:/workspace/tests:rw \
   -v ./packages/pglite:/workspace/packages/pglite:rw \
   $IMG_NAME:$IMG_TAG \

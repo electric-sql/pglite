@@ -42,7 +42,7 @@ else
     if $WASI
     then
 
-    CNF="${PGSRC}/configure --prefix=${PGROOT} \
+    CNF="${PGSRC}/configure FLEX=`which flex` --prefix=${PGROOT} \
  --disable-spinlocks --disable-atomics \
  --without-zlib --disable-largefile --without-llvm \
  --without-pam --disable-largefile --without-zlib --with-openssl=no \

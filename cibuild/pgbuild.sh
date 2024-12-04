@@ -62,7 +62,7 @@ CC_PGLITE=$CC_PGLITE
 
     cp ${PGSRC}/./src/include/port/wasm_common.h /tmp/pglite/include/wasm_common.h
 
-    CNF="${PGSRC}/configure --prefix=${PGROOT} \
+    CNF="${PGSRC}/configure FLEX=`which flex` --prefix=${PGROOT} \
  --cache-file=${PGROOT}/config.cache.${BUILD} \
  --disable-spinlocks --disable-largefile --without-llvm \
  --without-pam --disable-largefile --with-openssl=no \
