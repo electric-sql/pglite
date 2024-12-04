@@ -4,6 +4,7 @@ import {
   ShapeStream,
   isChangeMessage,
   isControlMessage,
+  ShapeStreamInterface,
 } from '@electric-sql/client'
 import type {
   Extension,
@@ -35,6 +36,7 @@ export interface SyncShapeToTableResult {
   readonly isUpToDate: boolean
   readonly shapeId: string
   subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+  stream: ShapeStreamInterface
 }
 
 export interface ElectricSyncOptions {
@@ -249,6 +251,7 @@ async function createPlugin(
         get shapeId() {
           return stream.shapeHandle
         },
+        stream,
         subscribe: (cb: () => void, error: (err: Error) => void) => {
           return stream.subscribe(() => {
             if (stream.isUpToDate) {
