@@ -75,29 +75,26 @@ async function applyTableChange(
   change: IssueChange | CommentChange,
   sql: postgres.TransactionSql
 ): Promise<void> {
-  const { id, modified_columns, new: isNew, deleted } = change
+  const {
+    id,
+    modified_columns: modified_columns_raw,
+    new: isNew,
+    deleted,
+  } = change
+  const modified_columns = modified_columns_raw as (keyof typeof change)[]
 
   if (deleted) {
     await sql`
       DELETE FROM ${sql(tableName)} WHERE id = ${id}
     `
   } else if (isNew) {
-    const columns = modified_columns || []
-    const values = columns.map((col) => change[col])
-
     await sql`
-      INSERT INTO ${sql(tableName)} (id, ${sql(columns)})
-      VALUES (${id}, ${sql(values)})
+      INSERT INTO ${sql(tableName)} ${sql(change, 'id', ...modified_columns)}
     `
   } else {
-    const columns = modified_columns || []
-    const updates = columns
-      .map((col) => ({ [col]: change[col] }))
-      .reduce((acc, curr) => ({ ...acc, ...curr }), {})
-
     await sql`
       UPDATE ${sql(tableName)} 
-      SET ${sql(updates)}
+      SET ${sql(change, ...modified_columns)}
       WHERE id = ${id}
     `
   }
