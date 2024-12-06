@@ -215,7 +215,11 @@ END
             if $WASI
             then
                 # remove unlinked server
-                rm src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                for todel in src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                do
+                    [ -f $todel ] && rm $todel
+                done
+
                 pushd ../..
                     chmod +x ./cibuild/linkwasi.sh
                     WASI_CFLAGS="$WASI_CFLAGS" ./cibuild/linkwasi.sh || exit 190
@@ -240,7 +244,7 @@ END
         else
             cat /tmp/install.log
             echo "install failed"
-            exit 225
+            exit 247
         fi
     else
         cat /tmp/build.log
@@ -276,7 +280,7 @@ END
     then
         echo pg_config installed
     else
-        echo "pg_config build failed"; exit 243
+        echo "pg_config build failed"; exit 283
     fi
 
     cat > ${PGROOT}/bin/pg_config <<END

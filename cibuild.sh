@@ -327,14 +327,26 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 if echo " $*"|grep -q " contrib"
 then
-    # TEMP FIX for SDK
-    SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
-    [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
-    SKIP="\
+
+    if $WASI
+    then
+        echo " ========= TODO WASI openssl ============== "
+        SKIP="\
+ [\
+ sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
+ ltree_plpython sepgsql bool_plperl start-scripts\
+ pgcrypto uuid-ossp xml2\
+ ]"
+    else
+        # TEMP FIX for SDK
+        SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
+        [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
+        SKIP="\
  [\
  sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
  ltree_plpython sepgsql bool_plperl start-scripts\
  ]"
+    fi
 
     for extdir in postgresql/contrib/*
     do
