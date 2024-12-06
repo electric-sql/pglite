@@ -187,7 +187,7 @@ END
     EMCC_ENV="${EMCC_NODE} -sERROR_ON_UNDEFINED_SYMBOLS"
 
     # PREFIX only required for static initdb
-    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE} -DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function"
+    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE} -DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes"
 
     WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
 
@@ -303,7 +303,7 @@ TZ=UTC PGTZ=UTC $(which node) ${PGROOT}/bin/initdb.cjs \$@
 END
 
     chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
-	chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
+	# chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
 
     # for extensions building
     chmod +x ${PGROOT}/bin/pg_config
@@ -313,44 +313,44 @@ END
 
     # create empty db hack
 
-	cat >$PGROOT/initdb.sh <<END
-#!/bin/bash
-rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
-export TZ=UTC
-export PGTZ=UTC
-SQL=/tmp/initdb-\$\$
-# TODO: --waldir=${PGROOT}/wal
-> /tmp/initdb.txt
+#	cat >$PGROOT/initdb.sh <<END
+##!/bin/bash
+#rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
+#export TZ=UTC
+#export PGTZ=UTC
+#SQL=/tmp/initdb-\$\$
+## TODO: --waldir=${PGROOT}/wal
+#> /tmp/initdb.txt
 
-${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
+#${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
 
-mv /tmp/initdb.boot.txt \${SQL}.boot.sql
-mv /tmp/initdb.single.txt \${SQL}.single.sql
+#mv /tmp/initdb.boot.txt \${SQL}.boot.sql
+#mv /tmp/initdb.single.txt \${SQL}.single.sql
 
-if \${CI:-false}
-then
-    cp -vf \$SQL ${PGROOT}/\$(md5sum \$SQL|cut -c1-32).sql
-fi
+#if \${CI:-false}
+#then
+#    cp -vf \$SQL ${PGROOT}/\$(md5sum \$SQL|cut -c1-32).sql
+#fi
 
-# --wal-segsize=1  -> -X 1048576
+## --wal-segsize=1  -> -X 1048576
 
-# CKSUM_B -k --data-checksums
-# 2024-04-24 05:53:28.121 GMT [42] WARNING:  page verification failed, calculated checksum 5487 but expected 0
-# 2024-04-24 05:53:28.121 GMT [42] FATAL:  invalid page in block 0 of relation base/1/1259
+## CKSUM_B -k --data-checksums
+## 2024-04-24 05:53:28.121 GMT [42] WARNING:  page verification failed, calculated checksum 5487 but expected 0
+## 2024-04-24 05:53:28.121 GMT [42] FATAL:  invalid page in block 0 of relation base/1/1259
 
-CMD="${PGROOT}/postgres --boot -D ${PGDATA} -d 3 $PGOPTS -X 1048576"
-echo "\$CMD < \$SQL.boot.sql"
-\$CMD < \$SQL.boot.sql 2>&1 \\
- | grep -v --line-buffered 'bootstrap> boot' \\
- | grep -v --line-buffered 'index'
+#CMD="${PGROOT}/postgres --boot -D ${PGDATA} -d 3 $PGOPTS -X 1048576"
+#echo "\$CMD < \$SQL.boot.sql"
+#\$CMD < \$SQL.boot.sql 2>&1 \\
+# | grep -v --line-buffered 'bootstrap> boot' \\
+# | grep -v --line-buffered 'index'
 
-echo "
+#echo "
 
-\$(md5sum /tmp/initdb-\$\$.*.sql)
+#\$(md5sum /tmp/initdb-\$\$.*.sql)
 
-    boot done
-"
-END
+#    boot done
+#"
+#END
 
     popd
 echo "pgbuild:end

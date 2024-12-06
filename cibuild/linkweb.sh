@@ -35,7 +35,10 @@ emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
 
 # this override completely pg server main loop for web use purpose
 pushd src
-    rm pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
+    for obj in pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
+    do
+        [ -f $obj ] && rm $obj
+    done
 
     emcc -DPG_INITDB_MAIN=1 -sFORCE_FILESYSTEM -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
@@ -118,8 +121,8 @@ pushd src/backend
     # =======================================================
     # size optimisations
     # =======================================================
-
-    rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
+    touch ${PGROOT}/lib/libany.so.x
+    rm ${PGROOT}/lib/lib*.so.?
 
     echo "#!/bin/true" > placeholder
     chmod +x placeholder
@@ -137,7 +140,8 @@ pushd src/backend
 
     # encodings ?
     # ./lib/postgresql/utf8_and*.so
-    rm ${PGROOT}/lib/postgresql/utf8_and*.so
+    touch ${PGROOT}/lib/postgresql/utf8_andany.so
+    rm -f ${PGROOT}/lib/postgresql/utf8_and*.so
 
 
     # =========================================================

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#set -x;
+set -e;
+
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
 export CMA_MB=${CMA_MB:-64}
@@ -30,10 +33,10 @@ EOE=false
 
 if ./cibuild/sdk.sh
 then
-    echo "sdk check passed (emscripten)"
+    echo "sdk check passed (emscripten+wasi)"
 else
     echo sdk failed
-    exit 44
+    exit 39
 fi
 
 
@@ -231,9 +234,10 @@ END
     fi
 
     mkdir -p ${PGROOT}/include/postgresql/server
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql/server
+    for dest in ${PGROOT}/include ${PGROOT}/include/postgresql ${PGROOT}/include/postgresql/server
+    do
+        [ -f $dest/pg_debug.h ] || cp ${PG_DEBUG_HEADER} $dest/
+    done
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
@@ -288,7 +292,12 @@ END
 
     # install emsdk-shared along with pg config  tool
     # for building user ext.
-    cp build/postgres/bin/emsdk-shared $PGROOT/bin/
+    if [ -f $PGROOT/bin/emsdk-shared ]
+    then
+        echo emsdk-shared already installed
+    else
+        cp -vf build/postgres/bin/emsdk-shared $PGROOT/bin/
+    fi
 
     export PGLITE=$(pwd)/packages/pglite
 
@@ -518,7 +527,7 @@ ________________________________________________________________________________
                 tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
 
                 # build sdk (node)
-                cp /tmp/sdk/postgres-${PG_VERSION}.tar.gz ${WEBROOT}/
+                cp /tmp/sdk/postgres-${PG_VERSION}-*.tar.gz ${WEBROOT}/
 
                 # pglite (web)
                 cp /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz ${WEBROOT}/
