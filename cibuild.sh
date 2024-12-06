@@ -488,19 +488,6 @@ ________________________________________________________________________________
 
                 mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}
 
-                # for repl demo
-#                mkdir -p /tmp/web/pglite
-
-                #cp -r ${PGLITE}/dist ${WEBROOT}/pglite/
-                #cp -r ${PGLITE}/examples ${WEBROOT}/pglite/
-
-#                for dir in /tmp/web ${WEBROOT}/pglite/examples
-#                do
-#                    pushd "$dir"
-#                    cp ${PGLITE}/dist/postgres.data ./
-#                    popd
-#                done
-
                 echo "<html>
                 <body>
                     <ul>
@@ -569,18 +556,7 @@ ________________________________________________________________________________
         ;;
 
         demo-site) echo "==================== demo-site =========================="
-            # Move all existing files to a subfolder
-            mkdir -p /tmp/web/x-term-repl
-            mv /tmp/web/* /tmp/web/x-term-repl/
-
-            mkdir -p /tmp/web/dist
-            mkdir -p /tmp/web/examples
-            mkdir -p /tmp/web/benchmark
-
-            PGLITE=$(pwd)/packages/pglite
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmark/
+            ./cibuild/demo-site.sh
         ;;
     esac
     shift
