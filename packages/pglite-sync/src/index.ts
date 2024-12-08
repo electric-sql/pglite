@@ -56,6 +56,14 @@ export interface SyncShapeToTableResult {
   stream: ShapeStreamInterface
 }
 
+export interface SyncShapeToTableResult {
+  unsubscribe: () => void
+  readonly isUpToDate: boolean
+  readonly shapeId: string
+  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+  stream: ShapeStreamInterface
+}
+
 export interface ElectricSyncOptions {
   debug?: boolean
   metadataSchema?: string
