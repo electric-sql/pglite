@@ -1,5 +1,14 @@
 # @electric-sql/pglite-sync
 
+## 0.2.17
+
+### Patch Changes
+
+- c3d98d5: Export return type of `syncShapeToTable`
+- 515a155: Bump the version of the Electric sync client
+- Updated dependencies [fa13714]
+  - @electric-sql/pglite@0.2.15
+
 ## 0.2.16
 
 ### Patch Changes
