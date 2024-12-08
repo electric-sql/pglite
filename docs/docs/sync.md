@@ -97,10 +97,11 @@ It takes the following options as an object:
 - `commitGranularity: CommitGranularity`<br>
   The granularity of the commit operation, defaults to `"up-to-date"`. Note that a commit will always be performed immediately on the `up-to-date` message.
   Options:
+
   - `"up-to-date"`: Commit all messages when the `up-to-date` message is received.
   - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres.
   - `"operation"`: Commit each message in its own transaction.
-  - `number`: Commit every N messages.  
+  - `number`: Commit every N messages.
 
 - `commitThrottle: number`<br>
   The number of milliseconds to wait between commits, defaults to `0`.
