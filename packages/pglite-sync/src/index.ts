@@ -77,11 +77,22 @@ async function createPlugin(
   // resolved by using reference counting in shadow tables
   const shapePerTableLock = new Map<string, void>()
 
+  let initMetadataTablesDone = false
+  const initMetadataTables = async () => {
+    if (initMetadataTablesDone) return
+    initMetadataTablesDone = true
+    await migrateShapeMetadataTables({
+      pg,
+      metadataSchema,
+    })
+  }
+
   const namespaceObj = {
+    initMetadataTables,
     syncShapeToTable: async (
       options: SyncShapeToTableOptions,
     ): Promise<SyncShapeToTableResult> => {
-      await firstRun()
+      await initMetadataTables()
       options = {
         commitGranularity: 'up-to-date',
         ...options,
@@ -332,17 +343,6 @@ async function createPlugin(
       stream.unsubscribeAll()
       aborter.abort()
     }
-  }
-
-  let firstRunDone = false
-
-  const firstRun = async () => {
-    if (firstRunDone) return
-    firstRunDone = true
-    await migrateShapeMetadataTables({
-      pg,
-      metadataSchema,
-    })
   }
 
   return {

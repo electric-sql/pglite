@@ -371,6 +371,7 @@ describe('pglite-sync', () => {
         }),
       },
     })
+    await db.electric.initMetadataTables()
 
     const result = await db.query(
       `SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1`,
@@ -533,7 +534,7 @@ describe('pglite-sync', () => {
     // Check the flag is not set outside of a sync
     const result0 =
       await pg.sql`SELECT current_setting('electric.syncing', true)`
-    expect(result0.rows[0]).toEqual({ current_setting: 'false' })
+    expect(result0.rows[0]).toEqual({ current_setting: null }) // not set yet as syncShapeToTable hasn't been called
 
     const shape = await pg.electric.syncShapeToTable({
       shape: {
