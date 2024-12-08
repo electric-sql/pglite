@@ -249,13 +249,25 @@ async function createPlugin(
       }
 
       const throttledCommit = async () => {
+        const now = Date.now()
+        if (options.commitThrottle && debug)
+          console.log(
+            'throttled commit: now:',
+            now,
+            'lastCommitAt:',
+            lastCommitAt,
+            'diff:',
+            now - lastCommitAt,
+          )
         if (
           options.commitThrottle &&
-          Date.now() - lastCommitAt < options.commitThrottle
+          now - lastCommitAt < options.commitThrottle
         ) {
+          // Skip this commit - messages will be caught by next commit or up-to-date
+          if (debug) console.log('skipping commit due to throttle')
           return
         }
-        lastCommitAt = Date.now()
+        lastCommitAt = now
         await commit()
       }
 
