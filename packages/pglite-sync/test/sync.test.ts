@@ -758,7 +758,10 @@ describe('pglite-sync', () => {
 
     const batchSize = 5
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: batchSize,
@@ -844,7 +847,10 @@ describe('pglite-sync', () => {
     })
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'transaction',
@@ -942,7 +948,10 @@ describe('pglite-sync', () => {
     })
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'up-to-date',
@@ -1018,7 +1027,10 @@ describe('pglite-sync', () => {
     })
 
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'operation',
@@ -1099,7 +1111,10 @@ describe('pglite-sync', () => {
 
     const throttleMs = 15 // Short throttle for testing
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'operation',
@@ -1186,7 +1201,10 @@ describe('pglite-sync', () => {
 
     const onInitialSync = vi.fn()
     const shape = await pg.electric.syncShapeToTable({
-      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
       table: 'todo',
       primaryKey: ['id'],
       onInitialSync,
