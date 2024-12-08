@@ -203,7 +203,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 )
               ).rows[0].count
               if (newTotalCount !== totalCount) {
-                console.log('newTotalCount', newTotalCount)
                 // The total count has changed, refresh the query
                 totalCount = newTotalCount
                 refresh()
