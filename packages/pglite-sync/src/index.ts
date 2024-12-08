@@ -24,7 +24,7 @@ type InsertChangeMessage = ChangeMessage<any> & {
 /**
  * The granularity of the commit operation.
  * - `up-to-date`: Commit all messages when the `up-to-date` message is received.
- * - `transaction`: Commit all messages within transactions inferred from the LSN prefix of the offset.
+ * - `transaction`: Commit all messages within transactions as they were applied to the source Postgres.
  * - `operation`: Commit each message in its own transaction.
  * - `number`: Commit every N messages.
  * Note a commit will always be performed on the `up-to-date` message.
