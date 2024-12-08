@@ -125,6 +125,9 @@ async function createPlugin(
       // may overlap and so the insert logic will be wrong.
       let doCopy = isNewSubscription && options.useCopy
 
+      // Track if onInitialSync has been called
+      let onInitialSyncCalled = false
+
       const aborter = new AbortController()
       if (options.shape.signal) {
         // we new to have our own aborter to be able to abort the stream
@@ -312,8 +315,13 @@ async function createPlugin(
               case 'up-to-date':
                 // perform all accumulated changes and store stream state
                 await commit() // not throttled, we want this to happen ASAP
-                if (isNewSubscription && options.onInitialSync) {
+                if (
+                  isNewSubscription &&
+                  !onInitialSyncCalled &&
+                  options.onInitialSync
+                ) {
                   options.onInitialSync()
+                  onInitialSyncCalled = true
                 }
                 break
             }

@@ -1116,7 +1116,7 @@ describe('pglite-sync', () => {
       },
       {
         headers: { operation: 'insert' as const },
-        offset: '1_2' as const, 
+        offset: '1_2' as const,
         key: 'id2',
         value: { id: 2, task: 'task2', done: false },
       },
@@ -1135,7 +1135,7 @@ describe('pglite-sync', () => {
       upToDateMsg,
     ]) {
       await feedMessages([message])
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
     }
 
     // Wait for all inserts to complete
@@ -1149,11 +1149,11 @@ describe('pglite-sync', () => {
     console.log(commits)
 
     // Extract row counts and timestamps from commit notifications
-    const commitInfo = commits.map(commit => {
+    const commitInfo = commits.map((commit) => {
       const [_, rowCount, timestamp] = commit.split('_')
       return {
         rowCount: parseInt(rowCount),
-        timestamp: parseFloat(timestamp)
+        timestamp: parseFloat(timestamp),
       }
     })
 
@@ -1161,8 +1161,12 @@ describe('pglite-sync', () => {
     expect(commitInfo.length).toBe(4)
 
     // Check timestamps are at least 15ms apart for first 3
-    expect(commitInfo[1].timestamp - commitInfo[0].timestamp).toBeGreaterThanOrEqual(15)
-    expect(commitInfo[2].timestamp - commitInfo[1].timestamp).toBeGreaterThanOrEqual(15) 
+    expect(
+      commitInfo[1].timestamp - commitInfo[0].timestamp,
+    ).toBeGreaterThanOrEqual(15)
+    expect(
+      commitInfo[2].timestamp - commitInfo[1].timestamp,
+    ).toBeGreaterThanOrEqual(15)
 
     // Last 2 operation messages should have same timestamp since they're batched
     expect(commitInfo[3].timestamp).toBe(commitInfo[2].timestamp)
@@ -1170,5 +1174,74 @@ describe('pglite-sync', () => {
     await unsubscribe()
     shape.unsubscribe()
   })
-})
 
+  it('calls onInitialSync callback after initial sync', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    const onInitialSync = vi.fn()
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      onInitialSync,
+    })
+
+    // Send some initial data
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: '1_1',
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'task1',
+          done: false,
+        },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '1_2',
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'task2',
+          done: true,
+        },
+      },
+    ])
+
+    // Verify callback was called once
+    expect(onInitialSync).toHaveBeenCalledTimes(1)
+
+    // Send more data - callback should not be called again
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: '1_3',
+        key: 'id3',
+        value: {
+          id: 3,
+          task: 'task3',
+          done: false,
+        },
+      },
+    ])
+
+    // Verify callback was still only called once
+    expect(onInitialSync).toHaveBeenCalledTimes(1)
+
+    // Verify all data was inserted
+    expect(
+      (await pg.sql<{ count: number }>`SELECT COUNT(*) as count FROM todo;`)
+        .rows[0].count,
+    ).toBe(3)
+
+    shape.unsubscribe()
+  })
+})
