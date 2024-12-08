@@ -725,4 +725,340 @@ describe('pglite-sync', () => {
 
     shape.unsubscribe()
   })
+
+  it('respects numeric batch commit granularity settings', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    // Create a trigger to notify on transaction commit
+    await pg.exec(`
+      CREATE OR REPLACE FUNCTION notify_transaction()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER todo_transaction_trigger
+      AFTER INSERT ON todo
+      FOR EACH STATEMENT
+      EXECUTE FUNCTION notify_transaction();
+    `)
+
+    const commits: string[] = []
+    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
+      commits.push(payload)
+    })
+
+    const batchSize = 5
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      commitGranularity: batchSize,
+    })
+
+    // Create test messages - 7 total (should see batch of 5, then 2)
+    const messages = Array.from(
+      { length: 7 },
+      (_, idx) =>
+        ({
+          headers: { operation: 'insert' },
+          offset: `1_${idx}`,
+          key: `id${idx}`,
+          value: {
+            id: idx,
+            task: `task${idx}`,
+            done: false,
+          },
+        }) satisfies Message,
+    )
+
+    await feedMessages(messages)
+
+    // Wait for all inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === 7
+    })
+
+    // Verify all rows were inserted
+    const result = await pg.sql`
+      SELECT * FROM todo ORDER BY id;
+    `
+    expect(result.rows).toEqual(
+      messages.map((m) => ({
+        id: m.value.id,
+        task: m.value.task,
+        done: m.value.done,
+      })),
+    )
+
+    // Should have received 2 commit notifications:
+    // - One for the first batch of 5
+    // - One for the remaining 2 (triggered by up-to-date message)
+    expect(commits).toHaveLength(2)
+    expect(commits).toEqual(['todo', 'todo'])
+
+    await unsubscribe()
+    shape.unsubscribe()
+  })
+
+  it('respects transaction commit granularity', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    // Create a trigger to notify on transaction commit
+    await pg.exec(`
+      CREATE OR REPLACE FUNCTION notify_transaction()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER todo_transaction_trigger
+      AFTER INSERT ON todo
+      FOR EACH STATEMENT
+      EXECUTE FUNCTION notify_transaction();
+    `)
+
+    // Track transaction commits
+    const transactionCommits: string[] = []
+    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
+      transactionCommits.push(payload)
+    })
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      commitGranularity: 'transaction',
+    })
+
+    // Send messages with different LSNs (first part of offset before _)
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: '1_1', // Transaction 1
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'task1',
+          done: false,
+        },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '1_2', // Same transaction
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'task2',
+          done: false,
+        },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '2_1', // New transaction
+        key: 'id3',
+        value: {
+          id: 3,
+          task: 'task3',
+          done: false,
+        },
+      },
+    ])
+
+    // Wait for all inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === 3
+    })
+
+    // Verify all rows were inserted
+    const result = await pg.sql`
+      SELECT * FROM todo ORDER BY id;
+    `
+    expect(result.rows).toEqual([
+      { id: 1, task: 'task1', done: false },
+      { id: 2, task: 'task2', done: false },
+      { id: 3, task: 'task3', done: false },
+    ])
+
+    // Should have received 2 transaction notifications
+    // One for LSN 1 (containing 2 inserts) and one for LSN 2 (containing 1 insert)
+    expect(transactionCommits).toHaveLength(2)
+    expect(transactionCommits).toEqual(['todo', 'todo'])
+
+    await unsubscribe()
+    shape.unsubscribe()
+  })
+
+  it('respects up-to-date commit granularity settings', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    // Create a trigger to notify on transaction commit
+    await pg.exec(`
+      CREATE OR REPLACE FUNCTION notify_transaction()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER todo_transaction_trigger
+      AFTER INSERT ON todo
+      FOR EACH STATEMENT
+      EXECUTE FUNCTION notify_transaction();
+    `)
+
+    const commits: string[] = []
+    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
+      commits.push(payload)
+    })
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      commitGranularity: 'up-to-date',
+    })
+
+    // Send multiple messages
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: '1_1',
+        key: 'id1',
+        value: { id: 1, task: 'task1', done: false },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '2_1',
+        key: 'id2',
+        value: { id: 2, task: 'task2', done: false },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '3_1',
+        key: 'id3',
+        value: { id: 3, task: 'task3', done: false },
+      },
+    ])
+
+    // Wait for all inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === 3
+    })
+
+    // Should have received only one commit notification since all operations
+    // are committed together when up-to-date message is received
+    expect(commits).toHaveLength(1)
+    expect(commits).toEqual(['todo'])
+
+    await unsubscribe()
+    shape.unsubscribe()
+  })
+
+  it('respects operation commit granularity settings', async () => {
+    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    MockShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+        feedMessages = (messages) => cb([...messages, upToDateMsg])
+      }),
+      unsubscribeAll: vi.fn(),
+    }))
+
+    // Create a trigger to notify on transaction commit
+    await pg.exec(`
+      CREATE OR REPLACE FUNCTION notify_transaction()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER todo_transaction_trigger
+      AFTER INSERT ON todo
+      FOR EACH STATEMENT
+      EXECUTE FUNCTION notify_transaction();
+    `)
+
+    const commits: string[] = []
+    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
+      commits.push(payload)
+    })
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+      commitGranularity: 'operation',
+    })
+
+    // Send multiple messages
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        offset: '1_1',
+        key: 'id1',
+        value: { id: 1, task: 'task1', done: false },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '1_2',
+        key: 'id2',
+        value: { id: 2, task: 'task2', done: false },
+      },
+      {
+        headers: { operation: 'insert' },
+        offset: '1_3',
+        key: 'id3',
+        value: { id: 3, task: 'task3', done: false },
+      },
+    ])
+
+    // Wait for all inserts to complete
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM todo;
+      `
+      return result.rows[0].count === 3
+    })
+
+    // Should have received a notification for each operation
+    expect(commits).toHaveLength(3)
+    expect(commits).toEqual(['todo', 'todo', 'todo'])
+
+    await unsubscribe()
+    shape.unsubscribe()
+  })
 })
