@@ -815,107 +815,108 @@ describe('pglite-sync', () => {
     shape.unsubscribe()
   })
 
-  it('respects transaction commit granularity', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
-      unsubscribeAll: vi.fn(),
-    }))
+  // Removed until Electric has stabilised on LSN metadata
+  // it('respects transaction commit granularity', async () => {
+  //   let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+  //   MockShapeStream.mockImplementation(() => ({
+  //     subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
+  //       feedMessages = (messages) => cb([...messages, upToDateMsg])
+  //     }),
+  //     unsubscribeAll: vi.fn(),
+  //   }))
 
-    // Create a trigger to notify on transaction commit
-    await pg.exec(`
-      CREATE OR REPLACE FUNCTION notify_transaction()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
+  //   // Create a trigger to notify on transaction commit
+  //   await pg.exec(`
+  //     CREATE OR REPLACE FUNCTION notify_transaction()
+  //     RETURNS TRIGGER AS $$
+  //     BEGIN
+  //       PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
+  //       RETURN NEW;
+  //     END;
+  //     $$ LANGUAGE plpgsql;
 
-      CREATE TRIGGER todo_transaction_trigger
-      AFTER INSERT ON todo
-      FOR EACH STATEMENT
-      EXECUTE FUNCTION notify_transaction();
-    `)
+  //     CREATE TRIGGER todo_transaction_trigger
+  //     AFTER INSERT ON todo
+  //     FOR EACH STATEMENT
+  //     EXECUTE FUNCTION notify_transaction();
+  //   `)
 
-    // Track transaction commits
-    const transactionCommits: string[] = []
-    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-      transactionCommits.push(payload)
-    })
+  //   // Track transaction commits
+  //   const transactionCommits: string[] = []
+  //   const unsubscribe = await pg.listen('transaction_commit', (payload) => {
+  //     transactionCommits.push(payload)
+  //   })
 
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: 'http://localhost:3000/v1/shape',
-        params: { table: 'todo' },
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      commitGranularity: 'transaction',
-    })
+  //   const shape = await pg.electric.syncShapeToTable({
+  //     shape: {
+  //       url: 'http://localhost:3000/v1/shape',
+  //       params: { table: 'todo' },
+  //     },
+  //     table: 'todo',
+  //     primaryKey: ['id'],
+  //     commitGranularity: 'transaction',
+  //   })
 
-    // Send messages with different LSNs (first part of offset before _)
-    await feedMessages([
-      {
-        headers: { operation: 'insert' },
-        offset: '1_1', // Transaction 1
-        key: 'id1',
-        value: {
-          id: 1,
-          task: 'task1',
-          done: false,
-        },
-      },
-      {
-        headers: { operation: 'insert' },
-        offset: '1_2', // Same transaction
-        key: 'id2',
-        value: {
-          id: 2,
-          task: 'task2',
-          done: false,
-        },
-      },
-      {
-        headers: { operation: 'insert' },
-        offset: '2_1', // New transaction
-        key: 'id3',
-        value: {
-          id: 3,
-          task: 'task3',
-          done: false,
-        },
-      },
-    ])
+  //   // Send messages with different LSNs (first part of offset before _)
+  //   await feedMessages([
+  //     {
+  //       headers: { operation: 'insert' },
+  //       offset: '1_1', // Transaction 1
+  //       key: 'id1',
+  //       value: {
+  //         id: 1,
+  //         task: 'task1',
+  //         done: false,
+  //       },
+  //     },
+  //     {
+  //       headers: { operation: 'insert' },
+  //       offset: '1_2', // Same transaction
+  //       key: 'id2',
+  //       value: {
+  //         id: 2,
+  //         task: 'task2',
+  //         done: false,
+  //       },
+  //     },
+  //     {
+  //       headers: { operation: 'insert' },
+  //       offset: '2_1', // New transaction
+  //       key: 'id3',
+  //       value: {
+  //         id: 3,
+  //         task: 'task3',
+  //         done: false,
+  //       },
+  //     },
+  //   ])
 
-    // Wait for all inserts to complete
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{ count: number }>`
-        SELECT COUNT(*) as count FROM todo;
-      `
-      return result.rows[0].count === 3
-    })
+  //   // Wait for all inserts to complete
+  //   await vi.waitUntil(async () => {
+  //     const result = await pg.sql<{ count: number }>`
+  //       SELECT COUNT(*) as count FROM todo;
+  //     `
+  //     return result.rows[0].count === 3
+  //   })
 
-    // Verify all rows were inserted
-    const result = await pg.sql`
-      SELECT * FROM todo ORDER BY id;
-    `
-    expect(result.rows).toEqual([
-      { id: 1, task: 'task1', done: false },
-      { id: 2, task: 'task2', done: false },
-      { id: 3, task: 'task3', done: false },
-    ])
+  //   // Verify all rows were inserted
+  //   const result = await pg.sql`
+  //     SELECT * FROM todo ORDER BY id;
+  //   `
+  //   expect(result.rows).toEqual([
+  //     { id: 1, task: 'task1', done: false },
+  //     { id: 2, task: 'task2', done: false },
+  //     { id: 3, task: 'task3', done: false },
+  //   ])
 
-    // Should have received 2 transaction notifications
-    // One for LSN 1 (containing 2 inserts) and one for LSN 2 (containing 1 insert)
-    expect(transactionCommits).toHaveLength(2)
-    expect(transactionCommits).toEqual(['todo', 'todo'])
+  //   // Should have received 2 transaction notifications
+  //   // One for LSN 1 (containing 2 inserts) and one for LSN 2 (containing 1 insert)
+  //   expect(transactionCommits).toHaveLength(2)
+  //   expect(transactionCommits).toEqual(['todo', 'todo'])
 
-    await unsubscribe()
-    shape.unsubscribe()
-  })
+  //   await unsubscribe()
+  //   shape.unsubscribe()
+  // })
 
   it('respects up-to-date commit granularity settings', async () => {
     let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}

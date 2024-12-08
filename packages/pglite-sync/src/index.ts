@@ -24,14 +24,13 @@ type InsertChangeMessage = ChangeMessage<any> & {
 /**
  * The granularity of the commit operation.
  * - `up-to-date`: Commit all messages when the `up-to-date` message is received.
- * - `transaction`: Commit all messages within transactions as they were applied to the source Postgres.
  * - `operation`: Commit each message in its own transaction.
  * - `number`: Commit every N messages.
  * Note a commit will always be performed on the `up-to-date` message.
  */
 export type CommitGranularity =
   | 'up-to-date'
-  | 'transaction'
+  // | 'transaction'  // Removed until Electric has stabilised on LSN metadata
   | 'operation'
   | number
 
@@ -157,7 +156,7 @@ async function createPlugin(
       // or use a separate connection to hold a long transaction
       let messageAggregator: ChangeMessage<any>[] = []
       let truncateNeeded = false
-      let lastLSN: string | null = null
+      // let lastLSN: string | null = null  // Removed until Electric has stabilised on LSN metadata
       let lastCommitAt: number = 0
 
       const commit = async () => {
@@ -287,17 +286,18 @@ async function createPlugin(
 
         for (const message of messages) {
           if (isChangeMessage(message)) {
-            const newLSN = message.offset.split('_')[0]
-            if (newLSN !== lastLSN) {
-              // If the LSN has changed and granularity is set to transaction
-              // we need to commit the current batch.
-              // This is done before we accumulate any more messages as they are
-              // part of the next transaction batch.
-              if (options.commitGranularity === 'transaction') {
-                await throttledCommit()
-              }
-              lastLSN = newLSN
-            }
+            // Removed until Electric has stabilised on LSN metadata
+            // const newLSN = message.offset.split('_')[0]
+            // if (newLSN !== lastLSN) {
+            //   // If the LSN has changed and granularity is set to transaction
+            //   // we need to commit the current batch.
+            //   // This is done before we accumulate any more messages as they are
+            //   // part of the next transaction batch.
+            //   if (options.commitGranularity === 'transaction') {
+            //     await throttledCommit()
+            //   }
+            //   lastLSN = newLSN
+            // }
 
             // accumulate change messages for committing all at once or in batches
             messageAggregator.push(message)

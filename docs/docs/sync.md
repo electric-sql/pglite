@@ -99,7 +99,7 @@ It takes the following options as an object:
   Options:
 
   - `"up-to-date"`: Commit all messages when the `up-to-date` message is received.
-  - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres.
+  <!-- - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres. -->
   - `"operation"`: Commit each message in its own transaction.
   - `number`: Commit every N messages.
 
