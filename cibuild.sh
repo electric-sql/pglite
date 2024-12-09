@@ -112,16 +112,10 @@ else
 
 fi
 
-# these are files that shadow original portion of pg core, with minimal changes
-# to original code
-# some may be included multiple time
-CC_PGLITE="-DPATCH_MAIN=${WORKSPACE}/patches/pg_main.c ${CC_PGLITE}"
-CC_PGLITE="-DPATCH_LOOP=${WORKSPACE}/patches/interactive_one.c ${CC_PGLITE}"
-CC_PGLITE="-DPATCH_PLUGIN=${WORKSPACE}/patches/pg_plugin.h ${CC_PGLITE}"
 CC_PGLITE="-DPATCH_PG_DEBUG=${PG_DEBUG_HEADER} ${CC_PGLITE}"
 
-
 export CC_PGLITE
+
 export PGPRELOAD="\
 --preload-file ${PGROOT}/share/postgresql@${PGROOT}/share/postgresql \
 --preload-file ${PGROOT}/lib/postgresql@${PGROOT}/lib/postgresql \
@@ -281,7 +275,8 @@ END
     # we always symlink in-tree build to "postgresql" folder
     if echo $PG_VERSION|grep -q ^16
     then
-        . cibuild/pg-16.x.sh
+        # . cibuild/pg-16.x.sh
+        . cibuild/repo-pg-16.x.sh
     else
         . cibuild/pg-git.sh
     fi
