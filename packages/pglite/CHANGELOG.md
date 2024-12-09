@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.2.15
+
+### Patch Changes
+
+- fa13714: Remove a debug console.log from the live query plugin
+
 ## 0.2.14
 
 ### Patch Changes
