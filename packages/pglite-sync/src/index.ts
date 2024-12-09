@@ -161,6 +161,7 @@ async function createPlugin(
 
       const commit = async () => {
         if (messageAggregator.length === 0 && !truncateNeeded) return
+        const shapeHandle = stream.shapeHandle // The shape handle could change while we are committing
         await pg.transaction(async (tx) => {
           if (debug) {
             console.log('committing message batch', messageAggregator.length)
@@ -240,13 +241,13 @@ async function createPlugin(
           if (
             options.shapeKey &&
             messageAggregator.length > 0 &&
-            stream.shapeHandle !== undefined
+            shapeHandle !== undefined
           ) {
             await updateShapeSubscriptionState({
               pg: tx,
               metadataSchema,
               shapeKey: options.shapeKey,
-              shapeId: stream.shapeHandle,
+              shapeId: shapeHandle,
               lastOffset:
                 messageAggregator[messageAggregator.length - 1].offset,
             })
@@ -258,8 +259,14 @@ async function createPlugin(
         await new Promise((resolve) => setTimeout(resolve, 0))
       }
 
-      const throttledCommit = async () => {
+      const throttledCommit = async ({
+        reset = false,
+      }: { reset?: boolean } = {}) => {
         const now = Date.now()
+        if (reset) {
+          // Reset the last commit time to 0, forcing the next commit to happen immediately
+          lastCommitAt = 0
+        }
         if (options.commitThrottle && debug)
           console.log(
             'throttled commit: now:',
@@ -322,7 +329,7 @@ async function createPlugin(
 
               case 'up-to-date':
                 // perform all accumulated changes and store stream state
-                await commit() // not throttled, we want this to happen ASAP
+                await throttledCommit({ reset: true }) // not throttled, we want this to happen ASAP
                 if (
                   isNewSubscription &&
                   !onInitialSyncCalled &&
