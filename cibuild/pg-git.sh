@@ -13,7 +13,7 @@ else
         for patchdir in \
             postgresql-debug \
             postgresql-emscripten \
-            postgresql-pglite \
+            postgresql-pglite
         do
             if [ -d ../patches/$patchdir ]
             then
