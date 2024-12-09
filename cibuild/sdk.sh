@@ -5,6 +5,18 @@ then
     exit 0
 fi
 
+# wasi sdk 24
+
+if [ -f extra/native/sdk-fix.tar ]
+then
+    pushd ${SDKROOT}/wasisdk/upstream
+      tar xf ${WORKSPACE}/extra/native/sdk-fix.tar
+    popd
+fi
+
+
+# emsdk
+
 if [ -f $SDKROOT/VERSION ]
 then
     echo "Using installed sdk from $SDKROOT"
@@ -24,21 +36,21 @@ else
 
     pushd /tmp/sdk
 
-if false
-then
-    ${SDKROOT}/emsdk/upstream/bin/wasm-opt --version > ${SDKROOT}/wasm-opt.version
-    cat > ${SDKROOT}/emsdk/upstream/bin/wasm-opt <<END
-#!/bin/bash
-if echo \$*|grep -q version$
-then
-	echo "$(cat ${SDKROOT}/wasm-opt.version)"
-else
-	# echo "\$@" >> /tmp/wasm.opt
-    exit 0
-fi
-END
-        chmod +x ${SDKROOT}/emsdk/upstream/bin/wasm-opt
-fi
+#if false
+#then
+#    ${SDKROOT}/emsdk/upstream/bin/wasm-opt --version > ${SDKROOT}/wasm-opt.version
+#    cat > ${SDKROOT}/emsdk/upstream/bin/wasm-opt <<END
+##!/bin/bash
+#if echo \$*|grep -q version$
+#then
+#	echo "$(cat ${SDKROOT}/wasm-opt.version)"
+#else
+#	# echo "\$@" >> /tmp/wasm.opt
+#    exit 0
+#fi
+#END
+#        chmod +x ${SDKROOT}/emsdk/upstream/bin/wasm-opt
+#fi
 
     ALL="-m32 \
 -D_FILE_OFFSET_BITS=64 \
