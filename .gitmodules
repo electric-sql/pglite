@@ -1,0 +1,4 @@
+[submodule "postgres-pglite"]
+	path = postgres-pglite
+	url = https://github.com/electric-sql/postgres-pglite.git
+	branch = tudor/complete-postgres-pglite-16.4
