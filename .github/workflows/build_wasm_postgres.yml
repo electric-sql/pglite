@@ -85,7 +85,7 @@ jobs:
         run: |
           bash ./cibuild.sh linkweb
 
-      - name: Link postgres WASI for wasi/native
+      - name: Build and Link postgres WASI for wasi/native
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./extra/native/wip.sh

@@ -285,7 +285,12 @@ END
 
     if $WASI
     then
-        echo "TODO wasi-run wrappers for pg_config"
+        echo "TODO:  wasi-run wrappers for bin/*"
+        cat > ${PGROOT}/bin/pg_config <<END
+#!/bin/bash
+$(which wasi-run) ${PGROOT}/bin/pg_config.wasi \$@
+END
+
     else
         cat > ${PGROOT}/bin/pg_config <<END
 #!/bin/bash
@@ -310,14 +315,15 @@ END
         chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
     	# chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
 
-        # for extensions building
-        chmod +x ${PGROOT}/bin/pg_config
 
-
-    	echo "TODO: initdb for PGDATA=${PGDATA} "
 
     fi
 
+    # for extensions building
+    chmod +x ${PGROOT}/bin/pg_config
+
+
+	echo "TODO: node/wasi cmdline initdb for PGDATA=${PGDATA} "
 
     # create empty db hack
 
