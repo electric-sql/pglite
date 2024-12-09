@@ -21,6 +21,19 @@ type InsertChangeMessage = ChangeMessage<any> & {
   headers: { operation: 'insert' }
 }
 
+/**
+ * The granularity of the commit operation.
+ * - `up-to-date`: Commit all messages when the `up-to-date` message is received.
+ * - `operation`: Commit each message in its own transaction.
+ * - `number`: Commit every N messages.
+ * Note a commit will always be performed on the `up-to-date` message.
+ */
+export type CommitGranularity =
+  | 'up-to-date'
+  // | 'transaction'  // Removed until Electric has stabilised on LSN metadata
+  | 'operation'
+  | number
+
 export interface SyncShapeToTableOptions {
   shape: ShapeStreamOptions
   table: string
@@ -29,6 +42,17 @@ export interface SyncShapeToTableOptions {
   primaryKey: string[]
   shapeKey?: ShapeKey
   useCopy?: boolean
+  commitGranularity?: CommitGranularity
+  commitThrottle?: number
+  onInitialSync?: () => void
+}
+
+export interface SyncShapeToTableResult {
+  unsubscribe: () => void
+  readonly isUpToDate: boolean
+  readonly shapeId: string
+  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+  stream: ShapeStreamInterface
 }
 
 export interface SyncShapeToTableResult {
@@ -60,10 +84,26 @@ async function createPlugin(
   // resolved by using reference counting in shadow tables
   const shapePerTableLock = new Map<string, void>()
 
+  let initMetadataTablesDone = false
+  const initMetadataTables = async () => {
+    if (initMetadataTablesDone) return
+    initMetadataTablesDone = true
+    await migrateShapeMetadataTables({
+      pg,
+      metadataSchema,
+    })
+  }
+
   const namespaceObj = {
+    initMetadataTables,
     syncShapeToTable: async (
       options: SyncShapeToTableOptions,
     ): Promise<SyncShapeToTableResult> => {
+      await initMetadataTables()
+      options = {
+        commitGranularity: 'up-to-date',
+        ...options,
+      }
       if (shapePerTableLock.has(options.table)) {
         throw new Error('Already syncing shape for table ' + options.table)
       }
@@ -92,6 +132,9 @@ async function createPlugin(
       // may overlap and so the insert logic will be wrong.
       let doCopy = isNewSubscription && options.useCopy
 
+      // Track if onInitialSync has been called
+      let onInitialSyncCalled = false
+
       const aborter = new AbortController()
       if (options.shape.signal) {
         // we new to have our own aborter to be able to abort the stream
@@ -113,123 +156,190 @@ async function createPlugin(
       // or use a separate connection to hold a long transaction
       let messageAggregator: ChangeMessage<any>[] = []
       let truncateNeeded = false
+      // let lastLSN: string | null = null  // Removed until Electric has stabilised on LSN metadata
+      let lastCommitAt: number = 0
+
+      const commit = async () => {
+        if (messageAggregator.length === 0 && !truncateNeeded) return
+        const shapeHandle = stream.shapeHandle // The shape handle could change while we are committing
+        await pg.transaction(async (tx) => {
+          if (debug) {
+            console.log('committing message batch', messageAggregator.length)
+            console.time('commit')
+          }
+
+          // Set the syncing flag to true during this transaction so that
+          // user defined triggers on the table are able to chose how to run
+          // during a sync
+          tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
+
+          if (truncateNeeded) {
+            truncateNeeded = false
+            // TODO: sync into shadow table and reference count
+            // for now just clear the whole table - will break
+            // cases with multiple shapes on the same table
+            await tx.exec(`DELETE FROM ${options.table};`)
+            if (options.shapeKey) {
+              await deleteShapeSubscriptionState({
+                pg: tx,
+                metadataSchema,
+                shapeKey: options.shapeKey,
+              })
+            }
+          }
+
+          if (doCopy) {
+            // We can do a `COPY FROM` to insert the initial data
+            // Split messageAggregator into initial inserts and remaining messages
+            const initialInserts: InsertChangeMessage[] = []
+            const remainingMessages: ChangeMessage<any>[] = []
+            let foundNonInsert = false
+            for (const message of messageAggregator) {
+              if (!foundNonInsert && message.headers.operation === 'insert') {
+                initialInserts.push(message as InsertChangeMessage)
+              } else {
+                foundNonInsert = true
+                remainingMessages.push(message)
+              }
+            }
+            if (initialInserts.length > 0) {
+              // As `COPY FROM` doesn't trigger a NOTIFY, we pop
+              // the last insert message and and add it to the be beginning
+              // of the remaining messages to be applied after the `COPY FROM`
+              remainingMessages.unshift(initialInserts.pop()!)
+            }
+            messageAggregator = remainingMessages
+
+            // Do the `COPY FROM` with initial inserts
+            if (initialInserts.length > 0) {
+              applyMessagesToTableWithCopy({
+                pg: tx,
+                table: options.table,
+                schema: options.schema,
+                messages: initialInserts as InsertChangeMessage[],
+                mapColumns: options.mapColumns,
+                primaryKey: options.primaryKey,
+                debug,
+              })
+              // We don't want to do a `COPY FROM` again after that
+              doCopy = false
+            }
+          }
+
+          for (const changeMessage of messageAggregator) {
+            await applyMessageToTable({
+              pg: tx,
+              table: options.table,
+              schema: options.schema,
+              message: changeMessage,
+              mapColumns: options.mapColumns,
+              primaryKey: options.primaryKey,
+              debug,
+            })
+          }
+
+          if (
+            options.shapeKey &&
+            messageAggregator.length > 0 &&
+            shapeHandle !== undefined
+          ) {
+            await updateShapeSubscriptionState({
+              pg: tx,
+              metadataSchema,
+              shapeKey: options.shapeKey,
+              shapeId: shapeHandle,
+              lastOffset:
+                messageAggregator[messageAggregator.length - 1].offset,
+            })
+          }
+        })
+        if (debug) console.timeEnd('commit')
+        messageAggregator = []
+        // Await a timeout to start a new task and  allow other connections to do work
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+
+      const throttledCommit = async ({
+        reset = false,
+      }: { reset?: boolean } = {}) => {
+        const now = Date.now()
+        if (reset) {
+          // Reset the last commit time to 0, forcing the next commit to happen immediately
+          lastCommitAt = 0
+        }
+        if (options.commitThrottle && debug)
+          console.log(
+            'throttled commit: now:',
+            now,
+            'lastCommitAt:',
+            lastCommitAt,
+            'diff:',
+            now - lastCommitAt,
+          )
+        if (
+          options.commitThrottle &&
+          now - lastCommitAt < options.commitThrottle
+        ) {
+          // Skip this commit - messages will be caught by next commit or up-to-date
+          if (debug) console.log('skipping commit due to throttle')
+          return
+        }
+        lastCommitAt = now
+        await commit()
+      }
 
       stream.subscribe(async (messages) => {
         if (debug) console.log('sync messages received', messages)
 
         for (const message of messages) {
-          // accumulate change messages for committing all at once
           if (isChangeMessage(message)) {
+            // Removed until Electric has stabilised on LSN metadata
+            // const newLSN = message.offset.split('_')[0]
+            // if (newLSN !== lastLSN) {
+            //   // If the LSN has changed and granularity is set to transaction
+            //   // we need to commit the current batch.
+            //   // This is done before we accumulate any more messages as they are
+            //   // part of the next transaction batch.
+            //   if (options.commitGranularity === 'transaction') {
+            //     await throttledCommit()
+            //   }
+            //   lastLSN = newLSN
+            // }
+
+            // accumulate change messages for committing all at once or in batches
             messageAggregator.push(message)
-            continue
-          }
 
-          // perform actual DB operations upon receiving control messages
-          if (!isControlMessage(message)) continue
-          switch (message.headers.control) {
-            // mark table as needing truncation before next batch commit
-            case 'must-refetch':
-              if (debug) console.log('refetching shape')
-              truncateNeeded = true
-              messageAggregator = []
+            if (options.commitGranularity === 'operation') {
+              // commit after each operation if granularity is set to operation
+              await throttledCommit()
+            } else if (typeof options.commitGranularity === 'number') {
+              // commit after every N messages if granularity is set to a number
+              if (messageAggregator.length >= options.commitGranularity) {
+                await throttledCommit()
+              }
+            }
+          } else if (isControlMessage(message)) {
+            switch (message.headers.control) {
+              case 'must-refetch':
+                // mark table as needing truncation before next batch commit
+                if (debug) console.log('refetching shape')
+                truncateNeeded = true
+                messageAggregator = []
+                break
 
-              break
-
-            // perform all accumulated changes and store stream state
-            case 'up-to-date':
-              await pg.transaction(async (tx) => {
-                if (debug) console.log('up-to-date, committing all messages')
-
-                // Set the syncing flag to true during this transaction so that
-                // user defined triggers on the table are able to chose how to run
-                // during a sync
-                tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
-
-                if (truncateNeeded) {
-                  truncateNeeded = false
-                  // TODO: sync into shadow table and reference count
-                  // for now just clear the whole table - will break
-                  // cases with multiple shapes on the same table
-                  await tx.exec(`DELETE FROM ${options.table};`)
-                  if (options.shapeKey) {
-                    await deleteShapeSubscriptionState({
-                      pg: tx,
-                      metadataSchema,
-                      shapeKey: options.shapeKey,
-                    })
-                  }
-                }
-
-                if (doCopy) {
-                  // We can do a `COPY FROM` to insert the initial data
-                  // Split messageAggregator into initial inserts and remaining messages
-                  const initialInserts: InsertChangeMessage[] = []
-                  const remainingMessages: ChangeMessage<any>[] = []
-                  let foundNonInsert = false
-                  for (const message of messageAggregator) {
-                    if (
-                      !foundNonInsert &&
-                      message.headers.operation === 'insert'
-                    ) {
-                      initialInserts.push(message as InsertChangeMessage)
-                    } else {
-                      foundNonInsert = true
-                      remainingMessages.push(message)
-                    }
-                  }
-                  if (initialInserts.length > 0) {
-                    // As `COPY FROM` doesn't trigger a NOTIFY, we pop
-                    // the last insert message and and add it to the be beginning
-                    // of the remaining messages to be applied after the `COPY FROM`
-                    remainingMessages.unshift(initialInserts.pop()!)
-                  }
-                  messageAggregator = remainingMessages
-
-                  // Do the `COPY FROM` with initial inserts
-                  if (initialInserts.length > 0) {
-                    applyMessagesToTableWithCopy({
-                      pg: tx,
-                      table: options.table,
-                      schema: options.schema,
-                      messages: initialInserts as InsertChangeMessage[],
-                      mapColumns: options.mapColumns,
-                      primaryKey: options.primaryKey,
-                      debug,
-                    })
-                    // We don't want to do a `COPY FROM` again after that
-                    doCopy = false
-                  }
-                }
-
-                for (const changeMessage of messageAggregator) {
-                  await applyMessageToTable({
-                    pg: tx,
-                    table: options.table,
-                    schema: options.schema,
-                    message: changeMessage,
-                    mapColumns: options.mapColumns,
-                    primaryKey: options.primaryKey,
-                    debug,
-                  })
-                }
-
+              case 'up-to-date':
+                // perform all accumulated changes and store stream state
+                await throttledCommit({ reset: true }) // not throttled, we want this to happen ASAP
                 if (
-                  options.shapeKey &&
-                  messageAggregator.length > 0 &&
-                  stream.shapeHandle !== undefined
+                  isNewSubscription &&
+                  !onInitialSyncCalled &&
+                  options.onInitialSync
                 ) {
-                  await updateShapeSubscriptionState({
-                    pg: tx,
-                    metadataSchema,
-                    shapeKey: options.shapeKey,
-                    shapeId: stream.shapeHandle,
-                    lastOffset:
-                      messageAggregator[messageAggregator.length - 1].offset,
-                  })
+                  options.onInitialSync()
+                  onInitialSyncCalled = true
                 }
-              })
-              messageAggregator = []
-              break
+                break
+            }
           }
         }
       })
@@ -270,29 +380,28 @@ async function createPlugin(
     }
   }
 
-  const init = async () => {
-    await migrateShapeMetadataTables({
-      pg,
-      metadataSchema,
-    })
-  }
-
   return {
     namespaceObj,
     close,
-    init,
   }
+}
+
+export type SyncNamespaceObj = Awaited<
+  ReturnType<typeof createPlugin>
+>['namespaceObj']
+
+export type PGliteWithSync = PGliteInterface & {
+  sync: SyncNamespaceObj
 }
 
 export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'ElectricSQL Sync',
     setup: async (pg: PGliteInterface) => {
-      const { namespaceObj, close, init } = await createPlugin(pg, options)
+      const { namespaceObj, close } = await createPlugin(pg, options)
       return {
         namespaceObj,
         close,
-        init,
       }
     },
   } satisfies Extension

@@ -94,6 +94,21 @@ It takes the following options as an object:
 - `useCopy: boolean`<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
+- `commitGranularity: CommitGranularity`<br>
+  The granularity of the commit operation, defaults to `"up-to-date"`. Note that a commit will always be performed immediately on the `up-to-date` message.
+  Options:
+
+  - `"up-to-date"`: Commit all messages when the `up-to-date` message is received.
+  <!-- - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres. -->
+  - `"operation"`: Commit each message in its own transaction.
+  - `number`: Commit every N messages.
+
+- `commitThrottle: number`<br>
+  The number of milliseconds to wait between commits, defaults to `0`.
+
+- `onInitialSync: () => void`<br>
+  A callback that is called when the initial sync is complete.
+
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
 - `isUpToDate: boolean`<br>
