@@ -283,22 +283,23 @@ END
         echo "pg_config build failed"; exit 283
     fi
 
-    cat > ${PGROOT}/bin/pg_config <<END
+    if $WASI
+    then
+        echo "TODO wasi-run wrappers for pg_config"
+    else
+        cat > ${PGROOT}/bin/pg_config <<END
 #!/bin/bash
 $(which node) ${PGROOT}/bin/pg_config.cjs \$@
 END
 
-    cat  > ${PGROOT}/postgres <<END
+        cat  > ${PGROOT}/postgres <<END
 #!/bin/bash
 . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
 TZ=UTC PGTZ=UTC PGDATA=${PGDATA} $(which node) ${PGROOT}/bin/postgres.cjs \$@
 END
 
-# remove the abort but stall prompt
-#  2>&1 | grep --line-buffered -v ^var\\ Module
-
-    # force node wasm version
-    cp -vf ${PGROOT}/postgres ${PGROOT}/bin/postgres
+        # force node wasm version
+        cp -vf ${PGROOT}/postgres ${PGROOT}/bin/postgres
 
 	cat  > ${PGROOT}/initdb <<END
 #!/bin/bash
@@ -306,14 +307,17 @@ END
 TZ=UTC PGTZ=UTC $(which node) ${PGROOT}/bin/initdb.cjs \$@
 END
 
-    chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
-	# chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
+        chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
+    	# chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
 
-    # for extensions building
-    chmod +x ${PGROOT}/bin/pg_config
+        # for extensions building
+        chmod +x ${PGROOT}/bin/pg_config
 
 
-	echo "initdb for PGDATA=${PGDATA} "
+    	echo "TODO: initdb for PGDATA=${PGDATA} "
+
+    fi
+
 
     # create empty db hack
 
