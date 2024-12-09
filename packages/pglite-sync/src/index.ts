@@ -4,6 +4,7 @@ import {
   ShapeStream,
   isChangeMessage,
   isControlMessage,
+  ShapeStreamInterface,
 } from '@electric-sql/client'
 import type {
   Extension,
@@ -23,14 +24,13 @@ type InsertChangeMessage = ChangeMessage<any> & {
 /**
  * The granularity of the commit operation.
  * - `up-to-date`: Commit all messages when the `up-to-date` message is received.
- * - `transaction`: Commit all messages within transactions inferred from the LSN prefix of the offset.
  * - `operation`: Commit each message in its own transaction.
  * - `number`: Commit every N messages.
  * Note a commit will always be performed on the `up-to-date` message.
  */
 export type CommitGranularity =
   | 'up-to-date'
-  | 'transaction'
+  // | 'transaction'  // Removed until Electric has stabilised on LSN metadata
   | 'operation'
   | number
 
@@ -45,6 +45,22 @@ export interface SyncShapeToTableOptions {
   commitGranularity?: CommitGranularity
   commitThrottle?: number
   onInitialSync?: () => void
+}
+
+export interface SyncShapeToTableResult {
+  unsubscribe: () => void
+  readonly isUpToDate: boolean
+  readonly shapeId: string
+  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+  stream: ShapeStreamInterface
+}
+
+export interface SyncShapeToTableResult {
+  unsubscribe: () => void
+  readonly isUpToDate: boolean
+  readonly shapeId: string
+  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
+  stream: ShapeStreamInterface
 }
 
 export interface ElectricSyncOptions {
@@ -68,9 +84,22 @@ async function createPlugin(
   // resolved by using reference counting in shadow tables
   const shapePerTableLock = new Map<string, void>()
 
+  let initMetadataTablesDone = false
+  const initMetadataTables = async () => {
+    if (initMetadataTablesDone) return
+    initMetadataTablesDone = true
+    await migrateShapeMetadataTables({
+      pg,
+      metadataSchema,
+    })
+  }
+
   const namespaceObj = {
-    syncShapeToTable: async (options: SyncShapeToTableOptions) => {
-      await firstRun()
+    initMetadataTables,
+    syncShapeToTable: async (
+      options: SyncShapeToTableOptions,
+    ): Promise<SyncShapeToTableResult> => {
+      await initMetadataTables()
       options = {
         commitGranularity: 'up-to-date',
         ...options,
@@ -103,6 +132,9 @@ async function createPlugin(
       // may overlap and so the insert logic will be wrong.
       let doCopy = isNewSubscription && options.useCopy
 
+      // Track if onInitialSync has been called
+      let onInitialSyncCalled = false
+
       const aborter = new AbortController()
       if (options.shape.signal) {
         // we new to have our own aborter to be able to abort the stream
@@ -124,11 +156,12 @@ async function createPlugin(
       // or use a separate connection to hold a long transaction
       let messageAggregator: ChangeMessage<any>[] = []
       let truncateNeeded = false
-      let lastLSN: string | null = null
+      // let lastLSN: string | null = null  // Removed until Electric has stabilised on LSN metadata
       let lastCommitAt: number = 0
 
       const commit = async () => {
         if (messageAggregator.length === 0 && !truncateNeeded) return
+        const shapeHandle = stream.shapeHandle // The shape handle could change while we are committing
         await pg.transaction(async (tx) => {
           if (debug) {
             console.log('committing message batch', messageAggregator.length)
@@ -208,13 +241,13 @@ async function createPlugin(
           if (
             options.shapeKey &&
             messageAggregator.length > 0 &&
-            stream.shapeHandle !== undefined
+            shapeHandle !== undefined
           ) {
             await updateShapeSubscriptionState({
               pg: tx,
               metadataSchema,
               shapeKey: options.shapeKey,
-              shapeId: stream.shapeHandle,
+              shapeId: shapeHandle,
               lastOffset:
                 messageAggregator[messageAggregator.length - 1].offset,
             })
@@ -226,14 +259,32 @@ async function createPlugin(
         await new Promise((resolve) => setTimeout(resolve, 0))
       }
 
-      const throttledCommit = async () => {
+      const throttledCommit = async ({
+        reset = false,
+      }: { reset?: boolean } = {}) => {
+        const now = Date.now()
+        if (reset) {
+          // Reset the last commit time to 0, forcing the next commit to happen immediately
+          lastCommitAt = 0
+        }
+        if (options.commitThrottle && debug)
+          console.log(
+            'throttled commit: now:',
+            now,
+            'lastCommitAt:',
+            lastCommitAt,
+            'diff:',
+            now - lastCommitAt,
+          )
         if (
           options.commitThrottle &&
-          Date.now() - lastCommitAt < options.commitThrottle
+          now - lastCommitAt < options.commitThrottle
         ) {
+          // Skip this commit - messages will be caught by next commit or up-to-date
+          if (debug) console.log('skipping commit due to throttle')
           return
         }
-        lastCommitAt = Date.now()
+        lastCommitAt = now
         await commit()
       }
 
@@ -242,17 +293,18 @@ async function createPlugin(
 
         for (const message of messages) {
           if (isChangeMessage(message)) {
-            const newLSN = message.offset.split('_')[0]
-            if (newLSN !== lastLSN) {
-              // If the LSN has changed and granularity is set to transaction
-              // we need to commit the current batch.
-              // This is done before we accumulate any more messages as they are
-              // part of the next transaction batch.
-              if (options.commitGranularity === 'transaction') {
-                await throttledCommit()
-              }
-              lastLSN = newLSN
-            }
+            // Removed until Electric has stabilised on LSN metadata
+            // const newLSN = message.offset.split('_')[0]
+            // if (newLSN !== lastLSN) {
+            //   // If the LSN has changed and granularity is set to transaction
+            //   // we need to commit the current batch.
+            //   // This is done before we accumulate any more messages as they are
+            //   // part of the next transaction batch.
+            //   if (options.commitGranularity === 'transaction') {
+            //     await throttledCommit()
+            //   }
+            //   lastLSN = newLSN
+            // }
 
             // accumulate change messages for committing all at once or in batches
             messageAggregator.push(message)
@@ -277,9 +329,14 @@ async function createPlugin(
 
               case 'up-to-date':
                 // perform all accumulated changes and store stream state
-                await commit() // not throttled, we want this to happen ASAP
-                if (isNewSubscription && options.onInitialSync) {
+                await throttledCommit({ reset: true }) // not throttled, we want this to happen ASAP
+                if (
+                  isNewSubscription &&
+                  !onInitialSyncCalled &&
+                  options.onInitialSync
+                ) {
                   options.onInitialSync()
+                  onInitialSyncCalled = true
                 }
                 break
             }
@@ -304,6 +361,7 @@ async function createPlugin(
         get shapeId() {
           return stream.shapeHandle
         },
+        stream,
         subscribe: (cb: () => void, error: (err: Error) => void) => {
           return stream.subscribe(() => {
             if (stream.isUpToDate) {
@@ -320,17 +378,6 @@ async function createPlugin(
       stream.unsubscribeAll()
       aborter.abort()
     }
-  }
-
-  let firstRunDone = false
-
-  const firstRun = async () => {
-    if (firstRunDone) return
-    firstRunDone = true
-    await migrateShapeMetadataTables({
-      pg,
-      metadataSchema,
-    })
   }
 
   return {

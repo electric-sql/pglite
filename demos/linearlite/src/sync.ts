@@ -61,8 +61,10 @@ async function startSyncToDatabase(pg: PGliteWithExtensions) {
   const issuesSync = await pg.sync.syncShapeToTable({
     shape: {
       url: issueUrl.toString(),
-      table: 'issue',
-      databaseId: ELECTRIC_DATABASE_ID,
+      params: {
+        table: 'issue',
+        database_id: ELECTRIC_DATABASE_ID,
+      },
     },
     table: 'issue',
     primaryKey: ['id'],
@@ -95,8 +97,10 @@ async function startSyncToDatabase(pg: PGliteWithExtensions) {
   const commentsSync = await pg.sync.syncShapeToTable({
     shape: {
       url: commentUrl.toString(),
-      table: 'comment',
-      databaseId: ELECTRIC_DATABASE_ID,
+      params: {
+        table: 'comment',
+        database_id: ELECTRIC_DATABASE_ID,
+      },
     },
     table: 'comment',
     primaryKey: ['id'],
