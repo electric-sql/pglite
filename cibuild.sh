@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -x;
+set -e;
+
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
 export CMA_MB=${CMA_MB:-64}
@@ -30,10 +33,10 @@ EOE=false
 
 if ./cibuild/sdk.sh
 then
-    echo "sdk check passed (emscripten)"
+    echo "sdk check passed (emscripten+wasi)"
 else
     echo sdk failed
-    exit 44
+    exit 39
 fi
 
 
@@ -231,9 +234,10 @@ END
     fi
 
     mkdir -p ${PGROOT}/include/postgresql/server
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql/server
+    for dest in ${PGROOT}/include ${PGROOT}/include/postgresql ${PGROOT}/include/postgresql/server
+    do
+        [ -f $dest/pg_debug.h ] || cp ${PG_DEBUG_HEADER} $dest/
+    done
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
@@ -288,7 +292,12 @@ END
 
     # install emsdk-shared along with pg config  tool
     # for building user ext.
-    cp build/postgres/bin/emsdk-shared $PGROOT/bin/
+    if [ -f $PGROOT/bin/emsdk-shared ]
+    then
+        echo emsdk-shared already installed
+    else
+        cp -vf build/postgres/bin/emsdk-shared $PGROOT/bin/
+    fi
 
     export PGLITE=$(pwd)/packages/pglite
 
@@ -318,14 +327,26 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 if echo " $*"|grep -q " contrib"
 then
-    # TEMP FIX for SDK
-    SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
-    [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
-    SKIP="\
+
+    if $WASI
+    then
+        echo " ========= TODO WASI openssl ============== "
+        SKIP="\
+ [\
+ sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
+ ltree_plpython sepgsql bool_plperl start-scripts\
+ pgcrypto uuid-ossp xml2\
+ ]"
+    else
+        # TEMP FIX for SDK
+        SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
+        [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
+        SKIP="\
  [\
  sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
  ltree_plpython sepgsql bool_plperl start-scripts\
  ]"
+    fi
 
     for extdir in postgresql/contrib/*
     do
@@ -479,19 +500,6 @@ ________________________________________________________________________________
 
                 mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}
 
-                # for repl demo
-#                mkdir -p /tmp/web/pglite
-
-                #cp -r ${PGLITE}/dist ${WEBROOT}/pglite/
-                #cp -r ${PGLITE}/examples ${WEBROOT}/pglite/
-
-#                for dir in /tmp/web ${WEBROOT}/pglite/examples
-#                do
-#                    pushd "$dir"
-#                    cp ${PGLITE}/dist/postgres.data ./
-#                    popd
-#                done
-
                 echo "<html>
                 <body>
                     <ul>
@@ -518,7 +526,7 @@ ________________________________________________________________________________
                 tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
 
                 # build sdk (node)
-                cp /tmp/sdk/postgres-${PG_VERSION}.tar.gz ${WEBROOT}/
+                cp /tmp/sdk/postgres-${PG_VERSION}-*.tar.gz ${WEBROOT}/
 
                 # pglite (web)
                 cp /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz ${WEBROOT}/
@@ -560,18 +568,7 @@ ________________________________________________________________________________
         ;;
 
         demo-site) echo "==================== demo-site =========================="
-            # Move all existing files to a subfolder
-            mkdir -p /tmp/web/x-term-repl
-            mv /tmp/web/* /tmp/web/x-term-repl/
-
-            mkdir -p /tmp/web/dist
-            mkdir -p /tmp/web/examples
-            mkdir -p /tmp/web/benchmark
-
-            PGLITE=$(pwd)/packages/pglite
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmark/
+            ./cibuild/demo-site.sh
         ;;
     esac
     shift

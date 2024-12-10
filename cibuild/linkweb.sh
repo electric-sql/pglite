@@ -35,7 +35,10 @@ emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
 
 # this override completely pg server main loop for web use purpose
 pushd src
-    rm pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
+    for obj in pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
+    do
+        [ -f $obj ] && rm $obj
+    done
 
     emcc -DPG_INITDB_MAIN=1 -sFORCE_FILESYSTEM -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
@@ -100,9 +103,14 @@ pushd src/backend
     then
         # es6
         MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        export COPTS="-O2 -g0"
+        if $DEBUG
+        then
+            export COPTS=${COPTS:-"-O2 -g3"}
+        else
+            export COPTS=${COPTS:-"-O3 -g3"}
+        fi
     else
-        export COPTS="-O0 -g3"
+        export COPTS="-O2 -g3"
         # local debug always fast build
         MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
@@ -113,8 +121,8 @@ pushd src/backend
     # =======================================================
     # size optimisations
     # =======================================================
-
-    rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
+    touch ${PGROOT}/lib/libany.so.x
+    rm ${PGROOT}/lib/lib*.so.?
 
     echo "#!/bin/true" > placeholder
     chmod +x placeholder
@@ -132,7 +140,8 @@ pushd src/backend
 
     # encodings ?
     # ./lib/postgresql/utf8_and*.so
-    rm ${PGROOT}/lib/postgresql/utf8_and*.so
+    touch ${PGROOT}/lib/postgresql/utf8_andany.so
+    rm -f ${PGROOT}/lib/postgresql/utf8_and*.so
 
 
     # =========================================================
@@ -227,7 +236,7 @@ popd
 
 
 echo "
-============= link web : end ===============
+============= link web : end COPTS=$COPTS ===============
 
 
 
