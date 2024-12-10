@@ -426,8 +426,9 @@ then
 
     # build web version
     echo "========== linkweb : $(pwd) =================="
+    currdir=$(realpath .)
     pushd build/postgres
-        . $WORKSPACE/cibuild/linkweb.sh
+        . $currdir/cibuild/linkweb.sh
     popd
 fi
 
