@@ -61,33 +61,39 @@ jobs:
           curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
 
       - name: Build postgres WASM via emsdk
+        working-directory: ./postgres-pglite/pglite
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh
+          bash cibuild.sh
 
       - name: Build contributed extensions
+        working-directory: ./postgres-pglite/pglite
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh contrib
+          bash ./cibuild.sh contrib
 
       - name: Build extra extensions
+        working-directory: ./postgres-pglite/pglite
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh extra
+          bash ./cibuild.sh extra
 
       - name: Pack node distribution
+        working-directory: ./postgres-pglite/pglite
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh node
+          bash ./cibuild.sh node
 
       - name: Link postgres WASM for web
+        working-directory: ./postgres-pglite/pglite
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh linkweb
+          bash ./cibuild.sh linkweb
 
       - name: Copy release for PGlite build
+        working-directory: ./postgres-pglite/pglite
         run: |
-          bash ./postgres-pglite/pglite/cibuild.sh pglite-prep
+          bash ./cibuild.sh pglite-prep
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
