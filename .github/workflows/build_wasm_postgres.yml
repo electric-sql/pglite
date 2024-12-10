@@ -111,7 +111,7 @@ jobs:
           PGSRC: ${{ github.workspace }}/postgres-pglite
           POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         run: |
-          bash ./cibuild.sh pglite-prep
+          bash ./cibuild.sh postgres-pglite-dist
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
