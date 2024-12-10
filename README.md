@@ -136,14 +136,14 @@ Docker is required to build the WASM module, along with Node (v20 or above) and 
 To start checkout the repository and install dependencies:
 
 ```bash
-git clone https://github.com/electric-sql/pglite
+git clone --recurse-submodules https://github.com/electric-sql/pglite
 cd pglite
 pnpm install
 ```
 
 To build everything, we have the convenient `pnpm build:all` command in the root of the repository. This command will:
 
-1. Use Docker to build the Postgres WASM module. The artifacts from this are then copied to `/packages/pglite/release`.
+1. Use Docker to build the Postgres WASM module. The artifacts produced by this step are then copied to `/packages/pglite/release`.
 2. Build the PGlite client library and other TypeScript packages.
 
 To _only_ build the Postgres WASM module (i.e. point 1 above), run
