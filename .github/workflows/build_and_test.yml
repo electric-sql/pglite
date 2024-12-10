@@ -209,7 +209,10 @@ jobs:
           path: /tmp/web
 
       - name: Build demo site
-        working-directory: ./postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
         run: |
           NO_SDK_CHECK=true SDKROOT=/opt/python-wasm-sdk bash ./cibuild.sh demo-site
 
