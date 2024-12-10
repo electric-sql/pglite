@@ -31,6 +31,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: true
 
       - name: Set build parameters
         run: |
@@ -47,7 +48,7 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('.buildconfig', 'cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'cibuild/**', 'extra/**', 'patches/*.c', 'patches/*.h', 'patches/**/*.diff') }}
+          key: build-cache-${{ hashFiles('postgres-pglite/pglite/.buildconfig', 'postgres-pglite/pglite/cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'postgres-pglite/pglite/cibuild/**', 'extra/**') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
@@ -62,31 +63,31 @@ jobs:
       - name: Build postgres WASM via emsdk
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh
+          bash ./postgres-pglite/pglite/cibuild.sh
 
       - name: Build contributed extensions
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh contrib
+          bash ./postgres-pglite/pglite/cibuild.sh contrib
 
       - name: Build extra extensions
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh extra
+          bash ./postgres-pglite/pglite/cibuild.sh extra
 
       - name: Pack node distribution
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh node
+          bash ./postgres-pglite/pglite/cibuild.sh node
 
       - name: Link postgres WASM for web
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh linkweb
+          bash ./postgres-pglite/pglite/cibuild.sh linkweb
 
       - name: Copy release for PGlite build
         run: |
-          bash ./cibuild.sh pglite-prep
+          bash ./postgres-pglite/pglite/cibuild.sh pglite-prep
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
