@@ -26,7 +26,7 @@ jobs:
       extra: extra
       EXTRA_EXT: vector postgis
       DEBUG: false
-      COPTS: -O3 -g3
+      COPTS: -Os -g3
 
     steps:
       - uses: actions/checkout@v4
