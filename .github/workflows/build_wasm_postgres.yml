@@ -31,6 +31,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: true
 
       - name: Set build parameters
         run: |
@@ -47,46 +48,70 @@ jobs:
             /tmp/sdk/postgres-*.tar.gz
             postgres
             postgresql-*
-          key: build-cache-${{ hashFiles('.buildconfig', 'cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'cibuild/**', 'extra/**', 'patches/*.c', 'patches/*.h', 'patches/**/*.diff') }}
+          key: build-cache-${{ hashFiles('postgres-pglite/pglite/.buildconfig', 'postgres-pglite/pglite/cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'postgres-pglite/pglite/cibuild/**', 'extra/**') }}
 
       - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
         if: steps.cache-restore.outputs.cache-hit != 'true'
         working-directory: /
         run: |
-          sudo apt-get install -y lz4 wget pv bash
+          sudo apt-get update && sudo apt-get install -y lz4 wget pv bash build-essential libreadline-dev zlib1g-dev bison flex git
           echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
           curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 34500 >/dev/null
           echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
           curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
 
       - name: Build postgres WASM via emsdk
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash ./cibuild.sh
+          bash cibuild.sh
 
       - name: Build contributed extensions
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./cibuild.sh contrib
 
       - name: Build extra extensions
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./cibuild.sh extra
 
       - name: Pack node distribution
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./cibuild.sh node
 
       - name: Link postgres WASM for web
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           bash ./cibuild.sh linkweb
 
       - name: Copy release for PGlite build
+        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
         run: |
-          bash ./cibuild.sh pglite-prep
+          bash ./cibuild.sh postgres-pglite-dist
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
