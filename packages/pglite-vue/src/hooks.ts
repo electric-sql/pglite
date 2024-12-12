@@ -47,7 +47,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     ? []
     : Array.isArray(params)
       ? params.map(ref)
-      : [params]
+      : [ref(params)]
 
   const keySource = typeof key === 'string' ? ref(key) : key
 
@@ -68,13 +68,11 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 
       const query = isRef(querySource) ? unref(querySource) : querySource()
 
-      const paramVals = isRef(params)
-        ? unref(params)
+      const paramVals = Array.isArray(params)
+        ? params.map(p => typeof p === 'function' ? p() : unref(p))
         : typeof params === 'function'
           ? params()
-          : Array.isArray(params)
-            ? params.map(unref)
-            : null
+          : unref(params)
 
       const key = isRef(keySource) ? keySource.value : keySource?.()
 
