@@ -56,7 +56,7 @@ jobs:
         if: steps.cache-restore.outputs.cache-hit != 'true'
         working-directory: /
         run: |
-          apt-get install -y lz4 wget pv bash
+          apt-get update && apt-get install -y lz4 wget pv bash
           echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
           curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 34500 >/dev/null
           echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
