@@ -12,10 +12,10 @@ if [[ -z "$SDK_VERSION" || -z "$PG_VERSION" ]]; then
   exit 1
 fi
 
-IMG_NAME="electricsql/pglite-builder"
-IMG_TAG="${PG_VERSION}_${SDK_VERSION}"
-SDK_ARCHIVE="${SDK_ARCHIVE:-python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4}"
-WASI_SDK_ARCHIVE="${WASI_SDK_ARCHIVE:-python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4}"
-OBJDUMP=${OBJDUMP:-true}
+export IMG_NAME="electricsql/pglite-builder"
+export IMG_TAG="${PG_VERSION}_${SDK_VERSION}"
+export SDK_ARCHIVE=python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
+export WASI_SDK_ARCHIVE=python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
+export OBJDUMP=${OBJDUMP:-true}
 
 ./cibuild/build-all.sh
