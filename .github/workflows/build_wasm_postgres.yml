@@ -12,20 +12,22 @@ jobs:
   build:
     name: Build WASM Postgres
     runs-on: ubuntu-22.04
-    env:
-      BUILD_CONFIG_FILE: .buildconfig
-      SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
-      WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
-      SDKROOT: /opt/python-wasm-sdk
-      SYS_PYTHON: /usr/bin/python3
-      PGROOT: /tmp/pglite
-      TOTAL_MEMORY: 192MB
-      CMA_MB: 16
-      OBJDUMP: true
-      contrib: contrib
-      extra: extra
-      EXTRA_EXT: vector postgis
-      DEBUG: false
+    container:
+      image: ubuntu:22.04
+      env:
+        BUILD_CONFIG_FILE: .buildconfig
+        SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
+        WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
+        SDKROOT: /opt/python-wasm-sdk
+        SYS_PYTHON: /usr/bin/python3
+        PGROOT: /tmp/pglite
+        TOTAL_MEMORY: 192MB
+        CMA_MB: 16
+        OBJDUMP: true
+        contrib: contrib
+        extra: extra
+        EXTRA_EXT: vector postgis
+        DEBUG: false
 #      COPTS: -O3 -g0
 
     steps:
