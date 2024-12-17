@@ -22,8 +22,6 @@ jobs:
   stylecheck:
     name: Stylecheck
     runs-on: ubuntu-22.04
-    container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -39,8 +37,6 @@ jobs:
   build-and-test-pglite-dependencies:
     name: Build and Test PGLite dependencies
     runs-on: ubuntu-22.04
-    container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -65,8 +61,6 @@ jobs:
   build-and-test-pglite:
     name: Build and Test PGLite
     runs-on: ubuntu-22.04
-    container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -154,8 +148,7 @@ jobs:
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
     runs-on: ubuntu-22.04
-    container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
+
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
@@ -186,8 +179,6 @@ jobs:
   publish-website-with-demos:
     name: Publish website with demos
     runs-on: ubuntu-22.04
-    container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
       - uses: actions/checkout@v4
