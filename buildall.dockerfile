@@ -21,5 +21,6 @@ WORKDIR /workspace
 COPY . .
 
 RUN pnpm install
+# runs the wasm build without spinning yet another docker instance that would produce them
 RUN pnpm wasm:build-no-docker
 RUN pnpm ts:build
