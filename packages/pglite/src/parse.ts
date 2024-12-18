@@ -27,7 +27,7 @@ export function parseResults(
 
   const filteredMessages = messages.filter(
       (msg) => VALID_MESSAGE_TYPES.has(msg.name)
-  );
+  )
 
   filteredMessages.forEach((message, index) => {
     switch (message.name) {
