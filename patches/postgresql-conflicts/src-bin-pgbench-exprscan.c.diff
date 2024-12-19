@@ -1,0 +1,196 @@
+--- postgresql/src/bin/pgbench/exprscan.c
++++ postgresql-wasm/src/bin/pgbench/exprscan.c
+@@ -289,7 +289,7 @@
+ #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+ 
+ /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
+- * if you want the limit (max/min) macros for int types. 
++ * if you want the limit (max/min) macros for int types.
+  */
+ #ifndef __STDC_LIMIT_MACROS
+ #define __STDC_LIMIT_MACROS 1
+@@ -306,7 +306,7 @@
+ typedef signed char flex_int8_t;
+ typedef short int flex_int16_t;
+ typedef int flex_int32_t;
+-typedef unsigned char flex_uint8_t; 
++typedef unsigned char flex_uint8_t;
+ typedef unsigned short int flex_uint16_t;
+ typedef unsigned int flex_uint32_t;
+ 
+@@ -430,10 +430,10 @@
+ #define EOB_ACT_CONTINUE_SCAN 0
+ #define EOB_ACT_END_OF_FILE 1
+ #define EOB_ACT_LAST_MATCH 2
+-    
++
+     #define YY_LESS_LINENO(n)
+     #define YY_LINENO_REWIND_TO(ptr)
+-    
++
+ /* Return all but the first "n" matched characters back to the input stream. */
+ #define yyless(n) \
+ 	do \
+@@ -852,7 +852,7 @@
+     int yy_more_flag;
+     int yy_more_len;
+ 
+-    YYSTYPE * yylval_r;
++    union YYSTYPE * yylval_r;
+ 
+     }; /* end struct yyguts_t */
+ 
+@@ -861,7 +861,7 @@
+     /* This must go here because YYSTYPE and YYLTYPE are included
+      * from bison output in section 1.*/
+     #    define yylval yyg->yylval_r
+-    
++
+ int yylex_init (yyscan_t* scanner);
+ 
+ int yylex_init_extra ( YY_EXTRA_TYPE user_defined, yyscan_t* scanner);
+@@ -899,9 +899,9 @@
+ 
+ void yyset_column ( int _column_no , yyscan_t yyscanner );
+ 
+-YYSTYPE * yyget_lval ( yyscan_t yyscanner );
++union YYSTYPE * yyget_lval ( yyscan_t yyscanner );
+ 
+-void yyset_lval ( YYSTYPE * yylval_param , yyscan_t yyscanner );
++void yyset_lval ( union YYSTYPE * yylval_param , yyscan_t yyscanner );
+ 
+ /* Macros after this point can all be overridden by user definitions in
+  * section 1.
+@@ -916,7 +916,7 @@
+ #endif
+ 
+ #ifndef YY_NO_UNPUT
+-    
++
+ #endif
+ 
+ #ifndef yytext_ptr
+@@ -1017,7 +1017,7 @@
+ #define YY_DECL_IS_OURS 1
+ 
+ extern int yylex \
+-               (YYSTYPE * yylval_param , yyscan_t yyscanner);
++               ( union YYSTYPE * yylval_param , yyscan_t yyscanner);
+ 
+ #define YY_DECL int yylex \
+                (YYSTYPE * yylval_param , yyscan_t yyscanner)
+@@ -1987,7 +1987,7 @@
+     YY_BUFFER_STATE yy_create_buffer  (FILE * file, int  size , yyscan_t yyscanner)
+ {
+ 	YY_BUFFER_STATE b;
+-    
++
+ 	b = (YY_BUFFER_STATE) yyalloc( sizeof( struct yy_buffer_state ) , yyscanner );
+ 	if ( ! b )
+ 		YY_FATAL_ERROR( "out of dynamic memory in yy_create_buffer()" );
+@@ -2053,7 +2053,7 @@
+     }
+ 
+         b->yy_is_interactive = 0;
+-    
++
+ 	errno = oerrno;
+ }
+ 
+@@ -2195,7 +2195,7 @@
+ YY_BUFFER_STATE yy_scan_buffer  (char * base, yy_size_t  size , yyscan_t yyscanner)
+ {
+ 	YY_BUFFER_STATE b;
+-    
++
+ 	if ( size < 2 ||
+ 	     base[size-2] != YY_END_OF_BUFFER_CHAR ||
+ 	     base[size-1] != YY_END_OF_BUFFER_CHAR )
+@@ -2231,7 +2231,7 @@
+  */
+ YY_BUFFER_STATE yy_scan_string (const char * yystr , yyscan_t yyscanner)
+ {
+-    
++
+ 	return yy_scan_bytes( yystr, (int) strlen(yystr) , yyscanner);
+ }
+ 
+@@ -2248,7 +2248,7 @@
+ 	char *buf;
+ 	yy_size_t n;
+ 	int i;
+-    
++
+ 	/* Get memory for full buffer, including space for trailing EOB's. */
+ 	n = (yy_size_t) (_yybytes_len + 2);
+ 	buf = (char *) yyalloc( n , yyscanner );
+@@ -2321,7 +2321,7 @@
+ 
+         if (! YY_CURRENT_BUFFER)
+             return 0;
+-    
++
+     return yylineno;
+ }
+ 
+@@ -2334,7 +2334,7 @@
+ 
+         if (! YY_CURRENT_BUFFER)
+             return 0;
+-    
++
+     return yycolumn;
+ }
+ 
+@@ -2396,7 +2396,7 @@
+         /* lineno is only valid if an input buffer exists. */
+         if (! YY_CURRENT_BUFFER )
+            YY_FATAL_ERROR( "yyset_lineno called with no buffer" );
+-    
++
+     yylineno = _line_number;
+ }
+ 
+@@ -2411,7 +2411,7 @@
+         /* column is only valid if an input buffer exists. */
+         if (! YY_CURRENT_BUFFER )
+            YY_FATAL_ERROR( "yyset_column called with no buffer" );
+-    
++
+     yycolumn = _column_no;
+ }
+ 
+@@ -2447,13 +2447,13 @@
+ 
+ /* Accessor methods for yylval and yylloc */
+ 
+-YYSTYPE * yyget_lval  (yyscan_t yyscanner)
++union YYSTYPE * yyget_lval  (yyscan_t yyscanner)
+ {
+     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+     return yylval;
+ }
+ 
+-void yyset_lval (YYSTYPE *  yylval_param , yyscan_t yyscanner)
++void yyset_lval (union YYSTYPE *  yylval_param , yyscan_t yyscanner)
+ {
+     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+     yylval = yylval_param;
+@@ -2650,7 +2650,7 @@
+ {
+ 	PsqlScanState state = yyget_extra(yyscanner);
+ 	int			error_detection_offset = expr_scanner_offset(state) - 1;
+-	YYSTYPE		lval;
++	union YYSTYPE		lval;
+ 	char	   *full_line;
+ 
+ 	/*
+@@ -2689,7 +2689,7 @@
+ expr_lex_one_word(PsqlScanState state, PQExpBuffer word_buf, int *offset)
+ {
+ 	int			lexresult;
+-	YYSTYPE		lval;
++	union YYSTYPE		lval;
+ 
+ 	/* Must be scanning already */
+ 	Assert(state->scanbufhandle != NULL);

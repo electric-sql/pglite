@@ -50,7 +50,7 @@ else
     # either a submodule dir or a symlink.
     # release only use symlink
 
-    rm postgresql 2>/dev/null
+    [ -f postgresql/configure ] && rm postgresql 2>/dev/null
     ln -s postgresql-${PG_VERSION} postgresql
 
 fi
