@@ -1,7 +1,7 @@
 #!/bin/bash
 
-set -x;
-set -e;
+#set -x;
+#set -e;
 
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB

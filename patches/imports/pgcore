@@ -135,7 +135,8 @@ _CreateExecutorState
 _ResourceOwnerCreate
 _CreateExprContext
 _GetCurrentSubTransactionId
-_SPI_plan_get_plan_sources
+_SPI_plan_get_cached_plan
+_ReleaseCachedPlan
 _SPI_execute_plan_extended
 _SPI_result_code_string
 _GetErrorContextStack
@@ -170,9 +171,8 @@ _SPI_rollback
 _err_generic_string
 _SPI_prepare_extended
 _SPI_keepplan
-_SPI_plan_get_cached_plan
+_SPI_plan_get_plan_sources
 _CachedPlanAllowsSimpleValidityCheck
-_ReleaseCachedPlan
 _EnsurePortalSnapshotExists
 _CachedPlanIsSimplyValid
 _ExecInitExprWithParams

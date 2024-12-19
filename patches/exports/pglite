@@ -6497,11 +6497,11 @@ _xmlUCSIsYijingHexagramSymbols
 _xmlXPathBooleanFunction
 _xmlXPathCastNodeToString
 _xmlXPathCeilingFunction
-_xmlXPathCompile
 _xmlXPathCompiledEval
 _xmlXPathConcatFunction
 _xmlXPathContainsFunction
 _xmlXPathCountFunction
+_xmlXPathCtxtCompile
 _xmlXPathFalseFunction
 _xmlXPathFloorFunction
 _xmlXPathFreeCompExpr

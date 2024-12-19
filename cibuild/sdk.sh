@@ -5,15 +5,6 @@ then
     exit 0
 fi
 
-# wasi sdk 24
-
-if [ -f extra/native/sdk-fix.tar ]
-then
-    pushd ${SDKROOT}/wasisdk/upstream
-      tar xf ${WORKSPACE}/extra/native/sdk-fix.tar
-    popd
-fi
-
 
 # emsdk
 
@@ -33,6 +24,17 @@ else
         echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
         curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
     fi
+
+
+    # wasi sdk 24 hotfix
+
+    if [ -f extra/native/sdk-fix.tar ]
+    then
+        pushd ${SDKROOT}/wasisdk/upstream
+          tar xf ${WORKSPACE}/extra/native/sdk-fix.tar
+        popd
+    fi
+
 
     pushd /tmp/sdk
 
