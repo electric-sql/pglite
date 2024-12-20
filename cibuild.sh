@@ -13,7 +13,7 @@ chmod +x ./extra/*.sh cibuild/*.sh
 
 . .buildconfig
 
-export PG_VERSION SDK_VERSION WASI_SDK_VERSION SDKROOT
+export PG_VERSION SDK_VERSION WASI_SDK_VERSION SDKROOT COPTS
 
 export PG_VERSION=${PG_VERSION:-16.4}
 export WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
