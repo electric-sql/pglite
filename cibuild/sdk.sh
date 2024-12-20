@@ -115,7 +115,7 @@ END
         rm hello_em.js hello_em.wasm
 
         python3 -E ${SDKROOT}/emsdk/upstream/emscripten/emcc.py -O2 -g3 -sENVIRONMENT=node -sGLOBAL_BASE=32B $ALL -o hello_em.js /tmp/sdk/hello_em.c
-        # $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^emsdk >> $SDKROOT/VERSION || exit 84
+        $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^emsdk >> $SDKROOT/VERSION || exit 84
 
         rm hello_em.*
 
