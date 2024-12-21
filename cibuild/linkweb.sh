@@ -202,7 +202,7 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
-    COPTS="-O3 -g0 --closure 0" emcc $EMCC_WEB $LINKER $MODULE \
+    COPTS="-O2 -g0 --closure 0" emcc $EMCC_WEB $LINKER $MODULE \
      -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
