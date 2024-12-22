@@ -97,22 +97,22 @@ pushd src/backend
 # -sSINGLE_FILE  => Uncaught SyntaxError: Cannot use 'import.meta' outside a module (at postgres.html:1:6033)
 # -sENVIRONMENT=web => XHR
 
-    export EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
+    export EMCC_WEB="-sENVIRONMENT=node,web" -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
 
     if ${PGES6:-true}
     then
         # es6
-        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        MODULE="$LDEBUG --closure 1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
         if $DEBUG
         then
             export COPTS=${COPTS:-"-O2 -g3"}
         else
-            export COPTS=${COPTS:-"-O2 -g0"}
+            export COPTS=${COPTS:-"-Os -g0"}
         fi
     else
         export COPTS="-O2 -g3"
         # local debug always fast build
-        MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
+        MODULE="--closure 0 -sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
     MODULE="$MODULE --shell-file ${WORKSPACE}/tests/repl.html"
@@ -202,7 +202,7 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
-    COPTS="-s -Os -g0 --closure 0" emcc $EMCC_WEB $LINKER $MODULE \
+    COPTS="-Os -g0 --closure 1" emcc $EMCC_WEB $LINKER $MODULE \
      -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
