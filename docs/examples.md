@@ -29,7 +29,7 @@ We have a number of examples showing how to use PGlite along with its capabiliti
 - <a href="./examples/opfs.html" target="_blank">OPFS VFS</a><br>
   An example demonstrating the [OPFS Access Handle Pool VFS](./docs/filesystems.md#opfs-ahp-fs).
 
-- <a href="./examples/copy.html" target="_blank">PL/PGSQL</a><br>
+- <a href="./examples/plpgsql.html" target="_blank">PL/PGSQL</a><br>
   Demonstration of PGlite's support for Postgres's built-in SQL procedural language extension "PL/PGSQL".
 
 - <a href="./examples/vector.html" target="_blank">Extension: `pgvector`</a><br>
@@ -37,3 +37,9 @@ We have a number of examples showing how to use PGlite along with its capabiliti
 
 - <a href="./examples/worker.html" target="_blank">Multi Tab Worker</a><br>
   Demonstration of the multi tab worker, enabling multiple browser tabs to share a PGlite database.
+
+- <a href="./examples/fts.html" target="_blank">FTS</a><br>
+  An example showing how to use Full Text Search (FTS) with PGlite.
+
+- <a href="./examples/pg_dump.html" target="_blank">pg_dump</a><br>
+  An example showing how to use the `pg_dump` tool with PGlite.
