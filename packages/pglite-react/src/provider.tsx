@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react'
+import React, { createContext, JSX, useContext } from 'react'
 import { PGliteWithLive } from '@electric-sql/pglite/live'
 
 interface Props<T extends PGliteWithLive> {
