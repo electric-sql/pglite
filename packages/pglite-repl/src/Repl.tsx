@@ -266,7 +266,7 @@ export function Repl({
     >
       <div
         className="PGliteRepl-output"
-        ref={(ref) => (outputRef.current = ref)}
+        ref={outputRef}
       >
         {loading && <div className="PGliteRepl-loading-msg">Loading...</div>}
         {output.map((response) => (
