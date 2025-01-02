@@ -96,11 +96,11 @@ int main(int argc, char**arv){
 }
 END
 
-        EMCC_TRACE=true DEBUG_PATTERN=* ${SDKROOT}/emsdk/upstream/emscripten/emcc -sASSERTIONS=0 -sGLOBAL_BASE=32B -o hello_em.html /tmp/sdk/hello_em.c
+        EMCC_TRACE=true DEBUG_PATTERN=* ${SDKROOT}/emsdk/upstream/emscripten/emcc -sASSERTIONS=0 -sENVIRONMENT=node,web -sGLOBAL_BASE=32B -o hello_em.html /tmp/sdk/hello_em.c
         $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^pydk > $SDKROOT/VERSION || exit 80
         rm hello_em.js hello_em.wasm
 
-        python3 -E ${SDKROOT}/emsdk/upstream/emscripten/emcc.py -O2 -g3 -sENVIRONMENT=node -sGLOBAL_BASE=32B $ALL -o hello_em.js /tmp/sdk/hello_em.c
+        python3 -E ${SDKROOT}/emsdk/upstream/emscripten/emcc.py -O2 -g3 -sENVIRONMENT=node,web -sGLOBAL_BASE=32B $ALL -o hello_em.js /tmp/sdk/hello_em.c
         $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^emsdk >> $SDKROOT/VERSION || exit 84
 
         rm hello_em.*
