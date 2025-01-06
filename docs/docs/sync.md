@@ -38,7 +38,12 @@ You can then use the `syncShapeToTable` method to sync a table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
-  shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+  shape: {
+    url: 'http://localhost:3000/v1/shape',
+    params: {
+      table: 'todo',
+    },
+  },
   table: 'todo',
   primaryKey: ['id'],
 })
@@ -69,7 +74,7 @@ The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeSt
 It takes the following options as an object:
 
 - `shape: ShapeStreamOptions`<br>
-  The shape stream specification to sync, described by [`ShapeStreamOptions`](#shapestreamoptions).
+  The shape stream specification to sync, described by the Electric [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#shapestream) options, see the [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#options) for more details.
 
 - `table: string`<br>
   The name of the table to sync into.
@@ -89,6 +94,21 @@ It takes the following options as an object:
 - `useCopy: boolean`<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
+- `commitGranularity: CommitGranularity`<br>
+  The granularity of the commit operation, defaults to `"up-to-date"`. Note that a commit will always be performed immediately on the `up-to-date` message.
+  Options:
+
+  - `"up-to-date"`: Commit all messages when the `up-to-date` message is received.
+  <!-- - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres. -->
+  - `"operation"`: Commit each message in its own transaction.
+  - `number`: Commit every N messages.
+
+- `commitThrottle: number`<br>
+  The number of milliseconds to wait between commits, defaults to `0`.
+
+- `onInitialSync: () => void`<br>
+  A callback that is called when the initial sync is complete.
+
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
 - `isUpToDate: boolean`<br>
@@ -100,40 +120,11 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 - `subscribe(cb: () => void, error: (err: FetchError | Error) => void)`<br>
   A callback to indicate that the shape caught up to the main Postgres.
 
-- `subscribeMustRefresh(cb: () => void)`<br>
-  A callback that is called when the stream emits a `must-refresh` message.
-
-- `unsubscribeMustRefresh(cb: () => void)`<br>
-  Unsubscribe from the `mustRefresh` notification.
-
 - `unsubscribe()`<br>
   Unsubscribe from the shape. Note that this does not clear the state that has been synced into the table.
 
-### `ShapeStreamOptions`
-
-- `url: string`<br>
-  The full URL to where the Shape is hosted. This can either be the Electric server directly, or a proxy. E.g. for a local Electric instance, you might set `http://localhost:3000/v1/shape`
-
-- `table: string`<br>
-  The name of the table in the remote database to sync from
-
-- `where?: string`<br>
-  Where clauses for the shape.
-
-- `offset?: Offset`<br>
-  The "offset" on the shape log. This is typically not set as the ShapeStream will handle this automatically. A common scenario where you might pass an offset is if you're maintaining a local cache of the log. If you've gone offline and are re-starting a ShapeStream to catch-up to the latest state of the Shape, you'd pass in the last offset and shapeId you'd seen from the Electric server so it knows at what point in the shape to catch you up from.
-
-- `shapeId?: string`<br>
-  The server side `shapeId`, similar to `offset`, this isn't typically used unless you're maintaining a cache of the shape log.
-
-- `backoffOptions`<br>
-  Options to configure the backoff rules on failure
-
-- `subscribe?: boolean`<br>
-  Automatically fetch updates to the Shape. If you just want to sync the current shape and stop, pass false.
-
-- `signal?: AbortSignal`<br>
-  A `AbortSignal` instance to use to abort the sync.
+- `stream: ShapeStream`<br>
+  The underlying `ShapeStream` instance, see the [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#shapestream) for more details.
 
 ## Limitations
 
