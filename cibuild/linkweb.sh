@@ -94,7 +94,7 @@ pushd src/backend
 # -sSINGLE_FILE  => Uncaught SyntaxError: Cannot use 'import.meta' outside a module (at postgres.html:1:6033)
 # -sENVIRONMENT=web => XHR
 
-    export EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
+    export EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sENVIRONMENT=node,web"
 
     if ${PGES6:-true}
     then
@@ -232,7 +232,4 @@ echo "
 
 
 "
-
-
-
 
