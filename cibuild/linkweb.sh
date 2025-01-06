@@ -35,10 +35,7 @@ emcc $CDEBUG -shared -o ${WEBROOT}/libpgc.so \
 
 # this override completely pg server main loop for web use purpose
 pushd src
-    for obj in pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
-    do
-        [ -f $obj ] && rm $obj
-    done
+    rm pg_initdb.o backend/main/main.o ./backend/tcop/postgres.o ./backend/utils/init/postinit.o
 
     emcc -DPG_INITDB_MAIN=1 -sFORCE_FILESYSTEM -DPREFIX=${PGROOT} ${CC_PGLITE} \
      -I${PGROOT}/include -I${PGROOT}/include/postgresql/server -I${PGROOT}/include/postgresql/internal \
@@ -97,22 +94,17 @@ pushd src/backend
 # -sSINGLE_FILE  => Uncaught SyntaxError: Cannot use 'import.meta' outside a module (at postgres.html:1:6033)
 # -sENVIRONMENT=web => XHR
 
-    export EMCC_WEB="-sENVIRONMENT=node,web" -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1"
+    export EMCC_WEB="-sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sENVIRONMENT=node,web"
 
     if ${PGES6:-true}
     then
         # es6
-        MODULE="$LDEBUG --closure 1 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        if $DEBUG
-        then
-            export COPTS=${COPTS:-"-O2 -g3"}
-        else
-            export COPTS=${COPTS:-"-Os -g0"}
-        fi
+        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        export COPTS="-O2 -g0"
     else
-        export COPTS="-O2 -g3"
+        export COPTS="-O0 -g3"
         # local debug always fast build
-        MODULE="--closure 0 -sMODULARIZE=0 -sEXPORT_ES6=0"
+        MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
 
     MODULE="$MODULE --shell-file ${WORKSPACE}/tests/repl.html"
@@ -121,8 +113,8 @@ pushd src/backend
     # =======================================================
     # size optimisations
     # =======================================================
-    touch ${PGROOT}/lib/libany.so.x
-    rm ${PGROOT}/lib/lib*.so.?
+
+    rm ${PGROOT}/lib/lib*.so.? 2>/dev/null
 
     echo "#!/bin/true" > placeholder
     chmod +x placeholder
@@ -140,8 +132,7 @@ pushd src/backend
 
     # encodings ?
     # ./lib/postgresql/utf8_and*.so
-    touch ${PGROOT}/lib/postgresql/utf8_andany.so
-    rm -f ${PGROOT}/lib/postgresql/utf8_and*.so
+    rm ${PGROOT}/lib/postgresql/utf8_and*.so
 
 
     # =========================================================
@@ -202,7 +193,7 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
-    emcc $EMCC_WEB $LINKER $MODULE \
+    emcc $EMCC_WEB $LINKER $MODULE  \
      -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \
@@ -236,12 +227,9 @@ popd
 
 
 echo "
-============= link web : end COPTS=$COPTS ===============
+============= link web : end ===============
 
 
 
 "
-
-
-
 
