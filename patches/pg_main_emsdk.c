@@ -941,7 +941,7 @@ extra_env:;
             console.warn("prerun(C-node) worker=", Module.is_worker);
 #endif
             Module['postMessage'] = function custom_postMessage(event) {
-                console.log("# 1252: onCustomMessage:",__FILE__, event);
+                console.log("# pg_main_emsdk.c:944: onCustomMessage:", event);
             };
         });
 
