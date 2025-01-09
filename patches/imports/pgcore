@@ -14,7 +14,6 @@ _SysCacheGetAttrNotNull
 _text_to_cstring
 _pstrdup
 _MemoryContextAllocZero
-_memset
 _AllocSetContextCreateInternal
 _format_procedure
 _MemoryContextSetIdentifier
@@ -35,7 +34,6 @@ _errhint
 _type_is_rowtype
 _ReleaseSysCache
 _pfree
-_memcpy
 _function_parse_error_transpose
 _set_errcontext_domain
 _errcontext_msg
@@ -213,7 +211,6 @@ _MemoryContextDelete
 _pg_printf
 _fflush
 _get_collation_oid
-_memmove
 _list_free
 _typeStringToTypeName
 _raw_parser
@@ -308,7 +305,6 @@ _atoi
 _pg_strtoint32
 _pg_snprintf
 _palloc
-_memcpy
 _initStringInfo
 _appendStringInfoString
 _appendStringInfo
@@ -354,7 +350,6 @@ _strncmp
 _time
 _pg_printf
 _abort
-_memset
 _getenv
 _strlcpy
 _geteuid
@@ -406,7 +401,6 @@ _memchr
 _open
 _read
 _write
-_memmove
 _fflush
 _poll
 _strnlen
@@ -475,11 +469,9 @@ _searchstoplist
 _strlen
 _pg_server_to_any
 _repalloc
-_memcpy
 _pg_any_to_server
 _palloc
 _memcmp
-_memmove
 ___stack_pointer
 ___memory_base
 ___table_base
@@ -525,7 +517,6 @@ _MemoryContextReset
 _MakePerTupleExprContext
 _slot_getsomeattrs_int
 _MakeSingleTupleTableSlot
-_memcpy
 _ExecStoreVirtualTuple
 _OutputPluginPrepareWrite
 _logicalrep_write_insert

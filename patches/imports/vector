@@ -9,7 +9,6 @@ _Float8GetDatum
 ___errno_location
 _strtof
 _errdetail
-_memcpy
 _pnstrdup
 _palloc
 _float_to_shortest_decimal_bufn
@@ -94,7 +93,6 @@ _MemoryContextAlloc
 _MemoryContextMemAllocated
 _MarkBufferDirty
 _UnlockReleaseBuffer
-_memset
 _PageGetFreeSpace
 _BufferGetBlockNumber
 _PageAddItemExtended
@@ -113,7 +111,6 @@ _PageGetExactFreeSpace
 _LockRelationForExtension
 _UnlockRelationForExtension
 _RelationGetIndexScan
-_memmove
 _pgstat_assoc_relation
 _list_make1_impl
 _pairingheap_remove_first

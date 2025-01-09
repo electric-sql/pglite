@@ -10,7 +10,6 @@ _SysCacheGetAttrNotNull
 _text_to_cstring
 _pstrdup
 _MemoryContextAllocZero
-_memset
 _AllocSetContextCreateInternal
 _format_procedure
 _MemoryContextSetIdentifier
@@ -31,7 +30,6 @@ _errhint
 _type_is_rowtype
 _ReleaseSysCache
 _pfree
-_memcpy
 _function_parse_error_transpose
 _set_errcontext_domain
 _errcontext_msg
@@ -209,7 +207,6 @@ _MemoryContextDelete
 _pg_printf
 _fflush
 _get_collation_oid
-_memmove
 _list_free
 _typeStringToTypeName
 _raw_parser
