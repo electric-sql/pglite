@@ -971,7 +971,7 @@ extra_env:;
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
                     case "raw" :  {
-                        stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
+                        //stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
                         break;
                     }
 
@@ -980,7 +980,7 @@ extra_env:;
                         break;
                     }
                     case "rcon" :  {
-                        stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
+                        //stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
                         break;
                     }
                     default : console.warn("custom_postMessage?", event);
