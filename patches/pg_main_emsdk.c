@@ -563,16 +563,6 @@ pg_shutdown() {
 int loops = 0;
 
 
-
-EM_JS(int, peek_fd, (int fd), {
-    return test_data.length;
-});
-
-EM_JS(int, fnc_getfd, (int fd), {
-    return fnc_stdin()
-});
-
-
 EMSCRIPTEN_KEEPALIVE void
 interactive_file() {
 	int			firstchar;
