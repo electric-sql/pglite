@@ -18,7 +18,7 @@ function paramsEqual(
 }
 
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
-  query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
+  query: string | LiveQuery<T> | Promise<LiveQuery<T>> | (() => Promise<T[]>),
   params: unknown[] | undefined | null,
   key?: string,
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
@@ -27,7 +27,11 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   const liveQueryRef = useRef<LiveQuery<T> | undefined>()
   let liveQuery: LiveQuery<T> | undefined
   let liveQueryChanged = false
-  if (!(typeof query === 'string') && !(query instanceof Promise)) {
+  if (
+    !(typeof query === 'string') &&
+    !(typeof query === 'function') &&
+    !(query instanceof Promise)
+  ) {
     liveQuery = query
     liveQueryChanged = liveQueryRef.current !== liveQuery
     liveQueryRef.current = liveQuery
@@ -58,6 +62,17 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       return () => {
         cancelled = true
         ret.then(({ unsubscribe }) => unsubscribe())
+      }
+    } else if (typeof query === 'function') {
+      query.then((liveQuery) => {
+        if (cancelled) return
+        liveQueryRef.current = liveQuery
+        setResults(liveQuery.initialResults)
+        liveQuery.subscribe(cb)
+      })
+      return () => {
+        cancelled = true
+        liveQueryRef.current?.unsubscribe(cb)
       }
     } else if (query instanceof Promise) {
       query.then((liveQuery) => {
@@ -112,7 +127,11 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
 ): LiveQueryResults<T> | undefined
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
-  query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
+  liveQueryPromise: () => Promise<T[]>,
+): LiveQueryResults<T> | undefined
+
+export function useLiveQuery<T = { [key: string]: unknown }>(
+  query: string | LiveQuery<T> | Promise<LiveQuery<T>> | (() => Promise<T[]>),
   params?: unknown[] | null,
 ): LiveQueryResults<T> | undefined {
   return useLiveQueryImpl<T>(query, params)
