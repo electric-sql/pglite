@@ -594,4 +594,9 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
 }
 
 
+pid_t waitpid(pid_t pid, int *status, int options) {
+    fputs(__FILE__ ": pid_t waitpid(pid_t pid, int *status, int options) STUB", stderr);
+    return -1;
+}
+
 

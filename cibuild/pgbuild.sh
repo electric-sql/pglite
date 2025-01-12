@@ -6,8 +6,8 @@ pgbuild:begin
 
 CC_PGLITE=$CC_PGLITE
 
-"
 
+"
 
     mkdir -p build/postgres
     pushd build/postgres
@@ -40,7 +40,10 @@ CC_PGLITE=$CC_PGLITE
         XML2=""
         UUID=""
         BUILD=wasi
-        export MAIN_MODULE="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+        export WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
+        WASM_LDFLAGS="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+        WASM_CFLAGS="-D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID"
+        export MAIN_MODULE=""
     else
         # --with-libxml does not fit with --without-zlib
         if $CI
@@ -52,10 +55,10 @@ CC_PGLITE=$CC_PGLITE
         fi
         UUID="--with-uuid=ossp"
         BUILD=emscripten
+        WASM_CFLAGS=""
+        WASM_LDFLAGS=""
         export MAIN_MODULE="-sMAIN_MODULE=1"
     fi
-
-
 
     export XML2_CONFIG=$PREFIX/bin/xml2-config
     export ZIC=$(pwd)/bin/zic
@@ -92,6 +95,7 @@ CC_PGLITE=$CC_PGLITE
 
     if $WASI
     then
+
         export EXT=wasi
         cat > ${PGROOT}/config.site <<END
 ac_cv_exeext=.wasi
@@ -121,7 +125,12 @@ END
         fi
     fi
 
-    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE=${PGROOT}/config.site emconfigure $CNF --with-template=$BUILD
+    if \
+     EM_PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
+     CONFIG_SITE="${PGROOT}/config.site" \
+     CFLAGS="$WASM_CFLAGS" \
+     LDFLAGS="$WASM_LDFLAGS" \
+     emconfigure $CNF --with-template=$BUILD
     then
         echo configure ok
     else
@@ -189,13 +198,12 @@ END
     # PREFIX only required for static initdb
     EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE} -DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes"
 
-    WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
-
     ZIC=${ZIC:-$(realpath bin/zic)}
 
-
-
-	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
+	if \
+     EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" \
+     WASI_CFLAGS="$WASI_CFLAGS" \
+     emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
         if $WASI
