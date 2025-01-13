@@ -37,14 +37,15 @@ Fatal: failed to apply patch : $one
     fi
 
     # either a submodule dir or a symlink.
-    # release only use symlink
+    # currently release only use symlink
     [ -f postgresql/configure ] && rm postgresql 2>/dev/null
 
-    ln -s postgresql-${PG_VERSION} postgresql
+    # do nothing if it is a submodule
+    [ -d postgresql ] || ln -s postgresql-${PG_VERSION} postgresql
 
 fi
 
-export PGSRC=$(realpath postgresql-${PG_VERSION})
+export PGSRC=$(realpath postgresql)
 
 if [ -f ${PGROOT}/pg.installed ]
 then
