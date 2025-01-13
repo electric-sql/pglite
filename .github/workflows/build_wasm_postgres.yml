@@ -13,7 +13,7 @@ jobs:
     name: Build WASM Postgres
     runs-on: ubuntu-22.04
     container:
-      image: electricsql/pglite-builder:git_3.1.72.3bi
+      image: electricsql/pglite-builder:git_3.1.74.2bi
       env:
         BUILD_CONFIG_FILE: .buildconfig
         SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
