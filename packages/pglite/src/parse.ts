@@ -89,7 +89,6 @@ function retrieveRowCount(msg: CommandCompleteMessage): number {
       return parseInt(parts[2], 10)
     case 'UPDATE':
     case 'DELETE':
-      return parseInt(parts[1], 10)
     case 'COPY':
       return parseInt(parts[1], 10)
     default:

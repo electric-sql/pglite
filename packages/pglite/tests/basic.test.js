@@ -468,32 +468,46 @@ await testEsmAndCjs(async (importType) => {
     it('copy to/from blob', async () => {
       const db = new PGlite()
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test (
-      id SERIAL PRIMARY KEY,
-      test TEXT
-    );
-    INSERT INTO test (test) VALUES ('test'), ('test2');
-  `)
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          test TEXT
+        );
+        INSERT INTO test (test) VALUES ('test'), ('test2');
+      `)
 
       // copy to
-      const ret = await db.query("COPY test TO '/dev/blob' WITH (FORMAT csv);")
-      const csv = await ret.blob.text()
+      const copyToRet = await db.query(
+        "COPY test TO '/dev/blob' WITH (FORMAT csv);",
+      )
+
+      // Check that the copy command returns the number of rows affected
+      expect(copyToRet.affectedRows).toBe(2)
+
+      const csv = await copyToRet.blob.text()
       expect(csv).toBe('1,test\n2,test2\n')
 
       // copy from
       const blob2 = new Blob([csv])
       await db.exec(`
-    CREATE TABLE IF NOT EXISTS test2 (
-      id SERIAL PRIMARY KEY,
-      test TEXT
-    );
-  `)
-      await db.query("COPY test2 FROM '/dev/blob' WITH (FORMAT csv);", [], {
-        blob: blob2,
-      })
+        CREATE TABLE IF NOT EXISTS test2 (
+          id SERIAL PRIMARY KEY,
+          test TEXT
+        );
+      `)
+      const copyFromRet = await db.query(
+        "COPY test2 FROM '/dev/blob' WITH (FORMAT csv);",
+        [],
+        {
+          blob: blob2,
+        },
+      )
+
+      // Check that the copy command returns the number of rows affected
+      expect(copyFromRet.affectedRows).toBe(2)
+
       const res = await db.query(`
-    SELECT * FROM test2;
-  `)
+        SELECT * FROM test2;
+      `)
       expect(res).toEqual({
         rows: [
           {
@@ -522,11 +536,11 @@ await testEsmAndCjs(async (importType) => {
     it('close', async () => {
       const db = new PGlite()
       await db.query(`
-    CREATE TABLE IF NOT EXISTS test (
-      id SERIAL PRIMARY KEY,
-      name TEXT
-    );
-  `)
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
       await db.query("INSERT INTO test (name) VALUES ('test');")
       await db.close()
       await expectToThrowAsync(async () => {
