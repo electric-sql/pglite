@@ -262,7 +262,7 @@ jobs:
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [build-wasm-postgres]
     steps:
       - uses: actions/checkout@v4
