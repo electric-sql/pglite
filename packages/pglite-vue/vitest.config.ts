@@ -5,7 +5,7 @@ export default defineConfig({
   // @ts-ignore type mismsatch but works?
   plugins: [vue()],
   test: {
-    name: 'pglite-react',
+    name: 'pglite-vue',
     dir: './test',
     watch: false,
     environment: 'jsdom',
