@@ -563,16 +563,6 @@ pg_shutdown() {
 int loops = 0;
 
 
-
-EM_JS(int, peek_fd, (int fd), {
-    return test_data.length;
-});
-
-EM_JS(int, fnc_getfd, (int fd), {
-    return fnc_stdin()
-});
-
-
 EMSCRIPTEN_KEEPALIVE void
 interactive_file() {
 	int			firstchar;
@@ -941,7 +931,7 @@ extra_env:;
             console.warn("prerun(C-node) worker=", Module.is_worker);
 #endif
             Module['postMessage'] = function custom_postMessage(event) {
-                console.log("# 1252: onCustomMessage:",__FILE__, event);
+                console.log("# pg_main_emsdk.c:944: onCustomMessage:", event);
             };
         });
 
@@ -971,7 +961,7 @@ extra_env:;
             Module['postMessage'] = function custom_postMessage(event) {
                 switch (event.type) {
                     case "raw" :  {
-                        stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
+                        //stringToUTF8( event.data, shm_rawinput, Module.FD_BUFFER_MAX);
                         break;
                     }
 
@@ -980,7 +970,7 @@ extra_env:;
                         break;
                     }
                     case "rcon" :  {
-                        stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
+                        //stringToUTF8( event.data, shm_rcon, Module.FD_BUFFER_MAX);
                         break;
                     }
                     default : console.warn("custom_postMessage?", event);

@@ -34,6 +34,10 @@ pg_realloc(void *ptr, size_t size) {
     return realloc(ptr, size);
 }
 
+EMSCRIPTEN_KEEPALIVE void pg_free(void *ptr) {
+    free(ptr);
+}
+
 EMSCRIPTEN_KEEPALIVE char *
 pg_strdup(const char *in) {
 	char	   *tmp;

@@ -5,29 +5,21 @@ then
     exit 0
 fi
 
-# wasi sdk 24
-
-if [ -f extra/native/sdk-fix.tar ]
-then
-    pushd ${SDKROOT}/wasisdk/upstream
-      tar xf ${WORKSPACE}/extra/native/sdk-fix.tar
-    popd
-fi
-
-
-# emsdk
-
 if [ -f $SDKROOT/VERSION ]
 then
-    echo "Using installed sdk from $SDKROOT"
+    echo "Using tested sdk from $SDKROOT"
 else
-    echo "Installing sdk to $SDKROOT"
-    SDK_ARCHIVE=${SDK_ARCHIVE:-python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4}
-    WASI_SDK_ARCHIVE=${WASI_SDK_ARCHIVE:-python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4}
-    if $CI
+    if [ -d $SDKROOT/emsdk ]
     then
-        echo "if sdk fails here, check .yml files and https://github.com/pygame-web/python-wasm-sdk releases"
+        echo "Using installed sdk from $SDKROOT"
     else
+        echo "Installing sdk to $SDKROOT"
+        SDK_ARCHIVE=${SDK_ARCHIVE:-python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4}
+        WASI_SDK_ARCHIVE=${WASI_SDK_ARCHIVE:-python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4}
+        if $CI
+        then
+            echo "if sdk fails here, check .yml files and https://github.com/pygame-web/python-wasm-sdk releases"
+        fi
         echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
         curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 46000 >/dev/null
         echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
@@ -36,21 +28,21 @@ else
 
     pushd /tmp/sdk
 
-#if false
-#then
-#    ${SDKROOT}/emsdk/upstream/bin/wasm-opt --version > ${SDKROOT}/wasm-opt.version
-#    cat > ${SDKROOT}/emsdk/upstream/bin/wasm-opt <<END
-##!/bin/bash
-#if echo \$*|grep -q version$
-#then
-#	echo "$(cat ${SDKROOT}/wasm-opt.version)"
-#else
-#	# echo "\$@" >> /tmp/wasm.opt
-#    exit 0
-#fi
-#END
-#        chmod +x ${SDKROOT}/emsdk/upstream/bin/wasm-opt
-#fi
+if false
+then
+    ${SDKROOT}/emsdk/upstream/bin/wasm-opt --version > ${SDKROOT}/wasm-opt.version
+    cat > ${SDKROOT}/emsdk/upstream/bin/wasm-opt <<END
+#!/bin/bash
+if echo \$*|grep -q version$
+then
+	echo "$(cat ${SDKROOT}/wasm-opt.version)"
+else
+	# echo "\$@" >> /tmp/wasm.opt
+    exit 0
+fi
+END
+        chmod +x ${SDKROOT}/emsdk/upstream/bin/wasm-opt
+fi
 
     ALL="-m32 \
 -D_FILE_OFFSET_BITS=64 \
@@ -83,7 +75,7 @@ else
 
 int main(int argc, char**arv){
 #if defined(__EMSCRIPTEN__)
-#   if defined(PYDK_STATIC)
+#   if defined(__PYDK__)
         printf("pydk" " %d.%d.%d\n",__EMSCRIPTEN_major__, __EMSCRIPTEN_minor__, __EMSCRIPTEN_tiny__);
 #   else
         printf("emsdk" " %d.%d.%d\n",__EMSCRIPTEN_major__, __EMSCRIPTEN_minor__, __EMSCRIPTEN_tiny__);
@@ -108,11 +100,11 @@ int main(int argc, char**arv){
 }
 END
 
-        EMCC_TRACE=true DEBUG_PATTERN=* ${SDKROOT}/emsdk/upstream/emscripten/emcc -sASSERTIONS=0 -sGLOBAL_BASE=32B -o hello_em.html /tmp/sdk/hello_em.c
+        EMCC_TRACE=true DEBUG_PATTERN=* ${SDKROOT}/emsdk/upstream/emscripten/emcc -sASSERTIONS=0 -sENVIRONMENT=node,web -sGLOBAL_BASE=32B -o hello_em.html /tmp/sdk/hello_em.c
         $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^pydk > $SDKROOT/VERSION || exit 80
         rm hello_em.js hello_em.wasm
 
-        python3 -E ${SDKROOT}/emsdk/upstream/emscripten/emcc.py -O2 -g3 -sENVIRONMENT=node -sGLOBAL_BASE=32B $ALL -o hello_em.js /tmp/sdk/hello_em.c
+        python3 -E ${SDKROOT}/emsdk/upstream/emscripten/emcc.py -O2 -g3 -sENVIRONMENT=node,web -sGLOBAL_BASE=32B $ALL -o hello_em.js /tmp/sdk/hello_em.c
         $SDKROOT/emsdk/node/*.*.*64bit/bin/node hello_em.js |grep ^emsdk >> $SDKROOT/VERSION || exit 84
 
         rm hello_em.*
