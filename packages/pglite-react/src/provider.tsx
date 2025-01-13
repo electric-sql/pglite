@@ -6,7 +6,9 @@ interface Props<T extends PGliteWithLive> {
   db?: T
 }
 
-type PGliteProvider<T extends PGliteWithLive> = (props: Props<T>) => React.JSX.Element
+type PGliteProvider<T extends PGliteWithLive> = (
+  props: Props<T>,
+) => React.JSX.Element
 type UsePGlite<T extends PGliteWithLive> = (db?: T) => T
 
 interface PGliteProviderSet<T extends PGliteWithLive> {
