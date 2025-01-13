@@ -6,7 +6,7 @@ WASI_CFLAGS="-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=${PGROOT} 
  -Ipostgresql/src/include \
  -Ipostgresql/src/backend \
  -c -o build/postgres/wasi_dlfcn.o \
- -Ibuild/postgres/src/include patches/wasi_dlfcn.c || exit 8
+ -Ibuild/postgres/src/include patches/wasi_dlfcn.c || exit 9
 
 #  -L./build/postgres/src/backend/snowball -ldict_snowball
 # ./build/postgres/src/backend/snowball/dict_snowball.o
@@ -793,7 +793,7 @@ $CC -o postgres \
  -Wl,--export=interactive_read \
  -Wl,--global-base=33333333
 
-cp -vf postgres postgres.wasi || exit 192
+cp -vf postgres postgres.wasi || exit 796
 #cp -vf postgres.wasi /tmp/pglite/bin/postgres.wasi
 
 popd

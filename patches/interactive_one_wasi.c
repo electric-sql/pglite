@@ -150,7 +150,8 @@ EMSCRIPTEN_KEEPALIVE int
 cma_rsize = 0;
 
 
-EMSCRIPTEN_KEEPALIVE void
+__attribute__((export_name("interactive_write"))) // EMSCRIPTEN_KEEPALIVE
+void
 interactive_write(int size) {
     cma_rsize = size;
     cma_wsize = 0;
@@ -158,7 +159,8 @@ interactive_write(int size) {
 
 /* TODO : prevent multiple write and write while reading ? */
 
-EMSCRIPTEN_KEEPALIVE int
+__attribute__((export_name("interactive_read"))) // EMSCRIPTEN_KEEPALIVE
+int
 interactive_read() {
 /* should cma_rsize should be reset here ? */
     return cma_wsize;
@@ -177,7 +179,6 @@ interactive_one() {
     FILE *stream ;
     FILE *fp;
     int packetlen;
-    bool is_socket = false;
     bool is_wire = true;
 
     if (!MyProcPort) {
@@ -242,141 +243,13 @@ interactive_one() {
  *
  */
 
-    packetlen = 0;
-
-    fp = fopen(PGS_IN, "r");
-
-    // read as a socket.
-    if (fp) {
-        fseek(fp, 0L, SEEK_END);
-        packetlen = ftell(fp);
-
-//printf("# 250 : wire packetlen = %d\n", packetlen);
-        if (packetlen) {
-            sockfiles = true;
-            whereToSendOutput = DestRemote;
-            resetStringInfo(inBuf);
-            rewind(fp);
-            /* peek on first char */
-            firstchar = getc(fp);
-            rewind(fp);
-            pq_recvbuf_fill(fp, packetlen);
-#if PGDEBUG
-            rewind(fp);
-#endif
-
-            /* is it startup/auth packet ? */
-            if (!firstchar || (firstchar==112)) {
-                /* code is in handshake/auth domain so read whole msg now */
-                //pq_recvbuf_fill(fp, packetlen);
-
-                if (!firstchar) {
-                    if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
-                        PDEBUG("# 266: ProcessStartupPacket !OK");
-                    } else {
-                        PDEBUG("# 267: auth request");
-                        //ClientAuthentication(MyProcPort);
-ClientAuthInProgress = true;
-                        md5Salt[0]=0x01;
-                        md5Salt[1]=0x23;
-                        md5Salt[2]=0x45;
-                        md5Salt[3]=0x56;
-                        {
-                            StringInfoData buf;
-                            pq_beginmessage(&buf, 'R');
-                            pq_sendint32(&buf, (int32) AUTH_REQ_MD5);
-                            if (md5Salt_len > 0)
-                                pq_sendbytes(&buf, md5Salt, md5Salt_len);
-                            pq_endmessage(&buf);
-                            pq_flush();
-                        }
-                    }
-                } // handshake
-
-                if (firstchar==112) {
-                    char *passwd = recv_password_packet(MyProcPort);
-                    printf("auth recv password: %s\n", "md5***" );
-ClientAuthInProgress = false;
-/*
-                // TODO: CheckMD5Auth
-                    if (passwd == NULL)
-                        return STATUS_EOF;
-                    if (shadow_pass)
-                        result = md5_crypt_verify(port->user_name, shadow_pass, passwd, md5Salt, md5Salt_len, logdetail);
-                    else
-                        result = STATUS_ERROR;
-*/
-                    pfree(passwd);
-                    {
-                        StringInfoData buf;
-                        pq_beginmessage(&buf, 'R');
-                        pq_sendint32(&buf, (int32) AUTH_REQ_OK);
-                        pq_endmessage(&buf);
-                    }
-
-                    BeginReportingGUCOptions();
-                    pgstat_report_connect(MyDatabaseId);
-                    {
-                        StringInfoData buf;
-                        pq_beginmessage(&buf, 'K');
-                        pq_sendint32(&buf, (int32) MyProcPid);
-                        pq_sendint32(&buf, (int32) MyCancelKey);
-                        pq_endmessage(&buf);
-                    }
-
-PDEBUG("# 324 : TODO: set a pg_main started flag");
-                    sf_connected++;
-// CHECK ME see 538 / 563
-                    send_ready_for_query = true;
-                } // auth
-            } else {
-#if 0 // PGDEBUG
-                fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
-                for (int i=0;i<packetlen;i++) {
-                    int b = getc(fp);
-                    /* skip header (size uint32) */
-                    if (i>4) {
-                        fprintf(stderr, "%d, ", b);
-                    }
-                }
-                fprintf(stderr, "]\n");
-#endif
-            }
-            // when using locks
-            // ftruncate(filenum(fp), 0);
-        }
-/* FD CLEANUP */
-        fclose(fp);
-        unlink(PGS_IN);
-
-        // Check if auth bypass work with socketfiles
-        if (packetlen) {
-            if (!firstchar || (firstchar==112)) {
-                PDEBUG("# 351: handshake/auth skip");
-                goto wire_flush;
-            }
-
-            /* else it is wire msg */
-#if PGDEBUG
-printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
-            force_echo = true;
-#endif
-            is_socket = true;
-            is_wire = true;
-            whereToSendOutput = DestRemote;
-
-            goto incoming;
-        } // wire msg
-
-    } // fp data read
-
     if (cma_rsize) {
-        PDEBUG("wire message in cma buffer !");
-        is_wire = true;
-        is_socket = false;
+        PDEBUG("repl message in cma buffer !");
+        is_wire = false;
         sockfiles = false;
+//        is_repl = !is_embed;
+        is_repl = false;
         whereToSendOutput = DestRemote;
-
         if (!MyProcPort) {
             io_init(true, false);
         }
@@ -385,12 +258,145 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
             SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
             MyProcPort->sock = fileno(SOCKET_FILE);
         }
+
 #if PGDEBUG
         printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
 #endif
-        goto incoming;
+        //goto incoming;
 
-    }
+    } else {
+        sockfiles = true;
+        is_wire = true;
+
+        packetlen = 0;
+
+        fp = fopen(PGS_IN, "r");
+
+        // read as a socket.
+        if (fp) {
+            fseek(fp, 0L, SEEK_END);
+            packetlen = ftell(fp);
+
+    //printf("# 250 : wire packetlen = %d\n", packetlen);
+            if (packetlen) {
+                sockfiles = true;
+                whereToSendOutput = DestRemote;
+                resetStringInfo(inBuf);
+                rewind(fp);
+                /* peek on first char */
+                firstchar = getc(fp);
+                rewind(fp);
+                pq_recvbuf_fill(fp, packetlen);
+    #if PGDEBUG
+                rewind(fp);
+    #endif
+
+                /* is it startup/auth packet ? */
+                if (!firstchar || (firstchar==112)) {
+                    /* code is in handshake/auth domain so read whole msg now */
+                    //pq_recvbuf_fill(fp, packetlen);
+
+                    if (!firstchar) {
+                        if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
+                            PDEBUG("# 266: ProcessStartupPacket !OK");
+                        } else {
+                            PDEBUG("# 267: auth request");
+                            //ClientAuthentication(MyProcPort);
+    ClientAuthInProgress = true;
+                            md5Salt[0]=0x01;
+                            md5Salt[1]=0x23;
+                            md5Salt[2]=0x45;
+                            md5Salt[3]=0x56;
+                            {
+                                StringInfoData buf;
+                                pq_beginmessage(&buf, 'R');
+                                pq_sendint32(&buf, (int32) AUTH_REQ_MD5);
+                                if (md5Salt_len > 0)
+                                    pq_sendbytes(&buf, md5Salt, md5Salt_len);
+                                pq_endmessage(&buf);
+                                pq_flush();
+                            }
+                        }
+                    } // handshake
+
+                    if (firstchar==112) {
+                        char *passwd = recv_password_packet(MyProcPort);
+                        printf("auth recv password: %s\n", "md5***" );
+    ClientAuthInProgress = false;
+    /*
+                    // TODO: CheckMD5Auth
+                        if (passwd == NULL)
+                            return STATUS_EOF;
+                        if (shadow_pass)
+                            result = md5_crypt_verify(port->user_name, shadow_pass, passwd, md5Salt, md5Salt_len, logdetail);
+                        else
+                            result = STATUS_ERROR;
+    */
+                        pfree(passwd);
+                        {
+                            StringInfoData buf;
+                            pq_beginmessage(&buf, 'R');
+                            pq_sendint32(&buf, (int32) AUTH_REQ_OK);
+                            pq_endmessage(&buf);
+                        }
+
+                        BeginReportingGUCOptions();
+                        pgstat_report_connect(MyDatabaseId);
+                        {
+                            StringInfoData buf;
+                            pq_beginmessage(&buf, 'K');
+                            pq_sendint32(&buf, (int32) MyProcPid);
+                            pq_sendint32(&buf, (int32) MyCancelKey);
+                            pq_endmessage(&buf);
+                        }
+
+    PDEBUG("# 324 : TODO: set a pg_main started flag");
+                        sf_connected++;
+    // CHECK ME see 538 / 563
+                        send_ready_for_query = true;
+                    } // auth
+                } else {
+    #if 0 // PGDEBUG
+                    fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
+                    for (int i=0;i<packetlen;i++) {
+                        int b = getc(fp);
+                        /* skip header (size uint32) */
+                        if (i>4) {
+                            fprintf(stderr, "%d, ", b);
+                        }
+                    }
+                    fprintf(stderr, "]\n");
+    #endif
+                }
+                // when using locks
+                // ftruncate(filenum(fp), 0);
+            }
+    /* FD CLEANUP */
+            fclose(fp);
+            unlink(PGS_IN);
+
+            // Check if auth bypass work with socketfiles
+            if (packetlen) {
+                if (!firstchar || (firstchar==112)) {
+                    PDEBUG("# 351: handshake/auth skip");
+                    goto wire_flush;
+                }
+
+                /* else it is wire msg */
+    #if PGDEBUG
+    printf("# 353 : node+repl is_wire -> true : %c\n", firstchar);
+                force_echo = true;
+    #endif
+                is_wire = true;
+                whereToSendOutput = DestRemote;
+
+                goto incoming;
+            } // wire msg
+
+        } // fp data read
+
+
+    } // !cma_rsize
 
     c = IO[0];
 
@@ -399,33 +405,30 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
     if (!c)
         return;
 
-// when embedded default to reply in cma buffer
-    is_repl = !is_embed;
+    // when embedded default to reply in cma buffer in wire mode.
 
     if (is_repl) {
         whereToSendOutput = DestNone;
         is_wire = false;
-        is_socket = false;
     } else {
-        is_wire = false;
-        is_socket = false;
         whereToSendOutput = DestRemote;
-
-        if (!MyProcPort) {
-            ClientAuthInProgress = true;
-            pq_init();
-            MyProcPort = (Port *) calloc(1, sizeof(Port));
+        if (sockfiles) {
             if (!MyProcPort) {
-                PDEBUG("      --------- NO CLIENT (oom) ---------");
-                abort();
+                ClientAuthInProgress = true;
+                pq_init();
+                MyProcPort = (Port *) calloc(1, sizeof(Port));
+                if (!MyProcPort) {
+                    PDEBUG("      --------- NO CLIENT (oom) ---------");
+                    abort();
+                }
+                MyProcPort->canAcceptConnections = CAC_OK;
+                ClientAuthInProgress = false;
             }
-            MyProcPort->canAcceptConnections = CAC_OK;
-            ClientAuthInProgress = false;
-        }
 
-        if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
-            MyProcPort->sock = fileno(SOCKET_FILE);
+            if (!SOCKET_FILE) {
+                SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
+                MyProcPort->sock = fileno(SOCKET_FILE);
+            }
         }
 #if PGDEBUG
         printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
@@ -433,7 +436,7 @@ printf("# 353 : node+repl is_wire/is_socket -> true : %c\n", firstchar);
 
     }
 
-    // zero copy buffer ( lower wasm memory segment )
+    // zero copy buffer ( lowest wasm memory segment )
     packetlen = strlen(IO);
     if (packetlen<2) {
         pg_prompt();
@@ -520,28 +523,28 @@ incoming:
 
 
     if (force_echo) {
-        printf("# 549: wire=%d socket=%d 1stchar=%c Q: %s", is_wire, is_socket, firstchar, inBuf->data);
+        printf("# 549: wire=%d 1stchar=%c Q: %s", is_wire,  firstchar, inBuf->data);
     }
 
+    if (is_wire) {
+        /* wire on a socket or cma */
+        firstchar = SocketBackend(inBuf);
 
-        if (is_wire) {
-            /* wire on a socket or cma */
-            firstchar = SocketBackend(inBuf);
+    } else {
+        /* nowire */
+        if (c == EOF && inBuf->len == 0) {
+            firstchar = EOF;
 
         } else {
-            /* nowire */
-            if (c == EOF && inBuf->len == 0) {
-                firstchar = EOF;
-
-            } else {
-                appendStringInfoChar(inBuf, (char) '\0');
-            	firstchar = 'Q';
-            }
-
-            /* stdio node repl */
-            if (is_repl)
-                whereToSendOutput = DestDebug;
+            appendStringInfoChar(inBuf, (char) '\0');
+        	firstchar = 'Q';
         }
+
+        /* stdio node repl */
+        if (is_repl)
+            whereToSendOutput = DestDebug;
+    }
+
     while (1) {
 	    if (ignore_till_sync && firstchar != EOF) {
 	        puts("@@@@@@@@@@@@@ 573 TODO: postgres.c 	4684 :	continue");
@@ -561,7 +564,7 @@ incoming:
         }
     }
 
-    if (is_wire) {
+    if (!is_repl) {
 wire_flush:
         if (!ClientAuthInProgress) {
             if (send_ready_for_query) {
