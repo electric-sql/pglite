@@ -264,10 +264,7 @@ export function Repl({
     `}
       style={styles}
     >
-      <div
-        className="PGliteRepl-output"
-        ref={outputRef}
-      >
+      <div className="PGliteRepl-output" ref={outputRef}>
         {loading && <div className="PGliteRepl-loading-msg">Loading...</div>}
         {output.map((response) => (
           <div key={`${response.query}-${response.time}`}>
