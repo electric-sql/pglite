@@ -2,8 +2,6 @@
 . /opt/python-wasm-sdk/wasisdk/wasisdk_env.sh
 # dlfcn emulation
 
-echo "WASI_CFLAGS=-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=${PGROOT} -DPYDK=1"
-read
 WASI_CFLAGS="-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=${PGROOT} -DPYDK=1" wasi-c -fPIC \
  -Ipostgresql/src/include \
  -Ipostgresql/src/backend \
