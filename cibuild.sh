@@ -419,26 +419,26 @@ then
 
 fi
 
- if echo " $*"|grep -q " extra"
+if echo " $*"|grep -q " extra"
 then
     for extra_ext in  ${EXTRA_EXT:-"vector"}
     do
-        if $CI
-        then
-            if [ -d $PREFIX/include/X11 ]
-            then
-                echo -n
-            else
-                # install EXTRA sdk
-                . /etc/lsb-release
-                DISTRIB="${DISTRIB_ID}-${DISTRIB_RELEASE}"
-                CIVER=${CIVER:-$DISTRIB}
-                SDK_URL=https://github.com/pygame-web/python-wasm-sdk-extra/releases/download/$SDK_VERSION/python3.13-emsdk-sdk-extra-${CIVER}.tar.lz4
-                echo "Installing $SDK_URL"
-                curl -sL --retry 5 $SDK_URL | tar xvP --use-compress-program=lz4 | pv -p -l -s 15000 >/dev/null
-                chmod +x ./extra/*.sh
-            fi
-        fi
+        # if $CI
+        # then
+        #     if [ -d $PREFIX/include/X11 ]
+        #     then
+        #         echo -n
+        #     else
+        #         # install EXTRA sdk
+        #         . /etc/lsb-release
+        #         DISTRIB="${DISTRIB_ID}-${DISTRIB_RELEASE}"
+        #         CIVER=${CIVER:-$DISTRIB}
+        #         SDK_URL=https://github.com/pygame-web/python-wasm-sdk-extra/releases/download/$SDK_VERSION/python3.13-emsdk-sdk-extra-${CIVER}.tar.lz4
+        #         echo "Installing $SDK_URL"
+        #         curl -sL --retry 5 $SDK_URL | tar xvP --use-compress-program=lz4 | pv -p -l -s 15000 >/dev/null
+        #         chmod +x ./extra/*.sh
+        #     fi
+        # fi
         echo "======================= ${extra_ext} : $(pwd) ==================="
 
         ./extra/${extra_ext}.sh || exit 400
