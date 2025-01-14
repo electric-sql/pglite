@@ -81,7 +81,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-interim-build-files
-          path: ./packages/pglite/release
+          path: ./release
 
       - name: Install dependencies
         run: |
