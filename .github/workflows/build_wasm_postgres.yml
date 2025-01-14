@@ -26,7 +26,7 @@ jobs:
         OBJDUMP: true
         contrib: contrib
         extra: extra
-        EXTRA_EXT: vector postgis
+        EXTRA_EXT: vector
         DEBUG: false
 
     steps:
