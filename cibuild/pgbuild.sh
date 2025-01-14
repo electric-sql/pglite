@@ -17,23 +17,16 @@ CC_PGLITE=$CC_PGLITE
     echo "{}" > package.json
 
 
-    # if $CI
-    # then
-    #     echo "CI : using build cache"
-    # else
-    #     if [ -f Makefile ]
-    #     then
-    #         echo "Cleaning up previous build ..."
-    #         make distclean 2>&1 > /dev/null
-    #     fi
-    # fi
-
-    if [ -f Makefile ]
+    if $CI
     then
-        echo "Cleaning up previous build ..."
-        make distclean 2>&1 > /dev/null
+        echo "CI : using build cache"
+    else
+        if [ -f Makefile ]
+        then
+            echo "Cleaning up previous build ..."
+            make distclean 2>&1 > /dev/null
+        fi
     fi
-
 
 # TODO: --with-libxml    xml2 >= 2.6.23
 # TODO: --with-libxslt   add to sdk
@@ -53,14 +46,13 @@ CC_PGLITE=$CC_PGLITE
         export MAIN_MODULE=""
     else
         # --with-libxml does not fit with --without-zlib
-        # if $CI
-        # then
-        #     # do not build obsolete ext xml2 on CI
-        #     XML2="--with-zlib --with-libxml"
-        # else
-        #     XML2="--with-zlib --with-libxml --with-libxslt"
-        # fi
-        XML2="--with-zlib --with-libxml --with-libxslt"
+        if $CI
+        then
+            # do not build obsolete ext xml2 on CI
+            XML2="--with-zlib --with-libxml"
+        else
+            XML2="--with-zlib --with-libxml --with-libxslt"
+        fi
         UUID="--with-uuid=ossp"
         BUILD=emscripten
         WASM_CFLAGS=""

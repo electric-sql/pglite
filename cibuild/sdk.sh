@@ -16,10 +16,10 @@ else
         echo "Installing sdk to $SDKROOT"
         SDK_ARCHIVE=${SDK_ARCHIVE:-python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4}
         WASI_SDK_ARCHIVE=${WASI_SDK_ARCHIVE:-python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4}
-        # if $CI
-        # then
-        #     echo "if sdk fails here, check .yml files and https://github.com/pygame-web/python-wasm-sdk releases"
-        # fi
+        if $CI
+        then
+            echo "if sdk fails here, check .yml files and https://github.com/pygame-web/python-wasm-sdk releases"
+        fi
         echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
         curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 46000 >/dev/null
         echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
