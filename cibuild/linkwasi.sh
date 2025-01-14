@@ -789,6 +789,7 @@ $CC -o postgres \
  -Wl,--export=loop \
  -Wl,--export=interactive_one \
  -Wl,--export=use_socketfile \
+ -Wl,--export=use_wire \
  -Wl,--export=interactive_write \
  -Wl,--export=interactive_read \
  -Wl,--global-base=33333333

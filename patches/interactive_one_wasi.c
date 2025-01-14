@@ -150,6 +150,12 @@ EMSCRIPTEN_KEEPALIVE int
 cma_rsize = 0;
 
 
+volatile int sf_connected = 0;
+volatile bool sockfiles = false;
+volatile bool is_wire = true;
+extern char * cma_port;
+
+
 __attribute__((export_name("interactive_write"))) // EMSCRIPTEN_KEEPALIVE
 void
 interactive_write(int size) {
@@ -166,9 +172,21 @@ interactive_read() {
     return cma_wsize;
 }
 
-volatile int sf_connected = 0;
-volatile bool sockfiles = false;
-extern char * cma_port;
+
+__attribute__((export_name("use_wire")))
+void
+use_wire(int state) {
+    if (state>0) {
+        puts("180: wire mode, echo on");
+        force_echo=true;
+        is_wire = 1;
+    } else {
+        //puts("184: repl mode, echo off");
+        force_echo=false;
+        is_wire = false;
+    }
+}
+
 
 EMSCRIPTEN_KEEPALIVE void
 interactive_one() {
@@ -179,7 +197,6 @@ interactive_one() {
     FILE *stream ;
     FILE *fp;
     int packetlen;
-    bool is_wire = true;
 
     if (!MyProcPort) {
         io_init(false, false);
@@ -204,26 +221,26 @@ interactive_one() {
 
     inBuf = &input_message;
 
-		InvalidateCatalogSnapshotConditionally();
+	InvalidateCatalogSnapshotConditionally();
 
-		if (send_ready_for_query)
+	if (send_ready_for_query)
+	{
+
+		if (IsAbortedTransactionBlockState())
 		{
-
-			if (IsAbortedTransactionBlockState())
-			{
-				puts("@@@@ TODO 219: idle in transaction (aborted)");
-			}
-			else if (IsTransactionOrTransactionBlock())
-			{
-				puts("@@@@ TODO 235: idle in transaction");
-			}
-			else
-			{
-				if (notifyInterruptPending)
-					ProcessNotifyInterrupt(false);
-            }
-            send_ready_for_query = false;
+			puts("@@@@ TODO 219: idle in transaction (aborted)");
+		}
+		else if (IsTransactionOrTransactionBlock())
+		{
+			puts("@@@@ TODO 235: idle in transaction");
+		}
+		else
+		{
+			if (notifyInterruptPending)
+				ProcessNotifyInterrupt(false);
         }
+        send_ready_for_query = false;
+    }
 
 
 // postgres.c 4627
@@ -237,32 +254,31 @@ interactive_one() {
 
 
 /*
- * in web mode, client call the wire loop itself waiting synchronously for the results
- * in repl mode, the wire loop polls a pseudo socket made from incoming and outgoing files. aka "socketfiles"
- * always use "socketfiles" when wasi
- *
+ * in cma mode (cma_rsize>0), client call the wire loop itself waiting synchronously for the results
+ * in socketfiles mode, the wire loop polls a pseudo socket made from incoming and outgoing files.
+ * in repl mode (cma_rsize==0) output is on stdout not cma/socketfiles wire. repl mode is default.
  */
 
     if (cma_rsize) {
-        PDEBUG("repl message in cma buffer !");
-        is_wire = false;
         sockfiles = false;
-//        is_repl = !is_embed;
         is_repl = false;
         whereToSendOutput = DestRemote;
-        if (!MyProcPort) {
-            io_init(true, false);
-        }
+        if (!is_wire) {
+            PDEBUG("repl message in cma buffer !");
+            if (!MyProcPort) {
+                io_init(true, false);
+            }
 
-        if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
-            MyProcPort->sock = fileno(SOCKET_FILE);
+            if (!SOCKET_FILE) {
+                SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
+                MyProcPort->sock = fileno(SOCKET_FILE);
+            }
         }
-
 #if PGDEBUG
-        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 391: fd %s: %s fd=%d is_embed=%d is_wire=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed, is_wire);
 #endif
-        //goto incoming;
+        if (is_wire)
+            goto incoming;
 
     } else {
         sockfiles = true;
@@ -431,7 +447,7 @@ interactive_one() {
             }
         }
 #if PGDEBUG
-        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 430: fd %s: %s fd=%d is_embed=%d is_wire=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed, is_wire);
 #endif
 
     }
@@ -521,11 +537,6 @@ incoming:
     if (!ignore_till_sync)
         send_ready_for_query = true;
 
-
-    if (force_echo) {
-        printf("# 549: wire=%d 1stchar=%c Q: %s", is_wire,  firstchar, inBuf->data);
-    }
-
     if (is_wire) {
         /* wire on a socket or cma */
         firstchar = SocketBackend(inBuf);
@@ -543,6 +554,10 @@ incoming:
         /* stdio node repl */
         if (is_repl)
             whereToSendOutput = DestDebug;
+    }
+
+    if (force_echo) {
+        printf("# 539: wire=%d 1stchar=%c Q: %s", is_wire,  firstchar, inBuf->data);
     }
 
     while (1) {
