@@ -1245,7 +1245,7 @@ pg_getport() {
 #else
 EMSCRIPTEN_KEEPALIVE int
 pg_getport() {
-    return 0;
+    return 1;
 }
 #endif
 
