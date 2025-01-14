@@ -28,6 +28,13 @@ CC_PGLITE=$CC_PGLITE
     #     fi
     # fi
 
+    if [ -f Makefile ]
+    then
+        echo "Cleaning up previous build ..."
+        make distclean 2>&1 > /dev/null
+    fi
+
+
 # TODO: --with-libxml    xml2 >= 2.6.23
 # TODO: --with-libxslt   add to sdk
 #  --disable-atomics https://github.com/WebAssembly/threads/pull/147  "Allow atomic operations on unshared memories"
