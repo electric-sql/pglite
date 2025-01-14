@@ -77,6 +77,7 @@ export function parseResults(
 
   if (resultSets.length === 0) {
     resultSets.push({
+      affectedRows: 0,
       rows: [],
       fields: [],
     })
