@@ -175,6 +175,31 @@ pnpm changeset
 ```
 And follow the instructions to create an appropriate changeset. Please ensure any contributions that touch code are accompanied by a changeset.
 
+### Building everything with Docker
+
+You can also build the PGlite from scratch by just issuing a docker build command:
+
+`$ docker build -f buildall.dockerfile -t pglitedocker .`
+
+This will build an image containing both the wasm and typescript parts of pglite.
+
+You can then use this image, for example, to run the tests:
+
+`$ docker run pglitedocker bash -c "cd /workspace/packages/pglite && pnpm test"`
+
+#### Extract build artifacts from the docker image
+
+Following is an example of how you can extract the build artifacts created in the previous step:
+
+```
+$ container_id=$(docker create pglitedocker)
+$ docker cp "$container_id:/tmp/pglite/sdk" /tmp/
+$ docker cp "$container_id:/tmp/web/postgres.wasm" /tmp/
+$ docker rm "$container_id"
+```
+
+This will copy the sdk build artifacts folder as well as the postgres.wasm binary to your local /tmp folder
+
 ## Acknowledgments
 
 PGlite builds on the work of [Stas Kelvich](https://github.com/kelvich) of [Neon](https://neon.tech) in this [Postgres fork](https://github.com/electric-sql/postgres-wasm).

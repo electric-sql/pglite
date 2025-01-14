@@ -148,6 +148,7 @@ jobs:
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
     runs-on: ubuntu-22.04
+
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4

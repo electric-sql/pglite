@@ -46,13 +46,14 @@ CC_PGLITE=$CC_PGLITE
         export MAIN_MODULE=""
     else
         # --with-libxml does not fit with --without-zlib
-        if $CI
-        then
-            # do not build obsolete ext xml2 on CI
-            XML2="--with-zlib --with-libxml"
-        else
-            XML2="--with-zlib --with-libxml --with-libxslt"
-        fi
+        # if $CI
+        # then
+        #     # do not build obsolete ext xml2 on CI
+        #     XML2="--with-zlib --with-libxml"
+        # else
+        #     XML2="--with-zlib --with-libxml --with-libxslt"
+        # fi
+        XML2="--with-zlib --with-libxml --with-libxslt"
         UUID="--with-uuid=ossp"
         BUILD=emscripten
         WASM_CFLAGS=""

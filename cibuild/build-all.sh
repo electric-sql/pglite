@@ -1,5 +1,10 @@
 #!/bin/bash
 echo "======== build-all.sh : $(pwd)             =========="
+
+echo "======== Installing packages =========="
+
+apt update && apt install -y git bison flex
+
 echo "======== Building all PGlite prerequisites =========="
 
 # move copy of patches into dir
