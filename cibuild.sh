@@ -555,17 +555,17 @@ ________________________________________________________________________________
             #mkdir /tmp/web/repl/dist-webcomponent -p
             #cp -r ${WORKSPACE}/packages/pglite-repl/dist-webcomponent /tmp/web/repl/
 
-            if $CI
-            then
-                tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
+            # if $CI
+            # then
+            #     tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
 
-                # build sdk (node)
-                cp /tmp/sdk/postgres-${PG_VERSION}-*.tar.gz ${WEBROOT}/
+            #     # build sdk (node)
+            #     cp /tmp/sdk/postgres-${PG_VERSION}-*.tar.gz ${WEBROOT}/
 
-                # pglite (web)
-                cp /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz ${WEBROOT}/
+            #     # pglite (web)
+            #     cp /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz ${WEBROOT}/
 
-            fi
+            # fi
 
             du -hs ${WEBROOT}/*
         ;;
