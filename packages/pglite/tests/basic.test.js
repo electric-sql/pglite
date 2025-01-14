@@ -26,10 +26,12 @@ await testEsmAndCjs(async (importType) => {
 
       expect(multiStatementResult).toEqual([
         {
+          affectedRows: 1,
           rows: [],
           fields: [],
         },
         {
+          affectedRows: 2,
           rows: [],
           fields: [],
         },

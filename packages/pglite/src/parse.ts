@@ -23,17 +23,7 @@ export function parseResults(
   let affectedRows = 0
   const parsers = { ...defaultParsers, ...options?.parsers }
 
-  const processMessageTypes = new Set([
-    'rowDescription',
-    'dataRow',
-    'commandComplete',
-  ])
-
-  const filteredMessages = messages.filter((msg) =>
-    processMessageTypes.has(msg.name),
-  )
-
-  filteredMessages.forEach((message, index) => {
+  messages.forEach((message) => {
     switch (message.name) {
       case 'rowDescription': {
         const msg = message as RowDescriptionMessage
@@ -73,15 +63,11 @@ export function parseResults(
         const msg = message as CommandCompleteMessage
         affectedRows += retrieveRowCount(msg)
 
-        if (index === filteredMessages.length - 1) {
-          resultSets.push({
-            ...currentResultSet,
-            affectedRows,
-            ...(blob ? { blob } : {}),
-          })
-        } else {
-          resultSets.push(currentResultSet)
-        }
+        resultSets.push({
+          ...currentResultSet,
+          affectedRows,
+          ...(blob ? { blob } : {}),
+        })
 
         currentResultSet = { rows: [], fields: [] }
         break
