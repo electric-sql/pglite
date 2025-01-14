@@ -22,7 +22,7 @@ jobs:
         SYS_PYTHON: /usr/bin/python3
         PGROOT: /tmp/pglite
         TOTAL_MEMORY: 192MB
-        CMA_MB: 16
+        CMA_MB: 64
         OBJDUMP: true
         contrib: contrib
         extra: extra
