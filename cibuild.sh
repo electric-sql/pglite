@@ -589,8 +589,8 @@ ________________________________________________________________________________
         ;;
 
         pglite-prep) echo "==================== pglite-prep  =========================="
+            rm -r $PGLITE/release
             mkdir -p $PGLITE/release
-            #rm $PGLITE/release/*
 
             # copy packed extensions
             cp -vf ${WEBROOT}/*.tar.gz ${PGLITE}/release/
