@@ -150,6 +150,12 @@ EMSCRIPTEN_KEEPALIVE int
 cma_rsize = 0;
 
 
+volatile int sf_connected = 0;
+volatile bool sockfiles = false;
+volatile bool is_wire = true;
+extern char * cma_port;
+
+
 __attribute__((export_name("interactive_write"))) // EMSCRIPTEN_KEEPALIVE
 void
 interactive_write(int size) {
@@ -166,10 +172,89 @@ interactive_read() {
     return cma_wsize;
 }
 
-volatile int sf_connected = 0;
-volatile bool sockfiles = false;
-extern char * cma_port;
 
+__attribute__((export_name("use_wire")))
+void
+use_wire(int state) {
+    if (state>0) {
+        puts("180: wire mode, echo on");
+        force_echo=true;
+        is_wire = 1;
+    } else {
+        //puts("184: repl mode, echo off");
+        force_echo=false;
+        is_wire = false;
+    }
+}
+
+
+bool
+startup_auth(int firstchar) {
+    if (!firstchar || (firstchar==112)) {
+        /* code is in handshake/auth domain so read whole msg now */
+        if (!firstchar) {
+            if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
+                PDEBUG("# 266: ProcessStartupPacket !OK");
+            } else {
+                PDEBUG("# 267: auth request");
+                //ClientAuthentication(MyProcPort);
+ClientAuthInProgress = true;
+                md5Salt[0]=0x01;
+                md5Salt[1]=0x23;
+                md5Salt[2]=0x45;
+                md5Salt[3]=0x56;
+                {
+                    StringInfoData buf;
+                    pq_beginmessage(&buf, 'R');
+                    pq_sendint32(&buf, (int32) AUTH_REQ_MD5);
+                    if (md5Salt_len > 0)
+                        pq_sendbytes(&buf, md5Salt, md5Salt_len);
+                    pq_endmessage(&buf);
+                    pq_flush();
+                }
+            }
+        } // handshake
+
+        if (firstchar==112) {
+            char *passwd = recv_password_packet(MyProcPort);
+            printf("auth recv password: %s\n", "md5***" );
+ClientAuthInProgress = false;
+/*
+        // TODO: CheckMD5Auth
+            if (passwd == NULL)
+                return STATUS_EOF;
+            if (shadow_pass)
+                result = md5_crypt_verify(port->user_name, shadow_pass, passwd, md5Salt, md5Salt_len, logdetail);
+            else
+                result = STATUS_ERROR;
+*/
+            pfree(passwd);
+            {
+                StringInfoData buf;
+                pq_beginmessage(&buf, 'R');
+                pq_sendint32(&buf, (int32) AUTH_REQ_OK);
+                pq_endmessage(&buf);
+            }
+
+            BeginReportingGUCOptions();
+            pgstat_report_connect(MyDatabaseId);
+            {
+                StringInfoData buf;
+                pq_beginmessage(&buf, 'K');
+                pq_sendint32(&buf, (int32) MyProcPid);
+                pq_sendint32(&buf, (int32) MyCancelKey);
+                pq_endmessage(&buf);
+            }
+
+PDEBUG("# 324 : TODO: set a pg_main started flag");
+            sf_connected++;
+// CHECK ME see 538 / 563
+            send_ready_for_query = true;
+        } // auth
+        return true;
+    }
+    return false;
+}
 EMSCRIPTEN_KEEPALIVE void
 interactive_one() {
 	int			firstchar;
@@ -179,7 +264,7 @@ interactive_one() {
     FILE *stream ;
     FILE *fp;
     int packetlen;
-    bool is_wire = true;
+
 
     if (!MyProcPort) {
         io_init(false, false);
@@ -187,10 +272,12 @@ interactive_one() {
 
     // this could be pg_flush in sync mode.
     // but in fact we are writing socket data that was piled up previous frame async.
-    if (SOCKET_DATA>0)
+    if (SOCKET_DATA>0) {
+        puts("209: ERROR flush after frame");
         goto wire_flush;
+    }
 
-
+    // prepare reply queue
     if (!SOCKET_FILE) {
         SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
         MyProcPort->sock = fileno(SOCKET_FILE);
@@ -204,26 +291,26 @@ interactive_one() {
 
     inBuf = &input_message;
 
-		InvalidateCatalogSnapshotConditionally();
+	InvalidateCatalogSnapshotConditionally();
 
-		if (send_ready_for_query)
+	if (send_ready_for_query)
+	{
+
+		if (IsAbortedTransactionBlockState())
 		{
-
-			if (IsAbortedTransactionBlockState())
-			{
-				puts("@@@@ TODO 219: idle in transaction (aborted)");
-			}
-			else if (IsTransactionOrTransactionBlock())
-			{
-				puts("@@@@ TODO 235: idle in transaction");
-			}
-			else
-			{
-				if (notifyInterruptPending)
-					ProcessNotifyInterrupt(false);
-            }
-            send_ready_for_query = false;
+			puts("@@@@ TODO 219: idle in transaction (aborted)");
+		}
+		else if (IsTransactionOrTransactionBlock())
+		{
+			puts("@@@@ TODO 235: idle in transaction");
+		}
+		else
+		{
+			if (notifyInterruptPending)
+				ProcessNotifyInterrupt(false);
         }
+        send_ready_for_query = false;
+    }
 
 
 // postgres.c 4627
@@ -231,42 +318,31 @@ interactive_one() {
 
 #if defined(EMUL_CMA)
     #define IO ((char *)(1+(int)cma_port))  //  temp fix for -O0 but less efficient than literal
+    #error "inefficient"
 #else
     #define IO ((char *)(1))
 #endif
 
 
 /*
- * in web mode, client call the wire loop itself waiting synchronously for the results
- * in repl mode, the wire loop polls a pseudo socket made from incoming and outgoing files. aka "socketfiles"
- * always use "socketfiles" when wasi
- *
+ * in cma mode (cma_rsize>0), client call the wire loop itself waiting synchronously for the results
+ * in socketfiles mode, the wire loop polls a pseudo socket made from incoming and outgoing files.
+ * in repl mode (cma_rsize==0) output is on stdout not cma/socketfiles wire. repl mode is default.
  */
 
     if (cma_rsize) {
-        PDEBUG("repl message in cma buffer !");
-        is_wire = false;
+        packetlen = cma_rsize;
         sockfiles = false;
-//        is_repl = !is_embed;
         is_repl = false;
         whereToSendOutput = DestRemote;
-        if (!MyProcPort) {
-            io_init(true, false);
-        }
 
-        if (!SOCKET_FILE) {
-            SOCKET_FILE =  fopen(PGS_OLOCK, "w") ;
-            MyProcPort->sock = fileno(SOCKET_FILE);
-        }
-
+        if (!is_wire)
+            PDEBUG("repl message in cma buffer !");
 #if PGDEBUG
-        printf("# 391: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 391: fd %s: %s fd=%d is_embed=%d is_wire=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed, is_wire);
 #endif
         //goto incoming;
-
     } else {
-        sockfiles = true;
-        is_wire = true;
 
         packetlen = 0;
 
@@ -279,6 +355,9 @@ interactive_one() {
 
     //printf("# 250 : wire packetlen = %d\n", packetlen);
             if (packetlen) {
+                // always.
+                is_wire = true;
+
                 sockfiles = true;
                 whereToSendOutput = DestRemote;
                 resetStringInfo(inBuf);
@@ -291,71 +370,11 @@ interactive_one() {
                 rewind(fp);
     #endif
 
+
                 /* is it startup/auth packet ? */
-                if (!firstchar || (firstchar==112)) {
-                    /* code is in handshake/auth domain so read whole msg now */
-                    //pq_recvbuf_fill(fp, packetlen);
+                if (!startup_auth(firstchar)) {
+                //else {
 
-                    if (!firstchar) {
-                        if (ProcessStartupPacket(MyProcPort, true, true) != STATUS_OK) {
-                            PDEBUG("# 266: ProcessStartupPacket !OK");
-                        } else {
-                            PDEBUG("# 267: auth request");
-                            //ClientAuthentication(MyProcPort);
-    ClientAuthInProgress = true;
-                            md5Salt[0]=0x01;
-                            md5Salt[1]=0x23;
-                            md5Salt[2]=0x45;
-                            md5Salt[3]=0x56;
-                            {
-                                StringInfoData buf;
-                                pq_beginmessage(&buf, 'R');
-                                pq_sendint32(&buf, (int32) AUTH_REQ_MD5);
-                                if (md5Salt_len > 0)
-                                    pq_sendbytes(&buf, md5Salt, md5Salt_len);
-                                pq_endmessage(&buf);
-                                pq_flush();
-                            }
-                        }
-                    } // handshake
-
-                    if (firstchar==112) {
-                        char *passwd = recv_password_packet(MyProcPort);
-                        printf("auth recv password: %s\n", "md5***" );
-    ClientAuthInProgress = false;
-    /*
-                    // TODO: CheckMD5Auth
-                        if (passwd == NULL)
-                            return STATUS_EOF;
-                        if (shadow_pass)
-                            result = md5_crypt_verify(port->user_name, shadow_pass, passwd, md5Salt, md5Salt_len, logdetail);
-                        else
-                            result = STATUS_ERROR;
-    */
-                        pfree(passwd);
-                        {
-                            StringInfoData buf;
-                            pq_beginmessage(&buf, 'R');
-                            pq_sendint32(&buf, (int32) AUTH_REQ_OK);
-                            pq_endmessage(&buf);
-                        }
-
-                        BeginReportingGUCOptions();
-                        pgstat_report_connect(MyDatabaseId);
-                        {
-                            StringInfoData buf;
-                            pq_beginmessage(&buf, 'K');
-                            pq_sendint32(&buf, (int32) MyProcPid);
-                            pq_sendint32(&buf, (int32) MyCancelKey);
-                            pq_endmessage(&buf);
-                        }
-
-    PDEBUG("# 324 : TODO: set a pg_main started flag");
-                        sf_connected++;
-    // CHECK ME see 538 / 563
-                        send_ready_for_query = true;
-                    } // auth
-                } else {
     #if 0 // PGDEBUG
                     fprintf(stderr, "# 331: CLI[%d] incoming=%d [%d, ", sf_connected, packetlen, firstchar);
                     for (int i=0;i<packetlen;i++) {
@@ -368,6 +387,8 @@ interactive_one() {
                     fprintf(stderr, "]\n");
     #endif
                 }
+
+
                 // when using locks
                 // ftruncate(filenum(fp), 0);
             }
@@ -395,22 +416,25 @@ interactive_one() {
 
         } // fp data read
 
+        // no socketfile, is it repl ?
+        c = IO[0];
 
-    } // !cma_rsize
+        // TODO: use a msg queue length
+        if (!c)
+            return;
 
-    c = IO[0];
+        is_repl = true;
+        is_wire = false;
+        whereToSendOutput = DestNone;
 
+        //REPL mode  in zero copy buffer ( lowest wasm memory segment )
+        packetlen = strlen(IO);
 
-// TODO: use a msg queue length
-    if (!c)
-        return;
+    } // !cma_rsize -> socketfiles -> repl
+
 
     // when embedded default to reply in cma buffer in wire mode.
-
-    if (is_repl) {
-        whereToSendOutput = DestNone;
-        is_wire = false;
-    } else {
+    if (!is_repl) {
         whereToSendOutput = DestRemote;
         if (sockfiles) {
             if (!MyProcPort) {
@@ -431,104 +455,49 @@ interactive_one() {
             }
         }
 #if PGDEBUG
-        printf("# 430: fd %s: %s fd=%d is_embed=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed);
+        printf("# 430: fd %s: %s fd=%d is_embed=%d is_wire=%d\n", PGS_OLOCK, IO, MyProcPort->sock, is_embed, is_wire);
 #endif
 
     }
 
-    // zero copy buffer ( lowest wasm memory segment )
-    packetlen = strlen(IO);
-    if (packetlen<2) {
-        pg_prompt();
-        // always free kernel buffer !!!
-        IO[0] = 0;
-        return;
-    }
-
-
-// buffer query TODO: direct access ?
-	resetStringInfo(inBuf);
+    // buffer query TODO: direct access ?
+    // CMA wire mode. -> packetlen is set to cma_rsize from     if (!packetlen)
+    resetStringInfo(inBuf);
 
     for (int i=0; i<packetlen; i++) {
         appendStringInfoChar(inBuf, IO[i]);
     }
 
-    // always free kernel buffer !!!
+    //int peek = IO[0];
+
+    // always free cma buffer !!!
     IO[0] = 0;
+
+    if (packetlen<2) {
+        puts("466: WARNING: empty packet");
+        cma_rsize= 0;
+        pg_prompt();
+        return;
+    }
+
 
 incoming:
 #if defined(__wasi__) //PGDEBUG
     PDEBUG("# 484: sjlj exception handler off");
 #else
-	if (sigsetjmp(local_sigjmp_buf, 1) != 0)
-	{
-        error_context_stack = NULL;
-        HOLD_INTERRUPTS();
-
-        disable_all_timeouts(false);	/* do first to avoid race condition */
-        QueryCancelPending = false;
-        idle_in_transaction_timeout_enabled = false;
-        idle_session_timeout_enabled = false;
-        DoingCommandRead = false;
-
-        pq_comm_reset();
-        EmitErrorReport();
-        debug_query_string = NULL;
-
-        AbortCurrentTransaction();
-
-        if (am_walsender)
-            WalSndErrorCleanup();
-
-        PortalErrorCleanup();
-        if (MyReplicationSlot != NULL)
-            ReplicationSlotRelease();
-
-        ReplicationSlotCleanup();
-
-        MemoryContextSwitchTo(TopMemoryContext);
-        FlushErrorState();
-
-        if (doing_extended_query_message)
-            ignore_till_sync = true;
-
-        xact_started = false;
-
-        if (pq_is_reading_msg())
-            ereport(FATAL,
-	                (errcode(ERRCODE_PROTOCOL_VIOLATION),
-	                 errmsg("terminating connection because protocol synchronization was lost")));
-
-        RESUME_INTERRUPTS();
-
-        /*
-         * If we were handling an extended-query-protocol message, skip till next Sync.
-         * This also causes us not to issue ReadyForQuery (until we get Sync).
-         */
-
-        if (!ignore_till_sync)
-            send_ready_for_query = true;
-
-        if (!is_wire)
-            pg_prompt();
-
-        goto wire_flush;
-    }
-
-	PG_exception_stack = &local_sigjmp_buf;
+    #error "sigsetjmp unsupported"
 #endif // wasi
 
     if (!ignore_till_sync)
         send_ready_for_query = true;
 
-
-    if (force_echo) {
-        printf("# 549: wire=%d 1stchar=%c Q: %s", is_wire,  firstchar, inBuf->data);
-    }
-
     if (is_wire) {
         /* wire on a socket or cma */
+        puts("496: is_wire");
         firstchar = SocketBackend(inBuf);
+        if (startup_auth(firstchar))
+            puts("TODO: cma / wire startup/auth");
+
 
     } else {
         /* nowire */
@@ -545,7 +514,13 @@ incoming:
             whereToSendOutput = DestDebug;
     }
 
+
+    if (force_echo) {
+        printf("# 539: wire=%d 1stchar=%c Q: %s", is_wire,  firstchar, inBuf->data);
+    }
+
     while (1) {
+
 	    if (ignore_till_sync && firstchar != EOF) {
 	        puts("@@@@@@@@@@@@@ 573 TODO: postgres.c 	4684 :	continue");
         } else {
@@ -554,6 +529,7 @@ incoming:
             /* process notifications */
             ProcessClientReadInterrupt(true);
         }
+
         if (is_wire && pq_buffer_has_data()) {
             firstchar = SocketBackend(inBuf);
 #if PGDEBUG
