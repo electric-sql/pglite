@@ -24,7 +24,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const paramsRef = useRef(params)
-  const liveQueryRef = useRef<LiveQuery<T> | undefined>()
+  const liveQueryRef = useRef<LiveQuery<T> | undefined>(undefined)
   let liveQuery: LiveQuery<T> | undefined
   let liveQueryChanged = false
   if (!(typeof query === 'string') && !(query instanceof Promise)) {

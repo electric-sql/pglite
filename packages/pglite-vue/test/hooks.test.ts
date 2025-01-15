@@ -43,6 +43,35 @@ describe('hooks', () => {
       `)
     })
 
+    it('updates when query without parameters is provided', async () => {
+      const { useLiveQuery } = await import('../src')
+      await db.exec(`INSERT INTO test (name) VALUES ('test1');`)
+
+      const result = useLiveQuery('SELECT * FROM test;')
+
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([
+        {
+          id: 1,
+          name: 'test1',
+        },
+      ])
+
+      await db.exec(`INSERT INTO test (name) VALUES ('test2');`)
+
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([
+        {
+          id: 1,
+          name: 'test1',
+        },
+        {
+          id: 2,
+          name: 'test2',
+        },
+      ])
+    })
+
     it('updates when query parameter ref changes', async () => {
       const { useLiveQuery } = await import('../src')
       await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
