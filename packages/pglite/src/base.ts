@@ -366,9 +366,7 @@ export abstract class BasePGlite
    * @param callback A callback function that takes a transaction object
    * @returns The result of the transaction
    */
-  async transaction<T>(
-    callback: (tx: Transaction) => Promise<T>,
-  ): Promise<T | undefined> {
+  async transaction<T>(callback: (tx: Transaction) => Promise<T>): Promise<T> {
     await this._checkReady()
     return await this._runExclusiveTransaction(async () => {
       await this.#runExec('BEGIN')
