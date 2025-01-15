@@ -47,7 +47,19 @@ export async function loadTar(
     tarball = await unzip(tarball)
   }
 
-  const files = untar(tarball)
+  let files
+  try {
+    files = untar(tarball)
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('File is corrupted')) {
+      // The file may be compressed, but had the wrong mime type, try unzipping it
+      tarball = await unzip(tarball)
+      files = untar(tarball)
+    } else {
+      throw e
+    }
+  }
+
   for (const file of files) {
     const filePath = pgDataDir + file.name
 
