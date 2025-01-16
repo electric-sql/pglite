@@ -10,10 +10,11 @@ import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { uuid } from '../utils.js'
 
-export type PGliteWorkerOptions = PGliteOptions & {
-  meta?: any
-  id?: string
-}
+export type PGliteWorkerOptions<E extends Extensions = Extensions> =
+  PGliteOptions<E> & {
+    meta?: any
+    id?: string
+  }
 
 export class PGliteWorker
   extends BasePGlite

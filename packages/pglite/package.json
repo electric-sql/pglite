@@ -54,6 +54,11 @@
       "import": "./dist/fs/opfs-ahp.js",
       "require": "./dist/fs/opfs-ahp.cjs"
     },
+    "./basefs": {
+      "types": "./dist/fs/base.d.ts",
+      "import": "./dist/fs/base.js",
+      "require": "./dist/fs/base.cjs"
+    },
     "./contrib/*": {
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
