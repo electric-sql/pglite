@@ -33,7 +33,7 @@
 
 ![PGlite](https://raw.githubusercontent.com/electric-sql/pglite/main/screenshot.png)
 
-PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
+PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js, Bun and Deno, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
 
 ```javascript
 import { PGlite } from "@electric-sql/pglite";
@@ -43,7 +43,7 @@ await db.query("select 'Hello world' as message;");
 // -> { rows: [ { message: "Hello world" } ] }
 ```
 
-It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun) or indexedDB (Browser).
+It can be used as an ephemeral in-memory database, or with persistence either to the file system (Node/Bun/Deno) or indexedDB (Browser).
 
 Unlike previous "Postgres in the browser" projects, PGlite does not use a Linux virtual machine - it is simply Postgres in WASM.
 
@@ -76,12 +76,26 @@ or to persist the database to indexedDB:
 const db = new PGlite("idb://my-pgdata");
 ```
 
-## Node/Bun
+## Node/Bun/Deno
 
 Install into your project:
 
+**NodeJS**
+
 ```bash
 npm install @electric-sql/pglite
+```
+
+**Bun**
+
+```bash
+bun install @electric-sql/pglite
+```
+
+**Deno**
+
+```bash
+deno add npm:@electric-sql/pglite
 ```
 
 To use the in-memory Postgres:
@@ -110,19 +124,50 @@ Fortunately, PostgreSQL includes a "single user mode" primarily intended for com
 
 - PGlite is single user/connection.
 
-## How to contribute
+## How to build PGlite and contribute
 
-You will need [pnpm](https://pnpm.io/) installed, and a recent version of Node.js (v20 and above).
+The build process of PGlite is split into two parts:
 
-You will also need the Postgres WASM build files, which you download from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. These are necessary to build PGlite and the dependent workspace projects. We plan to enable a local build in the future to streamline this step.
+1. Building the Postgres WASM module.
+2. Building the PGlite client library and other TypeScript packages.
 
-Once the requirements are met, you can install dependencies and build the workspace projects:
+Docker is required to build the WASM module, along with Node (v20 or above) and [pnpm](https://pnpm.io/) for package management and building the TypeScript packages.
+
+To start checkout the repository and install dependencies:
+
 ```bash
+git clone https://github.com/electric-sql/pglite
+cd pglite
 pnpm install
-pnpm build
+```
+
+To build everything, we have the convenient `pnpm build:all` command in the root of the repository. This command will:
+
+1. Use Docker to build the Postgres WASM module. The artifacts from this are then copied to `/packages/pglite/release`.
+2. Build the PGlite client library and other TypeScript packages.
+
+To _only_ build the Postgres WASM module (i.e. point 1 above), run
+
+```bash
+pnpm wasm:build
+```
+
+If you don't want to build the WASM module and assorted WASM binaries from scratch, you can download them from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. 
+
+To build all TypeScript packages (i.e. point 2 of the above), run:
+
+```bash
+pnpm ts:build
 ```
 
 This will build all packages in the correct order based on their dependency relationships. You can now develop any individual package using the `build` and `test` scripts, as well as the `stylecheck` and `typecheck` scripts to ensure style and type validity.
+
+Or alternatively to build a single package, move into the package directory and run:
+
+```bash
+cd packages/pglite
+pnpm build
+```
 
 When ready to open a PR, run the following command at the root of the repository:
 ```bash

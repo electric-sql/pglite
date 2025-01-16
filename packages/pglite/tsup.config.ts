@@ -20,6 +20,7 @@ const entryPoints = [
   'src/index.ts',
   'src/fs/nodefs.ts',
   'src/fs/opfs-ahp.ts',
+  'src/fs/base.ts',
   'src/templating.ts',
   'src/live/index.ts',
   'src/vector/index.ts',

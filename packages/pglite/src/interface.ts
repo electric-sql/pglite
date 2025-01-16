@@ -112,9 +112,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     ): Promise<Results<T>>
     exec(query: string, options?: QueryOptions): Promise<Array<Results>>
     describeQuery(query: string): Promise<DescribeQueryResult>
-    transaction<T>(
-      callback: (tx: Transaction) => Promise<T>,
-    ): Promise<T | undefined>
+    transaction<T>(callback: (tx: Transaction) => Promise<T>): Promise<T>
     execProtocolRaw(
       message: Uint8Array,
       options?: ExecProtocolOptions,

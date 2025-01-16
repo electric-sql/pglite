@@ -23,57 +23,61 @@ export function parseResults(
   let affectedRows = 0
   const parsers = { ...defaultParsers, ...options?.parsers }
 
-  const filteredMessages = messages.filter(
-    (msg) =>
-      msg.name === 'rowDescription' ||
-      msg.name === 'dataRow' ||
-      msg.name === 'commandComplete',
-  )
-
-  filteredMessages.forEach((message, index) => {
-    if (message.name === 'rowDescription') {
-      const msg = message as RowDescriptionMessage
-      currentResultSet.fields = msg.fields.map((field) => ({
-        name: field.name,
-        dataTypeID: field.dataTypeID,
-      }))
-    } else if (message.name === 'dataRow' && currentResultSet) {
-      const msg = message as DataRowMessage
-      if (options?.rowMode === 'array') {
-        currentResultSet.rows.push(
-          msg.fields.map((field, i) =>
-            parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
-          ),
-        )
-      } else {
-        // rowMode === "object"
-        currentResultSet.rows.push(
-          Object.fromEntries(
-            msg.fields.map((field, i) => [
-              currentResultSet!.fields[i].name,
-              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
-            ]),
-          ),
-        )
+  messages.forEach((message) => {
+    switch (message.name) {
+      case 'rowDescription': {
+        const msg = message as RowDescriptionMessage
+        currentResultSet.fields = msg.fields.map((field) => ({
+          name: field.name,
+          dataTypeID: field.dataTypeID,
+        }))
+        break
       }
-    } else if (message.name === 'commandComplete') {
-      const msg = message as CommandCompleteMessage
-      affectedRows += retrieveRowCount(msg)
+      case 'dataRow': {
+        if (!currentResultSet) break
+        const msg = message as DataRowMessage
+        if (options?.rowMode === 'array') {
+          currentResultSet.rows.push(
+            msg.fields.map((field, i) =>
+              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
+            ),
+          )
+        } else {
+          // rowMode === "object"
+          currentResultSet.rows.push(
+            Object.fromEntries(
+              msg.fields.map((field, i) => [
+                currentResultSet!.fields[i].name,
+                parseType(
+                  field,
+                  currentResultSet!.fields[i].dataTypeID,
+                  parsers,
+                ),
+              ]),
+            ),
+          )
+        }
+        break
+      }
+      case 'commandComplete': {
+        const msg = message as CommandCompleteMessage
+        affectedRows += retrieveRowCount(msg)
 
-      if (index === filteredMessages.length - 1)
         resultSets.push({
           ...currentResultSet,
           affectedRows,
           ...(blob ? { blob } : {}),
         })
-      else resultSets.push(currentResultSet)
 
-      currentResultSet = { rows: [], fields: [] }
+        currentResultSet = { rows: [], fields: [] }
+        break
+      }
     }
   })
 
   if (resultSets.length === 0) {
     resultSets.push({
+      affectedRows: 0,
       rows: [],
       fields: [],
     })
@@ -89,6 +93,7 @@ function retrieveRowCount(msg: CommandCompleteMessage): number {
       return parseInt(parts[2], 10)
     case 'UPDATE':
     case 'DELETE':
+    case 'COPY':
       return parseInt(parts[1], 10)
     default:
       return 0
