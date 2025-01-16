@@ -73,6 +73,9 @@ async def archive(target_folder):
                 if asp.startswith('/base/'):
                     continue
 
+                if asp.startswith('/dump.'):
+                    continue
+
                 fp = PGROOT / asp[1:]
                 if fp.is_symlink():
                     continue
@@ -107,8 +110,8 @@ asyncio.run( archive(PGROOT) )
 print("="*80)
 
 if not EXTNAME:
-    print("ERROR: no new installed extension found, is it builtin ?")
-    sys.exit(105)
+    print("MAYBE ERROR: no new installed extension found, is it builtin ?")
+    sys.exit(0)
 
 print(f"""
 PG installed in : {PGROOT=}

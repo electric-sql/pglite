@@ -6,8 +6,8 @@ pgbuild:begin
 
 CC_PGLITE=$CC_PGLITE
 
-"
 
+"
 
     mkdir -p build/postgres
     pushd build/postgres
@@ -40,7 +40,10 @@ CC_PGLITE=$CC_PGLITE
         XML2=""
         UUID=""
         BUILD=wasi
-        export MAIN_MODULE="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+        export WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
+        WASM_LDFLAGS="-lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+        WASM_CFLAGS="-D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID"
+        export MAIN_MODULE=""
     else
         # --with-libxml does not fit with --without-zlib
         if $CI
@@ -52,10 +55,10 @@ CC_PGLITE=$CC_PGLITE
         fi
         UUID="--with-uuid=ossp"
         BUILD=emscripten
+        WASM_CFLAGS=""
+        WASM_LDFLAGS=""
         export MAIN_MODULE="-sMAIN_MODULE=1"
     fi
-
-
 
     export XML2_CONFIG=$PREFIX/bin/xml2-config
     export ZIC=$(pwd)/bin/zic
@@ -92,6 +95,7 @@ CC_PGLITE=$CC_PGLITE
 
     if $WASI
     then
+
         export EXT=wasi
         cat > ${PGROOT}/config.site <<END
 ac_cv_exeext=.wasi
@@ -121,7 +125,12 @@ END
         fi
     fi
 
-    if EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CONFIG_SITE=${PGROOT}/config.site emconfigure $CNF --with-template=$BUILD
+    if \
+     EM_PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
+     CONFIG_SITE="${PGROOT}/config.site" \
+     CFLAGS="$WASM_CFLAGS" \
+     LDFLAGS="$WASM_LDFLAGS" \
+     emconfigure $CNF --with-template=$BUILD
     then
         echo configure ok
     else
@@ -187,15 +196,14 @@ END
     EMCC_ENV="${EMCC_NODE} -sERROR_ON_UNDEFINED_SYMBOLS"
 
     # PREFIX only required for static initdb
-    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE} -DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function"
-
-    WASI_CFLAGS="${CC_PGLITE} -DPREFIX=${PGROOT} -DPYDK=1 -Wno-declaration-after-statement -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes -Wno-incompatible-pointer-types"
+    EMCC_CFLAGS="-sERROR_ON_UNDEFINED_SYMBOLS=1 ${CC_PGLITE} -DPREFIX=${PGROOT} -Wno-macro-redefined -Wno-unused-function -Wno-missing-prototypes"
 
     ZIC=${ZIC:-$(realpath bin/zic)}
 
-
-
-	if EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" WASI_CFLAGS="$WASI_CFLAGS" emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
+	if \
+     EMCC_CFLAGS="${EMCC_ENV} ${EMCC_CFLAGS}" \
+     WASI_CFLAGS="$WASI_CFLAGS" \
+     emmake make $BUILD=1 -j $(nproc) 2>&1 > /tmp/build.log
 	then
         echo build ok
         if $WASI
@@ -215,7 +223,11 @@ END
             if $WASI
             then
                 # remove unlinked server
-                rm src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                for todel in src/backend/postgres src/backend/postgres.wasi $PGROOT/bin/postgres $PGROOT/bin/postgres.wasi
+                do
+                    [ -f $todel ] && rm $todel
+                done
+
                 pushd ../..
                     chmod +x ./cibuild/linkwasi.sh
                     WASI_CFLAGS="$WASI_CFLAGS" ./cibuild/linkwasi.sh || exit 190
@@ -240,7 +252,7 @@ END
         else
             cat /tmp/install.log
             echo "install failed"
-            exit 225
+            exit 247
         fi
     else
         cat /tmp/build.log
@@ -276,25 +288,31 @@ END
     then
         echo pg_config installed
     else
-        echo "pg_config build failed"; exit 243
+        echo "pg_config build failed"; exit 283
     fi
 
-    cat > ${PGROOT}/bin/pg_config <<END
+    if $WASI
+    then
+        echo "TODO:  wasi-run wrappers for bin/*"
+        cat > ${PGROOT}/bin/pg_config <<END
+#!/bin/bash
+$(which wasi-run) ${PGROOT}/bin/pg_config.wasi \$@
+END
+
+    else
+        cat > ${PGROOT}/bin/pg_config <<END
 #!/bin/bash
 $(which node) ${PGROOT}/bin/pg_config.cjs \$@
 END
 
-    cat  > ${PGROOT}/postgres <<END
+        cat  > ${PGROOT}/postgres <<END
 #!/bin/bash
 . /opt/python-wasm-sdk/wasm32-bi-emscripten-shell.sh
 TZ=UTC PGTZ=UTC PGDATA=${PGDATA} $(which node) ${PGROOT}/bin/postgres.cjs \$@
 END
 
-# remove the abort but stall prompt
-#  2>&1 | grep --line-buffered -v ^var\\ Module
-
-    # force node wasm version
-    cp -vf ${PGROOT}/postgres ${PGROOT}/bin/postgres
+        # force node wasm version
+        cp -vf ${PGROOT}/postgres ${PGROOT}/bin/postgres
 
 	cat  > ${PGROOT}/initdb <<END
 #!/bin/bash
@@ -302,55 +320,59 @@ END
 TZ=UTC PGTZ=UTC $(which node) ${PGROOT}/bin/initdb.cjs \$@
 END
 
-    chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
-	chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
+        chmod +x ${PGROOT}/postgres ${PGROOT}/bin/postgres
+    	# chmod +x ${PGROOT}/initdb ${PGROOT}/bin/initdb
+
+
+
+    fi
 
     # for extensions building
     chmod +x ${PGROOT}/bin/pg_config
 
 
-	echo "initdb for PGDATA=${PGDATA} "
+	echo "TODO: node/wasi cmdline initdb for PGDATA=${PGDATA} "
 
     # create empty db hack
 
-	cat >$PGROOT/initdb.sh <<END
-#!/bin/bash
-rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
-export TZ=UTC
-export PGTZ=UTC
-SQL=/tmp/initdb-\$\$
-# TODO: --waldir=${PGROOT}/wal
-> /tmp/initdb.txt
+#	cat >$PGROOT/initdb.sh <<END
+##!/bin/bash
+#rm -rf ${PGDATA} /tmp/initdb-* ${PGROOT}/wal/*
+#export TZ=UTC
+#export PGTZ=UTC
+#SQL=/tmp/initdb-\$\$
+## TODO: --waldir=${PGROOT}/wal
+#> /tmp/initdb.txt
 
-${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
+#${PGROOT}/initdb --no-clean --wal-segsize=1 -g $LANG $CRED --pgdata=${PGDATA}
 
-mv /tmp/initdb.boot.txt \${SQL}.boot.sql
-mv /tmp/initdb.single.txt \${SQL}.single.sql
+#mv /tmp/initdb.boot.txt \${SQL}.boot.sql
+#mv /tmp/initdb.single.txt \${SQL}.single.sql
 
-if \${CI:-false}
-then
-    cp -vf \$SQL ${PGROOT}/\$(md5sum \$SQL|cut -c1-32).sql
-fi
+#if \${CI:-false}
+#then
+#    cp -vf \$SQL ${PGROOT}/\$(md5sum \$SQL|cut -c1-32).sql
+#fi
 
-# --wal-segsize=1  -> -X 1048576
+## --wal-segsize=1  -> -X 1048576
 
-# CKSUM_B -k --data-checksums
-# 2024-04-24 05:53:28.121 GMT [42] WARNING:  page verification failed, calculated checksum 5487 but expected 0
-# 2024-04-24 05:53:28.121 GMT [42] FATAL:  invalid page in block 0 of relation base/1/1259
+## CKSUM_B -k --data-checksums
+## 2024-04-24 05:53:28.121 GMT [42] WARNING:  page verification failed, calculated checksum 5487 but expected 0
+## 2024-04-24 05:53:28.121 GMT [42] FATAL:  invalid page in block 0 of relation base/1/1259
 
-CMD="${PGROOT}/postgres --boot -D ${PGDATA} -d 3 $PGOPTS -X 1048576"
-echo "\$CMD < \$SQL.boot.sql"
-\$CMD < \$SQL.boot.sql 2>&1 \\
- | grep -v --line-buffered 'bootstrap> boot' \\
- | grep -v --line-buffered 'index'
+#CMD="${PGROOT}/postgres --boot -D ${PGDATA} -d 3 $PGOPTS -X 1048576"
+#echo "\$CMD < \$SQL.boot.sql"
+#\$CMD < \$SQL.boot.sql 2>&1 \\
+# | grep -v --line-buffered 'bootstrap> boot' \\
+# | grep -v --line-buffered 'index'
 
-echo "
+#echo "
 
-\$(md5sum /tmp/initdb-\$\$.*.sql)
+#\$(md5sum /tmp/initdb-\$\$.*.sql)
 
-    boot done
-"
-END
+#    boot done
+#"
+#END
 
     popd
 echo "pgbuild:end

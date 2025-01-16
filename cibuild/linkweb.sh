@@ -99,10 +99,10 @@ pushd src/backend
     if ${PGES6:-true}
     then
         # es6
-        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
-        export COPTS="-O2 -g0"
+        MODULE="$LDEBUG -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        export COPTS=${COPTS:-"-O2 -g0"}
     else
-        export COPTS="-O0 -g3"
+        export COPTS="-O2 -g3"
         # local debug always fast build
         MODULE="-sMODULARIZE=0 -sEXPORT_ES6=0"
     fi
@@ -193,7 +193,7 @@ _________________________________________________________
     # LINKER="-sMAIN_MODULE=1 -sEXPORTED_FUNCTIONS=@exports"
 
 
-    emcc $EMCC_WEB $LINKER $MODULE  \
+    emcc $EMCC_WEB $LINKER $MODULE --closure 0 \
      -sTOTAL_MEMORY=${TOTAL_MEMORY} -sSTACK_SIZE=4MB -sGLOBAL_BASE=${CMA_MB}MB \
      -fPIC -D__PYDK__=1 -DPREFIX=${PGROOT} \
      -sALLOW_TABLE_GROWTH -sALLOW_MEMORY_GROWTH -sERROR_ON_UNDEFINED_SYMBOLS -sASSERTIONS=0 \

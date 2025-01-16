@@ -2,11 +2,11 @@
 . /opt/python-wasm-sdk/wasisdk/wasisdk_env.sh
 # dlfcn emulation
 
-WASI_CFLAGS="-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=/tmp/pglite -DPYDK=1" wasi-c -fPIC \
+WASI_CFLAGS="-DPATCH_PG_DEBUG=/tmp/pglite/include/pg_debug.h -DPREFIX=${PGROOT} -DPYDK=1" wasi-c -fPIC \
  -Ipostgresql/src/include \
  -Ipostgresql/src/backend \
  -c -o build/postgres/wasi_dlfcn.o \
- -Ibuild/postgres/src/include patches/wasi_dlfcn.c || exit 8
+ -Ibuild/postgres/src/include patches/wasi_dlfcn.c || exit 9
 
 #  -L./build/postgres/src/backend/snowball -ldict_snowball
 # ./build/postgres/src/backend/snowball/dict_snowball.o
@@ -789,11 +789,12 @@ $CC -o postgres \
  -Wl,--export=loop \
  -Wl,--export=interactive_one \
  -Wl,--export=use_socketfile \
+ -Wl,--export=use_wire \
  -Wl,--export=interactive_write \
  -Wl,--export=interactive_read \
  -Wl,--global-base=33333333
 
-cp -vf postgres postgres.wasi || exit 192
+cp -vf postgres postgres.wasi || exit 796
 #cp -vf postgres.wasi /tmp/pglite/bin/postgres.wasi
 
 popd

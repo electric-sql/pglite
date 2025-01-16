@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#set -x;
+#set -e;
+
 # data transfer zone this is == (wire query size + result size ) + 2
 # expressed in EMSDK MB
 export CMA_MB=${CMA_MB:-64}
@@ -10,9 +13,8 @@ chmod +x ./extra/*.sh cibuild/*.sh
 
 . .buildconfig
 
-export PG_VERSION SDK_VERSION WASI_SDK_VERSION SDKROOT
+export PG_VERSION SDK_VERSION WASI_SDK_VERSION SDKROOT COPTS
 
-export PG_VERSION=${PG_VERSION:-16.4}
 export WORKSPACE=${GITHUB_WORKSPACE:-$(pwd)}
 export PGROOT=${PGROOT:-/tmp/pglite}
 export WEBROOT=${WEBROOT:-/tmp/web}
@@ -30,10 +32,10 @@ EOE=false
 
 if ./cibuild/sdk.sh
 then
-    echo "sdk check passed (emscripten)"
+    echo "sdk check passed (emscripten+wasi)"
 else
     echo sdk failed
-    exit 44
+    exit 39
 fi
 
 
@@ -82,8 +84,39 @@ System node/pnpm ( may interfer) :
 if ${WASI:-false}
 then
     echo "Wasi build (experimental)"
-    . /opt/python-wasm-sdk/wasm32-wasi-shell.sh
+    export WASI_SDK=24.0
+    export WASI_SDK_PREFIX=/opt/python-wasm-sdk/wasisdk/wasi-sdk-${WASI_SDK}-x86_64-linux
+    export WASI_SYSROOT=${WASI_SDK_PREFIX}/share/wasi-sysroot
 
+    if [ -f ${WASI_SYSROOT}/extra ]
+    then
+        echo -n
+    else
+        pushd ${WASI_SYSROOT}
+            VMLABS="https://github.com/vmware-labs/webassembly-language-runtimes/releases/download"
+            wget -q "${VMLABS}/libs%2Flibpng%2F1.6.39%2B20230629-ccb4cb0/libpng-1.6.39-wasi-sdk-20.0.tar.gz" -O-| tar xfz -
+            wget -q "${VMLABS}/libs%2Fzlib%2F1.2.13%2B20230623-2993864/libz-1.2.13-wasi-sdk-20.0.tar.gz"  -O-| tar xfz -
+            wget -q "${VMLABS}/libs%2Fsqlite%2F3.42.0%2B20230623-2993864/libsqlite-3.42.0-wasi-sdk-20.0.tar.gz" -O-| tar xfz -
+            wget -q "${VMLABS}/libs%2Flibxml2%2F2.11.4%2B20230623-2993864/libxml2-2.11.4-wasi-sdk-20.0.tar.gz" -O-| tar xfz -
+            wget -q "${VMLABS}/libs%2Fbzip2%2F1.0.8%2B20230623-2993864/libbzip2-1.0.8-wasi-sdk-20.0.tar.gz"  -O-| tar xfz -
+            wget -q "${VMLABS}/libs%2Flibuuid%2F1.0.3%2B20230623-2993864/libuuid-1.0.3-wasi-sdk-20.0.tar.gz" -O-| tar xfz -
+        popd
+        touch ${WASI_SYSROOT}/extra
+    fi
+
+
+    if false
+    then
+        . /opt/python-wasm-sdk/wasisdk/wasisdk_env.sh
+        env|grep WASI
+        export CC=${WASI_SDK_DIR}/bin/clang
+        export CPP=${WASI_SDK_DIR}/bin/clang-cpp
+        export CXX=${WASI_SDK_DIR}/bin/clang++
+        export CFLAGS="-D_WASI_EMULATED_SIGNAL"
+        export LDFLAGS="-lwasi-emulated-signal"
+    else
+        . ${SDKROOT}/wasm32-wasi-shell.sh
+    fi
 else
     if which emcc
     then
@@ -173,6 +206,8 @@ if $OBJDUMP
 then
     mkdir -p patches/imports patches/imports.pgcore
 else
+    mkdir -p patches/imports
+    touch patches/imports/plpgsql
     echo "
 
     WARNING:    wasm-objdump not found or OBJDUMP disabled, some extensions may not load properly
@@ -231,9 +266,10 @@ END
     fi
 
     mkdir -p ${PGROOT}/include/postgresql/server
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql
-    cp ${PG_DEBUG_HEADER} ${PGROOT}/include/postgresql/server
+    for dest in ${PGROOT}/include ${PGROOT}/include/postgresql ${PGROOT}/include/postgresql/server
+    do
+        [ -f $dest/pg_debug.h ] || cp ${PG_DEBUG_HEADER} $dest/
+    done
 
     # store all pg options that have impact on cmd line initdb/boot
     cat > ${PGROOT}/pgopts.sh <<END
@@ -279,16 +315,23 @@ END
     # to get same path for wasm shared link tools in the path
     # for extensions building.
     # we always symlink in-tree build to "postgresql" folder
-    if echo $PG_VERSION|grep -q ^16
+    if echo $PG_VERSION|grep -q git
     then
-        . cibuild/pg-16.x.sh
-    else
+        echo "building from git"
         . cibuild/pg-git.sh
+    else
+        echo "  * building from stable repo"
+        . cibuild/pg-16.x.sh
     fi
 
-    # install emsdk-shared along with pg config  tool
-    # for building user ext.
-    cp build/postgres/bin/emsdk-shared $PGROOT/bin/
+#    # install emsdk-shared along with pg config  tool
+#    # for building user ext.
+#    if [ -f $PGROOT/bin/emsdk-shared ]
+#    then
+#        echo emsdk-shared already installed
+#    else
+#        cp -vf build/postgres/bin/emsdk-shared $PGROOT/bin/
+#    fi
 
     export PGLITE=$(pwd)/packages/pglite
 
@@ -318,14 +361,26 @@ export PATH=${WORKSPACE}/build/postgres/bin:${PGROOT}/bin:$PATH
 
 if echo " $*"|grep -q " contrib"
 then
-    # TEMP FIX for SDK
-    SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
-    [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
-    SKIP="\
+
+    if $WASI
+    then
+        echo " ========= TODO WASI openssl ============== "
+        SKIP="\
+ [\
+ sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
+ ltree_plpython sepgsql bool_plperl start-scripts\
+ pgcrypto uuid-ossp xml2\
+ ]"
+    else
+        # TEMP FIX for SDK
+        SSL_INCDIR=$EMSDK/upstream/emscripten/cache/sysroot/include/openssl
+        [ -f $SSL_INCDIR/evp.h ] || ln -s $PREFIX/include/openssl $SSL_INCDIR
+        SKIP="\
  [\
  sslinfo bool_plperl hstore_plperl hstore_plpython jsonb_plperl jsonb_plpython\
  ltree_plpython sepgsql bool_plperl start-scripts\
  ]"
+    fi
 
     for extdir in postgresql/contrib/*
     do
@@ -479,19 +534,6 @@ ________________________________________________________________________________
 
                 mv $packed /tmp/sdk/pg${PG_VERSION}-${packed}
 
-                # for repl demo
-#                mkdir -p /tmp/web/pglite
-
-                #cp -r ${PGLITE}/dist ${WEBROOT}/pglite/
-                #cp -r ${PGLITE}/examples ${WEBROOT}/pglite/
-
-#                for dir in /tmp/web ${WEBROOT}/pglite/examples
-#                do
-#                    pushd "$dir"
-#                    cp ${PGLITE}/dist/postgres.data ./
-#                    popd
-#                done
-
                 echo "<html>
                 <body>
                     <ul>
@@ -518,7 +560,7 @@ ________________________________________________________________________________
                 tar -cpRz ${PGROOT} > /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz
 
                 # build sdk (node)
-                cp /tmp/sdk/postgres-${PG_VERSION}.tar.gz ${WEBROOT}/
+                cp /tmp/sdk/postgres-${PG_VERSION}-*.tar.gz ${WEBROOT}/
 
                 # pglite (web)
                 cp /tmp/sdk/pglite-pg${PG_VERSION}.tar.gz ${WEBROOT}/
@@ -560,18 +602,7 @@ ________________________________________________________________________________
         ;;
 
         demo-site) echo "==================== demo-site =========================="
-            # Move all existing files to a subfolder
-            mkdir -p /tmp/web/x-term-repl
-            mv /tmp/web/* /tmp/web/x-term-repl/
-
-            mkdir -p /tmp/web/dist
-            mkdir -p /tmp/web/examples
-            mkdir -p /tmp/web/benchmark
-
-            PGLITE=$(pwd)/packages/pglite
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${WORKSPACE}/packages/benchmark/dist/* /tmp/web/benchmark/
+            ./cibuild/demo-site.sh
         ;;
     esac
     shift

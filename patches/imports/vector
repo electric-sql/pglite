@@ -1,6 +1,3 @@
-___stack_pointer
-___memory_base
-___table_base
 _palloc0
 _pg_detoast_datum
 _errstart_cold
@@ -12,7 +9,6 @@ _Float8GetDatum
 ___errno_location
 _strtof
 _errdetail
-_memcpy
 _pnstrdup
 _palloc
 _float_to_shortest_decimal_bufn
@@ -97,7 +93,6 @@ _MemoryContextAlloc
 _MemoryContextMemAllocated
 _MarkBufferDirty
 _UnlockReleaseBuffer
-_memset
 _PageGetFreeSpace
 _BufferGetBlockNumber
 _PageAddItemExtended
@@ -116,7 +111,6 @@ _PageGetExactFreeSpace
 _LockRelationForExtension
 _UnlockRelationForExtension
 _RelationGetIndexScan
-_memmove
 _pgstat_assoc_relation
 _list_make1_impl
 _pairingheap_remove_first
@@ -154,15 +148,15 @@ _BlockSampler_Next
 _tuplesort_estimate_shared
 _tuplesort_initialize_shared
 _MakeSingleTupleTableSlot
+_tuplesort_gettupleslot
+_slot_getsomeattrs_int
+_index_form_tuple
 _CreateTemplateTupleDesc
 _TupleDescInitEntry
 _ExecStoreVirtualTuple
 _tuplesort_puttupleslot
 _reservoir_get_next_S
 _sampler_random_fract
-_tuplesort_gettupleslot
-_slot_getsomeattrs_int
-_index_form_tuple
 _palloc_extended
 _tuplesort_reset
 _nocache_index_getattr
@@ -172,6 +166,9 @@ _pg_qsort
 _pg_ltoa
 _pq_getmsgfloat4
 _pq_sendfloat4
+___stack_pointer
+___memory_base
+___table_base
 _pg_number_of_ones
 _numeric_float4
 _MainLWLockArray
