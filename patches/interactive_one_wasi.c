@@ -499,11 +499,8 @@ incoming:
 
         // won't have auth
         peek = -1;
-    } /* else {
-        if (cma_rsize)
-            pg_startcma();
     }
-*/
+
     while (pipelining) {
         // TODO: are we sure ?
         pipelining = !is_repl;
