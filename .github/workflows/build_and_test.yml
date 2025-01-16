@@ -35,14 +35,17 @@ jobs:
         run: pnpm -r stylecheck
 
   build-and-test-pglite-dependencies:
-    name: Build and Test PGLite dependencies
+    name: Build and Test PGLite dependencies (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -59,8 +62,11 @@ jobs:
     secrets: inherit
 
   build-and-test-pglite:
-    name: Build and Test PGLite
+    name: Build and Test PGLite (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -70,7 +76,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - uses: denoland/setup-deno@v1
@@ -146,15 +152,18 @@ jobs:
           edit-mode: append
 
   build-and-test-pglite-dependents:
-    name: Build and Test packages dependent on PGlite
+    name: Build and Test PGLite dependents (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - name: Download PGlite build artifacts
