@@ -18,7 +18,11 @@ function paramsEqual(
 }
 
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
-  query: string | LiveQuery<T> | Promise<LiveQuery<T>> | (() => Promise<T[]>),
+  query:
+    | string
+    | LiveQuery<T>
+    | Promise<LiveQuery<T>>
+    | (() => Promise<string | LiveQuery<T>>),
   params: unknown[] | undefined | null,
   key?: string,
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
@@ -53,6 +57,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       if (cancelled) return
       setResults(results)
     }
+
     if (typeof query === 'string') {
       const ret =
         key !== undefined
@@ -63,17 +68,6 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
         cancelled = true
         ret.then(({ unsubscribe }) => unsubscribe())
       }
-    } else if (typeof query === 'function') {
-      query.then((liveQuery) => {
-        if (cancelled) return
-        liveQueryRef.current = liveQuery
-        setResults(liveQuery.initialResults)
-        liveQuery.subscribe(cb)
-      })
-      return () => {
-        cancelled = true
-        liveQueryRef.current?.unsubscribe(cb)
-      }
     } else if (query instanceof Promise) {
       query.then((liveQuery) => {
         if (cancelled) return
@@ -81,6 +75,30 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
         setResults(liveQuery.initialResults)
         liveQuery.subscribe(cb)
       })
+
+      return () => {
+        cancelled = true
+        liveQueryRef.current?.unsubscribe(cb)
+      }
+    } else if (typeof query === 'function') {
+      query().then((liveQueryOrString) => {
+        if (cancelled) return
+        const liveQuery =
+          typeof liveQueryOrString === 'string'
+            ? key !== undefined
+              ? db.live.incrementalQuery<T>(
+                  liveQueryOrString,
+                  currentParams,
+                  key,
+                  cb,
+                )
+              : db.live.query<T>(liveQueryOrString, currentParams, cb)
+            : liveQueryOrString
+        liveQueryRef.current = liveQuery
+        setResults(liveQuery.initialResults)
+        liveQuery.subscribe(cb)
+      })
+
       return () => {
         cancelled = true
         liveQueryRef.current?.unsubscribe(cb)
@@ -88,6 +106,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     } else if (liveQuery) {
       setResults(liveQuery.initialResults)
       liveQuery.subscribe(cb)
+
       return () => {
         cancelled = true
         liveQuery.unsubscribe(cb)
@@ -127,11 +146,15 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
 ): LiveQueryResults<T> | undefined
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
-  liveQueryPromise: () => Promise<T[]>,
+  liveQueryPromise: () => Promise<string | LiveQuery<T>>,
 ): LiveQueryResults<T> | undefined
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
-  query: string | LiveQuery<T> | Promise<LiveQuery<T>> | (() => Promise<T[]>),
+  query:
+    | string
+    | LiveQuery<T>
+    | Promise<LiveQuery<T>>
+    | (() => Promise<string | LiveQuery<T>>),
   params?: unknown[] | null,
 ): LiveQueryResults<T> | undefined {
   return useLiveQueryImpl<T>(query, params)
