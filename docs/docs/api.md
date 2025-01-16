@@ -343,6 +343,12 @@ Returns an object with:
 - `resultFields: Array<{ name: string, dataTypeID: number, parser: Function }>` <br/>
   Information about each result field including its name, Postgres type ID, and the parser function used to convert Postgres values to JavaScript format.
 
+### refreshArrayTypes
+
+`.refreshArrayTypes(): Promise<void>`
+
+Refresh the array types in the database. This is useful when you have added columns that contain array types (ie. array of enums) and need to update the internal array type cache. This is done automatically when the database is started, but can be called manually if needed.
+
 ##### Example
 
 ```ts

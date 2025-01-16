@@ -102,8 +102,8 @@ export abstract class BasePGlite
    * each type.
    * This should be called at the end of #init() in the implementing class.
    */
-  async _initArrayTypes() {
-    if (this.#arrayTypesInitialized) return
+  async _initArrayTypes({ force = false } = {}) {
+    if (this.#arrayTypesInitialized && !force) return
     this.#arrayTypesInitialized = true
 
     const types = await this.query<{ oid: number; typarray: number }>(`
@@ -128,6 +128,14 @@ export abstract class BasePGlite
     options: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
     return await this.execProtocol(message, { ...options, syncToFs: false })
+  }
+
+  /**
+   * Re-syncs the array types from the database
+   * This is useful if you add a new type to the database and want to use it, otherwise pglite won't recognize it.
+   */
+  async refreshArrayTypes() {
+    await this._initArrayTypes({ force: true })
   }
 
   /**
