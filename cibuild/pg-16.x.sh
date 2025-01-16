@@ -7,9 +7,11 @@ else
     if pushd postgresql-${PG_VERSION}
     then
             echo
-        > ./src/template/emscripten
-        > ./src/include/port/emscripten.h
-        > ./src/makefiles/Makefile.emscripten
+        touch ./src/template/emscripten
+        touch ./src/include/port/emscripten.h
+        touch ./src/include/port/wasi.h
+        touch ./src/include/port/wasm_common.h
+        touch ./src/makefiles/Makefile.emscripten
         for patchdir in \
             postgresql-debug \
             postgresql-emscripten \
