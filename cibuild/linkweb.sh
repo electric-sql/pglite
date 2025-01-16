@@ -99,7 +99,7 @@ pushd src/backend
     if ${PGES6:-true}
     then
         # es6
-        MODULE="$LDEBUG --closure 0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
+        MODULE="$LDEBUG -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=Module"
         export COPTS="-O2 -g0"
     else
         export COPTS="-O0 -g3"
