@@ -13,7 +13,7 @@ jobs:
     name: Build WASM Postgres
     runs-on: ubuntu-22.04
     env:
-      BUILD_CONFIG_FILE: .buildconfig
+      BUILD_CONFIG_FILE: postgres-pglite/pglite/.buildconfig
       SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
       WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
       SDKROOT: /opt/python-wasm-sdk
