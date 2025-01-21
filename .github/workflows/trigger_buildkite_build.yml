@@ -4,10 +4,10 @@ on:
   push:
     branches: ['main']
     paths:
-      - .buildconfig
+      - postgres-pglite/pglite/.buildconfig
   pull_request:
     paths:
-      - .buildconfig
+      - postgres-pglite/pglite/.buildconfig
 
 jobs:
   build:
