@@ -1,5 +1,23 @@
 # @electric-sql/pglite-repl
 
+## 0.2.16
+
+### Patch Changes
+
+- 514943b: Bump versions of React, React DOM, and related testing libraries to v19 on pglite-repl. The PGlite REPL now supports React v18 and v19 projects.
+- Updated dependencies [c36fd09]
+- Updated dependencies [e037883]
+- Updated dependencies [d6b981b]
+- Updated dependencies [17e7664]
+- Updated dependencies [118ba3e]
+- Updated dependencies [d93c1bb]
+- Updated dependencies [ddd4a68]
+- Updated dependencies [514943b]
+- Updated dependencies [f3f1103]
+- Updated dependencies [67fb2aa]
+  - @electric-sql/pglite@0.2.16
+  - @electric-sql/pglite-react@0.2.16
+
 ## 0.2.15
 
 ### Patch Changes

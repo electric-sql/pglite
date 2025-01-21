@@ -1,5 +1,19 @@
 # @electric-sql/pglite
 
+## 0.2.16
+
+### Patch Changes
+
+- c36fd09: Improvements to parsing results received from pg
+- e037883: Fixed PGliteWorkerOptions type
+- d6b981b: Fix the return type of the `.transaction` method
+- 17e7664: Export the base filesystem to enable creating custom file systems. NOTE: This is a work-in-progress API, it is not stable, and may change significantly in future!
+- 118ba3e: Add affectedRows for COPY command
+- d93c1bb: Add `refreshArrayTypes()` call to re-sync newly created complex array columns, like enums
+- ddd4a68: Removes postgis extension which leads to a smaller build of the package
+- f3f1103: Refactor the protocol message parse code to be simpler and easer to follow
+- 67fb2aa: feat: add support for loading compressed dumps via loadDataDir that are not labeled with mimetype
+
 ## 0.2.15
 
 ### Patch Changes
