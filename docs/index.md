@@ -18,7 +18,7 @@ features:
   - title: Lightweight
     details: A complete WASM build of Postgres that's under 3MB Gzipped.
   - title: Extendable
-    details: Dynamic extension loading mechanism, including support for pgvector and PostGIS.
+    details: Dynamic extension loading mechanism, including support for pgvector.
   - title: Reactive
     details: Built in support for data loading, synchronisation and live query primitives.
 ---
