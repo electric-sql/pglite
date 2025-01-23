@@ -21,10 +21,12 @@ Deno.test('basic exec', async () => {
 
   assertEquals(multiStatementResult, [
     {
+      affectedRows: 1,
       rows: [],
       fields: [],
     },
     {
+      affectedRows: 2,
       rows: [],
       fields: [],
     },
