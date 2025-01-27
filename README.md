@@ -152,7 +152,7 @@ To _only_ build the Postgres WASM module (i.e. point 1 above), run
 pnpm wasm:build
 ```
 
-If you don't want to build the WASM module and assorted WASM binaries from scratch, you can download them from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. 
+If you don't want to build the WASM module and assorted WASM binaries from scratch, they are generated automatically on Github after each successful PR merge. You can download the latest binaries by going to the last successfully merged PR and clicking the link after the comment _Interim build files:_. Extract the files and place them under `packages/pglite/release` in your local repo copy.
 
 To build all TypeScript packages (i.e. point 2 of the above), run:
 
