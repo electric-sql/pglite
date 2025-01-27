@@ -18,10 +18,12 @@ Deno.test('filesystem new', async () => {
 
   assertEquals(multiStatementResult, [
     {
+      affectedRows: 1,
       rows: [],
       fields: [],
     },
     {
+      affectedRows: 2,
       rows: [],
       fields: [],
     },
