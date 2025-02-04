@@ -35,7 +35,7 @@ jobs:
         run: pnpm -r stylecheck
 
   build-all:
-    name: Install and build all as described in README
+    name: Install, build all and test as described in README
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/pglite/.buildconfig
@@ -68,6 +68,11 @@ jobs:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
           pnpm build:all
+
+      - name: Copy output
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp -vr postgres-pglite/pglite/dist packages/pglite/release
 
       - name: Test
         working-directory: ${{ github.workspace }}/packages/pglite
