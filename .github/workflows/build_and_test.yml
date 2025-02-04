@@ -49,14 +49,14 @@ jobs:
       EXTRA_EXT: vector
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm      
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: Install
         working-directory: ${{ github.workspace }}
