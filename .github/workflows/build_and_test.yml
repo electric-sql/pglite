@@ -34,6 +34,41 @@ jobs:
       - name: Stylecheck packages
         run: pnpm -r stylecheck
 
+  build-all:
+    name: Install and build all as described in README
+    runs-on: ubuntu-22.04
+    env:
+      BUILD_CONFIG_FILE: postgres-pglite/pglite/.buildconfig
+      PGROOT: /tmp/pglite
+      TOTAL_MEMORY: 128MB
+      CMA_MB: 16
+      DEBUG: false
+      OBJDUMP: true
+      contrib: contrib
+      extra: extra
+      EXTRA_EXT: vector
+
+    steps:
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm      
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install
+        working-directory: ${{ github.workspace }}
+        run: pnpm i
+
+      - name: Build 
+        working-directory: ${{ github.workspace }}
+        env: 
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+        run: |
+          pnpm build:all
+
   build-and-test-pglite-dependencies:
     name: Build and Test PGLite dependencies
     runs-on: ubuntu-22.04
