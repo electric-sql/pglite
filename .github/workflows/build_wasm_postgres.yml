@@ -14,10 +14,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/pglite/.buildconfig
-      SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
-      WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
-      SDKROOT: /opt/python-wasm-sdk
-      SYS_PYTHON: /usr/bin/python3
       PGROOT: /tmp/pglite
       TOTAL_MEMORY: 128MB
       CMA_MB: 16
@@ -37,89 +33,46 @@ jobs:
         run: |
           cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
 
-      - name: Restore cached build
-        id: cache-restore
-        uses: actions/cache@v4
-        with:
-          path: |
-            /opt/python-wasm-sdk
-            /tmp/web
-            /tmp/pglite
-            /tmp/sdk/postgres-*.tar.gz
-            postgres
-            postgresql-*
-          key: build-cache-${{ hashFiles('postgres-pglite/pglite/.buildconfig', 'postgres-pglite/pglite/cibuild.sh', '.github/workflows/build_wasm_postgres.yml', 'package.json', 'postgres-pglite/pglite/cibuild/**', 'extra/**') }}
-
-      - name: Install python-wasm-sdk for emsdk/wasi+prebuilts
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        working-directory: /
-        run: |
-          sudo apt-get update && sudo apt-get install -y lz4 wget pv bash build-essential libreadline-dev zlib1g-dev bison flex git
-          echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
-          curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 34500 >/dev/null
-          echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
-          curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
-
       - name: Build postgres WASM via emsdk
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
+        working-directory: ${{ github.workspace }}/postgres-pglite
         env: 
           PGSRC: ${{ github.workspace }}/postgres-pglite
           POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
-        if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          bash cibuild.sh
+          pglite/cibuild/build-with-docker.sh
 
       - name: Build contributed extensions
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
-        env: 
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/postgres-pglite
         run: |
-          bash ./cibuild.sh contrib
+          pglite/cibuild/build-with-docker.sh contrib
 
       - name: Build extra extensions
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
-        env: 
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/postgres-pglite
         run: |
-          bash ./cibuild.sh extra
+          pglite/cibuild/build-with-docker.sh extra
 
       - name: Pack node distribution
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
-        env: 
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/postgres-pglite
         run: |
-          bash ./cibuild.sh node
+          pglite/cibuild/build-with-docker.sh node
 
       - name: Link postgres WASM for web
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
-        env: 
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}/postgres-pglite
         run: |
-          bash ./cibuild.sh linkweb
+          pglite/cibuild/build-with-docker.sh linkweb
 
       - name: Copy release for PGlite build
-        working-directory: ${{ github.workspace }}/postgres-pglite/pglite
-        env: 
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
+        working-directory: ${{ github.workspace }}/postgres-pglite
         run: |
-          bash ./cibuild.sh postgres-pglite-dist
+          pglite/cibuild/build-with-docker.sh postgres-pglite-dist
 
-      - name: Upload Postgres to Github artifacts
-        id: upload-postgres-wasm
-        uses: actions/upload-artifact@v4
-        with:
-          name: postgres-wasm
-          path: /tmp/sdk/postgres-*.tar.gz
-          retention-days: 60
+      # - name: Upload Postgres to Github artifacts
+      #   id: upload-postgres-wasm
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: postgres-wasm
+      #     path: /tmp/sdk/postgres-*.tar.gz
+      #     retention-days: 60
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
@@ -129,13 +82,13 @@ jobs:
           path: ./packages/pglite/release/**
           retention-days: 60
 
-      - name: Upload PGlite Web Interim to Github artifacts
-        id: upload-demos
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-web-build-files
-          path: /tmp/web/**
-          retention-days: 60
+      # - name: Upload PGlite Web Interim to Github artifacts
+      #   id: upload-demos
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: pglite-web-build-files
+      #     path: /tmp/web/**
+      #     retention-days: 60
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
@@ -155,6 +108,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             Built bundles:
-            - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
             - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
           edit-mode: replace
