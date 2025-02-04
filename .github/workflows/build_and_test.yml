@@ -69,11 +69,6 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Copy output
-        working-directory: ${{ github.workspace }}
-        run: |
-          cp -vr postgres-pglite/pglite/dist packages/pglite/release
-
       - name: Test
         working-directory: ${{ github.workspace }}/packages/pglite
         run: |
