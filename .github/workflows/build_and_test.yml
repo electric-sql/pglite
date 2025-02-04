@@ -60,7 +60,7 @@ jobs:
 
       - name: Install
         working-directory: ${{ github.workspace }}
-        run: pnpm i
+        run: pnpm install
 
       - name: Build 
         working-directory: ${{ github.workspace }}
