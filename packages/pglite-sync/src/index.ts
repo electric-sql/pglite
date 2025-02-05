@@ -40,7 +40,7 @@ export interface SyncShapeToTableOptions {
   schema?: string
   mapColumns?: MapColumns
   primaryKey: string[]
-  shapeKey?: ShapeKey
+  shapeKey: ShapeKey | null
   useCopy?: boolean
   commitGranularity?: CommitGranularity
   commitThrottle?: number
@@ -110,7 +110,7 @@ async function createPlugin(
       shapePerTableLock.set(options.table)
       let shapeSubState: ShapeSubscriptionState | null = null
 
-      // if shapeKey is provided, ensure persistence of shape subscription
+      // if shapeKey is not null, ensure persistence of shape subscription
       // state is possible and check if it is already persisted
       if (options.shapeKey) {
         shapeSubState = await getShapeSubscriptionState({
