@@ -58,7 +58,7 @@ describe('pglite-sync', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
 
     // insert
@@ -131,7 +131,7 @@ describe('pglite-sync', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
 
     const numInserts = 10000
@@ -399,7 +399,7 @@ describe('pglite-sync', () => {
       },
       table: table,
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
 
     // should throw if syncing more shapes into same table
@@ -412,7 +412,7 @@ describe('pglite-sync', () => {
           },
           table: table,
           primaryKey: ['id'],
-          shapeKey: null
+          shapeKey: null,
         }),
     ).rejects.toThrowError(`Already syncing shape for table ${table}`)
 
@@ -424,7 +424,7 @@ describe('pglite-sync', () => {
       },
       table: altTable,
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
     altShape.unsubscribe()
 
@@ -439,7 +439,7 @@ describe('pglite-sync', () => {
       },
       table: table,
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
     shape2.unsubscribe()
   })
@@ -460,7 +460,7 @@ describe('pglite-sync', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
 
     // insert
@@ -550,7 +550,7 @@ describe('pglite-sync', () => {
       },
       table: 'test_syncing',
       primaryKey: ['id'],
-      shapeKey: null
+      shapeKey: null,
     })
 
     await feedMessage({
@@ -597,7 +597,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       useCopy: true,
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Create a batch of insert messages followed by an update
@@ -677,7 +677,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       useCopy: true,
-      shapeKey: null
+      shapeKey: null,
     })
 
     const specialCharMessages: Message[] = [
@@ -775,7 +775,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: batchSize,
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Create test messages - 7 total (should see batch of 5, then 2)
@@ -967,7 +967,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'up-to-date',
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Send multiple messages
@@ -1047,7 +1047,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       commitGranularity: 'operation',
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Send multiple messages
@@ -1133,7 +1133,7 @@ describe('pglite-sync', () => {
       primaryKey: ['id'],
       commitGranularity: 'operation',
       commitThrottle: throttleMs,
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Send messages with 10ms delays between them
@@ -1223,7 +1223,7 @@ describe('pglite-sync', () => {
       table: 'todo',
       primaryKey: ['id'],
       onInitialSync,
-      shapeKey: null
+      shapeKey: null,
     })
 
     // Send some initial data
