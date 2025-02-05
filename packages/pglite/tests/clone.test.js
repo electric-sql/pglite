@@ -11,9 +11,9 @@ describe('clone', () => {
     );
   `)
     await pg1.exec("INSERT INTO test (name) VALUES ('test');")
-    
+
     const pg2 = await pg1.clone()
-    
+
     const ret1 = await pg1.query('SELECT * FROM test;')
     const ret2 = await pg2.query('SELECT * FROM test;')
 
@@ -29,7 +29,7 @@ describe('clone', () => {
     );
   `)
     await pg1.exec("INSERT INTO test (name) VALUES ('test');")
-    
+
     const pg2 = await pg1.clone()
     await pg2.exec("INSERT INTO test (name) VALUES ('2-test');")
 

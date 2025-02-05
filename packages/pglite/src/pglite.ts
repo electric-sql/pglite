@@ -797,6 +797,6 @@ export class PGlite
 
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
-    return new PGlite({loadDataDir: dump});
+    return new PGlite({ loadDataDir: dump })
   }
 }
