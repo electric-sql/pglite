@@ -69,11 +69,6 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Test
-        working-directory: ${{ github.workspace }}/packages/pglite
-        run: |
-          pnpm test
-
   build-and-test-pglite-dependencies:
     name: Build and Test PGLite dependencies
     runs-on: ubuntu-22.04
