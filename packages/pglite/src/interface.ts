@@ -91,6 +91,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions
+  postgresqlConf?: Record<string, string | string[]>
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
