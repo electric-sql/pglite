@@ -269,7 +269,7 @@ const unsub = await pg.listen('test', (payload) => {
 await pg.query("NOTIFY test, 'Hello, world!'")
 ```
 
-Channel names are case sensitive if double-quoted (`pg.listen('"test"')`). Otherwise channel name will be lower cased (`pg.listen('TeStiNG')` == `pg.listen('testing')`).
+Channel names are case sensitive if double-quoted (`pg.listen('"TeST"')`). Otherwise channel name will be lower cased (`pg.listen('TeStiNG')` == `pg.listen('testing')`).
 
 ### unlisten
 
