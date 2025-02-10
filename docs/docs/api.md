@@ -362,9 +362,10 @@ await pg.describeQuery('SELECT * FROM test WHERE name = $1', ['test'])
 ```
 
 ### clone
+
 `.clone(): Promise<PGlite>`
 
-Clones the current instance. This is useful when a series of operations, like unit or integration test, need to be run on the same database without having to recreate the database each time, or for each test. 
+Clones the current instance. This is useful when a series of operations, like unit or integration test, need to be run on the same database without having to recreate the database each time, or for each test.
 
 ## Properties
 
