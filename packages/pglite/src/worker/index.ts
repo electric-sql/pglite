@@ -364,7 +364,7 @@ export class PGliteWorker
       this.#notifyListeners.set(channel, new Set())
     }
     this.#notifyListeners.get(channel)?.add(callback)
-    await this.exec(`LISTEN ${channel}`)
+    await this.exec(`LISTEN "${channel}"`)
     return async () => {
       await this.unlisten(channel, callback)
     }
