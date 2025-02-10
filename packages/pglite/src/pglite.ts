@@ -738,15 +738,16 @@ export class PGlite
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
+    const pgChannel = toPostgresName(channel)
     if (callback) {
-      this.#notifyListeners.get(channel)?.delete(callback)
-      if (this.#notifyListeners.get(channel)?.size === 0) {
-        await this.exec(`UNLISTEN "${channel}"`)
-        this.#notifyListeners.delete(channel)
+      this.#notifyListeners.get(pgChannel)?.delete(callback)
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        await this.exec(`UNLISTEN ${channel}`)
+        this.#notifyListeners.delete(pgChannel)
       }
     } else {
-      await this.exec(`UNLISTEN "${channel}"`)
-      this.#notifyListeners.delete(channel)
+      await this.exec(`UNLISTEN ${channel}`)
+      this.#notifyListeners.delete(pgChannel)
     }
   }
 

@@ -42,8 +42,8 @@ describe('notify API', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
-  it('check case sensitivity as Postgresql', async () => {
-    const pg = new PGlite(undefined, { debug: 5 })
+  it('check notify case sensitivity as Postgresql', async () => {
+    const pg = new PGlite()
 
     const allLower1 = vi.fn()
     await pg.listen('postgresdefaultlower', allLower1)
@@ -80,5 +80,52 @@ describe('notify API', () => {
     expect(caseSensitive1).toHaveBeenCalledOnce()
     expect(caseSensitive2).not.toHaveBeenCalled()
     expect(caseSensitive3).not.toHaveBeenCalled()
+  })
+
+  it('check unlisten case sensitivity as Postgresql', async () => {
+
+    const pg = new PGlite()
+
+    const allLower1 = vi.fn()
+    {
+      const unsub1 = await pg.listen('postgresdefaultlower', allLower1)
+      await pg.query(`NOTIFY postgresdefaultlower, 'payload1'`)
+      await unsub1()
+    }
+
+    const autoLowerTest1 = vi.fn()
+    {
+      const unsub2 = await pg.listen('PostgresDefaultLower', autoLowerTest1)
+      await pg.query(`NOTIFY PostgresDefaultLower, 'payload1'`)
+      await unsub2()
+    }
+
+    const autoLowerTest2 = vi.fn()
+    {
+      const unsub3 = await pg.listen('PostgresDefaultLower', autoLowerTest2)
+      await pg.query(`NOTIFY postgresdefaultlower, 'payload1'`)
+      await unsub3()
+    }
+
+    const autoLowerTest3 = vi.fn()
+    {
+      const unsub4 = await pg.listen('postgresdefaultlower', autoLowerTest3)
+      await pg.query(`NOTIFY PostgresDefaultLower, 'payload1'`)
+      await unsub4()
+    }
+
+    const caseSensitive1 = vi.fn()
+    {
+      await pg.listen('"CaSESEnsiTIvE"', caseSensitive1)
+      await pg.query(`NOTIFY "CaSESEnsiTIvE", 'payload1'`)
+      await pg.unlisten("CaSESEnsiTIvE")
+      await pg.query(`NOTIFY "CaSESEnsiTIvE", 'payload1'`)
+    }
+
+    expect(allLower1).toHaveBeenCalledOnce()
+    expect(autoLowerTest1).toHaveBeenCalledOnce()
+    expect(autoLowerTest2).toHaveBeenCalledOnce()
+    expect(autoLowerTest3).toHaveBeenCalledOnce()
+    expect(caseSensitive1).toHaveBeenCalledOnce()
   })
 })
