@@ -794,4 +794,9 @@ export class PGlite
   _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
     return this.#transactionMutex.runExclusive(fn)
   }
+
+  async clone(): Promise<PGliteInterface> {
+    const dump = await this.dumpDataDir('none')
+    return new PGlite({ loadDataDir: dump })
+  }
 }
