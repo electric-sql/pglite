@@ -42,17 +42,42 @@ describe('notify API', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
-  it('check case sensitivity works', async () => {
-    const f1 = vi.fn()
-    const f2 = vi.fn()
+  it('check case sensitivity as Postgresql', async () => {
+    const pg = new PGlite(undefined, { debug: 5 })
 
-    const pg = new PGlite()
+    const allLower1 = vi.fn()
+    await pg.listen('alllower1', allLower1)
+    await pg.query(`NOTIFY alllower1, 'payload1'`)
+    expect(allLower1).toHaveBeenCalledOnce()
 
-    await pg.listen('test1', f1)
-    await pg.listen('tesT2', f2)
-    await pg.query(`NOTIFY "test1", 'payload1'`)
+    const autoLowerTest1 = vi.fn()
+    await pg.listen('PostgresDefaultLower', autoLowerTest1)
+    await pg.query(`NOTIFY PostgresDefaultLower, 'payload1'`)
+    expect(autoLowerTest1).toHaveBeenCalledOnce()
+
+    const autoLowerTest2 = vi.fn()
+    await pg.listen('PosgresDefaultLower', autoLowerTest2)
+    await pg.query(`NOTIFY posgresdefaultlower, 'payload1'`)
+    expect(autoLowerTest2).toHaveBeenCalledOnce()
+
+    const autoLowerTest3 = vi.fn()
+    await pg.listen('posgresdefaultlower', autoLowerTest3)
+    await pg.query(`NOTIFY PosgresDefaultLower, 'payload1'`)
+    expect(autoLowerTest3).toHaveBeenCalledOnce()
+
+    const caseSensitive1 = vi.fn()
+    await pg.listen('"tesT2"', caseSensitive1)
     await pg.query(`NOTIFY "tesT2", 'paYloAd2'`)
-    expect(f1).toHaveBeenCalled()
-    expect(f2).toHaveBeenCalled()
+    expect(caseSensitive1).toHaveBeenCalledOnce()
+
+    const caseSensitive2 = vi.fn()
+    await pg.listen('"testNotCalled1"', caseSensitive2)
+    await pg.query(`NOTIFY testNotCalled1, 'paYloAd2'`)
+    expect(caseSensitive2).not.toHaveBeenCalled()
+
+    const caseSensitive3 = vi.fn()
+    await pg.listen('testNotCalled2', caseSensitive3)
+    await pg.query(`NOTIFY "testNotCalled2", 'paYloAd2'`)
+    expect(caseSensitive3).not.toHaveBeenCalled()
   })
 })
