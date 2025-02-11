@@ -117,7 +117,7 @@ describe('notify API', () => {
     {
       await pg.listen('"CaSESEnsiTIvE"', caseSensitive1)
       await pg.query(`NOTIFY "CaSESEnsiTIvE", 'payload1'`)
-      await pg.unlisten('CaSESEnsiTIvE')
+      await pg.unlisten('"CaSESEnsiTIvE"')
       await pg.query(`NOTIFY "CaSESEnsiTIvE", 'payload1'`)
     }
 
