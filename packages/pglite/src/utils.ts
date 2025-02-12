@@ -226,3 +226,20 @@ export function debounceMutex<A extends any[], R>(
     return promise
   }
 }
+
+/**
+ * Postgresql handles quoted names as CaseSensitive and unquoted as lower case.
+ * If input is quoted, returns an unquoted string (same casing)
+ * If input is unquoted, returns a lower-case string
+ */
+export function toPostgresName(input: string): string {
+  let output
+  if (input.startsWith('"') && input.endsWith('"')) {
+    // Postgres sensitive case
+    output = input.substring(1, input.length - 1)
+  } else {
+    // Postgres case insensitive - all to lower
+    output = input.toLowerCase()
+  }
+  return output
+}

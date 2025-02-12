@@ -19,7 +19,12 @@ import type {
   PGliteOptions,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
-import { getFsBundle, instantiateWasm, startWasmDownload } from './utils.js'
+import {
+  getFsBundle,
+  instantiateWasm,
+  startWasmDownload,
+  toPostgresName,
+} from './utils.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -716,13 +721,22 @@ export class PGlite
    * @param callback The callback to call when a notification is received
    */
   async listen(channel: string, callback: (payload: string) => void) {
-    if (!this.#notifyListeners.has(channel)) {
-      this.#notifyListeners.set(channel, new Set())
+    const pgChannel = toPostgresName(channel)
+    if (!this.#notifyListeners.has(pgChannel)) {
+      this.#notifyListeners.set(pgChannel, new Set())
     }
-    this.#notifyListeners.get(channel)!.add(callback)
-    await this.exec(`LISTEN "${channel}"`)
+    this.#notifyListeners.get(pgChannel)!.add(callback)
+    try {
+      await this.exec(`LISTEN ${channel}`)
+    } catch (e) {
+      this.#notifyListeners.get(pgChannel)!.delete(callback)
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        this.#notifyListeners.delete(pgChannel)
+      }
+      throw e
+    }
     return async () => {
-      await this.unlisten(channel, callback)
+      await this.unlisten(pgChannel, callback)
     }
   }
 
@@ -732,15 +746,16 @@ export class PGlite
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
+    const pgChannel = toPostgresName(channel)
     if (callback) {
-      this.#notifyListeners.get(channel)?.delete(callback)
-      if (this.#notifyListeners.get(channel)?.size === 0) {
-        await this.exec(`UNLISTEN "${channel}"`)
-        this.#notifyListeners.delete(channel)
+      this.#notifyListeners.get(pgChannel)?.delete(callback)
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        await this.exec(`UNLISTEN ${channel}`)
+        this.#notifyListeners.delete(pgChannel)
       }
     } else {
-      await this.exec(`UNLISTEN "${channel}"`)
-      this.#notifyListeners.delete(channel)
+      await this.exec(`UNLISTEN ${channel}`)
+      this.#notifyListeners.delete(pgChannel)
     }
   }
 
