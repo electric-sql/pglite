@@ -1,4 +1,4 @@
-import type { Offset, ShapeStreamOptions } from '@electric-sql/client'
+import type { Offset, Row, ShapeStreamOptions } from '@electric-sql/client'
 import {
   ChangeMessage,
   ShapeStream,
@@ -11,6 +11,10 @@ import type {
   PGliteInterface,
   Transaction,
 } from '@electric-sql/pglite'
+
+interface LegacyChangeMessage<T extends Row<unknown>> extends ChangeMessage<T> {
+  offset?: Offset
+}
 
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
@@ -154,7 +158,7 @@ async function createPlugin(
       // _very_ large shapes - either we should commit batches to
       // a temporary table and copy over the transactional result
       // or use a separate connection to hold a long transaction
-      let messageAggregator: ChangeMessage<any>[] = []
+      let messageAggregator: LegacyChangeMessage<any>[] = []
       let truncateNeeded = false
       // let lastLSN: string | null = null  // Removed until Electric has stabilised on LSN metadata
       let lastCommitAt: number = 0
@@ -248,8 +252,9 @@ async function createPlugin(
               metadataSchema,
               shapeKey: options.shapeKey,
               shapeId: shapeHandle,
-              lastOffset:
-                messageAggregator[messageAggregator.length - 1].offset,
+              lastOffset: getMessageOffset(
+                messageAggregator[messageAggregator.length - 1],
+              ),
             })
           }
         })
@@ -359,7 +364,7 @@ async function createPlugin(
           return stream.isUpToDate
         },
         get shapeId() {
-          return stream.shapeHandle
+          return stream.shapeHandle!
         },
         stream,
         subscribe: (cb: () => void, error: (err: Error) => void) => {
@@ -667,3 +672,11 @@ function subscriptionMetadataTableName(metadatSchema: string) {
 }
 
 const subscriptionTableName = `shape_subscriptions_metadata`
+
+function getMessageOffset(message: LegacyChangeMessage<any>): Offset {
+  if (message.offset) {
+    return message.offset
+  } else {
+    return `${message.headers.lsn}_${message.headers.op_position}` as Offset
+  }
+}

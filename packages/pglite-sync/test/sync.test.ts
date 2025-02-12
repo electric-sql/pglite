@@ -64,7 +64,6 @@ describe('pglite-sync', () => {
     // insert
     await feedMessage({
       headers: { operation: 'insert' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 1,
@@ -83,7 +82,6 @@ describe('pglite-sync', () => {
     // update
     await feedMessage({
       headers: { operation: 'update' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 1,
@@ -102,7 +100,6 @@ describe('pglite-sync', () => {
     // delete
     await feedMessage({
       headers: { operation: 'delete' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 1,
@@ -315,7 +312,6 @@ describe('pglite-sync', () => {
     await feedMessages([
       {
         headers: { operation: 'insert' },
-        offset: `1_${numInserts}`,
         key: `id${numInserts}`,
         value: {
           id: numInserts,
@@ -326,7 +322,6 @@ describe('pglite-sync', () => {
       { headers: { control: 'must-refetch' } },
       {
         headers: { operation: 'insert' },
-        offset: `2_1`,
         key: `id21`,
         value: {
           id: 21,
@@ -466,7 +461,6 @@ describe('pglite-sync', () => {
     // insert
     await feedMessage({
       headers: { operation: 'insert' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 1,
@@ -485,7 +479,6 @@ describe('pglite-sync', () => {
     // update with no columns to update
     await feedMessage({
       headers: { operation: 'update' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 1,
@@ -555,7 +548,6 @@ describe('pglite-sync', () => {
 
     await feedMessage({
       headers: { operation: 'insert' },
-      offset: '-1',
       key: 'id1',
       value: {
         id: 'id1',
@@ -619,7 +611,6 @@ describe('pglite-sync', () => {
       ),
       {
         headers: { operation: 'update' as const },
-        offset: `1_${numInserts}`,
         key: `id0`,
         value: {
           id: 0,
@@ -683,7 +674,6 @@ describe('pglite-sync', () => {
     const specialCharMessages: Message[] = [
       {
         headers: { operation: 'insert' },
-        offset: '1_0',
         key: 'id1',
         value: {
           id: 1,
@@ -693,7 +683,6 @@ describe('pglite-sync', () => {
       },
       {
         headers: { operation: 'insert' },
-        offset: '2_0',
         key: 'id2',
         value: {
           id: 2,
@@ -703,7 +692,6 @@ describe('pglite-sync', () => {
       },
       {
         headers: { operation: 'insert' },
-        offset: '3_0',
         key: 'id3',
         value: {
           id: 3,
@@ -784,7 +772,6 @@ describe('pglite-sync', () => {
       (_, idx) =>
         ({
           headers: { operation: 'insert' },
-          offset: `1_${idx}`,
           key: `id${idx}`,
           value: {
             id: idx,
@@ -872,7 +859,6 @@ describe('pglite-sync', () => {
   //   await feedMessages([
   //     {
   //       headers: { operation: 'insert' },
-  //       offset: '1_1', // Transaction 1
   //       key: 'id1',
   //       value: {
   //         id: 1,
@@ -882,7 +868,6 @@ describe('pglite-sync', () => {
   //     },
   //     {
   //       headers: { operation: 'insert' },
-  //       offset: '1_2', // Same transaction
   //       key: 'id2',
   //       value: {
   //         id: 2,
@@ -892,7 +877,6 @@ describe('pglite-sync', () => {
   //     },
   //     {
   //       headers: { operation: 'insert' },
-  //       offset: '2_1', // New transaction
   //       key: 'id3',
   //       value: {
   //         id: 3,
@@ -974,19 +958,16 @@ describe('pglite-sync', () => {
     await feedMessages([
       {
         headers: { operation: 'insert' },
-        offset: '1_1',
         key: 'id1',
         value: { id: 1, task: 'task1', done: false },
       },
       {
         headers: { operation: 'insert' },
-        offset: '2_1',
         key: 'id2',
         value: { id: 2, task: 'task2', done: false },
       },
       {
         headers: { operation: 'insert' },
-        offset: '3_1',
         key: 'id3',
         value: { id: 3, task: 'task3', done: false },
       },
@@ -1054,19 +1035,16 @@ describe('pglite-sync', () => {
     await feedMessages([
       {
         headers: { operation: 'insert' },
-        offset: '1_1',
         key: 'id1',
         value: { id: 1, task: 'task1', done: false },
       },
       {
         headers: { operation: 'insert' },
-        offset: '1_2',
         key: 'id2',
         value: { id: 2, task: 'task2', done: false },
       },
       {
         headers: { operation: 'insert' },
-        offset: '1_3',
         key: 'id3',
         value: { id: 3, task: 'task3', done: false },
       },
@@ -1230,7 +1208,6 @@ describe('pglite-sync', () => {
     await feedMessages([
       {
         headers: { operation: 'insert' },
-        offset: '1_1',
         key: 'id1',
         value: {
           id: 1,
@@ -1240,7 +1217,6 @@ describe('pglite-sync', () => {
       },
       {
         headers: { operation: 'insert' },
-        offset: '1_2',
         key: 'id2',
         value: {
           id: 2,
@@ -1257,7 +1233,6 @@ describe('pglite-sync', () => {
     await feedMessages([
       {
         headers: { operation: 'insert' },
-        offset: '1_3',
         key: 'id3',
         value: {
           id: 3,

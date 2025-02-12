@@ -45,7 +45,7 @@
     "dist"
   ],
   "dependencies": {
-    "@electric-sql/client": "~0.9.0"
+    "@electric-sql/client": "1.0.0-beta.3"
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
