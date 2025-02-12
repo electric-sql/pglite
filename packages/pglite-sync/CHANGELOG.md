@@ -1,5 +1,15 @@
 # @electric-sql/pglite-sync
 
+## 0.2.19
+
+### Patch Changes
+
+- 67bf759: shapeKey in syncShapeToTable is now mandatory but nullable; passing null will not persist the shape
+- b3640ee: Update the sync plugin to work with the latest Electric sync server
+- Updated dependencies [6bdd74e]
+- Updated dependencies [f94d591]
+  - @electric-sql/pglite@0.2.17
+
 ## 0.2.18
 
 ### Patch Changes
