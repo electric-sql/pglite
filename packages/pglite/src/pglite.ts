@@ -726,7 +726,15 @@ export class PGlite
       this.#notifyListeners.set(pgChannel, new Set())
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
-    await this.exec(`LISTEN ${channel}`)
+    try {
+      await this.exec(`LISTEN ${channel}`)
+    } catch (e) {
+      this.#notifyListeners.get(pgChannel)!.delete(callback)
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        this.#notifyListeners.delete(pgChannel)
+      }
+      throw e
+    }
     return async () => {
       await this.unlisten(pgChannel, callback)
     }
