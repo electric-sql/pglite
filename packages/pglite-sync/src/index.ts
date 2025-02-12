@@ -253,6 +253,7 @@ async function createPlugin(
               shapeKey: options.shapeKey,
               shapeId: shapeHandle,
               lastOffset: getMessageOffset(
+                stream,
                 messageAggregator[messageAggregator.length - 1],
               ),
             })
@@ -673,10 +674,15 @@ function subscriptionMetadataTableName(metadatSchema: string) {
 
 const subscriptionTableName = `shape_subscriptions_metadata`
 
-function getMessageOffset(message: LegacyChangeMessage<any>): Offset {
+function getMessageOffset(
+  stream: ShapeStream,
+  message: LegacyChangeMessage<any>,
+): Offset {
   if (message.offset) {
     return message.offset
-  } else {
+  } else if (message.headers.lsn && message.headers.op_position) {
     return `${message.headers.lsn}_${message.headers.op_position}` as Offset
+  } else {
+    return stream.lastOffset
   }
 }
