@@ -91,12 +91,8 @@ describe('notify API', () => {
     await pg.query(`NOTIFY "test&me", 'paYloAd2'`)
 
     const otherChars = vi.fn()
-    await expectToThrowAsync(
-      pg.listen('test&me', otherChars),
-    )
-    await expectToThrowAsync(
-      pg.query(`NOTIFY test&me, 'payload1'`),
-    )
+    await expectToThrowAsync(pg.listen('test&me', otherChars))
+    await expectToThrowAsync(pg.query(`NOTIFY test&me, 'payload1'`))
 
     expect(allLower1).toHaveBeenCalledTimes(4)
     expect(autoLowerTest1).toHaveBeenCalledTimes(3)
