@@ -680,7 +680,10 @@ function getMessageOffset(
 ): Offset {
   if (message.offset) {
     return message.offset
-  } else if (message.headers.lsn && message.headers.op_position) {
+  } else if (
+    message.headers.lsn !== undefined &&
+    message.headers.op_position !== undefined
+  ) {
     return `${message.headers.lsn}_${message.headers.op_position}` as Offset
   } else {
     return stream.lastOffset
