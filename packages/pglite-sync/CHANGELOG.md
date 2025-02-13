@@ -1,5 +1,11 @@
 # @electric-sql/pglite-sync
 
+## 0.2.20
+
+### Patch Changes
+
+- c489ec0: Correctly persist the offset during initial sync
+
 ## 0.2.19
 
 ### Patch Changes
