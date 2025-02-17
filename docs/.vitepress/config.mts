@@ -102,7 +102,7 @@ export default defineConfig({
             text: 'Framework Hooks',
             link: '/react',
             base: '/docs/framework-hooks',
-            collapsed: true,
+            collapsed: false,
             items: [
               { text: 'React', link: '/react' },
               { text: 'Vue', link: '/vue' },
