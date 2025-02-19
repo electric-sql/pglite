@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
-import pgliteLogo from '/pglite.svg'
+import pgliteLogoLight from '/pglite-logo-light.svg'
 import typescriptLogo from '/typescript.svg'
 import './App.css'
 import { PGliteProvider } from '@electric-sql/pglite-react'
@@ -33,7 +33,7 @@ function App() {
     <>
       <div>
         <a href="https://pglite.dev" target="_blank">
-          <img src={pgliteLogo} className="logo" alt="PGlite logo" />
+          <img src={pgliteLogoLight} className="logo" alt="PGlite logo" />
         </a>
         <a href="https://vite.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -45,7 +45,7 @@ function App() {
           <img src={typescriptLogo} className="logo" alt="Typescript logo" />
         </a>              
       </div>
-      <h1>PGlite with Vite + React + TS</h1>
+      <h1>PGlite example with Vite + React + TS</h1>
       <p className="read-the-docs">
         Click on the logos to learn more
       </p>      

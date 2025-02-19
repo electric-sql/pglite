@@ -1,4 +1,4 @@
-# PGlite + Vite + React + TypeScript
+# Example: PGlite + Vite + React + TypeScript
 
 This is an example of a simple project using [PGlite](https://pglite.dev) and it's React integration. It uses [Vite](https://vite.dev), [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/).
 
