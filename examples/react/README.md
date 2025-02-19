@@ -38,14 +38,27 @@ $ git clone https://github.com/electric-sql/pglite
 $ cd ./pglite/examples/react
 ```
 3. Install dependencies
+
 ```
-$ pnpm install
+$ pnpm i --ignore-workspace
 ```
+
+This example is part of the `pglite` pnpm workspace, but for our needs, we do not need to install all dependencies in the workspace. Thus passing the `--ignore-workspace` flag.
+
 4. Start a development server locally
 ```
 $ pnpm dev
 ```
-5. Open your browser and point to the above indicated address
+Sample output:
+```
+  VITE v6.1.0  ready in 126 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+```
+
+5. Open your browser and point to the above indicated address (http://localhost:5173/ but your address might be different)
 
 # Getting started with PGlite + Vite + React + Typescript
 
