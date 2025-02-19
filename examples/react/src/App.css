@@ -28,7 +28,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
+  a:nth-of-type(3) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }
