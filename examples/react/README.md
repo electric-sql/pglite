@@ -1,6 +1,10 @@
 # Example: PGlite + Vite + React + TypeScript
 
-This is an example of a simple project using [PGlite](https://pglite.dev) and it's React integration. It uses [Vite](https://vite.dev), [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/).
+This is an example of a simple project using [PGlite](https://pglite.dev) and it's [React integration](https://pglite.dev/docs/framework-hooks/react). It uses [Vite](https://vite.dev), [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/).
+
+This example demonstrates the usage of some of PGlite's React API: [PGliteProvider](https://pglite.dev/docs/framework-hooks/react#pgliteprovider), [usePGlite](https://pglite.dev/docs/framework-hooks/react#usepglite), [useLiveQuery](https://pglite.dev/docs/framework-hooks/react#uselivequery).
+
+On page load, a database is created with a single table. On pressing the button, a new row is inserted into the database. The `useLiveQuery` will watch for any changes and display the most recently inserted 5 rows.
 
 # Getting started with this example
 

@@ -48,7 +48,9 @@ function App() {
       <h1>PGlite example with Vite + React + TS</h1>
       <p className="read-the-docs">
         Click on the logos to learn more
-      </p>      
+      </p>
+      <p>This example demonstrates the usage of some of PGlite's React API: <a href="https://pglite.dev/docs/framework-hooks/react#pgliteprovider">PGliteProvider</a>, <a href="https://pglite.dev/docs/framework-hooks/react#usepglite">usePGlite</a>, <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">useLiveQuery</a>.</p>
+      <p>On page load, a database is created with a single table. On pressing the button, a new row is inserted into the database. The <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">useLiveQuery</a> will watch for any changes and display the most recently inserted 5 rows.</p>
       <div className="card">
         {/* see details https://pglite.dev/docs/framework-hooks/react#pgliteprovider */}
         <PGliteProvider db={db}>
