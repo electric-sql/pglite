@@ -1,4 +1,4 @@
-import PostgresModFactory from '../release/postgres'
+import PostgresModFactory from '../release/pglite'
 
 type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
@@ -23,6 +23,7 @@ export interface PostgresMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
+  _use_wire: (state: number) => void
   _pg_initdb: () => number
   _pg_shutdown: () => void
   _interactive_write: (msgLength: number) => void

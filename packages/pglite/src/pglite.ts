@@ -235,7 +235,7 @@ export class PGlite
         return {}
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
-        if (remotePackageName === 'postgres.data') {
+        if (remotePackageName === 'pglite.data') {
           if (fsBundleBuffer.byteLength !== remotePackageSize) {
             throw new Error(
               `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
@@ -563,6 +563,7 @@ export class PGlite
   execProtocolRawSync(message: Uint8Array) {
     const msg_len = message.length
     const mod = this.mod!
+    mod._use_wire(1)
     mod._interactive_write(msg_len)
     mod.HEAPU8.set(message, 1)
     mod._interactive_one()
@@ -591,6 +592,7 @@ export class PGlite
     const mod = this.mod!
 
     // >0 set buffer content type to wire protocol
+    mod._use_wire(1)
     // set buffer size so answer will be at size+0x2 pointer addr
     mod._interactive_write(msg_len)
 
