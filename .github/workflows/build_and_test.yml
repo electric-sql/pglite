@@ -70,14 +70,17 @@ jobs:
           pnpm build:all
 
   build-and-test-pglite-dependencies:
-    name: Build and Test PGLite dependencies
+    name: Build and Test PGLite dependencies (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [20, 22, 23]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -94,8 +97,11 @@ jobs:
     secrets: inherit
 
   build-and-test-pglite:
-    name: Build and Test PGLite
+    name: Build and Test PGLite (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [20, 22, 23]
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -105,7 +111,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - uses: denoland/setup-deno@v1
@@ -149,14 +155,14 @@ jobs:
         id: upload-pglite-dist
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-dist
+          name: pglite-dist-${{ matrix.node-version }}
           path: ./packages/pglite/dist/*
 
       - name: Upload PGlite package artifact
         id: upload-pglite-package
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-package
+          name: pglite-package-${{ matrix.node-version }}
           path: ./packages/pglite/electric-sql-pglite-*.tgz
           retention-days: 60
 
@@ -181,21 +187,24 @@ jobs:
           edit-mode: append
 
   build-and-test-pglite-dependents:
-    name: Build and Test packages dependent on PGlite
+    name: Build and Test PGLite dependents (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [20, 22, 23]
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-dist
+          name: pglite-dist-${{ matrix.node-version }}
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
@@ -228,7 +237,7 @@ jobs:
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-dist
+          name: pglite-dist-20
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
