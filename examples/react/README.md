@@ -127,8 +127,7 @@ dependencies:
 ```
 
 5. You are ready start using PGlite's React API.
-Note that you might need to disable React's `StrictMode`. (eg comment out `StrictMode` tags in `main.tsx`, as its done in this project).
-Also, make sure to exclude pglite from dependency optimization using the [optimizeDeps option inside vite.config.js](https://pglite.dev/docs/bundler-support#vite).
+Make sure to exclude pglite from dependency optimization using the [optimizeDeps option inside vite.config.js](https://pglite.dev/docs/bundler-support#vite).
 
 6. Have a look at this project's `App.tsx`, `MyPGliteComponent.tsx` and `MyPGliteItemsComponent.tsx` to see how you can create a database and use PGlite React's integration and start modifying your project. Switch to the browser to see your changes.
 

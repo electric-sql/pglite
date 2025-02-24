@@ -35,6 +35,8 @@
 
 .card {
   padding: 2em;
+  margin: 0 auto;
+  max-width: 800px;
 }
 
 .read-the-docs {

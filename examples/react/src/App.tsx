@@ -9,22 +9,27 @@ import MyPGliteComponent from './MyPGliteComponent'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
 import { PGlite } from '@electric-sql/pglite'
 
-function App() {
+let dbGlobal: PGliteWithLive | undefined
 
-  const [db, setDb] = useState<PGliteWithLive | undefined>();
+function App() {
+  const [db, setDb] = useState<PGliteWithLive | undefined>()
 
   useEffect(() => {
     async function setupDb() {
-      const db = await PGlite.create({
-        extensions: { live }
+      // Initialising a PGlite instance in a useEffect hook is a good pattern.
+      // However, it doesn't play well with React's strict mode, so we'll use a global
+      // variable to store the instance once it's initialised. That way strict mode
+      // doesn't re-initialise it.
+      dbGlobal ??= await PGlite.create({
+        extensions: { live },
       })
-      db.query(`CREATE TABLE IF NOT EXISTS my_table (
+      dbGlobal.query(`CREATE TABLE IF NOT EXISTS my_table (
         id SERIAL PRIMARY KEY NOT NULL,
         name TEXT,
         number INT,
         "insertDateTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );`)
-      setDb(db)
+      setDb(dbGlobal)
     }
     setupDb()
   }, [])
@@ -43,19 +48,43 @@ function App() {
         </a>
         <a href="https://www.typescriptlang.org/" target="_blank">
           <img src={typescriptLogo} className="logo" alt="Typescript logo" />
-        </a>              
+        </a>
       </div>
       <h1>PGlite example with Vite + React + TS</h1>
-      <p className="read-the-docs">
-        Click on the logos to learn more
+      <p className="read-the-docs">Click on the logos to learn more</p>
+      <p>
+        This example demonstrates the usage of some of PGlite's React API:{' '}
+        <a href="https://pglite.dev/docs/framework-hooks/react#pgliteprovider">
+          PGliteProvider
+        </a>
+        ,{' '}
+        <a href="https://pglite.dev/docs/framework-hooks/react#usepglite">
+          usePGlite
+        </a>
+        ,{' '}
+        <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">
+          useLiveQuery
+        </a>
+        .
       </p>
-      <p>This example demonstrates the usage of some of PGlite's React API: <a href="https://pglite.dev/docs/framework-hooks/react#pgliteprovider">PGliteProvider</a>, <a href="https://pglite.dev/docs/framework-hooks/react#usepglite">usePGlite</a>, <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">useLiveQuery</a>.</p>
-      <p>On page load, a database is created with a single table. On pressing the button, a new row is inserted into the database. The <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">useLiveQuery</a> will watch for any changes and display the most recently inserted 5 rows.</p>
+      <p>
+        On page load, a database is created with a single table. On pressing the
+        button, a new row is inserted into the database. The{' '}
+        <a href="https://pglite.dev/docs/framework-hooks/react#uselivequery">
+          useLiveQuery
+        </a>{' '}
+        will watch for any changes and display the most recently inserted 5
+        rows.
+      </p>
       <div className="card">
         {/* see details https://pglite.dev/docs/framework-hooks/react#pgliteprovider */}
-        <PGliteProvider db={db}>
-          <MyPGliteComponent/>
-        </PGliteProvider>
+        {db ? (
+          <PGliteProvider db={db}>
+            <MyPGliteComponent />
+          </PGliteProvider>
+        ) : (
+          <div>Loading PGlite...</div>
+        )}
       </div>
     </>
   )
