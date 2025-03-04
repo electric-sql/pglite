@@ -3,7 +3,7 @@ import { PGlite } from '../dist/index.js'
 
 describe('fts', () => {
   it('basic', async () => {
-    const db = await PGlite.create()
+    const db = await PGlite.create({"debug":true})
 
     let ret = await db.query(`
     SELECT 'a fat cat sat on a mat and ate a fat rat'::tsvector @@ 'cat & rat'::tsquery AS match;
@@ -64,7 +64,7 @@ describe('fts', () => {
   })
 
   it('ranking', async () => {
-    const db = await PGlite.create()
+    const db = await PGlite.create({"debug":true})
 
     await db.query(`
     CREATE TABLE fts_ranking (

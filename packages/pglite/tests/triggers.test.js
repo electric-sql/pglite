@@ -21,17 +21,18 @@ describe('db triggers', () => {
     it('should detect insert on table', async () => {
       const eventType = `table changed`
       await db.exec(`
+CREATE EXTENSION IF NOT EXISTS plpgsql;
       CREATE TABLE foo_table (id TEXT, value TEXT);
 
-      CREATE OR REPLACE FUNCTION foo() RETURNS trigger AS $$ 
+      CREATE OR REPLACE FUNCTION foo() RETURNS trigger AS $$
       BEGIN
         PERFORM pg_notify('messages', '${eventType}');
         RETURN NULL;
       END;
       $$ LANGUAGE plpgsql;
 
-      CREATE OR REPLACE TRIGGER table_trigger 
-      AFTER INSERT OR UPDATE OR DELETE ON foo_table 
+      CREATE OR REPLACE TRIGGER table_trigger
+      AFTER INSERT OR UPDATE OR DELETE ON foo_table
       EXECUTE FUNCTION foo();
     `)
 
@@ -46,10 +47,11 @@ describe('db triggers', () => {
     it('should detect ddl_command_end', async () => {
       const eventType = `table created or dropped`
       await db.exec(`
-      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$ 
-      BEGIN 
+CREATE EXTENSION IF NOT EXISTS plpgsql;
+      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$
+      BEGIN
         PERFORM pg_notify('messages','${eventType}');
-        
+
       END;
       $$ LANGUAGE plpgsql;
 
@@ -72,10 +74,11 @@ describe('db triggers', () => {
     it('should detect ddl_command_start', async () => {
       const eventType = `table created or dropped`
       await db.exec(`
-      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$ 
-      BEGIN 
+CREATE EXTENSION IF NOT EXISTS plpgsql;
+      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$
+      BEGIN
         PERFORM pg_notify('messages','${eventType}');
-        
+
       END;
       $$ LANGUAGE plpgsql;
 
@@ -98,10 +101,11 @@ describe('db triggers', () => {
     it('should detect sql_drop', async () => {
       const eventType = `table  dropped`
       await db.exec(`
-      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$ 
-      BEGIN 
+CREATE EXTENSION IF NOT EXISTS plpgsql;
+      CREATE OR REPLACE FUNCTION foo() RETURNS event_trigger AS $$
+      BEGIN
         PERFORM pg_notify('messages','${eventType}');
-        
+
       END;
       $$ LANGUAGE plpgsql;
 
