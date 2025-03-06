@@ -24,8 +24,9 @@ export interface PostgresMod
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
   _use_wire: (state: number) => void
-  _pg_initdb: () => number
-  _pg_shutdown: () => void
+  _pgl_initdb: () => number
+  _pgl_backend: () => void
+  _pgl_shutdown: () => void
   _interactive_write: (msgLength: number) => void
   _interactive_one: () => void
   _interactive_read: () => number

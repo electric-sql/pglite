@@ -385,7 +385,7 @@ export class PGlite
     await loadExtensions(this.mod, (...args) => this.#log(...args))
 
     // Initialize the database
-    const idb = this.mod._pg_initdb()
+    const idb = this.mod._pgl_initdb()
 
     if (!idb) {
       // This would be a sab worker crash before pg_initdb can be called
@@ -430,6 +430,9 @@ export class PGlite
     // Sync any changes back to the persisted store (if there is one)
     // TODO: only sync here if initdb did init db.
     await this.syncToFs()
+
+    // (re)start backed after possible initdb boot/single.
+    this.mod._pgl_backend()
 
     this.#ready = true
 
@@ -482,7 +485,7 @@ export class PGlite
     // Close the database
     try {
       await this.execProtocol(serialize.end())
-      this.mod!._pg_shutdown()
+      this.mod!._pgl_shutdown()
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
