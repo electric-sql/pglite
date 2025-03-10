@@ -14,6 +14,21 @@ describe('pgDump', () => {
     expect(content).toContain('PostgreSQL database dump')
   })
 
+  it('should dump an empty database twice', async () => {
+    const pg = await PGlite.create()
+    
+    for (let i = 0; i < 2; i++) {
+      const fileName = `dump_${i}.sql`
+      const dump = await pgDump({ pg, fileName })
+
+      expect(dump).toBeInstanceOf(File)
+      expect(dump.name).toBe(fileName)
+
+      const content = await dump.text()
+      expect(content).toContain('PostgreSQL database dump')
+    }
+  })  
+
   it('should dump a database with tables and data', async () => {
     const pg = await PGlite.create()
 

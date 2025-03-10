@@ -75,7 +75,7 @@ async function execPgDump({
 }: {
   pg: PGlite
   args: string[]
-}): Promise<[number, Uint8Array[]]> {
+}): Promise<[number, Uint8Array[], string]> {
   const bin = new URL('./pg_dump.wasm', import.meta.url)
   const acc: Uint8Array[] = []
   const FS = emscriptenFsToWasiFS(pg.Module.FS, acc)
@@ -89,10 +89,14 @@ async function execPgDump({
   })
 
   wasi.stdout = (_buffer) => {
-    // console.log('stdout', buffer)
+    // console.log('stdout', _buffer)
   }
+  const textDecoder = new TextDecoder()
+  let errorMessage = ''
+
   wasi.stderr = (_buffer) => {
-    // console.error('stderr', buffer)
+    const text = textDecoder.decode(_buffer)
+    if (text) errorMessage += text
   }
   wasi.sched_yield = () => {
     const pgIn = '/tmp/pglite/base/.s.PGSQL.5432.in'
@@ -144,7 +148,7 @@ async function execPgDump({
   await pg.runExclusive(async () => {
     exitCode = wasi.start(app.instance.exports)
   })
-  return [exitCode!, acc]
+  return [exitCode!, acc, errorMessage]
 }
 
 interface PgDumpOptions {
@@ -173,13 +177,13 @@ export async function pgDump({
     'postgres',
   ]
 
-  const [exitCode, acc] = await execPgDump({
+  const [exitCode, acc, errorMessage] = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
   })
 
   if (exitCode !== 0) {
-    throw new Error(`pg_dump failed with exit code ${exitCode}`)
+    throw new Error(`pg_dump failed with exit code ${exitCode}. \nError message: ${errorMessage}`)
   }
 
   const file = new File(acc, fileName, {
