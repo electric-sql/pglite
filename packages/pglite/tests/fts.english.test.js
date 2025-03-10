@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
 
 function lc_init(db, lang) {
+// TODO: check if 'SELECT dictname FROM pg_catalog.pg_ts_dict;' has the lang */
+/*
     db.exec(`
 SET search_path = pg_catalog;
 
@@ -45,7 +47,7 @@ ALTER TEXT SEARCH CONFIGURATION ${lang} ADD MAPPING
     FOR word, hword_part, hword
 	WITH ${lang}_stem;
 `)
-
+*/
 }
 
 describe('fts', () => {

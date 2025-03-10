@@ -402,7 +402,7 @@ export class PGlite
 
     if (idb & 0b0001) {
       // this would be a wasm crash inside pg_initdb from a sab worker.
-      throw new Error('INITDB failed')
+      throw new Error('INITDB: failed to execute')
     } else if (idb & 0b0010) {
       // initdb was called to init PGDATA if required
       const pguser = options.username ?? 'postgres'
@@ -413,7 +413,7 @@ export class PGlite
           // initdb found db+user, and we switched to that user
         } else {
           // TODO: invalid user for db?
-          throw new Error('Invalid db/user combination')
+          throw new Error(`INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`)
         }
       } else {
         // initdb has created a new database for us, we can only continue if we are
@@ -421,7 +421,7 @@ export class PGlite
         if (pgdatabase !== 'template1' && pguser !== 'postgres') {
           // throw new Error(`Invalid database ${pgdatabase} requested`);
           throw new Error(
-            'INITDB created a new datadir, but an alternative db/user was requested',
+            `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
           )
         }
       }
