@@ -174,8 +174,9 @@ async function createPlugin(
         // during a sync
         tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
 
-        for (let [shapeName, messages] of messagesToCommit.entries()) {
+        for (const [shapeName, initialMessages] of messagesToCommit.entries()) {
           const shape = shapes[shapeName]
+          let messages = initialMessages
 
           // If we need to truncate the table, do so
           if (truncateNeeded.has(shapeName)) {
