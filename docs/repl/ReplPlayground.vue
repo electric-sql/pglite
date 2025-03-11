@@ -153,7 +153,7 @@ async function clearDb() {
         </p>
         <p>
           <b>Tip:</b> The psql <code>\d[..]</code> commands are available, and
-          there is autocomplete based on you schema.
+          there is autocomplete based on your schema.
         </p>
         <h2>Enabled Extensions</h2>
         <div
