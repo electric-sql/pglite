@@ -13,7 +13,7 @@ jobs:
     name: Build WASM Postgres
     runs-on: ubuntu-24.04
     env:
-      BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
+#      BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
       WASI_SDK_VERSION: 24.0.5
       WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
       SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
@@ -33,9 +33,9 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      - name: Set build parameters
-        run: |
-          cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
+#      - name: Set build parameters
+#        run: |
+#          cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
 
       - name: Restore cached build
         id: cache-restore
@@ -57,12 +57,14 @@ jobs:
           curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
 
       - name: Build postgres and pglite-wasm via portable sdk
-        working-directory: ${{ github.workspace }}/postgres-pglite
+        working-directory: ${{ github.workspace }}
         env:
           USE_ICU: false
           DEBUG: false
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
+          git clone --no-tags --depth 1 --single-branch --branch REL_17_4_WASM-pglite postgres-pglite
+          cd postgres-pglite
           bash ./ci-17_4_WASM.sh
 
       - name: Upload Postgres to Github artifacts
