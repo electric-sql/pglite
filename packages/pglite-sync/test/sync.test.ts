@@ -980,4 +980,549 @@ describe('pglite-sync', () => {
 
     shape.unsubscribe()
   })
+
+  it('syncs multiple shapes to multiple tables simultaneously', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with two shapes
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: 0,
+                },
+              },
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: 0,
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const onInitialSync = vi.fn()
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'multi_sync_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+      onInitialSync,
+    })
+
+    // Send data for both shapes in a single batch
+    await feedMessages([
+      // Todo table inserts
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'task1',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'task2',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      // Project table inserts
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Project 1',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'Project 2',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify data was inserted into both tables
+    const todoResult = await pg.sql`SELECT * FROM todo ORDER BY id;`
+    expect(todoResult.rows).toEqual([
+      { id: 1, task: 'task1', done: false },
+      { id: 2, task: 'task2', done: true },
+    ])
+
+    const projectResult = await pg.sql`SELECT * FROM project ORDER BY id;`
+    expect(projectResult.rows).toEqual([
+      { id: 1, name: 'Project 1', active: true },
+      { id: 2, name: 'Project 2', active: false },
+    ])
+
+    // Verify onInitialSync was called
+    expect(onInitialSync).toHaveBeenCalledTimes(1)
+
+    // Test updates across both tables
+    await feedMessages([
+      // Update todo
+      {
+        headers: { operation: 'update' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Updated task 1',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      // Update project
+      {
+        headers: { operation: 'update' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'Updated Project 2',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify updates were applied to both tables
+    const updatedTodoResult = await pg.sql`SELECT * FROM todo WHERE id = 1;`
+    expect(updatedTodoResult.rows[0]).toEqual({
+      id: 1,
+      task: 'Updated task 1',
+      done: true,
+    })
+
+    const updatedProjectResult =
+      await pg.sql`SELECT * FROM project WHERE id = 2;`
+    expect(updatedProjectResult.rows[0]).toEqual({
+      id: 2,
+      name: 'Updated Project 2',
+      active: true,
+    })
+
+    // Test deletes across both tables
+    await feedMessages([
+      {
+        headers: { operation: 'delete' },
+        key: 'id2',
+        shape: 'todo_shape',
+        value: { id: 2 },
+      },
+      {
+        headers: { operation: 'delete' },
+        key: 'id1',
+        shape: 'project_shape',
+        value: { id: 1 },
+      },
+    ])
+
+    // Verify deletes were applied to both tables
+    const todoCountAfterDelete = await pg.sql<{ count: number }>`
+      SELECT COUNT(*) as count FROM todo;
+    `
+    expect(todoCountAfterDelete.rows[0].count).toBe(1)
+
+    const projectCountAfterDelete = await pg.sql<{ count: number }>`
+      SELECT COUNT(*) as count FROM project;
+    `
+    expect(projectCountAfterDelete.rows[0].count).toBe(1)
+
+    // Cleanup
+    syncResult.unsubscribe()
+  })
+
+  it('handles transactions across multiple tables with syncShapesToTables', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with two shapes and LSN tracking
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_lsn, _messages) => {}
+
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (lsn, messages) =>
+            cb([
+              ...messages.map((msg) => {
+                if ('headers' in msg && 'operation' in msg.headers) {
+                  return {
+                    ...msg,
+                    headers: {
+                      ...msg.headers,
+                      lsn,
+                    },
+                  } as MultiShapeMessage
+                }
+                return msg
+              }),
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn,
+                },
+              } as MultiShapeMessage,
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn,
+                },
+              } as MultiShapeMessage,
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'transaction_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+    })
+
+    // Send initial data with LSN 1
+    await feedMessages(1, [
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Initial task',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Initial project',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify initial data was inserted
+    const initialTodoCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM todo;`
+    expect(initialTodoCount.rows[0].count).toBe(1)
+
+    const initialProjectCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM project;`
+    expect(initialProjectCount.rows[0].count).toBe(1)
+
+    // Simulate a transaction with LSN 2 that updates both tables
+    await feedMessages(2, [
+      {
+        headers: { operation: 'update' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Updated in transaction',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'update' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Updated in transaction',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify both updates were applied
+    const todoResult = await pg.sql`SELECT * FROM todo WHERE id = 1;`
+    expect(todoResult.rows[0]).toEqual({
+      id: 1,
+      task: 'Updated in transaction',
+      done: true,
+    })
+
+    const projectResult = await pg.sql`SELECT * FROM project WHERE id = 1;`
+    expect(projectResult.rows[0]).toEqual({
+      id: 1,
+      name: 'Updated in transaction',
+      active: false,
+    })
+
+    // Cleanup
+    syncResult.unsubscribe()
+  })
+
+  it('handles must-refetch control message across multiple tables', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with refetch handling
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    let mockShapeId: string | void = undefined
+
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) => {
+            mockShapeId ??= Math.random() + ''
+            if (messages.find((m) => m.headers.control === 'must-refetch')) {
+              mockShapeId = undefined
+            }
+
+            return cb([
+              ...messages,
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: 0,
+                },
+              } as MultiShapeMessage,
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: 0,
+                },
+              } as MultiShapeMessage,
+            ])
+          }
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'refetch_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+    })
+
+    // Insert initial data
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Initial task',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Initial project',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify initial data was inserted
+    const refetchTodoCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM todo;`
+    expect(refetchTodoCount.rows[0].count).toBe(1)
+
+    const refetchProjectCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM project;`
+    expect(refetchProjectCount.rows[0].count).toBe(1)
+
+    // Send must-refetch control message and new data
+    await feedMessages([
+      { headers: { control: 'must-refetch' }, shape: 'todo_shape' },
+      { headers: { control: 'must-refetch' }, shape: 'project_shape' },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'New task after refetch',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'New project after refetch',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify tables were cleared and new data was inserted
+    const todoResult = await pg.sql`SELECT * FROM todo ORDER BY id;`
+    expect(todoResult.rows).toEqual([
+      {
+        id: 2,
+        task: 'New task after refetch',
+        done: true,
+      },
+    ])
+
+    const projectResult = await pg.sql`SELECT * FROM project ORDER BY id;`
+    expect(projectResult.rows).toEqual([
+      {
+        id: 2,
+        name: 'New project after refetch',
+        active: false,
+      },
+    ])
+
+    // Cleanup
+    syncResult.unsubscribe()
+  })
 })
