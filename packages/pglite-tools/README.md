@@ -12,6 +12,8 @@ npm install @electric-sql/pglite-tools
 
 pg_dump is a tool for dumping a PGlite database to a SQL file, this is a WASM build of pg_dump that can be used in a browser or other JavaScript environments. You can read more about pg_dump [in the Postgres docs](https://www.postgresql.org/docs/current/app-pgdump.html).
 
+Note: pg_dump will execute `DEALLOCATE ALL;` after each dump. Since this is running on the same (single) connection, any prepared statements that you have made before running pg_dump will be affected.
+
 ### Options
 
 - `pg`: A PGlite instance.

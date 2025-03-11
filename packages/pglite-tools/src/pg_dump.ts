@@ -182,6 +182,8 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
+  pg.query(`DEALLOCATE ALL;`)
+
   if (exitCode !== 0) {
     throw new Error(
       `pg_dump failed with exit code ${exitCode}. \nError message: ${errorMessage}`,
