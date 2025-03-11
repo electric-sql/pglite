@@ -310,12 +310,18 @@ importers:
       '@eslint-react/eslint-plugin':
         specifier: ^1.14.3
         version: 1.14.3(eslint@8.57.1)(typescript@5.6.3)
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
       '@vitejs/plugin-react':
         specifier: ^4.3.2
         version: 4.3.2(vite@5.4.8(@types/node@20.16.11)(terser@5.34.1))
       globals:
         specifier: ^15.11.0
         version: 15.11.0
+      pg:
+        specifier: ^8.14.0
+        version: 8.14.0
       vitest:
         specifier: ^2.1.2
         version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
@@ -3378,8 +3384,16 @@ packages:
     peerDependencies:
       pg: '>=8.0'
 
+  pg-pool@3.8.0:
+    resolution: {integrity: sha512-VBw3jiVm6ZOdLBTIcXLNdSotb6Iy3uOCwDGFAksZCXmi10nyRvnP2v3jl4d+IsLYRyXf6o9hIm/ZtUzlByNUdw==}
+    peerDependencies:
+      pg: '>=8.0'
+
   pg-protocol@1.7.0:
     resolution: {integrity: sha512-hTK/mE36i8fDDhgDFjy6xNOG+LCorxLG3WO17tku+ij6sVHXh1jQUJ8hYAnRhNla4QVD2H8er/FOjc/+EgC6yQ==}
+
+  pg-protocol@1.8.0:
+    resolution: {integrity: sha512-jvuYlEkL03NRvOoyoRktBK7+qU5kOvlAwvmrH8sr3wbLrOdVWsRxQfz8mMy9sZFsqJ1hEWNfdWKI4SAmoL+j7g==}
 
   pg-types@2.2.0:
     resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
@@ -3387,6 +3401,15 @@ packages:
 
   pg@8.13.0:
     resolution: {integrity: sha512-34wkUTh3SxTClfoHB3pQ7bIMvw9dpFU1audQQeZG837fmHfHpr14n/AELVDoOYVDW2h5RDWU78tFjkD+erSBsw==}
+    engines: {node: '>= 8.0.0'}
+    peerDependencies:
+      pg-native: '>=3.0.1'
+    peerDependenciesMeta:
+      pg-native:
+        optional: true
+
+  pg@8.14.0:
+    resolution: {integrity: sha512-nXbVpyoaXVmdqlKEzToFf37qzyeeh7mbiXsnoWvstSqohj88yaa/I/Rq/HEVn2QPSZEuLIJa/jSpRDyzjEx4FQ==}
     engines: {node: '>= 8.0.0'}
     peerDependencies:
       pg-native: '>=3.0.1'
@@ -7865,7 +7888,13 @@ snapshots:
     dependencies:
       pg: 8.13.0
 
+  pg-pool@3.8.0(pg@8.14.0):
+    dependencies:
+      pg: 8.14.0
+
   pg-protocol@1.7.0: {}
+
+  pg-protocol@1.8.0: {}
 
   pg-types@2.2.0:
     dependencies:
@@ -7880,6 +7909,16 @@ snapshots:
       pg-connection-string: 2.7.0
       pg-pool: 3.7.0(pg@8.13.0)
       pg-protocol: 1.7.0
+      pg-types: 2.2.0
+      pgpass: 1.0.5
+    optionalDependencies:
+      pg-cloudflare: 1.1.1
+
+  pg@8.14.0:
+    dependencies:
+      pg-connection-string: 2.7.0
+      pg-pool: 3.8.0(pg@8.14.0)
+      pg-protocol: 1.8.0
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:
