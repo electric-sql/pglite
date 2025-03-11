@@ -165,6 +165,15 @@ async function createPlugin(
       }
 
       await pg.transaction(async (tx) => {
+        if (debug) {
+          console.time('commit')
+        }
+
+        // Set the syncing flag to true during this transaction so that
+        // user defined triggers on the table are able to chose how to run
+        // during a sync
+        tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
+
         for (let [shapeName, messages] of messagesToCommit.entries()) {
           const shape = shapes[shapeName]
 
@@ -255,7 +264,7 @@ async function createPlugin(
       }
     }
 
-    multiShapeStream.subscribe((messages) => {
+    multiShapeStream.subscribe(async (messages) => {
       messages.forEach((message) => {
         if (isChangeMessage(message)) {
           const shapeChanges = changes.get(message.shape)!
@@ -296,6 +305,8 @@ async function createPlugin(
       if (lowestCommittedLsn > lastCommittedLsn) {
         // We have new changes to commit
         commitUpToLsn(lowestCommittedLsn)
+        // Await a timeout to start a new task and  allow other connections to do work
+        await new Promise((resolve) => setTimeout(resolve, 0))
       }
     })
 
