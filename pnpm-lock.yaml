@@ -298,8 +298,11 @@ importers:
   packages/pglite-sync:
     dependencies:
       '@electric-sql/client':
-        specifier: 1.0.0-beta.3
-        version: 1.0.0-beta.3
+        specifier: 1.0.0-beta.5
+        version: 1.0.0-beta.5
+      '@electric-sql/experimental':
+        specifier: 0.1.2-beta.4
+        version: 0.1.2-beta.4(@electric-sql/client@1.0.0-beta.5)
     devDependencies:
       '@electric-sql/pglite':
         specifier: workspace:*
@@ -685,8 +688,13 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@1.0.0-beta.3':
-    resolution: {integrity: sha512-x3bzYlX+IRwBAILPxzu3ARkXzmrAQtVOuJCKCxlSqENuJa4zvLPF4f8vC6HMOiiJiHPAntJjfI3Hb0lrt2PTxA==}
+  '@electric-sql/client@1.0.0-beta.5':
+    resolution: {integrity: sha512-sP4yBBt4sDWE7FhMMVkVceKULLPStumFzlgltUqb7AzzXP6AK2qs4bZ2QrabY6feBgRgrMP19bOzxI/WOSnTAA==}
+
+  '@electric-sql/experimental@0.1.2-beta.4':
+    resolution: {integrity: sha512-P+V8wvTaUddyMrPtvfEwkoGkrLUCX6MVTLJn303oEEb/aK0NkAqUaCXVj9BNZ3bM673dTqdysy+Wg61mP42kfw==}
+    peerDependencies:
+      '@electric-sql/client': 1.0.0-beta.5
 
   '@electric-sql/pglite-react@0.2.17':
     resolution: {integrity: sha512-TEdV1UAUO50gb/okYcVaiG2dQdox53K2E8jSEl0Wa/97x3Xi238ls7ZB7wgmoqNgy45f/tgYxyztml03EFClng==}
@@ -2000,6 +2008,7 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
+    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -4926,7 +4935,13 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@1.0.0-beta.3':
+  '@electric-sql/client@1.0.0-beta.5':
+    optionalDependencies:
+      '@rollup/rollup-darwin-arm64': 4.24.0
+
+  '@electric-sql/experimental@0.1.2-beta.4(@electric-sql/client@1.0.0-beta.5)':
+    dependencies:
+      '@electric-sql/client': 1.0.0-beta.5
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
 
