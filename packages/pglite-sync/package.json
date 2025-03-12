@@ -28,7 +28,11 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest",
-    "test:e2e": "docker compose -f test-e2e/docker_compose.yaml up -d && pnpm vitest --config vitest-e2e.config.ts && docker compose -f test-e2e/docker_compose.yaml down --volumes",
+    "test:e2e:up": "docker compose -f test-e2e/docker_compose.yaml up -d",
+    "test:e2e:down": "docker compose -f test-e2e/docker_compose.yaml down --volumes",
+    "test:e2e:reset": "pnpm test:e2e:down && pnpm test:e2e:up",
+    "test:e2e:run": "pnpm vitest --config vitest-e2e.config.ts",
+    "test:e2e": "pnpm test:e2e:up && pnpm test:e2e:run && pnpm test:e2e:down",
     "lint": "eslint ./src ./test --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
