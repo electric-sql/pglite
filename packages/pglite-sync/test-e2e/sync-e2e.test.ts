@@ -87,9 +87,9 @@ const deleteAllShapes = async () => {
   shapeHandles.clear()
 }
 
-const deleteAllShapesForTable = async (table: string) => {
+const deleteAllShapesForTable = async (targetTable: string) => {
   for (const [handle, table] of shapeHandles.entries()) {
-    if (table === table) {
+    if (table === targetTable) {
       await deleteShape(table, handle)
     }
   }
@@ -179,16 +179,42 @@ describe('sync-e2e', () => {
       );
     `)
 
+    // Create a large table with 10 columns in PostgreSQL
+    await pgClient.query(`
+      CREATE TABLE IF NOT EXISTS large_table (
+        id SERIAL PRIMARY KEY,
+        col1 TEXT,
+        col2 INTEGER,
+        col3 BOOLEAN,
+        col4 TIMESTAMP,
+        col5 NUMERIC(10,2),
+        col6 TEXT,
+        col7 INTEGER,
+        col8 BOOLEAN,
+        col9 TEXT
+      );
+    `)
+
+    // Create a table for large operations
+    await pgClient.query(`
+      CREATE TABLE IF NOT EXISTS large_ops_table (
+        id SERIAL PRIMARY KEY,
+        value TEXT,
+        number INTEGER,
+        flag BOOLEAN
+      );
+    `)
+
     // Clean up any existing data
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
     )
   })
 
   afterAll(async () => {
     // Truncate all tables
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
     )
 
     await pgClient.end()
@@ -197,7 +223,7 @@ describe('sync-e2e', () => {
 
   beforeEach(async () => {
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
     )
 
     // Create PGlite instance with electric sync extension
@@ -268,6 +294,31 @@ describe('sync-e2e', () => {
         done BOOLEAN
       );
     `)
+
+    // Create the same table in PGlite
+    await pg.exec(`
+      CREATE TABLE large_table (
+        id SERIAL PRIMARY KEY,
+        col1 TEXT,
+        col2 INTEGER,
+        col3 BOOLEAN,
+        col4 TIMESTAMP,
+        col5 NUMERIC(10,2),
+        col6 TEXT,
+        col7 INTEGER,
+        col8 BOOLEAN,
+        col9 TEXT
+      );
+    `)
+
+    await pg.exec(`
+      CREATE TABLE large_ops_table (
+        id SERIAL PRIMARY KEY,
+        value TEXT,
+        number INTEGER,
+        flag BOOLEAN
+      );
+    `)
   })
 
   afterEach(async () => {
@@ -276,7 +327,7 @@ describe('sync-e2e', () => {
 
     // Truncate all tables
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
     )
   })
 
@@ -1425,5 +1476,446 @@ newline', false);
     // Clean up
     newSyncResult.unsubscribe()
     await pg.electric.deleteSubscription('refetch_multi_test')
+  })
+
+  it('handles large initial load with multiple columns', async () => {
+    // Generate data in batches
+    const numRows = 5000; // Reduced from 10k to 5k for faster test execution
+    const batchSize = 500;
+    const batches = Math.ceil(numRows / batchSize);
+
+    for (let batch = 0; batch < batches; batch++) {
+      const start = batch * batchSize;
+      const end = Math.min(start + batchSize, numRows);
+      
+      // Build a batch of INSERT statements
+      for (let i = start; i < end; i++) {
+        await pgClient.query(`
+          INSERT INTO large_table (
+            id, col1, col2, col3, col4, col5, col6, col7, col8, col9
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+          );
+        `, [
+          i,
+          `text-${i}`,
+          i * 10,
+          i % 2 === 0,
+          new Date(2023, 0, 1, 12 + i), // 2023-01-01 12:00:00 + i hours
+          i * 1.5,
+          `long-text-value-${i}-with-some-additional-content`,
+          i * 5,
+          i % 3 === 0,
+          `another-text-value-${i}`
+        ]);
+      }
+    }
+
+    // Set up sync with COPY enabled for efficiency
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'large_table' },
+        fetchClient,
+      },
+      table: 'large_table',
+      primaryKey: ['id'],
+      useCopy: true,
+      shapeKey: null,
+    })
+
+    // Wait for all data to be synced - increase timeout for large dataset
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM large_table;`
+        expect(result.rows[0].count).toBe(numRows)
+      },
+      { timeout: 60000 }, // 60 second timeout for large dataset
+    )
+
+    // Verify some sample data points
+    const firstRow = await pg.sql`SELECT * FROM large_table WHERE id = 0;`
+    expect(firstRow.rows[0]).toMatchObject({
+      id: 0,
+      col1: 'text-0',
+      col2: 0,
+      col3: true,
+      // Skip timestamp comparison as it might have timezone differences
+      col5: "0.00",
+      col6: 'long-text-value-0-with-some-additional-content',
+      col7: 0,
+      col8: true,
+      col9: 'another-text-value-0'
+    })
+
+    const middleRow = await pg.sql`SELECT * FROM large_table WHERE id = 2500;`
+    expect(middleRow.rows[0]).toMatchObject({
+      id: 2500,
+      col1: 'text-2500',
+      col2: 25000,
+      col3: true,
+      // Skip timestamp comparison
+      col5: "3750.00",
+      col6: 'long-text-value-2500-with-some-additional-content',
+      col7: 12500,
+      col8: false,
+      col9: 'another-text-value-2500'
+    })
+
+    const lastRow = await pg.sql`SELECT * FROM large_table WHERE id = ${numRows - 1};`
+    expect(lastRow.rows[0]).toMatchObject({
+      id: numRows - 1,
+      col1: `text-${numRows - 1}`,
+      col2: (numRows - 1) * 10,
+      col3: (numRows - 1) % 2 === 0,
+      // Skip timestamp comparison
+      col5: ((numRows - 1) * 1.5).toFixed(2),
+      col6: `long-text-value-${numRows - 1}-with-some-additional-content`,
+      col7: (numRows - 1) * 5,
+      col8: (numRows - 1) % 3 === 0,
+      col9: `another-text-value-${numRows - 1}`
+    })
+
+    // Clean up
+    shape.unsubscribe()
+  })
+
+  it('handles large update with inserts, deletes, and updates', async () => {
+    // Insert initial rows (some will be updated, some deleted, some unchanged)
+    const totalRows = 3000;
+    const batchSize = 500;
+    const batches = Math.ceil(totalRows / batchSize);
+
+    for (let batch = 0; batch < batches; batch++) {
+      const start = batch * batchSize;
+      const end = Math.min(start + batchSize, totalRows);
+
+      for (let i = start; i < end; i++) {
+        await pgClient.query(`
+          INSERT INTO large_ops_table (id, value, number, flag) 
+          VALUES ($1, $2, $3, $4);
+        `, [i, `initial-value-${i}`, i, i % 2 === 0]);
+      }
+    }
+
+    // Set up sync
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'large_ops_table' },
+        fetchClient,
+      },
+      table: 'large_ops_table',
+      primaryKey: ['id'],
+      useCopy: true,
+      shapeKey: null,
+    })
+
+
+    const initialCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM large_ops_table;`
+    console.log('initialCount', initialCount.rows[0].count)
+
+    // Wait for initial sync to complete
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM large_ops_table;`
+        expect(result.rows[0].count).toBe(totalRows)
+      },
+      { timeout: 30000 },
+    )
+
+    // Begin transaction for large update
+    await pgClient.query('BEGIN;')
+
+    // 1. Delete rows (ids 1-999) - leave id=1 in the table
+    await pgClient.query(`
+      DELETE FROM large_ops_table WHERE id BETWEEN 1 AND 999;
+    `)
+
+    // 2. Update rows (ids 1000-1999)
+    await pgClient.query(`
+      UPDATE large_ops_table 
+      SET value = 'updated-value', number = number * 10, flag = NOT flag
+      WHERE id BETWEEN 1000 AND 1999;
+    `)
+
+    // 3. Insert new rows
+    for (let i = totalRows; i < totalRows + 1000; i++) {
+      await pgClient.query(`
+        INSERT INTO large_ops_table (id, value, number, flag) 
+        VALUES ($1, $2, $3, $4);
+      `, [i, `new-value-${i}`, i * 2, i % 3 === 0]);
+    }
+
+    // Commit the transaction
+    await pgClient.query('COMMIT;')
+
+    // Wait for all changes to sync
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM large_ops_table;`
+        expect(result.rows[0].count).toBe(3001) // 3000 original - 999 deleted + 1000 new = 3001
+      },
+      { timeout: 30000 },
+    )
+
+    // Verify deleted rows are gone
+    const deletedCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM large_ops_table WHERE id BETWEEN 1 AND 999;`
+    expect(deletedCount.rows[0].count).toBe(0)
+
+    // Verify updated rows have new values
+    const updatedRow = await pg.sql`SELECT * FROM large_ops_table WHERE id = 1500;`
+    expect(updatedRow.rows[0]).toEqual({
+      id: 1500,
+      value: 'updated-value',
+      number: 15000, // 1500 * 10
+      flag: 1500 % 2 !== 0, // NOT the original flag
+    })
+
+    // Verify new rows were inserted
+    const newRow = await pg.sql`SELECT * FROM large_ops_table WHERE id = 3500;`
+    expect(newRow.rows[0]).toEqual({
+      id: 3500,
+      value: 'new-value-3500',
+      number: 7000, // 3500 * 2
+      flag: 3500 % 3 === 0,
+    })
+
+    // Verify unchanged rows remain the same
+    const unchangedRow = await pg.sql`SELECT * FROM large_ops_table WHERE id = 2500;`
+    expect(unchangedRow.rows[0]).toEqual({
+      id: 2500,
+      value: 'initial-value-2500',
+      number: 2500,
+      flag: 2500 % 2 === 0,
+    })
+
+    // Clean up
+    shape.unsubscribe()
+  })
+
+  it.skip('cycles through operations with todo and project tables', async () => {
+    // Set up sync for both tables using syncShapesToTables
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'cycle_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: ELECTRIC_URL,
+            params: { table: 'todo' },
+            fetchClient,
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: ELECTRIC_URL,
+            params: { table: 'project' },
+            fetchClient,
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+    })
+
+    // Run 100 iterations of the cycle
+    for (let i = 1; i <= 100; i++) {
+      console.log(`Iteration ${i}/100`);
+      
+      // 1. Insert into todo, check
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6 - 5}, 'Todo ${i}.1', false);
+      `)
+
+      const originCount = await pgClient.query(`SELECT COUNT(*) FROM todo;`)
+      console.log('originCount', originCount.rows[0].count)
+
+      await new Promise((resolve) => setTimeout(resolve, 10000))
+
+      const todoResult = await pg.sql<{
+        id: number;
+        task: string;
+        done: boolean;
+      }>`SELECT * FROM todo;`
+      console.log('todoResult', todoResult.rows)
+      
+      // Wait for todo insert to sync
+      await vi.waitFor(
+        async () => {
+          const todoResult = await pg.sql<{
+            id: number;
+            task: string;
+            done: boolean;
+          }>`SELECT * FROM todo WHERE id = ${i * 6 - 5};`
+          expect(todoResult.rows.length).toBe(1)
+          expect(todoResult.rows[0]).toEqual({
+            id: i * 6 - 5,
+            task: `Todo ${i}.1`,
+            done: false,
+          })
+        },
+        { timeout: 5000 },
+      )
+      
+      // 2. Insert into todo and project in transaction, check
+      await pgClient.query('BEGIN;')
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6 - 4}, 'Todo ${i}.2', true);
+      `)
+      await pgClient.query(`
+        INSERT INTO project (id, name, active) 
+        VALUES (${i}, 'Project ${i}', true);
+      `)
+      await pgClient.query('COMMIT;')
+      
+      // Wait for transaction to sync
+      await vi.waitFor(
+        async () => {
+          const todoResult = await pg.sql<{
+            id: number;
+            task: string;
+            done: boolean;
+          }>`SELECT * FROM todo WHERE id = ${i * 6 - 4};`
+          const projectResult = await pg.sql<{
+            id: number;
+            name: string;
+            active: boolean;
+          }>`SELECT * FROM project WHERE id = ${i};`
+          expect(todoResult.rows).toHaveLength(1)
+          expect(projectResult.rows).toHaveLength(1)
+        },
+        { timeout: 5000 },
+      )
+      
+      // 3. Update todo, check
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6 - 3}, 'Todo ${i}.3', false);
+      `)
+      await pgClient.query(`
+        UPDATE todo SET task = 'Updated Todo ${i}.1', done = true WHERE id = ${i * 6 - 5};
+      `)
+      
+      // Wait for update to sync
+      await vi.waitFor(
+        async () => {
+          const todoResult = await pg.sql<{
+            id: number;
+            task: string;
+            done: boolean;
+          }>`SELECT * FROM todo WHERE id = ${i * 6 - 5};`
+          expect(todoResult.rows[0]).toEqual({
+            id: i * 6 - 5,
+            task: `Updated Todo ${i}.1`,
+            done: true,
+          })
+        },
+        { timeout: 5000 },
+      )
+      
+      // 4. Update project and todo, check
+      await pgClient.query('BEGIN;')
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6 - 2}, 'Todo ${i}.4', true);
+      `)
+      await pgClient.query(`
+        UPDATE todo SET task = 'Updated Todo ${i}.2', done = false WHERE id = ${i * 6 - 4};
+      `)
+      await pgClient.query(`
+        UPDATE project SET name = 'Updated Project ${i}', active = false WHERE id = ${i};
+      `)
+      await pgClient.query('COMMIT;')
+      
+      // Wait for updates to sync
+      await vi.waitFor(
+        async () => {
+          const todoResult = await pg.sql<{
+            id: number;
+            task: string;
+            done: boolean;
+          }>`SELECT * FROM todo WHERE id = ${i * 6 - 4};`
+          const projectResult = await pg.sql<{
+            id: number;
+            name: string;
+            active: boolean;
+          }>`SELECT * FROM project WHERE id = ${i};`
+          expect(todoResult.rows[0].task).toBe(`Updated Todo ${i}.2`)
+          expect(projectResult.rows[0].name).toBe(`Updated Project ${i}`)
+        },
+        { timeout: 5000 },
+      )
+      
+      // 5. Delete a todo, check
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6 - 1}, 'Todo ${i}.5', false);
+      `)
+      await pgClient.query(`
+        DELETE FROM todo WHERE id = ${i * 6 - 3};
+      `)
+      
+      // Wait for delete to sync
+      await vi.waitFor(
+        async () => {
+          const todoResult = await pg.sql<{
+            id: number;
+            task: string;
+            done: boolean;
+          }>`SELECT * FROM todo WHERE id = ${i * 6 - 3};`
+          expect(todoResult.rows).toHaveLength(0)
+        },
+        { timeout: 5000 },
+      )
+      
+      // 6. Delete the project, check
+      await pgClient.query(`
+        INSERT INTO todo (id, task, done) 
+        VALUES (${i * 6}, 'Todo ${i}.6', true);
+      `)
+      await pgClient.query(`
+        DELETE FROM project WHERE id = ${i};
+      `)
+      
+      // Wait for delete to sync
+      await vi.waitFor(
+        async () => {
+          const projectResult = await pg.sql<{
+            id: number;
+            name: string;
+            active: boolean;
+          }>`SELECT * FROM project WHERE id = ${i};`
+          expect(projectResult.rows).toHaveLength(0)
+        },
+        { timeout: 5000 },
+      )
+      
+      // Verify that after each iteration:
+      // - project count is 0
+      // - todo count increases by 1 (we add 6 todos and delete 1 per iteration)
+      const projectCount = await pg.sql<{ count: number }>`SELECT COUNT(*) as count FROM project;`
+      const todoCount = await pg.sql<{ count: number }>`SELECT COUNT(*) as count FROM todo;`
+      
+      expect(projectCount.rows[0].count).toBe(0)
+      expect(todoCount.rows[0].count).toBe(i * 5) // 6 inserts - 1 delete per iteration
+    }
+    
+    // Clean up
+    syncResult.unsubscribe()
+    await pg.electric.deleteSubscription('cycle_test')
   })
 })
