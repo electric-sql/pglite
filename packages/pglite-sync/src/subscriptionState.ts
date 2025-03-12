@@ -4,8 +4,8 @@ import { SubscriptionKey } from './types'
 
 export interface SubscriptionState {
   key: SubscriptionKey
-  shapeMetadata: ShapeSubscriptionState[]
-  lastLsn: number
+  shape_metadata: Record<string, ShapeSubscriptionState>
+  last_lsn: number
 }
 
 export interface ShapeSubscriptionState {
@@ -53,6 +53,7 @@ export interface UpdateSubscriptionStateOptions {
   subscriptionKey: SubscriptionKey
   shapeMetadata: Record<string, ShapeSubscriptionState>
   lastLsn: number
+  debug?: boolean
 }
 
 /**
@@ -65,7 +66,16 @@ export async function updateSubscriptionState({
   subscriptionKey,
   shapeMetadata,
   lastLsn,
+  debug,
 }: UpdateSubscriptionStateOptions) {
+  if (debug) {
+    console.log(
+      'updating subscription state',
+      subscriptionKey,
+      shapeMetadata,
+      lastLsn,
+    )
+  }
   await pg.query(
     `
       INSERT INTO ${subscriptionMetadataTableName(metadataSchema)}

@@ -3,6 +3,7 @@ import {
   ChangeMessage,
   isChangeMessage,
   isControlMessage,
+  ShapeStreamOptions,
 } from '@electric-sql/client'
 import { MultiShapeStream } from '@electric-sql/experimental'
 import type { Extension, PGliteInterface } from '@electric-sql/pglite'
@@ -57,6 +58,7 @@ async function createPlugin(
     useCopy,
     onInitialSync,
   }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
+    let unsubscribed = false
     await initMetadataTables()
 
     Object.values(shapes).forEach((shape) => {
@@ -110,7 +112,7 @@ async function createPlugin(
 
     // We also have to track the last lsn that we have committed
     // This is across all shapes
-    const lastCommittedLsn: number = -Infinity
+    const lastCommittedLsn: number = subState?.last_lsn ?? -Infinity
 
     // We need our own aborter to be able to abort the streams but still accept the
     // signals from the user for each shape, and so we monitor the user provided signal
@@ -131,10 +133,20 @@ async function createPlugin(
     const multiShapeStream = new MultiShapeStream<Record<string, Row<unknown>>>(
       {
         shapes: Object.fromEntries(
-          Object.entries(shapes).map(([key, shapeOptions]) => [
-            key,
-            shapeOptions.shape,
-          ]),
+          Object.entries(shapes).map(([key, shapeOptions]) => {
+            const shapeMetadata = subState?.shape_metadata[key]
+            const offset = shapeMetadata?.offset ?? undefined
+            const handle = shapeMetadata?.handle ?? undefined
+            return [
+              key,
+              {
+                ...shapeOptions.shape,
+                offset,
+                handle,
+                signal: aborter.signal,
+              } satisfies ShapeStreamOptions,
+            ]
+          }),
         ),
       },
     )
@@ -180,6 +192,9 @@ async function createPlugin(
 
           // If we need to truncate the table, do so
           if (truncateNeeded.has(shapeName)) {
+            if (debug) {
+              console.log('truncating table', shape.table)
+            }
             await tx.exec(`DELETE FROM ${shape.table};`)
             truncateNeeded.delete(shapeName)
           }
@@ -251,7 +266,11 @@ async function createPlugin(
               ]),
             ),
             lastLsn: targetLsn,
+            debug,
           })
+        }
+        if (unsubscribed) {
+          tx.rollback()
         }
       })
       if (debug) console.timeEnd('commit')
@@ -266,10 +285,23 @@ async function createPlugin(
     }
 
     multiShapeStream.subscribe(async (messages) => {
+      if (unsubscribed) {
+        return
+      }
+      if (debug) {
+        console.log('received messages', messages.length)
+      }
       messages.forEach((message) => {
+        const lastCommittedLsnForShape =
+          completeLsns.get(message.shape) ?? -Infinity
         if (isChangeMessage(message)) {
           const shapeChanges = changes.get(message.shape)!
           const lsn = (message.headers.lsn as number | undefined) ?? 0
+          if (lsn <= lastCommittedLsnForShape) {
+            // We are replaying changes / have already seen this lsn
+            // skip and move on to the next message
+            return
+          }
           const isLastOfLsn =
             (message.headers.last as boolean | undefined) ?? false
           if (!shapeChanges.has(lsn)) {
@@ -283,15 +315,26 @@ async function createPlugin(
           switch (message.headers.control) {
             case 'up-to-date': {
               // Update the complete lsn for this shape
+              if (debug) {
+                console.log('received up-to-date', message)
+              }
               if (typeof message.headers.global_last_seen_lsn !== `number`) {
                 throw new Error(`global_last_seen_lsn is not a number`)
               }
               const globalLastSeenLsn = message.headers.global_last_seen_lsn
+              if (globalLastSeenLsn <= lastCommittedLsnForShape) {
+                // We are replaying changes / have already seen this lsn
+                // skip and move on to the next message
+                return
+              }
               completeLsns.set(message.shape, globalLastSeenLsn)
               break
             }
             case 'must-refetch': {
               // Reset the changes for this shape
+              if (debug) {
+                console.log('received must-refetch', message)
+              }
               const shapeChanges = changes.get(message.shape)!
               shapeChanges.clear()
               completeLsns.set(message.shape, -Infinity)
@@ -303,7 +346,14 @@ async function createPlugin(
         }
       })
       const lowestCommittedLsn = Math.min(...Array.from(completeLsns.values()))
-      if (lowestCommittedLsn > lastCommittedLsn) {
+
+      // Normal commit needed
+      const isCommitNeeded = lowestCommittedLsn > lastCommittedLsn
+      // We've had a must-refetch and are catching up on one of the shape
+      const isMustRefetchAndCatchingUp =
+        lowestCommittedLsn >= lastCommittedLsn && truncateNeeded.size > 0
+
+      if (isCommitNeeded || isMustRefetchAndCatchingUp) {
         // We have new changes to commit
         commitUpToLsn(lowestCommittedLsn)
         // Await a timeout to start a new task and  allow other connections to do work
@@ -316,6 +366,10 @@ async function createPlugin(
       aborter,
     })
     const unsubscribe = () => {
+      if (debug) {
+        console.log('unsubscribing')
+      }
+      unsubscribed = true
       multiShapeStream.unsubscribeAll()
       aborter.abort()
       for (const shape of Object.values(shapes)) {
