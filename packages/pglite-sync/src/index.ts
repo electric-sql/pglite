@@ -165,17 +165,6 @@ async function createPlugin(
         }
       }
 
-      const hasMessagesToCommit =
-        Math.min(
-          ...Array.from(messagesToCommit.values()).map(
-            (messages) => messages.length,
-          ),
-        ) > 0
-
-      if (!hasMessagesToCommit) {
-        return
-      }
-
       await pg.transaction(async (tx) => {
         if (debug) {
           console.time('commit')
