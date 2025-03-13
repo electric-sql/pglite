@@ -28,7 +28,7 @@ describe('pglite-sync', () => {
   beforeEach(async () => {
     pg = await PGlite.create({
       extensions: {
-        electric: electricSync(),
+        electric: electricSync({ debug: false }),
       },
     })
     await pg.exec(`
@@ -42,20 +42,21 @@ describe('pglite-sync', () => {
   })
 
   it('handles inserts/updates/deletes', async () => {
-    let feedMessage: (message: MultiShapeMessage) => Promise<void> = async (
-      _,
-    ) => {}
+    let feedMessage: (
+      lsn: number,
+      message: MultiShapeMessage,
+    ) => Promise<void> = async (_) => {}
     MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(
         (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
-          feedMessage = (message) =>
+          feedMessage = (lsn, message) =>
             cb([
               message,
               {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               },
             ])
@@ -82,8 +83,8 @@ describe('pglite-sync', () => {
     })
 
     // insert
-    await feedMessage({
-      headers: { operation: 'insert' },
+    await feedMessage(0, {
+      headers: { operation: 'insert', lsn: '0' },
       key: 'id1',
       value: {
         id: 1,
@@ -101,8 +102,8 @@ describe('pglite-sync', () => {
     ])
 
     // update
-    await feedMessage({
-      headers: { operation: 'update' },
+    await feedMessage(1, {
+      headers: { operation: 'update', lsn: '1' },
       key: 'id1',
       value: {
         id: 1,
@@ -120,8 +121,8 @@ describe('pglite-sync', () => {
     ])
 
     // delete
-    await feedMessage({
-      headers: { operation: 'delete' },
+    await feedMessage(2, {
+      headers: { operation: 'delete', lsn: '2' },
       key: 'id1',
       value: {
         id: 1,
@@ -136,20 +137,21 @@ describe('pglite-sync', () => {
   })
 
   it('performs operations within a transaction', async () => {
-    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
-      _,
-    ) => {}
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
     MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(
         (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
-          feedMessages = (messages) =>
+          feedMessages = (lsn, messages) =>
             cb([
               ...messages,
               {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               },
             ])
@@ -180,10 +182,11 @@ describe('pglite-sync', () => {
     for (let i = 0; i < numBatches; i++) {
       const numBatchInserts = numInserts / numBatches
       feedMessages(
+        i,
         Array.from({ length: numBatchInserts }, (_, idx) => {
           const itemIdx = i * numBatchInserts + idx
           return {
-            headers: { operation: 'insert' },
+            headers: { operation: 'insert', lsn: i.toString() },
             key: `id${itemIdx}`,
             value: {
               id: itemIdx,
@@ -243,7 +246,7 @@ describe('pglite-sync', () => {
                   shape: 'shape',
                   headers: {
                     control: 'up-to-date',
-                    global_last_seen_lsn: lsn,
+                    global_last_seen_lsn: lsn.toString(),
                   },
                 },
               ])
@@ -282,7 +285,7 @@ describe('pglite-sync', () => {
         Array.from({ length: numInserts }, (_, idx) => ({
           headers: {
             operation: 'insert',
-            lsn: i,
+            lsn: i.toString(),
           },
           key: `id${i * numInserts + idx}`,
           value: {
@@ -340,7 +343,7 @@ describe('pglite-sync', () => {
                   shape: 'shape',
                   headers: {
                     control: 'up-to-date',
-                    global_last_seen_lsn: 0,
+                    global_last_seen_lsn: '0',
                   },
                 },
               ])
@@ -522,7 +525,7 @@ describe('pglite-sync', () => {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               },
             ])
@@ -601,7 +604,7 @@ describe('pglite-sync', () => {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               },
             ])
@@ -700,7 +703,7 @@ describe('pglite-sync', () => {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               },
             ])
@@ -801,7 +804,7 @@ describe('pglite-sync', () => {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               },
             ])
@@ -885,20 +888,21 @@ describe('pglite-sync', () => {
   })
 
   it('calls onInitialSync callback after initial sync', async () => {
-    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
-      _,
-    ) => {}
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
     MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(
         (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
-          feedMessages = (messages) =>
+          feedMessages = (lsn, messages) =>
             cb([
               ...messages,
               {
                 shape: 'shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               },
             ])
@@ -929,9 +933,9 @@ describe('pglite-sync', () => {
     })
 
     // Send some initial data
-    await feedMessages([
+    await feedMessages(0, [
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id1',
         value: {
           id: 1,
@@ -941,7 +945,7 @@ describe('pglite-sync', () => {
         shape: 'shape',
       },
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id2',
         value: {
           id: 2,
@@ -956,9 +960,9 @@ describe('pglite-sync', () => {
     expect(onInitialSync).toHaveBeenCalledTimes(1)
 
     // Send more data - callback should not be called again
-    await feedMessages([
+    await feedMessages(1, [
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '1' },
         key: 'id3',
         value: {
           id: 3,
@@ -993,27 +997,28 @@ describe('pglite-sync', () => {
     await pg.exec(`TRUNCATE project;`)
 
     // Setup mock for MultiShapeStream with two shapes
-    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
-      _,
-    ) => {}
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
     MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(
         (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
-          feedMessages = (messages) =>
+          feedMessages = (lsn, messages) =>
             cb([
               ...messages,
               {
                 shape: 'todo_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               },
               {
                 shape: 'project_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               },
             ])
@@ -1059,10 +1064,10 @@ describe('pglite-sync', () => {
     })
 
     // Send data for both shapes in a single batch
-    await feedMessages([
+    await feedMessages(0, [
       // Todo table inserts
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id1',
         value: {
           id: 1,
@@ -1072,7 +1077,7 @@ describe('pglite-sync', () => {
         shape: 'todo_shape',
       },
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id2',
         value: {
           id: 2,
@@ -1083,7 +1088,7 @@ describe('pglite-sync', () => {
       },
       // Project table inserts
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id1',
         value: {
           id: 1,
@@ -1093,7 +1098,7 @@ describe('pglite-sync', () => {
         shape: 'project_shape',
       },
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id2',
         value: {
           id: 2,
@@ -1121,10 +1126,10 @@ describe('pglite-sync', () => {
     expect(onInitialSync).toHaveBeenCalledTimes(1)
 
     // Test updates across both tables
-    await feedMessages([
+    await feedMessages(1, [
       // Update todo
       {
-        headers: { operation: 'update' },
+        headers: { operation: 'update', lsn: '1' },
         key: 'id1',
         value: {
           id: 1,
@@ -1135,7 +1140,7 @@ describe('pglite-sync', () => {
       },
       // Update project
       {
-        headers: { operation: 'update' },
+        headers: { operation: 'update', lsn: '1' },
         key: 'id2',
         value: {
           id: 2,
@@ -1163,15 +1168,15 @@ describe('pglite-sync', () => {
     })
 
     // Test deletes across both tables
-    await feedMessages([
+    await feedMessages(2, [
       {
-        headers: { operation: 'delete' },
+        headers: { operation: 'delete', lsn: '2' },
         key: 'id2',
         shape: 'todo_shape',
         value: { id: 2 },
       },
       {
-        headers: { operation: 'delete' },
+        headers: { operation: 'delete', lsn: '2' },
         key: 'id1',
         shape: 'project_shape',
         value: { id: 1 },
@@ -1221,7 +1226,7 @@ describe('pglite-sync', () => {
                     ...msg,
                     headers: {
                       ...msg.headers,
-                      lsn,
+                      lsn: lsn.toString(),
                     },
                   } as MultiShapeMessage
                 }
@@ -1231,14 +1236,14 @@ describe('pglite-sync', () => {
                 shape: 'todo_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: lsn,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               } as MultiShapeMessage,
               {
                 shape: 'project_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: lsn,
+                  global_last_seen_lsn: lsn.toString(),
                 },
               } as MultiShapeMessage,
             ])
@@ -1391,14 +1396,14 @@ describe('pglite-sync', () => {
                 shape: 'todo_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               } as MultiShapeMessage,
               {
                 shape: 'project_shape',
                 headers: {
                   control: 'up-to-date',
-                  global_last_seen_lsn: 0,
+                  global_last_seen_lsn: '0',
                 },
               } as MultiShapeMessage,
             ])
