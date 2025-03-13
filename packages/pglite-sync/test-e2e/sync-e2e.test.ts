@@ -322,7 +322,11 @@ describe('sync-e2e', () => {
   })
 
   afterEach(async () => {
-    await pg.close()
+    try {
+      await pg.close()
+    } catch (e) {
+      // ignore as we may have already closed it in the test
+    }
     await deleteAllShapes()
 
     // Truncate all tables
@@ -1246,6 +1250,102 @@ newline', false);
     await pg.electric.deleteSubscription('refetch_test')
   })
 
+  it('resumes sync after pglite restart', async () => {
+    // First sync session with a persistent key
+    let shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: 'refetch_test',
+    })
+
+    // Insert initial batch of data
+    await pgClient.query(`
+      INSERT INTO todo (id, task, done) 
+      VALUES (1, 'Initial task', false);
+    `)
+
+    // Wait for initial sync to complete
+    await vi.waitFor(async () => {
+      const result = await pg.sql<{
+        count: number
+      }>`SELECT COUNT(*) as count FROM todo;`
+      expect(result.rows[0].count).toBe(1)
+    })
+
+    // Check the data was inserted into the todo table
+    const todoResult = await pg.sql`SELECT * FROM todo WHERE id = 1;`
+    expect(todoResult.rows[0]).toEqual({
+      id: 1,
+      task: 'Initial task',
+      done: false,
+    })
+
+    // Unsubscribe from first sync session
+    shape.unsubscribe()
+
+    // Dump datadir and restart pglite
+    const datadir = await pg.dumpDataDir()
+    await pg.close()
+    const pg2 = await PGlite.create({
+      loadDataDir: datadir,
+      extensions: {
+        electric: electricSync(),
+      },
+    })
+
+    // Insert new data before we resume the sync
+    await pgClient.query(`
+      INSERT INTO todo (id, task, done) 
+      VALUES (2, 'New task after refetch', true);
+    `)
+
+    // Start a new sync session with the same key
+    shape = await pg2.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: 'refetch_test',
+    })
+
+    // Wait for sync to complete
+    await vi.waitFor(
+      async () => {
+        const result = await pg2.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+        expect(result.rows[0].count).toBe(2)
+      },
+      { timeout: 5000 },
+    )
+
+    // Verify only the new data is present (old data was cleared)
+    const result = await pg2.sql`SELECT * FROM todo ORDER BY id;`
+    expect(result.rows).toEqual([
+      {
+        id: 1,
+        task: 'Initial task',
+        done: false,
+      },
+      {
+        id: 2,
+        task: 'New task after refetch',
+        done: true,
+      },
+    ])
+
+    // Clean up
+    shape.unsubscribe()
+  })
+
   it('clears and restarts persisted shape stream state on refetch', async () => {
     // First sync session with a persistent key
     let shape = await pg.electric.syncShapeToTable({
@@ -1966,4 +2066,195 @@ newline', false);
     syncResult.unsubscribe()
     await pg.electric.deleteSubscription('cycle_test')
   }, 30000) // allow 30 seconds to run this test as it is long
-})
+
+  it('handles initial sync of 100,000 rows', async () => {
+    const numTodos = 100000
+
+    // Batch the inserts to Postgres
+    const batchSize = 1000
+    const batches = Math.ceil(numTodos / batchSize)
+    for (let batch = 0; batch < batches; batch++) {
+      const start = batch * batchSize
+      const end = Math.min(start + batchSize, numTodos)
+
+      // Build a batch of INSERT statements using a VALUES list for better performance
+      const values: string[] = []
+      const params: (number | string | boolean)[] = []
+      let paramIndex = 1
+
+      for (let i = start; i < end; i++) {
+        values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
+        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
+        paramIndex += 3
+      }
+
+      const query = `
+        INSERT INTO todo (id, task, done) 
+        VALUES ${values.join(', ')};
+      `
+
+      await pgClient.query(query, params)
+    }
+
+    // Set up sync with COPY enabled for efficiency
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: 'large_todo_sync_test',
+    })
+
+    // Wait for all data to be synced - increase timeout for large dataset
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+        expect(result.rows[0].count).toBe(numTodos)
+      },
+      { timeout: 30000 },
+    )
+
+    // Verify some sample data points
+    const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
+    expect(firstRow.rows[0]).toEqual({
+      id: 0,
+      task: 'Todo 0',
+      done: true, // 0 % 3 === 0
+    })
+
+    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
+    expect(middleRow.rows[0]).toEqual({
+      id: 25000,
+      task: 'Todo 25000',
+      done: 25000 % 3 === 0,
+    })
+
+    const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
+    expect(lastRow.rows[0]).toEqual({
+      id: numTodos - 1,
+      task: `Todo ${numTodos - 1}`,
+      done: (numTodos - 1) % 3 === 0,
+    })
+
+    // Test that we can still perform operations after the large sync
+    await pgClient.query(`
+      UPDATE todo SET task = 'Updated after sync' WHERE id = 0;
+    `)
+
+    // Wait for update to sync
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          task: string
+        }>`SELECT task FROM todo WHERE id = 0;`
+        expect(result.rows[0].task).toBe('Updated after sync')
+      },
+      { timeout: 5000 },
+    )
+
+    // Clean up
+    shape.unsubscribe()
+    await pg.electric.deleteSubscription('large_todo_sync_test')
+  }, 60000)
+
+  it('handles initial sync of 100,000 rows with COPY', async () => {
+    const numTodos = 100000
+
+    // Batch the inserts to Postgres
+    const batchSize = 1000
+    const batches = Math.ceil(numTodos / batchSize)
+    for (let batch = 0; batch < batches; batch++) {
+      const start = batch * batchSize
+      const end = Math.min(start + batchSize, numTodos)
+
+      // Build a batch of INSERT statements using a VALUES list for better performance
+      const values: string[] = []
+      const params: (number | string | boolean)[] = []
+      let paramIndex = 1
+
+      for (let i = start; i < end; i++) {
+        values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
+        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
+        paramIndex += 3
+      }
+
+      const query = `
+        INSERT INTO todo (id, task, done) 
+        VALUES ${values.join(', ')};
+      `
+
+      await pgClient.query(query, params)
+    }
+
+    // Set up sync with COPY enabled for efficiency
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      useCopy: true, // Enable COPY for faster initial sync
+      shapeKey: 'large_todo_sync_test',
+    })
+
+    // Wait for all data to be synced - increase timeout for large dataset
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+        expect(result.rows[0].count).toBe(numTodos)
+      },
+      { timeout: 30000 },
+    )
+
+    // Verify some sample data points
+    const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
+    expect(firstRow.rows[0]).toEqual({
+      id: 0,
+      task: 'Todo 0',
+      done: true, // 0 % 3 === 0
+    })
+
+    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
+    expect(middleRow.rows[0]).toEqual({
+      id: 25000,
+      task: 'Todo 25000',
+      done: 25000 % 3 === 0,
+    })
+
+    const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
+    expect(lastRow.rows[0]).toEqual({
+      id: numTodos - 1,
+      task: `Todo ${numTodos - 1}`,
+      done: (numTodos - 1) % 3 === 0,
+    })
+
+    // Test that we can still perform operations after the large sync
+    await pgClient.query(`
+      UPDATE todo SET task = 'Updated after sync' WHERE id = 0;
+    `)
+
+    // Wait for update to sync
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          task: string
+        }>`SELECT task FROM todo WHERE id = 0;`
+        expect(result.rows[0].task).toBe('Updated after sync')
+      },
+      { timeout: 5000 },
+    )
+
+    // Clean up
+    shape.unsubscribe()
+    await pg.electric.deleteSubscription('large_todo_sync_test')
+  })
+}, 60000)
