@@ -21,7 +21,9 @@ const ELECTRIC_URL =
 
 const shapeHandles: Map<string, string> = new Map()
 
-const LOG_FETCH = false
+const DEBUG = false
+const LOG_FETCH = DEBUG
+
 let fetchCount = 0
 
 const fetchClient: typeof fetch = async (
@@ -229,7 +231,7 @@ describe('sync-e2e', () => {
     // Create PGlite instance with electric sync extension
     pg = await PGlite.create({
       extensions: {
-        electric: electricSync(),
+        electric: electricSync({ debug: DEBUG }),
       },
     })
 

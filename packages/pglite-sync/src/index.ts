@@ -97,13 +97,13 @@ async function createPlugin(
 
     // Map of shape name to lsn to changes
     // We accumulate changes for each lsn and then apply them all at once
-    const changes = new Map<string, Map<number, ChangeMessage<Row<unknown>>[]>>(
+    const changes = new Map<string, Map<bigint, ChangeMessage<Row<unknown>>[]>>(
       Object.keys(shapes).map((key) => [key, new Map()]),
     )
 
     // We track the highest completely buffered lsn for each shape
-    const completeLsns = new Map<string, number>(
-      Object.keys(shapes).map((key) => [key, -Infinity]),
+    const completeLsns = new Map<string, bigint>(
+      Object.keys(shapes).map((key) => [key, BigInt(-1)]),
     )
 
     // We track which shapes need a truncate
@@ -112,7 +112,7 @@ async function createPlugin(
 
     // We also have to track the last lsn that we have committed
     // This is across all shapes
-    const lastCommittedLsn: number = subState?.last_lsn ?? -Infinity
+    const lastCommittedLsn: bigint = subState?.last_lsn ?? BigInt(-1)
 
     // We need our own aborter to be able to abort the streams but still accept the
     // signals from the user for each shape, and so we monitor the user provided signal
@@ -151,7 +151,7 @@ async function createPlugin(
       },
     )
 
-    const commitUpToLsn = async (targetLsn: number) => {
+    const commitUpToLsn = async (targetLsn: bigint) => {
       // We need to collect all the messages for each shape that we need to commit
       const messagesToCommit = new Map<string, ChangeMessage<Row<unknown>>[]>(
         Object.keys(shapes).map((shapeName) => [shapeName, []]),
@@ -282,10 +282,13 @@ async function createPlugin(
       }
       messages.forEach((message) => {
         const lastCommittedLsnForShape =
-          completeLsns.get(message.shape) ?? -Infinity
+          completeLsns.get(message.shape) ?? BigInt(-1) // we default to -1 if there are no previous changes
         if (isChangeMessage(message)) {
           const shapeChanges = changes.get(message.shape)!
-          const lsn = (message.headers.lsn as number | undefined) ?? 0
+          const lsn =
+            typeof message.headers.lsn === 'string'
+              ? BigInt(message.headers.lsn)
+              : BigInt(0) // we default to 0 if there no lsn on the message
           if (lsn <= lastCommittedLsnForShape) {
             // We are replaying changes / have already seen this lsn
             // skip and move on to the next message
@@ -307,10 +310,12 @@ async function createPlugin(
               if (debug) {
                 console.log('received up-to-date', message)
               }
-              if (typeof message.headers.global_last_seen_lsn !== `number`) {
-                throw new Error(`global_last_seen_lsn is not a number`)
+              if (typeof message.headers.global_last_seen_lsn !== `string`) {
+                throw new Error(`global_last_seen_lsn is not a string`)
               }
-              const globalLastSeenLsn = message.headers.global_last_seen_lsn
+              const globalLastSeenLsn = BigInt(
+                message.headers.global_last_seen_lsn,
+              )
               if (globalLastSeenLsn <= lastCommittedLsnForShape) {
                 // We are replaying changes / have already seen this lsn
                 // skip and move on to the next message
@@ -326,7 +331,7 @@ async function createPlugin(
               }
               const shapeChanges = changes.get(message.shape)!
               shapeChanges.clear()
-              completeLsns.set(message.shape, -Infinity)
+              completeLsns.set(message.shape, BigInt(-1))
               // Track that we need to truncate the table for this shape
               truncateNeeded.add(message.shape)
               break
@@ -334,7 +339,9 @@ async function createPlugin(
           }
         }
       })
-      const lowestCommittedLsn = Math.min(...Array.from(completeLsns.values()))
+      const lowestCommittedLsn = Array.from(completeLsns.values()).reduce(
+        (m, e) => (e < m ? e : m), // Min of all complete lsn
+      )
 
       // Normal commit needed
       const isCommitNeeded = lowestCommittedLsn > lastCommittedLsn

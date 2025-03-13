@@ -5,7 +5,7 @@ import { SubscriptionKey } from './types'
 export interface SubscriptionState {
   key: SubscriptionKey
   shape_metadata: Record<string, ShapeSubscriptionState>
-  last_lsn: number
+  last_lsn: bigint
 }
 
 export interface ShapeSubscriptionState {
@@ -44,7 +44,16 @@ export async function getSubscriptionState({
     throw new Error(`Multiple subscriptions found for key: ${subscriptionKey}`)
   }
 
-  return result.rows[0]
+  const res = result.rows[0]
+
+  if (typeof res.last_lsn === 'string' || typeof res.last_lsn === 'number') {
+    return {
+      ...res,
+      last_lsn: BigInt(res.last_lsn),
+    }
+  } else {
+    throw new Error(`Invalid last_lsn type: ${typeof res.last_lsn}`)
+  }
 }
 
 export interface UpdateSubscriptionStateOptions {
@@ -52,7 +61,7 @@ export interface UpdateSubscriptionStateOptions {
   metadataSchema: string
   subscriptionKey: SubscriptionKey
   shapeMetadata: Record<string, ShapeSubscriptionState>
-  lastLsn: number
+  lastLsn: number | bigint
   debug?: boolean
 }
 
@@ -87,7 +96,7 @@ export async function updateSubscriptionState({
         shape_metadata = EXCLUDED.shape_metadata,
         last_lsn = EXCLUDED.last_lsn;
     `,
-    [subscriptionKey, shapeMetadata, lastLsn],
+    [subscriptionKey, shapeMetadata, lastLsn.toString()],
   )
 }
 
