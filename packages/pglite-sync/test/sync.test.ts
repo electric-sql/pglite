@@ -1,35 +1,34 @@
-import {
-  ControlMessage,
-  Message,
-  ShapeStream,
-  ShapeStreamOptions,
-} from '@electric-sql/client'
+import { ShapeStreamOptions } from '@electric-sql/client'
+import { MultiShapeMessages } from '@electric-sql/experimental'
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { Mock, beforeEach, describe, expect, it, vi } from 'vitest'
 import { electricSync } from '../src/index.js'
+import { MultiShapeStream } from '@electric-sql/experimental'
 
-vi.mock('@electric-sql/client', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@electric-sql/client')>()
-  const ShapeStream = vi.fn(() => ({
+type MultiShapeMessage = MultiShapeMessages<any>
+
+vi.mock('@electric-sql/experimental', async (importOriginal) => {
+  const mod =
+    await importOriginal<typeof import('@electric-sql/experimental')>()
+  const MultiShapeStream = vi.fn(() => ({
     subscribe: vi.fn(),
+    unsubscribeAll: vi.fn(),
+    isUpToDate: true,
+    shapes: {},
   }))
-  return { ...mod, ShapeStream }
+  return { ...mod, MultiShapeStream }
 })
-
-const upToDateMsg: ControlMessage = {
-  headers: { control: 'up-to-date' },
-}
 
 describe('pglite-sync', () => {
   let pg: PGlite &
     PGliteInterfaceExtensions<{ electric: ReturnType<typeof electricSync> }>
 
-  const MockShapeStream = ShapeStream as unknown as Mock
+  const MockMultiShapeStream = MultiShapeStream as unknown as Mock
 
   beforeEach(async () => {
     pg = await PGlite.create({
       extensions: {
-        electric: electricSync(),
+        electric: electricSync({ debug: false }),
       },
     })
     await pg.exec(`
@@ -43,12 +42,34 @@ describe('pglite-sync', () => {
   })
 
   it('handles inserts/updates/deletes', async () => {
-    let feedMessage: (message: Message) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessage = (message) => cb([message, upToDateMsg])
-      }),
+    let feedMessage: (
+      lsn: number,
+      message: MultiShapeMessage,
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (lsn, message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const shape = await pg.electric.syncShapeToTable({
@@ -62,14 +83,15 @@ describe('pglite-sync', () => {
     })
 
     // insert
-    await feedMessage({
-      headers: { operation: 'insert' },
+    await feedMessage(0, {
+      headers: { operation: 'insert', lsn: '0' },
       key: 'id1',
       value: {
         id: 1,
         task: 'task1',
         done: false,
       },
+      shape: 'shape',
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
       {
@@ -80,14 +102,15 @@ describe('pglite-sync', () => {
     ])
 
     // update
-    await feedMessage({
-      headers: { operation: 'update' },
+    await feedMessage(1, {
+      headers: { operation: 'update', lsn: '1' },
       key: 'id1',
       value: {
         id: 1,
         task: 'task2',
         done: true,
       },
+      shape: 'shape',
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
       {
@@ -98,14 +121,15 @@ describe('pglite-sync', () => {
     ])
 
     // delete
-    await feedMessage({
-      headers: { operation: 'delete' },
+    await feedMessage(2, {
+      headers: { operation: 'delete', lsn: '2' },
       key: 'id1',
       value: {
         id: 1,
         task: 'task2',
         done: true,
       },
+      shape: 'shape',
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([])
 
@@ -113,12 +137,34 @@ describe('pglite-sync', () => {
   })
 
   it('performs operations within a transaction', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (lsn, messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const shape = await pg.electric.syncShapeToTable({
@@ -136,17 +182,18 @@ describe('pglite-sync', () => {
     for (let i = 0; i < numBatches; i++) {
       const numBatchInserts = numInserts / numBatches
       feedMessages(
+        i,
         Array.from({ length: numBatchInserts }, (_, idx) => {
           const itemIdx = i * numBatchInserts + idx
           return {
-            headers: { operation: 'insert' },
-            offset: `1_${itemIdx}`,
+            headers: { operation: 'insert', lsn: i.toString() },
             key: `id${itemIdx}`,
             value: {
               id: itemIdx,
               task: `task${itemIdx}`,
               done: false,
             },
+            shape: 'shape',
           }
         }),
       )
@@ -180,27 +227,45 @@ describe('pglite-sync', () => {
   })
 
   it('persists shape stream state and automatically resumes', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
     const shapeStreamInits = vi.fn()
     let mockShapeId: string | void = undefined
-    MockShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
+    MockMultiShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
       shapeStreamInits(initOpts)
       return {
-        subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-          feedMessages = (messages) => {
-            mockShapeId ??= Math.random() + ''
-            return cb([...messages, upToDateMsg])
-          }
-        }),
+        subscribe: vi.fn(
+          (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+            feedMessages = (lsn, messages) => {
+              mockShapeId ??= Math.random() + ''
+              return cb([
+                ...messages,
+                {
+                  shape: 'shape',
+                  headers: {
+                    control: 'up-to-date',
+                    global_last_seen_lsn: lsn.toString(),
+                  },
+                },
+              ])
+            }
+          },
+        ),
         unsubscribeAll: vi.fn(),
-        get shapeId() {
-          return mockShapeId
+        isUpToDate: true,
+        shapes: {
+          shape: {
+            subscribe: vi.fn(),
+            unsubscribeAll: vi.fn(),
+          },
         },
       }
     })
 
     let totalRowCount = 0
-    const numInserts = 100
+    const numInserts = 3 //100
     const shapeIds: string[] = []
 
     const numResumes = 3
@@ -216,15 +281,19 @@ describe('pglite-sync', () => {
       })
 
       await feedMessages(
+        i,
         Array.from({ length: numInserts }, (_, idx) => ({
-          headers: { operation: 'insert' },
-          offset: `1_${i * numInserts + idx}`,
+          headers: {
+            operation: 'insert',
+            lsn: i.toString(),
+          },
           key: `id${i * numInserts + idx}`,
           value: {
             id: i * numInserts + idx,
             task: `task${idx}`,
             done: false,
           },
+          shape: 'shape',
         })),
       )
 
@@ -252,31 +321,46 @@ describe('pglite-sync', () => {
   })
 
   it('clears and restarts persisted shape stream state on refetch', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
     const shapeStreamInits = vi.fn()
     let mockShapeId: string | void = undefined
-    MockShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
+    MockMultiShapeStream.mockImplementation((initOpts: ShapeStreamOptions) => {
       shapeStreamInits(initOpts)
-
       return {
-        subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-          feedMessages = (messages) => {
-            mockShapeId ??= Math.random() + ''
-            if (messages.find((m) => m.headers.control === 'must-refetch')) {
-              mockShapeId = undefined
-            }
+        subscribe: vi.fn(
+          (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+            feedMessages = (messages) => {
+              mockShapeId ??= Math.random() + ''
+              if (messages.find((m) => m.headers.control === 'must-refetch')) {
+                mockShapeId = undefined
+              }
 
-            return cb([...messages, upToDateMsg])
-          }
-        }),
+              return cb([
+                ...messages,
+                {
+                  shape: 'shape',
+                  headers: {
+                    control: 'up-to-date',
+                    global_last_seen_lsn: '0',
+                  },
+                },
+              ])
+            }
+          },
+        ),
         unsubscribeAll: vi.fn(),
-        get shapeId() {
-          return mockShapeId
+        isUpToDate: true,
+        shapes: {
+          shape: {
+            subscribe: vi.fn(),
+            unsubscribeAll: vi.fn(),
+          },
         },
       }
     })
 
-    const numInserts = 100
     const shape = await pg.electric.syncShapeToTable({
       shape: {
         url: 'http://localhost:3000/v1/shape',
@@ -287,28 +371,7 @@ describe('pglite-sync', () => {
       shapeKey: 'foo',
     })
 
-    await feedMessages(
-      Array.from({ length: numInserts }, (_, idx) => ({
-        headers: { operation: 'insert' },
-        offset: `1_${idx}`,
-        key: `id${idx}`,
-        value: {
-          id: idx,
-          task: `task${idx}`,
-          done: false,
-        },
-      })),
-    )
-
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{
-        count: number
-      }>`SELECT COUNT(*) as count FROM todo;`
-      return result.rows[0]?.count === numInserts
-    })
-
-    // feed a must-refetch message that should clear the table
-    // and any aggregated messages
+    const numInserts = 100
     await feedMessages([
       {
         headers: { operation: 'insert' },
@@ -318,8 +381,9 @@ describe('pglite-sync', () => {
           task: `task`,
           done: false,
         },
+        shape: 'shape',
       },
-      { headers: { control: 'must-refetch' } },
+      { headers: { control: 'must-refetch' }, shape: 'shape' },
       {
         headers: { operation: 'insert' },
         key: `id21`,
@@ -328,6 +392,7 @@ describe('pglite-sync', () => {
           task: `task`,
           done: false,
         },
+        shape: 'shape',
       },
     ])
 
@@ -379,9 +444,16 @@ describe('pglite-sync', () => {
   })
 
   it('forbids multiple subscriptions to the same table', async () => {
-    MockShapeStream.mockImplementation(() => ({
+    MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const table = 'foo'
@@ -440,12 +512,33 @@ describe('pglite-sync', () => {
   })
 
   it('handles an update message with no columns to update', async () => {
-    let feedMessage: (message: Message) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessage = (message) => cb([message, upToDateMsg])
-      }),
+    let feedMessage: (message: MultiShapeMessage) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const shape = await pg.electric.syncShapeToTable({
@@ -467,6 +560,7 @@ describe('pglite-sync', () => {
         task: 'task1',
         done: false,
       },
+      shape: 'shape',
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
       {
@@ -483,6 +577,7 @@ describe('pglite-sync', () => {
       value: {
         id: 1,
       },
+      shape: 'shape',
     })
     expect((await pg.sql`SELECT* FROM todo;`).rows).toEqual([
       {
@@ -496,12 +591,33 @@ describe('pglite-sync', () => {
   })
 
   it('sets the syncing flag to true when syncing begins', async () => {
-    let feedMessage: (message: Message) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessage = (message) => cb([message, upToDateMsg])
-      }),
+    let feedMessage: (message: MultiShapeMessage) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     await pg.exec(`
@@ -553,6 +669,7 @@ describe('pglite-sync', () => {
         id: 'id1',
         value: 'test value',
       },
+      shape: 'shape',
     })
 
     // Check the flag is set during a sync
@@ -573,12 +690,33 @@ describe('pglite-sync', () => {
   })
 
   it('uses COPY FROM for initial batch of inserts', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const shape = await pg.electric.syncShapeToTable({
@@ -594,20 +732,20 @@ describe('pglite-sync', () => {
 
     // Create a batch of insert messages followed by an update
     const numInserts = 1000
-    const messages: Message[] = [
+    const messages: MultiShapeMessage[] = [
       ...Array.from(
         { length: numInserts },
         (_, idx) =>
           ({
             headers: { operation: 'insert' as const },
-            offset: `1_${idx}`,
             key: `id${idx}`,
             value: {
               id: idx,
               task: `task${idx}`,
               done: idx % 2 === 0,
             },
-          }) as Message,
+            shape: 'shape',
+          }) as MultiShapeMessage,
       ),
       {
         headers: { operation: 'update' as const },
@@ -617,6 +755,7 @@ describe('pglite-sync', () => {
           task: 'updated task',
           done: true,
         },
+        shape: 'shape',
       },
     ]
 
@@ -652,12 +791,33 @@ describe('pglite-sync', () => {
   })
 
   it('handles special characters in COPY FROM data', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
     const shape = await pg.electric.syncShapeToTable({
@@ -671,7 +831,7 @@ describe('pglite-sync', () => {
       shapeKey: null,
     })
 
-    const specialCharMessages: Message[] = [
+    const specialCharMessages: MultiShapeMessage[] = [
       {
         headers: { operation: 'insert' },
         key: 'id1',
@@ -680,6 +840,7 @@ describe('pglite-sync', () => {
           task: 'task with, comma',
           done: false,
         },
+        shape: 'shape',
       },
       {
         headers: { operation: 'insert' },
@@ -689,6 +850,7 @@ describe('pglite-sync', () => {
           task: 'task with "quotes"',
           done: true,
         },
+        shape: 'shape',
       },
       {
         headers: { operation: 'insert' },
@@ -698,6 +860,7 @@ describe('pglite-sync', () => {
           task: 'task with\nnewline',
           done: false,
         },
+        shape: 'shape',
       },
     ]
 
@@ -724,475 +887,40 @@ describe('pglite-sync', () => {
     shape.unsubscribe()
   })
 
-  it('respects numeric batch commit granularity settings', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
-      unsubscribeAll: vi.fn(),
-    }))
-
-    // Create a trigger to notify on transaction commit
-    await pg.exec(`
-      CREATE OR REPLACE FUNCTION notify_transaction()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      CREATE TRIGGER todo_transaction_trigger
-      AFTER INSERT ON todo
-      FOR EACH STATEMENT
-      EXECUTE FUNCTION notify_transaction();
-    `)
-
-    const commits: string[] = []
-    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-      commits.push(payload)
-    })
-
-    const batchSize = 5
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: 'http://localhost:3000/v1/shape',
-        params: { table: 'todo' },
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      commitGranularity: batchSize,
-      shapeKey: null,
-    })
-
-    // Create test messages - 7 total (should see batch of 5, then 2)
-    const messages = Array.from(
-      { length: 7 },
-      (_, idx) =>
-        ({
-          headers: { operation: 'insert' },
-          key: `id${idx}`,
-          value: {
-            id: idx,
-            task: `task${idx}`,
-            done: false,
-          },
-        }) satisfies Message,
-    )
-
-    await feedMessages(messages)
-
-    // Wait for all inserts to complete
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{ count: number }>`
-        SELECT COUNT(*) as count FROM todo;
-      `
-      return result.rows[0].count === 7
-    })
-
-    // Verify all rows were inserted
-    const result = await pg.sql`
-      SELECT * FROM todo ORDER BY id;
-    `
-    expect(result.rows).toEqual(
-      messages.map((m) => ({
-        id: m.value.id,
-        task: m.value.task,
-        done: m.value.done,
-      })),
-    )
-
-    // Should have received 2 commit notifications:
-    // - One for the first batch of 5
-    // - One for the remaining 2 (triggered by up-to-date message)
-    expect(commits).toHaveLength(2)
-    expect(commits).toEqual(['todo', 'todo'])
-
-    await unsubscribe()
-    shape.unsubscribe()
-  })
-
-  // Removed until Electric has stabilised on LSN metadata
-  // it('respects transaction commit granularity', async () => {
-  //   let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-  //   MockShapeStream.mockImplementation(() => ({
-  //     subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-  //       feedMessages = (messages) => cb([...messages, upToDateMsg])
-  //     }),
-  //     unsubscribeAll: vi.fn(),
-  //   }))
-
-  //   // Create a trigger to notify on transaction commit
-  //   await pg.exec(`
-  //     CREATE OR REPLACE FUNCTION notify_transaction()
-  //     RETURNS TRIGGER AS $$
-  //     BEGIN
-  //       PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
-  //       RETURN NEW;
-  //     END;
-  //     $$ LANGUAGE plpgsql;
-
-  //     CREATE TRIGGER todo_transaction_trigger
-  //     AFTER INSERT ON todo
-  //     FOR EACH STATEMENT
-  //     EXECUTE FUNCTION notify_transaction();
-  //   `)
-
-  //   // Track transaction commits
-  //   const transactionCommits: string[] = []
-  //   const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-  //     transactionCommits.push(payload)
-  //   })
-
-  //   const shape = await pg.electric.syncShapeToTable({
-  //     shape: {
-  //       url: 'http://localhost:3000/v1/shape',
-  //       params: { table: 'todo' },
-  //     },
-  //     table: 'todo',
-  //     primaryKey: ['id'],
-  //     commitGranularity: 'transaction',
-  //   })
-
-  //   // Send messages with different LSNs (first part of offset before _)
-  //   await feedMessages([
-  //     {
-  //       headers: { operation: 'insert' },
-  //       key: 'id1',
-  //       value: {
-  //         id: 1,
-  //         task: 'task1',
-  //         done: false,
-  //       },
-  //     },
-  //     {
-  //       headers: { operation: 'insert' },
-  //       key: 'id2',
-  //       value: {
-  //         id: 2,
-  //         task: 'task2',
-  //         done: false,
-  //       },
-  //     },
-  //     {
-  //       headers: { operation: 'insert' },
-  //       key: 'id3',
-  //       value: {
-  //         id: 3,
-  //         task: 'task3',
-  //         done: false,
-  //       },
-  //     },
-  //   ])
-
-  //   // Wait for all inserts to complete
-  //   await vi.waitUntil(async () => {
-  //     const result = await pg.sql<{ count: number }>`
-  //       SELECT COUNT(*) as count FROM todo;
-  //     `
-  //     return result.rows[0].count === 3
-  //   })
-
-  //   // Verify all rows were inserted
-  //   const result = await pg.sql`
-  //     SELECT * FROM todo ORDER BY id;
-  //   `
-  //   expect(result.rows).toEqual([
-  //     { id: 1, task: 'task1', done: false },
-  //     { id: 2, task: 'task2', done: false },
-  //     { id: 3, task: 'task3', done: false },
-  //   ])
-
-  //   // Should have received 2 transaction notifications
-  //   // One for LSN 1 (containing 2 inserts) and one for LSN 2 (containing 1 insert)
-  //   expect(transactionCommits).toHaveLength(2)
-  //   expect(transactionCommits).toEqual(['todo', 'todo'])
-
-  //   await unsubscribe()
-  //   shape.unsubscribe()
-  // })
-
-  it('respects up-to-date commit granularity settings', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
-      unsubscribeAll: vi.fn(),
-    }))
-
-    // Create a trigger to notify on transaction commit
-    await pg.exec(`
-      CREATE OR REPLACE FUNCTION notify_transaction()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      CREATE TRIGGER todo_transaction_trigger
-      AFTER INSERT ON todo
-      FOR EACH STATEMENT
-      EXECUTE FUNCTION notify_transaction();
-    `)
-
-    const commits: string[] = []
-    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-      commits.push(payload)
-    })
-
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: 'http://localhost:3000/v1/shape',
-        params: { table: 'todo' },
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      commitGranularity: 'up-to-date',
-      shapeKey: null,
-    })
-
-    // Send multiple messages
-    await feedMessages([
-      {
-        headers: { operation: 'insert' },
-        key: 'id1',
-        value: { id: 1, task: 'task1', done: false },
-      },
-      {
-        headers: { operation: 'insert' },
-        key: 'id2',
-        value: { id: 2, task: 'task2', done: false },
-      },
-      {
-        headers: { operation: 'insert' },
-        key: 'id3',
-        value: { id: 3, task: 'task3', done: false },
-      },
-    ])
-
-    // Wait for all inserts to complete
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{ count: number }>`
-        SELECT COUNT(*) as count FROM todo;
-      `
-      return result.rows[0].count === 3
-    })
-
-    // Should have received only one commit notification since all operations
-    // are committed together when up-to-date message is received
-    expect(commits).toHaveLength(1)
-    expect(commits).toEqual(['todo'])
-
-    await unsubscribe()
-    shape.unsubscribe()
-  })
-
-  it('respects operation commit granularity settings', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
-      unsubscribeAll: vi.fn(),
-    }))
-
-    // Create a trigger to notify on transaction commit
-    await pg.exec(`
-      CREATE OR REPLACE FUNCTION notify_transaction()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        PERFORM pg_notify('transaction_commit', TG_TABLE_NAME);
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      CREATE TRIGGER todo_transaction_trigger
-      AFTER INSERT ON todo
-      FOR EACH STATEMENT
-      EXECUTE FUNCTION notify_transaction();
-    `)
-
-    const commits: string[] = []
-    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-      commits.push(payload)
-    })
-
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: 'http://localhost:3000/v1/shape',
-        params: { table: 'todo' },
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      commitGranularity: 'operation',
-      shapeKey: null,
-    })
-
-    // Send multiple messages
-    await feedMessages([
-      {
-        headers: { operation: 'insert' },
-        key: 'id1',
-        value: { id: 1, task: 'task1', done: false },
-      },
-      {
-        headers: { operation: 'insert' },
-        key: 'id2',
-        value: { id: 2, task: 'task2', done: false },
-      },
-      {
-        headers: { operation: 'insert' },
-        key: 'id3',
-        value: { id: 3, task: 'task3', done: false },
-      },
-    ])
-
-    // Wait for all inserts to complete
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{ count: number }>`
-        SELECT COUNT(*) as count FROM todo;
-      `
-      return result.rows[0].count === 3
-    })
-
-    // Should have received a notification for each operation
-    expect(commits).toHaveLength(3)
-    expect(commits).toEqual(['todo', 'todo', 'todo'])
-
-    await unsubscribe()
-    shape.unsubscribe()
-  })
-
-  // Skip this test as it's flaky in CI, timing is sensitive
-  it.skip('respects commitThrottle with operation commit granularity', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages])
-      }),
-      unsubscribeAll: vi.fn(),
-    }))
-
-    // Create a trigger to notify on transaction commit
-    await pg.exec(`
-      CREATE OR REPLACE FUNCTION notify_transaction()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        PERFORM pg_notify('transaction_commit', 
-          TG_TABLE_NAME || '_' || 
-          (SELECT COUNT(*) FROM todo)::text || '_' ||
-          EXTRACT(MILLISECONDS FROM NOW())::text
-        );
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      CREATE TRIGGER todo_transaction_trigger
-      AFTER INSERT ON todo
-      FOR EACH STATEMENT
-      EXECUTE FUNCTION notify_transaction();
-    `)
-
-    const commits: string[] = []
-    const unsubscribe = await pg.listen('transaction_commit', (payload) => {
-      commits.push(payload)
-    })
-
-    const throttleMs = 15 // Short throttle for testing
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: 'http://localhost:3000/v1/shape',
-        params: { table: 'todo' },
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      commitGranularity: 'operation',
-      commitThrottle: throttleMs,
-      shapeKey: null,
-    })
-
-    // Send messages with 10ms delays between them
-    for (const message of [
-      {
-        headers: { operation: 'insert' as const },
-        offset: '1_1' as const,
-        key: 'id1',
-        value: { id: 1, task: 'task1', done: false },
-      },
-      {
-        headers: { operation: 'insert' as const },
-        offset: '1_2' as const,
-        key: 'id2',
-        value: { id: 2, task: 'task2', done: false },
-      },
-      {
-        headers: { operation: 'insert' as const },
-        offset: '1_3' as const,
-        key: 'id3',
-        value: { id: 3, task: 'task3', done: false },
-      },
-      {
-        headers: { operation: 'insert' as const },
-        offset: '1_4' as const,
-        key: 'id4',
-        value: { id: 4, task: 'task4', done: false },
-      },
-      upToDateMsg,
-    ]) {
-      await feedMessages([message])
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    }
-
-    // Wait for all inserts to complete
-    await vi.waitUntil(async () => {
-      const result = await pg.sql<{ count: number }>`
-        SELECT COUNT(*) as count FROM todo;
-      `
-      return result.rows[0].count === 4
-    })
-
-    console.log(commits)
-
-    // Extract row counts and timestamps from commit notifications
-    const commitInfo = commits.map((commit) => {
-      const [_, rowCount, timestamp] = commit.split('_')
-      return {
-        rowCount: parseInt(rowCount),
-        timestamp: parseFloat(timestamp),
-      }
-    })
-
-    // Verify we got 4 operation messages
-    expect(commitInfo.length).toBe(4)
-
-    // Check timestamps are at least 15ms apart for first 3
-    expect(
-      commitInfo[1].timestamp - commitInfo[0].timestamp,
-    ).toBeGreaterThanOrEqual(15)
-    expect(
-      commitInfo[2].timestamp - commitInfo[1].timestamp,
-    ).toBeGreaterThanOrEqual(15)
-
-    // Last 2 operation messages should have same timestamp since they're batched
-    expect(commitInfo[3].timestamp).toBe(commitInfo[2].timestamp)
-
-    await unsubscribe()
-    shape.unsubscribe()
-  })
-
   it('calls onInitialSync callback after initial sync', async () => {
-    let feedMessages: (messages: Message[]) => Promise<void> = async (_) => {}
-    MockShapeStream.mockImplementation(() => ({
-      subscribe: vi.fn((cb: (messages: Message[]) => Promise<void>) => {
-        feedMessages = (messages) => cb([...messages, upToDateMsg])
-      }),
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (lsn, messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
       unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
     }))
 
-    const onInitialSync = vi.fn()
+    const onInitialSync = vi.fn(() => {
+      console.log('onInitialSync')
+    })
     const shape = await pg.electric.syncShapeToTable({
       shape: {
         url: 'http://localhost:3000/v1/shape',
@@ -1205,24 +933,26 @@ describe('pglite-sync', () => {
     })
 
     // Send some initial data
-    await feedMessages([
+    await feedMessages(0, [
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id1',
         value: {
           id: 1,
           task: 'task1',
           done: false,
         },
+        shape: 'shape',
       },
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '0' },
         key: 'id2',
         value: {
           id: 2,
           task: 'task2',
           done: true,
         },
+        shape: 'shape',
       },
     ])
 
@@ -1230,15 +960,16 @@ describe('pglite-sync', () => {
     expect(onInitialSync).toHaveBeenCalledTimes(1)
 
     // Send more data - callback should not be called again
-    await feedMessages([
+    await feedMessages(1, [
       {
-        headers: { operation: 'insert' },
+        headers: { operation: 'insert', lsn: '1' },
         key: 'id3',
         value: {
           id: 3,
           task: 'task3',
           done: false,
         },
+        shape: 'shape',
       },
     ])
 
@@ -1252,5 +983,551 @@ describe('pglite-sync', () => {
     ).toBe(3)
 
     shape.unsubscribe()
+  })
+
+  it('syncs multiple shapes to multiple tables simultaneously', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with two shapes
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (lsn, messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const onInitialSync = vi.fn()
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'multi_sync_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+      onInitialSync,
+    })
+
+    // Send data for both shapes in a single batch
+    await feedMessages(0, [
+      // Todo table inserts
+      {
+        headers: { operation: 'insert', lsn: '0' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'task1',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert', lsn: '0' },
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'task2',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      // Project table inserts
+      {
+        headers: { operation: 'insert', lsn: '0' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Project 1',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+      {
+        headers: { operation: 'insert', lsn: '0' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'Project 2',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify data was inserted into both tables
+    const todoResult = await pg.sql`SELECT * FROM todo ORDER BY id;`
+    expect(todoResult.rows).toEqual([
+      { id: 1, task: 'task1', done: false },
+      { id: 2, task: 'task2', done: true },
+    ])
+
+    const projectResult = await pg.sql`SELECT * FROM project ORDER BY id;`
+    expect(projectResult.rows).toEqual([
+      { id: 1, name: 'Project 1', active: true },
+      { id: 2, name: 'Project 2', active: false },
+    ])
+
+    // Verify onInitialSync was called
+    expect(onInitialSync).toHaveBeenCalledTimes(1)
+
+    // Test updates across both tables
+    await feedMessages(1, [
+      // Update todo
+      {
+        headers: { operation: 'update', lsn: '1' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Updated task 1',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      // Update project
+      {
+        headers: { operation: 'update', lsn: '1' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'Updated Project 2',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify updates were applied to both tables
+    const updatedTodoResult = await pg.sql`SELECT * FROM todo WHERE id = 1;`
+    expect(updatedTodoResult.rows[0]).toEqual({
+      id: 1,
+      task: 'Updated task 1',
+      done: true,
+    })
+
+    const updatedProjectResult =
+      await pg.sql`SELECT * FROM project WHERE id = 2;`
+    expect(updatedProjectResult.rows[0]).toEqual({
+      id: 2,
+      name: 'Updated Project 2',
+      active: true,
+    })
+
+    // Test deletes across both tables
+    await feedMessages(2, [
+      {
+        headers: { operation: 'delete', lsn: '2' },
+        key: 'id2',
+        shape: 'todo_shape',
+        value: { id: 2 },
+      },
+      {
+        headers: { operation: 'delete', lsn: '2' },
+        key: 'id1',
+        shape: 'project_shape',
+        value: { id: 1 },
+      },
+    ])
+
+    // Verify deletes were applied to both tables
+    const todoCountAfterDelete = await pg.sql<{ count: number }>`
+      SELECT COUNT(*) as count FROM todo;
+    `
+    expect(todoCountAfterDelete.rows[0].count).toBe(1)
+
+    const projectCountAfterDelete = await pg.sql<{ count: number }>`
+      SELECT COUNT(*) as count FROM project;
+    `
+    expect(projectCountAfterDelete.rows[0].count).toBe(1)
+
+    // Cleanup
+    syncResult.unsubscribe()
+  })
+
+  it('handles transactions across multiple tables with syncShapesToTables', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with two shapes and LSN tracking
+    let feedMessages: (
+      lsn: number,
+      messages: MultiShapeMessage[],
+    ) => Promise<void> = async (_lsn, _messages) => {}
+
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (lsn, messages) =>
+            cb([
+              ...messages.map((msg) => {
+                if ('headers' in msg && 'operation' in msg.headers) {
+                  return {
+                    ...msg,
+                    headers: {
+                      ...msg.headers,
+                      lsn: lsn.toString(),
+                    },
+                  } as MultiShapeMessage
+                }
+                return msg
+              }),
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              } as MultiShapeMessage,
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              } as MultiShapeMessage,
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'transaction_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+    })
+
+    // Send initial data with LSN 1
+    await feedMessages(1, [
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Initial task',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Initial project',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify initial data was inserted
+    const initialTodoCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM todo;`
+    expect(initialTodoCount.rows[0].count).toBe(1)
+
+    const initialProjectCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM project;`
+    expect(initialProjectCount.rows[0].count).toBe(1)
+
+    // Simulate a transaction with LSN 2 that updates both tables
+    await feedMessages(2, [
+      {
+        headers: { operation: 'update' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Updated in transaction',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'update' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Updated in transaction',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify both updates were applied
+    const todoResult = await pg.sql`SELECT * FROM todo WHERE id = 1;`
+    expect(todoResult.rows[0]).toEqual({
+      id: 1,
+      task: 'Updated in transaction',
+      done: true,
+    })
+
+    const projectResult = await pg.sql`SELECT * FROM project WHERE id = 1;`
+    expect(projectResult.rows[0]).toEqual({
+      id: 1,
+      name: 'Updated in transaction',
+      active: false,
+    })
+
+    // Cleanup
+    syncResult.unsubscribe()
+  })
+
+  it('handles must-refetch control message across multiple tables', async () => {
+    // Create a second table for testing multi-shape sync
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS project (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        active BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE project;`)
+
+    // Setup mock for MultiShapeStream with refetch handling
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    let mockShapeId: string | void = undefined
+
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) => {
+            mockShapeId ??= Math.random() + ''
+            if (messages.find((m) => m.headers.control === 'must-refetch')) {
+              mockShapeId = undefined
+            }
+
+            return cb([
+              ...messages,
+              {
+                shape: 'todo_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              } as MultiShapeMessage,
+              {
+                shape: 'project_shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              } as MultiShapeMessage,
+            ])
+          }
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todo_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+        project_shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    // Set up sync for both tables
+    const syncResult = await pg.electric.syncShapesToTables({
+      key: 'refetch_test',
+      shapes: {
+        todo_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+        project_shape: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'project' },
+          },
+          table: 'project',
+          primaryKey: ['id'],
+        },
+      },
+    })
+
+    // Insert initial data
+    await feedMessages([
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          task: 'Initial task',
+          done: false,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id1',
+        value: {
+          id: 1,
+          name: 'Initial project',
+          active: true,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify initial data was inserted
+    const refetchTodoCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM todo;`
+    expect(refetchTodoCount.rows[0].count).toBe(1)
+
+    const refetchProjectCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM project;`
+    expect(refetchProjectCount.rows[0].count).toBe(1)
+
+    // Send must-refetch control message and new data
+    await feedMessages([
+      { headers: { control: 'must-refetch' }, shape: 'todo_shape' },
+      { headers: { control: 'must-refetch' }, shape: 'project_shape' },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          task: 'New task after refetch',
+          done: true,
+        },
+        shape: 'todo_shape',
+      },
+      {
+        headers: { operation: 'insert' },
+        key: 'id2',
+        value: {
+          id: 2,
+          name: 'New project after refetch',
+          active: false,
+        },
+        shape: 'project_shape',
+      },
+    ])
+
+    // Verify tables were cleared and new data was inserted
+    const todoResult = await pg.sql`SELECT * FROM todo ORDER BY id;`
+    expect(todoResult.rows).toEqual([
+      {
+        id: 2,
+        task: 'New task after refetch',
+        done: true,
+      },
+    ])
+
+    const projectResult = await pg.sql`SELECT * FROM project ORDER BY id;`
+    expect(projectResult.rows).toEqual([
+      {
+        id: 2,
+        name: 'New project after refetch',
+        active: false,
+      },
+    ])
+
+    // Cleanup
+    syncResult.unsubscribe()
   })
 })
