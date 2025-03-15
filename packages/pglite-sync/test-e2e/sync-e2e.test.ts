@@ -1580,6 +1580,104 @@ newline', false);
     await pg.electric.deleteSubscription('refetch_multi_test')
   })
 
+  it('handles onMustRefetch with local data', async () => {
+    // Insert initial data
+    await pgClient.query(`
+      INSERT INTO todo (id, task, done) 
+      VALUES 
+        (1, 'Todo 1', false),
+        (2, 'Todo 2', false),
+        (3, 'Todo 3', false),
+        (4, 'Todo 4', false),
+        (5, 'Todo 5', false),
+        (6, 'Todo 6', false),
+        (7, 'Todo 7', false),
+        (8, 'Todo 8', false),
+        (9, 'Todo 9', false),
+        (10, 'Todo 10', false);
+    `)
+
+    // Set up sync for both tables using syncShapesToTables
+    const shape1 = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo', where: 'id > 5' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: 'todo_shape1',
+      onMustRefetch: async (tx) => {
+        await tx.exec(`DELETE FROM todo WHERE id > 5;`)
+      },
+    })
+
+    const shape2 = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo', where: 'id <= 5' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: 'todo_shape2',
+      onMustRefetch: async (tx) => {
+        await tx.exec(`DELETE FROM todo WHERE id <= 5;`)
+      },
+    })
+
+    // Wait for initial sync to complete
+    await vi.waitFor(
+      async () => {
+        const todoCount = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+        expect(todoCount.rows[0].count).toBe(10)
+      },
+      { timeout: 5000 },
+    )
+
+    // Insert some local data
+    await pg.query(`
+      INSERT INTO todo (id, task, done) 
+      VALUES 
+        (11, 'Todo 11', false),
+        (12, 'Todo 12', false),
+        (13, 'Todo 13', false);
+    `)
+
+    // Delete the shapes on the server to force a must-refetch on it
+    await deleteShape('todo', shape1.stream.shapeHandle!)
+
+    // Update all to done
+    await pgClient.query(`
+      UPDATE todo SET done = true;
+    `)
+
+    // Wait for sync to complete
+    await vi.waitFor(
+      async () => {
+        const todoCount = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo WHERE done = true;`
+        expect(todoCount.rows[0].count).toBe(10)
+      },
+      { timeout: 5000 },
+    )
+
+    // Verify that the local data is still present
+    const localTodoCount = await pg.sql<{
+      count: number
+    }>`SELECT COUNT(*) as count FROM todo WHERE id > 10 AND done = false;`
+    expect(localTodoCount.rows[0].count).toBe(3)
+
+    // Clean up
+    shape1.unsubscribe()
+    shape2.unsubscribe()
+    await pg.electric.deleteSubscription('todo_shape1')
+    await pg.electric.deleteSubscription('todo_shape2')
+  })
+
   it('handles large initial load with multiple columns', async () => {
     // Generate data in batches
     const numRows = 5000 // Reduced from 10k to 5k for faster test execution
@@ -2258,5 +2356,5 @@ newline', false);
     // Clean up
     shape.unsubscribe()
     await pg.electric.deleteSubscription('large_todo_sync_test')
-  })
-}, 60000)
+  }, 60000)
+})

@@ -4,6 +4,7 @@ import type {
   Row,
   ChangeMessage,
 } from '@electric-sql/client'
+import { Transaction } from '@electric-sql/pglite'
 
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
@@ -16,6 +17,7 @@ export interface ShapeToTableOptions {
   schema?: string
   mapColumns?: MapColumns
   primaryKey: string[]
+  onMustRefetch?: (tx: Transaction) => Promise<void>
 }
 
 export interface SyncShapesToTablesOptions {
@@ -40,6 +42,7 @@ export interface SyncShapeToTableOptions {
   shapeKey: string | null
   useCopy?: boolean
   onInitialSync?: () => void
+  onMustRefetch?: (tx: Transaction) => Promise<void>
 }
 
 export interface SyncShapeToTableResult {

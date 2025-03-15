@@ -61,12 +61,14 @@ async function createPlugin(
     let unsubscribed = false
     await initMetadataTables()
 
-    Object.values(shapes).forEach((shape) => {
-      if (shapePerTableLock.has(shape.table)) {
-        throw new Error('Already syncing shape for table ' + shape.table)
-      }
-      shapePerTableLock.set(shape.table)
-    })
+    Object.values(shapes)
+      .filter((shape) => !shape.onMustRefetch) // Shapes with onMustRefetch bypass the lock
+      .forEach((shape) => {
+        if (shapePerTableLock.has(shape.table)) {
+          throw new Error('Already syncing shape for table ' + shape.table)
+        }
+        shapePerTableLock.set(shape.table)
+      })
 
     let subState: SubscriptionState | null = null
 
@@ -184,7 +186,11 @@ async function createPlugin(
             if (debug) {
               console.log('truncating table', shape.table)
             }
-            await tx.exec(`DELETE FROM ${shape.table};`)
+            if (shape.onMustRefetch) {
+              await shape.onMustRefetch(tx)
+            } else {
+              await tx.exec(`DELETE FROM ${shape.table};`)
+            }
             truncateNeeded.delete(shapeName)
           }
 
@@ -397,6 +403,7 @@ async function createPlugin(
           schema: options.schema,
           mapColumns: options.mapColumns,
           primaryKey: options.primaryKey,
+          onMustRefetch: options.onMustRefetch,
         },
       },
       key: options.shapeKey,

@@ -20,7 +20,7 @@ services:
       - wal_level=logical
 
   electric:
-    image: electricsql/electric:latest
+    image: electric:local
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/electric?sslmode=disable
       ELECTRIC_ENABLE_INTEGRATION_TESTING: true
