@@ -2262,8 +2262,8 @@ newline', false);
     await pg.electric.deleteSubscription('large_todo_sync_test')
   }, 60000)
 
-  it('handles initial sync of 100,000 rows with COPY', async () => {
-    const numTodos = 100000
+  it('handles initial sync of 150,000 rows with COPY', async () => {
+    const numTodos = 150000
 
     // Batch the inserts to Postgres
     const batchSize = 1000
