@@ -298,11 +298,11 @@ importers:
   packages/pglite-sync:
     dependencies:
       '@electric-sql/client':
-        specifier: 1.0.0-beta.5
-        version: 1.0.0-beta.5
+        specifier: 1.0.0
+        version: 1.0.0
       '@electric-sql/experimental':
-        specifier: 0.1.2-beta.4
-        version: 0.1.2-beta.4(@electric-sql/client@1.0.0-beta.5)
+        specifier: 1.0.0
+        version: 1.0.0(@electric-sql/client@1.0.0)
     devDependencies:
       '@electric-sql/pglite':
         specifier: workspace:*
@@ -694,13 +694,13 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@1.0.0-beta.5':
-    resolution: {integrity: sha512-sP4yBBt4sDWE7FhMMVkVceKULLPStumFzlgltUqb7AzzXP6AK2qs4bZ2QrabY6feBgRgrMP19bOzxI/WOSnTAA==}
+  '@electric-sql/client@1.0.0':
+    resolution: {integrity: sha512-kGiVbBIlMqc/CeJpWZuLjxNkm0836NWxeMtIWH2w5IUK8pUL13hyxg3ZkR7+FlTGhpKuZRiCP5nPOH9D6wbhPw==}
 
-  '@electric-sql/experimental@0.1.2-beta.4':
-    resolution: {integrity: sha512-P+V8wvTaUddyMrPtvfEwkoGkrLUCX6MVTLJn303oEEb/aK0NkAqUaCXVj9BNZ3bM673dTqdysy+Wg61mP42kfw==}
+  '@electric-sql/experimental@1.0.0':
+    resolution: {integrity: sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ==}
     peerDependencies:
-      '@electric-sql/client': 1.0.0-beta.5
+      '@electric-sql/client': 1.0.0
 
   '@electric-sql/pglite-react@0.2.17':
     resolution: {integrity: sha512-TEdV1UAUO50gb/okYcVaiG2dQdox53K2E8jSEl0Wa/97x3Xi238ls7ZB7wgmoqNgy45f/tgYxyztml03EFClng==}
@@ -4958,13 +4958,13 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@1.0.0-beta.5':
+  '@electric-sql/client@1.0.0':
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
 
-  '@electric-sql/experimental@0.1.2-beta.4(@electric-sql/client@1.0.0-beta.5)':
+  '@electric-sql/experimental@1.0.0(@electric-sql/client@1.0.0)':
     dependencies:
-      '@electric-sql/client': 1.0.0-beta.5
+      '@electric-sql/client': 1.0.0
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
 

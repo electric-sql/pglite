@@ -20,9 +20,12 @@ services:
       - wal_level=logical
 
   electric:
-    image: electric:local
+    image: electricsql/electric:latest
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/electric?sslmode=disable
+      # Not suitable for production. Only use insecure mode in development or if you've otherwise secured the Electric API.
+      # See https://electric-sql.com/docs/guides/security
+      ELECTRIC_INSECURE: true
       ELECTRIC_ENABLE_INTEGRATION_TESTING: true
     ports:
       - "3000:3000"
