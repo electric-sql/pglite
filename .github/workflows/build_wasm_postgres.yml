@@ -63,9 +63,9 @@ jobs:
           DEBUG: false
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          git clone --no-tags --depth 1 --single-branch --branch REL_17_4_WASM-pglite https://github.com/electric-sql/postgres-pglite postgres-pglite
+#          git clone --no-tags --depth 1 --single-branch --branch REL_17_4_WASM-pglite https://github.com/electric-sql/postgres-pglite postgres-pglite
           cd postgres-pglite
-          bash ./ci-17_4_WASM.sh
+          bash ./wasm-build.sh extra contrib
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
