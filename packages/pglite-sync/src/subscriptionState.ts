@@ -1,11 +1,13 @@
 import type { PGliteInterface, Transaction } from '@electric-sql/pglite'
 import type { Offset } from '@electric-sql/client'
-import { SubscriptionKey } from './types'
+import { SubscriptionKey, Lsn } from './types'
+
+const subscriptionTableName = `subscriptions_metadata`
 
 export interface SubscriptionState {
   key: SubscriptionKey
   shape_metadata: Record<string, ShapeSubscriptionState>
-  last_lsn: bigint
+  last_lsn: Lsn
 }
 
 export interface ShapeSubscriptionState {
@@ -46,7 +48,7 @@ export async function getSubscriptionState({
 
   const res = result.rows[0]
 
-  if (typeof res.last_lsn === 'string' || typeof res.last_lsn === 'number') {
+  if (typeof res.last_lsn === 'string') {
     return {
       ...res,
       last_lsn: BigInt(res.last_lsn),
@@ -61,7 +63,7 @@ export interface UpdateSubscriptionStateOptions {
   metadataSchema: string
   subscriptionKey: SubscriptionKey
   shapeMetadata: Record<string, ShapeSubscriptionState>
-  lastLsn: number | bigint
+  lastLsn: Lsn
   debug?: boolean
 }
 
@@ -141,7 +143,7 @@ export async function migrateSubscriptionMetadataTables({
       CREATE TABLE IF NOT EXISTS ${subscriptionMetadataTableName(metadataSchema)} (
         key TEXT PRIMARY KEY,
         shape_metadata JSONB NOT NULL,
-        last_lsn NUMERIC NOT NULL
+        last_lsn TEXT NOT NULL
       );
     `,
   )
@@ -150,5 +152,3 @@ export async function migrateSubscriptionMetadataTables({
 function subscriptionMetadataTableName(metadataSchema: string) {
   return `"${metadataSchema}"."${subscriptionTableName}"`
 }
-
-const subscriptionTableName = `subscriptions_metadata`

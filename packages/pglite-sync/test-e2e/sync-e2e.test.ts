@@ -207,16 +207,29 @@ describe('sync-e2e', () => {
       );
     `)
 
+    // Create a table for data type testing
+    await pgClient.query(`
+      CREATE TABLE IF NOT EXISTS data_types_table (
+        id SERIAL PRIMARY KEY,
+        int_col INTEGER,
+        float_col FLOAT,
+        boolean_col BOOLEAN,
+        string_col TEXT,
+        json_col JSONB,
+        json_plain_col JSON
+      );
+    `)
+
     // Clean up any existing data
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table, data_types_table;',
     )
   })
 
   afterAll(async () => {
     // Truncate all tables
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table, data_types_table;',
     )
 
     await pgClient.end()
@@ -225,7 +238,7 @@ describe('sync-e2e', () => {
 
   beforeEach(async () => {
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table, data_types_table;',
     )
 
     // Create PGlite instance with electric sync extension
@@ -321,6 +334,19 @@ describe('sync-e2e', () => {
         flag BOOLEAN
       );
     `)
+
+    // Create data types testing table
+    await pg.exec(`
+      CREATE TABLE data_types_table (
+        id SERIAL PRIMARY KEY,
+        int_col INTEGER,
+        float_col FLOAT,
+        boolean_col BOOLEAN,
+        string_col TEXT,
+        json_col JSONB,
+        json_plain_col JSON
+      );
+    `)
   })
 
   afterEach(async () => {
@@ -333,7 +359,7 @@ describe('sync-e2e', () => {
 
     // Truncate all tables
     await pgClient.query(
-      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table;',
+      'TRUNCATE todo, project, alt_todo, test_syncing, todo_alt, large_table, large_ops_table, data_types_table;',
     )
   })
 
@@ -1784,7 +1810,7 @@ newline', false);
 
     // Clean up
     shape.unsubscribe()
-  })
+  }, 60000)
 
   it('handles large update with inserts, deletes, and updates', async () => {
     // Insert initial rows (some will be updated, some deleted, some unchanged)
@@ -2357,4 +2383,163 @@ newline', false);
     shape.unsubscribe()
     await pg.electric.deleteSubscription('large_todo_sync_test')
   }, 60000)
+
+  it('syncs data with various column types', async () => {
+    // Test data for different data types
+    const testData = [
+      {
+        id: 1,
+        int_col: 42,
+        float_col: 3.14159,
+        boolean_col: true,
+        string_col: 'Hello, world!',
+        json_col: { name: 'Test', nested: { value: 123 }, array: [1, 2, 3] },
+        json_plain_col: { type: "JSON", different: "from JSONB", nums: [42, 43] }
+      },
+      {
+        id: 2,
+        int_col: -100,
+        float_col: -0.5,
+        boolean_col: false,
+        string_col: 'Special chars: \n\t"\'\\',
+        json_col: { empty: {}, list: [] },
+        json_plain_col: { empty_arr: [], value: null }
+      },
+      {
+        id: 3,
+        int_col: 0,
+        float_col: 0.0,
+        boolean_col: true,
+        string_col: '',
+        json_col: null,
+        json_plain_col: null
+      }
+    ]
+
+    // Insert data into PostgreSQL
+    for (const row of testData) {
+      await pgClient.query(
+        `INSERT INTO data_types_table 
+         (id, int_col, float_col, boolean_col, string_col, json_col, json_plain_col) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          row.id,
+          row.int_col,
+          row.float_col,
+          row.boolean_col,
+          row.string_col,
+          row.json_col,
+          row.json_plain_col
+        ]
+      )
+    }
+
+    // Set up sync
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'data_types_table' },
+        fetchClient,
+      },
+      table: 'data_types_table',
+      primaryKey: ['id'],
+      shapeKey: 'data_types_test',
+    })
+
+    // Wait for sync to complete
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{ count: number }>`
+          SELECT COUNT(*) as count FROM data_types_table;
+        `
+        expect(result.rows[0].count).toBe(testData.length)
+      },
+      { timeout: 5000 },
+    )
+
+    // Define the row type for type safety
+    type DataTypeRow = {
+      id: number
+      int_col: number
+      float_col: string
+      boolean_col: boolean
+      string_col: string
+      json_col: any
+      json_plain_col: any
+    }
+
+    // Verify data was synced correctly
+    for (const expected of testData) {
+      const result = await pg.sql<DataTypeRow>`
+        SELECT * FROM data_types_table WHERE id = ${expected.id};
+      `
+      
+      const row = result.rows[0]
+      expect(row.id).toBe(expected.id)
+      expect(row.int_col).toBe(expected.int_col)
+      
+      // Float comparison needs to account for potential precision differences
+      expect(Math.abs(parseFloat(row.float_col) - expected.float_col)).toBeLessThan(0.00001)
+      
+      expect(row.boolean_col).toBe(expected.boolean_col)
+      expect(row.string_col).toBe(expected.string_col)
+      
+      // JSON data might be serialized differently but should be equivalent
+      if (expected.json_col === null) {
+        expect(row.json_col).toBeNull()
+      } else {
+        expect(row.json_col).toStrictEqual(expected.json_col)
+      }
+
+      // Plain JSON data should also be properly synced
+      if (expected.json_plain_col === null) {
+        expect(row.json_plain_col).toBeNull()
+      } else {
+        expect(row.json_plain_col).toStrictEqual(expected.json_plain_col)
+      }
+    }
+
+    // Update a row with new values for all columns
+    await pgClient.query(
+      `UPDATE data_types_table SET 
+       int_col = $1, float_col = $2, boolean_col = $3, 
+       string_col = $4, json_col = $5, json_plain_col = $6
+       WHERE id = 1`,
+      [
+        99999,
+        1234.5678,
+        false,
+        'Updated text value',
+        { updated: true, values: [4, 5, 6] },
+        { updated: "plainJSON", order: { might: "matter"} }
+      ]
+    )
+
+    // Wait for update to sync
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{ int_col: number }>`
+          SELECT int_col FROM data_types_table WHERE id = 1;
+        `
+        expect(result.rows[0].int_col).toBe(99999)
+      },
+      { timeout: 5000 },
+    )
+
+    // Verify updated data
+    const updatedResult = await pg.sql<DataTypeRow>`
+      SELECT * FROM data_types_table WHERE id = 1;
+    `
+    const updated = updatedResult.rows[0]
+    expect(updated.int_col).toBe(99999)
+    expect(Math.abs(parseFloat(updated.float_col) - 1234.5678)).toBeLessThan(0.00001)
+    expect(updated.boolean_col).toBe(false)
+    expect(updated.string_col).toBe('Updated text value')
+    expect(updated.json_col).toStrictEqual({ updated: true, values: [4, 5, 6] })
+    expect(updated.json_plain_col).toStrictEqual({ updated: "plainJSON", order: { might: "matter"} })
+
+    // Clean up
+    shape.unsubscribe()
+    await pg.electric.deleteSubscription('data_types_test')
+  })
 })

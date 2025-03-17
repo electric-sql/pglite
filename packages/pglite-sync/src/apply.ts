@@ -150,11 +150,10 @@ function doMapColumns(
 ): Record<string, any> {
   if (typeof mapColumns === 'function') {
     return mapColumns(message)
-  } else {
-    const mappedColumns: Record<string, any> = {}
-    for (const [key, value] of Object.entries(mapColumns)) {
-      mappedColumns[key] = message.value[value]
-    }
-    return mappedColumns
   }
+  const mappedColumns: Record<string, any> = {}
+  for (const [key, value] of Object.entries(mapColumns)) {
+    mappedColumns[key] = message.value[value]
+  }
+  return mappedColumns
 }

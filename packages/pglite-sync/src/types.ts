@@ -6,6 +6,8 @@ import type {
 } from '@electric-sql/client'
 import { Transaction } from '@electric-sql/pglite'
 
+export type Lsn = bigint
+
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
 export type MapColumns = MapColumnsMap | MapColumnsFn

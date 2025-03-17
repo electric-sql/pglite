@@ -21,6 +21,7 @@ import type {
   SyncShapeToTableOptions,
   SyncShapeToTableResult,
   InsertChangeMessage,
+  Lsn,
 } from './types'
 import { applyMessageToTable, applyMessagesToTableWithCopy } from './apply'
 
@@ -74,7 +75,7 @@ async function createPlugin(
 
     // if key is not null, ensure persistence of subscription state
     // is possible and check if it is already persisted
-    if (key) {
+    if (key !== null) {
       subState = await getSubscriptionState({
         pg,
         metadataSchema,
@@ -99,12 +100,12 @@ async function createPlugin(
 
     // Map of shape name to lsn to changes
     // We accumulate changes for each lsn and then apply them all at once
-    const changes = new Map<string, Map<bigint, ChangeMessage<Row<unknown>>[]>>(
+    const changes = new Map<string, Map<Lsn, ChangeMessage<Row<unknown>>[]>>(
       Object.keys(shapes).map((key) => [key, new Map()]),
     )
 
     // We track the highest completely buffered lsn for each shape
-    const completeLsns = new Map<string, bigint>(
+    const completeLsns = new Map<string, Lsn>(
       Object.keys(shapes).map((key) => [key, BigInt(-1)]),
     )
 
@@ -114,7 +115,7 @@ async function createPlugin(
 
     // We also have to track the last lsn that we have committed
     // This is across all shapes
-    const lastCommittedLsn: bigint = subState?.last_lsn ?? BigInt(-1)
+    const lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
 
     // We need our own aborter to be able to abort the streams but still accept the
     // signals from the user for each shape, and so we monitor the user provided signal
@@ -137,14 +138,16 @@ async function createPlugin(
         shapes: Object.fromEntries(
           Object.entries(shapes).map(([key, shapeOptions]) => {
             const shapeMetadata = subState?.shape_metadata[key]
-            const offset = shapeMetadata?.offset ?? undefined
-            const handle = shapeMetadata?.handle ?? undefined
             return [
               key,
               {
                 ...shapeOptions.shape,
-                offset,
-                handle,
+                ...(shapeMetadata
+                  ? {
+                      offset: shapeMetadata.offset,
+                      handle: shapeMetadata.handle,
+                    }
+                  : {}),
                 signal: aborter.signal,
               } satisfies ShapeStreamOptions,
             ]
@@ -153,7 +156,7 @@ async function createPlugin(
       },
     )
 
-    const commitUpToLsn = async (targetLsn: bigint) => {
+    const commitUpToLsn = async (targetLsn: Lsn) => {
       // We need to collect all the messages for each shape that we need to commit
       const messagesToCommit = new Map<string, ChangeMessage<Row<unknown>>[]>(
         Object.keys(shapes).map((shapeName) => [shapeName, []]),
@@ -178,7 +181,7 @@ async function createPlugin(
         // Set the syncing flag to true during this transaction so that
         // user defined triggers on the table are able to chose how to run
         // during a sync
-        tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
+        await tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
 
         for (const [shapeName, initialMessages] of messagesToCommit.entries()) {
           const shape = shapes[shapeName]
@@ -222,7 +225,7 @@ async function createPlugin(
 
             // Do the `COPY FROM` with initial inserts
             if (initialInserts.length > 0) {
-              applyMessagesToTableWithCopy({
+              await applyMessagesToTableWithCopy({
                 pg: tx,
                 table: shape.table,
                 schema: shape.schema,
@@ -268,7 +271,7 @@ async function createPlugin(
           })
         }
         if (unsubscribed) {
-          tx.rollback()
+          await tx.rollback()
         }
       })
       if (debug) console.timeEnd('commit')
@@ -361,8 +364,8 @@ async function createPlugin(
       if (isCommitNeeded || isMustRefetchAndCatchingUp) {
         // We have new changes to commit
         commitUpToLsn(lowestCommittedLsn)
-        // Await a timeout to start a new task and  allow other connections to do work
-        await new Promise((resolve) => setTimeout(resolve, 0))
+        // Await a timeout to start a new task and allow other connections to do work
+        await new Promise((resolve) => setTimeout(resolve))
       }
     })
 
@@ -415,7 +418,9 @@ async function createPlugin(
     })
     return {
       unsubscribe: multiShapeSub.unsubscribe,
-      isUpToDate: multiShapeSub.isUpToDate,
+      get isUpToDate() {
+        return multiShapeSub.isUpToDate
+      },
       stream: multiShapeSub.streams.shape,
     }
   }
