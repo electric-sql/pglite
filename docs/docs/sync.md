@@ -135,6 +135,9 @@ It takes the following options as an object:
 - `onInitialSync: () => void`<br>
   A callback that is called when the initial sync is complete.
 
+- `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
+  A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.
+
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
 - `isUpToDate: boolean`<br>
@@ -173,6 +176,9 @@ The `syncShapesToTables` API allows syncing multiple shapes into multiple tables
 
 - `onInitialSync?: () => void`<br>
   Optional callback that fires when initial sync is complete for all shapes.
+
+- `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
+  A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.
 
 The returned sync object provides:
 
