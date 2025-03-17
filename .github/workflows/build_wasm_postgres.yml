@@ -64,7 +64,7 @@ jobs:
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           cd postgres-pglite
-          bash ./wasm-build.sh extra contrib
+          bash ./portable/portable.sh
 
       - name: Upload Postgres to Github artifacts
         id: upload-postgres-wasm
