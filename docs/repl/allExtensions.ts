@@ -1,5 +1,4 @@
 export { vector } from '@electric-sql/pglite/vector'
-export { adminpack } from '@electric-sql/pglite/contrib/adminpack'
 export { amcheck } from '@electric-sql/pglite/contrib/amcheck'
 export { auto_explain } from '@electric-sql/pglite/contrib/auto_explain'
 export { bloom } from '@electric-sql/pglite/contrib/bloom'

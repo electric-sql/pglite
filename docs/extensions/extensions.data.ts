@@ -35,21 +35,6 @@ const baseExtensions: Extension[] = [
     size: 21766,
   },
   {
-    name: 'adminpack',
-    description: `
-      adminpack provides a number of support functions which pgAdmin and other 
-      administration and management tools can use to provide additional functionality
-    `,
-    shortDescription:
-      'Support functions for pgAdmin and other administration tools.',
-    docs: 'https://www.postgresql.org/docs/current/adminpack.html',
-    tags: ['postgres extension', 'postgres/contrib'],
-    importPath: '@electric-sql/pglite/contrib/adminpack',
-    importName: 'adminpack',
-    core: true,
-    size: 4274,
-  },
-  {
     name: 'amcheck',
     description: `
       The amcheck module provides functions that allow you to verify the logical 
