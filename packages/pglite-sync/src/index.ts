@@ -159,9 +159,12 @@ async function createPlugin(
         Object.keys(shapes).map((shapeName) => [shapeName, []]),
       )
       for (const [shapeName, shapeChanges] of changes.entries()) {
+        const m2c = messagesToCommit.get(shapeName)!
         for (const lsn of shapeChanges.keys()) {
           if (lsn <= targetLsn) {
-            messagesToCommit.get(shapeName)!.push(...shapeChanges.get(lsn)!)
+            for (const message of shapeChanges.get(lsn)!) {
+              m2c.push(message)
+            }
             shapeChanges.delete(lsn)
           }
         }
