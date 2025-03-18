@@ -38,7 +38,7 @@ jobs:
     name: Install, build all and test as described in README
     runs-on: ubuntu-22.04
     env:
-      BUILD_CONFIG_FILE: postgres-pglite/pglite/.buildconfig
+      BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
       PGROOT: /tmp/pglite
       TOTAL_MEMORY: 128MB
       CMA_MB: 16
@@ -56,8 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm      
-
+          cache: pnpm
       - name: Install
         working-directory: ${{ github.workspace }}
         run: pnpm install
@@ -69,29 +68,44 @@ jobs:
         run: |
           pnpm build:all
 
-  build-and-test-pglite-dependencies:
-    name: Build and Test PGLite dependencies
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
       - name: Build packages
         run: pnpm --filter "pglite^..." build
       - name: Typecheck packages
         run: pnpm --filter "pglite^..." typecheck
       - name: Test packages
         run: pnpm --filter "pglite^..." test
+      
+      - name: Upload PGlite Interim to Github artifacts
+        id: upload-pglite-interim-build-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-interim-build-files
+          path: ./packages/pglite/release/**
+          retention-days: 60
 
-  build-wasm-postgres:
-    name: Build PGlite WASM dependencies
-    uses: ./.github/workflows/build_wasm_postgres.yml
-    secrets: inherit
+  # build-and-test-pglite-dependencies:
+  #   name: Build and Test PGLite dependencies
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: pnpm/action-setup@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: pnpm
+  #     - name: Install dependencies
+  #       run: pnpm install --frozen-lockfile
+  #     - name: Build packages
+  #       run: pnpm --filter "pglite^..." build
+  #     - name: Typecheck packages
+  #       run: pnpm --filter "pglite^..." typecheck
+  #     - name: Test packages
+  #       run: pnpm --filter "pglite^..." test
+
+  # build-wasm-postgres:
+  #   name: Build PGlite WASM dependencies
+  #   uses: ./.github/workflows/build_wasm_postgres.yml
+  #   secrets: inherit
 
   build-and-test-pglite:
     name: Build and Test PGLite
@@ -99,7 +113,7 @@ jobs:
     defaults:
       run:
         working-directory: ./packages/pglite
-    needs: [build-wasm-postgres, build-and-test-pglite-dependencies]
+    needs: [build-all]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -305,7 +319,7 @@ jobs:
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
     runs-on: ubuntu-22.04
-    needs: [build-wasm-postgres]
+    needs: [build-all]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

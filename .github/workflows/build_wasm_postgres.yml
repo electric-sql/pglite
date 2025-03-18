@@ -1,113 +1,113 @@
-name: Build WASM PGlite files
+# name: Build WASM PGlite files
 
-permissions:
-  pull-requests: write
-  issues: write
-  contents: read
+# permissions:
+#   pull-requests: write
+#   issues: write
+#   contents: read
 
-on:
-  workflow_call:
+# on:
+#   workflow_call:
 
-jobs:
-  build:
-    name: Build WASM Postgres
-    runs-on: ubuntu-24.04
-    env:
-#      BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
-      WASI_SDK_VERSION: 24.0.5
-      WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
-      SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
-      SDKROOT: /opt/python-wasm-sdk
-      SYS_PYTHON: /usr/bin/python3
-      PGROOT: /tmp/pglite
-      TOTAL_MEMORY: 180MB
-      CMA_MB: 12
-      DEBUG: false
-      contrib: contrib
-      extra: extra
-      EXTRA_EXT: vector
+# jobs:
+#   build:
+#     name: Build WASM Postgres
+#     runs-on: ubuntu-24.04
+#     env:
+# #      BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
+#       WASI_SDK_VERSION: 24.0.5
+#       WASI_SDK_ARCHIVE: python3.13-wasi-sdk-Ubuntu-22.04.tar.lz4
+#       SDK_ARCHIVE: python3.13-wasm-sdk-Ubuntu-22.04.tar.lz4
+#       SDKROOT: /opt/python-wasm-sdk
+#       SYS_PYTHON: /usr/bin/python3
+#       PGROOT: /tmp/pglite
+#       TOTAL_MEMORY: 180MB
+#       CMA_MB: 12
+#       DEBUG: false
+#       contrib: contrib
+#       extra: extra
+#       EXTRA_EXT: vector
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          submodules: true
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 1
+#           submodules: true
 
-#      - name: Set build parameters
-#        run: |
-#          cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
+# #      - name: Set build parameters
+# #        run: |
+# #          cat ${{ env.BUILD_CONFIG_FILE }} >> $GITHUB_ENV
 
-      - name: Restore cached build
-        id: cache-restore
-        uses: actions/cache@v4
-        with:
-          path: |
-            /tmp/fs
-            /tmp/sdk
-            postgresql/dist
-          key: build-cache-${{ hashFiles('postgres-pglite/.buildconfig') }}
+#       - name: Restore cached build
+#         id: cache-restore
+#         uses: actions/cache@v4
+#         with:
+#           path: |
+#             /tmp/fs
+#             /tmp/sdk
+#             postgresql/dist
+#           key: build-cache-${{ hashFiles('postgres-pglite/.buildconfig') }}
 
 
-      - name: Install emsdk/wasi+prebuilts and build
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        working-directory: /
-        run: |
-          sudo apt-get install -y lz4 wget pv bash
-          echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
-          curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
+#       - name: Install emsdk/wasi+prebuilts and build
+#         if: steps.cache-restore.outputs.cache-hit != 'true'
+#         working-directory: /
+#         run: |
+#           sudo apt-get install -y lz4 wget pv bash
+#           echo https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE
+#           curl -sL --retry 5 https://github.com/pygame-web/python-wasi-sdk/releases/download/$WASI_SDK_VERSION/$WASI_SDK_ARCHIVE | tar xvP --use-compress-program=lz4 | pv -p -l -s 23000 >/dev/null
 
-      - name: Build postgres and pglite-wasm via portable sdk
-        working-directory: ${{ github.workspace }}
-        env:
-          USE_ICU: false
-          DEBUG: false
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: |
-          cd postgres-pglite
-          bash ./portable/portable.sh
+#       - name: Build postgres and pglite-wasm via portable sdk
+#         working-directory: ${{ github.workspace }}
+#         env:
+#           USE_ICU: false
+#           DEBUG: false
+#         if: steps.cache-restore.outputs.cache-hit != 'true'
+#         run: |
+#           cd postgres-pglite
+#           bash ./portable/portable.sh
 
-      - name: Upload Postgres to Github artifacts
-        id: upload-postgres-wasm
-        uses: actions/upload-artifact@v4
-        with:
-          name: postgres-wasm
-          path: /tmp/fs/tmp/sdk/postgres-*.tar.gz
-          retention-days: 60
+#       - name: Upload Postgres to Github artifacts
+#         id: upload-postgres-wasm
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: postgres-wasm
+#           path: /tmp/fs/tmp/sdk/postgres-*.tar.gz
+#           retention-days: 60
 
-      - name: Upload PGlite Interim to Github artifacts
-        id: upload-pglite-interim-build-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-interim-build-files
-          path: ./packages/pglite/release/**
-          retention-days: 60
+#       # - name: Upload PGlite Interim to Github artifacts
+#       #   id: upload-pglite-interim-build-files
+#       #   uses: actions/upload-artifact@v4
+#       #   with:
+#       #     name: pglite-interim-build-files
+#       #     path: ./packages/pglite/release/**
+#       #     retention-days: 60
 
-      - name: Upload PGlite Web Interim to Github artifacts
-        id: upload-demos
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-web-build-files
-          path: /tmp/web/**
-          retention-days: 60
+#       - name: Upload PGlite Web Interim to Github artifacts
+#         id: upload-demos
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: pglite-web-build-files
+#           path: /tmp/web/**
+#           retention-days: 60
 
-      - name: Find Comment
-        uses: peter-evans/find-comment@v3
-        id: fc
-        if: github.event_name == 'pull_request'
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: Built bundles
+#       - name: Find Comment
+#         uses: peter-evans/find-comment@v3
+#         id: fc
+#         if: github.event_name == 'pull_request'
+#         with:
+#           issue-number: ${{ github.event.pull_request.number }}
+#           comment-author: 'github-actions[bot]'
+#           body-includes: Built bundles
 
-      - name: Create or update build outputs comment
-        uses: peter-evans/create-or-update-comment@v4
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            Built bundles:
-            - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
-            - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
-          edit-mode: replace
+#       - name: Create or update build outputs comment
+#         uses: peter-evans/create-or-update-comment@v4
+#         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+#         continue-on-error: true
+#         with:
+#           comment-id: ${{ steps.fc.outputs.comment-id }}
+#           issue-number: ${{ github.event.pull_request.number }}
+#           body: |
+#             Built bundles:
+#             - Postgres WASM: ${{ steps.upload-postgres-wasm.outputs.artifact-url }}
+#             - Interim build files: ${{ steps.upload-pglite-interim-build-files.outputs.artifact-url }}
+#           edit-mode: replace
