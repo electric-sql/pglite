@@ -98,6 +98,32 @@ describe('hooks', () => {
         },
       ])
     })
+
+    it('updates when query contains WHERE ANY', async () => {
+      const { useLiveQuery } = await import('../src')
+      await db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
+
+      const ids = await db.query(`SELECT id FROM test`)
+      expect(ids.rows.length).toBe(2)
+
+      const result = useLiveQuery(`SELECT * FROM test WHERE id = ANY($1)`, [
+        [1, 2],
+      ])
+      await flushPromises()
+
+      await db.exec(`UPDATE test SET name = 'foobar' WHERE name = 'test2';`)
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([
+        {
+          id: 1,
+          name: 'test1',
+        },
+        {
+          id: 2,
+          name: 'foobar',
+        },
+      ])
+    })
   })
 })
 function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
