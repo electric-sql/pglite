@@ -34,7 +34,11 @@ await pg.exec(`
 `)
 ```
 
-You can then use the `syncShapeToTable` method to sync a table from Electric:
+You can sync data from Electric using either the single table or multi-table API.
+
+### Single Table Sync
+
+Use the `syncShapeToTable` method to sync a single table from Electric:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
@@ -46,13 +50,47 @@ const shape = await pg.electric.syncShapeToTable({
   },
   table: 'todo',
   primaryKey: ['id'],
+  shapeKey: 'todo', // or null if the shape state does not need to be persisted
 })
+
+// Stop syncing when done
+shape.unsubscribe()
 ```
 
-To stop syncing you can call `unsubscribe` on the shape:
+### Multi-Table Sync
+
+The multi-table API ensures transactional consistency across tables by syncing updates that happened in a single transaction in Postgres within a single transaction in PGLite.
+
+Use the `syncShapesToTables` method to sync multiple tables simultaneously:
 
 ```ts
-shape.unsubscribe()
+const sync = await pg.electric.syncShapesToTables({
+  shapes: {
+    todos: {
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+    },
+    users: {
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'users' },
+      },
+      table: 'users',
+      primaryKey: ['id'],
+    },
+  },
+  key: 'my-sync', // or null if the sync state does not need to be persisted
+  onInitialSync: () => {
+    console.log('Initial sync complete')
+  },
+})
+
+// Stop syncing when done
+sync.unsubscribe()
 ```
 
 There is a full example you can run locally in the [GitHub repository](https://github.com/electric-sql/pglite/tree/main/packages/pglite-sync/example).
@@ -94,20 +132,11 @@ It takes the following options as an object:
 - `useCopy: boolean`<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
-- `commitGranularity: CommitGranularity`<br>
-  The granularity of the commit operation, defaults to `"up-to-date"`. Note that a commit will always be performed immediately on the `up-to-date` message.
-  Options:
-
-  - `"up-to-date"`: Commit all messages when the `up-to-date` message is received.
-  <!-- - `"transaction"`: Commit all messages within transactions as they were applied to the source Postgres. -->
-  - `"operation"`: Commit each message in its own transaction.
-  - `number`: Commit every N messages.
-
-- `commitThrottle: number`<br>
-  The number of milliseconds to wait between commits, defaults to `0`.
-
 - `onInitialSync: () => void`<br>
   A callback that is called when the initial sync is complete.
+
+- `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
+  A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.
 
 The returned `shape` object from the `syncShapeToTable` call has the following methods:
 
@@ -126,12 +155,44 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
 - `stream: ShapeStream`<br>
   The underlying `ShapeStream` instance, see the [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#shapestream) for more details.
 
+## syncShapesToTables API
+
+The `syncShapesToTables` API allows syncing multiple shapes into multiple tables simultaneously while maintaining transactional consistency. It takes the following options:
+
+- `shapes: Record<string, ShapeOptions>`<br>
+  An object mapping shape names to their configuration options. Each shape configuration includes:
+
+  - `shape: ShapeStreamOptions` - The shape stream specification
+  - `table: string` - The target table name
+  - `schema?: string` - Optional schema name (defaults to "public")
+  - `mapColumns?: MapColumns` - Optional column mapping
+  - `primaryKey: string[]` - Array of primary key columns
+
+- `key: string | null`<br>
+  Identifier for the multi-shape subscription. If provided, sync state will be persisted to allow resuming between sessions.
+
+- `useCopy?: boolean`<br>
+  Whether to use `COPY FROM` for faster initial data loading (defaults to false).
+
+- `onInitialSync?: () => void`<br>
+  Optional callback that fires when initial sync is complete for all shapes.
+
+- `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
+  A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.
+
+The returned sync object provides:
+
+- `isUpToDate: boolean`<br>
+  Whether all shapes have caught up to the main Postgres.
+
+- `streams: Record<string, ShapeStream>`<br>
+  Access to individual shape streams by their names.
+
+- `unsubscribe()`<br>
+  Stop syncing all shapes.
+
 ## Limitations
 
 - It is currently not possible to sync multiple shapes into the same table, as shape subscriptions require being able to drop all data and start over. We are working on a fix for this case, but the current version will throw if a shape is synced into the same table more than once.
 
 - In order to maintain transactional consistency, data is aggregated in-memory until we can guarantee its consistency, which might create a lot of memory usage for very large shapes. We are working on resolving this issue, and it is only a problem for initial syncing.
-
-## Sync using legacy Electric
-
-Prior to the development of the new sync engine, the previous version of PGlite and Electric also had a sync capability. You can [read more about it on our blog](https://electric-sql.com/blog/2024/05/14/electricsql-postgres-client-support).

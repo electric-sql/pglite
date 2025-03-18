@@ -28,12 +28,47 @@ await pg.exec(`
 `)
 ```
 
-You can then use the syncShapeToTable method to sync a table from Electric:
+You can sync data from Electric using either the single table or multi-table API:
+
+### Single Table Sync
+
+Use `syncShapeToTable` to sync a single table:
 
 ```ts
 const shape = await pg.electric.syncShapeToTable({
   shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+  shapeKey: 'todo', // or null if the shape state does not need to be persisted
   table: 'todo',
   primaryKey: ['id'],
 })
+```
+
+### Multi-Table Sync
+
+The multi-table API is useful when you need to sync related tables together, ensuring consistency across multiple tables by syncing updates that happened in as single transaction in Postgres within a single transaction in PGLite.
+
+Use `syncShapesToTables` to sync multiple tables simultaneously:
+
+```ts
+const sync = await pg.electric.syncShapesToTables({
+  shapes: {
+    todos: {
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'todo' },
+      table: 'todo',
+      primaryKey: ['id'],
+    },
+    users: {
+      shape: { url: 'http://localhost:3000/v1/shape', table: 'users' },
+      table: 'users',
+      primaryKey: ['id'],
+    }
+  },
+  key: 'my-sync', // or null if the sync state does not need to be persisted
+  onInitialSync: () => {
+    console.log('Initial sync complete')
+  }
+})
+
+// Unsubscribe when done
+sync.unsubscribe()
 ```

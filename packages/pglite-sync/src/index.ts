@@ -1,76 +1,31 @@
-import type { Offset, Row, ShapeStreamOptions } from '@electric-sql/client'
+import type { Row } from '@electric-sql/client'
 import {
   ChangeMessage,
-  ShapeStream,
   isChangeMessage,
   isControlMessage,
-  ShapeStreamInterface,
+  ShapeStreamOptions,
 } from '@electric-sql/client'
+import { MultiShapeStream } from '@electric-sql/experimental'
+import type { Extension, PGliteInterface } from '@electric-sql/pglite'
+import {
+  migrateSubscriptionMetadataTables,
+  getSubscriptionState,
+  updateSubscriptionState,
+  deleteSubscriptionState,
+  SubscriptionState,
+} from './subscriptionState'
 import type {
-  Extension,
-  PGliteInterface,
-  Transaction,
-} from '@electric-sql/pglite'
+  ElectricSyncOptions,
+  SyncShapesToTablesOptions,
+  SyncShapesToTablesResult,
+  SyncShapeToTableOptions,
+  SyncShapeToTableResult,
+  InsertChangeMessage,
+  Lsn,
+} from './types'
+import { applyMessageToTable, applyMessagesToTableWithCopy } from './apply'
 
-interface LegacyChangeMessage<T extends Row<unknown>> extends ChangeMessage<T> {
-  offset?: Offset
-}
-
-export type MapColumnsMap = Record<string, string>
-export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
-export type MapColumns = MapColumnsMap | MapColumnsFn
-export type ShapeKey = string
-
-type InsertChangeMessage = ChangeMessage<any> & {
-  headers: { operation: 'insert' }
-}
-
-/**
- * The granularity of the commit operation.
- * - `up-to-date`: Commit all messages when the `up-to-date` message is received.
- * - `operation`: Commit each message in its own transaction.
- * - `number`: Commit every N messages.
- * Note a commit will always be performed on the `up-to-date` message.
- */
-export type CommitGranularity =
-  | 'up-to-date'
-  // | 'transaction'  // Removed until Electric has stabilised on LSN metadata
-  | 'operation'
-  | number
-
-export interface SyncShapeToTableOptions {
-  shape: ShapeStreamOptions
-  table: string
-  schema?: string
-  mapColumns?: MapColumns
-  primaryKey: string[]
-  shapeKey: ShapeKey | null
-  useCopy?: boolean
-  commitGranularity?: CommitGranularity
-  commitThrottle?: number
-  onInitialSync?: () => void
-}
-
-export interface SyncShapeToTableResult {
-  unsubscribe: () => void
-  readonly isUpToDate: boolean
-  readonly shapeId: string
-  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
-  stream: ShapeStreamInterface
-}
-
-export interface SyncShapeToTableResult {
-  unsubscribe: () => void
-  readonly isUpToDate: boolean
-  readonly shapeId: string
-  subscribe: (cb: () => void, error: (err: Error) => void) => () => void
-  stream: ShapeStreamInterface
-}
-
-export interface ElectricSyncOptions {
-  debug?: boolean
-  metadataSchema?: string
-}
+export * from './types'
 
 async function createPlugin(
   pg: PGliteInterface,
@@ -79,11 +34,11 @@ async function createPlugin(
   const debug = options?.debug ?? false
   const metadataSchema = options?.metadataSchema ?? 'electric'
   const streams: Array<{
-    stream: ShapeStream
+    stream: MultiShapeStream<Record<string, Row<unknown>>>
     aborter: AbortController
   }> = []
 
-  // TODO: keeping an in-memory lock per table such that two
+  // We keep an in-memory lock per table such that two
   // shapes are not synced into one table - this will be
   // resolved by using reference counting in shadow tables
   const shapePerTableLock = new Map<string, void>()
@@ -92,113 +47,167 @@ async function createPlugin(
   const initMetadataTables = async () => {
     if (initMetadataTablesDone) return
     initMetadataTablesDone = true
-    await migrateShapeMetadataTables({
+    await migrateSubscriptionMetadataTables({
       pg,
       metadataSchema,
     })
   }
 
-  const namespaceObj = {
-    initMetadataTables,
-    syncShapeToTable: async (
-      options: SyncShapeToTableOptions,
-    ): Promise<SyncShapeToTableResult> => {
-      await initMetadataTables()
-      options = {
-        commitGranularity: 'up-to-date',
-        ...options,
-      }
-      if (shapePerTableLock.has(options.table)) {
-        throw new Error('Already syncing shape for table ' + options.table)
-      }
-      shapePerTableLock.set(options.table)
-      let shapeSubState: ShapeSubscriptionState | null = null
+  const syncShapesToTables = async ({
+    key,
+    shapes,
+    useCopy,
+    onInitialSync,
+  }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
+    let unsubscribed = false
+    await initMetadataTables()
 
-      // if shapeKey is not null, ensure persistence of shape subscription
-      // state is possible and check if it is already persisted
-      if (options.shapeKey) {
-        shapeSubState = await getShapeSubscriptionState({
-          pg,
-          metadataSchema,
-          shapeKey: options.shapeKey,
-        })
-        if (debug && shapeSubState) {
-          console.log('resuming from shape state', shapeSubState)
+    Object.values(shapes)
+      .filter((shape) => !shape.onMustRefetch) // Shapes with onMustRefetch bypass the lock
+      .forEach((shape) => {
+        if (shapePerTableLock.has(shape.table)) {
+          throw new Error('Already syncing shape for table ' + shape.table)
+        }
+        shapePerTableLock.set(shape.table)
+      })
+
+    let subState: SubscriptionState | null = null
+
+    // if key is not null, ensure persistence of subscription state
+    // is possible and check if it is already persisted
+    if (key !== null) {
+      subState = await getSubscriptionState({
+        pg,
+        metadataSchema,
+        subscriptionKey: key,
+      })
+      if (debug && subState) {
+        console.log('resuming from subscription state', subState)
+      }
+    }
+
+    // If it's a new subscription there is no state to resume from
+    const isNewSubscription = subState === null
+
+    // If it's a new subscription we can do a `COPY FROM` to insert the initial data
+    // TODO: in future when we can have multiple shapes on the same table we will need
+    // to make sure we only do a `COPY FROM` on the first shape on the table as they
+    // may overlap and so the insert logic will be wrong.
+    let doCopy = isNewSubscription && useCopy
+
+    // Track if onInitialSync has been called
+    let onInitialSyncCalled = false
+
+    // Map of shape name to lsn to changes
+    // We accumulate changes for each lsn and then apply them all at once
+    const changes = new Map<string, Map<Lsn, ChangeMessage<Row<unknown>>[]>>(
+      Object.keys(shapes).map((key) => [key, new Map()]),
+    )
+
+    // We track the highest completely buffered lsn for each shape
+    const completeLsns = new Map<string, Lsn>(
+      Object.keys(shapes).map((key) => [key, BigInt(-1)]),
+    )
+
+    // We track which shapes need a truncate
+    // These are truncated at the start of the next commit
+    const truncateNeeded = new Set<string>()
+
+    // We also have to track the last lsn that we have committed
+    // This is across all shapes
+    const lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
+
+    // We need our own aborter to be able to abort the streams but still accept the
+    // signals from the user for each shape, and so we monitor the user provided signal
+    // for each shape and abort our own aborter when the user signal is aborted.
+    const aborter = new AbortController()
+    Object.values(shapes)
+      .filter((shapeOptions) => !!shapeOptions.shape.signal)
+      .forEach((shapeOptions) => {
+        shapeOptions.shape.signal!.addEventListener(
+          'abort',
+          () => aborter.abort(),
+          {
+            once: true,
+          },
+        )
+      })
+
+    const multiShapeStream = new MultiShapeStream<Record<string, Row<unknown>>>(
+      {
+        shapes: Object.fromEntries(
+          Object.entries(shapes).map(([key, shapeOptions]) => {
+            const shapeMetadata = subState?.shape_metadata[key]
+            return [
+              key,
+              {
+                ...shapeOptions.shape,
+                ...(shapeMetadata
+                  ? {
+                      offset: shapeMetadata.offset,
+                      handle: shapeMetadata.handle,
+                    }
+                  : {}),
+                signal: aborter.signal,
+              } satisfies ShapeStreamOptions,
+            ]
+          }),
+        ),
+      },
+    )
+
+    const commitUpToLsn = async (targetLsn: Lsn) => {
+      // We need to collect all the messages for each shape that we need to commit
+      const messagesToCommit = new Map<string, ChangeMessage<Row<unknown>>[]>(
+        Object.keys(shapes).map((shapeName) => [shapeName, []]),
+      )
+      for (const [shapeName, shapeChanges] of changes.entries()) {
+        const messagesForShape = messagesToCommit.get(shapeName)!
+        for (const lsn of shapeChanges.keys()) {
+          if (lsn <= targetLsn) {
+            for (const message of shapeChanges.get(lsn)!) {
+              messagesForShape.push(message)
+            }
+            shapeChanges.delete(lsn)
+          }
         }
       }
 
-      // If it's a new subscription there is no state to resume from
-      const isNewSubscription = shapeSubState === null
+      await pg.transaction(async (tx) => {
+        if (debug) {
+          console.time('commit')
+        }
 
-      // If it's a new subscription we can do a `COPY FROM` to insert the initial data
-      // TODO: in future when we can have multiple shapes on the same table we will need
-      // to make sure we only do a `COPY FROM` on the first shape on the table as they
-      // may overlap and so the insert logic will be wrong.
-      let doCopy = isNewSubscription && options.useCopy
+        // Set the syncing flag to true during this transaction so that
+        // user defined triggers on the table are able to chose how to run
+        // during a sync
+        await tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
 
-      // Track if onInitialSync has been called
-      let onInitialSyncCalled = false
+        for (const [shapeName, initialMessages] of messagesToCommit.entries()) {
+          const shape = shapes[shapeName]
+          let messages = initialMessages
 
-      const aborter = new AbortController()
-      if (options.shape.signal) {
-        // we new to have our own aborter to be able to abort the stream
-        // but still accept the signal from the user
-        options.shape.signal.addEventListener('abort', () => aborter.abort(), {
-          once: true,
-        })
-      }
-      const stream = new ShapeStream({
-        ...options.shape,
-        ...(shapeSubState ?? {}),
-        signal: aborter.signal,
-      })
-
-      // TODO: this aggregates all messages in memory until an
-      // up-to-date message is received, which is not viable for
-      // _very_ large shapes - either we should commit batches to
-      // a temporary table and copy over the transactional result
-      // or use a separate connection to hold a long transaction
-      let messageAggregator: LegacyChangeMessage<any>[] = []
-      let truncateNeeded = false
-      // let lastLSN: string | null = null  // Removed until Electric has stabilised on LSN metadata
-      let lastCommitAt: number = 0
-
-      const commit = async () => {
-        if (messageAggregator.length === 0 && !truncateNeeded) return
-        const shapeHandle = stream.shapeHandle // The shape handle could change while we are committing
-        await pg.transaction(async (tx) => {
-          if (debug) {
-            console.log('committing message batch', messageAggregator.length)
-            console.time('commit')
-          }
-
-          // Set the syncing flag to true during this transaction so that
-          // user defined triggers on the table are able to chose how to run
-          // during a sync
-          tx.exec(`SET LOCAL ${metadataSchema}.syncing = true;`)
-
-          if (truncateNeeded) {
-            truncateNeeded = false
-            // TODO: sync into shadow table and reference count
-            // for now just clear the whole table - will break
-            // cases with multiple shapes on the same table
-            await tx.exec(`DELETE FROM ${options.table};`)
-            if (options.shapeKey) {
-              await deleteShapeSubscriptionState({
-                pg: tx,
-                metadataSchema,
-                shapeKey: options.shapeKey,
-              })
+          // If we need to truncate the table, do so
+          if (truncateNeeded.has(shapeName)) {
+            if (debug) {
+              console.log('truncating table', shape.table)
             }
+            if (shape.onMustRefetch) {
+              await shape.onMustRefetch(tx)
+            } else {
+              await tx.exec(`DELETE FROM ${shape.table};`)
+            }
+            truncateNeeded.delete(shapeName)
           }
 
+          // Apply the changes to the table
           if (doCopy) {
             // We can do a `COPY FROM` to insert the initial data
             // Split messageAggregator into initial inserts and remaining messages
             const initialInserts: InsertChangeMessage[] = []
             const remainingMessages: ChangeMessage<any>[] = []
             let foundNonInsert = false
-            for (const message of messageAggregator) {
+            for (const message of messages) {
               if (!foundNonInsert && message.headers.operation === 'insert') {
                 initialInserts.push(message as InsertChangeMessage)
               } else {
@@ -212,17 +221,17 @@ async function createPlugin(
               // of the remaining messages to be applied after the `COPY FROM`
               remainingMessages.unshift(initialInserts.pop()!)
             }
-            messageAggregator = remainingMessages
+            messages = remainingMessages
 
             // Do the `COPY FROM` with initial inserts
             if (initialInserts.length > 0) {
-              applyMessagesToTableWithCopy({
+              await applyMessagesToTableWithCopy({
                 pg: tx,
-                table: options.table,
-                schema: options.schema,
+                table: shape.table,
+                schema: shape.schema,
                 messages: initialInserts as InsertChangeMessage[],
-                mapColumns: options.mapColumns,
-                primaryKey: options.primaryKey,
+                mapColumns: shape.mapColumns,
+                primaryKey: shape.primaryKey,
                 debug,
               })
               // We don't want to do a `COPY FROM` again after that
@@ -230,153 +239,204 @@ async function createPlugin(
             }
           }
 
-          for (const changeMessage of messageAggregator) {
+          for (const changeMessage of messages) {
             await applyMessageToTable({
               pg: tx,
-              table: options.table,
-              schema: options.schema,
+              table: shape.table,
+              schema: shape.schema,
               message: changeMessage,
-              mapColumns: options.mapColumns,
-              primaryKey: options.primaryKey,
+              mapColumns: shape.mapColumns,
+              primaryKey: shape.primaryKey,
               debug,
             })
           }
+        }
 
-          if (
-            options.shapeKey &&
-            messageAggregator.length > 0 &&
-            shapeHandle !== undefined
-          ) {
-            await updateShapeSubscriptionState({
-              pg: tx,
-              metadataSchema,
-              shapeKey: options.shapeKey,
-              shapeId: shapeHandle,
-              lastOffset: getMessageOffset(
-                stream,
-                messageAggregator[messageAggregator.length - 1],
-              ),
-            })
+        if (key) {
+          await updateSubscriptionState({
+            pg: tx,
+            metadataSchema,
+            subscriptionKey: key,
+            shapeMetadata: Object.fromEntries(
+              Object.keys(shapes).map((shapeName) => [
+                shapeName,
+                {
+                  handle: multiShapeStream.shapes[shapeName].shapeHandle!,
+                  offset: multiShapeStream.shapes[shapeName].lastOffset,
+                },
+              ]),
+            ),
+            lastLsn: targetLsn,
+            debug,
+          })
+        }
+        if (unsubscribed) {
+          await tx.rollback()
+        }
+      })
+      if (debug) console.timeEnd('commit')
+      if (
+        onInitialSync &&
+        !onInitialSyncCalled &&
+        multiShapeStream.isUpToDate
+      ) {
+        onInitialSync()
+        onInitialSyncCalled = true
+      }
+    }
+
+    multiShapeStream.subscribe(async (messages) => {
+      if (unsubscribed) {
+        return
+      }
+      if (debug) {
+        console.log('received messages', messages.length)
+      }
+      messages.forEach((message) => {
+        const lastCommittedLsnForShape =
+          completeLsns.get(message.shape) ?? BigInt(-1) // we default to -1 if there are no previous changes
+        if (isChangeMessage(message)) {
+          const shapeChanges = changes.get(message.shape)!
+          const lsn =
+            typeof message.headers.lsn === 'string'
+              ? BigInt(message.headers.lsn)
+              : BigInt(0) // we default to 0 if there no lsn on the message
+          if (lsn <= lastCommittedLsnForShape) {
+            // We are replaying changes / have already seen this lsn
+            // skip and move on to the next message
+            return
           }
-        })
-        if (debug) console.timeEnd('commit')
-        messageAggregator = []
-        // Await a timeout to start a new task and  allow other connections to do work
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      }
-
-      const throttledCommit = async ({
-        reset = false,
-      }: { reset?: boolean } = {}) => {
-        const now = Date.now()
-        if (reset) {
-          // Reset the last commit time to 0, forcing the next commit to happen immediately
-          lastCommitAt = 0
-        }
-        if (options.commitThrottle && debug)
-          console.log(
-            'throttled commit: now:',
-            now,
-            'lastCommitAt:',
-            lastCommitAt,
-            'diff:',
-            now - lastCommitAt,
-          )
-        if (
-          options.commitThrottle &&
-          now - lastCommitAt < options.commitThrottle
-        ) {
-          // Skip this commit - messages will be caught by next commit or up-to-date
-          if (debug) console.log('skipping commit due to throttle')
-          return
-        }
-        lastCommitAt = now
-        await commit()
-      }
-
-      stream.subscribe(async (messages) => {
-        if (debug) console.log('sync messages received', messages)
-
-        for (const message of messages) {
-          if (isChangeMessage(message)) {
-            // Removed until Electric has stabilised on LSN metadata
-            // const newLSN = message.offset.split('_')[0]
-            // if (newLSN !== lastLSN) {
-            //   // If the LSN has changed and granularity is set to transaction
-            //   // we need to commit the current batch.
-            //   // This is done before we accumulate any more messages as they are
-            //   // part of the next transaction batch.
-            //   if (options.commitGranularity === 'transaction') {
-            //     await throttledCommit()
-            //   }
-            //   lastLSN = newLSN
-            // }
-
-            // accumulate change messages for committing all at once or in batches
-            messageAggregator.push(message)
-
-            if (options.commitGranularity === 'operation') {
-              // commit after each operation if granularity is set to operation
-              await throttledCommit()
-            } else if (typeof options.commitGranularity === 'number') {
-              // commit after every N messages if granularity is set to a number
-              if (messageAggregator.length >= options.commitGranularity) {
-                await throttledCommit()
+          const isLastOfLsn =
+            (message.headers.last as boolean | undefined) ?? false
+          if (!shapeChanges.has(lsn)) {
+            shapeChanges.set(lsn, [])
+          }
+          shapeChanges.get(lsn)!.push(message)
+          if (isLastOfLsn) {
+            completeLsns.set(message.shape, lsn)
+          }
+        } else if (isControlMessage(message)) {
+          switch (message.headers.control) {
+            case 'up-to-date': {
+              // Update the complete lsn for this shape
+              if (debug) {
+                console.log('received up-to-date', message)
               }
+              if (typeof message.headers.global_last_seen_lsn !== `string`) {
+                throw new Error(`global_last_seen_lsn is not a string`)
+              }
+              const globalLastSeenLsn = BigInt(
+                message.headers.global_last_seen_lsn,
+              )
+              if (globalLastSeenLsn <= lastCommittedLsnForShape) {
+                // We are replaying changes / have already seen this lsn
+                // skip and move on to the next message
+                return
+              }
+              completeLsns.set(message.shape, globalLastSeenLsn)
+              break
             }
-          } else if (isControlMessage(message)) {
-            switch (message.headers.control) {
-              case 'must-refetch':
-                // mark table as needing truncation before next batch commit
-                if (debug) console.log('refetching shape')
-                truncateNeeded = true
-                messageAggregator = []
-                break
-
-              case 'up-to-date':
-                // perform all accumulated changes and store stream state
-                await throttledCommit({ reset: true }) // not throttled, we want this to happen ASAP
-                if (
-                  isNewSubscription &&
-                  !onInitialSyncCalled &&
-                  options.onInitialSync
-                ) {
-                  options.onInitialSync()
-                  onInitialSyncCalled = true
-                }
-                break
+            case 'must-refetch': {
+              // Reset the changes for this shape
+              if (debug) {
+                console.log('received must-refetch', message)
+              }
+              const shapeChanges = changes.get(message.shape)!
+              shapeChanges.clear()
+              completeLsns.set(message.shape, BigInt(-1))
+              // Track that we need to truncate the table for this shape
+              truncateNeeded.add(message.shape)
+              break
             }
           }
         }
       })
+      const lowestCommittedLsn = Array.from(completeLsns.values()).reduce(
+        (m, e) => (e < m ? e : m), // Min of all complete lsn
+      )
 
-      streams.push({
-        stream,
-        aborter,
-      })
-      const unsubscribe = () => {
-        stream.unsubscribeAll()
-        aborter.abort()
-        shapePerTableLock.delete(options.table)
+      // Normal commit needed
+      const isCommitNeeded = lowestCommittedLsn > lastCommittedLsn
+      // We've had a must-refetch and are catching up on one of the shape
+      const isMustRefetchAndCatchingUp =
+        lowestCommittedLsn >= lastCommittedLsn && truncateNeeded.size > 0
+
+      if (isCommitNeeded || isMustRefetchAndCatchingUp) {
+        // We have new changes to commit
+        commitUpToLsn(lowestCommittedLsn)
+        // Await a timeout to start a new task and allow other connections to do work
+        await new Promise((resolve) => setTimeout(resolve))
       }
-      return {
-        unsubscribe,
-        get isUpToDate() {
-          return stream.isUpToDate
-        },
-        get shapeId() {
-          return stream.shapeHandle!
-        },
-        stream,
-        subscribe: (cb: () => void, error: (err: Error) => void) => {
-          return stream.subscribe(() => {
-            if (stream.isUpToDate) {
-              cb()
-            }
-          }, error)
-        },
+    })
+
+    streams.push({
+      stream: multiShapeStream,
+      aborter,
+    })
+    const unsubscribe = () => {
+      if (debug) {
+        console.log('unsubscribing')
       }
-    },
+      unsubscribed = true
+      multiShapeStream.unsubscribeAll()
+      aborter.abort()
+      for (const shape of Object.values(shapes)) {
+        shapePerTableLock.delete(shape.table)
+      }
+    }
+    return {
+      unsubscribe,
+      get isUpToDate() {
+        return multiShapeStream.isUpToDate
+      },
+      streams: Object.fromEntries(
+        Object.keys(shapes).map((shapeName) => [
+          shapeName,
+          multiShapeStream.shapes[shapeName],
+        ]),
+      ),
+    }
+  }
+
+  const syncShapeToTable = async (
+    options: SyncShapeToTableOptions,
+  ): Promise<SyncShapeToTableResult> => {
+    const multiShapeSub = await syncShapesToTables({
+      shapes: {
+        shape: {
+          shape: options.shape,
+          table: options.table,
+          schema: options.schema,
+          mapColumns: options.mapColumns,
+          primaryKey: options.primaryKey,
+          onMustRefetch: options.onMustRefetch,
+        },
+      },
+      key: options.shapeKey,
+      useCopy: options.useCopy,
+      onInitialSync: options.onInitialSync,
+    })
+    return {
+      unsubscribe: multiShapeSub.unsubscribe,
+      get isUpToDate() {
+        return multiShapeSub.isUpToDate
+      },
+      stream: multiShapeSub.streams.shape,
+    }
+  }
+  const deleteSubscription = async (key: string) => {
+    await deleteSubscriptionState({
+      pg,
+      metadataSchema,
+      subscriptionKey: key,
+    })
+  }
+
+  const namespaceObj = {
+    initMetadataTables,
+    syncShapesToTables,
+    syncShapeToTable,
+    deleteSubscription,
   }
 
   const close = async () => {
@@ -411,281 +471,4 @@ export function electricSync(options?: ElectricSyncOptions) {
       }
     },
   } satisfies Extension
-}
-
-function doMapColumns(
-  mapColumns: MapColumns,
-  message: ChangeMessage<any>,
-): Record<string, any> {
-  if (typeof mapColumns === 'function') {
-    return mapColumns(message)
-  } else {
-    const mappedColumns: Record<string, any> = {}
-    for (const [key, value] of Object.entries(mapColumns)) {
-      mappedColumns[key] = message.value[value]
-    }
-    return mappedColumns
-  }
-}
-
-interface ApplyMessageToTableOptions {
-  pg: PGliteInterface | Transaction
-  table: string
-  schema?: string
-  message: ChangeMessage<any>
-  mapColumns?: MapColumns
-  primaryKey: string[]
-  debug: boolean
-}
-
-async function applyMessageToTable({
-  pg,
-  table,
-  schema = 'public',
-  message,
-  mapColumns,
-  primaryKey,
-  debug,
-}: ApplyMessageToTableOptions) {
-  const data = mapColumns ? doMapColumns(mapColumns, message) : message.value
-
-  switch (message.headers.operation) {
-    case 'insert': {
-      if (debug) console.log('inserting', data)
-      const columns = Object.keys(data)
-      return await pg.query(
-        `
-            INSERT INTO "${schema}"."${table}"
-            (${columns.map((s) => '"' + s + '"').join(', ')})
-            VALUES
-            (${columns.map((_v, i) => '$' + (i + 1)).join(', ')})
-          `,
-        columns.map((column) => data[column]),
-      )
-    }
-
-    case 'update': {
-      if (debug) console.log('updating', data)
-      const columns = Object.keys(data).filter(
-        // we don't update the primary key, they are used to identify the row
-        (column) => !primaryKey.includes(column),
-      )
-      if (columns.length === 0) return // nothing to update
-      return await pg.query(
-        `
-            UPDATE "${schema}"."${table}"
-            SET ${columns
-              .map((column, i) => '"' + column + '" = $' + (i + 1))
-              .join(', ')}
-            WHERE ${primaryKey
-              .map(
-                (column, i) =>
-                  '"' + column + '" = $' + (columns.length + i + 1),
-              )
-              .join(' AND ')}
-          `,
-        [
-          ...columns.map((column) => data[column]),
-          ...primaryKey.map((column) => data[column]),
-        ],
-      )
-    }
-
-    case 'delete': {
-      if (debug) console.log('deleting', data)
-      return await pg.query(
-        `
-            DELETE FROM "${schema}"."${table}"
-            WHERE ${primaryKey
-              .map((column, i) => '"' + column + '" = $' + (i + 1))
-              .join(' AND ')}
-          `,
-        [...primaryKey.map((column) => data[column])],
-      )
-    }
-  }
-}
-
-interface ApplyMessagesToTableWithCopyOptions {
-  pg: PGliteInterface | Transaction
-  table: string
-  schema?: string
-  messages: InsertChangeMessage[]
-  mapColumns?: MapColumns
-  primaryKey: string[]
-  debug: boolean
-}
-
-async function applyMessagesToTableWithCopy({
-  pg,
-  table,
-  schema = 'public',
-  messages,
-  mapColumns,
-  debug,
-}: ApplyMessagesToTableWithCopyOptions) {
-  if (debug) console.log('applying messages with COPY')
-
-  // Map the messages to the data to be inserted
-  const data: Record<string, any>[] = messages.map((message) =>
-    mapColumns ? doMapColumns(mapColumns, message) : message.value,
-  )
-
-  // Get column names from the first message
-  const columns = Object.keys(data[0])
-
-  // Create CSV data
-  const csvData = data
-    .map((message) => {
-      return columns
-        .map((column) => {
-          const value = message[column]
-          // Escape double quotes and wrap in quotes if necessary
-          if (
-            typeof value === 'string' &&
-            (value.includes(',') || value.includes('"') || value.includes('\n'))
-          ) {
-            return `"${value.replace(/"/g, '""')}"`
-          }
-          return value === null ? '\\N' : value
-        })
-        .join(',')
-    })
-    .join('\n')
-  const csvBlob = new Blob([csvData], { type: 'text/csv' })
-
-  // Perform COPY FROM
-  await pg.query(
-    `
-      COPY "${schema}"."${table}" (${columns.map((c) => `"${c}"`).join(', ')})
-      FROM '/dev/blob'
-      WITH (FORMAT csv, NULL '\\N')
-    `,
-    [],
-    {
-      blob: csvBlob,
-    },
-  )
-
-  if (debug) console.log(`Inserted ${messages.length} rows using COPY`)
-}
-
-interface GetShapeSubscriptionStateOptions {
-  readonly pg: PGliteInterface | Transaction
-  readonly metadataSchema: string
-  readonly shapeKey: ShapeKey
-}
-
-type ShapeSubscriptionState = Pick<ShapeStreamOptions, 'handle' | 'offset'>
-
-async function getShapeSubscriptionState({
-  pg,
-  metadataSchema,
-  shapeKey,
-}: GetShapeSubscriptionStateOptions): Promise<ShapeSubscriptionState | null> {
-  const result = await pg.query<{ shape_id: string; last_offset: string }>(
-    `
-    SELECT shape_id, last_offset
-    FROM ${subscriptionMetadataTableName(metadataSchema)}
-    WHERE shape_key = $1
-  `,
-    [shapeKey],
-  )
-
-  if (result.rows.length === 0) return null
-
-  const { shape_id: handle, last_offset: offset } = result.rows[0]
-  return {
-    handle,
-    offset: offset as Offset,
-  }
-}
-
-interface UpdateShapeSubscriptionStateOptions {
-  pg: PGliteInterface | Transaction
-  metadataSchema: string
-  shapeKey: ShapeKey
-  shapeId: string
-  lastOffset: Offset
-}
-
-async function updateShapeSubscriptionState({
-  pg,
-  metadataSchema,
-  shapeKey,
-  shapeId,
-  lastOffset,
-}: UpdateShapeSubscriptionStateOptions) {
-  await pg.query(
-    `
-    INSERT INTO ${subscriptionMetadataTableName(metadataSchema)} (shape_key, shape_id, last_offset)
-    VALUES ($1, $2, $3)
-    ON CONFLICT(shape_key)
-    DO UPDATE SET
-      shape_id = EXCLUDED.shape_id,
-      last_offset = EXCLUDED.last_offset;
-  `,
-    [shapeKey, shapeId, lastOffset],
-  )
-}
-
-interface DeleteShapeSubscriptionStateOptions {
-  pg: PGliteInterface | Transaction
-  metadataSchema: string
-  shapeKey: ShapeKey
-}
-
-async function deleteShapeSubscriptionState({
-  pg,
-  metadataSchema,
-  shapeKey,
-}: DeleteShapeSubscriptionStateOptions) {
-  await pg.query(
-    `DELETE FROM ${subscriptionMetadataTableName(metadataSchema)} WHERE shape_key = $1`,
-    [shapeKey],
-  )
-}
-
-interface MigrateShapeMetadataTablesOptions {
-  pg: PGliteInterface | Transaction
-  metadataSchema: string
-}
-
-async function migrateShapeMetadataTables({
-  pg,
-  metadataSchema,
-}: MigrateShapeMetadataTablesOptions) {
-  await pg.exec(
-    `
-    SET ${metadataSchema}.syncing = false;
-    CREATE SCHEMA IF NOT EXISTS "${metadataSchema}";
-    CREATE TABLE IF NOT EXISTS ${subscriptionMetadataTableName(metadataSchema)} (
-      shape_key TEXT PRIMARY KEY,
-      shape_id TEXT NOT NULL,
-      last_offset TEXT NOT NULL
-    );
-    `,
-  )
-}
-
-function subscriptionMetadataTableName(metadatSchema: string) {
-  return `"${metadatSchema}"."${subscriptionTableName}"`
-}
-
-const subscriptionTableName = `shape_subscriptions_metadata`
-
-function getMessageOffset(
-  stream: ShapeStream,
-  message: LegacyChangeMessage<any>,
-): Offset {
-  if (message.offset) {
-    return message.offset
-  } else if (
-    message.headers.lsn !== undefined &&
-    message.headers.op_position !== undefined
-  ) {
-    return `${message.headers.lsn}_${message.headers.op_position}` as Offset
-  } else {
-    return stream.lastOffset
-  }
 }

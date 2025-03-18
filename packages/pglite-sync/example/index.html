@@ -10,7 +10,8 @@
           "@electric-sql/pglite": "../../pglite/dist/index.js",
           "@electric-sql/pglite/live": "../../pglite/dist/live/index.js",
           "@electric-sql/pglite/sync": "../dist/index.js",
-          "@electric-sql/client": "../node_modules/@electric-sql/client/dist/index.browser.mjs"
+          "@electric-sql/client": "../node_modules/@electric-sql/client/dist/index.browser.mjs",
+          "@electric-sql/experimental": "../node_modules/@electric-sql/experimental/dist/index.browser.mjs"
         }
       }
     </script>
@@ -56,7 +57,7 @@
   window.pg = pg;
   
   await pg.electric.syncShapeToTable({
-    shape: { url: "http://localhost:3000/v1/shape", table: "test" },
+    shape: { url: "http://localhost:3000/v1/shape", params: { table: "test" } },
     table: "test",
     primaryKey: ["id"],
   });
