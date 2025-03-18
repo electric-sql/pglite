@@ -1,9 +1,9 @@
 {
-  "name": "pglite-react",
+  "name": "pglite-react-example",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
-  "private": false,
+  "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
