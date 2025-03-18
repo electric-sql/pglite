@@ -1,5 +1,12 @@
 # @electric-sql/pglite-tools
 
+## 0.2.3
+
+### Patch Changes
+
+- 8545760: pg_dump error messages set on the thrown Error
+- d26e658: Run a DEALLOCATE ALL after each pg_dump to cleanup the prepared statements.
+
 ## 0.2.2
 
 ### Patch Changes
