@@ -127,7 +127,7 @@ await testEsmAndCjs(async (importType) => {
         where extname = 'vector'
       `)
 
-      expect(res.rows[0].oid).toBeGreaterThan(16384)
+      expect(res.rows[0].oid).toBeGreaterThanOrEqual(16384)
     })
   })
 })
