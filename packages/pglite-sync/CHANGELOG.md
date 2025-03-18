@@ -1,5 +1,13 @@
 # @electric-sql/pglite-sync
 
+## 0.3.0
+
+### Minor Changes
+
+- f50b5f8: Support for multi shape transactional sync via a new `syncShapesToTables` api. This ensures that all changes from Postgres that were part of the same transaction are applied together as a single transaction to the local PGlite database.
+
+  Note: The `commitGranularity` and `commitThrottle` options have been removed due to incompatibility with the new transactional sync mechanism.
+
 ## 0.2.20
 
 ### Patch Changes
