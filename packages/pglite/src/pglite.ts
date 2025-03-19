@@ -428,10 +428,10 @@ export class PGlite
         }
       }
     }
-    
+
     // (re)start backed after possible initdb boot/single.
     this.mod._pgl_backend()
-    
+
     // Sync any changes back to the persisted store (if there is one)
     // TODO: only sync here if initdb did init db.
     await this.syncToFs()
