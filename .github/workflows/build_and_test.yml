@@ -83,30 +83,6 @@ jobs:
           path: ./packages/pglite/release/**
           retention-days: 60
 
-  # build-and-test-pglite-dependencies:
-  #   name: Build and Test PGLite dependencies
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: pnpm/action-setup@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         cache: pnpm
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-  #     - name: Build packages
-  #       run: pnpm --filter "pglite^..." build
-  #     - name: Typecheck packages
-  #       run: pnpm --filter "pglite^..." typecheck
-  #     - name: Test packages
-  #       run: pnpm --filter "pglite^..." test
-
-  # build-wasm-postgres:
-  #   name: Build PGlite WASM dependencies
-  #   uses: ./.github/workflows/build_wasm_postgres.yml
-  #   secrets: inherit
-
   build-and-test-pglite:
     name: Build and Test PGLite
     runs-on: ubuntu-22.04
@@ -273,6 +249,8 @@ jobs:
             cp -r ${PGLITE}/dist/* /tmp/web/dist/
             cp -r ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
+            rm /tmp/web/examples/pglite-tools
+            cp -r ${{ github.workspace }}/packages/pglite-tools/dist/* /tmp/web/examples/pglite-tools/
 
       - name: Build docs
         working-directory: ./docs
