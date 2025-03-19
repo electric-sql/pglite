@@ -254,7 +254,7 @@ jobs:
       - name: Download PGlite web build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-web-build-files
+          name: pglite-interim-build-files
           path: /tmp/web
 
       - name: Build demo site
