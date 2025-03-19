@@ -3,9 +3,11 @@ import { PGlite } from '../dist/index.js'
 
 describe('fts', () => {
   it('basic', async () => {
-    const db = await PGlite.create({"debug":false})
+    const db = await PGlite.create({ debug: false })
 
-    let ret = await db.query(`SELECT 'a fat cat sat on a mat and ate a fat rat'::tsvector @@ 'cat & rat'::tsquery AS match;`)
+    let ret = await db.query(
+      `SELECT 'a fat cat sat on a mat and ate a fat rat'::tsvector @@ 'cat & rat'::tsquery AS match;`,
+    )
     expect(ret.rows).toEqual([{ match: true }])
 
     ret = await db.query(`
@@ -118,7 +120,6 @@ describe('fts', () => {
         rank: 0.2,
         title: 'The Fat Cats and Rats',
       },
-
     ])
 
     ret = await db.query(`

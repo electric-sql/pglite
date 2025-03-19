@@ -413,7 +413,9 @@ export class PGlite
           // initdb found db+user, and we switched to that user
         } else {
           // TODO: invalid user for db?
-          throw new Error(`INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`)
+          throw new Error(
+            `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
+          )
         }
       } else {
         // initdb has created a new database for us, we can only continue if we are
