@@ -261,9 +261,17 @@ jobs:
         env: 
           PGSRC: ${{ github.workspace }}/postgres-pglite
           POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
+          PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
-          NO_SDK_CHECK=true SDKROOT=/opt/python-wasm-sdk bash ./postgres-pglite/pglite/cibuild.sh demo-site
+            mkdir -p /tmp/web/x-term-repl
+            mv /tmp/web/* /tmp/web/x-term-repl/
+            mkdir -p /tmp/web/dist
+            mkdir -p /tmp/web/examples
+            mkdir -p /tmp/web/benchmark
+            cp -r ${PGLITE}/dist/* /tmp/web/dist/
+            cp -r ${PGLITE}/examples/* /tmp/web/examples/
+            cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
 
       - name: Build docs
         working-directory: ./docs
