@@ -262,11 +262,9 @@ jobs:
             mkdir -p /tmp/x-term-repl
             mv /tmp/web/* /tmp/x-term-repl/
             mv /tmp/x-term-repl/ /tmp/web/
-            mkdir -p /tmp/web/dist
-            mkdir -p /tmp/web/examples
+            mv ${PGLITE}/dist /tmp/web/
+            mv ${PGLITE}/examples /tmp/web/
             mkdir -p /tmp/web/benchmark
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
             rm /tmp/web/examples/pglite-tools
             mv /tmp/pglite-tools /tmp/web/examples/
