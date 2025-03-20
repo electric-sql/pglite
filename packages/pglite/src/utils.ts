@@ -14,7 +14,7 @@ export async function startWasmDownload() {
   if (IN_NODE || wasmDownloadPromise) {
     return
   }
-  const moduleUrl = new URL('../release/postgres.wasm', import.meta.url)
+  const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
   wasmDownloadPromise = fetch(moduleUrl)
 }
 
@@ -39,7 +39,7 @@ export async function instantiateWasm(
       module: module || cachedWasmModule!,
     }
   }
-  const moduleUrl = new URL('../release/postgres.wasm', import.meta.url)
+  const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
   if (IN_NODE) {
     const fs = await import('fs/promises')
     const buffer = await fs.readFile(moduleUrl)
@@ -68,7 +68,7 @@ export async function instantiateWasm(
 }
 
 export async function getFsBundle(): Promise<ArrayBuffer> {
-  const fsBundleUrl = new URL('../release/postgres.data', import.meta.url)
+  const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
   if (IN_NODE) {
     const fs = await import('fs/promises')
     const fileData = await fs.readFile(fsBundleUrl)

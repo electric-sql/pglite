@@ -38,14 +38,14 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_description_o_c_o_index',
-      relpages: 24,
+      relpages: 23,
     },
     {
       bt_index_check: '',
       relname: 'pg_attribute_relid_attnam_index',
-      relpages: 16,
+      relpages: 15,
     },
-    { bt_index_check: '', relname: 'pg_proc_oid_index', relpages: 11 },
+    { bt_index_check: '', relname: 'pg_proc_oid_index', relpages: 12 },
     {
       bt_index_check: '',
       relname: 'pg_attribute_relid_attnum_index',
@@ -54,7 +54,7 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_depend_depender_index',
-      relpages: 9,
+      relpages: 10,
     },
     {
       bt_index_check: '',
