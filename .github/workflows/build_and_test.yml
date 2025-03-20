@@ -39,14 +39,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
-      PGROOT: /tmp/pglite
-      TOTAL_MEMORY: 128MB
-      CMA_MB: 16
-      DEBUG: false
-      OBJDUMP: true
-      contrib: contrib
-      extra: extra
-      EXTRA_EXT: vector
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +80,7 @@ jobs:
         with:
           name: pglite-tools-dist-files
           path: ./packages/pglite-tools/dist/**
-          retention-days: 60        
+          retention-days: 60
 
   build-and-test-pglite:
     name: Build and Test PGLite
@@ -245,12 +237,12 @@ jobs:
         with:
           name: pglite-interim-build-files
           path: /tmp/web
-      
+
       - name: Download PGlite tools build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-tools-dist-files
-          path: /tmp/pglite-tools 
+          path: /tmp/pglite-tools
 
       - name: Build demo site
         env:
