@@ -726,7 +726,7 @@ describe('pglite-sync', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
@@ -827,7 +827,7 @@ describe('pglite-sync', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
