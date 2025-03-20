@@ -80,7 +80,7 @@ export async function applyMessageToTable({
   }
 }
 
-export interface ApplyMessagesToTableWithCopyOptions {
+export interface BulkApplyMessagesToTableOptions {
   pg: PGliteInterface | Transaction
   table: string
   schema?: string
@@ -90,6 +90,59 @@ export interface ApplyMessagesToTableWithCopyOptions {
   debug: boolean
 }
 
+export async function applyMessagesToTableWithJson({
+  pg,
+  table,
+  schema = 'public',
+  messages,
+  mapColumns,
+  debug,
+}: BulkApplyMessagesToTableOptions) {
+  if (debug) console.log('applying messages with json_to_recordset')
+
+  // Map the messages to the data to be inserted
+  const data: Record<string, object>[] = messages.map((message) =>
+    mapColumns ? doMapColumns(mapColumns, message) : message.value,
+  )
+  const columns = (
+    await pg.query<{
+      column_name: string
+      udt_name: string
+      data_type: string
+    }>(
+      `
+        SELECT column_name, udt_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = $1 AND table_schema = $2
+      `,
+      [table, schema],
+    )
+  ).rows.filter((x) =>
+    Object.prototype.hasOwnProperty.call(data[0], x.column_name),
+  )
+
+  const MAX = 10_000
+  for (let i = 0; i < data.length; i += MAX) {
+    const maxdata = data.slice(i, i + MAX)
+    await pg.query(
+      `
+        INSERT INTO "${schema}"."${table}"
+        SELECT x.* from json_to_recordset($1) as x(${columns
+          .map(
+            (x) =>
+              `${x.column_name} ${x.udt_name.replace(/^_/, '')}` +
+              (x.data_type === 'ARRAY' ? `[]` : ''),
+          )
+          .join(', ')})
+      `,
+      [maxdata],
+    )
+  }
+
+  if (debug)
+    console.log(`Inserted ${messages.length} rows using json_to_recordset`)
+}
+
 export async function applyMessagesToTableWithCopy({
   pg,
   table,
@@ -97,7 +150,7 @@ export async function applyMessagesToTableWithCopy({
   messages,
   mapColumns,
   debug,
-}: ApplyMessagesToTableWithCopyOptions) {
+}: BulkApplyMessagesToTableOptions) {
   if (debug) console.log('applying messages with COPY')
 
   // Map the messages to the data to be inserted
