@@ -61,9 +61,9 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm install
 
-      - name: Build 
+      - name: Build
         working-directory: ${{ github.workspace }}
-        env: 
+        env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
           pnpm build:all
@@ -74,7 +74,7 @@ jobs:
         run: pnpm --filter "pglite^..." typecheck
       - name: Test packages
         run: pnpm --filter "pglite^..." test
-      
+
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v4
@@ -234,12 +234,13 @@ jobs:
           path: /tmp/web
 
       - name: Build demo site
-        env: 
+        env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
           POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
           PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
+            pnpm run ts:build
             mkdir -p /tmp/x-term-repl
             mv /tmp/web/* /tmp/x-term-repl/
             mv /tmp/x-term-repl/ /tmp/web/
@@ -249,7 +250,6 @@ jobs:
             cp -r ${PGLITE}/dist/* /tmp/web/dist/
             cp -r ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
-            rm /tmp/web/examples/pglite-tools
             cp -r ${{ github.workspace }}/packages/pglite-tools/dist/* /tmp/web/examples/pglite-tools/
 
       - name: Build docs
