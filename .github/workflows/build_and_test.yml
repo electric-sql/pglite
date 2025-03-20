@@ -251,8 +251,7 @@ jobs:
           PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
-            mkdir -p /tmp/web/x-term-repl /tmp/web/examples/ /tmp/web/dist /tmp/web/benchmark
-            mv /tmp/x-term-repl/* /tmp/web/x-term-repl/
+            mkdir -p /tmp/web/examples/ /tmp/web/dist /tmp/web/benchmark
             mv ${PGLITE}/dist/* /tmp/web/dist/
             mv ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
