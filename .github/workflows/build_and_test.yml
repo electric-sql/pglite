@@ -251,14 +251,12 @@ jobs:
           PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
-            mkdir -p /tmp/x-term-repl
-            mv /tmp/web/* /tmp/x-term-repl/
-            mv /tmp/x-term-repl/ /tmp/web/
-            mv ${PGLITE}/dist /tmp/web/
-            mv ${PGLITE}/examples /tmp/web/
-            mkdir -p /tmp/web/benchmark
+            mkdir -p /tmp/web/x-term-repl /tmp/web/examples/ /tmp/web/dist /tmp/web/benchmark
+            mv /tmp/x-term-repl/* /tmp/web/x-term-repl/
+            mv ${PGLITE}/dist/* /tmp/web/dist/
+            mv ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
-            rm /tmp/web/examples/pglite-tools
+            rm -rf /tmp/web/examples/pglite-tools
             mv /tmp/pglite-tools /tmp/web/examples/
 
       - name: Build docs
