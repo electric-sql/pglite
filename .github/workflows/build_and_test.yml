@@ -82,6 +82,13 @@ jobs:
           name: pglite-interim-build-files
           path: ./packages/pglite/release/**
           retention-days: 60
+      - name: Upload PGlite tools to Gihub artifacts
+        id: upload-pglite-tools-dist-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-tools-dist-files
+          path: ./packages/pglite-tools/dist/**
+          retention-days: 60        
 
   build-and-test-pglite:
     name: Build and Test PGLite
@@ -232,6 +239,12 @@ jobs:
         with:
           name: pglite-interim-build-files
           path: /tmp/web
+      
+      - name: Download PGlite tools build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-dist-files
+          path: /tmp/pglite-tools 
 
       - name: Build demo site
         env: 
@@ -250,7 +263,7 @@ jobs:
             cp -r ${PGLITE}/examples/* /tmp/web/examples/
             cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
             rm /tmp/web/examples/pglite-tools
-            cp -r ${{ github.workspace }}/packages/pglite-tools/dist/* /tmp/web/examples/pglite-tools/
+            mv /tmp/pglite-tools /tmp/web/examples/
 
       - name: Build docs
         working-directory: ./docs
