@@ -61,9 +61,9 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm install
 
-      - name: Build 
+      - name: Build
         working-directory: ${{ github.workspace }}
-        env: 
+        env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
           pnpm build:all
@@ -74,7 +74,7 @@ jobs:
         run: pnpm --filter "pglite^..." typecheck
       - name: Test packages
         run: pnpm --filter "pglite^..." test
-      
+
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v4
@@ -222,6 +222,12 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Download PGlite WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-interim-build-files
+          path: ./packages/pglite/release
+
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -247,7 +253,7 @@ jobs:
           path: /tmp/pglite-tools 
 
       - name: Build demo site
-        env: 
+        env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
           POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
           PGLITE: ${{ github.workspace }}/packages/pglite
