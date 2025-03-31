@@ -136,7 +136,7 @@ It takes the following options as an object:
   - `csv`: Insert the data using the `COPY FROM` command with a CSV file.
   - `json`: Insert the data using a query that is passed the data as a JSON array.
 
-- `useCopy: boolean`*(DEPRECATED: use `initialInsertMethod` instead)*<br>
+- `useCopy: boolean`_(DEPRECATED: use `initialInsertMethod` instead)_<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
 - `onInitialSync: () => void`<br>
@@ -185,7 +185,7 @@ The `syncShapesToTables` API allows syncing multiple shapes into multiple tables
   - `csv`: Insert the data using the `COPY FROM` command with a CSV file.
   - `json`: Insert the data using a query that is passed the data as a JSON array.
 
-- `useCopy: boolean`*(DEPRECATED: use `initialInsertMethod` instead)*<br>
+- `useCopy: boolean`_(DEPRECATED: use `initialInsertMethod` instead)_<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
 - `onInitialSync?: () => void`<br>
