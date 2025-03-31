@@ -129,7 +129,14 @@ It takes the following options as an object:
 - `shapeKey: string | null`<br>
   Identifier for the shape subscription - If not null, stream state will be persisted along with the data in order to allow resuming the stream between sessions.
 
-- `useCopy: boolean`<br>
+- `initialInsertMethod: 'insert' | 'csv' | 'json'`<br>
+  The method to use for the initial sync, defaults to `'insert'`. The `csv` and `json` options provide a performance boost during the initial sync.
+
+  - `insert`: Insert the data row by row.
+  - `csv`: Insert the data using the `COPY FROM` command with a CSV file.
+  - `json`: Insert the data using a query that is passed the data as a JSON array.
+
+- `useCopy: boolean`*(DEPRECATED: use `initialInsertMethod` instead)*<br>
   Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
 - `onInitialSync: () => void`<br>
@@ -171,8 +178,15 @@ The `syncShapesToTables` API allows syncing multiple shapes into multiple tables
 - `key: string | null`<br>
   Identifier for the multi-shape subscription. If provided, sync state will be persisted to allow resuming between sessions.
 
-- `useCopy?: boolean`<br>
-  Whether to use `COPY FROM` for faster initial data loading (defaults to false).
+- `initialInsertMethod: 'insert' | 'csv' | 'json'`<br>
+  The method to use for the initial sync, defaults to `'insert'`. The `csv` and `json` options provide a performance boost during the initial sync.
+
+  - `insert`: Insert the data row by row.
+  - `csv`: Insert the data using the `COPY FROM` command with a CSV file.
+  - `json`: Insert the data using a query that is passed the data as a JSON array.
+
+- `useCopy: boolean`*(DEPRECATED: use `initialInsertMethod` instead)*<br>
+  Whether to use the `COPY FROM` command to insert the initial data, defaults to `false`. This process may be faster than inserting row by row as it combines the inserts into a CSV to be passed to Postgres.
 
 - `onInitialSync?: () => void`<br>
   Optional callback that fires when initial sync is complete for all shapes.
