@@ -237,16 +237,16 @@ importers:
         specifier: workspace:^
         version: link:../pglite-react
       '@uiw/codemirror-theme-github':
-        specifier: ^4.23.5
+        specifier: 4.23.5
         version: 4.23.5(@codemirror/language@6.10.3)(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)
       '@uiw/codemirror-theme-xcode':
-        specifier: ^4.23.5
+        specifier: 4.23.5
         version: 4.23.5(@codemirror/language@6.10.3)(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)
       '@uiw/codemirror-themes':
-        specifier: ^4.23.5
+        specifier: 4.23.5
         version: 4.23.5(@codemirror/language@6.10.3)(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)
       '@uiw/react-codemirror':
-        specifier: ^4.23.5
+        specifier: 4.23.5
         version: 4.23.5(@babel/runtime@7.25.7)(@codemirror/autocomplete@6.18.1(@codemirror/language@6.10.3)(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)(@lezer/common@1.2.2))(@codemirror/language@6.10.3)(@codemirror/lint@6.8.2)(@codemirror/search@6.5.6)(@codemirror/state@6.4.1)(@codemirror/theme-one-dark@6.1.2)(@codemirror/view@6.34.1)(codemirror@6.0.1(@lezer/common@1.2.2))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       psql-describe:
         specifier: ^0.1.5
@@ -2014,7 +2014,6 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
