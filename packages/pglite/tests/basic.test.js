@@ -552,7 +552,7 @@ await testEsmAndCjs(async (importType) => {
 
     it('use same param multiple times', async () => {
       const db = new PGlite()
-      
+
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -560,16 +560,22 @@ await testEsmAndCjs(async (importType) => {
         last_name TEXT
       );
       `)
-      await db.query('INSERT INTO test (first_name, last_name) VALUES ($1, $1);', ['Duck'])
-      const result = await db.query('SELECT first_name, last_name FROM test WHERE first_name = $1 AND last_name = $1', ['Duck'])
+      await db.query(
+        'INSERT INTO test (first_name, last_name) VALUES ($1, $1);',
+        ['Duck'],
+      )
+      const result = await db.query(
+        'SELECT first_name, last_name FROM test WHERE first_name = $1 AND last_name = $1',
+        ['Duck'],
+      )
       expect(result).toEqual({
-        rows: [ { first_name: 'Duck', last_name: 'Duck' } ],
+        rows: [{ first_name: 'Duck', last_name: 'Duck' }],
         fields: [
           { name: 'first_name', dataTypeID: 25 },
-          { name: 'last_name', dataTypeID: 25 }
+          { name: 'last_name', dataTypeID: 25 },
         ],
-        affectedRows: 0
+        affectedRows: 0,
       })
-    })    
+    })
   })
 })
