@@ -12,7 +12,7 @@ export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
 export type MapColumns = MapColumnsMap | MapColumnsFn
 export type SubscriptionKey = string
-export type InitialInsertMethod = 'insert' | 'csv' | 'json'
+export type InitialInsertMethod = 'insert' | 'csv' | 'json' | 'useCopy'
 
 export interface ShapeToTableOptions {
   shape: ShapeStreamOptions
@@ -26,6 +26,7 @@ export interface ShapeToTableOptions {
 export interface SyncShapesToTablesOptions {
   key: string | null
   shapes: Record<string, ShapeToTableOptions>
+  useCopy?: boolean // DEPRECATED: use initialInsertMethod instead
   initialInsertMethod?: InitialInsertMethod
   onInitialSync?: () => void
 }
@@ -43,6 +44,7 @@ export interface SyncShapeToTableOptions {
   mapColumns?: MapColumns
   primaryKey: string[]
   shapeKey: string | null
+  useCopy?: boolean // DEPRECATED: use initialInsertMethod instead
   initialInsertMethod?: InitialInsertMethod
   onInitialSync?: () => void
   onMustRefetch?: (tx: Transaction) => Promise<void>

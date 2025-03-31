@@ -2409,7 +2409,7 @@ newline', false);
     await types_syncer('insert')
   }, 60000)
 
-  const many_syncer = async (initialInsertMethod: InitialInsertMethod) => {
+  const many_syncer = async (method: InitialInsertMethod | 'useCopy') => {
     const numTodos = 150000
 
     // Batch the inserts to Postgres
@@ -2438,6 +2438,16 @@ newline', false);
       await pgClient.query(query, params)
     }
 
+    // We want to test the deprecated useCopy option, but also the new initialInsertMethod option
+    let useCopy: boolean | undefined = undefined
+    let initialInsertMethod: InitialInsertMethod | undefined = undefined
+    if (method === 'useCopy') {
+      useCopy = true
+      initialInsertMethod = undefined
+    } else {
+      initialInsertMethod = method
+    }
+
     // Set up sync with COPY enabled for efficiency
     const shape = await pg.electric.syncShapeToTable({
       shape: {
@@ -2447,6 +2457,7 @@ newline', false);
       },
       table: 'todo',
       primaryKey: ['id'],
+      useCopy,
       initialInsertMethod,
       shapeKey: 'large_todo_sync_test',
     })
@@ -2516,4 +2527,8 @@ newline', false);
   it('handles initial sync of 150,000 rows', async () => {
     await many_syncer('insert')
   }, 360000)
+
+  it('handles initial sync of 150,000 rows with the deprecated useCopy option', async () => {
+    await many_syncer('useCopy')
+  }, 60000)
 })

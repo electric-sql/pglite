@@ -60,6 +60,7 @@ async function createPlugin(
   const syncShapesToTables = async ({
     key,
     shapes,
+    useCopy = false, // DEPRECATED: use initialInsertMethod instead
     initialInsertMethod = 'insert',
     onInitialSync,
   }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
@@ -92,6 +93,15 @@ async function createPlugin(
 
     // If it's a new subscription there is no state to resume from
     const isNewSubscription = subState === null
+
+    // We need to handle the old useCopy option
+    // We check if it's set to true and initialInsertMethod is it's default value
+    if (useCopy && initialInsertMethod === 'insert') {
+      initialInsertMethod = 'csv'
+      console.warn(
+        'The useCopy option is deprecated and will be removed in a future version. Use initialInsertMethod instead.',
+      )
+    }
 
     // If it's a new subscription we can do a `COPY FROM` to insert the initial data
     // TODO: in future when we can have multiple shapes on the same table we will need
@@ -421,6 +431,7 @@ async function createPlugin(
         },
       },
       key: options.shapeKey,
+      useCopy: options.useCopy, // DEPRECATED: use initialInsertMethod instead
       initialInsertMethod: options.initialInsertMethod,
       onInitialSync: options.onInitialSync,
     })
