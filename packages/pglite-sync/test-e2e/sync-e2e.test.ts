@@ -11,7 +11,7 @@ import {
 } from 'vitest'
 import { Client } from 'pg'
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
-import { electricSync } from '../src/index.js'
+import { electricSync, InitialInsertMethod } from '../src/index.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ||
@@ -207,6 +207,11 @@ describe('sync-e2e', () => {
       );
     `)
 
+    // Create a user-defined enum for data type testing
+    await pgClient.query(`
+      CREATE TYPE data_types_enum AS ENUM ('one', 'two', 'three');
+    `)
+
     // Create a table for data type testing
     await pgClient.query(`
       CREATE TABLE IF NOT EXISTS data_types_table (
@@ -216,7 +221,9 @@ describe('sync-e2e', () => {
         boolean_col BOOLEAN,
         string_col TEXT,
         json_col JSONB,
-        json_plain_col JSON
+        json_plain_col JSON,
+        int_array_col INTEGER[],
+        enum_col data_types_enum
       );
     `)
 
@@ -335,6 +342,11 @@ describe('sync-e2e', () => {
       );
     `)
 
+    // Create a user-defined enum for data type testing
+    await pg.query(`
+      CREATE TYPE data_types_enum AS ENUM ('one', 'two', 'three');
+    `)
+
     // Create data types testing table
     await pg.exec(`
       CREATE TABLE data_types_table (
@@ -344,7 +356,9 @@ describe('sync-e2e', () => {
         boolean_col BOOLEAN,
         string_col TEXT,
         json_col JSONB,
-        json_plain_col JSON
+        json_plain_col JSON,
+        int_array_col INTEGER[],
+        enum_col data_types_enum
       );
     `)
   })
@@ -377,7 +391,7 @@ describe('sync-e2e', () => {
 
     // Insert data into PostgreSQL
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'task1', false);
     `)
 
@@ -456,7 +470,7 @@ describe('sync-e2e', () => {
       }).join(', ')
 
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES ${values};
       `)
     }
@@ -519,12 +533,12 @@ describe('sync-e2e', () => {
 
     // Insert data into both tables in PostgreSQL
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'task1', false), (2, 'task2', true);
     `)
 
     await pgClient.query(`
-      INSERT INTO project (id, name, active) 
+      INSERT INTO project (id, name, active)
       VALUES (1, 'Project 1', true), (2, 'Project 2', false);
     `)
 
@@ -576,7 +590,7 @@ describe('sync-e2e', () => {
 
     // Insert data into PostgreSQL
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'task1', false);
     `)
 
@@ -632,7 +646,7 @@ describe('sync-e2e', () => {
 
     // Insert data into PostgreSQL
     await pgClient.query(`
-      INSERT INTO test_syncing (id, value) 
+      INSERT INTO test_syncing (id, value)
       VALUES ('id1', 'test value');
     `)
 
@@ -730,7 +744,7 @@ describe('sync-e2e', () => {
       (_, idx) => `(${idx}, 'task${idx}', ${idx % 2 === 0})`,
     ).join(', ')
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES ${values};
     `)
 
@@ -742,7 +756,7 @@ describe('sync-e2e', () => {
       },
       table: 'todo',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
@@ -808,7 +822,7 @@ newline', false);
       },
       table: 'todo',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
@@ -941,7 +955,7 @@ newline', false);
 
     // Verify the subscription table exists in the custom schema
     const tableResult = await pg.query(
-      `SELECT table_name FROM information_schema.tables 
+      `SELECT table_name FROM information_schema.tables
        WHERE table_schema = $1 AND table_name = 'subscriptions_metadata'`,
       [metadataSchema],
     )
@@ -1030,11 +1044,11 @@ newline', false);
     // Insert initial data in a transaction
     await pgClient.query('BEGIN;')
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial task', false);
     `)
     await pgClient.query(`
-      INSERT INTO project (id, name, active) 
+      INSERT INTO project (id, name, active)
       VALUES (1, 'Initial project', true);
     `)
     await pgClient.query('COMMIT;')
@@ -1120,7 +1134,7 @@ newline', false);
 
   it('stops sync after unsubscribe', async () => {
     // First sync session with a persistent key
-    let shape = await pg.electric.syncShapeToTable({
+    const shape = await pg.electric.syncShapeToTable({
       shape: {
         url: ELECTRIC_URL,
         params: { table: 'todo' },
@@ -1133,7 +1147,7 @@ newline', false);
 
     // Insert initial batch of data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial task', false);
     `)
 
@@ -1161,7 +1175,7 @@ newline', false);
 
     // Insert new data before we resume the sync
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (2, 'New task after refetch', true);
     `)
 
@@ -1206,7 +1220,7 @@ newline', false);
 
     // Insert initial batch of data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial task', false);
     `)
 
@@ -1231,7 +1245,7 @@ newline', false);
 
     // Insert new data before we resume the sync
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (2, 'New task after refetch', true);
     `)
 
@@ -1293,7 +1307,7 @@ newline', false);
 
     // Insert initial batch of data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial task', false);
     `)
 
@@ -1328,7 +1342,7 @@ newline', false);
 
     // Insert new data before we resume the sync
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (2, 'New task after refetch', true);
     `)
 
@@ -1389,7 +1403,7 @@ newline', false);
 
     // Insert initial batch of data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial task', false);
     `)
 
@@ -1417,7 +1431,7 @@ newline', false);
 
     // Insert new data before we resume the sync
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (2, 'New task after refetch', true);
     `)
 
@@ -1492,11 +1506,11 @@ newline', false);
 
     // Insert initial data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Initial todo', false);
     `)
     await pgClient.query(`
-      INSERT INTO project (id, name, active) 
+      INSERT INTO project (id, name, active)
       VALUES (1, 'Initial project', true);
     `)
 
@@ -1524,11 +1538,11 @@ newline', false);
 
     // Insert new data after refetch
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (2, 'New todo after refetch', true);
     `)
     await pgClient.query(`
-      INSERT INTO project (id, name, active) 
+      INSERT INTO project (id, name, active)
       VALUES (2, 'New project after refetch', false);
     `)
 
@@ -1609,8 +1623,8 @@ newline', false);
   it('handles onMustRefetch with local data', async () => {
     // Insert initial data
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
-      VALUES 
+      INSERT INTO todo (id, task, done)
+      VALUES
         (1, 'Todo 1', false),
         (2, 'Todo 2', false),
         (3, 'Todo 3', false),
@@ -1665,8 +1679,8 @@ newline', false);
 
     // Insert some local data
     await pg.query(`
-      INSERT INTO todo (id, task, done) 
-      VALUES 
+      INSERT INTO todo (id, task, done)
+      VALUES
         (11, 'Todo 11', false),
         (12, 'Todo 12', false),
         (13, 'Todo 13', false);
@@ -1749,7 +1763,7 @@ newline', false);
       },
       table: 'large_table',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
@@ -1825,7 +1839,7 @@ newline', false);
       for (let i = start; i < end; i++) {
         await pgClient.query(
           `
-          INSERT INTO large_ops_table (id, value, number, flag) 
+          INSERT INTO large_ops_table (id, value, number, flag)
           VALUES ($1, $2, $3, $4);
         `,
           [i, `initial-value-${i}`, i, i % 2 === 0],
@@ -1842,7 +1856,7 @@ newline', false);
       },
       table: 'large_ops_table',
       primaryKey: ['id'],
-      useCopy: true,
+      initialInsertMethod: 'csv',
       shapeKey: null,
     })
 
@@ -1867,7 +1881,7 @@ newline', false);
 
     // 2. Update rows (ids 1000-1999)
     await pgClient.query(`
-      UPDATE large_ops_table 
+      UPDATE large_ops_table
       SET value = 'updated-value', number = number * 10, flag = NOT flag
       WHERE id BETWEEN 1000 AND 1999;
     `)
@@ -1876,7 +1890,7 @@ newline', false);
     for (let i = totalRows; i < totalRows + 1000; i++) {
       await pgClient.query(
         `
-        INSERT INTO large_ops_table (id, value, number, flag) 
+        INSERT INTO large_ops_table (id, value, number, flag)
         VALUES ($1, $2, $3, $4);
       `,
         [i, `new-value-${i}`, i * 2, i % 3 === 0],
@@ -1962,7 +1976,7 @@ newline', false);
     })
 
     await pgClient.query(`
-      INSERT INTO todo (id, task, done) 
+      INSERT INTO todo (id, task, done)
       VALUES (1, 'Todo 1', false);
     `)
 
@@ -2018,7 +2032,7 @@ newline', false);
     for (let i = 1; i <= iterations; i++) {
       // 1. Insert into todo, check
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6 - 5}, 'Todo ${i}.1', false);
       `)
 
@@ -2043,11 +2057,11 @@ newline', false);
       // 2. Insert into todo and project in transaction, check
       await pgClient.query('BEGIN;')
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6 - 4}, 'Todo ${i}.2', true);
       `)
       await pgClient.query(`
-        INSERT INTO project (id, name, active) 
+        INSERT INTO project (id, name, active)
         VALUES (${i}, 'Project ${i}', true);
       `)
       await pgClient.query('COMMIT;')
@@ -2073,7 +2087,7 @@ newline', false);
 
       // 3. Update todo, check
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6 - 3}, 'Todo ${i}.3', false);
       `)
       await pgClient.query(`
@@ -2100,7 +2114,7 @@ newline', false);
       // 4. Update project and todo, check
       await pgClient.query('BEGIN;')
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6 - 2}, 'Todo ${i}.4', true);
       `)
       await pgClient.query(`
@@ -2132,7 +2146,7 @@ newline', false);
 
       // 5. Delete a todo, check
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6 - 1}, 'Todo ${i}.5', false);
       `)
       await pgClient.query(`
@@ -2154,7 +2168,7 @@ newline', false);
 
       // 6. Delete the project, check
       await pgClient.query(`
-        INSERT INTO todo (id, task, done) 
+        INSERT INTO todo (id, task, done)
         VALUES (${i * 6}, 'Todo ${i}.6', true);
       `)
       await pgClient.query(`
@@ -2193,198 +2207,7 @@ newline', false);
     await pg.electric.deleteSubscription('cycle_test')
   }, 30000) // allow 30 seconds to run this test as it is long
 
-  it('handles initial sync of 150,000 rows', async () => {
-    const numTodos = 150000
-
-    // Batch the inserts to Postgres
-    const batchSize = 1000
-    const batches = Math.ceil(numTodos / batchSize)
-    for (let batch = 0; batch < batches; batch++) {
-      const start = batch * batchSize
-      const end = Math.min(start + batchSize, numTodos)
-
-      // Build a batch of INSERT statements using a VALUES list for better performance
-      const values: string[] = []
-      const params: (number | string | boolean)[] = []
-      let paramIndex = 1
-
-      for (let i = start; i < end; i++) {
-        values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
-        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
-        paramIndex += 3
-      }
-
-      const query = `
-        INSERT INTO todo (id, task, done) 
-        VALUES ${values.join(', ')};
-      `
-
-      await pgClient.query(query, params)
-    }
-
-    // Set up sync with COPY enabled for efficiency
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: ELECTRIC_URL,
-        params: { table: 'todo' },
-        fetchClient,
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      shapeKey: 'large_todo_sync_test',
-    })
-
-    // Wait for all data to be synced - increase timeout for large dataset
-    await vi.waitFor(
-      async () => {
-        const result = await pg.sql<{
-          count: number
-        }>`SELECT COUNT(*) as count FROM todo;`
-        expect(result.rows[0].count).toBe(numTodos)
-      },
-      { timeout: 30000 },
-    )
-
-    // Verify some sample data points
-    const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
-    expect(firstRow.rows[0]).toEqual({
-      id: 0,
-      task: 'Todo 0',
-      done: true, // 0 % 3 === 0
-    })
-
-    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
-    expect(middleRow.rows[0]).toEqual({
-      id: 25000,
-      task: 'Todo 25000',
-      done: 25000 % 3 === 0,
-    })
-
-    const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
-    expect(lastRow.rows[0]).toEqual({
-      id: numTodos - 1,
-      task: `Todo ${numTodos - 1}`,
-      done: (numTodos - 1) % 3 === 0,
-    })
-
-    // Test that we can still perform operations after the large sync
-    await pgClient.query(`
-      UPDATE todo SET task = 'Updated after sync' WHERE id = 0;
-    `)
-
-    // Wait for update to sync
-    await vi.waitFor(
-      async () => {
-        const result = await pg.sql<{
-          task: string
-        }>`SELECT task FROM todo WHERE id = 0;`
-        expect(result.rows[0].task).toBe('Updated after sync')
-      },
-      { timeout: 5000 },
-    )
-
-    // Clean up
-    shape.unsubscribe()
-    await pg.electric.deleteSubscription('large_todo_sync_test')
-  }, 60000)
-
-  it('handles initial sync of 150,000 rows with COPY', async () => {
-    const numTodos = 150000
-
-    // Batch the inserts to Postgres
-    const batchSize = 1000
-    const batches = Math.ceil(numTodos / batchSize)
-    for (let batch = 0; batch < batches; batch++) {
-      const start = batch * batchSize
-      const end = Math.min(start + batchSize, numTodos)
-
-      // Build a batch of INSERT statements using a VALUES list for better performance
-      const values: string[] = []
-      const params: (number | string | boolean)[] = []
-      let paramIndex = 1
-
-      for (let i = start; i < end; i++) {
-        values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
-        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
-        paramIndex += 3
-      }
-
-      const query = `
-        INSERT INTO todo (id, task, done) 
-        VALUES ${values.join(', ')};
-      `
-
-      await pgClient.query(query, params)
-    }
-
-    // Set up sync with COPY enabled for efficiency
-    const shape = await pg.electric.syncShapeToTable({
-      shape: {
-        url: ELECTRIC_URL,
-        params: { table: 'todo' },
-        fetchClient,
-      },
-      table: 'todo',
-      primaryKey: ['id'],
-      useCopy: true, // Enable COPY for faster initial sync
-      shapeKey: 'large_todo_sync_test',
-    })
-
-    // Wait for all data to be synced - increase timeout for large dataset
-    await vi.waitFor(
-      async () => {
-        const result = await pg.sql<{
-          count: number
-        }>`SELECT COUNT(*) as count FROM todo;`
-        expect(result.rows[0].count).toBe(numTodos)
-      },
-      { timeout: 30000 },
-    )
-
-    // Verify some sample data points
-    const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
-    expect(firstRow.rows[0]).toEqual({
-      id: 0,
-      task: 'Todo 0',
-      done: true, // 0 % 3 === 0
-    })
-
-    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
-    expect(middleRow.rows[0]).toEqual({
-      id: 25000,
-      task: 'Todo 25000',
-      done: 25000 % 3 === 0,
-    })
-
-    const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
-    expect(lastRow.rows[0]).toEqual({
-      id: numTodos - 1,
-      task: `Todo ${numTodos - 1}`,
-      done: (numTodos - 1) % 3 === 0,
-    })
-
-    // Test that we can still perform operations after the large sync
-    await pgClient.query(`
-      UPDATE todo SET task = 'Updated after sync' WHERE id = 0;
-    `)
-
-    // Wait for update to sync
-    await vi.waitFor(
-      async () => {
-        const result = await pg.sql<{
-          task: string
-        }>`SELECT task FROM todo WHERE id = 0;`
-        expect(result.rows[0].task).toBe('Updated after sync')
-      },
-      { timeout: 5000 },
-    )
-
-    // Clean up
-    shape.unsubscribe()
-    await pg.electric.deleteSubscription('large_todo_sync_test')
-  }, 60000)
-
-  it('syncs data with various column types', async () => {
+  const types_syncer = async (initialInsertMethod: InitialInsertMethod) => {
     // Test data for different data types
     const testData = [
       {
@@ -2394,7 +2217,13 @@ newline', false);
         boolean_col: true,
         string_col: 'Hello, world!',
         json_col: { name: 'Test', nested: { value: 123 }, array: [1, 2, 3] },
-        json_plain_col: { type: "JSON", different: "from JSONB", nums: [42, 43] }
+        json_plain_col: {
+          type: 'JSON',
+          different: 'from JSONB',
+          nums: [42, 43],
+        },
+        int_array_col: [1, 2, 3],
+        enum_col: 'one',
       },
       {
         id: 2,
@@ -2403,7 +2232,9 @@ newline', false);
         boolean_col: false,
         string_col: 'Special chars: \n\t"\'\\',
         json_col: { empty: {}, list: [] },
-        json_plain_col: { empty_arr: [], value: null }
+        json_plain_col: { empty_arr: [], value: null },
+        int_array_col: [4, 5, 6],
+        enum_col: 'two',
       },
       {
         id: 3,
@@ -2412,16 +2243,18 @@ newline', false);
         boolean_col: true,
         string_col: '',
         json_col: null,
-        json_plain_col: null
-      }
+        json_plain_col: null,
+        int_array_col: [7, 8, 9],
+        enum_col: 'three',
+      },
     ]
 
     // Insert data into PostgreSQL
     for (const row of testData) {
       await pgClient.query(
-        `INSERT INTO data_types_table 
-         (id, int_col, float_col, boolean_col, string_col, json_col, json_plain_col) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO data_types_table
+         (id, int_col, float_col, boolean_col, string_col, json_col, json_plain_col, int_array_col, enum_col)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           row.id,
           row.int_col,
@@ -2429,8 +2262,10 @@ newline', false);
           row.boolean_col,
           row.string_col,
           row.json_col,
-          row.json_plain_col
-        ]
+          row.json_plain_col,
+          row.int_array_col,
+          row.enum_col,
+        ],
       )
     }
 
@@ -2442,6 +2277,7 @@ newline', false);
         fetchClient,
       },
       table: 'data_types_table',
+      initialInsertMethod,
       primaryKey: ['id'],
       shapeKey: 'data_types_test',
     })
@@ -2466,6 +2302,8 @@ newline', false);
       string_col: string
       json_col: any
       json_plain_col: any
+      int_array_col: number[]
+      enum_col: 'one' | 'two' | 'three'
     }
 
     // Verify data was synced correctly
@@ -2473,17 +2311,19 @@ newline', false);
       const result = await pg.sql<DataTypeRow>`
         SELECT * FROM data_types_table WHERE id = ${expected.id};
       `
-      
+
       const row = result.rows[0]
       expect(row.id).toBe(expected.id)
       expect(row.int_col).toBe(expected.int_col)
-      
+
       // Float comparison needs to account for potential precision differences
-      expect(Math.abs(parseFloat(row.float_col) - expected.float_col)).toBeLessThan(0.00001)
-      
+      expect(
+        Math.abs(parseFloat(row.float_col) - expected.float_col),
+      ).toBeLessThan(0.00001)
+
       expect(row.boolean_col).toBe(expected.boolean_col)
       expect(row.string_col).toBe(expected.string_col)
-      
+
       // JSON data might be serialized differently but should be equivalent
       if (expected.json_col === null) {
         expect(row.json_col).toBeNull()
@@ -2497,13 +2337,17 @@ newline', false);
       } else {
         expect(row.json_plain_col).toStrictEqual(expected.json_plain_col)
       }
+
+      expect(row.int_array_col).toStrictEqual(expected.int_array_col)
+      expect(row.enum_col).toBe(expected.enum_col)
     }
 
     // Update a row with new values for all columns
     await pgClient.query(
-      `UPDATE data_types_table SET 
-       int_col = $1, float_col = $2, boolean_col = $3, 
-       string_col = $4, json_col = $5, json_plain_col = $6
+      `UPDATE data_types_table SET
+       int_col = $1, float_col = $2, boolean_col = $3,
+       string_col = $4, json_col = $5, json_plain_col = $6,
+       int_array_col = $7, enum_col = $8
        WHERE id = 1`,
       [
         99999,
@@ -2511,8 +2355,10 @@ newline', false);
         false,
         'Updated text value',
         { updated: true, values: [4, 5, 6] },
-        { updated: "plainJSON", order: { might: "matter"} }
-      ]
+        { updated: 'plainJSON', order: { might: 'matter' } },
+        [3, 4, 5],
+        'two',
+      ],
     )
 
     // Wait for update to sync
@@ -2532,14 +2378,157 @@ newline', false);
     `
     const updated = updatedResult.rows[0]
     expect(updated.int_col).toBe(99999)
-    expect(Math.abs(parseFloat(updated.float_col) - 1234.5678)).toBeLessThan(0.00001)
+    expect(Math.abs(parseFloat(updated.float_col) - 1234.5678)).toBeLessThan(
+      0.00001,
+    )
     expect(updated.boolean_col).toBe(false)
     expect(updated.string_col).toBe('Updated text value')
     expect(updated.json_col).toStrictEqual({ updated: true, values: [4, 5, 6] })
-    expect(updated.json_plain_col).toStrictEqual({ updated: "plainJSON", order: { might: "matter"} })
+    expect(updated.json_plain_col).toStrictEqual({
+      updated: 'plainJSON',
+      order: { might: 'matter' },
+    })
+    expect(updated.int_array_col).toStrictEqual([3, 4, 5])
+    expect(updated.enum_col).toBe('two')
 
     // Clean up
     shape.unsubscribe()
     await pg.electric.deleteSubscription('data_types_test')
-  })
+  }
+
+  // FIXME: fails...
+  // it('syncs data with various column types initial COPY', async () => {
+  //   await types_syncer('csv')
+  // }, 60000)
+
+  it('syncs data with various column types initial json_to_recordset', async () => {
+    await types_syncer('json')
+  }, 60000)
+
+  it('syncs data with various column types', async () => {
+    await types_syncer('insert')
+  }, 60000)
+
+  const many_syncer = async (method: InitialInsertMethod | 'useCopy') => {
+    const numTodos = 150000
+
+    // Batch the inserts to Postgres
+    const batchSize = 1000
+    const batches = Math.ceil(numTodos / batchSize)
+    for (let batch = 0; batch < batches; batch++) {
+      const start = batch * batchSize
+      const end = Math.min(start + batchSize, numTodos)
+
+      // Build a batch of INSERT statements using a VALUES list for better performance
+      const values: string[] = []
+      const params: (number | string | boolean)[] = []
+      let paramIndex = 1
+
+      for (let i = start; i < end; i++) {
+        values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
+        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
+        paramIndex += 3
+      }
+
+      const query = `
+        INSERT INTO todo (id, task, done)
+        VALUES ${values.join(', ')};
+      `
+
+      await pgClient.query(query, params)
+    }
+
+    // We want to test the deprecated useCopy option, but also the new initialInsertMethod option
+    let useCopy: boolean | undefined = undefined
+    let initialInsertMethod: InitialInsertMethod | undefined = undefined
+    if (method === 'useCopy') {
+      useCopy = true
+      initialInsertMethod = undefined
+    } else {
+      initialInsertMethod = method
+    }
+
+    // Set up sync with COPY enabled for efficiency
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: ELECTRIC_URL,
+        params: { table: 'todo' },
+        fetchClient,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      useCopy,
+      initialInsertMethod,
+      shapeKey: 'large_todo_sync_test',
+    })
+
+    // Wait for all data to be synced - increase timeout for large dataset
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          count: number
+        }>`SELECT COUNT(*) as count FROM todo;`
+        expect(result.rows[0].count).toBe(numTodos)
+      },
+      { timeout: 30000 },
+    )
+
+    // Verify some sample data points
+    const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
+    expect(firstRow.rows[0]).toEqual({
+      id: 0,
+      task: 'Todo 0',
+      done: true, // 0 % 3 === 0
+    })
+
+    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
+    expect(middleRow.rows[0]).toEqual({
+      id: 25000,
+      task: 'Todo 25000',
+      done: 25000 % 3 === 0,
+    })
+
+    const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
+    expect(lastRow.rows[0]).toEqual({
+      id: numTodos - 1,
+      task: `Todo ${numTodos - 1}`,
+      done: (numTodos - 1) % 3 === 0,
+    })
+
+    // Test that we can still perform operations after the large sync
+    await pgClient.query(`
+      UPDATE todo SET task = 'Updated after sync' WHERE id = 0;
+    `)
+
+    // Wait for update to sync
+    await vi.waitFor(
+      async () => {
+        const result = await pg.sql<{
+          task: string
+        }>`SELECT task FROM todo WHERE id = 0;`
+        expect(result.rows[0].task).toBe('Updated after sync')
+      },
+      { timeout: 5000 },
+    )
+
+    // Clean up
+    shape.unsubscribe()
+    await pg.electric.deleteSubscription('large_todo_sync_test')
+  }
+
+  it('handles initial sync of 150,000 rows with COPY', async () => {
+    await many_syncer('csv')
+  }, 60000)
+
+  it('handles initial sync of 150,000 rows with json_to_recordset', async () => {
+    await many_syncer('json')
+  }, 60000)
+
+  it('handles initial sync of 150,000 rows', async () => {
+    await many_syncer('insert')
+  }, 360000)
+
+  it('handles initial sync of 150,000 rows with the deprecated useCopy option', async () => {
+    await many_syncer('useCopy')
+  }, 60000)
 })

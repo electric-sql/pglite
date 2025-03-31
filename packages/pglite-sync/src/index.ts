@@ -23,7 +23,11 @@ import type {
   InsertChangeMessage,
   Lsn,
 } from './types'
-import { applyMessageToTable, applyMessagesToTableWithCopy } from './apply'
+import {
+  applyMessageToTable,
+  applyMessagesToTableWithCopy,
+  applyMessagesToTableWithJson,
+} from './apply'
 
 export * from './types'
 
@@ -56,7 +60,8 @@ async function createPlugin(
   const syncShapesToTables = async ({
     key,
     shapes,
-    useCopy,
+    useCopy = false, // DEPRECATED: use initialInsertMethod instead
+    initialInsertMethod = 'insert',
     onInitialSync,
   }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
     let unsubscribed = false
@@ -89,11 +94,20 @@ async function createPlugin(
     // If it's a new subscription there is no state to resume from
     const isNewSubscription = subState === null
 
+    // We need to handle the old useCopy option
+    // We check if it's set to true and initialInsertMethod is it's default value
+    if (useCopy && initialInsertMethod === 'insert') {
+      initialInsertMethod = 'csv'
+      console.warn(
+        'The useCopy option is deprecated and will be removed in a future version. Use initialInsertMethod instead.',
+      )
+    }
+
     // If it's a new subscription we can do a `COPY FROM` to insert the initial data
     // TODO: in future when we can have multiple shapes on the same table we will need
     // to make sure we only do a `COPY FROM` on the first shape on the table as they
     // may overlap and so the insert logic will be wrong.
-    let doCopy = isNewSubscription && useCopy
+    let useInsert = !isNewSubscription || initialInsertMethod === 'insert'
 
     // Track if onInitialSync has been called
     let onInitialSyncCalled = false
@@ -201,8 +215,8 @@ async function createPlugin(
           }
 
           // Apply the changes to the table
-          if (doCopy) {
-            // We can do a `COPY FROM` to insert the initial data
+          if (!useInsert) {
+            // We can do a `COPY FROM`/json_to_recordset to insert the initial data
             // Split messageAggregator into initial inserts and remaining messages
             const initialInserts: InsertChangeMessage[] = []
             const remainingMessages: ChangeMessage<any>[] = []
@@ -215,7 +229,7 @@ async function createPlugin(
                 remainingMessages.push(message)
               }
             }
-            if (initialInserts.length > 0) {
+            if (initialInserts.length > 0 && initialInsertMethod === 'csv') {
               // As `COPY FROM` doesn't trigger a NOTIFY, we pop
               // the last insert message and and add it to the be beginning
               // of the remaining messages to be applied after the `COPY FROM`
@@ -223,9 +237,13 @@ async function createPlugin(
             }
             messages = remainingMessages
 
-            // Do the `COPY FROM` with initial inserts
+            // Do the `COPY FROM`/json_to_recordset with initial inserts
             if (initialInserts.length > 0) {
-              await applyMessagesToTableWithCopy({
+              const method =
+                initialInsertMethod === 'json'
+                  ? applyMessagesToTableWithJson
+                  : applyMessagesToTableWithCopy
+              await method({
                 pg: tx,
                 table: shape.table,
                 schema: shape.schema,
@@ -234,8 +252,8 @@ async function createPlugin(
                 primaryKey: shape.primaryKey,
                 debug,
               })
-              // We don't want to do a `COPY FROM` again after that
-              doCopy = false
+              // We don't want to do a `COPY FROM`/json_to_recordset again after that
+              useInsert = true
             }
           }
 
@@ -413,7 +431,8 @@ async function createPlugin(
         },
       },
       key: options.shapeKey,
-      useCopy: options.useCopy,
+      useCopy: options.useCopy, // DEPRECATED: use initialInsertMethod instead
+      initialInsertMethod: options.initialInsertMethod,
       onInitialSync: options.onInitialSync,
     })
     return {
