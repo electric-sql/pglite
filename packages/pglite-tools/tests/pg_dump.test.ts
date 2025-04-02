@@ -112,11 +112,11 @@ describe('pgDump', () => {
   it('pg_dump should not change SEARCH_PATH', async () => {
     const pg = await PGlite.create()
 
-    const setSearchPathResult = await pg.exec(`SET SEARCH_PATH = amigo;`)
+    await pg.exec(`SET SEARCH_PATH = amigo;`)
     const initialSearchPath = await pg.query('SHOW SEARCH_PATH;')
 
     const dump = await pgDump({ pg })
-    const dummy = await dump.text()
+    await dump.text()
 
     const finalSearchPath = await pg.query('SHOW SEARCH_PATH;')
 

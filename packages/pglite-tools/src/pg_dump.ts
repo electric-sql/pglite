@@ -165,8 +165,9 @@ export async function pgDump({
   args,
   fileName = 'dump.sql',
 }: PgDumpOptions) {
-
-  const getSearchPath = await pg.query<{search_path: string}>('SHOW SEARCH_PATH;')
+  const getSearchPath = await pg.query<{ search_path: string }>(
+    'SHOW SEARCH_PATH;',
+  )
   const search_path = getSearchPath.rows[0].search_path
 
   const outFile = `/tmp/out.sql`
