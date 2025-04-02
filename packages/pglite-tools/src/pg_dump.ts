@@ -165,6 +165,10 @@ export async function pgDump({
   args,
   fileName = 'dump.sql',
 }: PgDumpOptions) {
+
+  const getSearchPath = await pg.query<{search_path: string}>('SHOW SEARCH_PATH;')
+  const search_path = getSearchPath.rows[0].search_path
+
   const outFile = `/tmp/out.sql`
   const baseArgs = [
     '-U',
@@ -182,7 +186,7 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  pg.query(`DEALLOCATE ALL;`)
+  pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
 
   if (exitCode !== 0) {
     throw new Error(
