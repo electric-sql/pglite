@@ -108,4 +108,18 @@ describe('pgDump', () => {
     expect(result.rows[0].name).toBe('row1')
     expect(result.rows[1].name).toBe('row2')
   })
+
+  it('pg_dump should not change SEARCH_PATH', async () => {
+    const pg = await PGlite.create()
+
+    await pg.exec(`SET SEARCH_PATH = amigo;`)
+    const initialSearchPath = await pg.query('SHOW SEARCH_PATH;')
+
+    const dump = await pgDump({ pg })
+    await dump.text()
+
+    const finalSearchPath = await pg.query('SHOW SEARCH_PATH;')
+
+    expect(initialSearchPath).toEqual(finalSearchPath)
+  })
 })
