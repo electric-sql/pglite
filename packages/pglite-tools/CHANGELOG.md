@@ -1,5 +1,11 @@
 # @electric-sql/pglite-tools
 
+## 0.2.4
+
+### Patch Changes
+
+- bbfa9f1: Restore SEARCH_PATH after pg_dump
+
 ## 0.2.3
 
 ### Patch Changes
