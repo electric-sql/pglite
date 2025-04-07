@@ -1,5 +1,11 @@
 # @electric-sql/pglite-sync
 
+## 0.3.1
+
+### Patch Changes
+
+- 3ee6846: New `initialInsertMethod` option that can specify `insert`, `csv` or `json` as the method used to handle the initial sync. The supersedes the `useCopy` option which is now deprecated and will be removed in a future version.
+
 ## 0.3.0
 
 ### Minor Changes
