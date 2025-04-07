@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.0-next.0
+
+### Minor Changes
+
+- 97e52f7: upgrade to postgresql 17.4
+
 ## 0.2.17
 
 ### Patch Changes

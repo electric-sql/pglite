@@ -9,7 +9,10 @@
     "@electric-sql/pglite-repl": "0.2.17",
     "@electric-sql/pglite-sync": "0.2.20",
     "@electric-sql/pglite-tools": "0.2.2",
-    "@electric-sql/pglite-vue": "0.2.17"
+    "@electric-sql/pglite-vue": "0.2.17",
+    "pglite-react-example": "0.0.1"
   },
-  "changesets": []
+  "changesets": [
+    "dull-suits-count"
+  ]
 }
