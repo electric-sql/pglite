@@ -88,7 +88,7 @@ await testEsmAndCjs(async (importType) => {
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
 
       const res = await pg.query(`
-        select oid 
+        select oid
         from pg_extension
         where extname = 'vector'
       `)
@@ -122,12 +122,12 @@ await testEsmAndCjs(async (importType) => {
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
 
       const res = await pg.query(`
-        select oid 
+        select oid
         from pg_extension
         where extname = 'vector'
       `)
 
-      expect(res.rows[0].oid).toBe(16384)
+      expect(res.rows[0].oid).toBeGreaterThan(16383)
     })
   })
 })

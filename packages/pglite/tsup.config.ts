@@ -44,7 +44,7 @@ export default defineConfig([
       resolve: true,
     },
     clean: true,
-    external: ['../release/postgres.js', '../release/postgres.cjs'],
+    external: ['../release/pglite.js', '../release/pglite.cjs'],
     esbuildPlugins: [replaceAssertPlugin],
     minify: true,
     shims: true, // Convert import.meta.url to a shim for CJS
@@ -52,7 +52,7 @@ export default defineConfig([
   },
   {
     // Convert the Emscripten ESM bundle to a CJS bundle
-    entry: ['release/postgres.js'],
+    entry: ['release/pglite.js'],
     format: ['cjs'],
     minify: true,
     shims: true, // Convert import.meta.url to a shim for CJS

@@ -1,0 +1,15 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "benchmark": "0.0.17",
+    "@electric-sql/pg-protocol": "0.0.2",
+    "@electric-sql/pglite": "0.2.17",
+    "@electric-sql/pglite-react": "0.2.17",
+    "@electric-sql/pglite-repl": "0.2.17",
+    "@electric-sql/pglite-sync": "0.2.20",
+    "@electric-sql/pglite-tools": "0.2.2",
+    "@electric-sql/pglite-vue": "0.2.17"
+  },
+  "changesets": []
+}
