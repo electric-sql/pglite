@@ -39,6 +39,9 @@ const db = await PGlite.create({
   debug: DEBUG,
 })
 
+// Check if the database is working
+console.log(await db.query('SELECT version()'))
+
 // Create a PGLiteSocketServer instance
 const server = new PGLiteSocketServer({
   db,
