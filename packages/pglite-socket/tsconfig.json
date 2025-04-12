@@ -6,5 +6,5 @@
       "node"
     ]
   },
-  "include": ["src", "tsup.config.ts", "vitest.config.ts"]
+  "include": ["src", "examples", "tsup.config.ts", "vitest.config.ts"]
 }

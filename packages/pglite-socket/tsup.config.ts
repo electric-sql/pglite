@@ -1,9 +1,6 @@
 import { defineConfig } from 'tsup'
 
-const entryPoints = [
-  'src/index.ts',
-  'src/pg_dump.ts',
-]
+const entryPoints = ['src/index.ts']
 
 export default defineConfig([
   {

@@ -1,6 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite'
+import type { BackendMessage } from '@electric-sql/pg-protocol/messages'
 import { createServer, Server, Socket } from 'net'
-
 /**
  * Options for creating a PGLiteSocketHandler
  */
@@ -74,6 +74,9 @@ export class PGLiteSocketHandler extends EventTarget {
     socket.on('error', (err) => this.handleError(err))
     socket.on('close', () => this.handleClose())
 
+    // On attache sent an empty query to the database
+    // await this.handleData(Buffer.from([]))
+
     return this
   }
 
@@ -127,10 +130,26 @@ export class PGLiteSocketHandler extends EventTarget {
 
     try {
       // Process the raw protocol data
-      const result = await this.db.execProtocolRaw(new Uint8Array(data))
+      let result: Uint8Array
+      let messages: BackendMessage[] = []
+      if (this.inspect) {
+        const res = await this.db.execProtocol(new Uint8Array(data))
+        messages = res.messages
+        result = res.data
+      } else {
+        result = await this.db.execProtocolRaw(new Uint8Array(data))
+      }
 
       // Print the outgoing data to the console
       this.inspectData('outgoing', result)
+
+      // Print the messages to the console if we are inspecting
+      if (this.inspect) {
+        console.log(`Messages (${messages.length}):`)
+        messages.forEach((message) => {
+          console.log(message)
+        })
+      }
 
       // Send the result back if the socket is still connected
       if (this.socket && this.socket.writable && this.active) {

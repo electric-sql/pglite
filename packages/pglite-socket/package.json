@@ -25,10 +25,12 @@
     "format": "prettier --write ./src ./tests",
     "typecheck": "tsc",
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
-    "test": "vitest"
+    "test": "vitest",
+    "example:basic-server": "tsx examples/basic-server.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pg-protocol": "workspace:*",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.16.11",
     "pg": "^8.14.0",
