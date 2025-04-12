@@ -754,15 +754,21 @@ export class PGlite
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
+    const cleanUp = async () => {
+      await this.exec(`UNLISTEN ${channel}`)
+      // While that query was running, another query might have subscribed
+      // so we need to check again
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        this.#notifyListeners.delete(pgChannel)
+      }
+    }
     if (callback) {
       this.#notifyListeners.get(pgChannel)?.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
-        await this.exec(`UNLISTEN ${channel}`)
-        this.#notifyListeners.delete(pgChannel)
+        await cleanUp()
       }
     } else {
-      await this.exec(`UNLISTEN ${channel}`)
-      this.#notifyListeners.delete(pgChannel)
+      await cleanUp()
     }
   }
 
