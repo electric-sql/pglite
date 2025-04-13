@@ -19,6 +19,9 @@
   },
   "type": "module",
   "main": "index.js",
+  "bin": {
+    "pglite-server": "./dist/scripts/server.js"
+  },
   "scripts": {
     "build": "tsup",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
@@ -26,7 +29,8 @@
     "typecheck": "tsc",
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
     "test": "vitest",
-    "example:basic-server": "tsx examples/basic-server.ts"
+    "example:basic-server": "tsx examples/basic-server.ts",
+    "pglite-server:dev": "tsx --watch src/scripts/server.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",

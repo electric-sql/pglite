@@ -4,8 +4,10 @@ A socket implementation for PGlite enabling remote connections. This package is 
 
 There are two main components to this package:
 
-- `PGLiteSocketServer` - A TCP server that allows PostgreSQL clients to connect to a PGlite database instance.
-- `PGLiteSocketHandler` - A low-level handler for a single socket connection to PGlite. This class handles the raw protocol communication between a socket and PGlite, and can be used to create a custom server.
+- [`PGLiteSocketServer`](#pglitesocketserver) - A TCP server that allows PostgreSQL clients to connect to a PGlite database instance.
+- [`PGLiteSocketHandler`](#pglitesockethandler) - A low-level handler for a single socket connection to PGlite. This class handles the raw protocol communication between a socket and PGlite, and can be used to create a custom server.
+
+The package also includes a [CLI](#cli-usage) for quickly starting a PGlite socket server.
 
 Note: As PGlite is a single-connection database, it is not possible to have multiple simultaneous connections open. This means that the socket server will only support a single client connection at a time. While a `PGLiteSocketServer` or `PGLiteSocketHandler` are attached to a PGlite instance they hold an exclusive lock preventing any other connections, or queries on the PGlite instance.
 
@@ -128,6 +130,94 @@ server.listen(5432, '127.0.0.1')
 ## Examples
 
 See the [examples directory](./examples) for more usage examples.
+
+## CLI Usage
+
+This package provides a command-line interface for quickly starting a PGlite socket server.
+
+```bash
+# Install globally
+npm install -g @electric-sql/pglite-socket
+
+# Start a server with default settings (in-memory database, port 5432)
+pglite-server
+
+# Start a server with custom options
+pglite-server --db=/path/to/database --port=5433 --host=0.0.0.0 --debug=1
+
+# Using short options
+pglite-server -d /path/to/database -p 5433 -h 0.0.0.0 -v 1
+
+# Show help
+pglite-server --help
+```
+
+### CLI Options
+
+- `-d, --db=PATH` - Database path (default: memory://)
+- `-p, --port=PORT` - Port to listen on (default: 5432)
+- `-h, --host=HOST` - Host to bind to (default: 127.0.0.1)
+- `-v, --debug=LEVEL` - Debug level 0-5 (default: 0)
+
+### Using in npm scripts
+
+You can add the CLI to your package.json scripts for convenient execution:
+
+```json
+{
+  "scripts": {
+    "db:start": "pglite-server --db=./data/mydb --port=5433",
+    "db:dev": "pglite-server --db=memory:// --debug=1"
+  }
+}
+```
+
+Then run with:
+
+```bash
+npm run db:start
+# or
+npm run db:dev
+```
+
+### Connecting to the server
+
+Once the server is running, you can connect to it using any PostgreSQL client:
+
+#### Using psql
+
+```bash
+psql -h localhost -p 5432 -d template1
+```
+
+#### Using Node.js clients
+
+```javascript
+// Using node-postgres
+import pg from 'pg'
+const client = new pg.Client({
+  host: 'localhost',
+  port: 5432,
+  database: 'template1'
+})
+await client.connect()
+
+// Using postgres.js
+import postgres from 'postgres'
+const sql = postgres({
+  host: 'localhost',
+  port: 5432,
+  database: 'template1'
+})
+```
+
+### Limitations and Tips
+
+- Remember that PGlite only supports one connection at a time. If you're unable to connect, make sure no other client is currently connected.
+- For development purposes, using an in-memory database (`--db=memory://`) is fastest but data won't persist after the server is stopped.
+- For persistent storage, specify a file path for the database (e.g., `--db=./data/mydb`).
+- When using debug mode (`--debug=1` or higher), additional protocol information will be displayed in the console.
+- To allow connections from other machines, set the host to `0.0.0.0` with `--host=0.0.0.0`.
 
 ## License
 

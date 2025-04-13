@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup'
 
-const entryPoints = ['src/index.ts']
+const entryPoints = ['src/index.ts', 'src/scripts/server.ts']
 
 export default defineConfig([
   {
