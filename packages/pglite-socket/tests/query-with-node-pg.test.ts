@@ -7,7 +7,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest'
-import { Client, Pool } from 'pg'
+import { Client } from 'pg'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../src'
 
@@ -139,7 +139,7 @@ describe(`PGLite Socket Server`, () => {
     })
 
     it('should create a table', async () => {
-      const result = await client.query(`
+      await client.query(`
         CREATE TABLE test_users (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -267,7 +267,7 @@ describe(`PGLite Socket Server`, () => {
 
       // Start a transaction and perform operations
       await client.query('BEGIN')
-      
+
       try {
         // Deduct from Alice
         await client.query(`
@@ -282,7 +282,7 @@ describe(`PGLite Socket Server`, () => {
           SET balance = balance + 30
           WHERE name = 'Bob'
         `)
-        
+
         // Commit the transaction
         await client.query('COMMIT')
       } catch (error) {
@@ -327,7 +327,7 @@ describe(`PGLite Socket Server`, () => {
 
       // Start a transaction
       await client.query('BEGIN')
-      
+
       try {
         // Deduct from Alice
         await client.query(`
@@ -375,7 +375,7 @@ describe(`PGLite Socket Server`, () => {
       try {
         // Start a transaction
         await client.query('BEGIN')
-        
+
         // Deduct from Alice
         await client.query(`
           UPDATE test_users
@@ -389,13 +389,13 @@ describe(`PGLite Socket Server`, () => {
           SET balance = balance + 30
           WHERE name = 'Bob'
         `)
-        
+
         // Should never get here
         await client.query('COMMIT')
       } catch (error) {
         // Expected to fail - rollback transaction
         await client.query('ROLLBACK').catch(() => {
-          // If the client connection is in a bad state, we just ignore 
+          // If the client connection is in a bad state, we just ignore
           // the rollback error
         })
       }
@@ -450,7 +450,7 @@ describe(`PGLite Socket Server`, () => {
       try {
         // Begin transaction
         await client.query('BEGIN')
-        
+
         // Declare a cursor
         await client.query(
           'DECLARE user_cursor CURSOR FOR SELECT * FROM test_users ORDER BY id',
@@ -482,7 +482,7 @@ describe(`PGLite Socket Server`, () => {
 
         // Close the cursor
         await client.query('CLOSE user_cursor')
-        
+
         // Commit transaction
         await client.query('COMMIT')
       } catch (error) {
@@ -508,7 +508,7 @@ describe(`PGLite Socket Server`, () => {
           resolve()
         })
       })
-      
+
       // Start listening
       await client.query('LISTEN test_channel')
 
@@ -522,11 +522,12 @@ describe(`PGLite Socket Server`, () => {
       const timeoutPromise = new Promise<void>((_, reject) => {
         setTimeout(() => reject(new Error('Notification timeout')), 2000)
       })
-      
-      await Promise.race([notificationReceived, timeoutPromise])
-        .catch(error => {
+
+      await Promise.race([notificationReceived, timeoutPromise]).catch(
+        (error) => {
           console.error('Notification error:', error)
-        })
+        },
+      )
 
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')

@@ -135,7 +135,7 @@ describe(`PGLite Socket Server`, () => {
     })
 
     it('should create a table', async () => {
-      const result = await sql`
+      await sql`
         CREATE TABLE test_users (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -328,7 +328,7 @@ describe(`PGLite Socket Server`, () => {
           // Explicitly roll back (cancel) the transaction
           throw new Error('Triggering rollback')
         })
-        .catch((e) => {
+        .catch(() => {
           // Expected error to trigger rollback
           console.log('Transaction was rolled back as expected')
         })
