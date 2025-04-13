@@ -1225,5 +1225,52 @@ await testEsmAndCjs(async (importType) => {
         }),
       ).rejects.toThrow('offset and limit must be numbers')
     })
+
+    it("doesn't have a race condition when unsubscribing from a live query", async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      let results
+      const eventTarget = new EventTarget()
+
+      // Create a first live query
+      const { unsubscribe } = await db.live.query({
+        query: 'SELECT * FROM testTable WHERE number > 1',
+      })
+
+      // Create a second live query that listens to the same channel, but don't
+      // await it's subscription to complete.
+      // This creates a race condition with the following unsubscribe, both are
+      // potentially interlaced with each other.
+      db.live.query({
+        query: 'SELECT * FROM testTable WHERE number > 2',
+        callback: (result) => {
+          results = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      })
+
+      // Unsubscribe from the first live query
+      await unsubscribe()
+
+      const promise = new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      await db.exec('INSERT INTO testTable (number) VALUES (3);')
+
+      // In a failed test, this will never resolve.
+      await promise
+
+      expect(results.rows).toEqual([{ id: 1, number: 3 }])
+    }, 3000)
   })
 })
