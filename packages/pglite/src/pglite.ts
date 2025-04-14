@@ -55,6 +55,7 @@ export class PGlite
 
   #queryMutex = new Mutex()
   #transactionMutex = new Mutex()
+  #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
 
@@ -728,6 +729,10 @@ export class PGlite
    * @param callback The callback to call when a notification is received
    */
   async listen(channel: string, callback: (payload: string) => void) {
+    return this._runExclusiveListen(() => this.#listen(channel, callback))
+  }
+
+  async #listen(channel: string, callback: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
@@ -753,16 +758,26 @@ export class PGlite
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
+    return this._runExclusiveListen(() => this.#unlisten(channel, callback))
+  }
+
+  async #unlisten(channel: string, callback?: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
+    const cleanUp = async () => {
+      await this.exec(`UNLISTEN ${channel}`)
+      // While that query was running, another query might have subscribed
+      // so we need to check again
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        this.#notifyListeners.delete(pgChannel)
+      }
+    }
     if (callback) {
       this.#notifyListeners.get(pgChannel)?.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
-        await this.exec(`UNLISTEN ${channel}`)
-        this.#notifyListeners.delete(pgChannel)
+        await cleanUp()
       }
     } else {
-      await this.exec(`UNLISTEN ${channel}`)
-      this.#notifyListeners.delete(pgChannel)
+      await cleanUp()
     }
   }
 
@@ -820,5 +835,9 @@ export class PGlite
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
     return PGlite.create({ loadDataDir: dump })
+  }
+
+  _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#listenMutex.runExclusive(fn)
   }
 }
