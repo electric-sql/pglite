@@ -13,6 +13,7 @@
     "pglite-react-example": "0.0.1"
   },
   "changesets": [
-    "dull-suits-count"
+    "dull-suits-count",
+    "strange-news-burn"
   ]
 }
