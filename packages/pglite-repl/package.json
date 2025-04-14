@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-repl",
-  "version": "1.0.0-next.0",
+  "version": "1.0.0-next.1",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
