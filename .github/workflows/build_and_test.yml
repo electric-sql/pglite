@@ -62,13 +62,15 @@ jobs:
 
       - name: Typecheck all packages
         run: pnpm -r --filter "./packages/**" typecheck
-      - name: Test all packages - use `cma buffer` for data transfer
-        env:
-          DATA_TRANSFER_CONTAINER: "cma"
-        run: pnpm -r --filter "./packages/**" test
+
       - name: Test all packages - use `file` for data transfer
         env:
           DATA_TRANSFER_CONTAINER: "file"
+        run: pnpm -r --filter "./packages/**" test
+
+      - name: Test all packages - use `cma buffer` for data transfer
+        env:
+          DATA_TRANSFER_CONTAINER: "cma"
         run: pnpm -r --filter "./packages/**" test
 
       - name: Upload PGlite Interim to Github artifacts
