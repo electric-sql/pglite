@@ -60,12 +60,16 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Build packages
-        run: pnpm --filter "pglite^..." build
-      - name: Typecheck packages
-        run: pnpm --filter "pglite^..." typecheck
-      - name: Test packages
-        run: pnpm --filter "pglite^..." test
+      - name: Typecheck all packages
+        run: pnpm -r --filter "./packages/**" typecheck
+      - name: Test all packages - use `cma buffer` for data transfer
+        env:
+          DATA_TRANSFER_CONTAINER: "cma"
+        run: pnpm -r --filter "./packages/**" test
+      - name: Test all packages - use `file` for data transfer
+        env:
+          DATA_TRANSFER_CONTAINER: "file"
+        run: pnpm -r --filter "./packages/**" test
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
@@ -120,16 +124,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-      - name: Test with cma data transfer container
-        env:
-          DATA_TRANSFER_CONTAINER: "cma"
-        run: pnpm test
-
-      - name: Test with file data transfer container
-        env:
-          DATA_TRANSFER_CONTAINER: "file"
-        run: pnpm test        
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
