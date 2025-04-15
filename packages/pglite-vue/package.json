@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-vue",
-  "version": "1.0.0-next.1",
+  "version": "1.0.0-next.0",
   "description": "Vue hooks for using PGlite",
   "type": "module",
   "private": false,
