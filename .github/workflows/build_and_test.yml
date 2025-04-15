@@ -121,8 +121,15 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test
+      - name: Test with cma data transfer container
+        env:
+          DATA_TRANSFER_CONTAINER: "cma"
         run: pnpm test
+
+      - name: Test with file data transfer container
+        env:
+          DATA_TRANSFER_CONTAINER: "file"
+        run: pnpm test        
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
