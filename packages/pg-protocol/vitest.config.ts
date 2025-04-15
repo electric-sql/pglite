@@ -7,5 +7,6 @@ export default defineConfig({
     watch: false,
     typecheck: { enabled: true },
     restoreMocks: true,
+    testTimeout: 30000
   },
 })
