@@ -26,7 +26,7 @@ const DEBUG_TESTS_REAL_SERVER =
   process.env.DEBUG_TESTS_REAL_SERVER ||
   'postgres://postgres:postgres@localhost:5432/postgres'
 const TEST_PORT = 5434
-const DEBUG_INSPECT = process.env.DEBUG_INSPECT === "true" || undefined
+const DEBUG_INSPECT = process.env.DEBUG_INSPECT === 'true' || undefined
 
 describe(`PGLite Socket Server`, () => {
   describe('with node-pg client', () => {
@@ -55,7 +55,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
-          inspect: DEBUG_INSPECT
+          inspect: DEBUG_INSPECT,
         })
 
         // Add event listeners for debugging
