@@ -25,7 +25,7 @@ const DEBUG_TESTS = process.env.DEBUG_TESTS === 'true'
 const DEBUG_TESTS_REAL_SERVER =
   process.env.DEBUG_TESTS_REAL_SERVER ||
   'postgres://postgres:postgres@localhost:5432/postgres'
-const TEST_PORT = 5434
+const TEST_PORT = 5435
 const DEBUG_INSPECT = process.env.DEBUG_INSPECT === 'true' || undefined
 
 describe(`PGLite Socket Server`, () => {
