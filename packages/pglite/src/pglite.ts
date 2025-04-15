@@ -36,6 +36,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+type DataTransferContainer = "cma" | "file"
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -72,6 +74,8 @@ export class PGlite
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+
+  #dataTransferContainer = this.getDataTransferContainer()
 
   /**
    * Create a new PGlite instance
@@ -568,7 +572,8 @@ export class PGlite
   execProtocolRawSync(message: Uint8Array) {
     var data
     // Use cma
-    if (0) {
+    this.#log("#dataTransferContainer", this.#dataTransferContainer)
+    if (this.#dataTransferContainer === "cma") {
         const msg_len = message.length
         const mod = this.mod!
 
@@ -587,21 +592,23 @@ export class PGlite
         const msg_end = msg_start + mod._interactive_read()
         data = mod.HEAPU8.subarray(msg_start, msg_end)
     // use socketfiles
-    } else {
-        const Module = this.mod!
+    } else if (this.#dataTransferContainer === "file") {
+        const mod = this.mod!
         const pg_lck = "/tmp/pglite/base/.s.PGSQL.5432.lck.in"
         const pg_in = "/tmp/pglite/base/.s.PGSQL.5432.in"
         const pg_out = "/tmp/pglite/base/.s.PGSQL.5432.out"
-        Module._use_wire(1)
+        mod._use_wire(1)
 
-        Module.FS.writeFile(pg_lck, message)
-        Module.FS.rename(pg_lck, pg_in)
-        Module._interactive_one()
-        const fstat = Module.FS.stat(pg_out)
+        mod.FS.writeFile(pg_lck, message)
+        mod.FS.rename(pg_lck, pg_in)
+        mod._interactive_one()
+        const fstat = mod.FS.stat(pg_out)
 //        console.log("pgreply", fstat.size)
-        var stream = Module.FS.open(pg_out, 'r');
+        var stream = mod.FS.open(pg_out, 'r');
         data = new Uint8Array(fstat.size);
-        Module.FS.read(stream, data, 0, fstat.size, 0);
+        mod.FS.read(stream, data, 0, fstat.size, 0);
+    } else {
+        throw new Error("Should not happend but it did: unhandled data transfer container.")
     }
     return data
   }
@@ -829,5 +836,18 @@ export class PGlite
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
     return PGlite.create({ loadDataDir: dump })
+  }
+
+  getDataTransferContainer(): DataTransferContainer {
+    const dtc = process.env.DATA_TRANSFER_CONTAINER
+    if (!dtc || dtc === "cma") {
+      this.#log(`Using data transfer container`, dtc)
+      return "cma"
+    }
+    if (dtc === "file") {
+      this.#log(`Using data transfer container`, dtc)
+      return "file"
+    }
+    throw new Error(`Unsupported data transfer container ${dtc}`)
   }
 }
