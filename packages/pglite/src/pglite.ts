@@ -55,7 +55,6 @@ export class PGlite
 
   #queryMutex = new Mutex()
   #transactionMutex = new Mutex()
-  #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
 
@@ -567,15 +566,43 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const msg_len = message.length
-    const mod = this.mod!
-    mod._use_wire(1)
-    mod._interactive_write(msg_len)
-    mod.HEAPU8.set(message, 1)
-    mod._interactive_one()
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
+    var data
+    // Use cma
+    if (0) {
+        const msg_len = message.length
+        const mod = this.mod!
+
+        // >0 set buffer content type to wire protocol
+        mod._use_wire(1)
+
+        // set buffer size so answer will be at size+0x2 pointer addr
+        mod._interactive_write(msg_len)
+        mod.HEAPU8.set(message, 1)
+
+        // execute the message
+        mod._interactive_one()
+
+        // Read responses from the buffer
+        const msg_start = msg_len + 2
+        const msg_end = msg_start + mod._interactive_read()
+        data = mod.HEAPU8.subarray(msg_start, msg_end)
+    // use socketfiles
+    } else {
+        const Module = this.mod!
+        const pg_lck = "/tmp/pglite/base/.s.PGSQL.5432.lck.in"
+        const pg_in = "/tmp/pglite/base/.s.PGSQL.5432.in"
+        const pg_out = "/tmp/pglite/base/.s.PGSQL.5432.out"
+        Module._use_wire(1)
+
+        Module.FS.writeFile(pg_lck, message)
+        Module.FS.rename(pg_lck, pg_in)
+        Module._interactive_one()
+        const fstat = Module.FS.stat(pg_out)
+//        console.log("pgreply", fstat.size)
+        var stream = Module.FS.open(pg_out, 'r');
+        data = new Uint8Array(fstat.size);
+        Module.FS.read(stream, data, 0, fstat.size, 0);
+    }
     return data
   }
 
@@ -594,29 +621,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const msg_len = message.length
-    const mod = this.mod!
-
-    // >0 set buffer content type to wire protocol
-    mod._use_wire(1)
-    // set buffer size so answer will be at size+0x2 pointer addr
-    mod._interactive_write(msg_len)
-
-    // copy whole buffer at addr 0x1
-    mod.HEAPU8.set(message, 1)
-
-    // execute the message
-    mod._interactive_one()
-
-    // Read responses from the buffer
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
-
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
-
     return data
   }
 
@@ -729,10 +737,6 @@ export class PGlite
    * @param callback The callback to call when a notification is received
    */
   async listen(channel: string, callback: (payload: string) => void) {
-    return this._runExclusiveListen(() => this.#listen(channel, callback))
-  }
-
-  async #listen(channel: string, callback: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
@@ -758,26 +762,16 @@ export class PGlite
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
-    return this._runExclusiveListen(() => this.#unlisten(channel, callback))
-  }
-
-  async #unlisten(channel: string, callback?: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
-    const cleanUp = async () => {
-      await this.exec(`UNLISTEN ${channel}`)
-      // While that query was running, another query might have subscribed
-      // so we need to check again
-      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
-        this.#notifyListeners.delete(pgChannel)
-      }
-    }
     if (callback) {
       this.#notifyListeners.get(pgChannel)?.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
-        await cleanUp()
+        await this.exec(`UNLISTEN ${channel}`)
+        this.#notifyListeners.delete(pgChannel)
       }
     } else {
-      await cleanUp()
+      await this.exec(`UNLISTEN ${channel}`)
+      this.#notifyListeners.delete(pgChannel)
     }
   }
 
@@ -835,9 +829,5 @@ export class PGlite
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
     return PGlite.create({ loadDataDir: dump })
-  }
-
-  _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
-    return this.#listenMutex.runExclusive(fn)
   }
 }
