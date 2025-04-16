@@ -346,8 +346,6 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       expect(result.current?.rows[0]).toEqual({ id: 2, name: 'updated' })
     })
 
-
-    
     it('can take a live incremental query returned promise directly', async () => {
       await db.exec(`
         CREATE TABLE live_test (
@@ -386,7 +384,9 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         );
       `)
 
-      await db.exec(`INSERT INTO pattern_matching (statement) VALUES ('PGlite 4 ever.'),('To not be or not to be.');`)
+      await db.exec(
+        `INSERT INTO pattern_matching (statement) VALUES ('PGlite 4 ever.'),('To not be or not to be.');`,
+      )
 
       const liveQueryPromise = db.live.incrementalQuery(
         `SELECT * FROM pattern_matching WHERE statement ILIKE '%pglite%' ORDER BY id DESC LIMIT 1;`,
@@ -407,10 +407,18 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         ]),
       )
 
-      await db.exec(`INSERT INTO pattern_matching (statement) VALUES ('should not trigger!');`)
+      await db.exec(
+        `INSERT INTO pattern_matching (statement) VALUES ('should not trigger!');`,
+      )
       // Trigger an update
-      await db.exec(`INSERT INTO pattern_matching (statement) VALUES ('ElectricSQL + pglite = <3');`)
-      await waitFor(() => expect(result.current?.rows[0].statement).toBe('ElectricSQL + pglite = <3'))
+      await db.exec(
+        `INSERT INTO pattern_matching (statement) VALUES ('ElectricSQL + pglite = <3');`,
+      )
+      await waitFor(() =>
+        expect(result.current?.rows[0].statement).toBe(
+          'ElectricSQL + pglite = <3',
+        ),
+      )
     })
   })
 }
