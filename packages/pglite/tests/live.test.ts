@@ -1272,5 +1272,55 @@ await testEsmAndCjs(async (importType) => {
 
       expect(results.rows).toEqual([{ id: 1, number: 3 }])
     }, 3000)
+
+    it("works with pattern matching", async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+  
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          statement VARCHAR(100)
+        );
+        INSERT INTO testTable (statement) VALUES ('i love pglite!');
+      `)
+  
+      const eventTarget = new EventTarget()
+      let updatedResults
+  
+      const { initialResults, unsubscribe } = await db.live.query(
+        `SELECT
+          id,
+          statement 
+        FROM testTable
+        WHERE 
+          statement ILIKE '%pglite%'
+        ORDER BY id;`,
+        [],
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+  
+      expect(initialResults.rows).toEqual([
+        { id: 1, statement: 'i love pglite!' },
+      ])
+  
+      await db.exec(`INSERT INTO testTable (statement) VALUES ('This should not be in the results!');`)
+      await db.exec(`INSERT INTO testTable (statement) VALUES ('PGlite is da best!');`)
+  
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+  
+      unsubscribe()
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, statement: 'i love pglite!' },
+        { id: 3, statement: 'PGlite is da best!' },
+      ])
+    })
   })
 })
