@@ -6,7 +6,7 @@ PGlite versions 0.2.x were based on PostgreSQL version 16.x, while PGlite versio
 
 The upgrade path is to use [pg_dump](https://www.npmjs.com/package/@electric-sql/pglite-tools) to create a database dump from the previous version of PGlite and then import into a new instance based on 17.4.
 
-## Using pg_dump to upgrade 
+## Using pg_dump to upgrade
 
 ```bash
 ### in a project that is using PGLite v0.2.x, also install PGlite v0.3.x
@@ -44,5 +44,3 @@ That's it! Now you can remove the PGlite v0.2.x package from your project.
 ## Further reading
 
 You can see a full upgrade example in Electric SQL's Linearlite example on [this branch](https://github.com/electric-sql/electric/tree/tudor/upgradePathPGlite). The relevant code is in `examples/linearlite` folder.
-
-
