@@ -1272,5 +1272,100 @@ await testEsmAndCjs(async (importType) => {
 
       expect(results.rows).toEqual([{ id: 1, number: 3 }])
     }, 3000)
+
+    it('basic live query - case sensitive table name', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS "cAseSENSiTYVE" (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO "cAseSENSiTYVE" (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.query(
+        'SELECT * FROM "cAseSENSiTYVE" ORDER BY number;',
+        [],
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('INSERT INTO "cAseSENSiTYVE" (number) VALUES (25);')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 25 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('DELETE FROM "cAseSENSiTYVE" WHERE id = 6;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      db.exec('UPDATE "cAseSENSiTYVE" SET number = 15 WHERE id = 3;')
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      unsubscribe()
+
+      db.exec('INSERT INTO "cAseSENSiTYVE" (number) VALUES (35);')
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 3, number: 15 },
+        { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+    })
   })
 })
