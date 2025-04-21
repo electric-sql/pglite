@@ -88,7 +88,7 @@ export const types = {
   },
   number: {
     to: 0,
-    from: [INT2, INT4, OID, FLOAT4, FLOAT8],
+    from: [INT2, INT4, OID, FLOAT4, FLOAT8, NUMERIC],
     serialize: (x: number) => x.toString(),
     parse: (x: string) => +x,
   },

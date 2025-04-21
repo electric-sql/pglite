@@ -135,6 +135,7 @@ await testEsmAndCjs(async (importType) => {
       id SERIAL PRIMARY KEY,
       text TEXT,
       number INT,
+      numeric NUMERIC,
       float FLOAT,
       bigint BIGINT,
       bool BOOLEAN,
@@ -144,6 +145,7 @@ await testEsmAndCjs(async (importType) => {
       blob BYTEA,
       array_text TEXT[],
       array_number INT[],
+      nested_array_numeric numeric[][],
       nested_array_float FLOAT[][],
       test_null INT,
       test_undefined INT
@@ -152,12 +154,13 @@ await testEsmAndCjs(async (importType) => {
 
       await db.query(
         `
-    INSERT INTO test (text, number, float, bigint, bool, date, timestamp, json, blob, array_text, array_number, nested_array_float, test_null, test_undefined)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
+    INSERT INTO test (text, number, numeric, float, bigint, bool, date, timestamp, json, blob, array_text, array_number, nested_array_numeric, nested_array_float, test_null, test_undefined)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
   `,
         [
           'test',
           1,
+          0.1,
           1.5,
           9223372036854775807n,
           true,
@@ -167,6 +170,11 @@ await testEsmAndCjs(async (importType) => {
           Uint8Array.from([1, 2, 3]),
           ['test1', 'test2', 'test,3'],
           [1, 2, 3],
+          [
+            [0.001, 0],
+            [11, 22.2],
+            [33.333, 44.44444],
+          ],
           [
             [1.1, 2.2],
             [3.3, 4.4],
@@ -186,6 +194,7 @@ await testEsmAndCjs(async (importType) => {
             id: 1,
             text: 'test',
             number: 1,
+            numeric: 0.1,
             float: 1.5,
             bigint: 9223372036854775807n,
             bool: true,
@@ -194,6 +203,11 @@ await testEsmAndCjs(async (importType) => {
             blob: Uint8Array.from([1, 2, 3]),
             array_text: ['test1', 'test2', 'test,3'],
             array_number: [1, 2, 3],
+            nested_array_numeric: [
+              [0.001, 0],
+              [11, 22.2],
+              [33.333, 44.44444],
+            ],
             nested_array_float: [
               [1.1, 2.2],
               [3.3, 4.4],
@@ -215,6 +229,10 @@ await testEsmAndCjs(async (importType) => {
             name: 'number',
             dataTypeID: 23,
           },
+          {
+            name: 'numeric',
+            dataTypeID: 1700,
+          },          
           {
             name: 'float',
             dataTypeID: 701,
@@ -250,6 +268,10 @@ await testEsmAndCjs(async (importType) => {
           {
             name: 'array_number',
             dataTypeID: 1007,
+          },
+          {
+            name: 'nested_array_numeric',
+            dataTypeID: 1231,
           },
           {
             name: 'nested_array_float',
