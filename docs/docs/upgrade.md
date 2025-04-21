@@ -43,4 +43,4 @@ That's it! Now you can remove the PGlite v0.2.x package from your project.
 
 ## Further reading
 
-You can see a full upgrade example in Electric SQL's Linearlite example on [this branch](https://github.com/electric-sql/electric/tree/tudor/upgradePathPGlite). The relevant code is in `examples/linearlite` folder.
+You can see a full upgrade example in Electric SQL's Linearlite example on [this branch](https://github.com/electric-sql/electric/tree/tudor/upgradePathPGlite). The relevant code is in `examples/linearlite` folder, see [MigrateModal.tsx] (https://github.com/electric-sql/electric/blob/tudor/upgradePathPGlite/examples/linearlite/src/components/MigrateModal.tsx).
