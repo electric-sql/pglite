@@ -232,7 +232,7 @@ await testEsmAndCjs(async (importType) => {
           {
             name: 'numeric',
             dataTypeID: 1700,
-          },          
+          },
           {
             name: 'float',
             dataTypeID: 701,
