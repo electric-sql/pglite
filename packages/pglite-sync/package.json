@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "1.0.0-next.1",
+  "version": "0.0.18",
   "description": "ElectricSQL Sync for PGlite",
   "type": "module",
   "private": false,
