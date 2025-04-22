@@ -61,7 +61,7 @@ await pg03.exec('SET SEARCH_PATH = public;')
 const nextVersion = await pg03.query<{ version: string }>(
   'SELECT version();'
 )
-console.log(nextVersion.rows[0].version) 
+console.log(nextVersion.rows[0].version)
 // output should contain "PostgreSQL 17.4"
 ```
 
