@@ -8,10 +8,29 @@ The upgrade path is to use [pg_dump](https://www.npmjs.com/package/@electric-sql
 
 ## Using pg_dump to upgrade
 
-```bash
+::: code-group
+
+```bash [npm]
 ### in a project that is using PGLite v0.2.x, also install PGlite v0.3.x
-$ pnpm install pglite-03@npm:@electric-sql/pglite@0.3.0
+npm install pglite-03@npm:@electric-sql/pglite@0.3.0
 ```
+
+```bash [pnpm]
+### in a project that is using PGLite v0.2.x, also install PGlite v0.3.x
+pnpm install pglite-03@npm:@electric-sql/pglite@0.3.0
+```
+
+```bash [yarn]
+### in a project that is using PGLite v0.2.x, also install PGlite v0.3.x
+yarn add pglite-03@npm:@electric-sql/pglite@0.3.0
+```
+
+```bash [bun]
+### in a project that is using PGLite v0.2.x, also install PGlite v0.3.x
+bun install pglite-03@npm:@electric-sql/pglite@0.3.0
+```
+
+:::
 
 ```ts
 // in your upgrade code, you can then use your current PGlite
