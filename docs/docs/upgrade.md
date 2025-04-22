@@ -14,9 +14,10 @@ $ pnpm install pglite-03@npm:@electric-sql/pglite@0.3.0
 ```
 
 ```ts
-// in your upgrade code, you can then use your current PGlite version to dump the database:
-import { PGlite } from '@electric-sql/pglite' // this is at the current version
-import { PGlite as PGlite03 } from 'pglite-03' // this is at the next version
+// in your upgrade code, you can then use your current PGlite
+// version to dump the database:
+import { PGlite } from '@electric-sql/pglite' // current version
+import { PGlite as PGlite03 } from 'pglite-03' // next version
 
 [...]
 
@@ -24,19 +25,25 @@ import { PGlite as PGlite03 } from 'pglite-03' // this is at the next version
 const currentVersion = await pg02.query<{ version: string }>(
   'SELECT version();'
 )
-console.log(currentVersion.rows[0].version) // should contain "PostgreSQL 16.4"
+console.log(currentVersion.rows[0].version)
+// output should contain "PostgreSQL 16.4"
 
 const dumpDir = await pg02.dumpDataDir('none')
 const pgCurr = await PGlite.create({ loadDataDir: dumpDir })
 const dumpResult = await pgDump({ pg02: pgCurr })
 
+// pg03 is PGlite instance with version 0.3.x
 const pg03 = await PGlite03.create()
 
 pg03.exec(await dumpResult.text())
-await pg03.exec('SET SEARCH_PATH = public;') // you might want to adapt the SEARCH_PATH to your needs
+// adapt the SEARCH_PATH to your needs
+await pg03.exec('SET SEARCH_PATH = public;')
 
-const nextVersion = await pg03.query<{ version: string }>('SELECT version();')
-console.log(nextVersion.rows[0].version) // should contain "PostgreSQL 17.4"
+const nextVersion = await pg03.query<{ version: string }>(
+  'SELECT version();'
+)
+console.log(nextVersion.rows[0].version) 
+// output should contain "PostgreSQL 17.4"
 ```
 
 That's it! Now you can remove the PGlite v0.2.x package from your project.
