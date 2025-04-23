@@ -1,6 +1,6 @@
 {
   "name": "benchmark",
-  "version": "1.0.0-next.1",
+  "version": "0.0.18",
   "description": "",
   "main": "index.js",
   "type": "module",
