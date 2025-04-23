@@ -810,6 +810,7 @@ export class PGlite
   async dumpDataDir(
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob> {
+    await this._checkReady()
     const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
     return this.fs!.dumpTar(dbname, compression)
   }
