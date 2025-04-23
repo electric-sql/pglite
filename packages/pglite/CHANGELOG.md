@@ -1,17 +1,5 @@
 # @electric-sql/pglite
 
-## 0.3.0-next.1
-
-### Patch Changes
-
-- 0033bc7: Fix a race condition in live query unsubscription that could result in live queries failing to update.
-
-## 0.3.0-next.0
-
-### Minor Changes
-
-- 97e52f7: upgrade to postgresql 17.4
-
 ## 0.2.17
 
 ### Patch Changes
