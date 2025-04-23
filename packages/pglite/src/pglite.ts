@@ -604,7 +604,7 @@ export class PGlite
         const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
         const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
         mod._use_wire(1)
-
+        mod._interactive_write(0)
         mod.FS.writeFile(pg_lck, message)
         mod.FS.rename(pg_lck, pg_in)
         mod._interactive_one()
