@@ -1,5 +1,15 @@
 # @electric-sql/pglite-vue
 
+## 0.2.18
+
+### Patch Changes
+
+- 317fd36: Specify a peer dependency range on @electric-sql/pglite
+- Updated dependencies [97e52f7]
+- Updated dependencies [4356024]
+- Updated dependencies [0033bc7]
+  - @electric-sql/pglite@0.3.0
+
 ## 0.2.17
 
 ### Patch Changes

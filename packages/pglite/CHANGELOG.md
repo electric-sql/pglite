@@ -1,5 +1,16 @@
 # @electric-sql/pglite
 
+## 0.3.0
+
+### Minor Changes
+
+- 97e52f7: upgrade to postgresql 17.4
+
+### Patch Changes
+
+- 4356024: bug fix live plugin when dealing with case sensitive table names
+- 0033bc7: Fix a race condition in live query unsubscription that could result in live queries failing to update.
+
 ## 0.2.17
 
 ### Patch Changes
