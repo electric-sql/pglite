@@ -13,8 +13,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.0",
-    "@electric-sql/pglite-react": "^0.2.18",
+    "@electric-sql/pglite": "^0.2.17",
+    "@electric-sql/pglite-react": "^0.2.17",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
