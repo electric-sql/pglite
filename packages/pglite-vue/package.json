@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-vue",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "description": "Vue hooks for using PGlite",
   "type": "module",
   "private": false,
@@ -64,7 +64,7 @@
     "vue2.7": "npm:vue@~2.7.16"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.2.17 - 0.3.0",
+    "@electric-sql/pglite": "workspace:0.3.0",
     "@vue/composition-api": "^1.1.2",
     "vue": "^2.6.0 || ^3.3.0"
   },
