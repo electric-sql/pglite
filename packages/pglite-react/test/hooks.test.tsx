@@ -375,50 +375,5 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       await db.exec(`INSERT INTO live_test (name) VALUES ('updated');`)
       await waitFor(() => expect(result.current?.rows[0].name).toBe('updated'))
     })
-
-    it('works with pattern matching', async () => {
-      await db.exec(`
-        CREATE TABLE pattern_matching (
-          id SERIAL PRIMARY KEY,
-          statement VARCHAR(100)
-        );
-      `)
-
-      await db.exec(
-        `INSERT INTO pattern_matching (statement) VALUES ('PGlite 4 ever.'),('To not be or not to be.');`,
-      )
-
-      const liveQueryPromise = db.live.incrementalQuery(
-        `SELECT * FROM pattern_matching WHERE statement ILIKE '%pglite%' ORDER BY id DESC LIMIT 1;`,
-        [],
-        incKey,
-      )
-
-      const { result } = renderHook(() => useLiveQuery(liveQueryPromise), {
-        wrapper,
-      })
-
-      await waitFor(() =>
-        expect(result.current?.rows).toEqual([
-          {
-            id: 1,
-            statement: 'PGlite 4 ever.',
-          },
-        ]),
-      )
-
-      await db.exec(
-        `INSERT INTO pattern_matching (statement) VALUES ('should not trigger!');`,
-      )
-      // Trigger an update
-      await db.exec(
-        `INSERT INTO pattern_matching (statement) VALUES ('ElectricSQL + pglite = <3');`,
-      )
-      await waitFor(() =>
-        expect(result.current?.rows[0].statement).toBe(
-          'ElectricSQL + pglite = <3',
-        ),
-      )
-    })
   })
 }

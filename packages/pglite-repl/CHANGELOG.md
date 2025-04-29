@@ -1,16 +1,12 @@
 # @electric-sql/pglite-repl
 
-## 0.2.18
+## 1.0.0-next.0
 
 ### Patch Changes
 
-- 317fd36: Specify a peer dependency range on @electric-sql/pglite
 - Updated dependencies [97e52f7]
-- Updated dependencies [4356024]
-- Updated dependencies [0033bc7]
-- Updated dependencies [317fd36]
-  - @electric-sql/pglite@0.3.0
-  - @electric-sql/pglite-react@0.2.18
+  - @electric-sql/pglite@0.3.0-next.0
+  - @electric-sql/pglite-react@1.0.0-next.0
 
 ## 0.2.17
 

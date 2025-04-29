@@ -5,6 +5,7 @@ import { uuid_ossp } from '../../dist/contrib/uuid_ossp.js'
 describe('uuid_ossp', () => {
   it('uuid_generate_v1', async () => {
     const pg = new PGlite({
+      "debug":true,
       extensions: {
         uuid_ossp,
       },

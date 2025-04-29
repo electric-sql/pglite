@@ -113,7 +113,6 @@ export default defineConfig({
           { text: 'REPL Component', link: '/docs/repl' },
           { text: 'ORMs & Query Builders', link: '/docs/orm-support' },
           { text: 'Sync using ElectricSQL', link: '/docs/sync' },
-          { text: 'Upgrade v0.2.x -> v0.3.x', link: '/docs/upgrade' },
         ],
       },
       {

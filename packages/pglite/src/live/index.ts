@@ -217,7 +217,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       const unsubList: Array<() => Promise<void>> = await Promise.all(
         tables!.map((table) =>
           pg.listen(
-            `"table_change__${table.schema_name}__${table.table_name}"`,
+            `table_change__${table.schema_name}__${table.table_name}`,
             async () => {
               refresh()
             },
