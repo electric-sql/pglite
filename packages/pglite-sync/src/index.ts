@@ -209,7 +209,8 @@ async function createPlugin(
             if (shape.onMustRefetch) {
               await shape.onMustRefetch(tx)
             } else {
-              await tx.exec(`DELETE FROM ${shape.table};`)
+              const schema = shape.schema || 'public'
+              await tx.exec(`DELETE FROM "${schema}"."${shape.table}";`)
             }
             truncateNeeded.delete(shapeName)
           }

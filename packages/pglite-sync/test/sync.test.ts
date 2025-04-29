@@ -1530,4 +1530,108 @@ describe('pglite-sync', () => {
     // Cleanup
     syncResult.unsubscribe()
   })
+
+  it('case sensitivity: handles inserts/updates/deletes on case sensitive table names', async () => {
+    let feedMessage: (
+      lsn: number,
+      message: MultiShapeMessage,
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (lsn, message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS "cAseSENSiTiVe" (
+        id SERIAL PRIMARY KEY,
+        task TEXT,
+        done BOOLEAN
+      );
+    `)
+    await pg.exec(`TRUNCATE "cAseSENSiTiVe";`)
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'cAseSENSiTiVe' },
+      },
+      table: 'cAseSENSiTiVe',
+      primaryKey: ['id'],
+      shapeKey: null,
+    })
+
+    // insert
+    await feedMessage(0, {
+      headers: { operation: 'insert', lsn: '0' },
+      key: 'id1',
+      value: {
+        id: 1,
+        task: 'task1',
+        done: false,
+      },
+      shape: 'shape',
+    })
+    expect((await pg.sql`SELECT* FROM "cAseSENSiTiVe";`).rows).toEqual([
+      {
+        id: 1,
+        task: 'task1',
+        done: false,
+      },
+    ])
+
+    // update
+    await feedMessage(1, {
+      headers: { operation: 'update', lsn: '1' },
+      key: 'id1',
+      value: {
+        id: 1,
+        task: 'task2',
+        done: true,
+      },
+      shape: 'shape',
+    })
+    expect((await pg.sql`SELECT* FROM "cAseSENSiTiVe";`).rows).toEqual([
+      {
+        id: 1,
+        task: 'task2',
+        done: true,
+      },
+    ])
+
+    // delete
+    await feedMessage(2, {
+      headers: { operation: 'delete', lsn: '2' },
+      key: 'id1',
+      value: {
+        id: 1,
+        task: 'task2',
+        done: true,
+      },
+      shape: 'shape',
+    })
+    expect((await pg.sql`SELECT* FROM "cAseSENSiTiVe";`).rows).toEqual([])
+
+    shape.unsubscribe()
+  })
 })
