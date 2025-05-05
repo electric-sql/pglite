@@ -12,7 +12,7 @@
     "ci:publish": "pnpm changeset publish",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
-    "wasm:build": "cd postgres-pglite && ./wasm-build/build-with-docker.sh && cd .. && mkdir -p ./packages/pglite/release && cp -af postgres-pglite/dist/pglite-web/. ./packages/pglite/release/ && cp -avf postgres-pglite/dist/extensions-emsdk/*.tar.gz ./packages/pglite/release/"
+    "wasm:build": "cd postgres-pglite && ./wasm-build/build-with-docker.sh && cd .. && mkdir -p ./packages/pglite/release && cp -avf postgres-pglite/dist/pglite-web/. ./packages/pglite/release/ && cp -avf postgres-pglite/dist/extensions-emsdk/*.tar.gz ./packages/pglite/release/"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
