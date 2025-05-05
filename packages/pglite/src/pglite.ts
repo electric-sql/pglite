@@ -596,6 +596,7 @@ export class PGlite
       // use socketfiles
     } else if (1) {
 */
+if (1) {
       const mod = this.mod!
       const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
       const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
@@ -610,13 +611,13 @@ export class PGlite
       const stream = mod.FS.open(pg_out, 'r')
       data = new Uint8Array(fstat.size)
       mod.FS.read(stream, data, 0, fstat.size, 0)
-/*
+
     } else {
       throw new Error(
         `Should not happen but it did: unhandled data transfer container : ${this.#dataTransferContainer}`,
       )
     }
-*/
+
     return data
   }
 
