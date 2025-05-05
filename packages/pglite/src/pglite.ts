@@ -574,10 +574,10 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(message: Uint8Array) {
+  execProtocolRawSync(message: Uint8Array, dataTransferContainerOverride?: DataTransferContainer) {
     let data
     const mod = this.mod!
-    switch (this.#dataTransferContainer) {
+    switch (dataTransferContainerOverride ?? this.#dataTransferContainer) {
       case 'cma': {
         // Use the CMA buffer
         const msg_len = message.length
@@ -635,9 +635,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true, dataTransferContainerOverride = undefined }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message)
+    const data = this.execProtocolRawSync(message, dataTransferContainerOverride)
     if (syncToFs) {
       await this.syncToFs()
     }
@@ -655,9 +655,10 @@ export class PGlite
       syncToFs = true,
       throwOnError = true,
       onNotice,
+      dataTransferContainerOverride
     }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
-    const data = await this.execProtocolRaw(message, { syncToFs })
+    const data = await this.execProtocolRaw(message, { syncToFs, dataTransferContainerOverride })
     const results: BackendMessage[] = []
 
     this.#protocolParser.parse(data, (msg) => {
