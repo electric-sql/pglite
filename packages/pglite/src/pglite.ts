@@ -36,6 +36,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+type DataTransferContainer = 'cma' | 'file'
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -72,6 +74,8 @@ export class PGlite
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+
+  #dataTransferContainer = this.getDataTransferContainer()
 
   /**
    * Create a new PGlite instance
@@ -566,15 +570,50 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const msg_len = message.length
-    const mod = this.mod!
-    mod._use_wire(1)
-    mod._interactive_write(msg_len)
-    mod.HEAPU8.set(message, 1)
-    mod._interactive_one()
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
+    var data
+    // this.#log('#dataTransferContainer', this.#dataTransferContainer)
+
+    // Use cma
+    if (0) {
+      const msg_len = message.length
+      const mod = this.mod!
+
+      // >0 set buffer content type to wire protocol
+      mod._use_wire(1)
+
+      // set buffer size so answer will be at size+0x2 pointer addr
+      mod._interactive_write(msg_len)
+      mod.HEAPU8.set(message, 1)
+
+      // execute the message
+      mod._interactive_one()
+
+      // Read responses from the buffer
+      const msg_start = msg_len + 2
+      const msg_end = msg_start + mod._interactive_read()
+      data = mod.HEAPU8.subarray(msg_start, msg_end)
+
+      // use socketfiles
+    } else if (1) {
+      const mod = this.mod!
+      const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
+      const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
+      const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+      mod._interactive_write(0)
+      mod._use_wire(1)
+      mod.FS.writeFile(pg_lck, message)
+      mod.FS.rename(pg_lck, pg_in)
+      mod._interactive_one()
+      const fstat = mod.FS.stat(pg_out)
+      //        console.log("pgreply", fstat.size)
+      const stream = mod.FS.open(pg_out, 'r')
+      data = new Uint8Array(fstat.size)
+      mod.FS.read(stream, data, 0, fstat.size, 0)
+    } else {
+      throw new Error(
+        `Should not happen but it did: unhandled data transfer container : ${this.#dataTransferContainer}`,
+      )
+    }
     return data
   }
 
@@ -593,29 +632,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const msg_len = message.length
-    const mod = this.mod!
-
-    // >0 set buffer content type to wire protocol
-    mod._use_wire(1)
-    // set buffer size so answer will be at size+0x2 pointer addr
-    mod._interactive_write(msg_len)
-
-    // copy whole buffer at addr 0x1
-    mod.HEAPU8.set(message, 1)
-
-    // execute the message
-    mod._interactive_one()
-
-    // Read responses from the buffer
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
-
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
-
     return data
   }
 
@@ -820,5 +840,18 @@ export class PGlite
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
     return PGlite.create({ loadDataDir: dump })
+  }
+
+  getDataTransferContainer(): DataTransferContainer {
+    const dtc = process.env.DATA_TRANSFER_CONTAINER
+    if (!dtc || dtc === 'cma') {
+      this.#log(`Using data transfer container`, dtc)
+      return 'cma'
+    }
+    if (dtc === 'file') {
+      this.#log(`Using data transfer container`, dtc)
+      return 'file'
+    }
+    throw new Error(`Unsupported data transfer container ${dtc}`)
   }
 }
