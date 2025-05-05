@@ -570,9 +570,9 @@ export class PGlite
     const msg_len = message.length
     const mod = this.mod!
     mod._use_wire(1)
-    mod._interactive_write(msg_len)
+    // mod._interactive_write(msg_len)
     mod.HEAPU8.set(message, 1)
-    mod._interactive_one()
+    mod._interactive_one(msg_len)
     const msg_start = msg_len + 2
     const msg_end = msg_start + mod._interactive_read()
     const data = mod.HEAPU8.subarray(msg_start, msg_end)
@@ -600,13 +600,13 @@ export class PGlite
     // >0 set buffer content type to wire protocol
     mod._use_wire(1)
     // set buffer size so answer will be at size+0x2 pointer addr
-    mod._interactive_write(msg_len)
+    // mod._interactive_write(msg_len)
 
     // copy whole buffer at addr 0x1
     mod.HEAPU8.set(message, 1)
 
     // execute the message
-    mod._interactive_one()
+    mod._interactive_one(msg_len)
 
     // Read responses from the buffer
     const msg_start = msg_len + 2

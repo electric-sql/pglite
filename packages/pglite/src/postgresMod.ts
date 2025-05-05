@@ -27,8 +27,8 @@ export interface PostgresMod
   _pgl_initdb: () => number
   _pgl_backend: () => void
   _pgl_shutdown: () => void
-  _interactive_write: (msgLength: number) => void
-  _interactive_one: () => void
+  // _interactive_write: (msgLength: number) => void
+  _interactive_one: (length: number) => number
   _interactive_read: () => number
 }
 
