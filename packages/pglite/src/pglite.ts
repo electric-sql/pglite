@@ -577,41 +577,27 @@ export class PGlite
   execProtocolRawSync(message: Uint8Array) {
     let data
     const mod = this.mod!
+
+    // >0 set buffer content type to wire protocol
+    mod._use_wire(1)
+    const msg_len = message.length
+
+    // TODO: if (message.length>CMA_B) force file
+
     switch (this.#dataTransferContainer) {
       case 'cma': {
-        // Use the CMA buffer
-        const msg_len = message.length
-
-        // >0 set buffer content type to wire protocol
-        mod._use_wire(1)
-
         // set buffer size so answer will be at size+0x2 pointer addr
-        mod._interactive_write(msg_len)
+        mod._interactive_write(message.length)
         mod.HEAPU8.set(message, 1)
-
-        // execute the message
-        mod._interactive_one()
-
-        // Read responses from the buffer
-        const msg_start = msg_len + 2
-        const msg_end = msg_start + mod._interactive_read()
-        data = mod.HEAPU8.subarray(msg_start, msg_end)
         break
       }
       case 'file': {
         // Use socketfiles to emulate a socket connection
         const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
         const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-        mod._use_wire(1)
         mod._interactive_write(0)
         mod.FS.writeFile(pg_lck, message)
         mod.FS.rename(pg_lck, pg_in)
-        mod._interactive_one()
-        const fstat = mod.FS.stat(pg_out)
-        const stream = mod.FS.open(pg_out, 'r')
-        data = new Uint8Array(fstat.size)
-        mod.FS.read(stream, data, 0, fstat.size, 0)
         break
       }
       default:
@@ -619,6 +605,42 @@ export class PGlite
           `Unknown data transfer container: ${this.#dataTransferContainer}`,
         )
     }
+
+    // execute the message
+    mod._interactive_one()
+
+    // TODO: use get_channel() > 0 to detect possible CMA position else go file.
+
+    switch (this.#dataTransferContainer) {
+      case 'cma': {
+        // Read responses from the buffer
+
+        const msg_start = msg_len + 2
+        const msg_end = msg_start + mod._interactive_read()
+        data = mod.HEAPU8.subarray(msg_start, msg_end)
+        break
+      }
+      case 'file': {
+        // Use socketfiles to emulate a socket connection
+        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+        try {
+            const fstat = mod.FS.stat(pg_out)
+            const stream = mod.FS.open(pg_out, 'r')
+            data = new Uint8Array(fstat.size)
+            mod.FS.read(stream, data, 0, fstat.size, 0)
+            mod.FS.unlink(pg_out)
+        } catch (x) {
+            // case of single X message.
+            return new Uint8Array(0)
+        }
+        break
+      }
+      default:
+        throw new Error(
+          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+        )
+    }
+
     return data
   }
 
