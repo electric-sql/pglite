@@ -631,7 +631,8 @@ export class PGlite
             mod.FS.unlink(pg_out)
         } catch (x) {
             // case of single X message.
-            return new Uint8Array(0)
+console.error("file:", x)
+            data = new Uint8Array(0)
         }
         break
       }
