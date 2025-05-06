@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     typecheck: { enabled: true },
     environment: 'node',
-    testTimeout: 30000,
+    testTimeout: 5000,
     watch: false,
     dir: './tests',
     maxConcurrency: 1 // because we are running a TCP server on a port 

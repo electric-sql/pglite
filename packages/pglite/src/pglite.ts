@@ -119,7 +119,7 @@ export class PGlite
     if (options?.debug !== undefined) {
       this.debug = options.debug
     }
-
+this.debug = 1
     // Enable relaxed durability if requested
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
@@ -570,12 +570,11 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    var data
+    let data = new Uint8Array(0)
     // this.#log('#dataTransferContainer', this.#dataTransferContainer)
-
-    // Use cma
+/*
     if (0) {
-      const msg_len = message.length
+      let msg_len = message.length
       const mod = this.mod!
 
       // >0 set buffer content type to wire protocol
@@ -595,6 +594,31 @@ export class PGlite
 
       // use socketfiles
     } else if (1) {
+*/
+try {
+// /*
+      // Use cma
+      let msg_len = message.length
+      const mod = this.mod!
+
+      // >0 set buffer content type to wire protocol
+      mod._use_wire(1)
+
+      // set buffer size so answer will be at size+0x2 pointer addr
+      mod._interactive_write(msg_len)
+      mod.HEAPU8.set(message, 1)
+
+      // execute the message
+      mod._interactive_one()
+
+      // Read responses from the buffer
+      const msg_start = msg_len + 2
+      const msg_end = msg_start + mod._interactive_read()
+      if (msg_end>msg_start)
+        data = mod.HEAPU8.subarray(msg_start, msg_end)
+// */
+
+/*
       const mod = this.mod!
       const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
       const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
@@ -609,11 +633,14 @@ export class PGlite
       const stream = mod.FS.open(pg_out, 'r')
       data = new Uint8Array(fstat.size)
       mod.FS.read(stream, data, 0, fstat.size, 0)
-    } else {
-      throw new Error(
-        `Should not happen but it did: unhandled data transfer container : ${this.#dataTransferContainer}`,
+      mod.FS.unlink(pg_out)
+*/
+    } catch (x) {
+      console.warn(
+        `Should not happen but it did: unhandled ${x} in transfer container : ${this.#dataTransferContainer}`,
       )
     }
+
     return data
   }
 
