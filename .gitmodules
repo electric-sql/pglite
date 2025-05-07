@@ -1,3 +1,4 @@
 [submodule "postgres-pglite"]
 	path = postgres-pglite
 	url = ../postgres-pglite.git
+

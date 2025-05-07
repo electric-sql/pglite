@@ -77,6 +77,8 @@ export interface DumpDataDirResult {
   filename: string
 }
 
+export type DataTransferContainer = 'cma' | 'file'
+
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
@@ -91,6 +93,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions
+  defaultDataTransferContainer?: DataTransferContainer
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

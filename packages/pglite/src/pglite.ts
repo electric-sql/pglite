@@ -17,6 +17,7 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  DataTransferContainer,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
@@ -35,8 +36,6 @@ import {
   NoticeMessage,
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
-
-type DataTransferContainer = 'cma' | 'file'
 
 export class PGlite
   extends BasePGlite
@@ -57,8 +56,11 @@ export class PGlite
 
   #queryMutex = new Mutex()
   #transactionMutex = new Mutex()
+  #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
+
+  #dataTransferContainer: DataTransferContainer = 'cma'
 
   readonly debug: DebugLevel = 0
 
@@ -74,8 +76,6 @@ export class PGlite
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
-
-  #dataTransferContainer = this.getDataTransferContainer()
 
   /**
    * Create a new PGlite instance
@@ -123,6 +123,11 @@ export class PGlite
     // Enable relaxed durability if requested
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
+    }
+
+    // Set the default data transfer container
+    if (options?.defaultDataTransferContainer !== undefined) {
+      this.#dataTransferContainer = options.defaultDataTransferContainer
     }
 
     // Save the extensions for later use
@@ -571,51 +576,70 @@ export class PGlite
    */
   execProtocolRawSync(message: Uint8Array) {
     let data
-    // this.#log('#dataTransferContainer', this.#dataTransferContainer)
-    // Use cma
-/*
-    if (0) {
-      let msg_len = message.length
-      const mod = this.mod!
+    const mod = this.mod!
 
-      // >0 set buffer content type to wire protocol
-      mod._use_wire(1)
+    // >0 set buffer content type to wire protocol
+    mod._use_wire(1)
+    const msg_len = message.length
 
-      // set buffer size so answer will be at size+0x2 pointer addr
-      mod._interactive_write(msg_len)
-      mod.HEAPU8.set(message, 1)
+    // TODO: if (message.length>CMA_B) force file
 
-      // execute the message
-      mod._interactive_one()
+    switch (this.#dataTransferContainer) {
+      case 'cma': {
+        // set buffer size so answer will be at size+0x2 pointer addr
+        mod._interactive_write(message.length)
+        mod.HEAPU8.set(message, 1)
+        break
+      }
+      case 'file': {
+        // Use socketfiles to emulate a socket connection
+        const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
+        const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
+        mod._interactive_write(0)
+        mod.FS.writeFile(pg_lck, message)
+        mod.FS.rename(pg_lck, pg_in)
+        break
+      }
+      default:
+        throw new Error(
+          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+        )
+    }
 
-      // Read responses from the buffer
-      const msg_start = msg_len + 2
-      const msg_end = msg_start + mod._interactive_read()
-      data = mod.HEAPU8.subarray(msg_start, msg_end)
+    // execute the message
+    mod._interactive_one()
 
-      // use socketfiles
-    } else if (1) {
-*/
-if (1) {
-      const mod = this.mod!
-      const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
-      const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-      const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-      mod._interactive_write(0)
-      mod._use_wire(1)
-      mod.FS.writeFile(pg_lck, message)
-      mod.FS.rename(pg_lck, pg_in)
-      mod._interactive_one()
-      const fstat = mod.FS.stat(pg_out)
-      //        console.log("pgreply", fstat.size)
-      const stream = mod.FS.open(pg_out, 'r')
-      data = new Uint8Array(fstat.size)
-      mod.FS.read(stream, data, 0, fstat.size, 0)
+    // TODO: use get_channel() > 0 to detect possible CMA position else go file.
 
-    } else {
-      throw new Error(
-        `Should not happen but it did: unhandled data transfer container : ${this.#dataTransferContainer}`,
-      )
+    switch (this.#dataTransferContainer) {
+      case 'cma': {
+        // Read responses from the buffer
+
+        const msg_start = msg_len + 2
+        const msg_end = msg_start + mod._interactive_read()
+        data = mod.HEAPU8.subarray(msg_start, msg_end)
+        break
+      }
+      case 'file': {
+        // Use socketfiles to emulate a socket connection
+        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+        try {
+          const fstat = mod.FS.stat(pg_out)
+          const stream = mod.FS.open(pg_out, 'r')
+          data = new Uint8Array(fstat.size)
+          mod.FS.read(stream, data, 0, fstat.size, 0)
+          mod.FS.unlink(pg_out)
+        } catch (x) {
+          // case of single X message.
+          console.error('file:', x)
+          data = new Uint8Array(0)
+        }
+        break
+      }
+      default:
+        throw new Error(
+          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+        )
     }
 
     return data
@@ -752,6 +776,10 @@ if (1) {
    * @param callback The callback to call when a notification is received
    */
   async listen(channel: string, callback: (payload: string) => void) {
+    return this._runExclusiveListen(() => this.#listen(channel, callback))
+  }
+
+  async #listen(channel: string, callback: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
@@ -777,16 +805,26 @@ if (1) {
    * @param callback The callback to remove
    */
   async unlisten(channel: string, callback?: (payload: string) => void) {
+    return this._runExclusiveListen(() => this.#unlisten(channel, callback))
+  }
+
+  async #unlisten(channel: string, callback?: (payload: string) => void) {
     const pgChannel = toPostgresName(channel)
+    const cleanUp = async () => {
+      await this.exec(`UNLISTEN ${channel}`)
+      // While that query was running, another query might have subscribed
+      // so we need to check again
+      if (this.#notifyListeners.get(pgChannel)?.size === 0) {
+        this.#notifyListeners.delete(pgChannel)
+      }
+    }
     if (callback) {
       this.#notifyListeners.get(pgChannel)?.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
-        await this.exec(`UNLISTEN ${channel}`)
-        this.#notifyListeners.delete(pgChannel)
+        await cleanUp()
       }
     } else {
-      await this.exec(`UNLISTEN ${channel}`)
-      this.#notifyListeners.delete(pgChannel)
+      await cleanUp()
     }
   }
 
@@ -846,16 +884,7 @@ if (1) {
     return PGlite.create({ loadDataDir: dump })
   }
 
-  getDataTransferContainer(): DataTransferContainer {
-    const dtc = process.env.DATA_TRANSFER_CONTAINER
-    if (!dtc || dtc === 'cma') {
-      this.#log(`Using data transfer container`, dtc)
-      return 'cma'
-    }
-    if (dtc === 'file') {
-      this.#log(`Using data transfer container`, dtc)
-      return 'file'
-    }
-    throw new Error(`Unsupported data transfer container ${dtc}`)
+  _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#listenMutex.runExclusive(fn)
   }
 }

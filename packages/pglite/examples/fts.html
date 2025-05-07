@@ -12,28 +12,28 @@
       }
     </script>
   </head>
-<body>
-<h1>PGlite FTS Example</h1>
-<div class="script-plus-log">
-<script type="module">
-import { PGlite } from "@electric-sql/pglite";
+  <body>
+    <h1>PGlite FTS Example</h1>
+    <div class="script-plus-log">
+      <script type="module">
+        import { PGlite } from '@electric-sql/pglite'
 
-console.log("Starting...");
+        console.log('Starting...')
 
-// In-memory database:
-const pg = await PGlite.create();
+        // In-memory database:
+        const pg = await PGlite.create()
 
-const ret1 = await pg.query(`
+        const ret1 = await pg.query(`
   SELECT 'a fat cat sat on a mat and ate a fat rat'::tsvector @@ 'cat & rat'::tsquery AS match;
-`);
-console.log(ret1.rows[0].match);
+`)
+        console.log(ret1.rows[0].match)
 
-const ret2 = await pg.query(`
+        const ret2 = await pg.query(`
   SELECT to_tsvector('fat cats ate fat rats') @@ to_tsquery('fat & rat') AS match;
-`);
-console.log(ret2.rows[0].match);
+`)
+        console.log(ret2.rows[0].match)
 
-await pg.query(`
+        await pg.query(`
   CREATE TABLE fts_ranking (
     id serial PRIMARY KEY,
     title text,
@@ -41,7 +41,7 @@ await pg.query(`
   );
 `)
 
-await pg.query(`
+        await pg.query(`
   INSERT INTO fts_ranking (title, body)
   VALUES
     ('The Fat Rats', 'The fat rats ate the fat cats.'),
@@ -49,15 +49,15 @@ await pg.query(`
     ('The Fat Cats and Rats', 'The fat cats and rats ate the fat rats and cats.');
 `)
 
-const ret3 = await pg.query(`
+        const ret3 = await pg.query(`
   SELECT title, ts_rank_cd(to_tsvector('english', body), to_tsquery('english', 'fat & rat')) as rank
   FROM fts_ranking
   ORDER BY rank DESC;
 `)
 
-console.log(ret3.rows);
-</script>
-<div id="log"></div>
-</div>
-</body>
+        console.log(ret3.rows)
+      </script>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>
