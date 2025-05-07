@@ -588,7 +588,7 @@ export class PGlite
     // TODO: if (message.length>CMA_B) force file
 
     const currDataTransferContainer =
-    options.dataTransferContainer ?? this.#dataTransferContainer
+      options.dataTransferContainer ?? this.#dataTransferContainer
 
     switch (currDataTransferContainer) {
       case 'cma': {
@@ -663,15 +663,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    {
-      syncToFs = true,
-      dataTransferContainer,
-    }: ExecProtocolOptions = {}
+    { syncToFs = true, dataTransferContainer }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(
-      message,
-      { dataTransferContainer },
-    )
+    const data = this.execProtocolRawSync(message, { dataTransferContainer })
     if (syncToFs) {
       await this.syncToFs()
     }
