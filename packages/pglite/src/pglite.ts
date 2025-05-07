@@ -576,7 +576,7 @@ export class PGlite
    */
   execProtocolRawSync(
     message: Uint8Array,
-    dataTransferContainerOverride?: DataTransferContainer,
+    { dataTransferContainer?: DataTransferContainer } = {},
   ) {
     let data
     const mod = this.mod!
