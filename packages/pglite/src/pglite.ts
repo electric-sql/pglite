@@ -633,7 +633,6 @@ export class PGlite
           mod.FS.unlink(pg_out)
         } catch (x) {
           // case of single X message.
-          console.error('file:', x)
           data = new Uint8Array(0)
         }
         break
