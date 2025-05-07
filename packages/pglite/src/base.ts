@@ -63,7 +63,7 @@ export abstract class BasePGlite
    */
   abstract execProtocolRaw(
     message: Uint8Array,
-    { syncToFs, dataTransferContainerOverride }: ExecProtocolOptions,
+    { syncToFs, dataTransferContainer }: ExecProtocolOptions,
   ): Promise<Uint8Array>
 
   /**

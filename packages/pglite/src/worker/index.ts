@@ -637,7 +637,7 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       dataTransferContainer?: DataTransferContainer,
     ) {
       const result = await db.execProtocolRaw(message, {
-        dataTransferContainerOverride,
+        dataTransferContainer,
       })
       if (result.byteLength !== result.buffer.byteLength) {
         // The data is a slice of a larger buffer, this is potentially the whole
