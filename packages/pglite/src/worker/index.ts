@@ -634,7 +634,7 @@ function makeWorkerApi(tabId: string, db: PGlite) {
     },
     async execProtocolRaw(
       message: Uint8Array,
-      dataTransferContainerOverride?: DataTransferContainer,
+      dataTransferContainer?: DataTransferContainer,
     ) {
       const result = await db.execProtocolRaw(message, {
         dataTransferContainerOverride,
