@@ -7,14 +7,14 @@ function createStringOfSize(sizeInBytes: number): string {
 }
 
 const sizes = {
-  '8089' : 8089,
-  '8090' : 8090,
-/*
+  '8089': 8089,
+  '8090': 8090,
+  /*
   '8091' : 8091,
   '8092' : 8092,
 */
-//  '5mb': 5 * 1024 * 1024,
-//   '12mb': 12 * 1024 * 1024,
+  //  '5mb': 5 * 1024 * 1024,
+  //   '12mb': 12 * 1024 * 1024,
 }
 
 const rowDataSizes = {
@@ -68,7 +68,6 @@ function testRowCountAndSize(
 }
 
 testDTC(async (defaultDataTransferContainer) => {
-
   describe('query and exec with different data sizes', () => {
     let db: PGlite
 

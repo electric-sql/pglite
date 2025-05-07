@@ -624,15 +624,15 @@ export class PGlite
         // Use socketfiles to emulate a socket connection
         const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
         try {
-            const fstat = mod.FS.stat(pg_out)
-            const stream = mod.FS.open(pg_out, 'r')
-            data = new Uint8Array(fstat.size)
-            mod.FS.read(stream, data, 0, fstat.size, 0)
-            mod.FS.unlink(pg_out)
+          const fstat = mod.FS.stat(pg_out)
+          const stream = mod.FS.open(pg_out, 'r')
+          data = new Uint8Array(fstat.size)
+          mod.FS.read(stream, data, 0, fstat.size, 0)
+          mod.FS.unlink(pg_out)
         } catch (x) {
-            // case of single X message.
-console.error("file:", x)
-            data = new Uint8Array(0)
+          // case of single X message.
+          console.error('file:', x)
+          data = new Uint8Array(0)
         }
         break
       }
