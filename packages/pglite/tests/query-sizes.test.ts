@@ -7,11 +7,12 @@ function createStringOfSize(sizeInBytes: number): string {
 }
 
 const sizes = {
-  '1kb': 1024,
-  '10kb': 10 * 1024,
-  '100kb': 100 * 1024,
-  '1mb': 1024 * 1024,
+  '8089': 8089,
+  '8090': 8090,
+  '8091': 8091,
+  '8092': 8092,
   '5mb': 5 * 1024 * 1024,
+  //   '12mb': 12 * 1024 * 1024,
 }
 
 const rowDataSizes = {
@@ -69,7 +70,7 @@ testDTC(async (defaultDataTransferContainer) => {
     let db: PGlite
 
     beforeEach(async () => {
-      db = new PGlite({ defaultDataTransferContainer })
+      db = new PGlite({ defaultDataTransferContainer, debug: 0 })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS size_test (

@@ -36,10 +36,10 @@
 PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js, Bun and Deno, with no need to install any other dependencies. It is only 3mb gzipped and has support for many Postgres extensions, including [pgvector](https://github.com/pgvector/pgvector).
 
 ```javascript
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 
-const db = new PGlite();
-await db.query("select 'Hello world' as message;");
+const db = new PGlite()
+await db.query("select 'Hello world' as message;")
 // -> { rows: [ { message: "Hello world" } ] }
 ```
 
@@ -54,12 +54,13 @@ For full documentation and user guides see [pglite.dev](https://pglite.dev).
 It can be installed and imported using your usual package manager:
 
 ```js
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 ```
+
 or using a CDN such as JSDeliver:
 
 ```js
-import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js'
 ```
 
 Then for an in-memory Postgres:
@@ -73,7 +74,7 @@ await db.query("select 'Hello world' as message;")
 or to persist the database to indexedDB:
 
 ```js
-const db = new PGlite("idb://my-pgdata");
+const db = new PGlite('idb://my-pgdata')
 ```
 
 ## Node/Bun/Deno
@@ -101,17 +102,17 @@ deno add npm:@electric-sql/pglite
 To use the in-memory Postgres:
 
 ```javascript
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite } from '@electric-sql/pglite'
 
-const db = new PGlite();
-await db.query("select 'Hello world' as message;");
+const db = new PGlite()
+await db.query("select 'Hello world' as message;")
 // -> { rows: [ { message: "Hello world" } ] }
 ```
 
 or to persist to the filesystem:
 
 ```javascript
-const db = new PGlite("./path/to/pgdata");
+const db = new PGlite('./path/to/pgdata')
 ```
 
 ## How it works
@@ -152,7 +153,7 @@ To _only_ build the Postgres WASM module (i.e. point 1 above), run
 pnpm wasm:build
 ```
 
-If you don't want to build the WASM module and assorted WASM binaries from scratch, you can download them from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`. 
+If you don't want to build the WASM module and assorted WASM binaries from scratch, you can download them from a comment under the most recently merged PR, labeled as _interim build files_, and place them under `packages/pglite/release`.
 
 To build all TypeScript packages (i.e. point 2 of the above), run:
 
@@ -170,9 +171,11 @@ pnpm build
 ```
 
 When ready to open a PR, run the following command at the root of the repository:
+
 ```bash
 pnpm changeset
 ```
+
 And follow the instructions to create an appropriate changeset. Please ensure any contributions that touch code are accompanied by a changeset.
 
 ## Acknowledgments

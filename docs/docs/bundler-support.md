@@ -39,7 +39,7 @@ export default defineConfig({
 })
 ```
 
-When importing the worker in your script, hou can use the recommended [?worker](https://vitejs.dev/guide/features#static-assets) import method from Vite:
+When importing the worker in your script, you can use the recommended [?worker](https://vitejs.dev/guide/features#static-assets) import method from Vite:
 
 ```ts
 import PGWorker from './worker.js?worker'

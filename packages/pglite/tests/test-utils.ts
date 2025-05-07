@@ -2,7 +2,7 @@ import { describe, expect } from 'vitest'
 import type { DataTransferContainer } from '../dist/index.js'
 
 declare global {
-  var Bun: any
+  let Bun: any
 }
 
 export async function expectToThrowAsync(
@@ -10,7 +10,7 @@ export async function expectToThrowAsync(
   expected?: string,
 ) {
   if (typeof Bun !== 'undefined') {
-    // @ts-ignore
+    // @ts-ignore because
     const bunTest = await import('bun:test')
     try {
       await fn()
