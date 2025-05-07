@@ -574,7 +574,10 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(message: Uint8Array, dataTransferContainerOverride?: DataTransferContainer) {
+  execProtocolRawSync(
+    message: Uint8Array,
+    dataTransferContainerOverride?: DataTransferContainer,
+  ) {
     let data
     const mod = this.mod!
 
@@ -584,7 +587,8 @@ export class PGlite
 
     // TODO: if (message.length>CMA_B) force file
 
-    const currDataTransferContainer = dataTransferContainerOverride ?? this.#dataTransferContainer
+    const currDataTransferContainer =
+      dataTransferContainerOverride ?? this.#dataTransferContainer
 
     switch (currDataTransferContainer) {
       case 'cma': {
@@ -659,9 +663,15 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true, dataTransferContainerOverride }: ExecProtocolOptions = {},
+    {
+      syncToFs = true,
+      dataTransferContainerOverride,
+    }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message, dataTransferContainerOverride)
+    const data = this.execProtocolRawSync(
+      message,
+      dataTransferContainerOverride,
+    )
     if (syncToFs) {
       await this.syncToFs()
     }
