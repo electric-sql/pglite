@@ -12,44 +12,44 @@
       }
     </script>
   </head>
-<body>
-<h1>PGlite Basic Example</h1>
-<div class="script-plus-log">
-<script type="module">
-import { PGlite } from "@electric-sql/pglite";
+  <body>
+    <h1>PGlite Basic Example</h1>
+    <div class="script-plus-log">
+      <script type="module">
+        import { PGlite } from '@electric-sql/pglite'
 
-console.log("Starting...");
+        console.log('Starting...')
 
-// In-memory database:
-const pg = new PGlite();
-// Or, stored in indexedDB:
-// const pg = new PGlite('pgdata');
+        // In-memory database:
+        const pg = new PGlite()
+        // Or, stored in indexedDB:
+        // const pg = new PGlite('pgdata');
 
-console.log("Ready!");
+        console.log('Ready!')
 
-console.log("Creating table...");
-await pg.exec(`
+        console.log('Creating table...')
+        await pg.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     name TEXT
   );
-`);
+`)
 
-console.log("Inserting data...");
+        console.log('Inserting data...')
 
-await pg.exec("INSERT INTO test (name) VALUES ('test');");
+        await pg.exec("INSERT INTO test (name) VALUES ('test');")
 
-console.log("Selecting data...");
+        console.log('Selecting data...')
 
-const res = await pg.exec(`
+        const res = await pg.exec(`
   SELECT * FROM test;
-`);
+`)
 
-console.log(res);
+        console.log(res)
 
-console.log(await pg.exec("SELECT * FROM test;"));
-</script>
-<div id="log"></div>
-</div>
-</body>
+        console.log(await pg.exec('SELECT * FROM test;'))
+      </script>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>

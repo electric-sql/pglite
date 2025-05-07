@@ -1,6 +1,6 @@
-import { PGlite } from "../dist/index.js";
-import { worker } from "../dist/worker/index.js";
-import { vector } from "../dist/vector/index.js";
+import { PGlite } from '../dist/index.js'
+import { worker } from '../dist/worker/index.js'
+import { vector } from '../dist/vector/index.js'
 
 worker({
   async init() {
@@ -8,10 +8,10 @@ worker({
       extensions: {
         vector,
       },
-    });
+    })
     // If you want run any specific setup code for the worker process, you can do it here.
-    return pg;
+    return pg
   },
-});
+})
 
-console.log("Worker process started");
+console.log('Worker process started')
