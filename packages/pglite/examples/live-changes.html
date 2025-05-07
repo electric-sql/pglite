@@ -29,31 +29,31 @@
       }
     </style>
   </head>
-<body>
-<h1>PGlite Live Changes Example</h1>
-<button id="start">start</button><button id="add" disabled>Add</button>
-<pre id="output"></pre>
-<div class="script-plus-log">
-<script type="module">
-import { PGlite } from "../dist/index.js";
-import { live } from "../dist/live/index.js";
+  <body>
+    <h1>PGlite Live Changes Example</h1>
+    <button id="start">start</button><button id="add" disabled>Add</button>
+    <pre id="output"></pre>
+    <div class="script-plus-log">
+      <script type="module">
+        import { PGlite } from '../dist/index.js'
+        import { live } from '../dist/live/index.js'
 
-const output = document.getElementById("output");
-const startBtn = document.getElementById("start");
-const addBtn = document.getElementById("add");
-let counter = 1000;
-let lastClicked = 0;
-const nameLength = 10000;
-const nameSuffix = "-".repeat(nameLength);
+        const output = document.getElementById('output')
+        const startBtn = document.getElementById('start')
+        const addBtn = document.getElementById('add')
+        let counter = 1000
+        let lastClicked = 0
+        const nameLength = 10000
+        const nameSuffix = '-'.repeat(nameLength)
 
-const pg = new PGlite({
-  extensions: {
-    live,
-  },
-});
-window.pg = pg;
+        const pg = new PGlite({
+          extensions: {
+            live,
+          },
+        })
+        window.pg = pg
 
-await pg.exec(`
+        await pg.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     rand float,
@@ -62,33 +62,33 @@ await pg.exec(`
   INSERT INTO test (name, rand)
   SELECT 'test' || i || '${nameSuffix}', random()
   FROM generate_series(1, ${counter}) AS i;
-`);
+`)
 
-startBtn.addEventListener("click", async () => {
-  lastClicked = performance.now();
-  startBtn.disabled = true;
-  addBtn.disabled = false;
-  pg.live.changes(
-    "SELECT * FROM test ORDER BY rand;",
-    null,
-    "id",
-    (changes) => {
-      const time = performance.now() - lastClicked;
-      console.log(`Update took ${time}ms`);
-      output.textContent = JSON.stringify(changes, null, 2);
-    }
-  );
-});
+        startBtn.addEventListener('click', async () => {
+          lastClicked = performance.now()
+          startBtn.disabled = true
+          addBtn.disabled = false
+          pg.live.changes(
+            'SELECT * FROM test ORDER BY rand;',
+            null,
+            'id',
+            (changes) => {
+              const time = performance.now() - lastClicked
+              console.log(`Update took ${time}ms`)
+              output.textContent = JSON.stringify(changes, null, 2)
+            },
+          )
+        })
 
-addBtn.addEventListener("click", async () => {
-  lastClicked = performance.now();
-  await pg.query(
-    "INSERT INTO test (name, rand) VALUES ($1, random());",
-    [`test${++counter}${nameSuffix}`]
-  );
-});
-</script>
-<div id="log"></div>
-</div>
-</body>
+        addBtn.addEventListener('click', async () => {
+          lastClicked = performance.now()
+          await pg.query(
+            'INSERT INTO test (name, rand) VALUES ($1, random());',
+            [`test${++counter}${nameSuffix}`],
+          )
+        })
+      </script>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>

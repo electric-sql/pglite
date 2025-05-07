@@ -12,21 +12,21 @@
       }
     </script>
   </head>
-<body>
-<h1>PGlite <code>PL/PGSQL</code> Example</h1>
-<div class="script-plus-log">
-<script type="module">
-import { PGlite } from "@electric-sql/pglite";
+  <body>
+    <h1>PGlite <code>PL/PGSQL</code> Example</h1>
+    <div class="script-plus-log">
+      <script type="module">
+        import { PGlite } from '@electric-sql/pglite'
 
-console.log("Starting...");
-const pg = new PGlite();
+        console.log('Starting...')
+        const pg = new PGlite()
 
-let ret = await pg.exec(`
+        let ret = await pg.exec(`
   CREATE EXTENSION IF NOT EXISTS plpgsql;
-`);
-console.log(ret);
+`)
+        console.log(ret)
 
-await pg.exec(`
+        await pg.exec(`
   CREATE OR REPLACE FUNCTION calculate_factorial(n INT) RETURNS INT AS $$
   DECLARE
       result INT := 1;
@@ -43,14 +43,14 @@ await pg.exec(`
       END IF;
   END;
   $$ LANGUAGE plpgsql;
-`);
+`)
 
-ret = await pg.exec(`
+        ret = await pg.exec(`
   SELECT calculate_factorial(5) AS result;
-`);
-console.log(ret);
-</script>
-<div id="log"></div>
-</div>
-</body>
+`)
+        console.log(ret)
+      </script>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>

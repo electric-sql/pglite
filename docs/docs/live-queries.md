@@ -63,7 +63,7 @@ You can update the window position by calling refresh with new offset/limit valu
 await ret.refresh(10, 10)
 ```
 
-The returned value from the call is an object with this interface:
+The returned value from the call is a Promise of an object with this interface:
 
 ```ts
 interface LiveQueryReturn<T> {
@@ -121,7 +121,7 @@ const ret = pg.live.changes(
 )
 ```
 
-The returned value from the call is defined by this interface:
+The call returns a Promise of an object defined by this interface:
 
 ```ts
 interface LiveChangesReturn<T = { [key: string]: any }> {

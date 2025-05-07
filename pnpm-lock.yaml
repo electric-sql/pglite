@@ -234,7 +234,7 @@ importers:
         specifier: ^6.34.1
         version: 6.34.1
       '@electric-sql/pglite-react':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pglite-react
       '@uiw/codemirror-theme-github':
         specifier: 4.23.5
@@ -259,7 +259,7 @@ importers:
         version: 19.0.0(react@19.0.0)
     devDependencies:
       '@electric-sql/pglite':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../pglite
       '@types/node':
         specifier: ^20.16.11

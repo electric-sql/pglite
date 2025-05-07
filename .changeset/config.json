@@ -7,6 +7,12 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [],
-  "privatePackages": { "tag": true, "version": true }
+  "ignore": [
+    "benchmark",
+    "pglite-react-example"
+  ],
+  "privatePackages": { "tag": true, "version": true },
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  }
 }

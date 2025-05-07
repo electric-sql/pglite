@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { testEsmAndCjs } from './test-utils.js'
+import { testEsmCjsAndDTC } from './test-utils.ts'
 
-await testEsmAndCjs(async (importType) => {
+await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
   const { PGlite } = (
     importType === 'esm'
       ? await import('../dist/index.js')
@@ -13,10 +13,11 @@ await testEsmAndCjs(async (importType) => {
       ? await import('../dist/live/index.js')
       : await import('../dist/live/index.cjs')
 
-  describe(`live ${importType}`, () => {
+  describe(`live`, () => {
     it('basic live query', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -112,6 +113,7 @@ await testEsmAndCjs(async (importType) => {
     it('live query on view', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -222,6 +224,7 @@ await testEsmAndCjs(async (importType) => {
     it('live query with params', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -307,6 +310,7 @@ await testEsmAndCjs(async (importType) => {
     it('incremental query unordered', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -356,6 +360,7 @@ await testEsmAndCjs(async (importType) => {
     it('incremental query with non-integer key', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -405,6 +410,7 @@ await testEsmAndCjs(async (importType) => {
     it('basic live incremental query', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -501,6 +507,7 @@ await testEsmAndCjs(async (importType) => {
     it('basic live incremental query with limit 1', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -543,6 +550,7 @@ await testEsmAndCjs(async (importType) => {
     it('live incremental query on view', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -654,6 +662,7 @@ await testEsmAndCjs(async (importType) => {
     it('live incremental query with params', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -740,6 +749,7 @@ await testEsmAndCjs(async (importType) => {
     it('basic live changes', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -915,6 +925,7 @@ await testEsmAndCjs(async (importType) => {
     it('subscribe to live query after creation', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -971,6 +982,7 @@ await testEsmAndCjs(async (importType) => {
     it('live changes limit 1', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1037,6 +1049,7 @@ await testEsmAndCjs(async (importType) => {
     it('subscribe to live changes after creation', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1096,6 +1109,7 @@ await testEsmAndCjs(async (importType) => {
     it('live query with windowing', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1187,6 +1201,7 @@ await testEsmAndCjs(async (importType) => {
     it('throws error when only one of offset/limit is provided', async () => {
       const db = await PGlite.create({
         extensions: { live },
+        defaultDataTransferContainer,
       })
 
       await expect(
@@ -1225,5 +1240,204 @@ await testEsmAndCjs(async (importType) => {
         }),
       ).rejects.toThrow('offset and limit must be numbers')
     })
+
+    it("doesn't have a race condition when unsubscribing from a live query", async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+        defaultDataTransferContainer,
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      let results
+      const eventTarget = new EventTarget()
+
+      // Create a first live query
+      const { unsubscribe } = await db.live.query({
+        query: 'SELECT * FROM testTable WHERE number > 1',
+      })
+
+      // Create a second live query that listens to the same channel, but don't
+      // await it's subscription to complete.
+      // This creates a race condition with the following unsubscribe, both are
+      // potentially interlaced with each other.
+      db.live.query({
+        query: 'SELECT * FROM testTable WHERE number > 2',
+        callback: (result) => {
+          results = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      })
+
+      // Unsubscribe from the first live query
+      await unsubscribe()
+
+      const promise = new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      await db.exec('INSERT INTO testTable (number) VALUES (3);')
+
+      // In a failed test, this will never resolve.
+      await promise
+
+      expect(results.rows).toEqual([{ id: 1, number: 3 }])
+    }, 3000)
+
+    it('works with pattern matching', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+        defaultDataTransferContainer,
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          statement VARCHAR(100)
+        );
+        INSERT INTO testTable (statement) VALUES ('i love pglite!');
+      `)
+
+      const eventTarget = new EventTarget()
+      let updatedResults
+
+      const { initialResults, unsubscribe } = await db.live.query(
+        `SELECT
+          id,
+          statement 
+        FROM testTable
+        WHERE 
+          statement ILIKE '%pglite%'
+        ORDER BY id;`,
+        [],
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, statement: 'i love pglite!' },
+      ])
+
+      await db.exec(
+        `INSERT INTO testTable (statement) VALUES ('This should not be in the results!');`,
+      )
+      await db.exec(
+        `INSERT INTO testTable (statement) VALUES ('PGlite is da best!');`,
+      )
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      unsubscribe()
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, statement: 'i love pglite!' },
+        { id: 3, statement: 'PGlite is da best!' },
+      ])
+    })
+  })
+
+  it('basic live query - case sensitive table name', async () => {
+    const db = await PGlite.create({
+      extensions: { live },
+      defaultDataTransferContainer,
+    })
+
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS "cAseSENSiTYVE" (
+        id SERIAL PRIMARY KEY,
+        number INT
+      );
+    `)
+
+    await db.exec(`
+      INSERT INTO "cAseSENSiTYVE" (number)
+      SELECT i*10 FROM generate_series(1, 5) i;
+    `)
+
+    let updatedResults
+    const eventTarget = new EventTarget()
+
+    const { initialResults, unsubscribe } = await db.live.query(
+      'SELECT * FROM "cAseSENSiTYVE" ORDER BY number;',
+      [],
+      (result) => {
+        updatedResults = result
+        eventTarget.dispatchEvent(new Event('change'))
+      },
+    )
+
+    expect(initialResults.rows).toEqual([
+      { id: 1, number: 10 },
+      { id: 2, number: 20 },
+      { id: 3, number: 30 },
+      { id: 4, number: 40 },
+      { id: 5, number: 50 },
+    ])
+
+    db.exec('INSERT INTO "cAseSENSiTYVE" (number) VALUES (25);')
+
+    await new Promise((resolve) =>
+      eventTarget.addEventListener('change', resolve, { once: true }),
+    )
+
+    expect(updatedResults.rows).toEqual([
+      { id: 1, number: 10 },
+      { id: 2, number: 20 },
+      { id: 6, number: 25 },
+      { id: 3, number: 30 },
+      { id: 4, number: 40 },
+      { id: 5, number: 50 },
+    ])
+
+    db.exec('DELETE FROM "cAseSENSiTYVE" WHERE id = 6;')
+
+    await new Promise((resolve) =>
+      eventTarget.addEventListener('change', resolve, { once: true }),
+    )
+
+    expect(updatedResults.rows).toEqual([
+      { id: 1, number: 10 },
+      { id: 2, number: 20 },
+      { id: 3, number: 30 },
+      { id: 4, number: 40 },
+      { id: 5, number: 50 },
+    ])
+
+    db.exec('UPDATE "cAseSENSiTYVE" SET number = 15 WHERE id = 3;')
+
+    await new Promise((resolve) =>
+      eventTarget.addEventListener('change', resolve, { once: true }),
+    )
+
+    expect(updatedResults.rows).toEqual([
+      { id: 1, number: 10 },
+      { id: 3, number: 15 },
+      { id: 2, number: 20 },
+      { id: 4, number: 40 },
+      { id: 5, number: 50 },
+    ])
+
+    unsubscribe()
+
+    db.exec('INSERT INTO "cAseSENSiTYVE" (number) VALUES (35);')
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(updatedResults.rows).toEqual([
+      { id: 1, number: 10 },
+      { id: 3, number: 15 },
+      { id: 2, number: 20 },
+      { id: 4, number: 40 },
+      { id: 5, number: 50 },
+    ])
   })
 })
