@@ -33,7 +33,7 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean
   throwOnError?: boolean
   onNotice?: (notice: NoticeMessage) => void
-  dataTransferContainerOverride?: DataTransferContainer
+  dataTransferContainer?: DataTransferContainer
 }
 
 export interface ExtensionSetupResult<TNamespace = any> {
