@@ -5,20 +5,22 @@
     padding: 0;
   }
 </style>
-<script src="../../pglite-repl/dist-webcomponent/Repl.js" type="module"></script>
+<script
+  src="../../pglite-repl/dist-webcomponent/Repl.js"
+  type="module"
+></script>
 <pglite-repl id="repl" show-time></pglite-repl>
 <script type="module">
-  import { PGlite } from "../dist/index.js";
-  import { vector } from "../dist/vector/index.js";
+  import { PGlite } from '../dist/index.js'
+  import { vector } from '../dist/vector/index.js'
 
   const pg = new PGlite('idb://base', {
     relaxedDurability: true,
     extensions: {
       vector,
-    }
-  });
+    },
+  })
 
-  const repl = document.getElementById('repl');
-  repl.pg = pg;
+  const repl = document.getElementById('repl')
+  repl.pg = pg
 </script>
-

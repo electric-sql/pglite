@@ -1,16 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { expectToThrowAsync, testEsmAndCjs } from './test-utils.js'
+import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
 
-await testEsmAndCjs(async (importType) => {
+await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
   const { PGlite } =
     importType === 'esm'
       ? await import('../dist/index.js')
-      : await import('../dist/index.cjs')
+      : ((await import(
+          '../dist/index.cjs'
+        )) as unknown as typeof import('../dist/index.js'))
 
-  describe(`basic ${importType}`, () => {
+  describe(`basic`, () => {
     it('exec', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -47,7 +51,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('query', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -88,7 +94,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('query templated', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       const tableName = identifier`test`
       await db.sql`
     CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -129,7 +137,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('types', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -176,7 +186,23 @@ await testEsmAndCjs(async (importType) => {
         ],
       )
 
-      const res = await db.query(`
+      const res = await db.query<{
+        id: number
+        text: string
+        number: number
+        float: number
+        bigint: bigint
+        bool: boolean
+        date: Date
+        timestamp: Date
+        json: Record<string, unknown>
+        blob: Uint8Array
+        array_text: string[]
+        array_number: number[]
+        nested_array_float: number[][]
+        test_null: null
+        test_undefined: null
+      }>(`
     SELECT * FROM test;
   `)
 
@@ -275,6 +301,7 @@ await testEsmAndCjs(async (importType) => {
 
     it('custom parser and serializer', async () => {
       const db = new PGlite({
+        defaultDataTransferContainer,
         serializers: { 1700: (x) => x.toString() },
         parsers: { 1700: (x) => BigInt(x) },
       })
@@ -311,7 +338,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('params', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -345,7 +374,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('array params', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -398,7 +429,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('error', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
@@ -468,7 +501,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('copy to/from blob', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -485,11 +520,11 @@ await testEsmAndCjs(async (importType) => {
       // Check that the copy command returns the number of rows affected
       expect(copyToRet.affectedRows).toBe(2)
 
-      const csv = await copyToRet.blob.text()
+      const csv = await copyToRet.blob?.text()
       expect(csv).toBe('1,test\n2,test2\n')
 
       // copy from
-      const blob2 = new Blob([csv])
+      const blob2 = new Blob([csv!])
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test2 (
           id SERIAL PRIMARY KEY,
@@ -536,7 +571,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('close', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -551,7 +588,9 @@ await testEsmAndCjs(async (importType) => {
     })
 
     it('use same param multiple times', async () => {
-      const db = new PGlite()
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
 
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (

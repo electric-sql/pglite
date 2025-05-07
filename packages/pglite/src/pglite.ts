@@ -17,6 +17,7 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  DataTransferContainer,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
@@ -58,6 +59,8 @@ export class PGlite
   #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
+
+  #dataTransferContainer: DataTransferContainer = 'cma'
 
   readonly debug: DebugLevel = 0
 
@@ -120,6 +123,11 @@ export class PGlite
     // Enable relaxed durability if requested
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
+    }
+
+    // Set the default data transfer container
+    if (options?.defaultDataTransferContainer !== undefined) {
+      this.#dataTransferContainer = options.defaultDataTransferContainer
     }
 
     // Save the extensions for later use
@@ -567,15 +575,73 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const msg_len = message.length
+    let data
     const mod = this.mod!
+
+    // >0 set buffer content type to wire protocol
     mod._use_wire(1)
-    mod._interactive_write(msg_len)
-    mod.HEAPU8.set(message, 1)
+    const msg_len = message.length
+
+    // TODO: if (message.length>CMA_B) force file
+
+    switch (this.#dataTransferContainer) {
+      case 'cma': {
+        // set buffer size so answer will be at size+0x2 pointer addr
+        mod._interactive_write(message.length)
+        mod.HEAPU8.set(message, 1)
+        break
+      }
+      case 'file': {
+        // Use socketfiles to emulate a socket connection
+        const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
+        const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
+        mod._interactive_write(0)
+        mod.FS.writeFile(pg_lck, message)
+        mod.FS.rename(pg_lck, pg_in)
+        break
+      }
+      default:
+        throw new Error(
+          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+        )
+    }
+
+    // execute the message
     mod._interactive_one()
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
+
+    // TODO: use get_channel() > 0 to detect possible CMA position else go file.
+
+    switch (this.#dataTransferContainer) {
+      case 'cma': {
+        // Read responses from the buffer
+
+        const msg_start = msg_len + 2
+        const msg_end = msg_start + mod._interactive_read()
+        data = mod.HEAPU8.subarray(msg_start, msg_end)
+        break
+      }
+      case 'file': {
+        // Use socketfiles to emulate a socket connection
+        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+        try {
+          const fstat = mod.FS.stat(pg_out)
+          const stream = mod.FS.open(pg_out, 'r')
+          data = new Uint8Array(fstat.size)
+          mod.FS.read(stream, data, 0, fstat.size, 0)
+          mod.FS.unlink(pg_out)
+        } catch (x) {
+          // case of single X message.
+          console.error('file:', x)
+          data = new Uint8Array(0)
+        }
+        break
+      }
+      default:
+        throw new Error(
+          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+        )
+    }
+
     return data
   }
 
@@ -594,29 +660,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const msg_len = message.length
-    const mod = this.mod!
-
-    // >0 set buffer content type to wire protocol
-    mod._use_wire(1)
-    // set buffer size so answer will be at size+0x2 pointer addr
-    mod._interactive_write(msg_len)
-
-    // copy whole buffer at addr 0x1
-    mod.HEAPU8.set(message, 1)
-
-    // execute the message
-    mod._interactive_one()
-
-    // Read responses from the buffer
-    const msg_start = msg_len + 2
-    const msg_end = msg_start + mod._interactive_read()
-    const data = mod.HEAPU8.subarray(msg_start, msg_end)
-
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
-
     return data
   }
 
