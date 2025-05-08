@@ -9,6 +9,7 @@ export default defineConfig({
     testTimeout: 30000,
     watch: false,
     dir: './tests',
+    maxWorkers : 1,
     maxConcurrency: 1 // because we are running a TCP server on a port 
   },
 })
