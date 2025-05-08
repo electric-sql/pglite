@@ -54,7 +54,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
-//          inspect: true,
+          //          inspect: true,
         })
 
         // Add event listeners for debugging
@@ -489,6 +489,5 @@ describe(`PGLite Socket Server`, () => {
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
     })
-
   })
 })
