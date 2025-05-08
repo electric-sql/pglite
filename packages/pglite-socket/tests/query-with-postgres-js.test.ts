@@ -54,6 +54,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
+//          inspect: true,
         })
 
         // Add event listeners for debugging
@@ -146,8 +147,8 @@ describe(`PGLite Socket Server`, () => {
 
       // Verify table exists by querying the schema
       const tableCheck = await sql`
-        SELECT table_name 
-        FROM information_schema.tables 
+        SELECT table_name
+        FROM information_schema.tables
         WHERE table_schema = 'public' AND table_name = 'test_users'
       `
 
@@ -168,7 +169,7 @@ describe(`PGLite Socket Server`, () => {
       // Insert data
       const insertResult = await sql`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Alice', 'alice@example.com'),
           ('Bob', 'bob@example.com')
         RETURNING *
@@ -222,7 +223,7 @@ describe(`PGLite Socket Server`, () => {
 
       await sql`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Alice', 'alice@example.com'),
           ('Bob', 'bob@example.com')
       `
@@ -412,7 +413,7 @@ describe(`PGLite Socket Server`, () => {
       // Insert 100 rows using generate_series (server-side generation)
       await sql`
         INSERT INTO test_users (name, value)
-        SELECT 
+        SELECT
           'User ' || i as name,
           i as value
         FROM generate_series(1, 100) as i
@@ -488,5 +489,6 @@ describe(`PGLite Socket Server`, () => {
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
     })
+
   })
 })
