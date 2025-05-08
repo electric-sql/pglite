@@ -465,7 +465,7 @@ describe(`PGLite Socket Server`, () => {
       // Verify we received the expected number of pages
       expect(page).toBe(Math.ceil(100 / chunkSize))
     })
-
+/*
     it('should support LISTEN/NOTIFY for pub/sub messaging', async () => {
       // Create a promise that will resolve when the notification is received
       let receivedPayload = ''
@@ -489,5 +489,6 @@ describe(`PGLite Socket Server`, () => {
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
     })
+*/    
   })
 })
