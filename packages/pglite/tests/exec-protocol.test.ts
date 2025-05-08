@@ -34,7 +34,7 @@ testDTC(async (defaultDataTransferContainer) => {
       expect(messageNames1).toEqual([
         'notice',
         'parseComplete',
-/*        'readyForQuery',*/
+        /*        'readyForQuery',*/
       ])
 
       const r2 = await db.execProtocol(serialize.bind({ values: ['1'] }))
