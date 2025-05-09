@@ -14,6 +14,8 @@ export interface PGLiteSocketHandlerOptions {
   closeOnDetach?: boolean
   /** Print the incoming and outgoing data to the console in hex and ascii */
   inspect?: boolean
+  /** Enable debug logging of method calls */
+  debug?: boolean
 }
 
 /**
@@ -28,6 +30,11 @@ export class PGLiteSocketHandler extends EventTarget {
   private resolveLock?: () => void
   private rejectLock?: (err: Error) => void
   private inspect: boolean
+  private debug: boolean
+  private readonly id: number
+
+  // Static counter for generating unique handler IDs
+  private static nextHandlerId = 1;
 
   /**
    * Create a new PGLiteSocketHandler
@@ -38,6 +45,27 @@ export class PGLiteSocketHandler extends EventTarget {
     this.db = options.db
     this.closeOnDetach = options.closeOnDetach ?? false
     this.inspect = options.inspect ?? false
+    this.debug = options.debug ?? false
+    this.id = PGLiteSocketHandler.nextHandlerId++
+    
+    this.log('constructor: created new handler')
+  }
+  
+  /**
+   * Get the unique ID of this handler
+   */
+  public get handlerId(): number {
+    return this.id
+  }
+  
+  /**
+   * Log a message if debug is enabled
+   * @private
+   */
+  private log(message: string, ...args: any[]): void {
+    if (this.debug) {
+      console.log(`[PGLiteSocketHandler#${this.id}] ${message}`, ...args)
+    }
   }
 
   /**
@@ -47,6 +75,8 @@ export class PGLiteSocketHandler extends EventTarget {
    * @throws Error if a socket is already attached
    */
   public async attach(socket: Socket): Promise<PGLiteSocketHandler> {
+    this.log(`attach: attaching socket from ${socket.remoteAddress}:${socket.remotePort}`)
+    
     if (this.socket) {
       throw new Error('Socket already attached')
     }
@@ -55,9 +85,11 @@ export class PGLiteSocketHandler extends EventTarget {
     this.active = true
 
     // Ensure the PGlite instance is ready
+    this.log(`attach: waiting for PGlite to be ready`)
     await this.db.waitReady
 
     // Hold the lock on the PGlite instance
+    this.log(`attach: acquiring exclusive lock on PGlite instance`)
     await new Promise<void>((resolve) => {
       this.db.runExclusive(() => {
         // Ensure we have the lock on the PGlite instance
@@ -73,6 +105,7 @@ export class PGLiteSocketHandler extends EventTarget {
     })
 
     // Setup event handlers
+    this.log(`attach: setting up socket event handlers`)
     socket.on('data', (data) => this.handleData(data))
     socket.on('error', (err) => this.handleError(err))
     socket.on('close', () => this.handleClose())
@@ -86,7 +119,10 @@ export class PGLiteSocketHandler extends EventTarget {
    * @returns this handler instance
    */
   public detach(close?: boolean): PGLiteSocketHandler {
+    this.log(`detach: detaching socket, close=${close ?? this.closeOnDetach}`)
+    
     if (!this.socket) {
+      this.log(`detach: no socket attached, nothing to do`)
       return this
     }
 
@@ -98,11 +134,13 @@ export class PGLiteSocketHandler extends EventTarget {
     // Close the socket if requested
     if (close ?? this.closeOnDetach) {
       if (this.socket.writable) {
+        this.log(`detach: closing socket`)
         this.socket.end()
       }
     }
 
     // Release the lock on the PGlite instance
+    this.log(`detach: releasing exclusive lock on PGlite instance`)
     this.resolveLock?.()
 
     this.socket = null
@@ -122,20 +160,28 @@ export class PGLiteSocketHandler extends EventTarget {
    */
   private async handleData(data: Buffer): Promise<void> {
     if (!this.socket || !this.active) {
+      this.log(`handleData: no active socket, ignoring data`)
       return
     }
+
+    this.log(`handleData: received ${data.length} bytes`)
 
     // Print the incoming data to the console
     this.inspectData('incoming', data)
 
     try {
       // Process the raw protocol data
+      this.log(`handleData: sending data to PGlite for processing`)
       const result = await this.db.execProtocolRaw(new Uint8Array(data))
+      
+      this.log(`handleData: received ${result.length} bytes from PGlite`)
+      
       // Print the outgoing data to the console
       this.inspectData('outgoing', result)
 
       // Send the result back if the socket is still connected
       if (this.socket && this.socket.writable && this.active) {
+        this.log(`handleData: writing response to socket`)
         this.socket.write(Buffer.from(result))
 
         // Emit data event with byte sizes
@@ -144,8 +190,11 @@ export class PGLiteSocketHandler extends EventTarget {
             detail: { incoming: data.length, outgoing: result.length },
           }),
         )
+      } else {
+        this.log(`handleData: socket no longer writable or active, discarding response`)
       }
     } catch (err) {
+      this.log(`handleData: error processing data:`, err)
       this.handleError(err as Error)
     }
   }
@@ -154,10 +203,13 @@ export class PGLiteSocketHandler extends EventTarget {
    * Handle errors from the socket
    */
   private handleError(err: Error): void {
+    this.log(`handleError:`, err)
+    
     // Emit error event
     this.dispatchEvent(new CustomEvent('error', { detail: err }))
 
     // Reject the lock on the PGlite instance
+    this.log(`handleError: rejecting exclusive lock on PGlite instance`)
     this.rejectLock?.(err)
     this.resolveLock = undefined
     this.rejectLock = undefined
@@ -170,6 +222,8 @@ export class PGLiteSocketHandler extends EventTarget {
    * Handle socket close event
    */
   private handleClose(): void {
+    this.log(`handleClose: socket closed`)
+    
     this.dispatchEvent(new CustomEvent('close'))
     this.detach(false) // Already closed, just clean up
   }
@@ -247,6 +301,8 @@ export interface PGLiteSocketServerOptions {
   inspect?: boolean
   /** Connection queue timeout in milliseconds (default: 10000) */
   connectionQueueTimeout?: number
+  /** Enable debug logging of method calls */
+  debug?: boolean
 }
 
 /**
@@ -260,9 +316,11 @@ export class PGLiteSocketServer extends EventTarget {
   private host: string
   private active = false
   private inspect: boolean
+  private debug: boolean
   private connectionQueueTimeout: number
   private activeHandler: PGLiteSocketHandler | null = null
   private connectionQueue: QueuedConnection[] = []
+  private handlerCount: number = 0
 
   /**
    * Create a new PGLiteSocketServer
@@ -274,7 +332,21 @@ export class PGLiteSocketServer extends EventTarget {
     this.port = options.port || 5432
     this.host = options.host || '127.0.0.1'
     this.inspect = options.inspect ?? false
+    this.debug = options.debug ?? false
     this.connectionQueueTimeout = options.connectionQueueTimeout ?? CONNECTION_QUEUE_TIMEOUT
+    
+    this.log(`constructor: created server on ${this.host}:${this.port}`)
+    this.log(`constructor: connection queue timeout: ${this.connectionQueueTimeout}ms`)
+  }
+  
+  /**
+   * Log a message if debug is enabled
+   * @private
+   */
+  private log(message: string, ...args: any[]): void {
+    if (this.debug) {
+      console.log(`[PGLiteSocketServer] ${message}`, ...args)
+    }
   }
 
   /**
@@ -282,6 +354,8 @@ export class PGLiteSocketServer extends EventTarget {
    * @returns Promise that resolves when the server is listening
    */
   public async start(): Promise<void> {
+    this.log(`start: starting server on ${this.host}:${this.port}`)
+    
     if (this.server) {
       throw new Error('Socket server already started')
     }
@@ -293,11 +367,13 @@ export class PGLiteSocketServer extends EventTarget {
       if (!this.server) return reject(new Error('Server not initialized'))
 
       this.server.on('error', (err) => {
+        this.log(`start: server error:`, err)
         this.dispatchEvent(new CustomEvent('error', { detail: err }))
         reject(err)
       })
 
       this.server.listen(this.port, this.host, () => {
+        this.log(`start: server listening on ${this.host}:${this.port}`)
         this.dispatchEvent(
           new CustomEvent('listening', {
             detail: { port: this.port, host: this.host },
@@ -313,12 +389,17 @@ export class PGLiteSocketServer extends EventTarget {
    * @returns Promise that resolves when the server is closed
    */
   public async stop(): Promise<void> {
+    this.log(`stop: stopping server`)
+    
     this.active = false
 
     // Clear connection queue
+    this.log(`stop: clearing connection queue (${this.connectionQueue.length} connections)`)
+    
     this.connectionQueue.forEach(queuedConn => {
       clearTimeout(queuedConn.timeoutId)
       if (queuedConn.socket.writable) {
+        this.log(`stop: closing queued connection from ${queuedConn.clientInfo.clientAddress}:${queuedConn.clientInfo.clientPort}`)
         queuedConn.socket.end()
       }
     })
@@ -326,11 +407,13 @@ export class PGLiteSocketServer extends EventTarget {
 
     // Detach active handler if exists
     if (this.activeHandler) {
+      this.log(`stop: detaching active handler #${this.activeHandlerId}`)
       this.activeHandler.detach(true)
       this.activeHandler = null
     }
 
     if (!this.server) {
+      this.log(`stop: server not running, nothing to do`)
       return Promise.resolve()
     }
 
@@ -338,11 +421,19 @@ export class PGLiteSocketServer extends EventTarget {
       if (!this.server) return resolve()
 
       this.server.close(() => {
+        this.log(`stop: server closed`)
         this.server = null
         this.dispatchEvent(new CustomEvent('close'))
         resolve()
       })
     })
+  }
+
+  /**
+   * Get the active handler ID, or null if no active handler
+   */
+  private get activeHandlerId(): number | null {
+    return this.activeHandler?.handlerId ?? null
   }
 
   /**
@@ -354,20 +445,25 @@ export class PGLiteSocketServer extends EventTarget {
       clientPort: socket.remotePort || 0,
     }
 
+    this.log(`handleConnection: new connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}`)
+
     // If server is not active, close the connection immediately
     if (!this.active) {
+      this.log(`handleConnection: server not active, closing connection`)
       socket.end()
       return
     }
 
     // If we don't have an active handler or it's not attached, we can use this connection immediately
     if (!this.activeHandler || !this.activeHandler.isAttached) {
+      this.log(`handleConnection: no active handler, attaching socket directly`)
       this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
       await this.attachSocketToNewHandler(socket, clientInfo)
       return
     }
 
     // Otherwise, queue the connection
+    this.log(`handleConnection: active handler #${this.activeHandlerId} exists, queueing connection`)
     this.enqueueConnection(socket, clientInfo)
   }
 
@@ -375,13 +471,18 @@ export class PGLiteSocketServer extends EventTarget {
    * Add a connection to the queue
    */
   private enqueueConnection(socket: Socket, clientInfo: { clientAddress: string; clientPort: number }): void {
+    this.log(`enqueueConnection: queueing connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}, timeout: ${this.connectionQueueTimeout}ms`)
+    
     // Set a timeout for this queued connection
     const timeoutId = setTimeout(() => {
+      this.log(`enqueueConnection: timeout for connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}`)
+      
       // Remove from queue
       this.connectionQueue = this.connectionQueue.filter(queuedConn => queuedConn.socket !== socket)
       
       // End the connection if it's still open
       if (socket.writable) {
+        this.log(`enqueueConnection: closing timed out connection`)
         socket.end()
       }
 
@@ -395,6 +496,8 @@ export class PGLiteSocketServer extends EventTarget {
     // Add to queue
     this.connectionQueue.push({ socket, clientInfo, timeoutId })
 
+    this.log(`enqueueConnection: connection queued, queue size: ${this.connectionQueue.length}`)
+
     this.dispatchEvent(
       new CustomEvent('queuedConnection', { 
         detail: { ...clientInfo, queueSize: this.connectionQueue.length } 
@@ -406,8 +509,11 @@ export class PGLiteSocketServer extends EventTarget {
    * Process the next connection in the queue
    */
   private processNextInQueue(): void {
+    this.log(`processNextInQueue: processing next connection, queue size: ${this.connectionQueue.length}`)
+    
     // No connections in queue or server not active
     if (this.connectionQueue.length === 0 || !this.active) {
+      this.log(`processNextInQueue: no connections in queue or server not active, nothing to do`)
       return
     }
 
@@ -415,11 +521,14 @@ export class PGLiteSocketServer extends EventTarget {
     const nextConn = this.connectionQueue.shift()
     if (!nextConn) return
 
+    this.log(`processNextInQueue: processing connection from ${nextConn.clientInfo.clientAddress}:${nextConn.clientInfo.clientPort}`)
+
     // Clear the timeout
     clearTimeout(nextConn.timeoutId)
 
     // Check if the socket is still valid
     if (!nextConn.socket.writable) {
+      this.log(`processNextInQueue: socket no longer writable, skipping to next connection`)
       // Socket closed while waiting, process next in queue
       this.processNextInQueue()
       return
@@ -428,6 +537,7 @@ export class PGLiteSocketServer extends EventTarget {
     // Attach this socket to a new handler
     this.attachSocketToNewHandler(nextConn.socket, nextConn.clientInfo)
       .catch(err => {
+        this.log(`processNextInQueue: error attaching socket:`, err)
         this.dispatchEvent(new CustomEvent('error', { detail: err }))
         // Try the next connection
         this.processNextInQueue()
@@ -441,15 +551,21 @@ export class PGLiteSocketServer extends EventTarget {
     socket: Socket, 
     clientInfo: { clientAddress: string; clientPort: number }
   ): Promise<void> {
+    this.handlerCount++;
+    
+    this.log(`attachSocketToNewHandler: creating new handler for ${clientInfo.clientAddress}:${clientInfo.clientPort} (handler #${this.handlerCount})`)
+    
     // Create a new handler for this connection
     const handler = new PGLiteSocketHandler({
       db: this.db,
       closeOnDetach: true,
       inspect: this.inspect,
+      debug: this.debug,
     })
 
     // Forward error events from the handler
     handler.addEventListener('error', (event) => {
+      this.log(`handler #${handler.handlerId}: error from handler:`, (event as CustomEvent<Error>).detail)
       this.dispatchEvent(
         new CustomEvent('error', {
           detail: (event as CustomEvent<Error>).detail,
@@ -459,8 +575,11 @@ export class PGLiteSocketServer extends EventTarget {
 
     // Handle close event to process next queued connection
     handler.addEventListener('close', () => {
+      this.log(`handler #${handler.handlerId}: closed`)
+      
       // If this is our active handler, clear it
       if (this.activeHandler === handler) {
+        this.log(`handler #${handler.handlerId}: was active handler, processing next connection in queue`)
         this.activeHandler = null
         // Process next connection in queue
         this.processNextInQueue()
@@ -471,12 +590,15 @@ export class PGLiteSocketServer extends EventTarget {
       // Set as active handler
       this.activeHandler = handler
       
+      this.log(`handler #${handler.handlerId}: attaching socket`)
+      
       // Attach the socket to the handler
       await handler.attach(socket)
       
       this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
     } catch (err) {
       // If there was an error attaching, clean up
+      this.log(`handler #${handler.handlerId}: error attaching socket:`, err)
       this.activeHandler = null
       if (socket.writable) {
         socket.end()
