@@ -1,4 +1,5 @@
 import type {
+  DataTransferContainer,
   DebugLevel,
   ExecProtocolResult,
   Extensions,
@@ -631,8 +632,11 @@ function makeWorkerApi(tabId: string, db: PGlite) {
         return { messages, data }
       }
     },
-    async execProtocolRaw(message: Uint8Array) {
-      const result = await db.execProtocolRaw(message)
+    async execProtocolRaw(
+      message: Uint8Array,
+      options: { dataTransferContainer?: DataTransferContainer } = {},
+    ) {
+      const result = await db.execProtocolRaw(message, options)
       if (result.byteLength !== result.buffer.byteLength) {
         // The data is a slice of a larger buffer, this is potentially the whole
         // memory of the WASM module. We copy it to a new Uint8Array and return that.

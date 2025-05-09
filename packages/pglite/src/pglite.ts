@@ -574,7 +574,10 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(message: Uint8Array) {
+  execProtocolRawSync(
+    message: Uint8Array,
+    options: { dataTransferContainer?: DataTransferContainer } = {},
+  ) {
     let data
     const mod = this.mod!
 
@@ -584,7 +587,10 @@ export class PGlite
 
     // TODO: if (message.length>CMA_B) force file
 
-    switch (this.#dataTransferContainer) {
+    const currDataTransferContainer =
+      options.dataTransferContainer ?? this.#dataTransferContainer
+
+    switch (currDataTransferContainer) {
       case 'cma': {
         // set buffer size so answer will be at size+0x2 pointer addr
         mod._interactive_write(message.length)
@@ -602,7 +608,7 @@ export class PGlite
       }
       default:
         throw new Error(
-          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+          `Unknown data transfer container: ${currDataTransferContainer}`,
         )
     }
 
@@ -611,7 +617,7 @@ export class PGlite
 
     // TODO: use get_channel() > 0 to detect possible CMA position else go file.
 
-    switch (this.#dataTransferContainer) {
+    switch (currDataTransferContainer) {
       case 'cma': {
         // Read responses from the buffer
 
@@ -637,7 +643,7 @@ export class PGlite
       }
       default:
         throw new Error(
-          `Unknown data transfer container: ${this.#dataTransferContainer}`,
+          `Unknown data transfer container: ${currDataTransferContainer}`,
         )
     }
 
@@ -657,9 +663,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true, dataTransferContainer }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message)
+    const data = this.execProtocolRawSync(message, { dataTransferContainer })
     if (syncToFs) {
       await this.syncToFs()
     }
