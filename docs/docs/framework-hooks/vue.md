@@ -147,10 +147,10 @@ And its arguments, which can also be [watch sources](https://vuejs.org/guide/ess
 
 ```vue
 <script lang="ts">
-import { useLiveInceremntalQuery } from '@electric-sql/pglite-vue'
+import { useLiveIncrementalQuery } from '@electric-sql/pglite-vue'
 
 const maxNumber = 100
-const items = useLiveInceremntalQuery(
+const items = useLiveIncrementalQuery(
   `
     SELECT *
     FROM my_table
