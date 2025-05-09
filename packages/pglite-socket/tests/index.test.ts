@@ -239,6 +239,7 @@ describe('PGLiteSocketServer', () => {
 
   describe('Connection queuing', () => {
     // Mock implementation details
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let handleConnectionSpy: any
     let processNextInQueueSpy: any
     let attachSocketToNewHandlerSpy: any
