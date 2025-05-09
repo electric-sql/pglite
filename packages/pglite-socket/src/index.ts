@@ -1,5 +1,9 @@
 import type { PGlite } from '@electric-sql/pglite'
 import { createServer, Server, Socket } from 'net'
+
+// Connection queue timeout in milliseconds
+export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
+
 /**
  * Options for creating a PGLiteSocketHandler
  */
@@ -72,9 +76,6 @@ export class PGLiteSocketHandler extends EventTarget {
     socket.on('data', (data) => this.handleData(data))
     socket.on('error', (err) => this.handleError(err))
     socket.on('close', () => this.handleClose())
-
-    // On attache sent an empty query to the database
-    // await this.handleData(Buffer.from([]))
 
     return this
   }
@@ -221,6 +222,18 @@ export class PGLiteSocketHandler extends EventTarget {
 }
 
 /**
+ * Represents a queued connection with timeout
+ */
+interface QueuedConnection {
+  socket: Socket
+  clientInfo: {
+    clientAddress: string
+    clientPort: number
+  }
+  timeoutId: NodeJS.Timeout
+}
+
+/**
  * Options for creating a PGLiteSocketServer
  */
 export interface PGLiteSocketServerOptions {
@@ -232,6 +245,8 @@ export interface PGLiteSocketServerOptions {
   host?: string
   /** Print the incoming and outgoing data to the console in hex and ascii */
   inspect?: boolean
+  /** Connection queue timeout in milliseconds (default: 10000) */
+  connectionQueueTimeout?: number
 }
 
 /**
@@ -243,9 +258,11 @@ export class PGLiteSocketServer extends EventTarget {
   private server: Server | null = null
   private port: number
   private host: string
-  private socketHandler: PGLiteSocketHandler | null = null
   private active = false
   private inspect: boolean
+  private connectionQueueTimeout: number
+  private activeHandler: PGLiteSocketHandler | null = null
+  private connectionQueue: QueuedConnection[] = []
 
   /**
    * Create a new PGLiteSocketServer
@@ -257,6 +274,7 @@ export class PGLiteSocketServer extends EventTarget {
     this.port = options.port || 5432
     this.host = options.host || '127.0.0.1'
     this.inspect = options.inspect ?? false
+    this.connectionQueueTimeout = options.connectionQueueTimeout ?? CONNECTION_QUEUE_TIMEOUT
   }
 
   /**
@@ -270,22 +288,6 @@ export class PGLiteSocketServer extends EventTarget {
 
     this.active = true
     this.server = createServer((socket) => this.handleConnection(socket))
-
-    // Create a new socket handler for this server
-    this.socketHandler = new PGLiteSocketHandler({
-      db: this.db,
-      closeOnDetach: true,
-      inspect: this.inspect,
-    })
-
-    // Forward error events from the handler
-    this.socketHandler.addEventListener('error', (event) => {
-      this.dispatchEvent(
-        new CustomEvent('error', {
-          detail: (event as CustomEvent<Error>).detail,
-        }),
-      )
-    })
 
     return new Promise<void>((resolve, reject) => {
       if (!this.server) return reject(new Error('Server not initialized'))
@@ -313,9 +315,19 @@ export class PGLiteSocketServer extends EventTarget {
   public async stop(): Promise<void> {
     this.active = false
 
-    if (this.socketHandler) {
-      this.socketHandler.detach(true)
-      this.socketHandler = null
+    // Clear connection queue
+    this.connectionQueue.forEach(queuedConn => {
+      clearTimeout(queuedConn.timeoutId)
+      if (queuedConn.socket.writable) {
+        queuedConn.socket.end()
+      }
+    })
+    this.connectionQueue = []
+
+    // Detach active handler if exists
+    if (this.activeHandler) {
+      this.activeHandler.detach(true)
+      this.activeHandler = null
     }
 
     if (!this.server) {
@@ -337,20 +349,139 @@ export class PGLiteSocketServer extends EventTarget {
    * Handle a new client connection
    */
   private async handleConnection(socket: Socket): Promise<void> {
-    // Only allow one client at a time as per requirements
-    if (this.socketHandler?.isAttached || !this.active) {
-      socket.end()
-      return
-    }
-
-    // Attach the socket to our handler
-    await this.socketHandler?.attach(socket)
-
     const clientInfo = {
       clientAddress: socket.remoteAddress || 'unknown',
       clientPort: socket.remotePort || 0,
     }
 
-    this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
+    // If server is not active, close the connection immediately
+    if (!this.active) {
+      socket.end()
+      return
+    }
+
+    // If we don't have an active handler or it's not attached, we can use this connection immediately
+    if (!this.activeHandler || !this.activeHandler.isAttached) {
+      this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
+      await this.attachSocketToNewHandler(socket, clientInfo)
+      return
+    }
+
+    // Otherwise, queue the connection
+    this.enqueueConnection(socket, clientInfo)
+  }
+
+  /**
+   * Add a connection to the queue
+   */
+  private enqueueConnection(socket: Socket, clientInfo: { clientAddress: string; clientPort: number }): void {
+    // Set a timeout for this queued connection
+    const timeoutId = setTimeout(() => {
+      // Remove from queue
+      this.connectionQueue = this.connectionQueue.filter(queuedConn => queuedConn.socket !== socket)
+      
+      // End the connection if it's still open
+      if (socket.writable) {
+        socket.end()
+      }
+
+      this.dispatchEvent(
+        new CustomEvent('queueTimeout', { 
+          detail: { ...clientInfo, queueSize: this.connectionQueue.length } 
+        })
+      )
+    }, this.connectionQueueTimeout)
+
+    // Add to queue
+    this.connectionQueue.push({ socket, clientInfo, timeoutId })
+
+    this.dispatchEvent(
+      new CustomEvent('queuedConnection', { 
+        detail: { ...clientInfo, queueSize: this.connectionQueue.length } 
+      })
+    )
+  }
+
+  /**
+   * Process the next connection in the queue
+   */
+  private processNextInQueue(): void {
+    // No connections in queue or server not active
+    if (this.connectionQueue.length === 0 || !this.active) {
+      return
+    }
+
+    // Get the next connection
+    const nextConn = this.connectionQueue.shift()
+    if (!nextConn) return
+
+    // Clear the timeout
+    clearTimeout(nextConn.timeoutId)
+
+    // Check if the socket is still valid
+    if (!nextConn.socket.writable) {
+      // Socket closed while waiting, process next in queue
+      this.processNextInQueue()
+      return
+    }
+
+    // Attach this socket to a new handler
+    this.attachSocketToNewHandler(nextConn.socket, nextConn.clientInfo)
+      .catch(err => {
+        this.dispatchEvent(new CustomEvent('error', { detail: err }))
+        // Try the next connection
+        this.processNextInQueue()
+      })
+  }
+
+  /**
+   * Attach a socket to a new handler
+   */
+  private async attachSocketToNewHandler(
+    socket: Socket, 
+    clientInfo: { clientAddress: string; clientPort: number }
+  ): Promise<void> {
+    // Create a new handler for this connection
+    const handler = new PGLiteSocketHandler({
+      db: this.db,
+      closeOnDetach: true,
+      inspect: this.inspect,
+    })
+
+    // Forward error events from the handler
+    handler.addEventListener('error', (event) => {
+      this.dispatchEvent(
+        new CustomEvent('error', {
+          detail: (event as CustomEvent<Error>).detail,
+        }),
+      )
+    })
+
+    // Handle close event to process next queued connection
+    handler.addEventListener('close', () => {
+      // If this is our active handler, clear it
+      if (this.activeHandler === handler) {
+        this.activeHandler = null
+        // Process next connection in queue
+        this.processNextInQueue()
+      }
+    })
+
+    try {
+      // Set as active handler
+      this.activeHandler = handler
+      
+      // Attach the socket to the handler
+      await handler.attach(socket)
+      
+      this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
+    } catch (err) {
+      // If there was an error attaching, clean up
+      this.activeHandler = null
+      if (socket.writable) {
+        socket.end()
+      }
+      throw err
+    }
   }
 }
