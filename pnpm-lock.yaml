@@ -61,11 +61,11 @@ importers:
   examples/react:
     dependencies:
       '@electric-sql/pglite':
-        specifier: ^0.2.17
-        version: 0.2.17
+        specifier: workspace:*
+        version: link:../../packages/pglite
       '@electric-sql/pglite-react':
-        specifier: ^0.2.17
-        version: 0.2.17(@electric-sql/pglite@0.2.17)(react@19.0.0)
+        specifier: workspace:*
+        version: link:../../packages/pglite-react
       react:
         specifier: ^19.0.0
         version: 19.0.0
@@ -728,15 +728,6 @@ packages:
     resolution: {integrity: sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ==}
     peerDependencies:
       '@electric-sql/client': 1.0.0
-
-  '@electric-sql/pglite-react@0.2.17':
-    resolution: {integrity: sha512-TEdV1UAUO50gb/okYcVaiG2dQdox53K2E8jSEl0Wa/97x3Xi238ls7ZB7wgmoqNgy45f/tgYxyztml03EFClng==}
-    peerDependencies:
-      '@electric-sql/pglite': ^0.2.17
-      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-
-  '@electric-sql/pglite@0.2.17':
-    resolution: {integrity: sha512-qEpKRT2oUaWDH6tjRxLHjdzMqRUGYDnGZlKrnL4dJ77JVMcP2Hpo3NYnOSPKdZdeec57B6QPprCUFg0picx5Pw==}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -4980,13 +4971,6 @@ snapshots:
       '@electric-sql/client': 1.0.0
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
-
-  '@electric-sql/pglite-react@0.2.17(@electric-sql/pglite@0.2.17)(react@19.0.0)':
-    dependencies:
-      '@electric-sql/pglite': 0.2.17
-      react: 19.0.0
-
-  '@electric-sql/pglite@0.2.17': {}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     optional: true
