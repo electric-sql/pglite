@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.1
+
+### Patch Changes
+
+- 713364e: Fix a bug in the live plugin that could result in an error when unsubscribing from a live query
+
 ## 0.3.0
 
 ### Minor Changes
