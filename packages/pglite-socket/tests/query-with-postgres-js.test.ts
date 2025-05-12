@@ -56,6 +56,9 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
+max: 1,
+fetch_types: false,
+debug: DEBUG_LOCAL,
           inspect: DEBUG_TESTS || DEBUG_LOCAL,
         })
 
@@ -480,7 +483,7 @@ describe(`PGLite Socket Server`, () => {
         })
 
         // Small delay to ensure listener is set up
-        // await new Promise((resolve) => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, 100))
 
         // Send a notification on the same connection
         await sql`NOTIFY test_channel, 'Hello from PGlite!'`
