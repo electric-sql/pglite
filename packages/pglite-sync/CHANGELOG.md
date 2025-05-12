@@ -1,5 +1,13 @@
 # @electric-sql/pglite-sync
 
+## 0.3.3
+
+### Patch Changes
+
+- ad27e7c: Improve insert management for pglite-sync
+- Updated dependencies [713364e]
+  - @electric-sql/pglite@0.3.1
+
 ## 0.3.2
 
 ### Patch Changes
