@@ -244,7 +244,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         } else {
           callbacks = []
         }
-        if (callbacks.length === 0) {
+        if (callbacks.length === 0 && !dead) {
           dead = true
           await Promise.all(unsubList.map((unsub) => unsub()))
           await pg.exec(`
@@ -502,7 +502,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         } else {
           callbacks = []
         }
-        if (callbacks.length === 0) {
+        if (callbacks.length === 0 && !dead) {
           dead = true
           await Promise.all(unsubList.map((unsub) => unsub()))
           await pg.exec(`
