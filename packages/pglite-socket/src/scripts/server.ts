@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { PGlite, DebugLevel } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../index'
 import { parseArgs } from 'node:util'
