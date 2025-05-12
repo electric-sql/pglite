@@ -18,7 +18,9 @@
     "access": "public"
   },
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "pglite-server": "./dist/scripts/server.js"
   },
