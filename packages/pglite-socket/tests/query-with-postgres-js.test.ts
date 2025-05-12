@@ -494,4 +494,3 @@ describe(`PGLite Socket Server`, () => {
     }
   })
 })
-

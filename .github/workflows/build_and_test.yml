@@ -39,7 +39,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
-      SDKROOT: /tmp/sdk
 
     steps:
       - uses: actions/checkout@v4
