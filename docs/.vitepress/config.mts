@@ -128,6 +128,7 @@ export default defineConfig({
         items: [
           { text: 'Examples', link: '/examples.md' },
           { text: 'Benchmarks', link: '/benchmarks.md' },
+          { text: 'Debugging', link: '/debugging.md' },
         ],
       },
     ],
