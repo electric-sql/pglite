@@ -1,5 +1,22 @@
 # @electric-sql/pglite-tools
 
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies [713364e]
+  - @electric-sql/pglite@0.3.1
+
+## 0.2.5
+
+### Patch Changes
+
+- 317fd36: Specify a peer dependency range on @electric-sql/pglite
+- Updated dependencies [97e52f7]
+- Updated dependencies [4356024]
+- Updated dependencies [0033bc7]
+  - @electric-sql/pglite@0.3.0
+
 ## 0.2.4
 
 ### Patch Changes

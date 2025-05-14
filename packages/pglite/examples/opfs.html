@@ -12,63 +12,63 @@
       }
     </script>
   </head>
-<body>
-<h1>PGlite OPFS Example</h1>
-<div class="script-plus-log">
-<div class="scripts">
-<h2>Worker Thread - <code>opfs-worker.js</code></h2>
-<div class="script" rel="./opfs-worker.js"></div>
-<h2>Main Thread</h2>
-<script type="module">
-import { PGliteWorker } from "@electric-sql/pglite/worker";
+  <body>
+    <h1>PGlite OPFS Example</h1>
+    <div class="script-plus-log">
+      <div class="scripts">
+        <h2>Worker Thread - <code>opfs-worker.js</code></h2>
+        <div class="script" rel="./opfs-worker.js"></div>
+        <h2>Main Thread</h2>
+        <script type="module">
+          import { PGliteWorker } from '@electric-sql/pglite/worker'
 
-console.log("Starting...");
-const start = performance.now();
-const pg = new PGliteWorker(
-  new Worker(new URL("./opfs-worker.js", import.meta.url), {
-    type: "module",
-  })
-);
+          console.log('Starting...')
+          const start = performance.now()
+          const pg = new PGliteWorker(
+            new Worker(new URL('./opfs-worker.js', import.meta.url), {
+              type: 'module',
+            }),
+          )
 
-console.log("Waiting for ready...");
-await pg.waitReady;
+          console.log('Waiting for ready...')
+          await pg.waitReady
 
-console.log("Ready! Took", performance.now() - start, "ms");
+          console.log('Ready! Took', performance.now() - start, 'ms')
 
-console.log("Creating table...");
-await pg.exec(`
+          console.log('Creating table...')
+          await pg.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     name TEXT
   );
-`);
+`)
 
-console.log("Inserting data...");
-await pg.exec("INSERT INTO test (name) VALUES ('test');");
+          console.log('Inserting data...')
+          await pg.exec("INSERT INTO test (name) VALUES ('test');")
 
-console.log("Selecting data...");
-const res = await pg.exec(`
+          console.log('Selecting data...')
+          const res = await pg.exec(`
   SELECT * FROM test;
-`);
+`)
 
-console.log(res);
+          console.log(res)
 
-// Transaction example:
-console.log("Transaction example...");
-await pg.transaction(async (tx) => {
-  await tx.exec("INSERT INTO test (name) VALUES ('test2');");
-  await tx.exec("INSERT INTO test (name) VALUES ('test3');");
-});
+          // Transaction example:
+          console.log('Transaction example...')
+          await pg.transaction(async (tx) => {
+            await tx.exec("INSERT INTO test (name) VALUES ('test2');")
+            await tx.exec("INSERT INTO test (name) VALUES ('test3');")
+          })
 
-console.log("Selecting data...");
-const res2 = await pg.exec(`
+          console.log('Selecting data...')
+          const res2 = await pg.exec(`
   SELECT * FROM test;
-`);
+`)
 
-console.log(res2);
-</script>
-</div>
-<div id="log"></div>
-</div>
-</body>
+          console.log(res2)
+        </script>
+      </div>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>

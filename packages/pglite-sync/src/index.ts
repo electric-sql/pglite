@@ -24,6 +24,7 @@ import type {
   Lsn,
 } from './types'
 import {
+  applyInsertsToTable,
   applyMessageToTable,
   applyMessagesToTableWithCopy,
   applyMessagesToTableWithJson,
@@ -170,6 +171,13 @@ async function createPlugin(
       },
     )
 
+    const insertMethods = {
+      json: applyMessagesToTableWithJson,
+      csv: applyMessagesToTableWithCopy,
+      useCopy: applyMessagesToTableWithCopy,
+      insert: applyInsertsToTable,
+    } as const
+
     const commitUpToLsn = async (targetLsn: Lsn) => {
       // We need to collect all the messages for each shape that we need to commit
       const messagesToCommit = new Map<string, ChangeMessage<Row<unknown>>[]>(
@@ -209,7 +217,8 @@ async function createPlugin(
             if (shape.onMustRefetch) {
               await shape.onMustRefetch(tx)
             } else {
-              await tx.exec(`DELETE FROM ${shape.table};`)
+              const schema = shape.schema || 'public'
+              await tx.exec(`DELETE FROM "${schema}"."${shape.table}";`)
             }
             truncateNeeded.delete(shapeName)
           }
@@ -239,34 +248,56 @@ async function createPlugin(
 
             // Do the `COPY FROM`/json_to_recordset with initial inserts
             if (initialInserts.length > 0) {
-              const method =
-                initialInsertMethod === 'json'
-                  ? applyMessagesToTableWithJson
-                  : applyMessagesToTableWithCopy
-              await method({
+              await insertMethods[initialInsertMethod]({
                 pg: tx,
                 table: shape.table,
                 schema: shape.schema,
                 messages: initialInserts as InsertChangeMessage[],
                 mapColumns: shape.mapColumns,
-                primaryKey: shape.primaryKey,
                 debug,
               })
+
               // We don't want to do a `COPY FROM`/json_to_recordset again after that
               useInsert = true
             }
           }
 
-          for (const changeMessage of messages) {
-            await applyMessageToTable({
-              pg: tx,
-              table: shape.table,
-              schema: shape.schema,
-              message: changeMessage,
-              mapColumns: shape.mapColumns,
-              primaryKey: shape.primaryKey,
-              debug,
-            })
+          const bulkInserts: InsertChangeMessage[] = []
+          let change: ChangeMessage<any> | null = null
+          const messagesLength = messages.length
+          for (let i = 0; i < messagesLength; i++) {
+            const changeMessage = messages[i]
+            if (changeMessage.headers.operation === 'insert') {
+              bulkInserts.push(changeMessage as InsertChangeMessage)
+            } else {
+              change = changeMessage
+            }
+
+            if (change || i === messagesLength - 1) {
+              if (bulkInserts.length > 0) {
+                await applyInsertsToTable({
+                  pg: tx,
+                  table: shape.table,
+                  schema: shape.schema,
+                  messages: bulkInserts as InsertChangeMessage[],
+                  mapColumns: shape.mapColumns,
+                  debug,
+                })
+                bulkInserts.length = 0
+              }
+              if (change) {
+                await applyMessageToTable({
+                  pg: tx,
+                  table: shape.table,
+                  schema: shape.schema,
+                  message: change,
+                  mapColumns: shape.mapColumns,
+                  primaryKey: shape.primaryKey,
+                  debug,
+                })
+                change = null
+              }
+            }
           }
         }
 

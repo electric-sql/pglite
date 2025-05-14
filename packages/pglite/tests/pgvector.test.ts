@@ -1,23 +1,28 @@
 import { describe, it, expect } from 'vitest'
-import { testEsmAndCjs } from './test-utils.js'
+import { testEsmCjsAndDTC } from './test-utils.ts'
 
-await testEsmAndCjs(async (importType) => {
+await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
   const { PGlite } =
     importType === 'esm'
       ? await import('../dist/index.js')
-      : await import('../dist/index.cjs')
+      : ((await import(
+          '../dist/index.cjs'
+        )) as unknown as typeof import('../dist/index.js'))
 
   const { vector } =
     importType === 'esm'
       ? await import('../dist/vector/index.js')
-      : await import('../dist/vector/index.cjs')
+      : ((await import(
+          '../dist/vector/index.cjs'
+        )) as unknown as typeof import('../dist/vector/index.js'))
 
-  describe(`pgvector ${importType}`, () => {
+  describe(`pgvector`, () => {
     it('basic', async () => {
       const pg = new PGlite({
         extensions: {
           vector,
         },
+        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
@@ -83,11 +88,12 @@ await testEsmAndCjs(async (importType) => {
         extensions: {
           vector,
         },
+        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
 
-      const res = await pg.query(`
+      const res = await pg.query<{ oid: number }>(`
         select oid
         from pg_extension
         where extname = 'vector'
@@ -108,6 +114,7 @@ await testEsmAndCjs(async (importType) => {
         extensions: {
           vector,
         },
+        defaultDataTransferContainer,
       })
 
       await pg.close()
@@ -117,11 +124,12 @@ await testEsmAndCjs(async (importType) => {
         extensions: {
           vector,
         },
+        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
 
-      const res = await pg.query(`
+      const res = await pg.query<{ oid: number }>(`
         select oid
         from pg_extension
         where extname = 'vector'

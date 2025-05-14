@@ -1,16 +1,21 @@
 # @electric-sql/pglite
 
-## 0.3.0-next.1
+## 0.3.1
 
 ### Patch Changes
 
-- 0033bc7: Fix a race condition in live query unsubscription that could result in live queries failing to update.
+- 713364e: Fix a bug in the live plugin that could result in an error when unsubscribing from a live query
 
-## 0.3.0-next.0
+## 0.3.0
 
 ### Minor Changes
 
 - 97e52f7: upgrade to postgresql 17.4
+
+### Patch Changes
+
+- 4356024: bug fix live plugin when dealing with case sensitive table names
+- 0033bc7: Fix a race condition in live query unsubscription that could result in live queries failing to update.
 
 ## 0.2.17
 

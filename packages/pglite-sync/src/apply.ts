@@ -86,8 +86,41 @@ export interface BulkApplyMessagesToTableOptions {
   schema?: string
   messages: InsertChangeMessage[]
   mapColumns?: MapColumns
-  primaryKey: string[]
   debug: boolean
+}
+
+export async function applyInsertsToTable({
+  pg,
+  table,
+  schema = 'public',
+  messages,
+  mapColumns,
+  debug,
+}: BulkApplyMessagesToTableOptions) {
+  // Map the messages to the data to be inserted
+  const data: Record<string, object>[] = messages.map((message) =>
+    mapColumns ? doMapColumns(mapColumns, message) : message.value,
+  )
+
+  if (debug) console.log('inserting', data)
+
+  // Get column names from the first message
+  const columns = Object.keys(data[0])
+  const MAX = Math.floor(32_000 / columns.length)
+  for (let i = 0; i < data.length; i += MAX) {
+    const maxdata = data.slice(i, i + MAX) // slice the data to avoid too many parameters
+    const sql = `
+      INSERT INTO "${schema}"."${table}"
+      (${columns.map((s) => `"${s}"`).join(', ')})
+      VALUES
+      ${maxdata.map((_, j) => `(${columns.map((_v, k) => '$' + (j * columns.length + k + 1)).join(', ')})`).join(', ')}
+    `
+    const values = maxdata.flatMap((message) =>
+      columns.map((column) => message[column]),
+    )
+    await pg.query(sql, values)
+  }
+  if (debug) console.log(`Inserted ${messages.length} rows using INSERT`)
 }
 
 export async function applyMessagesToTableWithJson({

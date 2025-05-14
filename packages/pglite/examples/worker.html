@@ -29,91 +29,81 @@
       }
     </style>
   </head>
-<body>
-<h1>PGlite Worker Example</h1>
-<p>Leader: <span id="leader" style="color: red;">false</span></p>
-<p>
-<button id="insert">Insert Data</button>
-<button id="clear">Clear Data</button>
-</p>
-<pre id="output"></pre>
-<div class="script-plus-log">
-<div class="scripts">
-<h2>Worker Thread - <code>worker-process.js</code></h2>
-<div class="script" rel="./worker-process.js"></div>
-<h2>Main Thread</h2>
-<script type="module">
-import { PGliteWorker } from "@electric-sql/pglite/worker";
-import { live } from "@electric-sql/pglite/live";
+  <body>
+    <h1>PGlite Worker Example</h1>
+    <p>Leader: <span id="leader" style="color: red">false</span></p>
+    <p>
+      <button id="insert">Insert Data</button>
+      <button id="clear">Clear Data</button>
+    </p>
+    <pre id="output"></pre>
+    <div class="script-plus-log">
+      <div class="scripts">
+        <h2>Worker Thread - <code>worker-process.js</code></h2>
+        <div class="script" rel="./worker-process.js"></div>
+        <h2>Main Thread</h2>
+        <script type="module">
+          import { PGliteWorker } from '@electric-sql/pglite/worker'
+          import { live } from '@electric-sql/pglite/live'
 
-console.log("Creating worker...");
-const pg = new PGliteWorker(
-  new Worker(new URL("./worker-process.js", import.meta.url), {
-    type: "module",
-  }),
-  {
-    extensions: {
-      live,
-    },
-  }
-);
+          console.log('Creating worker...')
+          const pg = new PGliteWorker(
+            new Worker(new URL('./worker-process.js', import.meta.url), {
+              type: 'module',
+            }),
+            {
+              extensions: {
+                live,
+              },
+            },
+          )
 
-pg.onLeaderChange(() => {
-  if (pg.isLeader) {
-    document.title = "[leader] PGlite Worker Example";
-    const leader = document.getElementById("leader");
-    leader.textContent = "true";
-    leader.style.color = "green";
-  }
-});
+          pg.onLeaderChange(() => {
+            if (pg.isLeader) {
+              document.title = '[leader] PGlite Worker Example'
+              const leader = document.getElementById('leader')
+              leader.textContent = 'true'
+              leader.style.color = 'green'
+            }
+          })
 
-console.log("Creating table...");
+          console.log('Creating table...')
 
-await pg.exec(`
+          await pg.exec(`
   CREATE EXTENSION IF NOT EXISTS vector;
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     data vector(3)
   );
-`);
+`)
 
-console.log("Ready!");
+          console.log('Ready!')
 
-async function insertData() {
-  const data = [
-    Math.random(),
-    Math.random(),
-    Math.random(),
-  ];
-  await pg.query(
-    `INSERT INTO test (data) VALUES ($1)`,
-    [JSON.stringify(data)]
-  );
-}
+          async function insertData() {
+            const data = [Math.random(), Math.random(), Math.random()]
+            await pg.query(`INSERT INTO test (data) VALUES ($1)`, [
+              JSON.stringify(data),
+            ])
+          }
 
-async function clearData() {
-  await pg.query(`DELETE FROM test`);
-}
+          async function clearData() {
+            await pg.query(`DELETE FROM test`)
+          }
 
-const btnInsert = document.querySelector("#insert");
-btnInsert.addEventListener("click", insertData);
+          const btnInsert = document.querySelector('#insert')
+          btnInsert.addEventListener('click', insertData)
 
-const btnClear = document.querySelector("#clear");
-btnClear.addEventListener("click", clearData);
+          const btnClear = document.querySelector('#clear')
+          btnClear.addEventListener('click', clearData)
 
-// pg.live.query(
-pg.live.incrementalQuery(
-  `SELECT * FROM test`,
-  [],
-  'id',
-  (data) => {
-    const output = document.getElementById("output");
-    output.textContent = JSON.stringify(data.rows, null, 2);
-  }
-);
-</script>
-</div>
-<div id="log"></div>
-</div>
-</body>
+          // pg.live.query(
+          pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
+            const output = document.getElementById('output')
+            output.textContent = JSON.stringify(data.rows, null, 2)
+          })
+        </script>
+      </div>
+      <div id="log"></div>
+    </div>
+  </body>
 </html>

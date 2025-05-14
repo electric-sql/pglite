@@ -6,9 +6,16 @@
 const CONFIGURATIONS = new Map(
   [
     {
-      label: 'PGlite Memory',
+      label: 'PGlite Memory<br> (CMA Transport <em>default</em>)',
       db: 'pglite',
       dataDir: '',
+      options: { defaultDataTransferContainer: 'cma' },
+    },
+    {
+      label: 'PGlite Memory<br> (File Transport)',
+      db: 'pglite',
+      dataDir: '',
+      options: { defaultDataTransferContainer: 'file' },
     },
     {
       label: 'PGlite IDB',
@@ -16,7 +23,7 @@ const CONFIGURATIONS = new Map(
       dataDir: 'idb://benchmark-rtt',
     },
     {
-      label: 'PGlite IDB<br> <i>relaxed durability</i>',
+      label: 'PGlite IDB (CMA) <br> <i>relaxed durability</i>',
       db: 'pglite',
       dataDir: 'idb://benchmark-rtt-rd',
       options: { relaxedDurability: true },

@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-repl",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
@@ -44,7 +44,7 @@
     "@codemirror/lang-sql": "^6.8.0",
     "@codemirror/language": "^6.10.3",
     "@codemirror/view": "^6.34.1",
-    "@electric-sql/pglite-react": "workspace:^",
+    "@electric-sql/pglite-react": "workspace:*",
     "@uiw/codemirror-theme-github": "4.23.5",
     "@uiw/codemirror-theme-xcode": "4.23.5",
     "@uiw/codemirror-themes": "4.23.5",
@@ -54,7 +54,7 @@
     "react-dom": "^19.0.0"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:^"
+    "@electric-sql/pglite": "workspace:0.3.1"
   },
   "peerDependenciesMeta": {
     "@electric-sql/pglite": {
@@ -62,7 +62,7 @@
     }
   },
   "devDependencies": {
-    "@electric-sql/pglite": "workspace:^",
+    "@electric-sql/pglite": "workspace:*",
     "@types/node": "^20.16.11",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
