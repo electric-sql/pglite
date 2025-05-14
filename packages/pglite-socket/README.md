@@ -187,7 +187,7 @@ Once the server is running, you can connect to it using any PostgreSQL client:
 #### Using psql
 
 ```bash
-psql -h localhost -p 5432 -d template1
+PGSSLMODE=disable psql -h localhost -p 5432 -d template1
 ```
 
 #### Using Node.js clients
@@ -218,6 +218,7 @@ const sql = postgres({
 - For persistent storage, specify a file path for the database (e.g., `--db=./data/mydb`).
 - When using debug mode (`--debug=1` or higher), additional protocol information will be displayed in the console.
 - To allow connections from other machines, set the host to `0.0.0.0` with `--host=0.0.0.0`.
+- SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
 
 ## License
 
