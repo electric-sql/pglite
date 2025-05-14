@@ -21,8 +21,8 @@ This step will create a `pglite.wasm` build that contains the debug information.
           "file:///workspace/*": "${workspaceFolder}/postgres-pglite",
         }
 ```
- 
- If this doesn't work, a workaround is to make a symbolic link from `/workspace` to your `"${workspaceFolder}/postgres-pglite"` folder.
+
+If this doesn't work, a workaround is to make a symbolic link from `/workspace` to your `"${workspaceFolder}/postgres-pglite"` folder.
 
 ## Using Chrome
 
