@@ -25,5 +25,6 @@ This step will create a `pglite.wasm` build that contains the debug information 
 
 For example, you can start the `JavaScript Debug Terminal` inside VSCode and run some of the pglite tests:
 (from the folder `packages/pglite`):
+
 `$ vitest tests/basic.test.ts`
 
