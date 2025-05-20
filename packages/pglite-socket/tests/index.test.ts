@@ -167,7 +167,6 @@ describe('PGLiteSocketHandler', () => {
 })
 
 testSocket(async (connOptions) => {
-
   describe('PGLiteSocketServer', () => {
     let db: PGlite
     let server: PGLiteSocketServer
@@ -196,7 +195,7 @@ testSocket(async (connOptions) => {
         db,
         host: connOptions.host,
         port: connOptions.port,
-        path: connOptions.host
+        path: connOptions.host,
       })
 
       // Start server
@@ -383,11 +382,11 @@ testSocket(async (connOptions) => {
 
       it('should use default timeout value from CONNECTION_QUEUE_TIMEOUT', async () => {
         // Create server without specifying timeout
-        const defaultServer = new PGLiteSocketServer({ 
-          db, 
+        const defaultServer = new PGLiteSocketServer({
+          db,
           host: connOptions.host,
           port: connOptions.port,
-          path: connOptions.host
+          path: connOptions.host,
         })
 
         // Check that it's using the default timeout

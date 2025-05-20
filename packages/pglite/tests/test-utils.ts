@@ -67,7 +67,11 @@ export async function testDTC(
 }
 
 export async function testSocket(
-  fn: (socketOptions: { address?: string, port?: number, host?: string}) => Promise<void>,
+  fn: (socketOptions: {
+    address?: string
+    port?: number
+    host?: string
+  }) => Promise<void>,
 ) {
   describe('TCP socket server', async () => {
     await fn({ address: '127.0.0.1', port: 5433 })
