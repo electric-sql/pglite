@@ -1,8 +1,8 @@
-import { PGlite } from '../../../pglite/dist';
-import { PGLiteSocketServer } from '../../src'
+import { PGlite } from '../../../packages/pglite/dist';
+import { PGLiteSocketServer } from '../../../packages/pglite-socket'
 import { Client } from 'pg';
 import { unlink } from 'fs/promises';
-import { existsSync, readdir } from 'fs';
+import { existsSync } from 'fs';
 
 const SOCKET_PATH = '/tmp/.s.PGSQL.5432';
 
@@ -35,12 +35,6 @@ async function run() {
     await db.close();
     console.log('Server stopped and database closed');
     process.exit(0);
-  });
-
-  readdir('/tmp/', (err, files) => {
-    files.forEach((file) => {
-      console.log('file found:', file);
-    });
   });
 
   // Create a new PostgreSQL client
