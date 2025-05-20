@@ -15,7 +15,6 @@ import {
   CONNECTION_QUEUE_TIMEOUT,
 } from '../src'
 import { Socket, createConnection } from 'net'
-import { testSocket } from '../../pglite/tests/test-utils'
 import { existsSync } from 'fs'
 import { unlink } from 'fs/promises'
 
@@ -27,6 +26,21 @@ beforeAll(() => {
 afterAll(() => {
   vi.useRealTimers()
 })
+
+async function testSocket(
+  fn: (socketOptions: {
+    host?: string
+    port?: number
+    path?: string
+  }) => Promise<void>,
+) {
+  describe('TCP socket server', async () => {
+    await fn({ host: '127.0.0.1', port: 5433 })
+  })
+  describe('unix socket server', async () => {
+    await fn({ path: '/tmp/.s.PGSQL.5432' })
+  })
+}
 
 // Create a mock Socket for testing
 const createMockSocket = () => {
