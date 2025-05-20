@@ -398,13 +398,13 @@ export class PGLiteSocketServer extends EventTarget {
         })
       } else {
         this.server.listen(this.port, this.host, () => {
-        this.log(`start: server listening on ${this.getServerConn()}`)
-        this.dispatchEvent(
-          new CustomEvent('listening', {
-            detail: { port: this.port, host: this.host },
-          }),
-        )
-        resolve()
+          this.log(`start: server listening on ${this.getServerConn()}`)
+          this.dispatchEvent(
+            new CustomEvent('listening', {
+              detail: { port: this.port, host: this.host },
+            }),
+          )
+          resolve()
         })
       }
     })
