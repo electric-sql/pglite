@@ -619,7 +619,7 @@ export class PGlite
     // execute the message
     mod._interactive_one()
 
-    let channel = mod._get_channel()
+    const channel = mod._get_channel()
     if (channel < 0) currDataTransferContainer = 'file'
 
     // TODO: use channel value for msg_start
