@@ -86,10 +86,10 @@ async function main() {
 
     // Listen for server events
     server.addEventListener('listening', (event) => {
-      const { port, host } = (
-        event as CustomEvent<{ port: number; host: string }>
+      const detail = (
+        event as CustomEvent<{ port: number; host: string } | { host: string }>
       ).detail
-      console.log(`PGLiteSocketServer listening on ${host}:${port}`)
+      console.log(`PGLiteSocketServer listening on ${detail}`)
     })
 
     server.addEventListener('connection', (event) => {

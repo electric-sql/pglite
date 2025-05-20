@@ -301,6 +301,8 @@ export interface PGLiteSocketServerOptions {
   port?: number
   /** The host to bind to (default: 127.0.0.1) */
   host?: string
+  /** Unix socket path to bind to (default: undefined). If specified, takes precedence over host:port */
+  path?: string
   /** Print the incoming and outgoing data to the console in hex and ascii */
   inspect?: boolean
   /** Connection queue timeout in milliseconds (default: 10000) */
@@ -316,8 +318,9 @@ export interface PGLiteSocketServerOptions {
 export class PGLiteSocketServer extends EventTarget {
   readonly db: PGlite
   private server: Server | null = null
-  private port: number
-  private host: string
+  private port?: number
+  private host?: string
+  private path?: string
   private active = false
   private inspect: boolean
   private debug: boolean
@@ -333,8 +336,12 @@ export class PGLiteSocketServer extends EventTarget {
   constructor(options: PGLiteSocketServerOptions) {
     super()
     this.db = options.db
-    this.port = options.port || 5432
-    this.host = options.host || '127.0.0.1'
+    if (options.path) {
+      this.path = options.path
+    } else {
+      this.port = options.port || 5432
+      this.host = options.host || '127.0.0.1'
+    }
     this.inspect = options.inspect ?? false
     this.debug = options.debug ?? false
     this.connectionQueueTimeout =
@@ -361,7 +368,7 @@ export class PGLiteSocketServer extends EventTarget {
    * @returns Promise that resolves when the server is listening
    */
   public async start(): Promise<void> {
-    this.log(`start: starting server on ${this.host}:${this.port}`)
+    this.log(`start: starting server on ${this.getServerConn()}`)
 
     if (this.server) {
       throw new Error('Socket server already started')
@@ -379,16 +386,33 @@ export class PGLiteSocketServer extends EventTarget {
         reject(err)
       })
 
-      this.server.listen(this.port, this.host, () => {
-        this.log(`start: server listening on ${this.host}:${this.port}`)
+      if (this.path) {
+        this.server.listen(this.path, () => {
+          this.log(`start: server listening on ${this.getServerConn()}`)
+          this.dispatchEvent(
+            new CustomEvent('listening', {
+              detail: { path: this.path },
+            }),
+          )
+          resolve()
+        })
+      } else {
+        this.server.listen(this.port, this.host, () => {
+        this.log(`start: server listening on ${this.getServerConn()}`)
         this.dispatchEvent(
           new CustomEvent('listening', {
             detail: { port: this.port, host: this.host },
           }),
         )
         resolve()
-      })
+        })
+      }
     })
+  }
+
+  public getServerConn(): string {
+    if (this.path) return this.path
+    return `${this.host}:${this.port}`
   }
 
   /**
