@@ -25,6 +25,12 @@ const args = parseArgs({
       default: '127.0.0.1',
       help: 'Host to bind to',
     },
+    path: {
+      type: 'string',
+      short: 'u',
+      default: undefined,
+      help: 'unix socket to bind to. Takes precedence over host:port',
+    },
     debug: {
       type: 'string',
       short: 'v',
@@ -47,6 +53,7 @@ Options:
   -d, --db=PATH       Database path (default: memory://)
   -p, --port=PORT     Port to listen on (default: 5432)
   -h, --host=HOST     Host to bind to (default: 127.0.0.1)
+  -u, --path=UNIX     Unix socket to bind to (default: undefined). Takes precedence over host:port
   -v, --debug=LEVEL   Debug level 0-5 (default: 0)
 `
 
@@ -63,6 +70,7 @@ async function main() {
     const dbPath = args.values.db as string
     const port = parseInt(args.values.port as string, 10)
     const host = args.values.host as string
+    const path = args.values.path as string
     const debugStr = args.values.debug as string
     const debugLevel = parseInt(debugStr, 10) as DebugLevel
 
@@ -81,6 +89,7 @@ async function main() {
       db,
       port,
       host,
+      path,
       inspect: debugLevel > 0,
     })
 
@@ -89,7 +98,7 @@ async function main() {
       const detail = (
         event as CustomEvent<{ port: number; host: string } | { host: string }>
       ).detail
-      console.log(`PGLiteSocketServer listening on ${detail}`)
+      console.log(`PGLiteSocketServer listening on ${JSON.stringify(detail)}`)
     })
 
     server.addEventListener('connection', (event) => {
