@@ -16,6 +16,8 @@ import {
 } from '../src'
 import { Socket, createConnection } from 'net'
 import { testSocket } from '../../pglite/tests/test-utils'
+import { existsSync } from 'fs'
+import { unlink } from 'fs/promises'
 
 // Mock timers for testing timeouts
 beforeAll(() => {
@@ -170,11 +172,20 @@ testSocket(async (connOptions) => {
   describe('PGLiteSocketServer', () => {
     let db: PGlite
     let server: PGLiteSocketServer
-    const TEST_PORT = 5433 // Using non-default port for testing
 
     beforeEach(async () => {
       // Create a PGlite instance for testing
       db = await PGlite.create()
+      if (connOptions.path) {
+        if (existsSync(connOptions.path)) {
+          try {
+            await unlink(connOptions.path)
+            console.log(`Removed old socket at ${connOptions.path}`)
+          } catch (err) {
+            console.log('')
+          }
+        }
+      }
     })
 
     afterEach(async () => {
@@ -195,14 +206,30 @@ testSocket(async (connOptions) => {
         db,
         host: connOptions.host,
         port: connOptions.port,
-        path: connOptions.host,
+        path: connOptions.path,
       })
 
       // Start server
       await server.start()
 
       // Try to connect to confirm server is running
-      const client = createConnection({ port: TEST_PORT })
+      let client
+      if (connOptions.path) {
+        // unix socket
+        client = createConnection({ path: connOptions.path })
+      } else {
+        if (connOptions.port) {
+          // TCP socket
+          client = createConnection({
+            port: connOptions.port,
+            host: connOptions.host,
+          })
+        } else {
+          throw new Error(
+            'need to specify connOptions.path or connOptions.port',
+          )
+        }
+      }
       client.on('error', () => {
         // Ignore connection errors during test
       })
@@ -223,7 +250,23 @@ testSocket(async (connOptions) => {
       // Try to connect again - should fail
       await expect(
         new Promise<void>((resolve, reject) => {
-          const failClient = createConnection({ port: TEST_PORT })
+          let failClient
+          if (connOptions.path) {
+            // unix socket
+            failClient = createConnection({ path: connOptions.path })
+          } else {
+            if (connOptions.port) {
+              // TCP socket
+              failClient = createConnection({
+                port: connOptions.port,
+                host: connOptions.host,
+              })
+            } else {
+              throw new Error(
+                'need to specify connOptions.path or connOptions.port',
+              )
+            }
+          }
 
           failClient.on('error', () => {
             // Expected error - connection should fail
@@ -254,7 +297,7 @@ testSocket(async (connOptions) => {
           db,
           host: connOptions.host,
           port: connOptions.port,
-          path: connOptions.host,
+          path: connOptions.path,
           connectionQueueTimeout: 100, // Very short timeout for testing
         })
 
@@ -386,7 +429,7 @@ testSocket(async (connOptions) => {
           db,
           host: connOptions.host,
           port: connOptions.port,
-          path: connOptions.host,
+          path: connOptions.path,
         })
 
         // Check that it's using the default timeout
