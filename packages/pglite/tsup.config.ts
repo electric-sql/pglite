@@ -35,6 +35,8 @@ for (const file of contribFiles) {
   }
 }
 
+const minify = process.env.DEBUG === 'true' ? false : true
+
 export default defineConfig([
   {
     entry: entryPoints,
@@ -46,7 +48,7 @@ export default defineConfig([
     clean: true,
     external: ['../release/pglite.js', '../release/pglite.cjs'],
     esbuildPlugins: [replaceAssertPlugin],
-    minify: true,
+    minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
     format: ['esm', 'cjs'],
   },
@@ -54,7 +56,7 @@ export default defineConfig([
     // Convert the Emscripten ESM bundle to a CJS bundle
     entry: ['release/pglite.js'],
     format: ['cjs'],
-    minify: true,
+    minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
     keepNames: true,
   },
