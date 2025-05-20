@@ -65,3 +65,14 @@ export async function testDTC(
     await fn('file')
   })
 }
+
+export async function testSocket(
+  fn: (socketOptions: { address?: string, port?: number, host?: string}) => Promise<void>,
+) {
+  describe('TCP socket server', async () => {
+    await fn({ address: '127.0.0.1', port: 5433 })
+  })
+  describe('unix socket server', async () => {
+    await fn({ host: '/tmp/.s.PGSQL.5432' })
+  })
+}
