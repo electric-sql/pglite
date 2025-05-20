@@ -1,5 +1,12 @@
 # @electric-sql/pglite-socket
 
+## 0.0.5
+
+### Patch Changes
+
+- f975f77: Updated README
+- d9b52d5: allows unix socket connections
+
 ## 0.0.4
 
 ### Patch Changes
