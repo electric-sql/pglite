@@ -1,5 +1,11 @@
 # @electric-sql/pglite-sync
 
+## 0.3.5
+
+### Patch Changes
+
+- 0655bff: batch inserts by by a max query size of 50mb
+
 ## 0.3.4
 
 ### Patch Changes
