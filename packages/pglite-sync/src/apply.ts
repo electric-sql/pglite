@@ -106,20 +106,128 @@ export async function applyInsertsToTable({
 
   // Get column names from the first message
   const columns = Object.keys(data[0])
-  const MAX = Math.floor(32_000 / columns.length)
-  for (let i = 0; i < data.length; i += MAX) {
-    const maxdata = data.slice(i, i + MAX) // slice the data to avoid too many parameters
+
+  // Calculate size of a single value
+  const getValueSize = (value: any): number => {
+    if (value === null) return 0
+
+    // Handle binary data types
+    if (value instanceof ArrayBuffer) return value.byteLength
+    if (value instanceof Blob) return value.size
+    if (value instanceof Uint8Array) return value.byteLength
+    if (value instanceof DataView) return value.byteLength
+    if (ArrayBuffer.isView(value)) return value.byteLength
+
+    // Handle regular types
+    switch (typeof value) {
+      case 'string':
+        return value.length
+      case 'number':
+        return 8 // assuming 8 bytes for numbers
+      case 'boolean':
+        return 1
+      default:
+        if (value instanceof Date) return 8
+        return value?.toString()?.length || 0
+    }
+  }
+
+  // Calculate size of a single row's values in bytes
+  const getRowSize = (row: Record<string, any>): number => {
+    return columns.reduce((size, column) => {
+      const value = row[column]
+      if (value === null) return size
+
+      // Handle arrays
+      if (Array.isArray(value)) {
+        if (value.length === 0) return size
+
+        // Check first element to determine array type
+        const firstElement = value[0]
+
+        // Handle homogeneous arrays
+        switch (typeof firstElement) {
+          case 'number':
+            return size + value.length * 8 // 8 bytes per number
+          case 'string':
+            return (
+              size + value.reduce((arrSize, str) => arrSize + str.length, 0)
+            )
+          case 'boolean':
+            return size + value.length // 1 byte per boolean
+          default:
+            if (firstElement instanceof Date) {
+              return size + value.length * 8 // 8 bytes per date
+            }
+            // Handle mixed or other types of arrays (including binary data)
+            return (
+              size +
+              value.reduce((arrSize, item) => arrSize + getValueSize(item), 0)
+            )
+        }
+      }
+
+      return size + getValueSize(value)
+    }, 0)
+  }
+
+  const MAX_PARAMS = 32_000
+  const MAX_BYTES = 50 * 1024 * 1024 // 50MB
+
+  // Helper function to execute a batch insert
+  const executeBatch = async (batch: Record<string, any>[]) => {
     const sql = `
       INSERT INTO "${schema}"."${table}"
       (${columns.map((s) => `"${s}"`).join(', ')})
       VALUES
-      ${maxdata.map((_, j) => `(${columns.map((_v, k) => '$' + (j * columns.length + k + 1)).join(', ')})`).join(', ')}
+      ${batch.map((_, j) => `(${columns.map((_v, k) => '$' + (j * columns.length + k + 1)).join(', ')})`).join(', ')}
     `
-    const values = maxdata.flatMap((message) =>
+    const values = batch.flatMap((message) =>
       columns.map((column) => message[column]),
     )
     await pg.query(sql, values)
   }
+
+  let currentBatch: Record<string, any>[] = []
+  let currentBatchSize = 0
+  let currentBatchParams = 0
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i]
+    const rowSize = getRowSize(row)
+    const rowParams = columns.length
+
+    // Check if adding this row would exceed either limit
+    if (
+      currentBatch.length > 0 &&
+      (currentBatchSize + rowSize > MAX_BYTES ||
+        currentBatchParams + rowParams > MAX_PARAMS)
+    ) {
+      if (debug && currentBatchSize + rowSize > MAX_BYTES) {
+        console.log('batch size limit exceeded, executing batch')
+      }
+      if (debug && currentBatchParams + rowParams > MAX_PARAMS) {
+        console.log('batch params limit exceeded, executing batch')
+      }
+      await executeBatch(currentBatch)
+
+      // Reset batch
+      currentBatch = []
+      currentBatchSize = 0
+      currentBatchParams = 0
+    }
+
+    // Add row to current batch
+    currentBatch.push(row)
+    currentBatchSize += rowSize
+    currentBatchParams += rowParams
+  }
+
+  // Execute final batch if there are any remaining rows
+  if (currentBatch.length > 0) {
+    await executeBatch(currentBatch)
+  }
+
   if (debug) console.log(`Inserted ${messages.length} rows using INSERT`)
 }
 

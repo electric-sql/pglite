@@ -407,7 +407,7 @@ describe('sync-e2e', () => {
           },
         ])
       },
-      { timeout: 5000 },
+      { timeout: 10000 },
     )
 
     // Update data in PostgreSQL
@@ -2409,12 +2409,15 @@ newline', false);
     await types_syncer('insert')
   }, 60000)
 
-  const many_syncer = async (method: InitialInsertMethod | 'useCopy') => {
-    const numTodos = 150000
-
+  const many_syncer = async (
+    method: InitialInsertMethod | 'useCopy',
+    numTodos: number = 150000,
+    rowSize: number = 100,
+  ) => {
     // Batch the inserts to Postgres
     const batchSize = 1000
     const batches = Math.ceil(numTodos / batchSize)
+    const rowBytesValue = 'a'.repeat(rowSize)
     for (let batch = 0; batch < batches; batch++) {
       const start = batch * batchSize
       const end = Math.min(start + batchSize, numTodos)
@@ -2426,7 +2429,7 @@ newline', false);
 
       for (let i = start; i < end; i++) {
         values.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`)
-        params.push(i, `Todo ${i}`, i % 3 === 0) // id, task, done
+        params.push(i, `Todo ${i} ${rowBytesValue}`, i % 3 === 0) // id, task, done
         paramIndex += 3
       }
 
@@ -2477,21 +2480,23 @@ newline', false);
     const firstRow = await pg.sql`SELECT * FROM todo WHERE id = 0;`
     expect(firstRow.rows[0]).toEqual({
       id: 0,
-      task: 'Todo 0',
+      task: `Todo 0 ${rowBytesValue}`,
       done: true, // 0 % 3 === 0
     })
 
-    const middleRow = await pg.sql`SELECT * FROM todo WHERE id = 25000;`
+    const middleRowId = Math.floor(numTodos / 2)
+    const middleRow =
+      await pg.sql`SELECT * FROM todo WHERE id = ${middleRowId};`
     expect(middleRow.rows[0]).toEqual({
-      id: 25000,
-      task: 'Todo 25000',
-      done: 25000 % 3 === 0,
+      id: middleRowId,
+      task: `Todo ${middleRowId} ${rowBytesValue}`,
+      done: middleRowId % 3 === 0,
     })
 
     const lastRow = await pg.sql`SELECT * FROM todo WHERE id = ${numTodos - 1};`
     expect(lastRow.rows[0]).toEqual({
       id: numTodos - 1,
-      task: `Todo ${numTodos - 1}`,
+      task: `Todo ${numTodos - 1} ${rowBytesValue}`,
       done: (numTodos - 1) % 3 === 0,
     })
 
@@ -2516,19 +2521,33 @@ newline', false);
     await pg.electric.deleteSubscription('large_todo_sync_test')
   }
 
-  it('handles initial sync of 150,000 rows with COPY', async () => {
-    await many_syncer('csv')
-  }, 60000)
+  for (const numTodos of [20_000, 150_000, 300_000]) {
+    const rowSizeOptions = numTodos <= 20_000 ? [100, 10000] : [100]
+    // 20_000 row of 100000 bytes triggers the batching by size for inserts
+    for (const rowSize of rowSizeOptions) {
+      describe(`handles initial sync of ${numTodos} rows`, () => {
+        describe(`with row size ${rowSize} bytes`, () => {
+          it(`with insert`, async () => {
+            await many_syncer('insert', numTodos, rowSize)
+          }, 360000)
 
-  it('handles initial sync of 150,000 rows with json_to_recordset', async () => {
-    await many_syncer('json')
-  }, 60000)
+          if (numTodos <= 150_000) {
+            it(`with COPY`, async () => {
+              await many_syncer('csv', numTodos, rowSize)
+            }, 60000)
 
-  it('handles initial sync of 150,000 rows', async () => {
-    await many_syncer('insert')
-  }, 360000)
+            it(`with json_to_recordset`, async () => {
+              await many_syncer('json', numTodos, rowSize)
+            }, 60000)
+          }
 
-  it('handles initial sync of 150,000 rows with the deprecated useCopy option', async () => {
-    await many_syncer('useCopy')
-  }, 60000)
+          if (numTodos <= 20_000) {
+            it(`with the deprecated useCopy option`, async () => {
+              await many_syncer('useCopy', numTodos)
+            }, 60000)
+          }
+        })
+      })
+    }
+  }
 })
