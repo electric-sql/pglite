@@ -26,8 +26,14 @@ import { PGlite, DebugLevel } from '@electric-sql/pglite'
  * ```bash
  * DEBUG=1 pnpm tsx examples/basic-server.ts
  * ```
+ * You can also use a UNIX socket instead of the host:port
+ * 
+ * ```bash
+ * UNIX=/tmp/.s.PGSQL.5432 DEBUG=1 pnpm tsx examples/basic-server.ts
+ * ```
  */
 
+const UNIX = process.env.UNIX
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5432
 const HOST = process.env.HOST ?? '127.0.0.1'
 const DEBUG = process.env.DEBUG
@@ -47,12 +53,19 @@ const server = new PGLiteSocketServer({
   db,
   port: PORT,
   host: HOST,
+  path: UNIX,
   inspect: !!DEBUG, // Print the incoming and outgoing data to the console
+})
+
+server.addEventListener('listening', (event) => {
+  const detail = (
+    event as CustomEvent<{ port: number; host: string } | { host: string }>
+  ).detail
+  console.log(`Server listening on ${JSON.stringify(detail)}`)
 })
 
 // Start the server
 await server.start()
-console.log(`Server started on ${HOST}:${PORT}`)
 
 // Handle SIGINT to stop the server and close the database
 process.on('SIGINT', async () => {

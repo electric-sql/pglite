@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-socket",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A socket implementation for PGlite enabling remote connections",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
@@ -35,8 +35,8 @@
     "pglite-server:dev": "tsx --watch src/scripts/server.ts"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "workspace:*",
     "@electric-sql/pg-protocol": "workspace:*",
+    "@electric-sql/pglite": "workspace:*",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.16.11",
     "pg": "^8.14.0",
