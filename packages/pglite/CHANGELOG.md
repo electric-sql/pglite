@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.2
+
+### Patch Changes
+
+- e2c654b: automatic fallback from `cma` data transfer container to `file` for large queries, and fix errors that could result in a "memory access out of bounds" error.
+
 ## 0.3.1
 
 ### Patch Changes
