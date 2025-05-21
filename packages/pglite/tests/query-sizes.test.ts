@@ -7,22 +7,23 @@ function createStringOfSize(sizeInBytes: number): string {
 }
 
 const sizes = {
-  '8089': 8089,
-  '8090': 8090,
-  '8091': 8091,
-  '8092': 8092,
+  '8kb': 8 * 1024,
   '5mb': 5 * 1024 * 1024,
-  //   '12mb': 12 * 1024 * 1024,
+  '12mb': 12 * 1024 * 1024,
+  '128mb': 128 * 1024 * 1024,
 }
 
 const rowDataSizes = {
   '100b': 100,
   '1kb': 1024,
+  '10kb': 10 * 1024,
+  '100kb': 100 * 1024,
 }
 
 const rowCounts = {
   '1k rows': 1000,
   '10k rows': 10000,
+  '100k rows': 100000,
 }
 
 function testEachSize(
@@ -52,6 +53,10 @@ function testRowCountAndSize(
 
   for (const [countLabel, rowCount] of countEntries) {
     for (const [sizeLabel, sizeInBytes] of sizeEntries) {
+      if (sizeInBytes * rowCount > 1024 * 1024 * 1024) {
+        // limit the size of the test to 1gb
+        continue
+      }
       it(`handles ${countLabel} with ${sizeLabel} per row`, async () => {
         await new Promise((resolve) =>
           setTimeout(async () => {

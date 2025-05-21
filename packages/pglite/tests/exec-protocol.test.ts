@@ -39,19 +39,15 @@ testDTC(async (defaultDataTransferContainer) => {
 
       const r2 = await db.execProtocol(serialize.bind({ values: ['1'] }))
       const messageNames2 = r2.messages.map((msg) => msg.name)
-      expect(messageNames2).toEqual(['notice', 'bindComplete', 'readyForQuery'])
+      expect(messageNames2).toEqual(['notice', 'bindComplete'])
 
       const r3 = await db.execProtocol(serialize.describe({ type: 'P' }))
       const messageNames3 = r3.messages.map((msg) => msg.name)
-      expect(messageNames3).toEqual(['rowDescription', 'readyForQuery'])
+      expect(messageNames3).toEqual(['rowDescription'])
 
       const r4 = await db.execProtocol(serialize.execute({}))
       const messageNames4 = r4.messages.map((msg) => msg.name)
-      expect(messageNames4).toEqual([
-        'dataRow',
-        'commandComplete',
-        'readyForQuery',
-      ])
+      expect(messageNames4).toEqual(['dataRow', 'commandComplete'])
 
       const r5 = await db.execProtocol(serialize.sync())
       const messageNames5 = r5.messages.map((msg) => msg.name)
