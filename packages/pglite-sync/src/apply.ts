@@ -203,11 +203,11 @@ export async function applyInsertsToTable({
       (currentBatchSize + rowSize > MAX_BYTES ||
         currentBatchParams + rowParams > MAX_PARAMS)
     ) {
-      if (currentBatchSize + rowSize > MAX_BYTES) {
-        console.log('>> Batch size limit exceeded, executing batch')
+      if (debug && currentBatchSize + rowSize > MAX_BYTES) {
+        console.log('batch size limit exceeded, executing batch')
       }
-      if (currentBatchParams + rowParams > MAX_PARAMS) {
-        console.log('>> Batch params limit exceeded, executing batch')
+      if (debug && currentBatchParams + rowParams > MAX_PARAMS) {
+        console.log('batch params limit exceeded, executing batch')
       }
       await executeBatch(currentBatch)
 
