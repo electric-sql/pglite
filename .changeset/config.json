@@ -9,7 +9,8 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "benchmark",
-    "pglite-react-example"
+    "pglite-react-example",
+    "pglite-unixsocket-example"
   ],
   "privatePackages": { "tag": true, "version": true },
   "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
