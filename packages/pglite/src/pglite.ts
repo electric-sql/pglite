@@ -587,13 +587,17 @@ export class PGlite
 
     // TODO: if (message.length>CMA_B) force file
 
-    const currDataTransferContainer =
+    let currDataTransferContainer =
       options.dataTransferContainer ?? this.#dataTransferContainer
+
+    // do we overflow allocated shared memory segment
+    if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
 
     switch (currDataTransferContainer) {
       case 'cma': {
         // set buffer size so answer will be at size+0x2 pointer addr
         mod._interactive_write(message.length)
+        // TODO: make it seg num * seg maxsize if multiple channels.
         mod.HEAPU8.set(message, 1)
         break
       }
@@ -615,7 +619,11 @@ export class PGlite
     // execute the message
     mod._interactive_one()
 
-    // TODO: use get_channel() > 0 to detect possible CMA position else go file.
+    const channel = mod._get_channel()
+    if (channel < 0) currDataTransferContainer = 'file'
+
+    // TODO: use channel value for msg_start
+    if (channel > 0) currDataTransferContainer = 'cma'
 
     switch (currDataTransferContainer) {
       case 'cma': {
