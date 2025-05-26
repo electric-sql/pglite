@@ -84,20 +84,30 @@ npm i @electric-sql/pglite orange-orm
 
 ```javascript
 import orange from 'orange-orm';
+const db = map.pglite('idb://my-db');
+
+await db.query(`
+  create table if not exists task (
+    id uuid primary key default gen_random_uuid(),
+    title text,
+    done boolean
+  )
+`);
 
 const map = orange.map(x => ({
   task: x.table('task').map(({ column }) => ({
-    id: column('id').numeric().primary(),
+    id: column('id').uuid().primary(),
     title: column('title').string(),
     done: column('done').boolean(),
   })),
 }));
 
-const db = map.pglite('idb://my-db');
 await db.task.insert({ title: 'Write docs', done: false });
 
-const tasks = await db.task.getAll();
-console.log(tasks);
+const tasks = await db.task.getAll({
+	where: x => x.done.eq(false),
+});
+console.log(JSON.stringify(tasks));
 ```
 
 ## TypeORM
