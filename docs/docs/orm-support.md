@@ -66,6 +66,40 @@ Now you can check [Knex documentation](https://knexjs.org/guide/query-builder.ht
 and [knex-pglite](https://github.com/czeidler/knex-pglite) documentation for
 more details.
 
+## Orange ORM
+
+[Orange ORM](https://orange-orm.io) is a modern, TypeScript-first ORM that runs in Node.js, Bun, Deno and the browser. It follows the Active-Record pattern and ships with an expressive, LINQ-style query API. Key features include:
+
+- Rich querying and deep filtering  
+- Active-Record-style change tracking
+- Fully-typed models with **zero code-generation**
+- Seamless integration with **PGlite** across runtimes
+
+To use Orange ORM with PGlite, add [orange-orm](https://github.com/alfateam/orange-orm)
+library to your project:
+
+```bash
+npm i @electric-sql/pglite orange-orm
+```
+
+```javascript
+import orange from 'orange-orm';
+
+const map = orange.map(x => ({
+  task: x.table('task').map(({ column }) => ({
+    id: column('id').numeric().primary(),
+    title: column('title').string(),
+    done: column('done').boolean(),
+  })),
+}));
+
+const db = map.pglite('idb://my-db');
+await db.task.insert({ title: 'Write docs', done: false });
+
+const tasks = await db.task.getAll();
+console.log(tasks);
+```
+
 ## TypeORM
 
 [TypeORM](https://typeorm.io/) is an ORM that can run in NodeJS, the Browser, and many other platforms. Key features include:
