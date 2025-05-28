@@ -92,6 +92,8 @@ describe('pgDump', () => {
       INSERT INTO test (name) VALUES ('row1'), ('row2');
     `)
 
+    const initialSearchPath = (await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')).rows[0].search_path
+
     // Dump database
     const dump = await pgDump({ pg: pg1 })
     const dumpContent = await dump.text()
@@ -100,9 +102,12 @@ describe('pgDump', () => {
     const pg2 = await PGlite.create()
     await pg2.exec(dumpContent)
 
+    // after importing, set search path back to the initial one
+    await pg2.query(`SET search_path TO ${initialSearchPath};`);
+
     // Verify data
     const result = await pg2.query<{ name: string }>(
-      'SELECT * FROM public.test ORDER BY id',
+      'SELECT * FROM test ORDER BY id',
     )
     expect(result.rows).toHaveLength(2)
     expect(result.rows[0].name).toBe('row1')
