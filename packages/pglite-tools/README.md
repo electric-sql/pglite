@@ -68,5 +68,5 @@ const restoredPG = await PGlite.create()
 await restoredPG.exec(dumpContent)
 
 // optional - after importing, set search path back to the initial one
-await pg2.query(`SET search_path TO ${initialSearchPath};`);
+await restoredPG.query(`SET search_path TO ${initialSearchPath};`);
 ```
