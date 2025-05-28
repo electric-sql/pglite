@@ -1,4 +1,4 @@
-### Debugging PGlite
+# Debugging PGlite
 
 Building a `debug` version of PGlite allows you to debug both the TypeScript and WASM parts of the project.
 
@@ -6,18 +6,18 @@ You can run an interactive debug session either in Chrome or in Visual Studio Co
 
 ## Using Visual Studio Code
 
-# Prerequisites
+### Prerequisites
 
 - Visual Studio Code with [WebAssembly DWARF Debugging](https://marketplace.visualstudio.com/items?itemName=ms-vscode.wasm-dwarf-debugging) extension installed
 
 ## Using Chrome
 
-# Prerequisites
+### Prerequisites
 
 - Chrome browser
 - [C/C++ DevTools Support (DWARF) Chrome extension](https://goo.gle/wasm-debugging-extension).
 
-# Run the DEBUG build
+# Running the DEBUG build
 
 `$ pnpm build:all:debug`
 
