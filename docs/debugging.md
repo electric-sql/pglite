@@ -23,7 +23,7 @@ You can run an interactive debug session either in Chrome or in Visual Studio Co
 
 This step will create a `pglite.wasm` build that contains the debug information as well as a non-minified version of the pglite javascript frontend. You can now use this build to run interactive debug sessions.
 
-For example, you can start the `JavaScript Debug Terminal` inside VSCode and run some of the pglite tests. 
+For example, you can start the `JavaScript Debug Terminal` inside VSCode and run some of the pglite tests.
 
 From the folder `packages/pglite`:
 
