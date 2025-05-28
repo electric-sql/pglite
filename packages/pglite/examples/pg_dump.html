@@ -46,7 +46,7 @@
           await pg.exec(`INSERT INTO test2 (name) VALUES ('test2-${i}');`)
         }
 
-        const initialSearchPath = (await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')).rows[0].search_path
+        const initialSearchPath = (await pg.query('SHOW SEARCH_PATH;')).rows[0].search_path
 
         console.log('Dumping database...')
         const dump = await pgDump({ pg })
@@ -66,8 +66,7 @@
         const sql = await dump.text()
         await pg2.exec(sql)
 
-        console.log('Setting the search path to', initialSearchPath)
-        // restore the initial search path
+        console.log('Restoring the initial search path to', initialSearchPath)
         await pg2.exec(`SET search_path TO ${initialSearchPath};`)
 
         console.log('Querying restored database...')
