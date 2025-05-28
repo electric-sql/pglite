@@ -103,7 +103,7 @@ describe('pgDump', () => {
     await pg2.exec(dumpContent)
 
     // after importing, set search path back to the initial one
-    await pg2.query(`SET search_path TO ${initialSearchPath};`);
+    await pg2.exec(`SET search_path TO ${initialSearchPath};`);
 
     // Verify data
     const result = await pg2.query<{ name: string }>(
