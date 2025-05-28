@@ -92,7 +92,9 @@ describe('pgDump', () => {
       INSERT INTO test (name) VALUES ('row1'), ('row2');
     `)
 
-    const initialSearchPath = (await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')).rows[0].search_path
+    const initialSearchPath = (
+      await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')
+    ).rows[0].search_path
 
     // Dump database
     const dump = await pgDump({ pg: pg1 })
@@ -103,7 +105,7 @@ describe('pgDump', () => {
     await pg2.exec(dumpContent)
 
     // after importing, set search path back to the initial one
-    await pg2.exec(`SET search_path TO ${initialSearchPath};`);
+    await pg2.exec(`SET search_path TO ${initialSearchPath};`)
 
     // Verify data
     const result = await pg2.query<{ name: string }>(
