@@ -1340,5 +1340,4 @@ export class WasiPreview1 {
   }
 }
 
-console.log('easywasi')
 export default WasiPreview1
