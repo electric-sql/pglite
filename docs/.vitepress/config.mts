@@ -117,11 +117,11 @@ export default defineConfig({
           {
             text: 'PGlite tools',
             link: '/pglite-tools',
-            base: '/docs/pglite-tools',
+            base: '/docs',
             collapsed: false,
             items: [
-              { text: 'Package', link: '/docs/pglite-tools' },
-              { text: 'pgdump', link: '/docs/pglite-tools#pgDump' },
+              { text: 'Package', link: '/' },
+              { text: 'pgdump', link: '#pgDump' },
             ],
           },
         ],
