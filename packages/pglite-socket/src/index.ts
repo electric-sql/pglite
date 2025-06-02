@@ -108,7 +108,14 @@ export class PGLiteSocketHandler extends EventTarget {
 
     // Setup event handlers
     this.log(`attach: setting up socket event handlers`)
-    socket.on('data', (data) => this.handleData(data))
+    socket.on('data', async (data) => {
+      try {
+        const result = await this.handleData(data)
+        this.log(`socket on data sent: ${result} bytes`)
+      } catch (err) {
+        this.log('socket on data error: ', err)
+      }
+    })
     socket.on('error', (err) => this.handleError(err))
     socket.on('close', () => this.handleClose())
 
@@ -160,47 +167,63 @@ export class PGLiteSocketHandler extends EventTarget {
   /**
    * Handle incoming data from the socket
    */
-  private async handleData(data: Buffer): Promise<void> {
-    if (!this.socket || !this.active) {
-      this.log(`handleData: no active socket, ignoring data`)
-      return
-    }
-
-    this.log(`handleData: received ${data.length} bytes`)
-
-    // Print the incoming data to the console
-    this.inspectData('incoming', data)
-
-    try {
-      // Process the raw protocol data
-      this.log(`handleData: sending data to PGlite for processing`)
-      const result = await this.db.execProtocolRaw(new Uint8Array(data))
-
-      this.log(`handleData: received ${result.length} bytes from PGlite`)
-
-      // Print the outgoing data to the console
-      this.inspectData('outgoing', result)
-
-      // Send the result back if the socket is still connected
-      if (this.socket && this.socket.writable && this.active) {
-        this.log(`handleData: writing response to socket`)
-        this.socket.write(Buffer.from(result))
-
-        // Emit data event with byte sizes
-        this.dispatchEvent(
-          new CustomEvent('data', {
-            detail: { incoming: data.length, outgoing: result.length },
-          }),
-        )
-      } else {
-        this.log(
-          `handleData: socket no longer writable or active, discarding response`,
-        )
+  private async handleData(data: Buffer): Promise<number> {
+    const result = new Promise<number>(async (resolve, reject) => {
+      if (!this.socket || !this.active) {
+        this.log(`handleData: no active socket, ignoring data`)
+        return reject(-1)
       }
-    } catch (err) {
-      this.log(`handleData: error processing data:`, err)
-      this.handleError(err as Error)
-    }
+
+      this.log(`handleData: received ${data.length} bytes`)
+
+      // Print the incoming data to the console
+      this.inspectData('incoming', data)
+
+      try {
+        // Process the raw protocol data
+        this.log(`handleData: sending data to PGlite for processing`)
+        const result = await this.db.execProtocolRaw(new Uint8Array(data))
+
+        this.log(`handleData: received ${result.length} bytes from PGlite`)
+
+        // Print the outgoing data to the console
+        this.inspectData('outgoing', result)
+
+        // Send the result back if the socket is still connected
+        if (this.socket && this.socket.writable && this.active) {
+          if (result.length <= 0) {
+            this.log(`handleData: cowardly refusing to send empty packet`)
+            return reject(0)
+          }
+    
+          this.log(`handleData: writing response to socket`)
+          this.socket.write(Buffer.from(result), (err?: Error) => {
+            if (err) {
+              return reject(-2)
+            } else {
+              return resolve(result.length)
+            }
+          })
+
+          // Emit data event with byte sizes
+          this.dispatchEvent(
+            new CustomEvent('data', {
+              detail: { incoming: data.length, outgoing: result.length },
+            }),
+          )
+        } else {
+          this.log(
+            `handleData: socket no longer writable or active, discarding response`,
+          )
+          return reject(-3)
+        }
+      } catch (err) {
+        this.log(`handleData: error processing data:`, err)
+        this.handleError(err as Error)
+        return reject(-4)
+      }
+    })
+    return result
   }
 
   /**
