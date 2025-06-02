@@ -145,6 +145,7 @@ export class PGLiteSocketHandler extends EventTarget {
       if (this.socket.writable) {
         this.log(`detach: closing socket`)
         this.socket.end()
+        this.socket.destroy()
       }
     }
 
