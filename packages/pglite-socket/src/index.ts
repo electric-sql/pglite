@@ -169,62 +169,70 @@ export class PGLiteSocketHandler extends EventTarget {
    * Handle incoming data from the socket
    */
   private async handleData(data: Buffer): Promise<number> {
-    const result = new Promise<number>(async (resolve, reject) => {
-      if (!this.socket || !this.active) {
-        this.log(`handleData: no active socket, ignoring data`)
-        return reject(-1)
-      }
+    if (!this.socket || !this.active) {
+      this.log(`handleData: no active socket, ignoring data`)
+      return new Promise((_, reject) => reject(`no active socket`))
+    }
 
-      this.log(`handleData: received ${data.length} bytes`)
+    this.log(`handleData: received ${data.length} bytes`)
 
-      // Print the incoming data to the console
-      this.inspectData('incoming', data)
+    // Print the incoming data to the console
+    this.inspectData('incoming', data)
 
-      try {
-        // Process the raw protocol data
-        this.log(`handleData: sending data to PGlite for processing`)
-        const result = await this.db.execProtocolRaw(new Uint8Array(data))
+    try {
+      // Process the raw protocol data
+      this.log(`handleData: sending data to PGlite for processing`)
+      const result = await this.db.execProtocolRaw(new Uint8Array(data))
 
-        this.log(`handleData: received ${result.length} bytes from PGlite`)
+      this.log(`handleData: received ${result.length} bytes from PGlite`)
 
-        // Print the outgoing data to the console
-        this.inspectData('outgoing', result)
+      // Print the outgoing data to the console
+      this.inspectData('outgoing', result)
 
-        // Send the result back if the socket is still connected
-        if (this.socket && this.socket.writable && this.active) {
-          if (result.length <= 0) {
-            this.log(`handleData: cowardly refusing to send empty packet`)
-            return reject(0)
-          }
-    
-          this.log(`handleData: writing response to socket`)
-          this.socket.write(Buffer.from(result), (err?: Error) => {
-            if (err) {
-              return reject(-2)
-            } else {
-              return resolve(result.length)
-            }
-          })
-
-          // Emit data event with byte sizes
-          this.dispatchEvent(
-            new CustomEvent('data', {
-              detail: { incoming: data.length, outgoing: result.length },
-            }),
-          )
-        } else {
-          this.log(
-            `handleData: socket no longer writable or active, discarding response`,
-          )
-          return reject(-3)
+      // Send the result back if the socket is still connected
+      if (this.socket && this.socket.writable && this.active) {
+        if (result.length <= 0) {
+          this.log(`handleData: cowardly refusing to send empty packet`)
+          return new Promise((_, reject) => reject('no data'))
         }
-      } catch (err) {
-        this.log(`handleData: error processing data:`, err)
-        this.handleError(err as Error)
-        return reject(-4)
+
+        const promise = new Promise<number>((resolve, reject) => {
+          this.log(`handleData: writing response to socket`)
+          if (this.socket) {
+            this.socket.write(Buffer.from(result), (err?: Error) => {
+              if (err) {
+                reject(`Error while writing to the socket ${err.toString()}`)
+              } else {
+                resolve(result.length)
+              }
+            })
+          } else {
+            reject(`No socket`)
+          }
+        })
+
+        // Emit data event with byte sizes
+        this.dispatchEvent(
+          new CustomEvent('data', {
+            detail: { incoming: data.length, outgoing: result.length },
+          }),
+        )
+        return promise
+      } else {
+        this.log(
+          `handleData: socket no longer writable or active, discarding response`,
+        )
+        return new Promise((_, reject) =>
+          reject(`No socket, not active or not writeable`),
+        )
       }
-    })
-    return result
+    } catch (err) {
+      this.log(`handleData: error processing data:`, err)
+      this.handleError(err as Error)
+      return new Promise((_, reject) =>
+        reject(`Error while processing data ${(err as Error).toString()}`),
+      )
+    }
   }
 
   /**
