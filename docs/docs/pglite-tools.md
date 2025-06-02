@@ -1,1 +1,1 @@
-../packages/pglite-tools/README.md
+../../packages/pglite-tools/README.md
