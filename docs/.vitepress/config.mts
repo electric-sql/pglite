@@ -114,6 +114,16 @@ export default defineConfig({
           { text: 'ORMs & Query Builders', link: '/docs/orm-support' },
           { text: 'Sync using ElectricSQL', link: '/docs/sync' },
           { text: 'Upgrade v0.2.x -> v0.3.x', link: '/docs/upgrade' },
+          { 
+            text: 'PGlite tools', 
+            link: '/pglite-tools',
+            base: '/docs/pglite-tools',
+            collapsed: false,
+            items: [
+              { text: 'Package', link: '/docs/pglite-tools'},
+              { text: 'pgdump' , link: '/docs/pglite-tools#pgDump',}
+            ]
+          },
         ],
       },
       {
