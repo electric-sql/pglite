@@ -31,6 +31,10 @@ There are a number of arguments that are automatically added to the end of the c
 
 - A `File` object containing the dump.
 
+### Caveats
+
+- After restoring a dump, you might want to set the same search path as the initial db.
+
 ### Example
 
 ```typescript
@@ -50,6 +54,19 @@ await pg.exec(`
   INSERT INTO test (name) VALUES ('test');
 `)
 
+// store the current search path so it can be used in the restored db
+const initialSearchPath = (await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')).rows[0].search_path
+
 // Dump the database to a file
 const dump = await pgDump({ pg })
+// Get the dump text - used for restore
+const dumpContent = await dump.text()
+
+// Create a new database 
+const restoredPG = await PGlite.create()
+// ... and restore it using the dump
+await restoredPG.exec(dumpContent)
+
+// optional - after importing, set search path back to the initial one
+await restoredPG.exec(`SET search_path TO ${initialSearchPath};`);
 ```
