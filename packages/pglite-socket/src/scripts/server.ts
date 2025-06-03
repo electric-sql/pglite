@@ -268,6 +268,9 @@ class SubprocessManager {
 
     this.childProcess.on('error', (error) => {
       console.error('Error running command:', error)
+      // If subprocess fails to start, shutdown the server
+      console.log('Subprocess failed to start, shutting down...')
+      this.onExit(1)
     })
 
     this.childProcess.on('close', (code) => {
