@@ -1,4 +1,4 @@
-# pglite-socket
+# PGlite Socket
 
 A socket implementation for PGlite enabling remote connections. This package is a simple wrapper around the `net` module to allow PGlite to be used as a PostgreSQL server.
 
@@ -9,7 +9,9 @@ There are two main components to this package:
 
 The package also includes a [CLI](#cli-usage) for quickly starting a PGlite socket server.
 
-Note: As PGlite is a single-connection database, it is not possible to have multiple simultaneous connections open. This means that the socket server will only support a single client connection at a time. While a `PGLiteSocketServer` or `PGLiteSocketHandler` are attached to a PGlite instance they hold an exclusive lock preventing any other connections, or queries on the PGlite instance.
+:::info
+As PGlite is a single-connection database, it is not possible to have multiple simultaneous connections open. This means that the socket server will only support a single client connection at a time. While a `PGLiteSocketServer` or `PGLiteSocketHandler` are attached to a PGlite instance they hold an exclusive lock preventing any other connections, or queries on the PGlite instance.
+:::
 
 ## Installation
 
@@ -128,10 +130,6 @@ const server = createServer(async (socket: Socket) => {
 server.listen(5432, '127.0.0.1')
 ```
 
-## Examples
-
-See the [examples directory](./examples) for more usage examples.
-
 ## CLI Usage
 
 This package provides a command-line interface for quickly starting a PGlite socket server.
@@ -181,6 +179,14 @@ pglite-server --run "npx concurrently 'npm run dev' 'npm run worker'" --include-
 
 When using `--run` with `--include-database-url`, the subprocess will receive a `DATABASE_URL` environment variable with the correct connection string for your PGlite server. This enables seamless integration with applications that expect a PostgreSQL connection string.
 
+:::tip Benefits for Development
+- **Zero PostgreSQL installation** - No need to install and manage PostgreSQL locally
+- **Faster startup** - PGlite starts instantly compared to PostgreSQL
+- **Isolated databases** - Each project can have its own database file
+- **Simplified setup** - One command starts both database and application
+- **Automatic cleanup** - Server shuts down gracefully when your app exits
+:::
+
 ### Using in npm scripts
 
 You can add the CLI to your package.json scripts for convenient execution:
@@ -221,7 +227,11 @@ Once the server is running, you can connect to it using any PostgreSQL client:
 #### Using psql
 
 ```bash
+# TCP connection
 PGSSLMODE=disable psql -h localhost -p 5432 -d template1
+
+# Unix socket connection (if using --path)
+PGSSLMODE=disable psql -h /tmp -d template1
 ```
 
 #### Using Node.js clients
@@ -248,17 +258,18 @@ const sql = postgres({
 const sql = postgres(process.env.DATABASE_URL)
 ```
 
-### Limitations and Tips
+## Limitations and Tips
 
+:::warning Important Limitations
 - Remember that PGlite only supports one connection at a time. If you're unable to connect, make sure no other client is currently connected.
+- SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
+:::
+
+### General Tips
+
 - For development purposes, using an in-memory database (`--db=memory://`) is fastest but data won't persist after the server is stopped.
 - For persistent storage, specify a file path for the database (e.g., `--db=./data/mydb`).
 - When using debug mode (`--debug=1` or higher), additional protocol information will be displayed in the console.
 - To allow connections from other machines, set the host to `0.0.0.0` with `--host=0.0.0.0`.
-- SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
 - When using `--run`, the server will automatically shut down if the subprocess exits with a non-zero code.
 - Use `--shutdown-timeout` to adjust how long to wait for graceful subprocess termination (default: 5 seconds).
-
-## License
-
-Apache 2.0
