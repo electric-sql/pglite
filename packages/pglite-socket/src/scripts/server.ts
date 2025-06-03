@@ -77,12 +77,6 @@ Options:
   --shutdown-timeout=MS   Timeout for graceful subprocess shutdown in ms (default: 5000)
 `
 
-// Show help and exit if requested
-if (args.values.help) {
-  console.log(help)
-  process.exit(0)
-}
-
 interface ServerConfig {
   dbPath: string
   port: number
@@ -92,6 +86,151 @@ interface ServerConfig {
   runCommand?: string
   includeDatabaseUrl: boolean
   shutdownTimeout: number
+}
+
+class PGLiteServerRunner {
+  private config: ServerConfig
+  private db: PGlite | null = null
+  private server: PGLiteSocketServer | null = null
+  private subprocessManager: SubprocessManager | null = null
+
+  constructor(config: ServerConfig) {
+    this.config = config
+  }
+
+  static parseConfig(): ServerConfig {
+    return {
+      dbPath: args.values.db as string,
+      port: parseInt(args.values.port as string, 10),
+      host: args.values.host as string,
+      path: args.values.path as string,
+      debugLevel: parseInt(args.values.debug as string, 10) as DebugLevel,
+      runCommand: args.values.run as string,
+      includeDatabaseUrl: args.values['include-database-url'] as boolean,
+      shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
+    }
+  }
+
+  private createDatabaseUrl(): string {
+    const { host, port, path } = this.config
+
+    if (path) {
+      // Unix socket connection
+      const socketDir = path.endsWith('/.s.PGSQL.5432')
+        ? path.slice(0, -13)
+        : path
+      return `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(socketDir)}`
+    } else {
+      // TCP connection
+      return `postgresql://postgres:postgres@${host}:${port}/postgres`
+    }
+  }
+
+  private async initializeDatabase(): Promise<void> {
+    console.log(`Initializing PGLite with database: ${this.config.dbPath}`)
+    console.log(`Debug level: ${this.config.debugLevel}`)
+
+    this.db = new PGlite(this.config.dbPath, { debug: this.config.debugLevel })
+    await this.db.waitReady
+    console.log('PGlite database initialized')
+  }
+
+  private setupServerEventHandlers(): void {
+    if (!this.server || !this.subprocessManager) {
+      throw new Error('Server or subprocess manager not initialized')
+    }
+
+    this.server.addEventListener('listening', (event) => {
+      const detail = (
+        event as CustomEvent<{ port: number; host: string } | { host: string }>
+      ).detail
+      console.log(`PGLiteSocketServer listening on ${JSON.stringify(detail)}`)
+
+      // Run the command after server starts listening
+      if (this.config.runCommand && this.subprocessManager) {
+        const databaseUrl = this.createDatabaseUrl()
+        this.subprocessManager.spawn(
+          this.config.runCommand,
+          databaseUrl,
+          this.config.includeDatabaseUrl,
+        )
+      }
+    })
+
+    this.server.addEventListener('connection', (event) => {
+      const { clientAddress, clientPort } = (
+        event as CustomEvent<{ clientAddress: string; clientPort: number }>
+      ).detail
+      console.log(`Client connected from ${clientAddress}:${clientPort}`)
+    })
+
+    this.server.addEventListener('error', (event) => {
+      const error = (event as CustomEvent<Error>).detail
+      console.error('Socket server error:', error)
+    })
+  }
+
+  private setupSignalHandlers(): void {
+    process.on('SIGINT', () => this.shutdown())
+    process.on('SIGTERM', () => this.shutdown())
+  }
+
+  async start(): Promise<void> {
+    try {
+      // Initialize database
+      await this.initializeDatabase()
+
+      if (!this.db) {
+        throw new Error('Database initialization failed')
+      }
+
+      // Create and setup the socket server
+      this.server = new PGLiteSocketServer({
+        db: this.db,
+        port: this.config.port,
+        host: this.config.host,
+        path: this.config.path,
+        inspect: this.config.debugLevel > 0,
+      })
+
+      // Create subprocess manager
+      this.subprocessManager = new SubprocessManager((exitCode) => {
+        this.shutdown(exitCode)
+      })
+
+      // Setup event handlers
+      this.setupServerEventHandlers()
+      this.setupSignalHandlers()
+
+      // Start the server
+      await this.server.start()
+    } catch (error) {
+      console.error('Failed to start PGLiteSocketServer:', error)
+      throw error
+    }
+  }
+
+  async shutdown(exitCode: number = 0): Promise<void> {
+    console.log('\nShutting down PGLiteSocketServer...')
+
+    // Terminate subprocess if running
+    if (this.subprocessManager) {
+      this.subprocessManager.terminate(this.config.shutdownTimeout)
+    }
+
+    // Stop server
+    if (this.server) {
+      await this.server.stop()
+    }
+
+    // Close database
+    if (this.db) {
+      await this.db.close()
+    }
+
+    console.log('Server stopped')
+    process.exit(exitCode)
+  }
 }
 
 class SubprocessManager {
@@ -106,7 +245,11 @@ class SubprocessManager {
     return this.childProcess
   }
 
-  spawn(command: string, databaseUrl: string, includeDatabaseUrl: boolean): void {
+  spawn(
+    command: string,
+    databaseUrl: string,
+    includeDatabaseUrl: boolean,
+  ): void {
     console.log(`Running command: ${command}`)
 
     // Prepare environment variables
@@ -133,7 +276,9 @@ class SubprocessManager {
 
       // If child process exits with non-zero code, notify parent
       if (code !== null && code !== 0) {
-        console.log(`Child process failed with exit code ${code}, shutting down...`)
+        console.log(
+          `Child process failed with exit code ${code}, shutting down...`,
+        )
         this.onExit(code)
       }
     })
@@ -155,118 +300,23 @@ class SubprocessManager {
   }
 }
 
-function createDatabaseUrl(host: string, port: number, path?: string): string {
-  if (path) {
-    // Unix socket connection
-    const socketDir = path.endsWith('/.s.PGSQL.5432') ? path.slice(0, -13) : path
-    return `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(socketDir)}`
-  } else {
-    // TCP connection
-    return `postgresql://postgres:postgres@${host}:${port}/postgres`
-  }
-}
-
-function parseConfig(): ServerConfig {
-  return {
-    dbPath: args.values.db as string,
-    port: parseInt(args.values.port as string, 10),
-    host: args.values.host as string,
-    path: args.values.path as string,
-    debugLevel: parseInt(args.values.debug as string, 10) as DebugLevel,
-    runCommand: args.values.run as string,
-    includeDatabaseUrl: args.values['include-database-url'] as boolean,
-    shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
-  }
-}
-
-async function initializeDatabase(config: ServerConfig): Promise<PGlite> {
-  console.log(`Initializing PGLite with database: ${config.dbPath}`)
-  console.log(`Debug level: ${config.debugLevel}`)
-
-  const db = new PGlite(config.dbPath, { debug: config.debugLevel })
-  await db.waitReady
-  console.log('PGlite database initialized')
-  
-  return db
-}
-
-function setupServerEventHandlers(
-  server: PGLiteSocketServer,
-  config: ServerConfig,
-  subprocessManager: SubprocessManager
-) {
-  server.addEventListener('listening', (event) => {
-    const detail = (
-      event as CustomEvent<{ port: number; host: string } | { host: string }>
-    ).detail
-    console.log(`PGLiteSocketServer listening on ${JSON.stringify(detail)}`)
-
-    // Run the command after server starts listening
-    if (config.runCommand) {
-      const databaseUrl = createDatabaseUrl(config.host, config.port, config.path)
-      subprocessManager.spawn(config.runCommand, databaseUrl, config.includeDatabaseUrl)
-    }
-  })
-
-  server.addEventListener('connection', (event) => {
-    const { clientAddress, clientPort } = (
-      event as CustomEvent<{ clientAddress: string; clientPort: number }>
-    ).detail
-    console.log(`Client connected from ${clientAddress}:${clientPort}`)
-  })
-
-  server.addEventListener('error', (event) => {
-    const error = (event as CustomEvent<Error>).detail
-    console.error('Socket server error:', error)
-  })
-}
-
-// Main function to start the server
+// Main execution
 async function main() {
+  // Show help and exit if requested
+  if (args.values.help) {
+    console.log(help)
+    process.exit(0)
+  }
+
   try {
-    const config = parseConfig()
-    const db = await initializeDatabase(config)
-
-    // Create and start the socket server
-    const server = new PGLiteSocketServer({
-      db,
-      port: config.port,
-      host: config.host,
-      path: config.path,
-      inspect: config.debugLevel > 0,
-    })
-
-    // Create subprocess manager
-    const subprocessManager = new SubprocessManager((exitCode) => {
-      shutdown(exitCode)
-    })
-
-    // Setup server event handlers
-    setupServerEventHandlers(server, config, subprocessManager)
-
-    // Start the server
-    await server.start()
-
-    // Handle process termination to stop the server gracefully
-    const shutdown = async (exitCode: number = 0) => {
-      console.log('\nShutting down PGLiteSocketServer...')
-      subprocessManager.terminate(config.shutdownTimeout)
-      await server.stop()
-      await db.close()
-      console.log('Server stopped')
-      process.exit(exitCode)
-    }
-
-    process.on('SIGINT', () => shutdown())
-    process.on('SIGTERM', () => shutdown())
+    const config = PGLiteServerRunner.parseConfig()
+    const serverRunner = new PGLiteServerRunner(config)
+    await serverRunner.start()
   } catch (error) {
-    console.error('Failed to start PGLiteSocketServer:', error)
+    console.error('Unhandled error:', error)
     process.exit(1)
   }
 }
 
 // Run the main function
-main().catch((error) => {
-  console.error('Unhandled error:', error)
-  process.exit(1)
-})
+main()
