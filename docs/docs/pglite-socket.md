@@ -180,12 +180,13 @@ pglite-server --run "npx concurrently 'npm run dev' 'npm run worker'" --include-
 When using `--run` with `--include-database-url`, the subprocess will receive a `DATABASE_URL` environment variable with the correct connection string for your PGlite server. This enables seamless integration with applications that expect a PostgreSQL connection string.
 
 :::tip Benefits for Development
+
 - **Zero PostgreSQL installation** - No need to install and manage PostgreSQL locally
 - **Faster startup** - PGlite starts instantly compared to PostgreSQL
 - **Isolated databases** - Each project can have its own database file
 - **Simplified setup** - One command starts both database and application
 - **Automatic cleanup** - Server shuts down gracefully when your app exits
-:::
+  :::
 
 ### Using in npm scripts
 
@@ -242,7 +243,7 @@ import pg from 'pg'
 const client = new pg.Client({
   host: 'localhost',
   port: 5432,
-  database: 'template1'
+  database: 'template1',
 })
 await client.connect()
 
@@ -251,7 +252,7 @@ import postgres from 'postgres'
 const sql = postgres({
   host: 'localhost',
   port: 5432,
-  database: 'template1'
+  database: 'template1',
 })
 
 // Using environment variable (when using --include-database-url)
@@ -261,9 +262,10 @@ const sql = postgres(process.env.DATABASE_URL)
 ## Limitations and Tips
 
 :::warning Important Limitations
+
 - Remember that PGlite only supports one connection at a time. If you're unable to connect, make sure no other client is currently connected.
 - SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
-:::
+  :::
 
 ### General Tips
 
