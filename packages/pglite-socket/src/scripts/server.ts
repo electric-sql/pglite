@@ -137,7 +137,10 @@ async function main() {
         let databaseUrl = ''
         if (path) {
           // Unix socket connection
-          databaseUrl = `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(path)}`
+          databaseUrl = `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(
+            // When using a unix socket the database url format does not include the socket file directly, just the directory
+            path.endsWith('/.s.PGSQL.5432') ? path.slice(0, -13) : path,
+          )}`
         } else {
           // TCP connection
           databaseUrl = `postgresql://postgres:postgres@${host}:${port}/postgres`
