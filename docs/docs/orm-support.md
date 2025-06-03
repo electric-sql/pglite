@@ -70,7 +70,7 @@ more details.
 
 [Orange ORM](https://orange-orm.io) is a modern, TypeScript-first ORM that runs in Node.js, Bun, Deno and the browser. It follows the Active-Record pattern and ships with an expressive, LINQ-style query API. Key features include:
 
-- Rich querying and deep filtering  
+- Rich querying and deep filtering
 - Active-Record-style change tracking
 - Fully-typed models with **zero code-generation**
 - Seamless integration with **PGlite** across runtimes
@@ -83,8 +83,8 @@ npm i @electric-sql/pglite orange-orm
 ```
 
 ```javascript
-import orange from 'orange-orm';
-const db = map.pglite('idb://my-db');
+import orange from 'orange-orm'
+const db = map.pglite('idb://my-db')
 
 await db.query(`
   create table if not exists task (
@@ -92,22 +92,22 @@ await db.query(`
     title text,
     done boolean
   )
-`);
+`)
 
-const map = orange.map(x => ({
+const map = orange.map((x) => ({
   task: x.table('task').map(({ column }) => ({
     id: column('id').uuid().primary(),
     title: column('title').string(),
     done: column('done').boolean(),
   })),
-}));
+}))
 
-await db.task.insert({ title: 'Write docs', done: false });
+await db.task.insert({ title: 'Write docs', done: false })
 
 const tasks = await db.task.getAll({
-	where: x => x.done.eq(false),
-});
-console.log(JSON.stringify(tasks));
+  where: (x) => x.done.eq(false),
+})
+console.log(JSON.stringify(tasks))
 ```
 
 ## TypeORM
