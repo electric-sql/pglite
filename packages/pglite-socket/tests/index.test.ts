@@ -50,6 +50,7 @@ const createMockSocket = () => {
     // Socket methods we need for testing
     removeAllListeners: vi.fn(),
     end: vi.fn(),
+    destroy: vi.fn(),
     write: vi.fn(),
     writable: true,
     remoteAddress: '127.0.0.1',

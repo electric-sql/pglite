@@ -108,7 +108,14 @@ export class PGLiteSocketHandler extends EventTarget {
 
     // Setup event handlers
     this.log(`attach: setting up socket event handlers`)
-    socket.on('data', (data) => this.handleData(data))
+    socket.on('data', async (data) => {
+      try {
+        const result = await this.handleData(data)
+        this.log(`socket on data sent: ${result} bytes`)
+      } catch (err) {
+        this.log('socket on data error: ', err)
+      }
+    })
     socket.on('error', (err) => this.handleError(err))
     socket.on('close', () => this.handleClose())
 
@@ -138,6 +145,7 @@ export class PGLiteSocketHandler extends EventTarget {
       if (this.socket.writable) {
         this.log(`detach: closing socket`)
         this.socket.end()
+        this.socket.destroy()
       }
     }
 
@@ -160,10 +168,10 @@ export class PGLiteSocketHandler extends EventTarget {
   /**
    * Handle incoming data from the socket
    */
-  private async handleData(data: Buffer): Promise<void> {
+  private async handleData(data: Buffer): Promise<number> {
     if (!this.socket || !this.active) {
       this.log(`handleData: no active socket, ignoring data`)
-      return
+      return new Promise((_, reject) => reject(`no active socket`))
     }
 
     this.log(`handleData: received ${data.length} bytes`)
@@ -183,8 +191,25 @@ export class PGLiteSocketHandler extends EventTarget {
 
       // Send the result back if the socket is still connected
       if (this.socket && this.socket.writable && this.active) {
-        this.log(`handleData: writing response to socket`)
-        this.socket.write(Buffer.from(result))
+        if (result.length <= 0) {
+          this.log(`handleData: cowardly refusing to send empty packet`)
+          return new Promise((_, reject) => reject('no data'))
+        }
+
+        const promise = new Promise<number>((resolve, reject) => {
+          this.log(`handleData: writing response to socket`)
+          if (this.socket) {
+            this.socket.write(Buffer.from(result), (err?: Error) => {
+              if (err) {
+                reject(`Error while writing to the socket ${err.toString()}`)
+              } else {
+                resolve(result.length)
+              }
+            })
+          } else {
+            reject(`No socket`)
+          }
+        })
 
         // Emit data event with byte sizes
         this.dispatchEvent(
@@ -192,14 +217,21 @@ export class PGLiteSocketHandler extends EventTarget {
             detail: { incoming: data.length, outgoing: result.length },
           }),
         )
+        return promise
       } else {
         this.log(
           `handleData: socket no longer writable or active, discarding response`,
+        )
+        return new Promise((_, reject) =>
+          reject(`No socket, not active or not writeable`),
         )
       }
     } catch (err) {
       this.log(`handleData: error processing data:`, err)
       this.handleError(err as Error)
+      return new Promise((_, reject) =>
+        reject(`Error while processing data ${(err as Error).toString()}`),
+      )
     }
   }
 
