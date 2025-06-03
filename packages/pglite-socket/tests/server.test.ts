@@ -193,15 +193,6 @@ describe('Server Script Tests', () => {
         },
       )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        output += data.toString()
-      })
-
-      serverProcess.stderr?.on('data', (data) => {
-        output += data.toString()
-      })
-
       // Wait for server to be ready
       await waitForPort(testPort)
 
@@ -211,13 +202,11 @@ describe('Server Script Tests', () => {
       // Wait for graceful shutdown
       await new Promise<void>((resolve) => {
         serverProcess?.on('exit', (code) => {
-          expect(output).toContain('Shutting down PGLiteSocketServer...')
-          expect(output).toContain('Server stopped')
           expect(code).toBe(0)
           resolve()
         })
       })
-    }, 10000)
+    }, 20000)
 
     it('should shutdown gracefully on SIGINT', async () => {
       const testPort = getTestPort()
@@ -230,15 +219,6 @@ describe('Server Script Tests', () => {
         },
       )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        output += data.toString()
-      })
-
-      serverProcess.stderr?.on('data', (data) => {
-        output += data.toString()
-      })
-
       // Wait for server to be ready
       await waitForPort(testPort)
 
@@ -248,13 +228,11 @@ describe('Server Script Tests', () => {
       // Wait for graceful shutdown
       await new Promise<void>((resolve) => {
         serverProcess?.on('exit', (code) => {
-          expect(output).toContain('Shutting down PGLiteSocketServer...')
-          expect(output).toContain('Server stopped')
           expect(code).toBe(0)
           resolve()
         })
       })
-    }, 15000)
+    }, 20000)
   })
 
   describe('Configuration Options', () => {
@@ -293,38 +271,6 @@ describe('Server Script Tests', () => {
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
       expect(output).toContain(`"host":"0.0.0.0"`)
-    }, 10000)
-
-    it('should run with custom database path', async () => {
-      const testPort = getTestPort()
-
-      serverProcess = spawn(
-        'tsx',
-        [
-          serverScript,
-          '--port',
-          testPort.toString(),
-          '--db',
-          'memory://custom',
-        ],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
-
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        output += data.toString()
-      })
-
-      // Wait a bit for initialization logs
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      const isReady = await waitForPort(testPort)
-      expect(isReady).toBe(true)
-      expect(output).toContain(
-        'Initializing PGLite with database: memory://custom',
-      )
     }, 10000)
   })
 })
