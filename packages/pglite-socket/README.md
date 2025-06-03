@@ -60,6 +60,7 @@ Creates a TCP server that allows PostgreSQL clients to connect to a PGlite datab
 - `db: PGlite` - The PGlite database instance
 - `port?: number` - The port to listen on (default: 5432)
 - `host?: string` - The host to bind to (default: 127.0.0.1)
+- `path?: string` - Unix socket path to bind to (takes precedence over host:port)
 - `inspect?: boolean` - Print the incoming and outgoing data to the console (default: false)
 
 #### Methods
@@ -157,7 +158,28 @@ pglite-server --help
 - `-d, --db=PATH` - Database path (default: memory://)
 - `-p, --port=PORT` - Port to listen on (default: 5432)
 - `-h, --host=HOST` - Host to bind to (default: 127.0.0.1)
+- `-u, --path=UNIX` - Unix socket to bind to (takes precedence over host:port)
 - `-v, --debug=LEVEL` - Debug level 0-5 (default: 0)
+- `-r, --run=COMMAND` - Command to run after server starts
+- `--include-database-url` - Include DATABASE_URL in subprocess environment
+- `--shutdown-timeout=MS` - Timeout for graceful subprocess shutdown in ms (default: 5000)
+
+### Development Server Integration
+
+The `--run` option is particularly useful for development workflows where you want to use PGlite as a drop-in replacement for PostgreSQL. This allows you to wrap your development server and automatically provide it with a DATABASE_URL pointing to your PGlite instance.
+
+```bash
+# Start your Next.js dev server with PGlite
+pglite-server --run "npm run dev" --include-database-url
+
+# Start a Node.js app with PGlite
+pglite-server --db=./dev-db --run "node server.js" --include-database-url
+
+# Start multiple services (using a process manager like concurrently)
+pglite-server --run "npx concurrently 'npm run dev' 'npm run worker'" --include-database-url
+```
+
+When using `--run` with `--include-database-url`, the subprocess will receive a `DATABASE_URL` environment variable with the correct connection string for your PGlite server. This enables seamless integration with applications that expect a PostgreSQL connection string.
 
 ### Using in npm scripts
 
@@ -167,7 +189,9 @@ You can add the CLI to your package.json scripts for convenient execution:
 {
   "scripts": {
     "db:start": "pglite-server --db=./data/mydb --port=5433",
-    "db:dev": "pglite-server --db=memory:// --debug=1"
+    "db:dev": "pglite-server --db=memory:// --debug=1",
+    "dev": "pglite-server --db=./dev-db --run 'npm run start:dev' --include-database-url",
+    "dev:clean": "pglite-server --run 'npm run start:dev' --include-database-url"
   }
 }
 ```
@@ -175,9 +199,19 @@ You can add the CLI to your package.json scripts for convenient execution:
 Then run with:
 
 ```bash
-npm run db:start
-# or
-npm run db:dev
+npm run dev          # Start with persistent database
+npm run dev:clean    # Start with in-memory database
+```
+
+### Unix Socket Support
+
+For better performance in local development, you can use Unix sockets instead of TCP:
+
+```bash
+# Start server on a Unix socket
+pglite-server --path=/tmp/pglite.sock --run "npm run dev" --include-database-url
+
+# The DATABASE_URL will be: postgresql://postgres:postgres@/postgres?host=/tmp
 ```
 
 ### Connecting to the server
@@ -209,6 +243,9 @@ const sql = postgres({
   port: 5432,
   database: 'template1'
 })
+
+// Using environment variable (when using --include-database-url)
+const sql = postgres(process.env.DATABASE_URL)
 ```
 
 ### Limitations and Tips
@@ -219,6 +256,9 @@ const sql = postgres({
 - When using debug mode (`--debug=1` or higher), additional protocol information will be displayed in the console.
 - To allow connections from other machines, set the host to `0.0.0.0` with `--host=0.0.0.0`.
 - SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
+- When using `--run`, the server will automatically shut down if the subprocess exits with a non-zero code.
+- Use `--shutdown-timeout` to adjust how long to wait for graceful subprocess termination (default: 5 seconds).
+- Unix sockets (`--path`) generally offer better performance than TCP for local connections.
 
 ## License
 
