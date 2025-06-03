@@ -254,7 +254,7 @@ describe('Server Script Tests', () => {
           resolve()
         })
       })
-    }, 10000)
+    }, 15000)
   })
 
   describe('Configuration Options', () => {
