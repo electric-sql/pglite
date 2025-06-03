@@ -120,8 +120,8 @@ export default defineConfig({
             base: '/docs',
             collapsed: false,
             items: [
-              { text: 'Package', link: '/' },
-              { text: 'pgdump', link: '#pgDump' },
+              { text: 'Package', link: '/pglite-tools' },
+              { text: 'pgdump', link: '/pglite-tools#pgDump' },
             ],
           },
         ],
