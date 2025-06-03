@@ -1,9 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  afterEach,
-} from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { spawn, ChildProcess } from 'node:child_process'
 import { createConnection } from 'net'
 import path from 'node:path'
@@ -15,7 +10,7 @@ const serverScript = path.resolve(__dirname, '../src/scripts/server.ts')
 // Helper to wait for a port to be available
 async function waitForPort(port: number, timeout = 5000): Promise<boolean> {
   const start = Date.now()
-  
+
   while (Date.now() - start < timeout) {
     try {
       const socket = createConnection({ port, host: '127.0.0.1' })
@@ -28,7 +23,7 @@ async function waitForPort(port: number, timeout = 5000): Promise<boolean> {
       })
       return true
     } catch {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
   }
   return false
@@ -70,13 +65,13 @@ describe('Server Script Tests', () => {
 
     it('should accept and use debug level parameter', async () => {
       const testPort = getTestPort()
-      const serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString(),
-        '--debug', '2'
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+      const serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString(), '--debug', '2'],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -117,10 +112,14 @@ describe('Server Script Tests', () => {
 
     it('should start server on TCP port and accept connections', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [serverScript, '--port', testPort.toString()], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString()],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -146,14 +145,14 @@ describe('Server Script Tests', () => {
 
     it('should work with memory database', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString(),
-        '--db', 'memory://'
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString(), '--db', 'memory://'],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -185,13 +184,14 @@ describe('Server Script Tests', () => {
 
     it('should shutdown gracefully on SIGTERM', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString()
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString()],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -221,13 +221,14 @@ describe('Server Script Tests', () => {
 
     it('should shutdown gracefully on SIGINT', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString()
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString()],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -275,14 +276,14 @@ describe('Server Script Tests', () => {
 
     it('should handle different hosts', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString(),
-        '--host', '0.0.0.0'
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [serverScript, '--port', testPort.toString(), '--host', '0.0.0.0'],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -296,14 +297,20 @@ describe('Server Script Tests', () => {
 
     it('should run with custom database path', async () => {
       const testPort = getTestPort()
-      
-      serverProcess = spawn('tsx', [
-        serverScript,
-        '--port', testPort.toString(),
-        '--db', 'memory://custom'
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      })
+
+      serverProcess = spawn(
+        'tsx',
+        [
+          serverScript,
+          '--port',
+          testPort.toString(),
+          '--db',
+          'memory://custom',
+        ],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
@@ -311,11 +318,13 @@ describe('Server Script Tests', () => {
       })
 
       // Wait a bit for initialization logs
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
-      expect(output).toContain('Initializing PGLite with database: memory://custom')
+      expect(output).toContain(
+        'Initializing PGLite with database: memory://custom',
+      )
     }, 10000)
   })
-}) 
+})
