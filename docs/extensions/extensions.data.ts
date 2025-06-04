@@ -324,6 +324,23 @@ const baseExtensions: Extension[] = [
     importName: 'uuid_ossp',
     size: 17936,
   },
+  {
+    name: 'pg-ivm',
+    description: `
+    The pg_ivm module provides Incremental View Maintenance (IVM) feature for PostgreSQL.
+    Incremental View Maintenance (IVM) is a way to make materialized views up-to-date in 
+    which only incremental changes are computed and applied on views rather than 
+    recomputing the contents from scratch as REFRESH MATERIALIZED VIEW does. 
+    IVM can update materialized views more efficiently than recomputation 
+    when only small parts of the view are changed.
+    `,
+    shortDescription: 'Incremental View Maintenance (IVM) feature for PostgreSQL.',
+    docs: 'https://github.com/sraoss/pg_ivm',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/pg_ivm',
+    importName: 'pg_ivm',
+    size: 24865,
+  },
 ]
 
 const tags = [
