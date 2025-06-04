@@ -1,5 +1,12 @@
 # @electric-sql/pglite-socket
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [ea2c7c7]
+  - @electric-sql/pglite@0.3.3
+
 ## 0.0.7
 
 ### Patch Changes
