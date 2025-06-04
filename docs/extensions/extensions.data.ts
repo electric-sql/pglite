@@ -334,7 +334,8 @@ const baseExtensions: Extension[] = [
     IVM can update materialized views more efficiently than recomputation 
     when only small parts of the view are changed.
     `,
-    shortDescription: 'Incremental View Maintenance (IVM) feature for PostgreSQL.',
+    shortDescription:
+      'Incremental View Maintenance (IVM) feature for PostgreSQL.',
     docs: 'https://github.com/sraoss/pg_ivm',
     tags: ['postgres extension'],
     importPath: '@electric-sql/pglite/pg_ivm',
