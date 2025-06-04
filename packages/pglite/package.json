@@ -44,6 +44,11 @@
       "import": "./dist/vector/index.js",
       "require": "./dist/vector/index.cjs"
     },
+    "./pg_ivm": {
+      "types": "./dist/pg_ivm/index.d.ts",
+      "import": "./dist/pg_ivm/index.js",
+      "require": "./dist/pg_ivm/index.cjs"
+    },
     "./nodefs": {
       "types": "./dist/fs/nodefs.d.ts",
       "import": "./dist/fs/nodefs.js",

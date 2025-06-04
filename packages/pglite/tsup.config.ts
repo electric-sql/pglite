@@ -24,6 +24,7 @@ const entryPoints = [
   'src/templating.ts',
   'src/live/index.ts',
   'src/vector/index.ts',
+  'src/pg_ivm/index.ts',
   'src/worker/index.ts',
 ]
 
