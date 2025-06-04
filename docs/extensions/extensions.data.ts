@@ -336,7 +336,7 @@ const baseExtensions: Extension[] = [
     `,
     shortDescription: 'Incremental View Maintenance (IVM) feature for PostgreSQL.',
     docs: 'https://github.com/sraoss/pg_ivm',
-    tags: ['postgres extension', 'postgres/contrib'],
+    tags: ['postgres extension'],
     importPath: '@electric-sql/pglite/pg_ivm',
     importName: 'pg_ivm',
     size: 24865,
