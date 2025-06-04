@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.3
+
+### Patch Changes
+
+- ea2c7c7: pg_ivm extension
+
 ## 0.3.2
 
 ### Patch Changes

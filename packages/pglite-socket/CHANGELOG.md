@@ -1,5 +1,19 @@
 # @electric-sql/pglite-socket
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [ea2c7c7]
+  - @electric-sql/pglite@0.3.3
+
+## 0.0.7
+
+### Patch Changes
+
+- 5a47f4d: better handling of closing the socket
+- 6f8dd08: with the `npx pglite-server` command, add the ability to pass a command to run after the server is ready, along with passing a new DATABASE_URL environment variable to the command. This allows for a command like `npx pglite-server -r "npm run dev:inner" --include-database-url` to run a dev server that uses the pglite server as the database.
+
 ## 0.0.6
 
 ### Patch Changes

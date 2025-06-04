@@ -113,17 +113,18 @@ export default defineConfig({
           { text: 'REPL Component', link: '/docs/repl' },
           { text: 'ORMs & Query Builders', link: '/docs/orm-support' },
           { text: 'Sync using ElectricSQL', link: '/docs/sync' },
-          { text: 'Upgrade v0.2.x -> v0.3.x', link: '/docs/upgrade' },
+          { text: 'PGlite Socket', link: '/docs/pglite-socket' },
           {
             text: 'PGlite tools',
             link: '/pglite-tools',
             base: '/docs',
             collapsed: false,
             items: [
-              { text: 'Package', link: '/' },
-              { text: 'pgdump', link: '#pgDump' },
+              { text: 'Package', link: '/pglite-tools' },
+              { text: 'pgdump', link: '/pglite-tools#pgDump' },
             ],
           },
+          { text: 'Upgrade v0.2.x -> v0.3.x', link: '/docs/upgrade' },
         ],
       },
       {
