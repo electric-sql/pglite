@@ -259,6 +259,49 @@ const sql = postgres({
 const sql = postgres(process.env.DATABASE_URL)
 ```
 
+## LLM Usage
+
+PGlite with the socket server can be used as a drop-in replacement for PostgreSQL in development environments, and when combined with AI coding agents or app builders can significantly simplify development. It removes the need to install and manage PostgreSQL locally, or to connect to a remote database.
+
+### Example Prompt
+
+This prompt will one-shot a working wish list app with PGlite in [Bolt.new](http://bolt.new):
+
+````
+Please make a simple wish list app, it should have a single screen for adding items. There should be a single input for adding the text for the item. Keep it simple and minimal.
+Show error messages inline in the UI, where the list is, when the backend fails to connect to the database.
+Use TypeScript, React, and Vite for the front end app.
+The server side should use TypeScript, tsx and Express with a Postgres database using the postgres.js lib and it's `sql` template literal syntax.
+Please use concurrently to run both vite and the backend at the same time.
+I want to use PGlite and its socket server for development - match these versions:
+```
+    "@electric-sql/pglite": "^0.3.2",
+    "@electric-sql/pglite-socket": "^0.0.7",
+```
+Do something like this to run it:
+```
+    "dev": "USE_PGLITE=true npx pglite-server -u /tmp/.s.PGSQL.5432 -r \"npm run dev:both\"",
+    "dev:both": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "tsx watch server/index.ts",
+```
+and the postgres.js config should look something like this:
+```
+export const sql = process.env.USE_PGLITE
+  ? postgres({
+    host: '/tmp/',
+    username: 'postgres',
+    password: 'postgres',
+    database: 'postgres',
+    max: 1,
+    connect_timeout: 0,
+  })
+  : postgres(connectionString, {
+    ssl: process.env.NODE_ENV === 'production',
+  });
+```
+````
+
 ## Limitations and Tips
 
 :::warning Important Limitations
