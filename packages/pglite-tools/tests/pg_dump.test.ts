@@ -4,11 +4,13 @@ import { pgDump } from '../dist/pg_dump.js'
 
 describe('pgDump', () => {
   it('should dump an empty database', async () => {
-    const pg = await PGlite.create({database: "template1",
+    const pg = await PGlite.create({
+      database: 'template1',
       debug: undefined,
-      defaultDataTransferContainer: "file",
+      defaultDataTransferContainer: 'file',
       relaxedDurability: false,
-      username: "postgres"})
+      username: 'postgres',
+    })
     const dump = await pgDump({ pg })
 
     expect(dump).toBeInstanceOf(File)
@@ -68,7 +70,7 @@ describe('pgDump', () => {
   it('specify datadir: should dump a database with tables and data', async () => {
     const pg = await PGlite.create({
       // dataDir: 'idb://benchmark-rd',
-      dataDir: '/tmp'
+      dataDir: '/tmp',
     })
 
     // Create test tables and insert data
