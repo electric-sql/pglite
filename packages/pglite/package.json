@@ -17,52 +17,98 @@
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./template": {
-      "types": "./dist/templating.d.ts",
-      "import": "./dist/templating.js",
-      "require": "./dist/templating.cjs"
+      "import": {
+        "types": "./dist/templating.d.ts",
+        "default": "./dist/templating.js"
+      },
+      "require": {
+        "types": "./dist/templating.d.cts",
+        "default": "./dist/templating.cjs"
+      }
     },
     "./live": {
-      "types": "./dist/live/index.d.ts",
-      "import": "./dist/live/index.js",
-      "require": "./dist/live/index.cjs"
+      "import": {
+        "types": "./dist/live/index.d.ts",
+        "default": "./dist/live/index.js"
+      },
+      "require": {
+        "types": "./dist/live/index.d.cts",
+        "default": "./dist/live/index.cjs"
+      }
     },
     "./worker": {
-      "types": "./dist/worker/index.d.ts",
-      "import": "./dist/worker/index.js",
-      "require": "./dist/worker/index.cjs"
+      "import": {
+        "types": "./dist/worker/index.d.ts",
+        "default": "./dist/worker/index.js"
+      },
+      "require": {
+        "types": "./dist/worker/index.d.cts",
+        "default": "./dist/worker/index.cjs"
+      }
     },
     "./vector": {
-      "types": "./dist/vector/index.d.ts",
-      "import": "./dist/vector/index.js",
-      "require": "./dist/vector/index.cjs"
+      "import": {
+        "types": "./dist/vector/index.d.ts",
+        "default": "./dist/vector/index.js"
+      },
+      "require": {
+        "types": "./dist/vector/index.d.cts",
+        "default": "./dist/vector/index.cjs"
+      }
     },
     "./pg_ivm": {
-      "types": "./dist/pg_ivm/index.d.ts",
-      "import": "./dist/pg_ivm/index.js",
-      "require": "./dist/pg_ivm/index.cjs"
+      "import": {
+        "types": "./dist/pg_ivm/index.d.ts",
+        "default": "./dist/pg_ivm/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_ivm/index.d.cts",
+        "default": "./dist/pg_ivm/index.cjs"
+      }
     },
     "./nodefs": {
-      "types": "./dist/fs/nodefs.d.ts",
-      "import": "./dist/fs/nodefs.js",
-      "require": "./dist/fs/nodefs.cjs"
+      "import": {
+        "types": "./dist/fs/nodefs.d.ts",
+        "default": "./dist/fs/nodefs.js"
+      },
+      "require": {
+        "types": "./dist/fs/nodefs.d.cts",
+        "default": "./dist/fs/nodefs.cjs"
+      }
     },
     "./opfs-ahp": {
-      "types": "./dist/fs/opfs-ahp.d.ts",
-      "import": "./dist/fs/opfs-ahp.js",
-      "require": "./dist/fs/opfs-ahp.cjs"
+      "import": {
+        "types": "./dist/fs/opfs-ahp.d.ts",
+        "default": "./dist/fs/opfs-ahp.js"
+      },
+      "require": {
+        "types": "./dist/fs/opfs-ahp.d.cts",
+        "default": "./dist/fs/opfs-ahp.cjs"
+      }
     },
     "./basefs": {
-      "types": "./dist/fs/base.d.ts",
-      "import": "./dist/fs/base.js",
-      "require": "./dist/fs/base.cjs"
+      "import": {
+        "types": "./dist/fs/base.d.ts",
+        "default": "./dist/fs/base.js"
+      },
+      "require": {
+        "types": "./dist/fs/base.d.cts",
+        "default": "./dist/fs/base.cjs"
+      }
     },
     "./contrib/*": {
       "types": "./dist/contrib/*.d.ts",
@@ -81,6 +127,7 @@
     "directory": "packages/pglite"
   },
   "scripts": {
+    "check:exports": "attw . --pack --profile node16",
     "test": "pnpm test:basic && pnpm test:node",
     "test:basic": "pnpm test:clean && vitest tests/*.test.js tests/*.test.ts tests/**/*.test.js tests/**/*.test.ts",
     "test:web": "pnpm test:clean && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && vitest --fileParallelism false tests/targets/web/*.test.web.*\" \"npx http-server --port 3334 ./\"",
@@ -97,9 +144,11 @@
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./tests",
     "typecheck": "tsc --noEmit",
-    "stylecheck": "pnpm lint && prettier --check ./src ./tests"
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests",
+    "prepublishOnly": "pnpm check:exports"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",
     "@types/emscripten": "^1.39.13",
     "@types/node": "^20.16.11",
