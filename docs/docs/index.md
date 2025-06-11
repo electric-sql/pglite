@@ -114,16 +114,16 @@ Output:
 ]
 ```
 
-## Using parametrised queries
+## Using parameterised queries
 
-When working with user supplied values, it's always best to use parametrised queries; these are supported on the `.query` method.
+When working with user supplied values, it's always best to use parameterized queries; these are supported on the `.query` method.
 
 We can use this to update a task:
 
 ```js
 const ret = await db.query(
   'UPDATE todo SET task = $2, done = $3 WHERE id = $1',
-  [5, 'Update a task using parametrised queries', true],
+  [5, 'Update a task using parameterized queries', true],
 )
 ```
 
