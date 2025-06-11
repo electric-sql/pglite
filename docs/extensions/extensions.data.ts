@@ -325,7 +325,7 @@ const baseExtensions: Extension[] = [
     size: 17936,
   },
   {
-    name: 'pg-ivm',
+    name: 'pg_ivm',
     description: `
     The pg_ivm module provides Incremental View Maintenance (IVM) feature for PostgreSQL.
     Incremental View Maintenance (IVM) is a way to make materialized views up-to-date in 
