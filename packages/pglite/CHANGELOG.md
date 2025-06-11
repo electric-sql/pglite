@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.4
+
+### Patch Changes
+
+- aac7003: remove double wasm instantiation when providing a wasm module'
+
 ## 0.3.3
 
 ### Patch Changes
