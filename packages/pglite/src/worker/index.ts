@@ -6,6 +6,7 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  Transaction,
 } from '../interface.js'
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
@@ -359,14 +360,15 @@ export class PGliteWorker
   async listen(
     channel: string,
     callback: (payload: string) => void,
+    tx?: Transaction,
   ): Promise<() => Promise<void>> {
     const pgChannel = toPostgresName(channel)
-
+    const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
-    await this.exec(`LISTEN ${channel}`)
+    await pg.exec(`LISTEN ${channel}`)
     return async () => {
       await this.unlisten(pgChannel, callback)
     }
