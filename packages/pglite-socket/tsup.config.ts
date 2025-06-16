@@ -2,6 +2,8 @@ import { defineConfig } from 'tsup'
 
 const entryPoints = ['src/index.ts', 'src/scripts/server.ts']
 
+const minify = process.env.DEBUG === 'true' ? false : true
+
 export default defineConfig([
   {
     entry: entryPoints,
@@ -11,7 +13,7 @@ export default defineConfig([
       resolve: true,
     },
     clean: true,
-    minify: true,
+    minify: minify,
     shims: true,
     format: ['esm', 'cjs'],
   },
