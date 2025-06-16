@@ -200,7 +200,14 @@ describe('Server Script Tests', () => {
 
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
-      expect(output).toContain(`"host":"0.0.0.0"`)
+      serverProcess.kill()
+      await new Promise<void>((resolve) => {
+        serverProcess.on('exit', () => {
+          expect(output).toContain(`"host":"0.0.0.0"`)
+          serverProcess = null
+          resolve()
+        })
+      })
     }, 10000)
   })
 })
