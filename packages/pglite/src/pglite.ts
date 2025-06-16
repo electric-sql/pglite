@@ -38,7 +38,10 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-export class PGlite extends BasePGlite implements PGliteInterface, AsyncDisposable {
+export class PGlite
+  extends BasePGlite
+  implements PGliteInterface, AsyncDisposable
+{
   fs?: Filesystem
   protected mod?: PostgresMod
 
