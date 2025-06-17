@@ -384,7 +384,6 @@ export abstract class BasePGlite
    * @returns The result of the transaction
    */
   async transaction<T>(callback: (tx: Transaction) => Promise<T>): Promise<T> {
-    console.log('--transaction')
     await this._checkReady()
     return await this._runExclusiveTransaction(async () => {
       await this.#runExec('BEGIN')

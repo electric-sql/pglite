@@ -900,10 +900,7 @@ export class PGlite
    * @returns The result of the function
    */
   _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
-    console.log('--running exclusive')
-    console.trace()
     const x = this.#transactionMutex.runExclusive(fn)
-    console.log('--ran exclusive')
     return x
   }
 
