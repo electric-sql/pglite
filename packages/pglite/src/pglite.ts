@@ -18,6 +18,7 @@ import type {
   PGliteInterfaceExtensions,
   PGliteOptions,
   DataTransferContainer,
+  Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
@@ -788,18 +789,27 @@ export class PGlite
    * @param channel The channel to listen on
    * @param callback The callback to call when a notification is received
    */
-  async listen(channel: string, callback: (payload: string) => void) {
-    return this._runExclusiveListen(() => this.#listen(channel, callback))
+  async listen(
+    channel: string,
+    callback: (payload: string) => void,
+    tx?: Transaction,
+  ) {
+    return this._runExclusiveListen(() => this.#listen(channel, callback, tx))
   }
 
-  async #listen(channel: string, callback: (payload: string) => void) {
+  async #listen(
+    channel: string,
+    callback: (payload: string) => void,
+    tx?: Transaction,
+  ) {
     const pgChannel = toPostgresName(channel)
+    const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
     try {
-      await this.exec(`LISTEN ${channel}`)
+      await pg.exec(`LISTEN ${channel}`)
     } catch (e) {
       this.#notifyListeners.get(pgChannel)!.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
@@ -890,7 +900,8 @@ export class PGlite
    * @returns The result of the function
    */
   _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T> {
-    return this.#transactionMutex.runExclusive(fn)
+    const x = this.#transactionMutex.runExclusive(fn)
+    return x
   }
 
   async clone(): Promise<PGliteInterface> {

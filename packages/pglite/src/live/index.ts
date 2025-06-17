@@ -76,6 +76,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let results: LiveQueryResults<T>
       let tables: { table_name: string; schema_name: string }[]
 
+      let unsubList: Array<() => Promise<void>>
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
@@ -121,6 +122,17 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             `)
             results = await tx.query<T>(`EXECUTE live_query_${id}_get;`)
           }
+          // Setup the listeners
+          unsubList = await Promise.all(
+            tables!.map((table) =>
+              tx.listen(
+                `"table_change__${table.schema_name}__${table.table_name}"`,
+                async () => {
+                  refresh()
+                },
+              ),
+            ),
+          )
         })
       }
       await init()
@@ -211,18 +223,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           }
           await run()
         },
-      )
-
-      // Setup the listeners
-      const unsubList: Array<() => Promise<void>> = await Promise.all(
-        tables!.map((table) =>
-          pg.listen(
-            `"table_change__${table.schema_name}__${table.table_name}"`,
-            async () => {
-              refresh()
-            },
-          ),
-        ),
       )
 
       // Function to subscribe to the query
