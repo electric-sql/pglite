@@ -125,6 +125,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     listen(
       channel: string,
       callback: (payload: string) => void,
+      tx?: Transaction,
     ): Promise<() => Promise<void>>
     unlisten(
       channel: string,
@@ -171,6 +172,10 @@ export interface Transaction {
   ): Promise<Results<T>>
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   rollback(): Promise<void>
+  listen(
+    channel: string,
+    callback: (payload: string) => void,
+  ): Promise<() => Promise<void>>
   get closed(): boolean
 }
 
