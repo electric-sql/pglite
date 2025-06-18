@@ -1266,7 +1266,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
       // await it's subscription to complete.
       // This creates a race condition with the following unsubscribe, both are
       // potentially interlaced with each other.
-      db.live.query({
+      await db.live.query({
         query: 'SELECT * FROM testTable WHERE number > 2',
         callback: (result) => {
           results = result
