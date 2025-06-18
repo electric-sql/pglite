@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
 
-await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
+await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } = (
     importType === 'esm'
       ? await import('../dist/index.js')
@@ -17,7 +17,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('basic live query', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -113,7 +112,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live query on view', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -224,7 +222,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live query with params', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -310,7 +307,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('incremental query unordered', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -360,7 +356,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('incremental query with non-integer key', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -410,7 +405,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('basic live incremental query', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -507,7 +501,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('basic live incremental query with limit 1', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -550,7 +543,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live incremental query on view', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -662,7 +654,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live incremental query with params', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -749,7 +740,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('basic live changes', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -925,7 +915,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('subscribe to live query after creation', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -982,7 +971,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live changes limit 1', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1049,7 +1037,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('subscribe to live changes after creation', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1109,7 +1096,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('live query with windowing', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1201,7 +1187,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('throws error when only one of offset/limit is provided', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await expect(
@@ -1244,7 +1229,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it("doesn't have a race condition when unsubscribing from a live query", async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1292,7 +1276,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     it('works with pattern matching', async () => {
       const db = await PGlite.create({
         extensions: { live },
-        defaultDataTransferContainer,
       })
 
       await db.exec(`
@@ -1348,7 +1331,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
   it('basic live query - case sensitive table name', async () => {
     const db = await PGlite.create({
       extensions: { live },
-      defaultDataTransferContainer,
     })
 
     await db.exec(`

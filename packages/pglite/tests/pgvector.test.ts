@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
 
-await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
+await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
     importType === 'esm'
       ? await import('../dist/index.js')
@@ -22,7 +22,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         extensions: {
           vector,
         },
-        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
@@ -88,7 +87,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         extensions: {
           vector,
         },
-        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
@@ -114,7 +112,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         extensions: {
           vector,
         },
-        defaultDataTransferContainer,
       })
 
       await pg.close()
@@ -124,7 +121,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         extensions: {
           vector,
         },
-        defaultDataTransferContainer,
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')

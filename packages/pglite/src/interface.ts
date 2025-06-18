@@ -33,7 +33,6 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean
   throwOnError?: boolean
   onNotice?: (notice: NoticeMessage) => void
-  dataTransferContainer?: DataTransferContainer
 }
 
 export interface ExtensionSetupResult<TNamespace = any> {
@@ -78,8 +77,6 @@ export interface DumpDataDirResult {
   filename: string
 }
 
-export type DataTransferContainer = 'cma' | 'file'
-
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
@@ -94,7 +91,6 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions
-  defaultDataTransferContainer?: DataTransferContainer
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
