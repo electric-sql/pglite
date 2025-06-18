@@ -3,7 +3,7 @@ import { PGlite } from '../dist/index.js'
 
 describe('clone', () => {
   it('clone pglite instance', async () => {
-    const pg1 = new PGlite()
+    const pg1 = await PGlite.create()
     await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -21,7 +21,7 @@ describe('clone', () => {
   })
 
   it('clone pglite instance - insert into pg2', async () => {
-    const pg1 = new PGlite()
+    const pg1 = await PGlite.create()
     await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,

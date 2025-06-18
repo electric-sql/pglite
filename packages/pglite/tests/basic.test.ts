@@ -12,7 +12,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
 
   describe(`basic`, () => {
     it('exec', async () => {
-      const db = new PGlite({
+      const db = await PGlite.create({
         defaultDataTransferContainer,
       })
       await db.exec(`

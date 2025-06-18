@@ -77,6 +77,15 @@ export class PGlite
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
+  // receive data from wasm
+  #onWriteDataPtr: number = -1
+  #accumulatedData: any = []
+
+  // send data to wasm
+  #onReadDataPtr: number = -1
+  #outputData: any = []
+  #outputDataReadBytes: number = 0
+
   /**
    * Create a new PGlite instance
    * @param dataDir The directory to store the database files
@@ -129,6 +138,8 @@ export class PGlite
     if (options?.defaultDataTransferContainer !== undefined) {
       this.#dataTransferContainer = options.defaultDataTransferContainer
     }
+
+    console.log(this.#dataTransferContainer)
 
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {}
@@ -369,6 +380,56 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+    // set the write callback
+    this.#onWriteDataPtr = (this.mod as any).addFunction((ptr: any, length: number) => {
+      let bytes
+      try {
+        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+      } catch (e: any) {
+        console.error('error', e)
+        throw e
+      }
+      // const bytes = new Uint8Array(this.mod!.HEAPU8, data, length); // View into WASM memory
+      let copied = bytes.slice();
+    
+      try {
+
+        // Append copied data to accumulatedData
+        if (!this.#accumulatedData) {
+          console.error('no accumulatedData')
+        }
+        if (this.#accumulatedData.length < 0) {
+          console.error('length less than 0')
+        }
+        const newAccumulated = new Uint8Array(this.#accumulatedData.length + copied.length);
+        newAccumulated.set(this.#accumulatedData, 0);
+        newAccumulated.set(copied, this.#accumulatedData.length);
+        this.#accumulatedData = newAccumulated;
+      } catch (e) {
+        console.log(e)
+      }
+      return this.#accumulatedData.length
+    }, 'iii');
+
+    // set the read callback
+    this.#onReadDataPtr = (this.mod as any).addFunction((ptr: any, max_length: number) => {
+      // copy current data to wasm buffer
+      let length = this.#outputData.length
+      if (this.#outputData.length - this.#outputDataReadBytes > max_length) {
+        length = max_length
+      }
+      try {
+
+        this.mod!.HEAP8.set((this.#outputData as Uint8Array).subarray(this.#outputDataReadBytes, this.#outputDataReadBytes + length), ptr);
+        this.#outputDataReadBytes += length
+      } catch (e) {
+        console.log(e)
+      }
+      return length
+    }, 'iii');
+
+    this.mod._set_read_write_cbs(this.#onReadDataPtr, this.#onWriteDataPtr)
+
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
@@ -578,84 +639,92 @@ export class PGlite
     message: Uint8Array,
     options: { dataTransferContainer?: DataTransferContainer } = {},
   ) {
-    let data
+    // let data
     const mod = this.mod!
-
+    console.log(options)
     // >0 set buffer content type to wire protocol
     mod._use_wire(1)
-    const msg_len = message.length
+    // const msg_len = message.length
 
     // TODO: if (message.length>CMA_B) force file
 
-    let currDataTransferContainer =
-      options.dataTransferContainer ?? this.#dataTransferContainer
+    // let currDataTransferContainer =
+    //   options.dataTransferContainer ?? this.#dataTransferContainer
 
     // do we overflow allocated shared memory segment
-    if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
+    // if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
 
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // set buffer size so answer will be at size+0x2 pointer addr
-        mod._interactive_write(message.length)
-        // TODO: make it seg num * seg maxsize if multiple channels.
-        mod.HEAPU8.set(message, 1)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
-        const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-        mod._interactive_write(0)
-        mod.FS.writeFile(pg_lck, message)
-        mod.FS.rename(pg_lck, pg_in)
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
-    }
+    // switch (currDataTransferContainer) {
+    //   case 'cma': {
+    //     // set buffer size so answer will be at size+0x2 pointer addr
+    //     mod._interactive_write(message.length)
+    //     // TODO: make it seg num * seg maxsize if multiple channels.
+    //     mod.HEAPU8.set(message, 1)
+    //     break
+    //   }
+    //   case 'file': {
+    //     // Use socketfiles to emulate a socket connection
+    //     const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
+    //     const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
+    //     mod._interactive_write(0)
+    //     mod.FS.writeFile(pg_lck, message)
+    //     mod.FS.rename(pg_lck, pg_in)
+    //     break
+    //   }
+    //   default:
+    //     throw new Error(
+    //       `Unknown data transfer container: ${currDataTransferContainer}`,
+    //     )
+    // }
+
+    this.#accumulatedData = []
+    this.#outputDataReadBytes = 0
+    this.#outputData = message
 
     // execute the message
-    mod._interactive_one()
+    mod._interactive_one(message.length, message[0])
 
-    const channel = mod._get_channel()
-    if (channel < 0) currDataTransferContainer = 'file'
+    this.#outputData = []
 
-    // TODO: use channel value for msg_start
-    if (channel > 0) currDataTransferContainer = 'cma'
+    // const channel = mod._get_channel()
+    // if (channel < 0) currDataTransferContainer = 'file'
 
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // Read responses from the buffer
+    // // TODO: use channel value for msg_start
+    // if (channel > 0) currDataTransferContainer = 'cma'
 
-        const msg_start = msg_len + 2
-        const msg_end = msg_start + mod._interactive_read()
-        data = mod.HEAPU8.subarray(msg_start, msg_end)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-        try {
-          const fstat = mod.FS.stat(pg_out)
-          const stream = mod.FS.open(pg_out, 'r')
-          data = new Uint8Array(fstat.size)
-          mod.FS.read(stream, data, 0, fstat.size, 0)
-          mod.FS.unlink(pg_out)
-        } catch (x) {
-          // case of single X message.
-          data = new Uint8Array(0)
-        }
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
-    }
+    // switch (currDataTransferContainer) {
+    //   case 'cma': {
+    //     // Read responses from the buffer
 
-    return data
+    //     const msg_start = msg_len + 2
+    //     const msg_end = msg_start + mod._interactive_read()
+    //     data = mod.HEAPU8.subarray(msg_start, msg_end)
+    //     break
+    //   }
+    //   case 'file': {
+    //     // Use socketfiles to emulate a socket connection
+    //     const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
+    //     try {
+    //       const fstat = mod.FS.stat(pg_out)
+    //       const stream = mod.FS.open(pg_out, 'r')
+    //       data = new Uint8Array(fstat.size)
+    //       mod.FS.read(stream, data, 0, fstat.size, 0)
+    //       mod.FS.unlink(pg_out)
+    //     } catch (x) {
+    //       // case of single X message.
+    //       data = new Uint8Array(0)
+    //     }
+    //     break
+    //   }
+    //   default:
+    //     throw new Error(
+    //       `Unknown data transfer container: ${currDataTransferContainer}`,
+    //     )
+    // }
+
+    // return data
+    if (this.#accumulatedData.length) return this.#accumulatedData
+    return new Uint8Array(0)
   }
 
   /**

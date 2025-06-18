@@ -32,8 +32,9 @@ export interface PostgresMod
   _get_buffer_addr: (fd: number) => number
   _get_channel: () => number
   _interactive_write: (msgLength: number) => void
-  _interactive_one: () => void
+  _interactive_one: (length: number, peek: number) => void
   _interactive_read: () => number
+  _set_read_write_cbs: (read_cb: number, write_cb: number) => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
