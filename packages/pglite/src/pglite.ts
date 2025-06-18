@@ -17,7 +17,6 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
-  DataTransferContainer,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
@@ -60,8 +59,6 @@ export class PGlite
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
 
-  #dataTransferContainer: DataTransferContainer = 'cma'
-
   readonly debug: DebugLevel = 0
 
   #extensions: Extensions
@@ -77,14 +74,21 @@ export class PGlite
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
+  static readonly RECV_BUF_SIZE: number = 10 * 1024 * 1024 // 10MB default
+
   // receive data from wasm
   #onWriteDataPtr: number = -1
-  #accumulatedData: any = []
+  // buffer that holds data received from wasm
+  #inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
+  // write index in the buffer
+  #writeOffset: number = 0
 
   // send data to wasm
   #onReadDataPtr: number = -1
+  // buffer that sends the data to be sent to wasm
   #outputData: any = []
-  #outputDataReadBytes: number = 0
+  // read index in the buffer
+  #readOffset: number = 0
 
   /**
    * Create a new PGlite instance
@@ -133,13 +137,6 @@ export class PGlite
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
     }
-
-    // Set the default data transfer container
-    if (options?.defaultDataTransferContainer !== undefined) {
-      this.#dataTransferContainer = options.defaultDataTransferContainer
-    }
-
-    console.log(this.#dataTransferContainer)
 
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {}
@@ -381,52 +378,67 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // set the write callback
-    this.#onWriteDataPtr = (this.mod as any).addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      // const bytes = new Uint8Array(this.mod!.HEAPU8, data, length); // View into WASM memory
-      let copied = bytes.slice();
-    
-      try {
+    this.#onWriteDataPtr = (this.mod as any).addFunction(
+      (ptr: any, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        const copied = bytes.slice()
 
-        // Append copied data to accumulatedData
-        if (!this.#accumulatedData) {
-          console.error('no accumulatedData')
+        const requiredSize = this.#writeOffset + copied.length
+
+        if (requiredSize > this.#inputData.length) {
+          // Expand buffer size (double until it fits)
+          let newSize = this.#inputData.length
+          while (newSize < requiredSize) {
+            newSize *= 2
+          }
+
+          const newBuffer = new Uint8Array(newSize)
+          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+          this.#inputData = newBuffer
         }
-        if (this.#accumulatedData.length < 0) {
-          console.error('length less than 0')
-        }
-        const newAccumulated = new Uint8Array(this.#accumulatedData.length + copied.length);
-        newAccumulated.set(this.#accumulatedData, 0);
-        newAccumulated.set(copied, this.#accumulatedData.length);
-        this.#accumulatedData = newAccumulated;
-      } catch (e) {
-        console.log(e)
-      }
-      return this.#accumulatedData.length
-    }, 'iii');
+
+        this.#inputData.set(copied, this.#writeOffset)
+        this.#writeOffset += copied.length
+
+        // const newAccumulated = new Uint8Array(this.#accumulatedData.length + copied.length);
+        // newAccumulated.set(this.#accumulatedData, 0);
+        // newAccumulated.set(copied, this.#accumulatedData.length);
+        // this.#accumulatedData = newAccumulated;
+        return this.#inputData.length
+      },
+      'iii',
+    )
 
     // set the read callback
-    this.#onReadDataPtr = (this.mod as any).addFunction((ptr: any, max_length: number) => {
-      // copy current data to wasm buffer
-      let length = this.#outputData.length
-      if (this.#outputData.length - this.#outputDataReadBytes > max_length) {
-        length = max_length
-      }
-      try {
-
-        this.mod!.HEAP8.set((this.#outputData as Uint8Array).subarray(this.#outputDataReadBytes, this.#outputDataReadBytes + length), ptr);
-        this.#outputDataReadBytes += length
-      } catch (e) {
-        console.log(e)
-      }
-      return length
-    }, 'iii');
+    this.#onReadDataPtr = (this.mod as any).addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.log(e)
+        }
+        return length
+      },
+      'iii',
+    )
 
     this.mod._set_read_write_cbs(this.#onReadDataPtr, this.#onWriteDataPtr)
 
@@ -635,13 +647,9 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(
-    message: Uint8Array,
-    options: { dataTransferContainer?: DataTransferContainer } = {},
-  ) {
+  execProtocolRawSync(message: Uint8Array) {
     // let data
     const mod = this.mod!
-    console.log(options)
     // >0 set buffer content type to wire protocol
     mod._use_wire(1)
     // const msg_len = message.length
@@ -677,9 +685,14 @@ export class PGlite
     //     )
     // }
 
-    this.#accumulatedData = []
-    this.#outputDataReadBytes = 0
+    // this.#accumulatedData = []
+    if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {
+      this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
+    }
+    this.#readOffset = 0
     this.#outputData = message
+
+    this.#writeOffset = 0
 
     // execute the message
     mod._interactive_one(message.length, message[0])
@@ -723,7 +736,7 @@ export class PGlite
     // }
 
     // return data
-    if (this.#accumulatedData.length) return this.#accumulatedData
+    if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
 
@@ -740,9 +753,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true, dataTransferContainer }: ExecProtocolOptions = {},
+    { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message, { dataTransferContainer })
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
