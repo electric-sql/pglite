@@ -817,8 +817,8 @@ export class PGlite
       }
       throw e
     }
-    return async () => {
-      await this.unlisten(pgChannel, callback)
+    return async (tx?: Transaction) => {
+      await this.unlisten(pgChannel, callback, tx)
     }
   }
 
