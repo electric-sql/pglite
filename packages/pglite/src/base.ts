@@ -99,7 +99,7 @@ export abstract class BasePGlite
     channel: string,
     callback: (payload: string) => void,
     tx?: Transaction,
-  ): Promise<() => Promise<void>>
+  ): Promise<(tx?: Transaction) => Promise<void>>
 
   // # Concrete implementations:
 

@@ -76,7 +76,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let results: LiveQueryResults<T>
       let tables: { table_name: string; schema_name: string }[]
 
-      let unsubList: Array<() => Promise<void>>
+      let unsubList: Array<(tx?: Transaction) => Promise<void>>
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
@@ -246,11 +246,13 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
         if (callbacks.length === 0 && !dead) {
           dead = true
-          await Promise.all(unsubList.map((unsub) => unsub()))
-          await pg.exec(`
-            DROP VIEW IF EXISTS live_query_${id}_view;
-            DEALLOCATE live_query_${id}_get;
-          `)
+          await pg.transaction(async (tx) => {
+            await Promise.all(unsubList.map((unsub) => unsub(tx)))
+            await tx.exec(`
+              DROP VIEW IF EXISTS live_query_${id}_view;
+              DEALLOCATE live_query_${id}_get;
+            `)
+          })
         }
       }
 

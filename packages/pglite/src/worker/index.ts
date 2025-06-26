@@ -369,8 +369,8 @@ export class PGliteWorker
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
     await pg.exec(`LISTEN ${channel}`)
-    return async () => {
-      await this.unlisten(pgChannel, callback)
+    return async (tx?: Transaction) => {
+      await this.unlisten(pgChannel, callback, tx)
     }
   }
 
@@ -382,8 +382,10 @@ export class PGliteWorker
   async unlisten(
     channel: string,
     callback?: (payload: string) => void,
+    tx?: Transaction,
   ): Promise<void> {
     await this.waitReady
+    const pg = tx ?? this
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback)
     } else {
@@ -391,7 +393,7 @@ export class PGliteWorker
     }
     if (this.#notifyListeners.get(channel)?.size === 0) {
       // As we currently have a dedicated worker we can just unlisten
-      await this.exec(`UNLISTEN ${channel}`)
+      await pg.exec(`UNLISTEN ${channel}`)
     }
   }
 
