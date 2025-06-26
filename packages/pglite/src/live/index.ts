@@ -76,7 +76,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let results: LiveQueryResults<T>
       let tables: { table_name: string; schema_name: string }[]
 
-      let unsubList: Array<() => Promise<void>>
+      let unsubList: Array<(tx?: Transaction) => Promise<void>>
       const init = async () => {
         await pg.transaction(async (tx) => {
           // Create a temporary view with the query
@@ -246,11 +246,13 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
         if (callbacks.length === 0 && !dead) {
           dead = true
-          await Promise.all(unsubList.map((unsub) => unsub()))
-          await pg.exec(`
-            DROP VIEW IF EXISTS live_query_${id}_view;
-            DEALLOCATE live_query_${id}_get;
-          `)
+          await pg.transaction(async (tx) => {
+            await Promise.all(unsubList.map((unsub) => unsub(tx)))
+            await tx.exec(`
+              DROP VIEW IF EXISTS live_query_${id}_view;
+              DEALLOCATE live_query_${id}_get;
+            `)
+          })
         }
       }
 
@@ -306,6 +308,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let tables: { table_name: string; schema_name: string }[]
       let stateSwitch: 1 | 2 = 1
       let changes: Results<Change<T>>
+
+      let unsubList: Array<(tx?: Transaction) => Promise<void>>
 
       const init = async () => {
         await pg.transaction(async (tx) => {
@@ -411,6 +415,18 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               SELECT * FROM data_diff;
             `)
           }
+
+          // Setup the listeners
+          unsubList = await Promise.all(
+            tables!.map((table) =>
+              tx.listen(
+                `"table_change__${table.schema_name}__${table.table_name}"`,
+                async () => {
+                  refresh()
+                },
+              ),
+            ),
+          )
         })
       }
 
@@ -473,16 +489,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ])
       })
 
-      // Setup the listeners
-      const unsubList: Array<() => Promise<void>> = await Promise.all(
-        tables!.map((table) =>
-          pg.listen(
-            `table_change__${table.schema_name}__${table.table_name}`,
-            async () => refresh(),
-          ),
-        ),
-      )
-
       // Function to subscribe to the query
       const subscribe = (callback: (changes: Array<Change<T>>) => void) => {
         if (dead) {
@@ -504,14 +510,16 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         }
         if (callbacks.length === 0 && !dead) {
           dead = true
-          await Promise.all(unsubList.map((unsub) => unsub()))
-          await pg.exec(`
-            DROP VIEW IF EXISTS live_query_${id}_view;
-            DROP TABLE IF EXISTS live_query_${id}_state1;
-            DROP TABLE IF EXISTS live_query_${id}_state2;
-            DEALLOCATE live_query_${id}_diff1;
-            DEALLOCATE live_query_${id}_diff2;
-          `)
+          await pg.transaction(async (tx) => {
+            await Promise.all(unsubList.map((unsub) => unsub(tx)))
+            await tx.exec(`
+              DROP VIEW IF EXISTS live_query_${id}_view;
+              DROP TABLE IF EXISTS live_query_${id}_state1;
+              DROP TABLE IF EXISTS live_query_${id}_state2;
+              DEALLOCATE live_query_${id}_diff1;
+              DEALLOCATE live_query_${id}_diff2;
+            `)
+          })
         }
       }
 
