@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.3.4
+
+### Patch Changes
+
+- 1fcaa3e: fix race condition in live query unsubscribe
+- 38a55d0: fix cjs/esm misconfigurations
+- aac7003: remove double wasm instantiation when providing a wasm module'
+- 8ca254d: expose listen function in transaction object
+
 ## 0.3.3
 
 ### Patch Changes
