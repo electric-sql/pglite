@@ -32,7 +32,7 @@ export interface Filesystem {
   initialSyncFs(): Promise<void>
 
   /**
-   * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   * Dump the PGDATA dir from the filesystem to a gzipped tarball.
    */
   dumpTar(
     dbname: string,
