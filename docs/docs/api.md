@@ -297,7 +297,7 @@ Remove an event handler for all notifications received from Postgres.
 
 Dump the Postgres `datadir` to a Gzipped tarball.
 
-The compression option defults to `auto` which uses compression where possible. You can explicit opt in or out of compression with `gzip` and `none`. When you specify that compression is required with `gzip`, if the environment doesn't support a suitable compression API it will throw an error.
+The compression option defaults to `auto` which uses compression where possible. You can explicit opt in or out of compression with `gzip` and `none`. When you specify that compression is required with `gzip`, if the environment doesn't support a suitable compression API it will throw an error.
 
 This can then be used in combination with the [`loadDataDir`](#options) option when starting PGlite to load a dumped database from storage.
 
@@ -400,7 +400,7 @@ Query methods will wait for the `waitReady` promise to resolve if called before 
 Result objects have the following properties:
 
 - `rows: Row<T>[]`<br />
-  The rows retuned by the query.
+  The rows returned by the query.
 
 - `affectedRows?: number` <br />
   Count of the rows affected by the query. Note, this is _not_ the count of rows returned, it is the number or rows in the database changed by the query.

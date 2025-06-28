@@ -107,7 +107,7 @@ export abstract class BasePGlite
    * Initialize the array types
    * The oid if the type of an element and the typarray is the oid of the type of the
    * array.
-   * We extract these from the databaes then create the serializers/parsers for
+   * We extract these from the database then create the serializers/parsers for
    * each type.
    * This should be called at the end of #init() in the implementing class.
    */
