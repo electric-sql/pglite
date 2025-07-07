@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.5
+
+### Patch Changes
+
+- 6653899: fix: pglite worker dumpDataDir not using compression parameter
+
 ## 0.3.4
 
 ### Patch Changes
