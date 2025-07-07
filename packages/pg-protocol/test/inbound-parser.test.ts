@@ -502,7 +502,7 @@ describe('PgPacketStream', () => {
     })
   })
 
-  // since the data message on a stream can randomly divide the incomming
+  // since the data message on a stream can randomly divide the incoming
   // tcp packets anywhere, we need to make sure we can parse every single
   // split on a tcp message
   describe('split buffer, single message parsing', () => {

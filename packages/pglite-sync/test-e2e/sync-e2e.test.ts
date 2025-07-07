@@ -976,7 +976,7 @@ newline', false);
       shapeKey: 'custom_schema_test',
     })
 
-    // We don't persist any metadata untill some data has been synced
+    // We don't persist any metadata until some data has been synced
     await pgClient.query(`
       INSERT INTO todo (id, task, done) VALUES
       (1, 'task1', false);

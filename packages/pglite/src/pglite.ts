@@ -882,7 +882,7 @@ export class PGlite
   }
 
   /**
-   * Dump the PGDATA dir from the filesystem to a gziped tarball.
+   * Dump the PGDATA dir from the filesystem to a gzipped tarball.
    * @param compression The compression options to use - 'gzip', 'auto', 'none'
    * @returns The tarball as a File object where available, and fallback to a Blob
    */

@@ -8,7 +8,7 @@ We would recommend using the IndexedDB VFS in the browser at the current time as
 
 ## In-memory FS
 
-The in-memory FS is the default when starting PGlite, and it is available on all platforms. All files are kept in memory and there is no persistance, other than calling [`pg.dumpDataDir()`](./api.md#dumpdatadir) and then using the [`loadDataDir`](./api.md#options) option at start.
+The in-memory FS is the default when starting PGlite, and it is available on all platforms. All files are kept in memory and there is no persistence, other than calling [`pg.dumpDataDir()`](./api.md#dumpdatadir) and then using the [`loadDataDir`](./api.md#options) option at start.
 
 To use the in-memory FS you can use one of these methods:
 
