@@ -10,6 +10,7 @@ import type {
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { toPostgresName, uuid } from '../utils.js'
+import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -427,8 +428,10 @@ export class PGliteWorker
     }
   }
 
-  async dumpDataDir(): Promise<File | Blob> {
-    return (await this.#rpc('dumpDataDir')) as File | Blob
+  async dumpDataDir(
+    compression?: DumpTarCompressionOptions,
+  ): Promise<File | Blob> {
+    return (await this.#rpc('dumpDataDir', compression)) as File | Blob
   }
 
   onLeaderChange(callback: () => void) {
@@ -648,8 +651,8 @@ function makeWorkerApi(tabId: string, db: PGlite) {
         return result
       }
     },
-    async dumpDataDir() {
-      return await db.dumpDataDir()
+    async dumpDataDir(compression?: DumpTarCompressionOptions) {
+      return await db.dumpDataDir(compression)
     },
     async syncToFs() {
       return await db.syncToFs()
