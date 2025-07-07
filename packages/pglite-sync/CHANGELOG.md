@@ -1,5 +1,16 @@
 # @electric-sql/pglite-sync
 
+## 0.3.7
+
+### Patch Changes
+
+- 38a55d0: fix cjs/esm misconfigurations
+- Updated dependencies [1fcaa3e]
+- Updated dependencies [38a55d0]
+- Updated dependencies [aac7003]
+- Updated dependencies [8ca254d]
+  - @electric-sql/pglite@0.3.4
+
 ## 0.3.6
 
 ### Patch Changes

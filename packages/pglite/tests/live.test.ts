@@ -51,7 +51,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -66,7 +66,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('DELETE FROM testTable WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -80,7 +80,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -94,9 +94,9 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
-      db.exec('INSERT INTO testTable (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -161,7 +161,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -176,7 +176,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('DELETE FROM testTable WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -190,7 +190,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -204,9 +204,9 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
-      db.exec('INSERT INTO testTable (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -254,7 +254,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -267,7 +267,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('DELETE FROM testTable WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -279,7 +279,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 3, number: 30 },
       ])
 
-      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -291,9 +291,9 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 2, number: 20 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
-      db.exec('INSERT INTO testTable (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -350,7 +350,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 1, number: 10 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('incremental query with non-integer key', async () => {
@@ -399,7 +399,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 'potato', number: 10 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('basic live incremental query', async () => {
@@ -483,7 +483,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
       await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
@@ -537,7 +537,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(updatedResults.rows).toEqual([{ id: 2, number: 5 }])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('live incremental query on view', async () => {
@@ -636,7 +636,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
       await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
@@ -724,7 +724,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 2, number: 20 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
       await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
@@ -805,7 +805,7 @@ await testEsmCjsAndDTC(async (importType) => {
         },
       ])
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -828,7 +828,7 @@ await testEsmCjsAndDTC(async (importType) => {
         },
       ])
 
-      db.exec('DELETE FROM testTable WHERE id = 6;')
+      await db.exec('DELETE FROM testTable WHERE id = 6;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -851,7 +851,7 @@ await testEsmCjsAndDTC(async (importType) => {
         },
       ])
 
-      db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
+      await db.exec('UPDATE testTable SET number = 15 WHERE id = 3;')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -881,9 +881,9 @@ await testEsmCjsAndDTC(async (importType) => {
         },
       ])
 
-      unsubscribe()
+      await unsubscribe()
 
-      db.exec('INSERT INTO testTable (number) VALUES (35);')
+      await db.exec('INSERT INTO testTable (number) VALUES (35);')
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -950,7 +950,7 @@ await testEsmCjsAndDTC(async (importType) => {
         eventTarget.dispatchEvent(new Event('change'))
       })
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -965,7 +965,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('live changes limit 1', async () => {
@@ -1031,7 +1031,7 @@ await testEsmCjsAndDTC(async (importType) => {
         },
       ])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('subscribe to live changes after creation', async () => {
@@ -1075,7 +1075,7 @@ await testEsmCjsAndDTC(async (importType) => {
         eventTarget.dispatchEvent(new Event('change'))
       })
 
-      db.exec('INSERT INTO testTable (number) VALUES (25);')
+      await db.exec('INSERT INTO testTable (number) VALUES (25);')
 
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
@@ -1090,7 +1090,7 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 5, number: 50 },
       ])
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('live query with windowing', async () => {
@@ -1181,7 +1181,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(updatedResults.totalCount).toBe(4) // now its 4
 
-      unsubscribe()
+      await unsubscribe()
     })
 
     it('throws error when only one of offset/limit is provided', async () => {
@@ -1319,7 +1319,7 @@ await testEsmCjsAndDTC(async (importType) => {
         eventTarget.addEventListener('change', resolve, { once: true }),
       )
 
-      unsubscribe()
+      await unsubscribe()
 
       expect(updatedResults.rows).toEqual([
         { id: 1, statement: 'i love pglite!' },

@@ -899,8 +899,8 @@ export class PGlite
       }
       throw e
     }
-    return async () => {
-      await this.unlisten(pgChannel, callback)
+    return async (tx?: Transaction) => {
+      await this.unlisten(pgChannel, callback, tx)
     }
   }
 
@@ -909,14 +909,23 @@ export class PGlite
    * @param channel The channel to stop listening on
    * @param callback The callback to remove
    */
-  async unlisten(channel: string, callback?: (payload: string) => void) {
-    return this._runExclusiveListen(() => this.#unlisten(channel, callback))
+  async unlisten(
+    channel: string,
+    callback?: (payload: string) => void,
+    tx?: Transaction,
+  ) {
+    return this._runExclusiveListen(() => this.#unlisten(channel, callback, tx))
   }
 
-  async #unlisten(channel: string, callback?: (payload: string) => void) {
+  async #unlisten(
+    channel: string,
+    callback?: (payload: string) => void,
+    tx?: Transaction,
+  ) {
     const pgChannel = toPostgresName(channel)
+    const pg = tx ?? this
     const cleanUp = async () => {
-      await this.exec(`UNLISTEN ${channel}`)
+      await pg.exec(`UNLISTEN ${channel}`)
       // While that query was running, another query might have subscribed
       // so we need to check again
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
