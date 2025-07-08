@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { testDTC } from './test-utils.js'
 import { PGlite } from '../dist/index.js'
 
 function createStringOfSize(sizeInBytes: number): string {
@@ -70,115 +69,113 @@ function testRowCountAndSize(
   }
 }
 
-testDTC(async (defaultDataTransferContainer) => {
-  describe('query and exec with different data sizes', () => {
-    let db: PGlite
+describe('query and exec with different data sizes', () => {
+  let db: PGlite
 
-    beforeEach(async () => {
-      db = new PGlite({ defaultDataTransferContainer, debug: 0 })
+  beforeEach(async () => {
+    db = new PGlite({ debug: 0 })
 
-      await db.exec(`
+    await db.exec(`
         CREATE TABLE IF NOT EXISTS size_test (
           id SERIAL PRIMARY KEY,
           data TEXT
         );
       `)
-    })
+  })
 
-    describe('exec method', () => {
-      testEachSize(async (_, sizeInBytes) => {
-        const testData = createStringOfSize(sizeInBytes)
+  describe('exec method', () => {
+    testEachSize(async (_, sizeInBytes) => {
+      const testData = createStringOfSize(sizeInBytes)
 
-        const results = await db.exec(`
+      const results = await db.exec(`
           INSERT INTO size_test (data) VALUES ('${testData}');
           SELECT * FROM size_test;
         `)
 
-        expect(results).toHaveLength(2)
-        expect(results[1].rows).toHaveLength(1)
-        expect(results[1].rows[0].data).toBe(testData)
-        expect(results[1].rows[0].data.length).toBe(sizeInBytes)
-      })
-    })
-
-    describe('query method without params', () => {
-      testEachSize(async (_, sizeInBytes) => {
-        const testData = createStringOfSize(sizeInBytes)
-
-        await db.query(`INSERT INTO size_test (data) VALUES ('${testData}');`)
-
-        const result = await db.query<{ id: number; data: string }>(
-          'SELECT * FROM size_test;',
-        )
-
-        expect(result.rows).toHaveLength(1)
-        expect(result.rows[0].data).toBe(testData)
-        expect(result.rows[0].data.length).toBe(sizeInBytes)
-      })
-    })
-
-    describe('query method with params', () => {
-      testEachSize(async (_, sizeInBytes) => {
-        const testData = createStringOfSize(sizeInBytes)
-
-        await db.query('INSERT INTO size_test (data) VALUES ($1);', [testData])
-
-        const result = await db.query<{ id: number; data: string }>(
-          'SELECT * FROM size_test WHERE data = $1;',
-          [testData],
-        )
-
-        expect(result.rows).toHaveLength(1)
-        expect(result.rows[0].data).toBe(testData)
-        expect(result.rows[0].data.length).toBe(sizeInBytes)
-      })
+      expect(results).toHaveLength(2)
+      expect(results[1].rows).toHaveLength(1)
+      expect(results[1].rows[0].data).toBe(testData)
+      expect(results[1].rows[0].data.length).toBe(sizeInBytes)
     })
   })
 
-  describe('query with combinations of row counts and data sizes', () => {
-    let db: PGlite
+  describe('query method without params', () => {
+    testEachSize(async (_, sizeInBytes) => {
+      const testData = createStringOfSize(sizeInBytes)
 
-    beforeEach(async () => {
-      db = new PGlite({ defaultDataTransferContainer })
+      await db.query(`INSERT INTO size_test (data) VALUES ('${testData}');`)
+
+      const result = await db.query<{ id: number; data: string }>(
+        'SELECT * FROM size_test;',
+      )
+
+      expect(result.rows).toHaveLength(1)
+      expect(result.rows[0].data).toBe(testData)
+      expect(result.rows[0].data.length).toBe(sizeInBytes)
     })
+  })
 
-    testRowCountAndSize(async (_, rowCount, __, dataSize) => {
-      const testData = createStringOfSize(dataSize)
+  describe('query method with params', () => {
+    testEachSize(async (_, sizeInBytes) => {
+      const testData = createStringOfSize(sizeInBytes)
 
-      const result = await db.query<{ id: number; data: string }>(`
+      await db.query('INSERT INTO size_test (data) VALUES ($1);', [testData])
+
+      const result = await db.query<{ id: number; data: string }>(
+        'SELECT * FROM size_test WHERE data = $1;',
+        [testData],
+      )
+
+      expect(result.rows).toHaveLength(1)
+      expect(result.rows[0].data).toBe(testData)
+      expect(result.rows[0].data.length).toBe(sizeInBytes)
+    })
+  })
+})
+
+describe('query with combinations of row counts and data sizes', () => {
+  let db: PGlite
+
+  beforeEach(async () => {
+    db = new PGlite()
+  })
+
+  testRowCountAndSize(async (_, rowCount, __, dataSize) => {
+    const testData = createStringOfSize(dataSize)
+
+    const result = await db.query<{ id: number; data: string }>(`
         SELECT generate_series(1, ${rowCount}) as id, '${testData}' as data;
       `)
 
-      expect(result.rows).toHaveLength(rowCount)
+    expect(result.rows).toHaveLength(rowCount)
 
-      expect(result.rows[0].data).toBe(testData)
-      expect(result.rows[0].data.length).toBe(dataSize)
-      expect(result.rows[rowCount - 1].data).toBe(testData)
-      expect(result.rows[rowCount - 1].data.length).toBe(dataSize)
+    expect(result.rows[0].data).toBe(testData)
+    expect(result.rows[0].data.length).toBe(dataSize)
+    expect(result.rows[rowCount - 1].data).toBe(testData)
+    expect(result.rows[rowCount - 1].data.length).toBe(dataSize)
 
-      if (rowCount > 5) {
-        const middleIndex = Math.floor(rowCount / 2)
-        expect(result.rows[middleIndex].data).toBe(testData)
-        expect(result.rows[middleIndex].data.length).toBe(dataSize)
-      }
-    })
+    if (rowCount > 5) {
+      const middleIndex = Math.floor(rowCount / 2)
+      expect(result.rows[middleIndex].data).toBe(testData)
+      expect(result.rows[middleIndex].data.length).toBe(dataSize)
+    }
+  })
+})
+
+describe('query with postgres-generated data of different sizes', () => {
+  let db: PGlite
+
+  beforeEach(async () => {
+    db = new PGlite()
   })
 
-  describe('query with postgres-generated data of different sizes', () => {
-    let db: PGlite
-
-    beforeEach(async () => {
-      db = new PGlite({ defaultDataTransferContainer })
-    })
-
-    testEachSize(async (_, sizeInBytes) => {
-      const result = await db.query<{ id: number; data: string }>(`
+  testEachSize(async (_, sizeInBytes) => {
+    const result = await db.query<{ id: number; data: string }>(`
         SELECT 1 as id, repeat('a', ${sizeInBytes}) as data;
       `)
 
-      expect(result.rows).toHaveLength(1)
-      expect(result.rows[0].data.length).toBe(sizeInBytes)
-      expect(result.rows[0].data).toBe('a'.repeat(sizeInBytes))
-    })
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0].data.length).toBe(sizeInBytes)
+    expect(result.rows[0].data).toBe('a'.repeat(sizeInBytes))
   })
 })

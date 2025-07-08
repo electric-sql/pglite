@@ -1,5 +1,4 @@
 import { describe, expect } from 'vitest'
-import type { DataTransferContainer } from '../dist/index.js'
 
 declare global {
   let Bun: any
@@ -28,40 +27,16 @@ export async function expectToThrowAsync(
 }
 
 export async function testEsmCjsAndDTC(
-  fn: (
-    importType: 'esm' | 'cjs',
-    defaultDataTransferContainer: DataTransferContainer,
-  ) => Promise<void>,
+  fn: (importType: 'esm' | 'cjs') => Promise<void>,
 ) {
   describe('esm import', async () => {
-    describe('cma data transfer container', async () => {
-      await fn('esm', 'cma')
-    })
-    describe('file data transfer container', async () => {
-      await fn('esm', 'file')
-    })
+    await fn('esm')
   })
 
   // don't run cjs tests for Bun
   if (typeof Bun !== 'undefined') return
 
   describe('cjs import', async () => {
-    describe('cma data transfer container', async () => {
-      await fn('cjs', 'cma')
-    })
-    describe('file data transfer container', async () => {
-      await fn('cjs', 'file')
-    })
-  })
-}
-
-export async function testDTC(
-  fn: (defaultDataTransferContainer: DataTransferContainer) => Promise<void>,
-) {
-  describe('cma data transfer container', async () => {
-    await fn('cma')
-  })
-  describe('file data transfer container', async () => {
-    await fn('file')
+    await fn('cjs')
   })
 }
