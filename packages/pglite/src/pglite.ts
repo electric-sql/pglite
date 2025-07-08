@@ -75,7 +75,7 @@ export class PGlite
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
-  static readonly RECV_BUF_SIZE: number = 10 * 1024 * 1024 // 10MB default
+  static readonly RECV_BUF_SIZE: number = 16 * 1024 * 1024 // 16MB default
 
   // receive data from wasm
   #onWriteDataPtr: number = -1
@@ -407,10 +407,6 @@ export class PGlite
         this.#inputData.set(copied, this.#writeOffset)
         this.#writeOffset += copied.length
 
-        // const newAccumulated = new Uint8Array(this.#accumulatedData.length + copied.length);
-        // newAccumulated.set(this.#accumulatedData, 0);
-        // newAccumulated.set(copied, this.#accumulatedData.length);
-        // this.#accumulatedData = newAccumulated;
         return this.#inputData.length
       },
       'iii',
@@ -653,40 +649,7 @@ export class PGlite
     const mod = this.mod!
     // >0 set buffer content type to wire protocol
     mod._use_wire(1)
-    // const msg_len = message.length
-
-    // TODO: if (message.length>CMA_B) force file
-
-    // let currDataTransferContainer =
-    //   options.dataTransferContainer ?? this.#dataTransferContainer
-
-    // do we overflow allocated shared memory segment
-    // if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
-
-    // switch (currDataTransferContainer) {
-    //   case 'cma': {
-    //     // set buffer size so answer will be at size+0x2 pointer addr
-    //     mod._interactive_write(message.length)
-    //     // TODO: make it seg num * seg maxsize if multiple channels.
-    //     mod.HEAPU8.set(message, 1)
-    //     break
-    //   }
-    //   case 'file': {
-    //     // Use socketfiles to emulate a socket connection
-    //     const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
-    //     const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-    //     mod._interactive_write(0)
-    //     mod.FS.writeFile(pg_lck, message)
-    //     mod.FS.rename(pg_lck, pg_in)
-    //     break
-    //   }
-    //   default:
-    //     throw new Error(
-    //       `Unknown data transfer container: ${currDataTransferContainer}`,
-    //     )
-    // }
-
-    // this.#accumulatedData = []
+    
     if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {
       this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
     }
@@ -700,43 +663,6 @@ export class PGlite
 
     this.#outputData = []
 
-    // const channel = mod._get_channel()
-    // if (channel < 0) currDataTransferContainer = 'file'
-
-    // // TODO: use channel value for msg_start
-    // if (channel > 0) currDataTransferContainer = 'cma'
-
-    // switch (currDataTransferContainer) {
-    //   case 'cma': {
-    //     // Read responses from the buffer
-
-    //     const msg_start = msg_len + 2
-    //     const msg_end = msg_start + mod._interactive_read()
-    //     data = mod.HEAPU8.subarray(msg_start, msg_end)
-    //     break
-    //   }
-    //   case 'file': {
-    //     // Use socketfiles to emulate a socket connection
-    //     const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-    //     try {
-    //       const fstat = mod.FS.stat(pg_out)
-    //       const stream = mod.FS.open(pg_out, 'r')
-    //       data = new Uint8Array(fstat.size)
-    //       mod.FS.read(stream, data, 0, fstat.size, 0)
-    //       mod.FS.unlink(pg_out)
-    //     } catch (x) {
-    //       // case of single X message.
-    //       data = new Uint8Array(0)
-    //     }
-    //     break
-    //   }
-    //   default:
-    //     throw new Error(
-    //       `Unknown data transfer container: ${currDataTransferContainer}`,
-    //     )
-    // }
-
-    // return data
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
