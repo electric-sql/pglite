@@ -499,6 +499,38 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         affectedRows: 0,
       })
     })
+    it('merge delete', async () => {
+      const db = new PGlite()
+      await db.exec(`
+      CREATE TABLE employees (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      department TEXT,
+      salary NUMERIC);`)
+
+      await db.exec(`INSERT INTO employees (id, name, department, salary) VALUES
+        (1, 'Alice', 'Engineering', 75000),
+        (2, 'Bob', 'Sales', 50000),
+        (3, 'Charlie', 'Engineering', 80000);`)
+
+      await db.exec(`CREATE TEMP TABLE employees_updates (
+        id INT,
+        name TEXT,
+        department TEXT,
+        salary NUMERIC);`)
+
+      await db.exec(`INSERT INTO employees_updates VALUES
+        (2, 'Bob', 'Sales', 55000),       -- Update salary
+        (3, 'Charlie', 'Product', 80000), -- Update department
+        (4, 'Diana', 'Engineering', 70000); -- New employee`)
+
+      const res = await db.exec(`MERGE INTO employees AS target
+      USING employees_updates AS source
+      ON target.id = source.id
+      WHEN MATCHED THEN DELETE`)
+
+      expect(res[0].affectedRows).toEqual(2)
+    })
 
     it('copy to/from blob', async () => {
       const db = new PGlite({
