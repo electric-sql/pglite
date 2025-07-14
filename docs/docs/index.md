@@ -114,16 +114,16 @@ Output:
 ]
 ```
 
-## Using parametrised queries
+## Using parameterised queries
 
-When working with user supplied values, it's always best to use parametrised queries; these are supported on the `.query` method.
+When working with user supplied values, it's always best to use parameterized queries; these are supported on the `.query` method.
 
 We can use this to update a task:
 
 ```js
 const ret = await db.query(
   'UPDATE todo SET task = $2, done = $3 WHERE id = $1',
-  [5, 'Update a task using parametrised queries', true],
+  [5, 'Update a task using parameterized queries', true],
 )
 ```
 
@@ -133,7 +133,7 @@ const ret = await db.query(
 
 - There is also a [live-query extension](./live-queries.md) that enables reactive queries to update a UI when the underlying database changes.
 
-- PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistance for your database.
+- PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistence for your database.
 
 - There are [framework hooks](./framework-hooks/react.md) to make working with PGlite within React and Vue much easier with less boilerplate.
 

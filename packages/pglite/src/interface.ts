@@ -129,10 +129,12 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     listen(
       channel: string,
       callback: (payload: string) => void,
-    ): Promise<() => Promise<void>>
+      tx?: Transaction,
+    ): Promise<(tx?: Transaction) => Promise<void>>
     unlisten(
       channel: string,
       callback?: (payload: string) => void,
+      tx?: Transaction,
     ): Promise<void>
     onNotification(
       callback: (channel: string, payload: string) => void,
@@ -175,6 +177,10 @@ export interface Transaction {
   ): Promise<Results<T>>
   exec(query: string, options?: QueryOptions): Promise<Array<Results>>
   rollback(): Promise<void>
+  listen(
+    channel: string,
+    callback: (payload: string) => void,
+  ): Promise<(tx?: Transaction) => Promise<void>>
   get closed(): boolean
 }
 

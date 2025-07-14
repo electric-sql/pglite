@@ -24,7 +24,7 @@ We also have a set of [native baseline](#native-baseline) results comparing nati
 
 Comparing Postgres to SQLite is challenging, as they are quite different databases, particularly when you take into account the complexities of WASM. Therefore, these benchmarks provide a view of performance only as a starting point to investigate the difference between the two, and the improvements we can make going forward.
 
-Another consideration when analysing the speed, is the performance of the various different VFS implementations providing persistance to both PGlite and wa-sqlite.
+Another consideration when analyzing the speed, is the performance of the various different VFS implementations providing persistence to both PGlite and wa-sqlite.
 
 The key findings are:
 
@@ -44,7 +44,7 @@ These tests run a series of inserts/updates/deletes to find the average time to 
 
 Values are average ms - lower is better.
 
-![](./public/img/benckmark/rtt.svg)
+![](./public/img/benchmark/rtt.svg)
 
 | Test                     | PGlite Memory | PGlite IDB | PGlite IDB<br>_relaxed durability_ | PGlite OPFS AHP | PGlite OPFS AHP<br>_relaxed durability_ | SQLite Memory | SQLite IDB | SQLite IDB<br>_relaxed durability_ | SQLite IDB BatchAtomic | SQLite IDB BatchAtomic<br>_relaxed durability_ | SQLite OPFS | SQLite OPFS AHP |
 | ------------------------ | ------------- | ---------- | ---------------------------------- | --------------- | --------------------------------------- | ------------- | ---------- | ---------------------------------- | ---------------------- | ---------------------------------------------- | ----------- | --------------- |
@@ -67,7 +67,7 @@ The SQLite benchmark suite, converted to web for wa-sqlite - it performs a numbe
 
 Values are seconds to complete the test - lower is better.
 
-![](./public/img/benckmark/sqlite-suite.svg)
+![](./public/img/benchmark/sqlite-suite.svg)
 
 | Test                                                 | PGlite<br>Memory | PGlite<br>IDB FS | PGlite<br>IDB FS<br>_relaxed durability_ | PGlite<br>OPFS Access Handle Pool | PGlite<br>OPFS Access Handle Pool<br>_relaxed durability_ | wa-sqlite<br>Memory (sync) | wa-sqlite<br>Memory (async) | wa-sqlite<br>DB Minimal | wa-sqlite<br>IDB Minimal<br>_relaxed durability_ | wa-sqlite<br>IDB Batch Atomic | wa-sqlite<br>IDB Batch Atomic<br>_relaxed durability_ | wa-sqlite<br>OPFS | wa-sqlite<br>OPFS Access Handle Pool |
 | ---------------------------------------------------- | ---------------- | ---------------- | ---------------------------------------- | --------------------------------- | --------------------------------------------------------- | -------------------------- | --------------------------- | ----------------------- | ------------------------------------------------ | ----------------------------- | ----------------------------------------------------- | ----------------- | ------------------------------------ |
@@ -92,7 +92,7 @@ Values are seconds to complete the test - lower is better.
 
 All tests run with Node, [Better-SQLite3](https://www.npmjs.com/package/better-sqlite3) and [node-postgres](https://www.npmjs.com/package/pg) (via [embedded-postgres](https://github.com/leinelissen/embedded-postgres))
 
-![](./public/img/benckmark/baseline.svg)
+![](./public/img/benchmark/baseline.svg)
 
 | Test                                                 | SQLite In-Memory | SQLite On-Disk | Postgres |
 | ---------------------------------------------------- | ---------------- | -------------- | -------- |

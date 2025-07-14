@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pg-protocol",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The postgres client/server binary protocol, implemented in TypeScript",
   "type": "module",
   "private": true,
@@ -20,29 +20,44 @@
   },
   "scripts": {
     "build": "tsup",
+    "check:exports": "attw . --pack --profile node16",
     "test": "vitest",
     "lint": "eslint ./src ./test",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
-    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test"
+    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test",
+    "prepublishOnly": "pnpm check:exports"
   },
   "types": "dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./messages": {
-      "types": "./dist/messages.d.ts",
-      "import": "./dist/messages.js",
-      "require": "./dist/messages.cjs"
+      "import": {
+        "types": "./dist/messages.d.ts",
+        "default": "./dist/messages.js"
+      },
+      "require": {
+        "types": "./dist/messages.d.cts",
+        "default": "./dist/messages.cjs"
+      }
     }
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "vitest": "^2.1.2"
   }
 }

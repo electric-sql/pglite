@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "ElectricSQL Sync for PGlite",
   "type": "module",
   "private": false,
@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "check:exports": "attw . --pack --profile node16",
     "test": "vitest",
     "test:e2e:up": "docker compose -f test-e2e/docker_compose.yaml up -d",
     "test:e2e:down": "docker compose -f test-e2e/docker_compose.yaml down --volumes",
@@ -36,14 +37,22 @@
     "lint": "eslint ./src ./test --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
-    "stylecheck": "pnpm lint && prettier --check ./src ./test"
+    "stylecheck": "pnpm lint && prettier --check ./src ./test",
+    "prepublishOnly": "pnpm check:exports"
   },
   "types": "dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -54,6 +63,7 @@
     "@electric-sql/experimental": "1.0.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
     "@eslint-react/eslint-plugin": "^1.14.3",
     "@types/node": "^20.16.11",
@@ -63,6 +73,6 @@
     "vitest": "^2.1.2"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.3.3"
+    "@electric-sql/pglite": "workspace:0.3.4"
   }
 }

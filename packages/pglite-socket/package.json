@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-socket",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A socket implementation for PGlite enabling remote connections",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
@@ -18,23 +18,38 @@
     "access": "public"
   },
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
   "bin": {
     "pglite-server": "./dist/scripts/server.js"
   },
   "scripts": {
     "build": "tsup",
+    "check:exports": "attw . --pack --profile node16",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./tests",
     "typecheck": "tsc",
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
     "test": "vitest",
     "example:basic-server": "tsx examples/basic-server.ts",
-    "pglite-server:dev": "tsx --watch src/scripts/server.ts"
+    "pglite-server:dev": "tsx --watch src/scripts/server.ts",
+    "prepublishOnly": "pnpm check:exports"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",
     "@electric-sql/pglite": "workspace:*",
     "@types/emscripten": "^1.39.13",

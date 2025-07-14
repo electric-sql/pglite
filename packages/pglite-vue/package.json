@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-vue",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "description": "Vue hooks for using PGlite",
   "type": "module",
   "private": false,
@@ -26,6 +26,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "check:exports": "attw . --pack --profile node16",
     "test-v2": "vue-demi-switch 2 vue2 && vitest",
     "test-v2.7": "vue-demi-switch 2.7 vue2.7 && vitest",
     "test-v3": "vue-demi-switch 3 && vitest",
@@ -33,14 +34,22 @@
     "lint": "eslint ./src ./test",
     "format": "prettier --write ./src ./test",
     "typecheck": "tsc",
-    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test"
+    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test",
+    "prepublishOnly": "pnpm check:exports"
   },
   "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "main": "dist/index.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -50,6 +59,7 @@
     "vue-demi": "^0.14.10"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
     "@eslint-react/eslint-plugin": "^1.14.3",
     "@testing-library/dom": "^10.4.0",
@@ -64,7 +74,7 @@
     "vue2.7": "npm:vue@~2.7.16"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.3.3",
+    "@electric-sql/pglite": "workspace:0.3.4",
     "@vue/composition-api": "^1.1.2",
     "vue": "^2.6.0 || ^3.3.0"
   },

@@ -6,10 +6,12 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  Transaction,
 } from '../interface.js'
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { toPostgresName, uuid } from '../utils.js'
+import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -359,16 +361,17 @@ export class PGliteWorker
   async listen(
     channel: string,
     callback: (payload: string) => void,
+    tx?: Transaction,
   ): Promise<() => Promise<void>> {
     const pgChannel = toPostgresName(channel)
-
+    const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
-    await this.exec(`LISTEN ${channel}`)
-    return async () => {
-      await this.unlisten(pgChannel, callback)
+    await pg.exec(`LISTEN ${channel}`)
+    return async (tx?: Transaction) => {
+      await this.unlisten(pgChannel, callback, tx)
     }
   }
 
@@ -380,8 +383,10 @@ export class PGliteWorker
   async unlisten(
     channel: string,
     callback?: (payload: string) => void,
+    tx?: Transaction,
   ): Promise<void> {
     await this.waitReady
+    const pg = tx ?? this
     if (callback) {
       this.#notifyListeners.get(channel)?.delete(callback)
     } else {
@@ -389,7 +394,7 @@ export class PGliteWorker
     }
     if (this.#notifyListeners.get(channel)?.size === 0) {
       // As we currently have a dedicated worker we can just unlisten
-      await this.exec(`UNLISTEN ${channel}`)
+      await pg.exec(`UNLISTEN ${channel}`)
     }
   }
 
@@ -424,8 +429,10 @@ export class PGliteWorker
     }
   }
 
-  async dumpDataDir(): Promise<File | Blob> {
-    return (await this.#rpc('dumpDataDir')) as File | Blob
+  async dumpDataDir(
+    compression?: DumpTarCompressionOptions,
+  ): Promise<File | Blob> {
+    return (await this.#rpc('dumpDataDir', compression)) as File | Blob
   }
 
   onLeaderChange(callback: () => void) {
@@ -648,8 +655,8 @@ function makeWorkerApi(tabId: string, db: PGlite) {
         return result
       }
     },
-    async dumpDataDir() {
-      return await db.dumpDataDir()
+    async dumpDataDir(compression?: DumpTarCompressionOptions) {
+      return await db.dumpDataDir(compression)
     },
     async syncToFs() {
       return await db.syncToFs()

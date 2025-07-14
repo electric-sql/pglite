@@ -30,11 +30,12 @@ async function main() {
     await fs.access("./release/pg_dump.wasm");
     console.log("pg_dump.wasm already exists in release directory");
   } catch {
-    const response = await fetch("https://static.pglite.dev/pg_tools/pg_dump_26-11-24.wasm");
+    console.log("Downloading pg_dump.wasm to release directory ...");
+    const response = await fetch("https://static.pglite.dev/pg_tools/pg_dump_2025-07-14.wasm");
     const wasmBuffer = await response.arrayBuffer();
     
     await fs.writeFile("./release/pg_dump.wasm", new Uint8Array(wasmBuffer));
-    console.log("Downloaded pg_dump.wasm to release directory");
+    console.log("Success downloading pg_dump.wasm to release directory");
   }
   
   await copyFiles("./release", "./dist");

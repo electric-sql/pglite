@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-repl",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
@@ -19,15 +19,22 @@
     "dist-webcomponent"
   ],
   "module": "dist/Repl.js",
+  "types": "dist/Repl.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/Repl.js"
+      "import": {
+        "types": "./dist/Repl.d.ts",
+        "default": "./dist/Repl.js"
+      }
     },
     "./webcomponent": {
-      "import": "./dist-webcomponent/Repl.js"
+      "import": {
+        "default": "./dist-webcomponent/Repl.js"
+      }
     }
   },
   "scripts": {
+    "check:exports": "attw . --pack --profile esm-only",
     "dev": "vite",
     "build:react": "tsc && vite build",
     "build:webcomp": "vite build --config vite.webcomp.config.ts",
@@ -54,7 +61,7 @@
     "react-dom": "^19.0.0"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.3.3"
+    "@electric-sql/pglite": "workspace:0.3.4"
   },
   "peerDependenciesMeta": {
     "@electric-sql/pglite": {
@@ -62,6 +69,7 @@
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
     "@types/node": "^20.16.11",
     "@types/react": "^19.0.2",

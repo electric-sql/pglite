@@ -92,13 +92,22 @@ export abstract class BasePGlite
   abstract _runExclusiveQuery<T>(fn: () => Promise<T>): Promise<T>
   abstract _runExclusiveTransaction<T>(fn: () => Promise<T>): Promise<T>
 
+  /**
+   * Listen for notifications on a channel
+   */
+  abstract listen(
+    channel: string,
+    callback: (payload: string) => void,
+    tx?: Transaction,
+  ): Promise<(tx?: Transaction) => Promise<void>>
+
   // # Concrete implementations:
 
   /**
    * Initialize the array types
    * The oid if the type of an element and the typarray is the oid of the type of the
    * array.
-   * We extract these from the databaes then create the serializers/parsers for
+   * We extract these from the database then create the serializers/parsers for
    * each type.
    * This should be called at the end of #init() in the implementing class.
    */
@@ -420,6 +429,13 @@ export abstract class BasePGlite
           // transaction
           await this.#runExec('ROLLBACK')
           closed = true
+        },
+        listen: async (
+          channel: string,
+          callback: (payload: string) => void,
+        ) => {
+          checkClosed()
+          return await this.listen(channel, callback, tx)
         },
         get closed() {
           return closed
