@@ -69,7 +69,7 @@ Sample output:
 If you'd like to start from scratch, here is how you can reproduce this example, so you understand better how it was made:
 
 1. Install [node](https://nodejs.org/en/download), [pnpm](https://pnpm.io/installation) and [git](https://git-scm.com/downloads)
-2. Run `pnpm create vite`. Follow the steps, input the name of your project (eg pglite-vite-react-project), selecte `React` for framework, `TypeScript` as variant. 
+2. Run `pnpm create vite`. Follow the steps, input the name of your project (eg pglite-vite-react-project), select `React` for framework, `TypeScript` as variant. 
 
 Sample output:
 

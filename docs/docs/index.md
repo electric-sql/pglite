@@ -133,7 +133,7 @@ const ret = await db.query(
 
 - There is also a [live-query extension](./live-queries.md) that enables reactive queries to update a UI when the underlying database changes.
 
-- PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistance for your database.
+- PGlite has a number of built-in [virtual file systems](./filesystems.md) to provide persistence for your database.
 
 - There are [framework hooks](./framework-hooks/react.md) to make working with PGlite within React and Vue much easier with less boilerplate.
 
