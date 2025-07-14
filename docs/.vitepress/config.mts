@@ -90,7 +90,7 @@ export default defineConfig({
       {
         text: 'About',
         items: [
-          { text: 'What is PGlite', link: '/docs/about'},
+          { text: 'What is PGlite', link: '/docs/about' },
           { text: 'Videos', link: '/docs/videos' },
         ],
       },
