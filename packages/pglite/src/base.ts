@@ -23,7 +23,9 @@ import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
 import {
   RowDescriptionMessage,
   ParameterDescriptionMessage,
+  DatabaseError,
 } from '@electric-sql/pg-protocol/messages'
+import { makePGliteError } from './errors.js'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -279,6 +281,12 @@ export abstract class BasePGlite
             )
           ).messages,
         ]
+      } catch (e) {
+        if (e instanceof DatabaseError) {
+          const pgError = makePGliteError({ e, options, params, query })
+          throw pgError
+        }
+        throw e
       } finally {
         await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
@@ -315,6 +323,17 @@ export abstract class BasePGlite
             options,
           )
         ).messages
+      } catch (e) {
+        if (e instanceof DatabaseError) {
+          const pgError = makePGliteError({
+            e,
+            options,
+            params: undefined,
+            query,
+          })
+          throw pgError
+        }
+        throw e
       } finally {
         await this.#execProtocolNoSync(serializeProtocol.sync(), options)
       }
@@ -373,6 +392,17 @@ export abstract class BasePGlite
         })) ?? []
 
       return { queryParams, resultFields }
+    } catch (e) {
+      if (e instanceof DatabaseError) {
+        const pgError = makePGliteError({
+          e,
+          options,
+          params: undefined,
+          query,
+        })
+        throw pgError
+      }
+      throw e
     } finally {
       await this.#execProtocolNoSync(serializeProtocol.sync(), options)
     }
