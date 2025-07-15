@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.3.5
+
+### Patch Changes
+
+- 6653899: fix: pglite worker dumpDataDir not using compression parameter
+- 5f007fc: fix MERGE affected rows return count
+
 ## 0.3.4
 
 ### Patch Changes
