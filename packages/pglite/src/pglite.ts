@@ -393,12 +393,10 @@ export class PGlite
         const requiredSize = this.#writeOffset + copied.length
 
         if (requiredSize > this.#inputData.length) {
-          // Expand buffer size (double until it fits)
-          let newSize = this.#inputData.length
-          while (newSize < requiredSize) {
-            newSize *= 2
-          }
-
+          const newSize =
+            this.#inputData.length +
+            (this.#inputData.length >> 1) +
+            requiredSize
           const newBuffer = new Uint8Array(newSize)
           newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
           this.#inputData = newBuffer
