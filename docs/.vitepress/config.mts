@@ -89,7 +89,10 @@ export default defineConfig({
     sidebar: [
       {
         text: 'About',
-        items: [{ text: 'What is PGlite', link: '/docs/about' }],
+        items: [
+          { text: 'What is PGlite', link: '/docs/about' },
+          { text: 'Videos', link: '/docs/videos' },
+        ],
       },
       {
         text: 'Docs',
