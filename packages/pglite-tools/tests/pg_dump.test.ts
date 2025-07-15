@@ -70,7 +70,7 @@ describe('pgDump', () => {
   it('specify datadir: should dump a database with tables and data', async () => {
     const pg = await PGlite.create({
       // dataDir: 'idb://benchmark-rd',
-      dataDir: '/tmp',
+      dataDir: '/tmp/my_data_dir',
     })
 
     // Create test tables and insert data
