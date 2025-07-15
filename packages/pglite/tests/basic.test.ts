@@ -10,7 +10,57 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
           '../dist/index.cjs'
         )) as unknown as typeof import('../dist/index.js'))
 
-  describe(`basic`, () => {
+  describe(`#719`, () => {
+    it('exec', async () => {
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
+      await db.exec(`
+      CREATE TABLE IF NOT EXISTS test (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );
+    `)
+
+    try {
+      const multiStatementResult = await db.exec(`
+      INSERT INTO test_non_existing (name) VALUES ('test');
+      UPDATE test SET name = 'test2';
+      SELECT * FROM test;
+    `)
+    } catch (e) {
+      console.log(e)
+    }
+
+    const multiStatementResult = await db.exec(`
+      INSERT INTO test (name) VALUES ('test');
+      UPDATE test SET name = 'test2';
+      SELECT * FROM test;
+    `)
+    
+    expect(multiStatementResult).toEqual([
+      {
+        affectedRows: 1,
+        rows: [],
+        fields: [],
+      },
+      {
+        affectedRows: 2,
+        rows: [],
+        fields: [],
+      },
+      {
+        rows: [{ id: 1, name: 'test2' }],
+        fields: [
+          { name: 'id', dataTypeID: 23 },
+          { name: 'name', dataTypeID: 25 },
+        ],
+        affectedRows: 2,
+      },
+    ])
+
+  })
+
     it('exec', async () => {
       const db = new PGlite({
         defaultDataTransferContainer,
