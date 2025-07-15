@@ -1,5 +1,14 @@
 # @electric-sql/pglite-tools
 
+## 0.2.10
+
+### Patch Changes
+
+- 8172b72: new pg_dump wasm blob
+- Updated dependencies [6653899]
+- Updated dependencies [5f007fc]
+  - @electric-sql/pglite@0.3.5
+
 ## 0.2.9
 
 ### Patch Changes
