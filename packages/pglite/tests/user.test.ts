@@ -2,21 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { expectToThrowAsync } from './test-utils.js'
 import * as fs from 'fs/promises'
 import { PGlite } from '../dist/index.js'
-import { testDTC } from './test-utils.js'
 
-testDTC(async (defaultDataTransferContainer) => {
-  describe('user', () => {
-    it('user switching', async () => {
-      await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+describe('user', () => {
+  it('user switching', async () => {
+    await fs.rm('./pgdata-test-user', { force: true, recursive: true })
 
-      const db = new PGlite('./pgdata-test-user', {
-        defaultDataTransferContainer,
-      })
-      await db.exec(
-        "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
-      )
+    const db = new PGlite('./pgdata-test-user')
+    await db.exec(
+      "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
+    )
 
-      await db.exec(`
+    await db.exec(`
     CREATE TABLE test (
       id SERIAL PRIMARY KEY,
       number INT
@@ -24,7 +20,7 @@ testDTC(async (defaultDataTransferContainer) => {
     INSERT INTO test (number) VALUES (42);
   `)
 
-      await db.exec(`
+    await db.exec(`
     CREATE TABLE test2 (
       id SERIAL PRIMARY KEY,
       number INT
@@ -32,48 +28,43 @@ testDTC(async (defaultDataTransferContainer) => {
     INSERT INTO test2 (number) VALUES (42);
   `)
 
-      await db.exec('ALTER TABLE test2 OWNER TO test_user;')
+    await db.exec('ALTER TABLE test2 OWNER TO test_user;')
 
-      await db.close()
+    await db.close()
 
-      const db2 = new PGlite({
-        dataDir: './pgdata-test-user',
-        username: 'test_user',
-        defaultDataTransferContainer,
-      })
-
-      const currentUsername = await db2.query('SELECT current_user;')
-      expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
-
-      await expectToThrowAsync(async () => {
-        await db2.query('SELECT * FROM test;')
-      }, 'permission denied for table test')
-
-      const test2 = await db2.query('SELECT * FROM test2;')
-      expect(test2.rows).toEqual([{ id: 1, number: 42 }])
-
-      await expectToThrowAsync(async () => {
-        await db2.query('SET ROLE postgres;')
-      }, 'permission denied to set role "postgres"')
+    const db2 = new PGlite({
+      dataDir: './pgdata-test-user',
+      username: 'test_user',
     })
 
-    it('switch to user created after initial run', async () => {
-      await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+    const currentUsername = await db2.query('SELECT current_user;')
+    expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
 
-      const db0 = new PGlite('./pgdata-test-user', {
-        defaultDataTransferContainer,
-      })
-      await db0.waitReady
-      await db0.close()
+    await expectToThrowAsync(async () => {
+      await db2.query('SELECT * FROM test;')
+    }, 'permission denied for table test')
 
-      const db = new PGlite('./pgdata-test-user', {
-        defaultDataTransferContainer,
-      })
-      await db.exec(
-        "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
-      )
+    const test2 = await db2.query('SELECT * FROM test2;')
+    expect(test2.rows).toEqual([{ id: 1, number: 42 }])
 
-      await db.exec(`
+    await expectToThrowAsync(async () => {
+      await db2.query('SET ROLE postgres;')
+    }, 'permission denied to set role "postgres"')
+  })
+
+  it('switch to user created after initial run', async () => {
+    await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+
+    const db0 = new PGlite('./pgdata-test-user')
+    await db0.waitReady
+    await db0.close()
+
+    const db = new PGlite('./pgdata-test-user')
+    await db.exec(
+      "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
+    )
+
+    await db.exec(`
     CREATE TABLE test (
       id SERIAL PRIMARY KEY,
       number INT
@@ -81,7 +72,7 @@ testDTC(async (defaultDataTransferContainer) => {
     INSERT INTO test (number) VALUES (42);
   `)
 
-      await db.exec(`
+    await db.exec(`
     CREATE TABLE test2 (
       id SERIAL PRIMARY KEY,
       number INT
@@ -89,53 +80,50 @@ testDTC(async (defaultDataTransferContainer) => {
     INSERT INTO test2 (number) VALUES (42);
   `)
 
-      await db.exec('ALTER TABLE test2 OWNER TO test_user;')
+    await db.exec('ALTER TABLE test2 OWNER TO test_user;')
 
-      await db.close()
+    await db.close()
 
-      const db2 = new PGlite({
-        dataDir: './pgdata-test-user',
-        username: 'test_user',
-      })
-
-      const currentUsername = await db2.query('SELECT current_user;')
-      expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
-
-      await expectToThrowAsync(async () => {
-        await db2.query('SELECT * FROM test;')
-      }, 'permission denied for table test')
-
-      const test2 = await db2.query('SELECT * FROM test2;')
-      expect(test2.rows).toEqual([{ id: 1, number: 42 }])
-
-      await expectToThrowAsync(async () => {
-        await db2.query('SET ROLE postgres;')
-      }, 'permission denied to set role "postgres"')
+    const db2 = new PGlite({
+      dataDir: './pgdata-test-user',
+      username: 'test_user',
     })
 
-    it('create database and switch to it', async () => {
-      await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+    const currentUsername = await db2.query('SELECT current_user;')
+    expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
 
-      const db = new PGlite('./pgdata-test-user', {
-        defaultDataTransferContainer,
-      })
-      await db.exec(
-        "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
-      )
+    await expectToThrowAsync(async () => {
+      await db2.query('SELECT * FROM test;')
+    }, 'permission denied for table test')
 
-      await db.exec('CREATE DATABASE test_db OWNER test_user;')
-      await db.close()
+    const test2 = await db2.query('SELECT * FROM test2;')
+    expect(test2.rows).toEqual([{ id: 1, number: 42 }])
 
-      const db2 = new PGlite({
-        dataDir: './pgdata-test-user',
-        username: 'test_user',
-        database: 'test_db',
-      })
+    await expectToThrowAsync(async () => {
+      await db2.query('SET ROLE postgres;')
+    }, 'permission denied to set role "postgres"')
+  })
 
-      const currentUsername = await db2.query('SELECT current_user;')
-      expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
-      const currentDatabase = await db2.query('SELECT current_database();')
-      expect(currentDatabase.rows).toEqual([{ current_database: 'test_db' }])
+  it('create database and switch to it', async () => {
+    await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+
+    const db = new PGlite('./pgdata-test-user')
+    await db.exec(
+      "CREATE USER test_user WITH PASSWORD 'md5abdbecd56d5fbd2cdaee3d0fa9e4f434';",
+    )
+
+    await db.exec('CREATE DATABASE test_db OWNER test_user;')
+    await db.close()
+
+    const db2 = new PGlite({
+      dataDir: './pgdata-test-user',
+      username: 'test_user',
+      database: 'test_db',
     })
+
+    const currentUsername = await db2.query('SELECT current_user;')
+    expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
+    const currentDatabase = await db2.query('SELECT current_database();')
+    expect(currentDatabase.rows).toEqual([{ current_database: 'test_db' }])
   })
 })
