@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.3.6
+
+### Patch Changes
+
+- 6898469: PostgreSQL 17.5
+- 469be18: bug fix in packaging the distribution
+
 ## 0.3.5
 
 ### Patch Changes
