@@ -149,7 +149,6 @@ export abstract class BasePGlite
     await this._initArrayTypes({ force: true })
   }
 
-
   /**
    * Execute a single SQL statement
    * This uses the "Extended Query" postgres wire protocol message.
@@ -157,7 +156,11 @@ export abstract class BasePGlite
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>> {
+  query<T>(
+    query: string,
+    params?: any[],
+    options?: QueryOptions,
+  ): Promise<Results<T>> {
     return this._query(query, params, options)
   }
 

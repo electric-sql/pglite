@@ -932,23 +932,26 @@ export class PGlite
    * @param query The query to execute
    * @returns The result of the query
    */
-  override async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+  override async exec(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<Array<Results>> {
     await this.waitReady
     return super.exec(query, options)
   }
 
   /**
-  * Execute a single SQL statement
-  * This uses the "Extended Query" postgres wire protocol message.
-  * @param query The query to execute
-  * @param params Optional parameters for the query
-  * @returns The result of the query
-  */
-   async query<T>(
-     query: string,
-     params?: any[],
-     options?: QueryOptions,
-   ): Promise<Results<T>> {
+   * Execute a single SQL statement
+   * This uses the "Extended Query" postgres wire protocol message.
+   * @param query The query to execute
+   * @param params Optional parameters for the query
+   * @returns The result of the query
+   */
+  async query<T>(
+    query: string,
+    params?: any[],
+    options?: QueryOptions,
+  ): Promise<Results<T>> {
     await this.waitReady
     return this._query(query, params, options)
   }
@@ -977,5 +980,5 @@ export class PGlite
     await this.waitReady
     const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
     return this._query(query, actualParams)
-  }  
+  }
 }
