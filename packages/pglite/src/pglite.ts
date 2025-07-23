@@ -19,6 +19,8 @@ import type {
   PGliteOptions,
   DataTransferContainer,
   Transaction,
+  QueryOptions,
+  Results,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
@@ -37,6 +39,8 @@ import {
   NoticeMessage,
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
+
+import { query as queryTemplate } from './templating.js'
 
 export class PGlite
   extends BasePGlite
@@ -449,7 +453,7 @@ export class PGlite
     this.#ready = true
 
     // Set the search path to public for this connection
-    await this.exec('SET search_path TO public;')
+    await super.exec('SET search_path TO public;')
 
     // Init array types
     await this._initArrayTypes()
@@ -921,4 +925,57 @@ export class PGlite
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
     return this.#listenMutex.runExclusive(fn)
   }
+
+  /**
+   * Execute a SQL query, this can have multiple statements.
+   * This uses the "Simple Query" postgres wire protocol message.
+   * @param query The query to execute
+   * @returns The result of the query
+   */
+  override async exec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+    await this.waitReady
+    return super.exec(query, options)
+  }
+
+  /**
+  * Execute a single SQL statement
+  * This uses the "Extended Query" postgres wire protocol message.
+  * @param query The query to execute
+  * @param params Optional parameters for the query
+  * @returns The result of the query
+  */
+   async query<T>(
+     query: string,
+     params?: any[],
+     options?: QueryOptions,
+   ): Promise<Results<T>> {
+    await this.waitReady
+    return this._query(query, params, options)
+  }
+
+  /**
+   * Execute a single SQL statement like with {@link PGlite.query}, but with a
+   * templated statement where template values will be treated as parameters.
+   *
+   * You can use helpers from `/template` to further format the query with
+   * identifiers, raw SQL, and nested statements.
+   *
+   * This uses the "Extended Query" postgres wire protocol message.
+   *
+   * @param query The query to execute with parameters as template values
+   * @returns The result of the query
+   *
+   * @example
+   * ```ts
+   * const results = await db.sql`SELECT * FROM ${identifier`foo`} WHERE id = ${id}`
+   * ```
+   */
+  async sql<T>(
+    sqlStrings: TemplateStringsArray,
+    ...params: any[]
+  ): Promise<Results<T>> {
+    await this.waitReady
+    const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
+    return this._query(query, actualParams)
+  }  
 }
