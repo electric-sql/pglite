@@ -10,38 +10,19 @@ import {
   onCleanup,
 } from 'solid-js'
 
-function paramsEqual(
-  a1: unknown[] | undefined | null,
-  a2: unknown[] | undefined | null,
-) {
-  if (!a1 && !a2) return true
-  if (a1?.length !== a2?.length) return false
-  for (let i = 0; i < a1!.length; i++) {
-    if (!Object.is(a1![i], a2![i])) {
-      return false
-    }
-  }
-  return true
-}
-
 type Params = unknown[] | undefined | null
-type LimitAndOffset =
-  | { offset?: never; limit?: never }
-  | { offset: number; limit: number }
+type Pagination = { limit: number; offset: number }
 
-function useLiveQueryImpl<T = { [key: string]: unknown }>(
-  opts: Accessor<
-    {
-      query: string | LiveQuery<T> | Promise<LiveQuery<T>>
-      params?: Params
-      key?: string
-    } & LimitAndOffset
-  >,
-): Accessor<Omit<LiveQueryResults<T>, 'affectedRows'> | undefined> {
+function useLiveQueryImpl<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<string | LiveQuery<T> | Promise<LiveQuery<T>>>
+  params?: Accessor<Params>
+  key?: Accessor<string>
+  pagination?: Accessor<Pagination>
+}): Accessor<Omit<LiveQueryResults<T>, 'affectedRows'> | undefined> {
   const db = usePGlite()
   const liveQuery = createMemo(
     () => {
-      const originalQuery = opts().query
+      const originalQuery = opts.query()
       if (
         !(typeof originalQuery === 'string') &&
         !(originalQuery instanceof Promise)
@@ -71,20 +52,9 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     { name: 'PGLiteLiveQueryInitialSyncComputed' },
   )
 
-  const params = createMemo(
-    (prev: Params) => {
-      if (!paramsEqual(opts().params, prev)) {
-        return opts().params
-      }
-
-      return prev
-    },
-    opts().params,
-    { name: 'PGLiteLiveQueryParamsMemo' },
-  )
-
+  const initialPagination = opts.pagination?.()
   const [queryRan] = createResource(
-    opts,
+    () => ({ query: opts.query(), key: opts.key?.(), params: opts.params?.() }),
     async (opts) => {
       const query = opts.query
       if (typeof query === 'string') {
@@ -94,15 +64,14 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
             ? db.live.incrementalQuery<T>({
                 query,
                 callback: setResults,
-                params: params(),
+                params: opts.params,
                 key,
               })
             : db.live.query({
                 query,
                 callback: setResults,
-                params: params(),
-                limit: opts.limit,
-                offset: opts.offset,
+                params: opts.params,
+                ...initialPagination,
               })
 
         const res = await ret
@@ -124,6 +93,21 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     },
     { name: 'PGLiteLiveQueryResource' },
   )
+
+  createComputed((oldPagination: Pagination | undefined) => {
+    const pagination = opts.pagination?.()
+
+    if (
+      pagination &&
+      (pagination.limit !== oldPagination?.limit ||
+        pagination.offset !== oldPagination?.offset)
+    ) {
+      queryRan()?.refresh(pagination)
+      return pagination
+    }
+
+    return undefined
+  }, opts.pagination?.())
 
   onCleanup(() => {
     queryRan()?.unsubscribe()
@@ -152,35 +136,25 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   return aggregatedResult
 }
 
-export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<
-    {
-      query: string
-      params?: unknown[] | undefined | null
-    } & LimitAndOffset
-  >,
-): Accessor<LiveQueryResults<T> | undefined>
+export function useLiveQuery<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<string>
+  params?: Accessor<unknown[] | undefined | null>
+  pagination?: Accessor<Pagination>
+}): Accessor<LiveQueryResults<T> | undefined>
 
-export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: LiveQuery<T>
-  }>,
-): Accessor<LiveQueryResults<T>>
+export function useLiveQuery<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<LiveQuery<T>>
+}): Accessor<LiveQueryResults<T>>
 
-export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: Promise<LiveQuery<T>>
-  }>,
-): Accessor<LiveQueryResults<T> | undefined>
+export function useLiveQuery<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<Promise<LiveQuery<T>>>
+}): Accessor<LiveQueryResults<T> | undefined>
 
-export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<
-    {
-      query: string | LiveQuery<T> | Promise<LiveQuery<T>>
-      params?: unknown[] | undefined | null
-    } & LimitAndOffset
-  >,
-): Accessor<LiveQueryResults<T> | undefined> {
+export function useLiveQuery<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<string | LiveQuery<T> | Promise<LiveQuery<T>>>
+  params?: Accessor<unknown[] | undefined | null>
+  pagination?: Accessor<Pagination>
+}): Accessor<LiveQueryResults<T> | undefined> {
   return useLiveQueryImpl<T>(opts)
 }
 
@@ -189,18 +163,16 @@ useLiveQuery.sql = function <T = { [key: string]: unknown }>(
   ...values: any[]
 ): Accessor<LiveQueryResults<T> | undefined> {
   const { query, params } = buildQuery(strings, ...values)
-  return useLiveQueryImpl<T>(() => ({
-    params: params.map((p) => (typeof p === 'function' ? p() : p)),
-    query,
-  }))
+  return useLiveQueryImpl<T>({
+    params: () => params.map((p) => (typeof p === 'function' ? p() : p)),
+    query: () => query,
+  })
 }
 
-export function useLiveIncrementalQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: string | LiveQuery<T> | Promise<LiveQuery<T>>
-    params: unknown[] | undefined | null
-    key?: string
-  }>,
-): Accessor<LiveQueryResults<T> | undefined> {
+export function useLiveIncrementalQuery<T = { [key: string]: unknown }>(opts: {
+  query: Accessor<string | LiveQuery<T> | Promise<LiveQuery<T>>>
+  params: Accessor<unknown[] | undefined | null>
+  key?: Accessor<string>
+}): Accessor<LiveQueryResults<T> | undefined> {
   return useLiveQueryImpl<T>(opts)
 }

@@ -41,10 +41,10 @@ describe('hooks', () => {
       const [opts, setOpts] = createSignal({ limit: 1, offset: 0 })
       const { result } = renderHook(
         (props: { pagination: Accessor<{ limit: number; offset: number }> }) =>
-          useLiveQuery(() => ({
-            query: `SELECT * FROM test`,
-            ...props.pagination(),
-          })),
+          useLiveQuery({
+            query: () => `SELECT * FROM test`,
+            pagination: props.pagination,
+          }),
         { wrapper, initialProps: [{ pagination: opts }] },
       )
 
@@ -150,11 +150,11 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
 
       const { result } = renderHook(
         () =>
-          hookFn(() => ({
-            query: `SELECT * FROM test`,
-            params: [],
-            key: incKey,
-          })),
+          hookFn({
+            query: () => `SELECT * FROM test`,
+            params: () => [],
+            key: () => incKey,
+          }),
         { wrapper },
       )
 
@@ -188,11 +188,11 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
 
       const { result } = renderHook(
         () =>
-          hookFn(() => ({
-            query: `SELECT * FROM test`,
-            params: [],
-            key: incKey,
-          })),
+          hookFn({
+            query: () => `SELECT * FROM test`,
+            params: () => [],
+            key: () => incKey,
+          }),
         { wrapper },
       )
 
@@ -270,11 +270,11 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         const [query, setQuery] = createSignal(`SELECT * FROM test`)
         const { result } = renderHook(
           (props: { query: Accessor<string> }) => {
-            return hookFn(() => ({
-              query: props.query(),
-              params: [],
-              key: incKey,
-            }))
+            return hookFn({
+              query: () => props.query(),
+              params: () => [],
+              key: () => incKey,
+            })
           },
           { wrapper, initialProps: [{ query }] },
         )
@@ -293,11 +293,11 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
 
       const { result } = renderHook(
         (props: { params: Accessor<Array<string>> }) =>
-          hookFn(() => ({
-            query: `SELECT * FROM test WHERE name = $1;`,
-            params: [props.params()[props.params().length - 1]],
-            key: incKey,
-          })),
+          hookFn({
+            query: () => `SELECT * FROM test WHERE name = $1;`,
+            params: () => [props.params()[props.params().length - 1]],
+            key: () => incKey,
+          }),
         { wrapper, initialProps: [{ params: paramsArr }] },
       )
 
@@ -345,7 +345,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
       )
       const { result } = renderHook(
-        () => useLiveQuery(() => ({ query: liveQuery })),
+        () => useLiveQuery({ query: () => liveQuery }),
         { wrapper },
       )
 
@@ -371,7 +371,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         `SELECT * FROM live_test ORDER BY id DESC LIMIT 1;`,
       )
       const { result } = renderHook(
-        () => useLiveQuery(() => ({ query: liveQueryPromise })),
+        () => useLiveQuery({ query: () => liveQueryPromise }),
         {
           wrapper,
         },
@@ -405,7 +405,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         incKey,
       )
       const { result } = renderHook(
-        () => useLiveQuery(() => ({ query: liveQuery })),
+        () => useLiveQuery({ query: () => liveQuery }),
         { wrapper },
       )
 
@@ -433,7 +433,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         incKey,
       )
       const { result } = renderHook(
-        () => useLiveQuery(() => ({ query: liveQueryPromise })),
+        () => useLiveQuery({ query: () => liveQueryPromise }),
         {
           wrapper,
         },
@@ -470,7 +470,7 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       )
 
       const { result } = renderHook(
-        () => useLiveQuery(() => ({ query: liveQueryPromise })),
+        () => useLiveQuery({ query: () => liveQueryPromise }),
         {
           wrapper,
         },
