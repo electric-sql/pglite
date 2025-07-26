@@ -25,13 +25,18 @@ function paramsEqual(
 }
 
 type Params = unknown[] | undefined | null
+type LimitAndOffset =
+  | { offset?: never; limit?: never }
+  | { offset: number; limit: number }
 
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: string | LiveQuery<T> | Promise<LiveQuery<T>>
-    params?: Params
-    key?: string
-  }>,
+  opts: Accessor<
+    {
+      query: string | LiveQuery<T> | Promise<LiveQuery<T>>
+      params?: Params
+      key?: string
+    } & LimitAndOffset
+  >,
 ): Accessor<Omit<LiveQueryResults<T>, 'affectedRows'> | undefined> {
   const db = usePGlite()
   const liveQuery = createMemo(
@@ -67,12 +72,12 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   )
 
   const params = createMemo(
-    (prev) => {
-      if (!paramsEqual(opts().params, prev as Params)) {
+    (prev: Params) => {
+      if (!paramsEqual(opts().params, prev)) {
         return opts().params
       }
 
-      return prev as Params
+      return prev
     },
     opts().params,
     { name: 'PGLiteLiveQueryParamsMemo' },
@@ -86,8 +91,19 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
         const key = opts.key
         const ret =
           key != undefined
-            ? db.live.incrementalQuery<T>(query, params(), key, setResults)
-            : db.live.query<T>(query, params(), setResults)
+            ? db.live.incrementalQuery<T>({
+                query,
+                callback: setResults,
+                params: params(),
+                key,
+              })
+            : db.live.query({
+                query,
+                callback: setResults,
+                params: params(),
+                limit: opts.limit,
+                offset: opts.offset,
+              })
 
         const res = await ret
         return res
@@ -137,10 +153,12 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 }
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: string
-    params: unknown[] | undefined | null
-  }>,
+  opts: Accessor<
+    {
+      query: string
+      params?: unknown[] | undefined | null
+    } & LimitAndOffset
+  >,
 ): Accessor<LiveQueryResults<T> | undefined>
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
@@ -156,10 +174,12 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
 ): Accessor<LiveQueryResults<T> | undefined>
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
-  opts: Accessor<{
-    query: string | LiveQuery<T> | Promise<LiveQuery<T>>
-    params?: unknown[] | undefined | null
-  }>,
+  opts: Accessor<
+    {
+      query: string | LiveQuery<T> | Promise<LiveQuery<T>>
+      params?: unknown[] | undefined | null
+    } & LimitAndOffset
+  >,
 ): Accessor<LiveQueryResults<T> | undefined> {
   return useLiveQueryImpl<T>(opts)
 }

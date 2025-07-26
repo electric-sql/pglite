@@ -12,6 +12,57 @@ describe('hooks', () => {
 
   testLiveQuery('useLiveIncrementalQuery')
 
+  describe('useLiveQuery with limit and offset', () => {
+    let db: PGliteWithLive
+    let wrapper: (props: { children: JSX.Element }) => JSX.Element
+
+    beforeEach(async () => {
+      db = await PGlite.create({
+        extensions: {
+          live,
+        },
+      })
+      wrapper = (props) => {
+        return <PGliteProvider db={db}>{props.children}</PGliteProvider>
+      }
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS test (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+      await db.exec(`TRUNCATE test;`)
+    })
+
+    it('query with limit and offset', async () => {
+      db.exec(`INSERT INTO test (name) VALUES ('test1'),('test2');`)
+
+      const [opts, setOpts] = createSignal({ limit: 1, offset: 0 })
+      const { result } = renderHook(
+        (props: { pagination: Accessor<{ limit: number; offset: number }> }) =>
+          useLiveQuery(() => ({
+            query: `SELECT * FROM test`,
+            ...props.pagination(),
+          })),
+        { wrapper, initialProps: [{ pagination: opts }] },
+      )
+
+      waitFor(() => expect(result()?.rows).toEqual([{ id: 1, name: 'test1' }]))
+
+      setOpts({ limit: 1, offset: 1 })
+      waitFor(() => expect(result()?.rows).toEqual([{ id: 2, name: 'test2' }]))
+
+      setOpts({ limit: 2, offset: 0 })
+      waitFor(() =>
+        expect(result()?.rows).toEqual([
+          { id: 1, name: 'test1' },
+          { id: 2, name: 'test2' },
+        ]),
+      )
+    })
+  })
+
   describe('useLiveQuery.sql', () => {
     let db: PGliteWithLive
     let wrapper: (props: { children: JSX.Element }) => JSX.Element
