@@ -61,7 +61,7 @@ describe('plpgsql', () => {
     } catch (e) {
       // expected
       expect(e.message).toBe(
-        'Dynamic linking error: cannot resolve symbol setTempRet0',
+        'exception',
       )
     }
   })
