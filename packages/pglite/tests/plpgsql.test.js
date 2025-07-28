@@ -60,9 +60,7 @@ describe('plpgsql', () => {
       await db.exec('CALL raise_exception();')
     } catch (e) {
       // expected
-      expect(e.message).toBe(
-        'exception',
-      )
+      expect(e.message).toBe('exception')
     }
   })
 })
