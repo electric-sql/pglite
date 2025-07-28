@@ -648,5 +648,15 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
         affectedRows: 0,
       })
     })
+    it('timezone', async () => {
+      const db = new PGlite({
+        defaultDataTransferContainer,
+      })
+
+      const res = await db.query(
+        `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
+      )
+      expect(res.rows.length).toEqual(1)
+    })
   })
 })
