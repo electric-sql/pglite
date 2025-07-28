@@ -60,7 +60,7 @@ describe('plpgsql', () => {
       await db.exec('CALL raise_exception();')
     } catch (e) {
       // expected
-      expect(e.message).toBe('Dynamic linking error: cannot resolve symbol setTempRet0')
+      expect(e.message).toBe('exception')
     }
   })
 })
