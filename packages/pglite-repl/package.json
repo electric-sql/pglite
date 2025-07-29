@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-repl",
-  "version": "0.2.23",
+  "version": "0.2.24",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
@@ -61,7 +61,7 @@
     "react-dom": "^19.0.0"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.3.5"
+    "@electric-sql/pglite": "workspace:0.3.6"
   },
   "peerDependenciesMeta": {
     "@electric-sql/pglite": {
