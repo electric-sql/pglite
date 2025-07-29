@@ -2,7 +2,7 @@
 
 pushd postgres-pglite
 	WASI=true ./wasm-builder/build-with-docker.sh
-    WASI=false ./wasm-builder/build-with-docker.sh
+    WASI=false DEBUG=true ./wasm-builder/build-with-docker.sh
 popd 
 
 
