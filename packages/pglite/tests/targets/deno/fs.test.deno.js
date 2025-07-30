@@ -2,7 +2,7 @@ import { assertEquals } from 'https://deno.land/std@0.202.0/testing/asserts.ts'
 import { PGlite } from '@electric-sql/pglite'
 
 Deno.test('filesystem new', async () => {
-  const db = new PGlite('./pgdata-test')
+  const db = await PGlite.create('./pgdata-test')
   await db.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -41,7 +41,7 @@ Deno.test('filesystem new', async () => {
 })
 
 Deno.test('filesystem existing', async () => {
-  const db = new PGlite('./pgdata-test')
+  const db = await PGlite.create('./pgdata-test')
 
   const res = await db.exec('SELECT * FROM test;')
 
