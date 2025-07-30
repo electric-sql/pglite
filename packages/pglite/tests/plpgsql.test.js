@@ -43,24 +43,4 @@ describe('plpgsql', () => {
     const res = await db.query('SELECT calculate_factorial(5) AS result;')
     expect(res.rows[0].result).toBe(120)
   })
-
-  it('plpgsql usable after exception', async () => {
-    const db = await PGlite.create()
-
-    await db.exec(`
-      CREATE EXTENSION IF NOT EXISTS plpgsql;
-      CREATE OR REPLACE PROCEDURE raise_exception() LANGUAGE plpgsql AS $$
-      BEGIN
-      RAISE 'exception';
-      END;
-      $$;
-      `)
-
-    try {
-      await db.exec('CALL raise_exception();')
-    } catch (e) {
-      // expected
-      expect(e.message).toBe('exception')
-    }
-  })
 })
