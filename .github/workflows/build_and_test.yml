@@ -128,6 +128,9 @@ jobs:
         # retry on failure as web tests can be flaky
         run: pnpm test:web || pnpm test:web || pnpm test:web
 
+      - name: Display Deno version
+        run: deno -v
+
       - name: Test Deno
         run: pnpm test:deno
 
