@@ -21,7 +21,7 @@ on:
 jobs:
   stylecheck:
     name: Stylecheck
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,7 +36,7 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
 
@@ -84,7 +84,7 @@ jobs:
 
   build-and-test-pglite:
     name: Build and Test PGLite
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -174,7 +174,7 @@ jobs:
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
@@ -207,7 +207,7 @@ jobs:
 
   publish-website-with-demos:
     name: Publish website with demos
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
       - name: Checkout
@@ -317,7 +317,7 @@ jobs:
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-all]
     steps:
       - uses: actions/checkout@v4
