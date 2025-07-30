@@ -128,6 +128,10 @@ jobs:
         # retry on failure as web tests can be flaky
         run: pnpm test:web || pnpm test:web || pnpm test:web
 
+      - name: Deno install
+        working-directory: ./packages/pglite/tests/targets/deno
+        run: deno install
+        
       - name: Test Deno
         run: pnpm test:deno
 
