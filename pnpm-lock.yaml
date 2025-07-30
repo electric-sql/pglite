@@ -457,6 +457,12 @@ importers:
         specifier: npm:vue@~2.7.16
         version: vue@2.7.16
 
+  packages/pglite/tests/targets/deno:
+    dependencies:
+      '@electric-sql/pglite':
+        specifier: v0.3.5
+        version: 0.3.5
+
 packages:
 
   '@algolia/autocomplete-core@1.9.3':
@@ -790,6 +796,9 @@ packages:
     resolution: {integrity: sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ==}
     peerDependencies:
       '@electric-sql/client': 1.0.0
+
+  '@electric-sql/pglite@0.3.5':
+    resolution: {integrity: sha512-fhODErXJjOrnsJj5f1A8sH/Zj0INpLUbqOCiskufIUImUsFOBNHE6/FApY656Q2VSOp46wkXX3rvbBBO8O8Cag==}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -5200,6 +5209,8 @@ snapshots:
       '@electric-sql/client': 1.0.0
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
+
+  '@electric-sql/pglite@0.3.5': {}
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     optional: true
