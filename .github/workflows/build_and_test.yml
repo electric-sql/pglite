@@ -58,7 +58,7 @@ jobs:
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
-          pnpm build:all
+          pnpm build:all:debug
 
       - name: Build packages
         run: pnpm --filter "pglite^..." build
