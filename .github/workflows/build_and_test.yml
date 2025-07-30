@@ -99,7 +99,7 @@ jobs:
 
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: vx.x.x
+          deno-version: v2.4.2
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
