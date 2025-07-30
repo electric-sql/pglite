@@ -5,7 +5,7 @@ import {
 import { PGlite } from '@electric-sql/pglite'
 
 Deno.test('basic exec', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -42,7 +42,7 @@ Deno.test('basic exec', async () => {
 })
 
 Deno.test('basic query', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -83,7 +83,7 @@ Deno.test('basic query', async () => {
 })
 
 Deno.test('basic types', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -230,7 +230,7 @@ Deno.test('basic types', async () => {
 })
 
 Deno.test('basic params', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -264,7 +264,7 @@ Deno.test('basic params', async () => {
 })
 
 Deno.test('basic error', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await assertRejects(
     async () => {
       await db.query('SELECT * FROM test;')
@@ -275,7 +275,7 @@ Deno.test('basic error', async () => {
 })
 
 Deno.test('basic transaction', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -338,7 +338,7 @@ Deno.test('basic transaction', async () => {
 })
 
 Deno.test('basic copy to/from blob', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -392,7 +392,7 @@ Deno.test('basic copy to/from blob', async () => {
 })
 
 Deno.test('basic close', async () => {
-  const db = new PGlite()
+  const db = await PGlite.create()
   await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,

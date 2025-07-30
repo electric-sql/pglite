@@ -21,13 +21,13 @@ on:
 jobs:
   stylecheck:
     name: Stylecheck
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -36,7 +36,7 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
 
@@ -47,7 +47,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Install
         working-directory: ${{ github.workspace }}
@@ -58,7 +58,7 @@ jobs:
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
-          pnpm build:all
+          pnpm build:all:debug
 
       - name: Build packages
         run: pnpm --filter "pglite^..." build
@@ -84,7 +84,7 @@ jobs:
 
   build-and-test-pglite:
     name: Build and Test PGLite
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -94,10 +94,10 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
-      - uses: denoland/setup-deno@v1
+      - uses: denoland/setup-deno@v2
         with:
           deno-version: vx.x.x
 
@@ -121,15 +121,18 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Display Deno version
+        run: deno --version
+
+      - name: Test Deno
+        run: pnpm test:deno
+
       - name: Test
         run: pnpm test
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
         run: pnpm test:web || pnpm test:web || pnpm test:web
-
-      - name: Test Deno
-        run: pnpm test:deno
 
       - name: Pack for distribution
         run: pnpm pack
@@ -171,14 +174,14 @@ jobs:
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Download PGlite build artifacts
@@ -204,7 +207,7 @@ jobs:
 
   publish-website-with-demos:
     name: Publish website with demos
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
       - name: Checkout
@@ -214,7 +217,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Download PGlite WASM build artifacts
@@ -314,14 +317,14 @@ jobs:
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build-all]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Download PGlite WASM build artifacts
