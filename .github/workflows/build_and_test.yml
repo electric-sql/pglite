@@ -129,7 +129,7 @@ jobs:
         run: pnpm test:web || pnpm test:web || pnpm test:web
 
       - name: Display Deno version
-        run: deno -v
+        run: deno --version
 
       - name: Test Deno
         run: pnpm test:deno
