@@ -4,6 +4,7 @@ import { vector } from '@electric-sql/pglite/vector'
 
 Deno.test('pgvector', async () => {
   const pg = await PGlite.create({
+    debug: 5,
     extensions: {
       vector,
     },
