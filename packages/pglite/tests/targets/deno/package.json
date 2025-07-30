@@ -7,10 +7,7 @@
     "test": "rm -rf ./pgdata-test && rm -rf ./node_modules && mkdir -p ./node_modules/@electric-sql/ && ln -s ../../../../../ ./node_modules/@electric-sql/pglite && deno test --allow-read --allow-write --allow-env --allow-sys --node-modules-dir ./*.test.deno.js",
     "testtemp": "deno test --allow-read --allow-write --allow-env --allow-sys ./*.test.deno.js"
   },
-  "devDependencies": {
-    "@electric-sql/pglite": "workspace:*"
-  },
-  "peerDependencies": {
-    "@electric-sql/pglite": "workspace:*"
+  "dependencies": {
+    "@electric-sql/pglite": "v0.3.5"
   }
 }
