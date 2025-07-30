@@ -97,9 +97,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - uses: denoland/setup-deno@v1
+      - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.4.2
+          deno-version: vx.x.x
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
