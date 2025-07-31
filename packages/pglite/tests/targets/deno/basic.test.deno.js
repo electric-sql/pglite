@@ -4,10 +4,10 @@ import {
 } from 'https://deno.land/std@0.202.0/testing/asserts.ts'
 import { PGlite } from '@electric-sql/pglite'
 
-console.warn("DENO TEST SKIPPED")
+console.warn('DENO TEST SKIPPED')
 
 Deno.test('basic exec', async () => {
-/*
+  /*
   const db = new PGlite()
   await db.exec(`
     CREATE TABLE IF NOT EXISTS test (
