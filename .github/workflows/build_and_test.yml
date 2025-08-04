@@ -108,7 +108,7 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20
+          name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
 
       - name: Install dependencies
@@ -188,7 +188,7 @@ jobs:
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-dist-node-v20
+          name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
@@ -224,13 +224,13 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20
+          name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-dist-node-v20
+          name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
@@ -242,13 +242,13 @@ jobs:
       - name: Download PGlite web build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20
+          name: pglite-interim-build-files-node-v20.x
           path: /tmp/web
 
       - name: Download PGlite tools build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-tools-dist-files-node-v20
+          name: pglite-tools-dist-files-node-v20.x
           path: /tmp/pglite-tools
 
       - name: Build demo site
@@ -331,7 +331,7 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20
+          name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
