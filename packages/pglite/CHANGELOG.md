@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.7
+
+### Patch Changes
+
+- 0936962: nested exception bugfix; wasm runtime exception fix
+
 ## 0.3.6
 
 ### Patch Changes
