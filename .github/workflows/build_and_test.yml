@@ -36,7 +36,11 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
-    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-22.04, ubuntu-latest]
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]
+    runs-on: ${{ matrix.os }}
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
       TZ: UTC
@@ -48,7 +52,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: pnpm
       - name: Install
         working-directory: ${{ github.workspace }}
