@@ -8,6 +8,7 @@ Deno.test('pgvector', async () => {
       vector,
     },
   })
+  await pg.waitReady
 
   await pg.exec('CREATE EXTENSION IF NOT EXISTS vector;')
   await pg.exec(`
