@@ -36,10 +36,10 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]
-    runs-on: ubuntu-22.04
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
       TZ: UTC
@@ -89,6 +89,9 @@ jobs:
   build-and-test-pglite:
     name: Build and Test PGLite
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -98,7 +101,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - uses: denoland/setup-deno@v1
@@ -108,7 +111,7 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v${{ matrix.node }}
           path: ./packages/pglite/release
 
       - name: Install dependencies
@@ -142,14 +145,14 @@ jobs:
         id: upload-pglite-dist
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-dist-node-v20.x
+          name: pglite-dist-node-v${{ matrix.node }}
           path: ./packages/pglite/dist/*
 
       - name: Upload PGlite package artifact
         id: upload-pglite-package
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-package-node-v20.x
+          name: pglite-package-node-v${{ matrix.node }}
           path: ./packages/pglite/electric-sql-pglite-*.tgz
           retention-days: 60
 
@@ -176,19 +179,22 @@ jobs:
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-dist-node-v20.x
+          name: pglite-dist-node-v${{ matrix.node }}
           path: ./packages/pglite/dist/
 
       - name: Install dependencies
