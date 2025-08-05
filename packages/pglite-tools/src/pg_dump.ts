@@ -134,7 +134,7 @@ async function execPgDump({
 
   if (IN_NODE) {
     const fs = await import('fs/promises')
-    const blob = await fs.readFile(bin.toString().slice(7))
+    const blob = await fs.readFile(bin)
     app = await WebAssembly.instantiate(blob, {
       wasi_snapshot_preview1: wasi as any,
     })
