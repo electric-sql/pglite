@@ -142,14 +142,14 @@ jobs:
         id: upload-pglite-dist
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-dist-node-v20
+          name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/*
 
       - name: Upload PGlite package artifact
         id: upload-pglite-package
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-package-node-v20
+          name: pglite-package-node-v20.x
           path: ./packages/pglite/electric-sql-pglite-*.tgz
           retention-days: 60
 
