@@ -371,7 +371,7 @@ export class PGLiteSocketServer extends EventTarget {
     if (options.path) {
       this.path = options.path
     } else {
-      this.port = options.port || 5432
+      this.port = options.port ?? 5432
       this.host = options.host || '127.0.0.1'
     }
     this.inspect = options.inspect ?? false
