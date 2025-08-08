@@ -481,19 +481,19 @@ testSocket(async (connOptions) => {
         server = new PGLiteSocketServer({
           db,
           host: connOptions.host,
-          port: 0,  // Let OS assign port
+          port: 0, // Let OS assign port
         })
-  
+
         await server.start()
         const assignedPort = (server as any).port
         expect(assignedPort).toBeGreaterThan(1024)
-  
+
         // Try to connect to confirm server is running
         const client = createConnection({
           port: assignedPort,
           host: connOptions.host,
         })
-  
+
         await new Promise<void>((resolve, reject) => {
           client.on('error', () => {
             reject(new Error('Connection should have failed'))
@@ -504,7 +504,7 @@ testSocket(async (connOptions) => {
           })
           setTimeout(resolve, 100)
         })
-  
+
         await server.stop()
       })
     })
