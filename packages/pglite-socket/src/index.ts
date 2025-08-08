@@ -373,7 +373,7 @@ export class PGLiteSocketServer extends EventTarget {
     } else {
       if (typeof options.port === 'number') {
         // Keep port undefined on port 0, will be set by the OS when we start the server.
-        this.port = options.port === 0 ? undefined : options.port;
+        this.port = options.port ?? options.port;
       } else {
         this.port = 5432;
       }

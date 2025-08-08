@@ -486,7 +486,7 @@ testSocket(async (connOptions) => {
   
         await server.start()
         const assignedPort = (server as any).port
-        expect(assignedPort).toBeGreaterThan(0)
+        expect(assignedPort).toBeGreaterThan(1024)
   
         // Try to connect to confirm server is running
         const client = createConnection({
