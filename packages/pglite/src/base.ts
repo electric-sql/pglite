@@ -117,7 +117,7 @@ export abstract class BasePGlite
     if (this.#arrayTypesInitialized && !force) return
     this.#arrayTypesInitialized = true
 
-    const types = await this.query<{ oid: number; typarray: number }>(`
+    const types = await this._query<{ oid: number; typarray: number }>(`
       SELECT b.oid, b.typarray
       FROM pg_catalog.pg_type a
       LEFT JOIN pg_catalog.pg_type b ON b.oid = a.typelem
@@ -156,7 +156,15 @@ export abstract class BasePGlite
    * @param params Optional parameters for the query
    * @returns The result of the query
    */
-  async query<T>(
+  query<T>(
+    query: string,
+    params?: any[],
+    options?: QueryOptions,
+  ): Promise<Results<T>> {
+    return this._query(query, params, options)
+  }
+
+  async _query<T>(
     query: string,
     params?: any[],
     options?: QueryOptions,
@@ -192,7 +200,7 @@ export abstract class BasePGlite
     ...params: any[]
   ): Promise<Results<T>> {
     const { query, params: actualParams } = queryTemplate(sqlStrings, ...params)
-    return await this.query(query, actualParams)
+    return await this._query(query, actualParams)
   }
 
   /**
