@@ -58,7 +58,7 @@ Creates a TCP server that allows PostgreSQL clients to connect to a PGlite datab
 #### Options
 
 - `db: PGlite` - The PGlite database instance
-- `port?: number` - The port to listen on (default: 5432)
+- `port?: number` - The port to listen on (default: 5432). Use port 0 to let the OS assign an available port
 - `host?: string` - The host to bind to (default: 127.0.0.1)
 - `path?: string` - Unix socket path to bind to (takes precedence over host:port)
 - `inspect?: boolean` - Print the incoming and outgoing data to the console (default: false)
@@ -156,7 +156,7 @@ pglite-server --help
 ### CLI Options
 
 - `-d, --db=PATH` - Database path (default: memory://)
-- `-p, --port=PORT` - Port to listen on (default: 5432)
+- `-p, --port=PORT` - Port to listen on (default: 5432). Use 0 to let the OS assign an available port
 - `-h, --host=HOST` - Host to bind to (default: 127.0.0.1)
 - `-u, --path=UNIX` - Unix socket to bind to (takes precedence over host:port)
 - `-v, --debug=LEVEL` - Debug level 0-5 (default: 0)
