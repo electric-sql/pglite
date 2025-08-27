@@ -1,0 +1,97 @@
+plugins {
+  id 'com.android.library'
+  id 'org.jetbrains.kotlin.android'
+}
+
+android {
+  namespace 'com.electricsql.pglite'
+  compileSdkVersion 34
+
+  defaultConfig {
+    minSdkVersion 24
+    targetSdkVersion 34
+    consumerProguardFiles 'consumer-rules.pro'
+
+    // For now, only build 64-bit ARM. We will add x86_64 later; no 32-bit support.
+    ndk {
+      abiFilters 'arm64-v8a'
+    }
+
+    // Pass CMake arguments via defaultConfig so AGP/Prefab resolves STL correctly
+    externalNativeBuild {
+      cmake {
+        // Ensure Prefab packages (e.g. ReactAndroid hermestooling) see a shared STL
+        // Both flags are supplied for compatibility across NDK/AGP versions
+        arguments "-DANDROID_STL=c++_shared", "-DCMAKE_ANDROID_STL_TYPE=c++_shared"
+      }
+    }
+  }
+
+  buildFeatures {
+    prefab true
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "../CMakeLists.txt"
+      // Do not pass arguments via DSL; CMakeLists enforces c++_shared and reads env vars.
+    }
+  }
+
+  buildTypes {
+    debug {
+      ndk { debugSymbolLevel 'FULL' }
+    }
+    release {
+      minifyEnabled false
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-native:+'
+  implementation project(':react-native-nitro-modules')
+}
+
+android {
+  sourceSets {
+    main {
+      assets.srcDirs += ["src/main/assets"]
+    }
+  }
+}
+
+// Ensure runtime catalogs are copied into the module's assets before packaging
+def distRoot = file("../../../postgres-pglite/dist/mobile/android")
+tasks.register("syncPGLiteAssets", Copy) { t ->
+  t.group = "build"
+  t.description = "Copy PGLite runtime catalogs into module assets"
+  def destDir = file("${project.projectDir}/src/main/assets/pglite/share/postgresql")
+  t.into(destDir)
+  doFirst {
+    destDir.mkdirs()
+  }
+  def candidates = []
+  if (distRoot.exists()) {
+    distRoot.listFiles()?.findAll { it.isDirectory() }?.each { abiDir ->
+      def cand = new File(abiDir, "runtime/share/postgresql")
+      if (cand.exists()) candidates << cand
+    }
+  }
+  if (candidates.isEmpty()) {
+    // No dist artifacts found; leave task empty but log a warning once
+    println "[pglite-react-native] Warning: no runtime catalogs found under ${distRoot}. Run mobile-build/build-mobile.sh first."
+  } else {
+    // Prefer the first candidate (arm64-v8a usually)
+    from(candidates[0])
+  }
+}
+
+preBuild.dependsOn tasks.named("syncPGLiteAssets")
+
+
+// Include Nitrogen-generated autolinking sources
+apply from: '../nitrogen/generated/android/PGLiteReactNative+autolinking.gradle'
+
+

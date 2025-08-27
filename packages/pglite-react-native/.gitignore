@@ -1,0 +1,3 @@
+android/build
+android/.cxx
+android/src/main/assets/**/*

@@ -1,0 +1,10 @@
+{
+  "platforms": ["android", "apple"],
+  "android": {
+    "modules": []
+  },
+  "apple": {
+    "modules": [],
+    "appDelegateSubscribers": ["PGLiteAppDelegateSubscriber"]
+  }
+}

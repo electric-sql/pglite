@@ -1,0 +1,70 @@
+{
+  "name": "@electric-sql/pglite-react-native",
+  "version": "0.1.0",
+  "description": "PGLite React Native module (Native bridge for iOS/Android with the same API as @electric-sql/pglite)",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "react-native",
+    "pglite"
+  ],
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "react-native": "dist/index.js",
+  "files": [
+    "dist",
+    "ios",
+    "android",
+    "cpp",
+    "CMakeLists.txt",
+    "nitro.json",
+    "nitrogen/generated",
+    "expo-module.config.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/electric-sql/pglite",
+    "directory": "pglite/packages/pglite-react-native"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": "workspace:*",
+    "react-native": ">=0.70.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pg-protocol": "workspace:*",
+    "@types/node": "^20.16.11",
+    "nitro-codegen": "latest",
+    "react-native-nitro-modules": "0.28.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "build": "nitro-codegen src && tsc",
+    "codegen": "nitro-codegen src",
+    "build:android": "cd android && ./gradlew assembleRelease",
+    "build:ios": "xcodebuild -project ios/PGLiteReactNative.xcodeproj",
+    "prepack": "npm run build"
+  },
+  "codegenConfig": {
+    "name": "PGLiteRNSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "sourceDir": "android/src/main/java",
+      "packageName": "com.electricsql.pglite"
+    },
+    "ios": {
+      "sourceDir": "ios"
+    }
+  }
+}
