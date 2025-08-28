@@ -32,6 +32,7 @@ export class PGLiteSocketHandler extends EventTarget {
   private inspect: boolean
   private debug: boolean
   private readonly id: number
+  private messageBuffer: Buffer = Buffer.alloc(0)
 
   // Static counter for generating unique handler IDs
   private static nextHandlerId = 1
@@ -155,6 +156,7 @@ export class PGLiteSocketHandler extends EventTarget {
 
     this.socket = null
     this.active = false
+    this.messageBuffer = Buffer.alloc(0)
     return this
   }
 
@@ -176,56 +178,88 @@ export class PGLiteSocketHandler extends EventTarget {
 
     this.log(`handleData: received ${data.length} bytes`)
 
+    // Append to buffer for message reassembly
+    this.messageBuffer = Buffer.concat([this.messageBuffer, data])
+
     // Print the incoming data to the console
     this.inspectData('incoming', data)
 
     try {
-      // Process the raw protocol data
-      this.log(`handleData: sending data to PGlite for processing`)
-      const result = await this.db.execProtocolRaw(new Uint8Array(data))
-
-      this.log(`handleData: received ${result.length} bytes from PGlite`)
-
-      // Print the outgoing data to the console
-      this.inspectData('outgoing', result)
-
-      // Send the result back if the socket is still connected
-      if (this.socket && this.socket.writable && this.active) {
-        if (result.length <= 0) {
-          this.log(`handleData: cowardly refusing to send empty packet`)
-          return new Promise((_, reject) => reject('no data'))
-        }
-
-        const promise = new Promise<number>((resolve, reject) => {
-          this.log(`handleData: writing response to socket`)
-          if (this.socket) {
-            this.socket.write(Buffer.from(result), (err?: Error) => {
-              if (err) {
-                reject(`Error while writing to the socket ${err.toString()}`)
-              } else {
-                resolve(result.length)
-              }
-            })
-          } else {
-            reject(`No socket`)
+      let totalProcessed = 0
+      
+      while (this.messageBuffer.length > 0) {
+        // Determine message length
+        let messageLength = 0
+        let isComplete = false
+        
+        // Handle startup message (no type byte, just length)
+        if (this.messageBuffer.length >= 4) {
+          const firstInt = this.messageBuffer.readInt32BE(0)
+          
+          if (this.messageBuffer.length >= 8) {
+            const secondInt = this.messageBuffer.readInt32BE(4)
+            // PostgreSQL 3.0 protocol version
+            if (secondInt === 196608 || secondInt === 0x00030000) {
+              messageLength = firstInt
+              isComplete = this.messageBuffer.length >= messageLength
+            }
           }
-        })
-
-        // Emit data event with byte sizes
-        this.dispatchEvent(
-          new CustomEvent('data', {
-            detail: { incoming: data.length, outgoing: result.length },
-          }),
-        )
-        return promise
-      } else {
-        this.log(
-          `handleData: socket no longer writable or active, discarding response`,
-        )
-        return new Promise((_, reject) =>
-          reject(`No socket, not active or not writeable`),
-        )
+          
+          // Regular message (type byte + length)
+          if (!isComplete && this.messageBuffer.length >= 5) {
+            const msgLength = this.messageBuffer.readInt32BE(1)
+            messageLength = 1 + msgLength
+            isComplete = this.messageBuffer.length >= messageLength
+          }
+        }
+        
+        if (!isComplete || messageLength === 0) {
+          this.log(`handleData: incomplete message, buffering ${this.messageBuffer.length} bytes`)
+          break
+        }
+        
+        // Extract and process complete message
+        const message = this.messageBuffer.slice(0, messageLength)
+        this.messageBuffer = this.messageBuffer.slice(messageLength)
+        
+        this.log(`handleData: processing message of ${message.length} bytes`)
+        const result = await this.db.execProtocolRaw(new Uint8Array(message))
+        
+        this.log(`handleData: received ${result.length} bytes from PGlite`)
+        
+        // Print the outgoing data to the console
+        this.inspectData('outgoing', result)
+        
+        // Send response if available
+        if (result.length > 0 && this.socket && this.socket.writable && this.active) {
+          await new Promise<number>((resolve, reject) => {
+            this.log(`handleData: writing response to socket`)
+            if (this.socket) {
+              this.socket.write(Buffer.from(result), (err?: any) => {
+                if (err) {
+                  reject(`Error while writing to the socket ${err.toString()}`)
+                } else {
+                  resolve(result.length)
+                }
+              })
+            } else {
+              reject(`No socket`)
+            }
+          })
+        }
+        
+        totalProcessed += message.length
       }
+      
+      // Emit data event with byte sizes
+      this.dispatchEvent(
+        new CustomEvent('data', {
+          detail: { incoming: data.length, outgoing: totalProcessed },
+        }),
+      )
+      
+      return totalProcessed
+      
     } catch (err) {
       this.log(`handleData: error processing data:`, err)
       this.handleError(err as Error)
