@@ -12,12 +12,12 @@
 namespace NitroModules { class ArrayBuffer; }
 // Forward declaration of `ExecProtocolOptionsNative` to properly resolve imports.
 namespace margelo::nitro::electricsql::pglite { struct ExecProtocolOptionsNative; }
-// Forward declaration of `HybridPGLiteNativeSpec` to properly resolve imports.
-namespace margelo::nitro::electricsql::pglite { class HybridPGLiteNativeSpec; }
+// Forward declaration of `HybridPGLiteReactNativeSpec` to properly resolve imports.
+namespace margelo::nitro::electricsql::pglite { class HybridPGLiteReactNativeSpec; }
 
 // Include C++ defined types
 #include "ExecProtocolOptionsNative.hpp"
-#include "HybridPGLiteNativeSpec.hpp"
+#include "HybridPGLiteReactNativeSpec.hpp"
 #include <NitroModules/ArrayBuffer.hpp>
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
@@ -35,8 +35,8 @@ namespace margelo::nitro::electricsql::pglite { class HybridPGLiteNativeSpec; }
 #include <NitroModules/DateToChronoDate.hpp>
 
 // Forward declarations of Swift defined types
-// Forward declaration of `HybridPGLiteNativeSpec_cxx` to properly resolve imports.
-namespace PGLiteReactNative { class HybridPGLiteNativeSpec_cxx; }
+// Forward declaration of `HybridPGLiteReactNativeSpec_cxx` to properly resolve imports.
+namespace PGLiteReactNative { class HybridPGLiteReactNativeSpec_cxx; }
 
 // Include Swift defined types
 #if __has_include("PGLiteReactNative-Swift.h")

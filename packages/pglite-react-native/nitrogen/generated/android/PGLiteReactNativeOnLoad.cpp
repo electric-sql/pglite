@@ -15,10 +15,8 @@
 #include <fbjni/fbjni.h>
 #include <NitroModules/HybridObjectRegistry.hpp>
 
-#include "JHybridPGLiteNativeSpec.hpp"
+#include "JHybridPGLiteReactNativeSpec.hpp"
 #include "PGLiteReactNative.hpp"
-#include "JHybridPGLiteSpec.hpp"
-#include <NitroModules/DefaultConstructableObject.hpp>
 
 namespace margelo::nitro::electricsql::pglite {
 
@@ -29,25 +27,16 @@ int initialize(JavaVM* vm) {
 
   return facebook::jni::initialize(vm, [] {
     // Register native JNI methods
-    margelo::nitro::electricsql::pglite::JHybridPGLiteNativeSpec::registerNatives();
+    margelo::nitro::electricsql::pglite::JHybridPGLiteReactNativeSpec::registerNatives();
 
     // Register Nitro Hybrid Objects
     HybridObjectRegistry::registerHybridObjectConstructor(
-      "PGLite",
+      "PGLiteReactNative",
       []() -> std::shared_ptr<HybridObject> {
         static_assert(std::is_default_constructible_v<PGLiteReactNative>,
                       "The HybridObject \"PGLiteReactNative\" is not default-constructible! "
                       "Create a public constructor that takes zero arguments to be able to autolink this HybridObject.");
         return std::make_shared<PGLiteReactNative>();
-      }
-    );
-    HybridObjectRegistry::registerHybridObjectConstructor(
-      "PGLite",
-      []() -> std::shared_ptr<HybridObject> {
-        static DefaultConstructableObject<JHybridPGLiteSpec::javaobject> object("com/margelo/nitro/com/electricsql/pglite/PGLiteReactNative");
-        auto instance = object.create();
-        auto globalRef = jni::make_global(instance);
-        return globalRef->cthis()->shared();
       }
     );
   });

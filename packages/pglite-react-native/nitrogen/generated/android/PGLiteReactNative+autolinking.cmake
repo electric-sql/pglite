@@ -27,9 +27,9 @@ target_sources(
   # Autolinking Setup
   ../nitrogen/generated/android/PGLiteReactNativeOnLoad.cpp
   # Shared Nitrogen C++ sources
-  ../nitrogen/generated/shared/c++/HybridPGLiteNativeSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridPGLiteReactNativeSpec.cpp
   # Android-specific Nitrogen C++ sources
-  ../nitrogen/generated/android/c++/JHybridPGLiteNativeSpec.cpp
+  ../nitrogen/generated/android/c++/JHybridPGLiteReactNativeSpec.cpp
 )
 
 # Define a flag to check if we are building properly

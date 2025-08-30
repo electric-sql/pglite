@@ -3,13 +3,11 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include "../nitrogen/generated/shared/c++/HybridPGLiteReactNativeSpec.hpp"
 
-namespace electricsql { namespace pglite {
+namespace margelo { namespace nitro { namespace electricsql { namespace pglite {
 
-struct ExecProtocolOptionsNative {
-  bool syncToFs{true};
-};
-
+// Native implementation class (internal)
 class PGLiteRNNative final {
 public:
   PGLiteRNNative();
@@ -35,5 +33,21 @@ private:
   void ensureStarted_();
 };
 
-}} // namespace electricsql::pglite
+// Nitro hybrid object class
+class PGLiteReactNative : public HybridPGLiteReactNativeSpec {
+public:
+  PGLiteReactNative(): HybridObject(TAG) {}
+  ~PGLiteReactNative() override = default;
+
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> execProtocolRaw(
+      const std::shared_ptr<ArrayBuffer>& message,
+      const std::optional<ExecProtocolOptionsNative>& options) override;
+
+  std::shared_ptr<Promise<void>> close() override;
+
+private:
+  PGLiteRNNative native_{};
+};
+
+}}}} // namespace margelo::nitro::electricsql::pglite
 

@@ -12,20 +12,46 @@
 #ifndef ANDROID_LOG_WARN
 #define ANDROID_LOG_WARN ANDROID_LOG_DEBUG
 #endif
+#define PGLOG(level, ...) __android_log_print(level, "PGLiteReactNative", __VA_ARGS__)
+#define PGLOG_INFO(...) __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", __VA_ARGS__)
+#define PGLOG_ERROR(...) __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", __VA_ARGS__)
+#define PGLOG_WARN(...) __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", __VA_ARGS__)
+#elif __APPLE__
+#include <iostream>
+#define PGLOG(level, ...) do { \
+  fprintf(stderr, "[PGLiteReactNative] "); \
+  fprintf(stderr, __VA_ARGS__); \
+  fprintf(stderr, "\n"); \
+  fflush(stderr); \
+} while(0)
+#define PGLOG_INFO(...) PGLOG(0, __VA_ARGS__)
+#define PGLOG_ERROR(...) PGLOG(0, __VA_ARGS__)
+#define PGLOG_WARN(...) PGLOG(0, __VA_ARGS__)
+#else
+#include <iostream>
+#define PGLOG(level, ...) do { \
+  fprintf(stderr, "[PGLiteReactNative] "); \
+  fprintf(stderr, __VA_ARGS__); \
+  fprintf(stderr, "\n"); \
+  fflush(stderr); \
+} while(0)
+#define PGLOG_INFO(...) PGLOG(0, __VA_ARGS__)
+#define PGLOG_ERROR(...) PGLOG(0, __VA_ARGS__)
+#define PGLOG_WARN(...) PGLOG(0, __VA_ARGS__)
 #endif
 
 // If native mobile libs are not linked (default), provide stub implementations so the module compiles.
 #if !defined(PGLITE_MOBILE_HAS_NATIVE) || PGLITE_MOBILE_HAS_NATIVE == 0
 extern "C" {
-  int pgl_initdb() { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub pgl_initdb()"); return 0; }
-  void pgl_backend() { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub pgl_backend()"); }
-  void pgl_shutdown() { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub pgl_shutdown()"); }
-  int interactive_read() { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub interactive_read()"); return 0; }
-  void interactive_write(int size) { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub interactive_write(%d)", size); }
-  void interactive_one() { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub interactive_one()"); }
-  void use_wire(int state) { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub use_wire(%d)", state); }
-  int get_buffer_addr(int) { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub get_buffer_addr()"); return 0; }
-  int get_buffer_size(int) { __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "stub get_buffer_size()"); return 0; }
+  int pgl_initdb() { PGLOG_WARN("stub pgl_initdb()"); return 0; }
+  void pgl_backend() { PGLOG_WARN("stub pgl_backend()"); }
+  void pgl_shutdown() { PGLOG_WARN("stub pgl_shutdown()"); }
+  int interactive_read() { PGLOG_WARN("stub interactive_read()"); return 0; }
+  void interactive_write(int size) { PGLOG_WARN("stub interactive_write(%d)", size); }
+  void interactive_one() { PGLOG_WARN("stub interactive_one()"); }
+  void use_wire(int state) { PGLOG_WARN("stub use_wire(%d)", state); }
+  intptr_t get_buffer_addr(int) { PGLOG_WARN("stub get_buffer_addr()"); return 0; }
+  int get_buffer_size(int) { PGLOG_WARN("stub get_buffer_size()"); return 0; }
 }
 #endif
 
@@ -44,7 +70,7 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
-namespace electricsql { namespace pglite {
+namespace margelo { namespace nitro { namespace electricsql { namespace pglite {
 
 static std::once_flag s_start_once;
 static std::atomic<bool> s_started{false};
@@ -102,17 +128,17 @@ void PGLiteRNNative::ensureStarted_() {
     bool haveAlt = fs::exists(altShareDir) && fs::exists(bkiAlt);
     const std::string chosenShare = haveShare ? shareDir : (haveAlt ? altShareDir : shareDir);
     if (!haveShare && !haveAlt) {
-      #ifdef __ANDROID__
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative",
-        "Missing runtime catalogs at %s (or %s). Ensure assets packaged and copied.",
+      PGLOG_ERROR("Missing runtime catalogs at %s (or %s). Ensure assets packaged and copied.",
         shareDir.c_str(), altShareDir.c_str());
-      #endif
       throw std::runtime_error(std::string("PGLite runtime catalogs missing: ") + shareDir);
     }
 
-    // Always point PGSYSCONFDIR to the directory that directly contains postgres.bki
-    const std::string confDir = haveShare ? shareDir : (haveAlt ? altShareDir : shareDir);
-    ::setenv("PGSYSCONFDIR", confDir.c_str(), 1);
+    // PGSYSCONFDIR should point to parent of 'share' directory so PostgreSQL can find:
+    // - share/postgresql/postgres.bki (for initdb)  
+    // - share/timezonesets/* (for timezone abbreviations) 
+    // - share/timezone/* (for timezone data)
+    // After PGLiteCopyRuntimeToDir copies the bundle, runtimeDir contains the share/ structure
+    ::setenv("PGSYSCONFDIR", paths.runtimeDir.c_str(), 1);
 
     // Ensure PREFIX points at runtime root like WASM_PREFIX (so initdb argv uses PREFIX/password)
     ::setenv("PREFIX", paths.runtimeDir.c_str(), 1);
@@ -132,72 +158,91 @@ void PGLiteRNNative::ensureStarted_() {
     if (pw_pgroot != pw_prefix) writeIfMissing(pw_pgroot);
 
     // Extra diagnostics: log env and chosen share path
-    #ifdef __ANDROID__
+#ifdef __ANDROID__
     const char* env_runtime = getenv("ANDROID_RUNTIME_DIR");
+#elif __APPLE__
+    const char* env_runtime = getenv("IOS_RUNTIME_DIR");
+#else
+    const char* env_runtime = nullptr;
+#endif
     const char* env_pgdata = getenv("PGDATA");
     const char* env_prefix = getenv("PREFIX");
     const char* env_conf = getenv("PGSYSCONFDIR");
     const char* env_pgroot = getenv("PGROOT");
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative",
-      "initdb about to run. runtime=%s pgdata=%s prefix=%s confdir=%s chosenShare=%s pgroot=%s",
+    PGLOG_INFO("initdb about to run. runtime=%s pgdata=%s prefix=%s confdir=%s chosenShare=%s pgroot=%s",
       env_runtime ? env_runtime : "", env_pgdata ? env_pgdata : "", env_prefix ? env_prefix : "", env_conf ? env_conf : "", chosenShare.c_str(), env_pgroot ? env_pgroot : "");
-    #endif
 
-    // Redirect stderr and stdout to a file so we can read all initdb output even if the process aborts
-    // Use append mode and unbuffered streams to avoid truncation and lost logs on crashes
-    #ifdef __ANDROID__
+    // Set up logging - redirect to file on Android, keep console output on iOS for Xcode debugging
     const std::string errLog = paths.runtimeDir + "/initdb.stderr.log";
     ::setenv("PGL_INITDB_LOG", errLog.c_str(), 1);
-    FILE* __pgl_stderr = freopen(errLog.c_str(), "a", stderr);
+    
+    // Declare variables for both platforms, but only use them on Android
+    FILE* __pgl_stderr = nullptr;
+    FILE* __pgl_stdout = nullptr;
+    
+#ifdef __ANDROID__
+    // Android: Redirect stderr and stdout to a file so we can read all initdb output
+    // Use append mode and unbuffered streams to avoid truncation and lost logs on crashes
+    __pgl_stderr = freopen(errLog.c_str(), "a", stderr);
     if (__pgl_stderr) setvbuf(stderr, NULL, _IONBF, 0);
-    FILE* __pgl_stdout = freopen(errLog.c_str(), "a", stdout);
+    __pgl_stdout = freopen(errLog.c_str(), "a", stdout);
     if (__pgl_stdout) setvbuf(stdout, NULL, _IONBF, 0);
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "initdb logs redirected (append, unbuffered) to %s (pwfile=%s)", errLog.c_str(), pw_prefix.c_str());
-    #endif
+    PGLOG_INFO("initdb logs redirected (append, unbuffered) to %s (pwfile=%s)", errLog.c_str(), pw_prefix.c_str());
+#else
+    // iOS: Keep stderr/stdout for Xcode console, but also write to file for debugging
+    // Create the log file but don't redirect stderr/stdout
+    FILE* logFile = fopen(errLog.c_str(), "a");
+    if (logFile) {
+        fclose(logFile);
+    }
+    PGLOG_INFO("iOS: initdb logs will appear in Xcode console and be logged to %s (pwfile=%s)", errLog.c_str(), pw_prefix.c_str());
+#endif
 
     // Call raw initdb so we see real error traces (may abort on failure)
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "Calling pgl_initdb()...");
+    PGLOG_INFO("Calling pgl_initdb()...");
     int initdb_rc = pgl_initdb();
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "*** pgl_initdb() returned %d ***", initdb_rc);
+    PGLOG_INFO("*** pgl_initdb() returned %d ***", initdb_rc);
     fprintf(stderr, "*** REACT NATIVE: Successfully returned from pgl_initdb() ***\n");
     fprintf(stderr, "*** REACT NATIVE: About to continue execution ***\n");
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "*** REACT NATIVE: Successfully returned from pgl_initdb() ***");
+    PGLOG_INFO("*** REACT NATIVE: Successfully returned from pgl_initdb() ***");
 
     // Force flush any pending logs
     fflush(stdout);
     fflush(stderr);
 
-    // If we got here, initdb completed; restore stderr if needed
-    __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "DEBUG: About to check stderr restoration");
-    #ifdef __ANDROID__
+    // If we got here, initdb completed
+#ifdef __ANDROID__
+    // Android: stderr was redirected, keep it redirected for subsequent backend logs
     if (__pgl_stderr) {
       fflush(stderr);
       // Do not fclose(stderr) here; leave it redirected for subsequent backend logs
     }
-    #endif
+    PGLOG_INFO("initdb completed successfully (Android - logs in file)");
+#else
+    // iOS: stderr was not redirected, it's already going to Xcode console
+    PGLOG_INFO("initdb completed successfully (iOS - logs in Xcode console)");
+#endif
 
-    __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "DEBUG: About to log 'About to call pgl_backend()'");
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "About to call pgl_backend()...");
+    PGLOG_ERROR("DEBUG: About to log 'About to call pgl_backend()'");
+    PGLOG_INFO("About to call pgl_backend()...");
     pgl_backend();
-    __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "pgl_backend() returned successfully");
+    PGLOG_INFO("pgl_backend() returned successfully");
     
     // Try to read and log the stderr log file to see what happened
-    #ifdef __ANDROID__
-    std::ifstream logFile(errLog);
-    if (logFile.is_open()) {
+    std::ifstream logFileStream(errLog);
+    if (logFileStream.is_open()) {
         std::string line;
         int lineCount = 0;
-        __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "=== Contents of %s ===", errLog.c_str());
-        while (std::getline(logFile, line) && lineCount < 100) {  // Limit to first 100 lines
-            __android_log_print(ANDROID_LOG_INFO, "PGLiteStderr", "%s", line.c_str());
+        PGLOG_INFO("=== Contents of %s ===", errLog.c_str());
+        while (std::getline(logFileStream, line) && lineCount < 100) {  // Limit to first 100 lines
+            PGLOG_INFO("[stderr] %s", line.c_str());
             lineCount++;
         }
-        logFile.close();
-        __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "=== End of stderr log (showed %d lines) ===", lineCount);
+        logFileStream.close();
+        PGLOG_INFO("=== End of stderr log (showed %d lines) ===", lineCount);
     } else {
-        __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative", "Could not open stderr log file: %s", errLog.c_str());
+        PGLOG_WARN("Could not open stderr log file: %s", errLog.c_str());
     }
-    #endif
     
     s_started.store(true, std::memory_order_release);
     started_ = true;
@@ -217,7 +262,7 @@ std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
 }
 
 std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_t size) {
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "fileModeExecPtr_ called with size=%zu", size);
+  PGLOG_ERROR("fileModeExecPtr_ called with size=%zu", size);
   const std::string base = getEnvOr("PGDATA", defaultPgdata());
   ensureDir(base);
 
@@ -237,31 +282,30 @@ std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_
 
     // CMA fast path when message fits shared buffer
     const int cap = get_buffer_size(0);
-    __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "CMA buffer check: size=%d cap=%d", (int)size, cap);
+    PGLOG_ERROR("CMA buffer check: size=%d cap=%d", (int)size, cap);
     if (static_cast<int>(size) < cap) {
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "Taking CMA fast path");
+      PGLOG_ERROR("Taking CMA fast path");
       // get_buffer_addr(0) returns (g_buf + 1) to match WASM semantics
       // But we need to write to the base buffer (g_buf) and let PostgreSQL read from (g_buf + 1)
       // This matches WASM where JS writes to HEAPU8[1] and PG reads from address 1
       uint8_t* buf_base = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(0))) - 1;
-      __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative", "CMA fast-path cap=%d size=%d base=%p", cap, (int)size, (void*)buf_base);
+      PGLOG_INFO("CMA fast-path cap=%d size=%d base=%p", cap, (int)size, (void*)buf_base);
 
       // Put data into CMA buffer starting at offset 1 (base + 1) to match WASM semantics
       memcpy(buf_base + 1, data, size);
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "Data copied to CMA buffer at %p + 1 = %p (first 4 bytes: %02x %02x %02x %02x)", 
+      PGLOG_ERROR("Data copied to CMA buffer at %p + 1 = %p (first 4 bytes: %02x %02x %02x %02x)", 
                          (void*)buf_base, (void*)(buf_base + 1), data[0], data[1], data[2], data[3]);
       use_wire(1);
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "Called use_wire(1)");
+      PGLOG_ERROR("Called use_wire(1)");
       interactive_write(static_cast<int>(size));
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "Called interactive_write(%d)", static_cast<int>(size));
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "About to call interactive_one() to process protocol message");
+      PGLOG_ERROR("Called interactive_write(%d)", static_cast<int>(size));
+      PGLOG_ERROR("About to call interactive_one() to process protocol message");
       interactive_one();
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "interactive_one() completed, reading response");
+      PGLOG_ERROR("interactive_one() completed, reading response");
       // Read reply from CMA buffer 1 starting at (request_size + 2), mirroring WASM
       const int outCap = get_buffer_size(1);
       const int outLen = interactive_read();
-      __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative",
-                          "CMA reply outCap=%d outLen=%d", outCap, outLen);
+      PGLOG_INFO("CMA reply outCap=%d outLen=%d", outCap, outLen);
 
       std::vector<uint8_t> out;
       if (outLen > 0 && outLen <= outCap) {
@@ -271,8 +315,7 @@ std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_
           out.assign(outBase + start, outBase + start + outLen);
           return out;
         } else {
-          __android_log_print(ANDROID_LOG_WARN, "PGLiteReactNative",
-                              "CMA reply slice oob: start=%zu len=%d cap=%d", start, outLen, outCap);
+          PGLOG_WARN("CMA reply slice oob: start=%zu len=%d cap=%d", start, outLen, outCap);
         }
       }
       // Fallback: if CMA reports 0 or oob, try file-mode .out
@@ -286,15 +329,14 @@ std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_
                         static_cast<std::streamsize>(len));
         f.close();
         fs::remove(pg_out, ec);
-        __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative",
-                            "CMA fallback read file out len=%zu", out.size());
+        PGLOG_INFO("CMA fallback read file out len=%zu", out.size());
       }
       return out;
     } else {
-      __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "CMA buffer too small, using file mode");
+      PGLOG_ERROR("CMA buffer too small, using file mode");
     }
 
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "Using file mode fallback");
+  PGLOG_ERROR("Using file mode fallback");
   fs::rename(pg_lck_in, pg_in, ec);
 
   use_wire(1);
@@ -318,13 +360,13 @@ std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_
 std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
   const uint8_t* data,
   size_t size,
-  const ExecProtocolOptionsNative& /*opts*/) {
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "execProtocolRaw called with size=%zu", size);
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "DEBUG: execProtocolRaw ENTRY - changes are compiled in!");
+  const ExecProtocolOptionsNative& opts) {
+  PGLOG_ERROR("execProtocolRaw called with size=%zu", size);
+  PGLOG_ERROR("DEBUG: execProtocolRaw ENTRY - changes are compiled in!");
   std::lock_guard<std::mutex> lock(mtx_);
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "DEBUG: About to call ensureStarted_()");
+  PGLOG_ERROR("DEBUG: About to call ensureStarted_()");
   ensureStarted_();
-  __android_log_print(ANDROID_LOG_ERROR, "PGLiteReactNative", "About to call fileModeExecPtr_");
+  PGLOG_ERROR("About to call fileModeExecPtr_");
   return fileModeExecPtr_(data, size);
 }
 
@@ -377,5 +419,36 @@ void PGLiteRNNative::close() {
   }
 }
 
-}} // namespace electricsql::pglite
+// Nitro hybrid object implementations
+std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> PGLiteReactNative::execProtocolRaw(
+    const std::shared_ptr<ArrayBuffer>& message,
+    const std::optional<ExecProtocolOptionsNative>& options) {
+  // Copy message bytes on the JS thread before going async (Nitro requires this)
+  std::vector<uint8_t> input;
+  if (message) {
+    const uint8_t* jsData = message->data();
+    const size_t jsSize = message->size();
+    input.assign(jsData, jsData + jsSize);
+  }
+
+  ExecProtocolOptionsNative nativeOpts{};
+  if (options.has_value()) {
+    nativeOpts = *options;
+  }
+
+  return Promise<std::shared_ptr<ArrayBuffer>>::async([this, input = std::move(input), nativeOpts]() mutable {
+    // Execute through existing native implementation (pointer/size)
+    auto result = native_.execProtocolRaw(input.data(), input.size(), nativeOpts);
+    // Return as ArrayBuffer (copy)
+    return ArrayBuffer::copy(result);
+  });
+}
+
+std::shared_ptr<Promise<void>> PGLiteReactNative::close() {
+  return Promise<void>::async([this]() {
+    native_.close();
+  });
+}
+
+}}}} // namespace margelo::nitro::electricsql::pglite
 

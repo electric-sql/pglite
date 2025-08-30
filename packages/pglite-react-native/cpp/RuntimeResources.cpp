@@ -4,7 +4,7 @@
 
 namespace fs = std::filesystem;
 
-namespace electricsql { namespace pglite {
+namespace margelo { namespace nitro { namespace electricsql { namespace pglite {
 
 static std::string defaultDataDir() {
 #ifdef __ANDROID__
@@ -21,9 +21,22 @@ static std::string defaultDataDir() {
 }
 
 RuntimePaths RuntimeResources::prepare() {
+#ifdef __APPLE__
+  // Set up iOS environment variables before reading them
+  PGLiteSetupIOSEnvironment();
+#endif
+
   RuntimePaths paths;
   const char* pgdataEnv = std::getenv("PGDATA");
   paths.pgdata = pgdataEnv ? std::string(pgdataEnv) : defaultDataDir();
+
+#ifdef __APPLE__
+  printf("[RuntimeResources] iOS environment - PGDATA: %s\n", paths.pgdata.c_str());
+  const char* iosAppSupport = std::getenv("IOS_APP_SUPPORT");
+  const char* iosRuntimeDir = std::getenv("IOS_RUNTIME_DIR");
+  printf("[RuntimeResources] IOS_APP_SUPPORT: %s\n", iosAppSupport ? iosAppSupport : "not set");
+  printf("[RuntimeResources] IOS_RUNTIME_DIR: %s\n", iosRuntimeDir ? iosRuntimeDir : "not set");
+#endif
 
   // runtimeDir holds share/postgresql; default to pgdata and overwrite on extraction
   paths.runtimeDir = paths.pgdata;
@@ -47,20 +60,31 @@ RuntimePaths RuntimeResources::prepare() {
   // Expose IOS_APP_SUPPORT for override; default to tmp path above if not set
   const char* iosRuntime = std::getenv("IOS_RUNTIME_DIR");
   if (iosRuntime) {
+    printf("[RuntimeResources] Using IOS_RUNTIME_DIR: %s\n", iosRuntime);
     paths.runtimeDir = iosRuntime;
+  } else {
+    printf("[RuntimeResources] IOS_RUNTIME_DIR not set, using default: %s\n", paths.runtimeDir.c_str());
   }
+  
+  printf("[RuntimeResources] Final runtimeDir: %s\n", paths.runtimeDir.c_str());
   fs::create_directories(paths.runtimeDir, ec);
-  // Bridge to ObjC++ helper to copy share/postgresql into runtimeDir
+  
+  // Bridge to Swift helper to copy share/postgresql into runtimeDir
+  printf("[RuntimeResources] Calling PGLiteCopyRuntimeToDir with: %s\n", paths.runtimeDir.c_str());
   PGLiteCopyRuntimeToDir(paths.runtimeDir.c_str());
+  printf("[RuntimeResources] PGLiteCopyRuntimeToDir completed\n");
 #endif
 
   // Export env vars for backend init
+  printf("[RuntimeResources] Setting PGDATA=%s\n", paths.pgdata.c_str());
+  printf("[RuntimeResources] Setting PGSYSCONFDIR=%s\n", paths.runtimeDir.c_str());
   ::setenv("PGDATA", paths.pgdata.c_str(), 1);
   ::setenv("PGSYSCONFDIR", paths.runtimeDir.c_str(), 1);
   // Do not set skip flags by default; align with WASM behavior. Only set them
   // when we explicitly load a prebuilt snapshot (done in native startup code).
+  printf("[RuntimeResources] RuntimeResources::prepare() completed successfully\n");
   return paths;
 }
 
-}} // namespace electricsql::pglite
+}}}} // namespace margelo::nitro::electricsql::pglite
 

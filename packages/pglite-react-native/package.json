@@ -38,15 +38,22 @@
   },
   "peerDependencies": {
     "@electric-sql/pglite": "workspace:*",
-    "react-native": ">=0.70.0"
+    "react-native": ">=0.70.0",
+    "expo": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@electric-sql/pg-protocol": "workspace:*",
     "@types/node": "^20.16.11",
     "nitro-codegen": "latest",
-    "react-native-nitro-modules": "0.28.0",
-    "typescript": "^5.0.0"
+    "react-native-nitro-modules": "0.29.0",
+    "typescript": "^5.0.0",
+    "expo-modules-core": "^2.4.0"
   },
   "scripts": {
     "build": "nitro-codegen src && tsc",

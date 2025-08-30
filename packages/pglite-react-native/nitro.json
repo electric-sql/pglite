@@ -9,9 +9,7 @@
     "androidCxxLibName": "PGLiteReactNative"
   },
   "autolinking": {
-    "PGLite": {
-      "swift": "PGLiteReactNative",
-      "kotlin": "PGLiteReactNative",
+    "PGLiteReactNative": {
       "cpp": "PGLiteReactNative"
     }
   }

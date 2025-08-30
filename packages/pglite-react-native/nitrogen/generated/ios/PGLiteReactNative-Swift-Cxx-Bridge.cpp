@@ -8,7 +8,7 @@
 #include "PGLiteReactNative-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
-#include "HybridPGLiteNativeSpecSwift.hpp"
+#include "HybridPGLiteReactNativeSpecSwift.hpp"
 #include "PGLiteReactNative-Swift-Cxx-Umbrella.hpp"
 
 namespace margelo::nitro::electricsql::pglite::bridge::swift {
@@ -37,19 +37,19 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
     };
   }
   
-  // pragma MARK: std::shared_ptr<HybridPGLiteNativeSpec>
-  std::shared_ptr<HybridPGLiteNativeSpec> create_std__shared_ptr_HybridPGLiteNativeSpec_(void* _Nonnull swiftUnsafePointer) {
-    PGLiteReactNative::HybridPGLiteNativeSpec_cxx swiftPart = PGLiteReactNative::HybridPGLiteNativeSpec_cxx::fromUnsafe(swiftUnsafePointer);
-    return std::make_shared<margelo::nitro::electricsql::pglite::HybridPGLiteNativeSpecSwift>(swiftPart);
+  // pragma MARK: std::shared_ptr<HybridPGLiteReactNativeSpec>
+  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer) {
+    PGLiteReactNative::HybridPGLiteReactNativeSpec_cxx swiftPart = PGLiteReactNative::HybridPGLiteReactNativeSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift>(swiftPart);
   }
-  void* _Nonnull get_std__shared_ptr_HybridPGLiteNativeSpec_(std__shared_ptr_HybridPGLiteNativeSpec_ cppType) {
-    std::shared_ptr<margelo::nitro::electricsql::pglite::HybridPGLiteNativeSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::electricsql::pglite::HybridPGLiteNativeSpecSwift>(cppType);
+  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift>(cppType);
     #ifdef NITRO_DEBUG
     if (swiftWrapper == nullptr) [[unlikely]] {
-      throw std::runtime_error("Class \"HybridPGLiteNativeSpec\" is not implemented in Swift!");
+      throw std::runtime_error("Class \"HybridPGLiteReactNativeSpec\" is not implemented in Swift!");
     }
     #endif
-    PGLiteReactNative::HybridPGLiteNativeSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    PGLiteReactNative::HybridPGLiteReactNativeSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
     return swiftPart.toUnsafe();
   }
 

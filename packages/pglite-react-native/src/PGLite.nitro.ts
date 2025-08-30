@@ -9,7 +9,7 @@ export interface ExecProtocolOptionsNative {
   syncToFs?: boolean
 }
 
-export interface PGLiteNative
+export interface PGLiteReactNative
   extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
   execProtocolRaw(
     message: ByteBuffer,

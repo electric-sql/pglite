@@ -25,14 +25,15 @@
     "expo": "~53.0.20",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.5",
+    "react-native": "~0.79.6",
     "expo-dev-client": "~5.2.4",
-    "react-native-nitro-modules": "0.28.1"
+    "react-native-nitro-modules": "0.29.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "expo-build-properties": "~0.14.8"
   },
   "private": true
 }

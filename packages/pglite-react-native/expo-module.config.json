@@ -5,6 +5,6 @@
   },
   "apple": {
     "modules": [],
-    "appDelegateSubscribers": ["PGLiteAppDelegateSubscriber"]
+    "appDelegateSubscribers": []
   }
 }

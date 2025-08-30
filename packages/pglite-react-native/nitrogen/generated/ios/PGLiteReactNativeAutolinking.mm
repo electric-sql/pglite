@@ -7,11 +7,10 @@
 
 #import <Foundation/Foundation.h>
 #import <NitroModules/HybridObjectRegistry.hpp>
-#import "PGLiteReactNative-Swift-Cxx-Umbrella.hpp"
+
 #import <type_traits>
 
 #include "PGLiteReactNative.hpp"
-#include "HybridPGLiteSpecSwift.hpp"
 
 @interface PGLiteReactNativeAutolinking : NSObject
 @end
@@ -23,19 +22,12 @@
   using namespace margelo::nitro::electricsql::pglite;
 
   HybridObjectRegistry::registerHybridObjectConstructor(
-    "PGLite",
+    "PGLiteReactNative",
     []() -> std::shared_ptr<HybridObject> {
       static_assert(std::is_default_constructible_v<PGLiteReactNative>,
                     "The HybridObject \"PGLiteReactNative\" is not default-constructible! "
                     "Create a public constructor that takes zero arguments to be able to autolink this HybridObject.");
       return std::make_shared<PGLiteReactNative>();
-    }
-  );
-  HybridObjectRegistry::registerHybridObjectConstructor(
-    "PGLite",
-    []() -> std::shared_ptr<HybridObject> {
-      std::shared_ptr<HybridPGLiteSpec> hybridObject = PGLiteReactNative::PGLiteReactNativeAutolinking::createPGLite();
-      return hybridObject;
     }
   );
 }

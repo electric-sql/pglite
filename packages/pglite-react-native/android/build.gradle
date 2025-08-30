@@ -33,7 +33,7 @@ android {
 
   externalNativeBuild {
     cmake {
-      path "../CMakeLists.txt"
+      path "./CMakeLists.txt"
       // Do not pass arguments via DSL; CMakeLists enforces c++_shared and reads env vars.
     }
   }

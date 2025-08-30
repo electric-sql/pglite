@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace electricsql { namespace pglite {
+namespace margelo { namespace nitro { namespace electricsql { namespace pglite {
 
 struct RuntimePaths {
   std::string pgdata;
@@ -16,14 +16,15 @@ public:
 
 
 // Minimal untar interface (implemented in PGLiteReactNative.cpp for now)
-namespace electricsql { namespace pglite {
+namespace margelo { namespace nitro { namespace electricsql { namespace pglite {
   bool untarFile(const char* tarPath, const char* dstDir, char* errBuf, size_t errLen);
-}}
+}}}}
 
-}} // namespace electricsql::pglite
+}}}} // namespace margelo::nitro::electricsql::pglite
 
-// iOS-only helper implemented in Objective-C++ to copy bundled resources
+// iOS-only helpers implemented in Swift
 #ifdef __APPLE__
 extern "C" void PGLiteCopyRuntimeToDir(const char* destDir);
+extern "C" void PGLiteSetupIOSEnvironment(void);
 #endif
 

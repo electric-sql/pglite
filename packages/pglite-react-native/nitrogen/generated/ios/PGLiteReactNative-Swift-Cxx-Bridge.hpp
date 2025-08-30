@@ -14,16 +14,16 @@ namespace NitroModules { class ArrayBufferHolder; }
 namespace NitroModules { class ArrayBuffer; }
 // Forward declaration of `ExecProtocolOptionsNative` to properly resolve imports.
 namespace margelo::nitro::electricsql::pglite { struct ExecProtocolOptionsNative; }
-// Forward declaration of `HybridPGLiteNativeSpec` to properly resolve imports.
-namespace margelo::nitro::electricsql::pglite { class HybridPGLiteNativeSpec; }
+// Forward declaration of `HybridPGLiteReactNativeSpec` to properly resolve imports.
+namespace margelo::nitro::electricsql::pglite { class HybridPGLiteReactNativeSpec; }
 
 // Forward declarations of Swift defined types
-// Forward declaration of `HybridPGLiteNativeSpec_cxx` to properly resolve imports.
-namespace PGLiteReactNative { class HybridPGLiteNativeSpec_cxx; }
+// Forward declaration of `HybridPGLiteReactNativeSpec_cxx` to properly resolve imports.
+namespace PGLiteReactNative { class HybridPGLiteReactNativeSpec_cxx; }
 
 // Include C++ defined types
 #include "ExecProtocolOptionsNative.hpp"
-#include "HybridPGLiteNativeSpec.hpp"
+#include "HybridPGLiteReactNativeSpec.hpp"
 #include <NitroModules/ArrayBuffer.hpp>
 #include <NitroModules/ArrayBufferHolder.hpp>
 #include <NitroModules/Promise.hpp>
@@ -148,17 +148,17 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
     return Func_void_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::shared_ptr<HybridPGLiteNativeSpec>
+  // pragma MARK: std::shared_ptr<HybridPGLiteReactNativeSpec>
   /**
-   * Specialized version of `std::shared_ptr<HybridPGLiteNativeSpec>`.
+   * Specialized version of `std::shared_ptr<HybridPGLiteReactNativeSpec>`.
    */
-  using std__shared_ptr_HybridPGLiteNativeSpec_ = std::shared_ptr<HybridPGLiteNativeSpec>;
-  std::shared_ptr<HybridPGLiteNativeSpec> create_std__shared_ptr_HybridPGLiteNativeSpec_(void* _Nonnull swiftUnsafePointer);
-  void* _Nonnull get_std__shared_ptr_HybridPGLiteNativeSpec_(std__shared_ptr_HybridPGLiteNativeSpec_ cppType);
+  using std__shared_ptr_HybridPGLiteReactNativeSpec_ = std::shared_ptr<HybridPGLiteReactNativeSpec>;
+  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer);
+  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType);
   
-  // pragma MARK: std::weak_ptr<HybridPGLiteNativeSpec>
-  using std__weak_ptr_HybridPGLiteNativeSpec_ = std::weak_ptr<HybridPGLiteNativeSpec>;
-  inline std__weak_ptr_HybridPGLiteNativeSpec_ weakify_std__shared_ptr_HybridPGLiteNativeSpec_(const std::shared_ptr<HybridPGLiteNativeSpec>& strong) { return strong; }
+  // pragma MARK: std::weak_ptr<HybridPGLiteReactNativeSpec>
+  using std__weak_ptr_HybridPGLiteReactNativeSpec_ = std::weak_ptr<HybridPGLiteReactNativeSpec>;
+  inline std__weak_ptr_HybridPGLiteReactNativeSpec_ weakify_std__shared_ptr_HybridPGLiteReactNativeSpec_(const std::shared_ptr<HybridPGLiteReactNativeSpec>& strong) { return strong; }
   
   // pragma MARK: Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>
   using Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ = Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>;

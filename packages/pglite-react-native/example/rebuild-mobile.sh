@@ -12,6 +12,8 @@ NC='\033[0m' # No Color
 # Configuration
 PLATFORM=${PLATFORM:-android}
 ABI=${ABI:-arm64-v8a}
+ARCH=${ARCH:-arm64-sim}  # For iOS: arm64-sim (Apple Silicon sim), arm64 (device), x86_64 (Intel sim)
+API=${API:-27}       # For Android API level
 PG_BRANCH=${PG_BRANCH:-REL_17_5_WASM}
 SKIP_BUILD=${SKIP_BUILD:-false}
 SKIP_INSTALL=${SKIP_INSTALL:-false}
@@ -51,21 +53,28 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Options:
-    -p, --platform PLATFORM    Target platform (default: android)
-    -a, --abi ABI              Target ABI (default: arm64-v8a)
+    -p, --platform PLATFORM    Target platform (android, ios) (default: android)
+    -a, --abi ABI              Android ABI (arm64-v8a, armeabi-v7a) (default: arm64-v8a)
+    --arch ARCH                iOS architecture (arm64-sim, arm64, x86_64) (default: arm64-sim)
+    --api API                  Android API level (default: 27)
     -b, --pg-branch BRANCH     PostgreSQL branch (default: REL_17_5_WASM)
     -s, --skip-build           Skip building pglite static libs
     -i, --skip-install         Skip npm/pnpm install steps
     -h, --help                 Show this help message
 
 Examples:
-    $0                         # Build with defaults
-    $0 --skip-build            # Skip native lib build, just rebuild app
-    $0 -p android -a arm64-v8a # Specify platform and ABI explicitly
+    $0                          # Build Android with defaults
+    $0 -p ios                   # Build iOS simulator (Apple Silicon)
+    $0 -p ios --arch arm64      # Build iOS for device
+    $0 -p ios --arch arm64-sim  # Build iOS simulator (Apple Silicon) - explicit
+    $0 --skip-build             # Skip native lib build, just rebuild app
+    $0 -p android -a arm64-v8a  # Android with specific ABI
 
 Environment Variables:
-    PLATFORM     Target platform (android)
-    ABI          Target ABI (arm64-v8a, armeabi-v7a, etc.)
+    PLATFORM     Target platform (android, ios)
+    ABI          Android ABI (arm64-v8a, armeabi-v7a, etc.)
+    ARCH         iOS architecture (arm64-sim, arm64, x86_64)
+    API          Android API level
     PG_BRANCH    PostgreSQL branch
     SKIP_BUILD   Skip native build (true/false)
     SKIP_INSTALL Skip install steps (true/false)
@@ -81,6 +90,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -a|--abi)
             ABI="$2"
+            shift 2
+            ;;
+        --arch)
+            ARCH="$2"
+            shift 2
+            ;;
+        --api)
+            API="$2"
             shift 2
             ;;
         -b|--pg-branch)
@@ -108,9 +125,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 print_info "PGLite Mobile Rebuild Script"
-print_info "Platform: $PLATFORM, ABI: $ABI, Branch: $PG_BRANCH"
+if [[ "$PLATFORM" == "ios" ]]; then
+    print_info "Platform: $PLATFORM, Arch: $ARCH, Branch: $PG_BRANCH"
+else
+    print_info "Platform: $PLATFORM, ABI: $ABI, API: $API, Branch: $PG_BRANCH"
+fi
 print_info "Skip Build: $SKIP_BUILD, Skip Install: $SKIP_INSTALL"
-print_info "Android directory will always be cleaned and rebuilt"
+print_info "$PLATFORM directory will always be cleaned and rebuilt"
 echo
 
 # Check required commands
@@ -133,8 +154,13 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
     fi
     
     cd "$POSTGRES_PGLITE_DIR"
-    print_info "Running: PLATFORM=$PLATFORM ABI=$ABI PG_BRANCH=$PG_BRANCH ./mobile-build/build-mobile.sh"
-    PLATFORM="$PLATFORM" ABI="$ABI" PG_BRANCH="$PG_BRANCH" ./mobile-build/build-mobile.sh
+    if [[ "$PLATFORM" == "ios" ]]; then
+        print_info "Running: PLATFORM=$PLATFORM ARCH=$ARCH PG_BRANCH=$PG_BRANCH ./mobile-build/build-mobile.sh"
+        PLATFORM="$PLATFORM" ARCH="$ARCH" PG_BRANCH="$PG_BRANCH" ./mobile-build/build-mobile.sh
+    else
+        print_info "Running: PLATFORM=$PLATFORM ABI=$ABI PG_BRANCH=$PG_BRANCH ./mobile-build/build-mobile.sh"
+        PLATFORM="$PLATFORM" ABI="$ABI" PG_BRANCH="$PG_BRANCH" ./mobile-build/build-mobile.sh
+    fi
     print_success "Static libs built and copied to pglite-react-native project"
 else
     print_info "Skipping native lib build"
@@ -169,33 +195,54 @@ else
     print_info "Skipping npm install in example"
 fi
 
-# Always clean android directory to ensure it's up to date
-if [[ -d "android" ]]; then
-    print_step "Cleaning generated android project"
-    rm -rf android
-    print_success "Android directory cleaned"
-fi
+# Platform-specific build steps
+if [[ "$PLATFORM" == "ios" ]]; then
+    # Clean iOS directory to ensure it's up to date
+    if [[ -d "ios" ]]; then
+        print_step "Cleaning generated iOS project"
+        rm -rf ios
+        print_success "iOS directory cleaned"
+    fi
 
-# Generate native android project
-print_step "Generating native android project"
-npx expo prebuild -p android --clean
-print_success "Native android project generated"
+    # Generate native iOS project
+    print_step "Generating native iOS project"
+    npx expo prebuild -p ios --clean
+    print_success "Native iOS project generated"
 
-# Build the APK
-print_step "Building APK"
-cd android
-./gradlew assembleDebug
-print_success "APK built successfully"
-
-# Install APK on device
-print_step "Installing APK on device"
-APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-if [[ -f "$APK_PATH" ]]; then
-    adb install "$APK_PATH"
-    print_success "APK installed on device"
+    print_info "iOS build ready!"
+    print_info "Next steps:"
+    print_info "1. Open ios/example.xcworkspace in Xcode"
+    print_info "2. Select your device/simulator"
+    print_info "3. Build and run (Cmd+R)"
 else
-    print_error "APK not found at $APK_PATH"
-    exit 1
+    # Always clean android directory to ensure it's up to date
+    if [[ -d "android" ]]; then
+        print_step "Cleaning generated android project"
+        rm -rf android
+        print_success "Android directory cleaned"
+    fi
+
+    # Generate native android project
+    print_step "Generating native android project"
+    npx expo prebuild -p android --clean
+    print_success "Native android project generated"
+
+    # Build the APK
+    print_step "Building APK"
+    cd android
+    ./gradlew assembleDebug
+    print_success "APK built successfully"
+
+    # Install APK on device
+    print_step "Installing APK on device"
+    APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+    if [[ -f "$APK_PATH" ]]; then
+        adb install "$APK_PATH"
+        print_success "APK installed on device"
+    else
+        print_error "APK not found at $APK_PATH"
+        exit 1
+    fi
 fi
 
 # Return to example directory

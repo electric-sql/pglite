@@ -1,11 +1,10 @@
+#ifdef __ANDROID__
 #include <jni.h>
 #include <cstdlib>
 #include <string>
-#ifdef __ANDROID__
 #include <android/log.h>
 #ifndef ANDROID_LOG_INFO
 #define ANDROID_LOG_INFO ANDROID_LOG_DEBUG
-#endif
 #endif
 
 static void set_env_if_nonempty(const char* key, const std::string& val) {
@@ -43,10 +42,9 @@ Java_com_electricsql_pglite_NativeEnv_applyEnv(
   // Provide a sane default user if none set upstream
   if (!getenv("PGUSER")) setenv("PGUSER", "postgres", 0);
 
-#ifdef __ANDROID__
   __android_log_print(ANDROID_LOG_INFO, "PGLiteReactNative",
     "NativeEnv.applyEnv ANDROID_RUNTIME_DIR=%s ANDROID_DATA_DIR=%s PGDATA=%s",
     runtimeDir.c_str(), dataDir.c_str(), pgdata.c_str());
-#endif
 }
+#endif
 
