@@ -109,6 +109,7 @@ export default defineConfig({
             items: [
               { text: 'React', link: '/react' },
               { text: 'Vue', link: '/vue' },
+              { text: 'Angular', link: '/angular' },
             ],
           },
           { text: 'Bundler Support', link: '/docs/bundler-support' },
