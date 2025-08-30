@@ -3,9 +3,6 @@
 #include <cstdlib>
 #include <string>
 #include <android/log.h>
-#ifndef ANDROID_LOG_INFO
-#define ANDROID_LOG_INFO ANDROID_LOG_DEBUG
-#endif
 
 static void set_env_if_nonempty(const char* key, const std::string& val) {
   if (!val.empty()) {

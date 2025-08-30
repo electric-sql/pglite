@@ -27,9 +27,6 @@ public:
 private:
   std::mutex mtx_;
   bool started_{false};
-  // Helper functions for file-mode fallback
-  std::vector<uint8_t> fileModeExec_(const std::vector<uint8_t>& message);
-  std::vector<uint8_t> fileModeExecPtr_(const uint8_t* data, size_t size);
   void ensureStarted_();
 };
 

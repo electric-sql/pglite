@@ -40,20 +40,6 @@
 #define PGLOG_WARN(...) PGLOG(0, __VA_ARGS__)
 #endif
 
-// If native mobile libs are not linked (default), provide stub implementations so the module compiles.
-#if !defined(PGLITE_MOBILE_HAS_NATIVE) || PGLITE_MOBILE_HAS_NATIVE == 0
-extern "C" {
-  int pgl_initdb() { PGLOG_WARN("stub pgl_initdb()"); return 0; }
-  void pgl_backend() { PGLOG_WARN("stub pgl_backend()"); }
-  void pgl_shutdown() { PGLOG_WARN("stub pgl_shutdown()"); }
-  int interactive_read() { PGLOG_WARN("stub interactive_read()"); return 0; }
-  void interactive_write(int size) { PGLOG_WARN("stub interactive_write(%d)", size); }
-  void interactive_one() { PGLOG_WARN("stub interactive_one()"); }
-  void use_wire(int state) { PGLOG_WARN("stub use_wire(%d)", state); }
-  intptr_t get_buffer_addr(int) { PGLOG_WARN("stub get_buffer_addr()"); return 0; }
-  int get_buffer_size(int) { PGLOG_WARN("stub get_buffer_size()"); return 0; }
-}
-#endif
 
 
 extern "C" {
@@ -261,155 +247,46 @@ std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
   return execProtocolRaw(message.data(), message.size(), opts);
 }
 
-std::vector<uint8_t> PGLiteRNNative::fileModeExecPtr_(const uint8_t* data, size_t size) {
-  PGLOG_ERROR("fileModeExecPtr_ called with size=%zu", size);
-  const std::string base = getEnvOr("PGDATA", defaultPgdata());
-  ensureDir(base);
-
-  const std::string pg_lck_in = base + "/.s.PGSQL.5432.lock.in";  // client input lock
-  const std::string pg_in     = base + "/.s.PGSQL.5432.in";       // server reads
-  const std::string pg_out    = base + "/.s.PGSQL.5432.out";      // server writes
-
-  {
-    std::ofstream of(pg_lck_in, std::ios::binary | std::ios::trunc);
-    if (size) of.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(size));
-    of.close();
-  }
-  std::error_code ec;
-  fs::remove(pg_in, ec);
-
-
-
-    // CMA fast path when message fits shared buffer
-    const int cap = get_buffer_size(0);
-    PGLOG_ERROR("CMA buffer check: size=%d cap=%d", (int)size, cap);
-    if (static_cast<int>(size) < cap) {
-      PGLOG_ERROR("Taking CMA fast path");
-      // get_buffer_addr(0) returns (g_buf + 1) to match WASM semantics
-      // But we need to write to the base buffer (g_buf) and let PostgreSQL read from (g_buf + 1)
-      // This matches WASM where JS writes to HEAPU8[1] and PG reads from address 1
-      uint8_t* buf_base = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(0))) - 1;
-      PGLOG_INFO("CMA fast-path cap=%d size=%d base=%p", cap, (int)size, (void*)buf_base);
-
-      // Put data into CMA buffer starting at offset 1 (base + 1) to match WASM semantics
-      memcpy(buf_base + 1, data, size);
-      PGLOG_ERROR("Data copied to CMA buffer at %p + 1 = %p (first 4 bytes: %02x %02x %02x %02x)", 
-                         (void*)buf_base, (void*)(buf_base + 1), data[0], data[1], data[2], data[3]);
-      use_wire(1);
-      PGLOG_ERROR("Called use_wire(1)");
-      interactive_write(static_cast<int>(size));
-      PGLOG_ERROR("Called interactive_write(%d)", static_cast<int>(size));
-      PGLOG_ERROR("About to call interactive_one() to process protocol message");
-      interactive_one();
-      PGLOG_ERROR("interactive_one() completed, reading response");
-      // Read reply from CMA buffer 1 starting at (request_size + 2), mirroring WASM
-      const int outCap = get_buffer_size(1);
-      const int outLen = interactive_read();
-      PGLOG_INFO("CMA reply outCap=%d outLen=%d", outCap, outLen);
-
-      std::vector<uint8_t> out;
-      if (outLen > 0 && outLen <= outCap) {
-        const size_t start = static_cast<size_t>(size) + 2;
-        const uint8_t* outBase = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(1)));
-        if (start + static_cast<size_t>(outLen) <= static_cast<size_t>(outCap)) {
-          out.assign(outBase + start, outBase + start + outLen);
-          return out;
-        } else {
-          PGLOG_WARN("CMA reply slice oob: start=%zu len=%d cap=%d", start, outLen, outCap);
-        }
-      }
-      // Fallback: if CMA reports 0 or oob, try file-mode .out
-      if (fs::exists(pg_out)) {
-        std::ifstream f(pg_out, std::ios::binary);
-        f.seekg(0, std::ios::end);
-        const auto len = static_cast<size_t>(f.tellg());
-        f.seekg(0, std::ios::beg);
-        out.resize(len);
-        if (len) f.read(reinterpret_cast<char*>(out.data()),
-                        static_cast<std::streamsize>(len));
-        f.close();
-        fs::remove(pg_out, ec);
-        PGLOG_INFO("CMA fallback read file out len=%zu", out.size());
-      }
-      return out;
-    } else {
-      PGLOG_ERROR("CMA buffer too small, using file mode");
-    }
-
-  PGLOG_ERROR("Using file mode fallback");
-  fs::rename(pg_lck_in, pg_in, ec);
-
-  use_wire(1);
-  interactive_write(0);
-  interactive_one();
-
-  std::vector<uint8_t> out;
-  if (fs::exists(pg_out)) {
-    std::ifstream f(pg_out, std::ios::binary);
-    f.seekg(0, std::ios::end);
-    const auto len = static_cast<size_t>(f.tellg());
-    f.seekg(0, std::ios::beg);
-    out.resize(len);
-    if (len) f.read(reinterpret_cast<char*>(out.data()), static_cast<std::streamsize>(len));
-    f.close();
-    fs::remove(pg_out, ec);
-  }
-  return out;
-}
 
 std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
   const uint8_t* data,
   size_t size,
-  const ExecProtocolOptionsNative& opts) {
-  PGLOG_ERROR("execProtocolRaw called with size=%zu", size);
-  PGLOG_ERROR("DEBUG: execProtocolRaw ENTRY - changes are compiled in!");
+  const ExecProtocolOptionsNative& /*opts*/) {
+  PGLOG_INFO("execProtocolRaw (CMA-only) called with size=%zu", size);
   std::lock_guard<std::mutex> lock(mtx_);
-  PGLOG_ERROR("DEBUG: About to call ensureStarted_()");
   ensureStarted_();
-  PGLOG_ERROR("About to call fileModeExecPtr_");
-  return fileModeExecPtr_(data, size);
-}
 
-std::vector<uint8_t> PGLiteRNNative::fileModeExec_(
-  const std::vector<uint8_t>& message) {
-  // File-mode protocol aligned with wasm_common.h and interactive_one.c
-  const std::string base = getEnvOr("PGDATA", defaultPgdata());
-  ensureDir(base);
-
-  const std::string pg_lck_in = base + "/.s.PGSQL.5432.lock.in";  // client input lock
-  const std::string pg_in     = base + "/.s.PGSQL.5432.in";       // server reads
-  const std::string pg_out    = base + "/.s.PGSQL.5432.out";      // server writes
-
-  // Write request to lock file and atomically rename to .in
-  {
-    std::ofstream of(pg_lck_in, std::ios::binary | std::ios::trunc);
-    of.write(reinterpret_cast<const char*>(message.data()), static_cast<std::streamsize>(message.size()));
-    of.close();
+  // CMA request path
+  const int inCap = get_buffer_size(0);
+  if (static_cast<int>(size) >= inCap) {
+    PGLOG_ERROR("CMA request too large: size=%zu cap=%d (no file-mode fallback)", size, inCap);
+    return {};
   }
-  std::error_code ec;
-  // Remove existing .in if present to avoid rename failure
-  fs::remove(pg_in, ec);
-  fs::rename(pg_lck_in, pg_in, ec);
-
-  // Signal file-mode (no CMA data) and pump one request
+  // get_buffer_addr(0) returns (buf + 1) to match WASM semantics; write at +1
+  uint8_t* buf_base = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(0))) - 1;
+  memcpy(buf_base + 1, data, size);
   use_wire(1);
-  interactive_write(0);
+  interactive_write(static_cast<int>(size));
   interactive_one();
 
-  // Read reply from .out, if present
-  std::vector<uint8_t> data;
-  if (fs::exists(pg_out)) {
-    std::ifstream f(pg_out, std::ios::binary);
-    f.seekg(0, std::ios::end);
-    const auto len = static_cast<size_t>(f.tellg());
-    f.seekg(0, std::ios::beg);
-    data.resize(len);
-    if (len) f.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(len));
-    f.close();
-    fs::remove(pg_out, ec);
+  // CMA response path
+  const int outCap = get_buffer_size(1);
+  const int outLen = interactive_read();
+  std::vector<uint8_t> out;
+  if (outLen > 0 && outLen <= outCap) {
+    const size_t start = static_cast<size_t>(size) + 2;
+    const uint8_t* outBase = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(1)));
+    if (start + static_cast<size_t>(outLen) <= static_cast<size_t>(outCap)) {
+      out.assign(outBase + start, outBase + start + outLen);
+    } else {
+      PGLOG_WARN("CMA reply slice oob: start=%zu len=%d cap=%d", start, outLen, outCap);
+    }
+  } else {
+    PGLOG_WARN("CMA reply empty or too large: outLen=%d outCap=%d", outLen, outCap);
   }
-  return data;
+  return out;
 }
+
 
 void PGLiteRNNative::close() {
   std::lock_guard<std::mutex> lock(mtx_);

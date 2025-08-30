@@ -41,7 +41,7 @@ Pod::Spec.new do |s|
   current_config = s.attributes_hash['pod_target_xcconfig'] || {}
   s.pod_target_xcconfig = current_config.merge({
     # 'CLANG_CXX_LIBRARY' => 'libc++',
-    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) FOLLY_NO_CONFIG FOLLY_CFG_NO_COROUTINES PGLITE_MOBILE_HAS_NATIVE=1 PGL_MOBILE=1',
+    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) FOLLY_NO_CONFIG FOLLY_CFG_NO_COROUTINES PGL_MOBILE=1',
   })
 end
 

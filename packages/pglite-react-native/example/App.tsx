@@ -1,16 +1,16 @@
 import { useEffect, useReducer, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, Platform } from 'react-native'
 import { PGlite } from '@electric-sql/pglite-react-native'
 
 /*
  * PGlite React Native Test Suite
- * 
+ *
  * This test suite works with persistent databases. It:
  * - Uses CREATE TABLE IF NOT EXISTS to handle existing tables
  * - Clears test data before inserting to avoid duplicate key violations
  * - Uses @test.com email domain for test data isolation
- * 
+ *
  * This ensures tests pass whether starting with a fresh or existing database.
  */
 
@@ -26,6 +26,8 @@ interface TestResult {
   success: boolean
   result?: any
   error?: string
+  query?: string
+  response?: string
 }
 
 export default function App() {
@@ -44,6 +46,31 @@ export default function App() {
       `[PGL Test] ${success ? '✅' : '❌'} ${step}: ${result || error || 'no details'}`,
     )
     setResults((prev) => [...prev, { step, success, result, error }])
+  }
+
+  // New helper to record a structured test with query and response (or error)
+  const addTestResult = (
+    step: string,
+    success: boolean,
+    query: string,
+    response: any,
+  ) => {
+    let responseText: string
+    try {
+      responseText =
+        typeof response === 'string'
+          ? response
+          : JSON.stringify(response, null, 2)
+    } catch (e) {
+      responseText = String(response)
+    }
+    console.log(
+      `[PGL Test] ${success ? '✅' : '❌'} ${step} -> Query: ${query} | Response: ${responseText?.slice(0, 200)}...`,
+    )
+    setResults((prev) => [
+      ...prev,
+      { step, success, query, response: responseText },
+    ])
   }
 
   // Helper function to check if a query result indicates success
@@ -87,32 +114,27 @@ export default function App() {
     let cancelled = false
     ;(async () => {
       try {
-        addResult('Initializing PGlite', true, 'Starting database...')
         console.log('[PGL Test] Initializing PGlite database...')
         const db = new PGlite()
         console.log('[PGL Test] Database initialized successfully')
 
         // Test 1: Simple query
-        addResult('Test 1: Simple SELECT', true, 'Running...')
+
         console.log('[PGL Test] Running simple SELECT query...')
         const simpleRes = await db.query<{ n: number }>('SELECT 1 as n')
         console.log('[PGL Test] Simple SELECT result:', simpleRes)
 
         const simpleSuccess =
           isQuerySuccessful(simpleRes, 1) && simpleRes.rows[0]?.n == 1 // Use == to handle string/number conversion
-        addResult(
+        addTestResult(
           'Test 1: Simple SELECT',
           simpleSuccess,
-          simpleSuccess
-            ? `Result: ${simpleRes.rows[0]?.n}`
-            : 'Failed to get expected result',
-          simpleSuccess
-            ? undefined
-            : `Expected 1 row with n=1, got: ${JSON.stringify(simpleRes)}`,
+          'SELECT 1 as n',
+          simpleRes,
         )
 
         // Test 2: Create table (or use existing)
-        addResult('Test 2: Setup table', true, 'Setting up users table...')
+
         console.log('[PGL Test] Setting up users table...')
         const createTableQuery = `CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -136,33 +158,25 @@ export default function App() {
           createRes &&
           Array.isArray(createRes.rows) &&
           createRes.rows.length === 0
-        addResult(
+        addTestResult(
           'Test 2: Setup table',
           createSuccess,
-          createSuccess
-            ? `Table ready for use`
-            : 'Failed to setup table',
-          createSuccess
-            ? undefined
-            : `CREATE TABLE failed: ${JSON.stringify(createRes)}`,
+          createTableQuery,
+          createRes,
         )
 
         // Test 2b: Clear existing test data
-        addResult('Test 2b: Clear test data', true, 'Clearing existing test data...')
+
         console.log('[PGL Test] Clearing existing test data...')
         const clearQuery = `DELETE FROM users WHERE email LIKE '%@example.com' OR email LIKE '%@test.com'`
         console.log('[PGL Test] SQL:', clearQuery)
         const clearRes = await db.query(clearQuery)
         console.log('[PGL Test] DELETE result:', clearRes)
         const clearedCount = clearRes.affectedRows || 0
-        addResult(
-          'Test 2b: Clear test data',
-          true,
-          `Cleared ${clearedCount} existing test records`
-        )
+        addTestResult('Test 2b: Clear test data', true, clearQuery, clearRes)
 
         // Test 3: Insert data
-        addResult('Test 3: Insert data', true, 'Inserting users...')
+
         console.log('[PGL Test] Inserting first user...')
         // Use literal values instead of parameters for simple protocol
         const insertQuery = `INSERT INTO users (name, email, age) VALUES ('Alice Johnson', 'alice@test.com', 28) RETURNING id`
@@ -185,20 +199,18 @@ export default function App() {
           insertRes.rows[0]?.[0] ||
           insertRes.rows[0]?.['0']
 
-        addResult(
+        addTestResult(
           'Test 3: Insert data',
           insertSuccess,
-          insertSuccess
-            ? `Inserted user with ID: ${insertedId}`
-            : 'Failed to insert user',
-          insertSuccess
-            ? undefined
-            : `INSERT failed: ${JSON.stringify(insertRes)}`,
+          insertQuery,
+          insertRes,
         )
 
         // Only continue if first insert succeeded
         if (!insertSuccess) {
-          addResult('Test suite', false, 'Stopping tests due to INSERT failure')
+          addTestResult('Test suite', false, 'N/A', {
+            message: 'Stopping tests due to INSERT failure',
+          })
           throw new Error('First INSERT failed, stopping test suite')
         }
 
@@ -244,18 +256,20 @@ export default function App() {
           insert3Success,
           insert4Success,
         ].filter(Boolean).length
-        addResult(
+        addTestResult(
           'Test 3b: Additional inserts',
           successfulInserts === 3,
-          successfulInserts === 3
-            ? `Inserted 3 more users successfully`
-            : `Only ${successfulInserts}/3 inserts succeeded`,
-          successfulInserts === 3 ? undefined : `Some inserts failed`,
+          'INSERT INTO users (name, email, age) VALUES ($1, $2, $3) [executed 3x]',
+          { insert2Res, insert3Res, insert4Res },
         )
 
         // Test 4: Query data
-        addResult('Test 4: Query data', true, 'Querying users...')
-        console.log('[PGL Test] Querying all users...')
+        const expectedCount = (insertSuccess ? 1 : 0) + successfulInserts
+        console.log(
+          '[PGL Test] Querying all users... Expecting',
+          expectedCount,
+          'rows',
+        )
         const selectQuery =
           'SELECT id, name, email, age FROM users ORDER BY age DESC'
         console.log('[PGL Test] SQL:', selectQuery)
@@ -270,23 +284,13 @@ export default function App() {
           console.log(`[PGL Test] User ${index + 1}:`, row)
         })
 
-        // Should find the users we just inserted (at least 1, up to 4)
         const actualUserCount = queryRes.rows.length
-        const minExpected = 1 // At least the first insert should succeed
-        const maxExpected = 4 // Maximum if all inserts succeeded
-        const selectSuccess =
-          isQuerySuccessful(queryRes) &&
-          actualUserCount >= minExpected &&
-          actualUserCount <= maxExpected
-        addResult(
-          'Test 4: Query data',
+        const selectSuccess = isQuerySuccessful(queryRes, expectedCount)
+        addTestResult(
+          `Test 4: Query data (${actualUserCount}/${expectedCount})`,
           selectSuccess,
-          selectSuccess
-            ? `Found ${actualUserCount} users (${minExpected}-${maxExpected} expected)`
-            : `Expected ${minExpected}-${maxExpected} users, found ${actualUserCount}`,
-          selectSuccess
-            ? undefined
-            : `SELECT failed: ${JSON.stringify(queryRes)}`,
+          `${selectQuery}\nExpected rows: ${expectedCount}`,
+          queryRes,
         )
 
         // Test 4b: Simple count to verify data exists
@@ -302,22 +306,18 @@ export default function App() {
           countRes.rows[0]?.['0']
         // Count verification should just confirm the COUNT query works, not match SELECT results
         const countSuccess = isQuerySuccessful(countRes, 1) && countValue >= 0
-        addResult(
+        addTestResult(
           'Test 4b: Count verification',
           countSuccess,
-          countSuccess
-            ? `Count query returned: ${countValue} users total`
-            : `COUNT query failed`,
-          countSuccess
-            ? undefined
-            : `COUNT failed: ${JSON.stringify(countRes)}`,
+          countQuery,
+          countRes,
         )
-        
+
         // Update actualUserCount to use the authoritative COUNT result
         const totalUserCount = parseInt(countValue) || 0
 
         // Test 5: Complex query with aggregation
-        addResult('Test 5: Aggregation', true, 'Running aggregation query...')
+
         console.log('[PGL Test] Running aggregation query...')
         const aggQuery =
           'SELECT COUNT(*) as count, AVG(age) as avg_age, MIN(age) as min_age, MAX(age) as max_age FROM users'
@@ -344,19 +344,10 @@ export default function App() {
             }
           : null
 
-        addResult(
-          'Test 5: Aggregation',
-          aggSuccess,
-          aggSuccess
-            ? `Count: ${displayStats?.count}, Avg age: ${displayStats?.avg_age}, Min: ${displayStats?.min_age}, Max: ${displayStats?.max_age}`
-            : 'Aggregation failed',
-          aggSuccess
-            ? undefined
-            : `Aggregation failed: ${JSON.stringify(aggRes)}`,
-        )
+        addTestResult('Test 5: Aggregation', aggSuccess, aggQuery, aggRes)
 
         // Test 6: Update data
-        addResult('Test 6: Update data', true, 'Updating user...')
+
         console.log('[PGL Test] Updating user age...')
         const updateQuery = 'UPDATE users SET age = $1 WHERE name = $2'
         const updateParams = [29, 'Alice Johnson']
@@ -368,19 +359,15 @@ export default function App() {
         const updateSuccess =
           isQuerySuccessful(updateRes) &&
           (updateRes.affectedRows == 1 || updateRes.rows.length >= 0)
-        addResult(
+        addTestResult(
           'Test 6: Update data',
           updateSuccess,
-          updateSuccess
-            ? `Updated ${updateRes.affectedRows || 'unknown'} row(s)`
-            : 'Update failed',
-          updateSuccess
-            ? undefined
-            : `UPDATE failed: ${JSON.stringify(updateRes)}`,
+          `${updateQuery}\nParams: ${JSON.stringify(updateParams)}`,
+          updateRes,
         )
 
         // Test 7: Delete data
-        addResult('Test 7: Delete data', true, 'Deleting user...')
+
         console.log('[PGL Test] Deleting user...')
         const deleteQuery = 'DELETE FROM users WHERE email = $1'
         const deleteParams = ['david@test.com']
@@ -392,23 +379,15 @@ export default function App() {
         const deleteSuccess =
           isQuerySuccessful(deleteRes) &&
           (deleteRes.affectedRows == 1 || deleteRes.rows.length >= 0)
-        addResult(
+        addTestResult(
           'Test 7: Delete data',
           deleteSuccess,
-          deleteSuccess
-            ? `Deleted ${deleteRes.affectedRows || 'unknown'} row(s)`
-            : 'Delete failed',
-          deleteSuccess
-            ? undefined
-            : `DELETE failed: ${JSON.stringify(deleteRes)}`,
+          `${deleteQuery}\nParams: ${JSON.stringify(deleteParams)}`,
+          deleteRes,
         )
 
         // Test 8: Final count
-        addResult(
-          'Test 8: Final verification',
-          true,
-          'Counting remaining users...',
-        )
+
         console.log('[PGL Test] Final verification - counting users...')
         const finalQuery = 'SELECT COUNT(*) as count FROM users'
         console.log('[PGL Test] SQL:', finalQuery)
@@ -422,21 +401,11 @@ export default function App() {
         const expectedFinalCount = Math.max(0, totalUserCount - 1) // Current count - 1 deleted
         const finalSuccess =
           isQuerySuccessful(finalRes, 1) && finalCount == expectedFinalCount
-        addResult(
+        addTestResult(
           'Test 8: Final verification',
           finalSuccess,
-          finalSuccess
-            ? `Final user count: ${finalCount} (deleted 1 from ${totalUserCount})`
-            : `Expected ${expectedFinalCount} users, got ${finalCount}`,
-          finalSuccess
-            ? undefined
-            : `Final count failed: ${JSON.stringify(finalRes)}`,
-        )
-
-        addResult(
-          'All tests completed!',
-          true,
-          '✅ PGlite is working correctly on React Native!',
+          finalQuery,
+          finalRes,
         )
 
         console.log('[PGL Test] All tests completed successfully!')
@@ -472,21 +441,52 @@ export default function App() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
         {results.map((result, index) => (
-          <View key={index} style={styles.resultItem}>
+          <View
+            key={index}
+            style={[
+              styles.resultItem,
+              result.success ? styles.boxPass : styles.boxFail,
+            ]}
+          >
             <Text
               style={[
                 styles.stepText,
                 result.success ? styles.success : styles.error,
               ]}
             >
-              {result.success ? '✅' : '❌'} {result.step}
+              {result.success ? '✅ PASS' : '❌ FAIL'} — {result.step}
             </Text>
-            {result.result && (
-              <Text style={styles.resultText}>{result.result}</Text>
-            )}
-            {result.error && (
-              <Text style={styles.errorText}>{result.error}</Text>
-            )}
+
+            {result.query ? (
+              <View style={styles.block}>
+                <Text style={styles.blockLabel}>Query</Text>
+                <Text style={styles.mono}>{result.query}</Text>
+              </View>
+            ) : null}
+
+            {result.response ? (
+              <View style={styles.block}>
+                <Text style={styles.blockLabel}>Response</Text>
+                <Text style={styles.mono}>{result.response}</Text>
+              </View>
+            ) : null}
+
+            {/* Back-compat display for legacy addResult entries */}
+            {!result.query && result.result ? (
+              <View style={styles.block}>
+                <Text style={styles.blockLabel}>Details</Text>
+                <Text style={styles.mono}>{String(result.result)}</Text>
+              </View>
+            ) : null}
+
+            {result.error ? (
+              <View style={styles.block}>
+                <Text style={[styles.blockLabel, styles.error]}>Error</Text>
+                <Text style={[styles.mono, styles.errorText]}>
+                  {result.error}
+                </Text>
+              </View>
+            ) : null}
           </View>
         ))}
 
@@ -529,11 +529,45 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  boxPass: {
+    backgroundColor: '#eef8f0',
+    borderColor: '#b7e1c0',
+  },
+  boxFail: {
+    backgroundColor: '#fdecea',
+    borderColor: '#f5c6c0',
   },
   stepText: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 6,
+  },
+  block: {
+    marginTop: 6,
+  },
+  blockLabel: {
+    fontSize: 12,
+    color: '#555',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  mono: {
+    fontSize: 13,
+    color: '#333',
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'Courier',
+    }),
+    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   resultText: {
     fontSize: 14,
@@ -543,12 +577,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: 'red',
-    marginLeft: 20,
+    marginLeft: 0,
   },
   success: {
-    color: 'green',
+    color: '#2e7d32',
   },
   error: {
-    color: 'red',
+    color: '#c62828',
   },
 })

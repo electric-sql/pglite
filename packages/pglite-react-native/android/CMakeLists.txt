@@ -13,18 +13,10 @@ set(ANDROID_STL c++_shared CACHE STRING "" FORCE)
 
 project(PGLiteReactNative)
 
-# Allow failing the build if native libs are missing (default: fail)
-option(PGLITE_ALLOW_STUBS "Allow building with stub PGLite functions if native libs are missing" OFF)
-
-
 # Allow EAS/Gradle to pass absolute paths via environment variables (no Gradle DSL needed)
 if(NOT DEFINED PGLITE_DIST AND DEFINED ENV{PGLITE_DIST})
   set(PGLITE_DIST $ENV{PGLITE_DIST})
   message(STATUS "PGLITE_DIST from environment: ${PGLITE_DIST}")
-endif()
-if(NOT DEFINED PGLITE_ALLOW_STUBS AND DEFINED ENV{PGLITE_ALLOW_STUBS})
-  set(PGLITE_ALLOW_STUBS ON)
-  message(WARNING "PGLITE_ALLOW_STUBS enabled via environment")
 endif()
 
 add_library(PGLiteReactNative SHARED
@@ -74,16 +66,10 @@ if(ANDROID)
     # Allow duplicate pg_* symbols; prefer glue definitions (glue appears first in group)
     target_link_options(PGLiteReactNative PRIVATE -Wl,--allow-multiple-definition)
 
-    add_compile_definitions(PGLITE_MOBILE_HAS_NATIVE=1)
     # Ensure wrapper TU also sees HAVE_SPINLOCKS, to avoid any fallback paths here
     target_compile_definitions(PGLiteReactNative PRIVATE HAVE_SPINLOCKS=1)
-    set(PGLITE_NATIVE_LINKED 1)
   else()
-    if(PGLITE_ALLOW_STUBS)
-      message(WARNING "PGLite native prebuilt libs not found. Building with stub implementations (no real database).")
-    else()
-      message(FATAL_ERROR "PGLite native prebuilt libs not found. Provide -DPGLITE_DIST=...</lib> or copy libs to android/src/main/jni/${ANDROID_ABI}.")
-    endif()
+    message(FATAL_ERROR "PGLite native prebuilt libs not found. Provide -DPGLITE_DIST=...</lib> or copy libs to android/src/main/jni/${ANDROID_ABI}.")
   endif()
 endif()
 
@@ -107,10 +93,6 @@ if(ANDROID)
   endif()
 endif()
 
-# Define PGLITE_MOBILE_HAS_NATIVE=0 only if we didn't link native libs
-if(NOT PGLITE_NATIVE_LINKED)
-  add_compile_definitions(PGLITE_MOBILE_HAS_NATIVE=0)
-endif()
 
 # Add Nitrogen specs :)
 include(${CMAKE_SOURCE_DIR}/../nitrogen/generated/android/PGLiteReactNative+autolinking.cmake)
