@@ -184,6 +184,9 @@ void PGLiteRNNative::ensureStarted_() {
     PGLOG_INFO("iOS: initdb logs will appear in Xcode console and be logged to %s (pwfile=%s)", errLog.c_str(), pw_prefix.c_str());
 #endif
 
+    // Bootstrap/initdb runs in REPL mode by default (is_wire = false by default)
+    PGLOG_INFO("Starting bootstrap/initdb in REPL mode (default)...");
+    
     // Call raw initdb so we see real error traces (may abort on failure)
     PGLOG_INFO("Calling pgl_initdb()...");
     int initdb_rc = pgl_initdb();
@@ -211,8 +214,13 @@ void PGLiteRNNative::ensureStarted_() {
 
     PGLOG_ERROR("DEBUG: About to log 'About to call pgl_backend()'");
     PGLOG_INFO("About to call pgl_backend()...");
+    // Keep REPL mode for pgl_backend() as it also runs bootstrap SQL
     pgl_backend();
     PGLOG_INFO("pgl_backend() returned successfully");
+    
+    // Only now that initialization is complete, enable wire protocol for queries
+    PGLOG_INFO("Initialization complete, enabling wire protocol mode for queries");
+    // Note: wire protocol will be enabled per-query in execProtocolRaw()
     
     // Try to read and log the stderr log file to see what happened
     std::ifstream logFileStream(errLog);
@@ -265,6 +273,9 @@ std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
   // get_buffer_addr(0) returns (buf + 1) to match WASM semantics; write at +1
   uint8_t* buf_base = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(0))) - 1;
   memcpy(buf_base + 1, data, size);
+
+  PGLOG_INFO("CMA request: size=%zu, writing to buffer offset 1", size);
+
   use_wire(1);
   interactive_write(static_cast<int>(size));
   interactive_one();
@@ -273,11 +284,73 @@ std::vector<uint8_t> PGLiteRNNative::execProtocolRaw(
   const int outCap = get_buffer_size(1);
   const int outLen = interactive_read();
   std::vector<uint8_t> out;
+
+  PGLOG_INFO("CMA response: outLen=%d, outCap=%d, input_size=%zu", outLen, outCap, size);
+
   if (outLen > 0 && outLen <= outCap) {
     const size_t start = static_cast<size_t>(size) + 2;
     const uint8_t* outBase = reinterpret_cast<uint8_t*>(static_cast<intptr_t>(get_buffer_addr(1)));
+
+    PGLOG_INFO("CMA response: start_offset=%zu, outBase=%p", start, (void*)outBase);
+
+    // Validate that we have enough space and that outLen doesn't include separator bytes
     if (start + static_cast<size_t>(outLen) <= static_cast<size_t>(outCap)) {
+      // Debug: dump first few message headers in native buffer (aligned to protocol)
+      int offset = static_cast<int>(start);
+      int remaining = outLen;
+      int msgIdx = 0;
+      while (remaining >= 5 && msgIdx < 16) {
+        uint8_t code = outBase[offset];
+        uint32_t len = (static_cast<uint32_t>(outBase[offset + 1]) << 24) |
+                       (static_cast<uint32_t>(outBase[offset + 2]) << 16) |
+                       (static_cast<uint32_t>(outBase[offset + 3]) << 8) |
+                       (static_cast<uint32_t>(outBase[offset + 4]) << 0);
+        uint32_t full = 1 + len; // length includes its own 4 bytes
+
+        // Detect PostgreSQL backend corruption (0xff code with huge length)
+        if (code == 0xff && len > 1000000) {
+          PGLOG_ERROR("[native dump] DETECTED POSTGRESQL CORRUPTION: code=0xff len=%u - this is a known issue with existing databases", len);
+          PGLOG_ERROR("[native dump] Stopping dump to prevent crash. Consider database reset.");
+          break;
+        }
+        PGLOG_INFO("[native dump] msg#%d @%d code='%c'(0x%02x) len=%u full=%u remaining=%d",
+                   ++msgIdx, offset, (char)code, (unsigned)code, len, full, remaining);
+        if ((int)full > remaining) {
+          PGLOG_WARN("[native dump] TRUNCATED header: need %u, have %d", full, remaining);
+          // Log the corrupted bytes for analysis
+          int dumpLen = std::min(remaining, 16);
+          for (int i = 0; i < dumpLen; i++) {
+            PGLOG_WARN("[native dump] corrupt byte[%d] = 0x%02x", i, outBase[offset + i]);
+          }
+          break;
+        }
+        // For DataRow, sanity-check first two field lengths
+        if (code == 'D') {
+          if (remaining >= 5 + 2) {
+            int p = offset + 5;
+            int16_t fcount = (int16_t)((outBase[p] << 8) | outBase[p + 1]);
+            PGLOG_INFO("[native dump]   DataRow fieldCount=%d", (int)fcount);
+            p += 2;
+            for (int i = 0; i < fcount && i < 2; i++) {
+              if (p + 4 > offset + (int)full) break;
+              uint32_t flen = (static_cast<uint32_t>(outBase[p]) << 24) |
+                              (static_cast<uint32_t>(outBase[p + 1]) << 16) |
+                              (static_cast<uint32_t>(outBase[p + 2]) << 8) |
+                              (static_cast<uint32_t>(outBase[p + 3]) << 0);
+              PGLOG_INFO("[native dump]     field[%d] len=%u", i, flen);
+              p += 4;
+              if ((int32_t)flen >= 0) p += (int)flen;
+            }
+          }
+        }
+        offset += (int)full;
+        remaining -= (int)full;
+      }
+
+      // Copy the full response as returned by PostgreSQL
+      // The wire protocol has proper message boundaries with length fields
       out.assign(outBase + start, outBase + start + outLen);
+      PGLOG_INFO("CMA response: successfully copied %d bytes", outLen);
     } else {
       PGLOG_WARN("CMA reply slice oob: start=%zu len=%d cap=%d", start, outLen, outCap);
     }

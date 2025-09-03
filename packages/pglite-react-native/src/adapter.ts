@@ -13,6 +13,101 @@ function concatBuffers(a: Uint8Array, b: Uint8Array): Uint8Array {
   out.set(b, a.length)
   return out
 }
+// Debug helpers to inspect wire protocol buffers
+function toHex(n: number) {
+  return '0x' + n.toString(16).padStart(2, '0')
+}
+
+function debugDumpWire(prefix: string, buf: Uint8Array) {
+  try {
+    const ab =
+      buf.byteOffset === 0 && buf.byteLength === buf.buffer.byteLength
+        ? buf.buffer
+        : buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    const view = new DataView(ab)
+    // const bytes = new Uint8Array(ab)
+    const total = buf.byteLength
+    let offset = 0
+    let idx = 0
+    console.log(`[PGL RN] ${prefix} total=${total} bytes`)
+    while (offset + 5 <= total) {
+      const code = view.getUint8(offset)
+      const len = view.getUint32(offset + 1, false) // length includes its own 4 bytes
+      const full = 1 + len // total bytes for this message (type + length-included)
+      const end = offset + full
+      const ch = String.fromCharCode(code)
+      const fits = end <= total
+      console.log(
+        `[PGL RN]   msg#${++idx} @${offset} code='${ch}'(${toHex(code)}) len=${len} full=${full} fits=${fits}`,
+      )
+      if (!fits) {
+        console.log(
+          `[PGL RN]   TRUNCATED message header indicates beyond buffer: need ${full}, have ${total - offset}`,
+        )
+        break
+      }
+      // Light-weight DataRow introspection to detect inner truncation
+      if (code === 0x44 /* 'D' */) {
+        try {
+          // DataRow payload starts after type(1)+len(4)
+          let p = offset + 5
+          const fieldCount = view.getInt16(p, false)
+          p += 2
+          console.log(`[PGL RN]     DataRow fieldCount=${fieldCount}`)
+          for (let i = 0; i < fieldCount; i++) {
+            if (p + 4 > end) {
+              console.log(
+                `[PGL RN]     DataRow field[${i}] length header oob (need 4 bytes, have ${end - p})`,
+              )
+              break
+            }
+            // Dump next 4 bytes that encode the field length
+            const b0 = view.getUint8(p + 0)
+            const b1 = view.getUint8(p + 1)
+            const b2 = view.getUint8(p + 2)
+            const b3 = view.getUint8(p + 3)
+            console.log(
+              `[PGL RN]       field[${i}] len-bytes = ${toHex(b0)} ${toHex(b1)} ${toHex(b2)} ${toHex(b3)}`,
+            )
+            const flen = view.getInt32(p, false)
+            p += 4
+            if (flen === -1) {
+              console.log(`[PGL RN]       field[${i}] = NULL`)
+              continue
+            }
+            const need = p + flen
+            const ok = need <= end
+            console.log(`[PGL RN]       field[${i}] len=${flen} ok=${ok}`)
+            if (!ok) {
+              const rem = end - p
+              const previewLen = Math.min(rem, 16)
+              const preview: string[] = []
+              for (let k = 0; k < previewLen; k++)
+                preview.push(toHex(view.getUint8(p + k)))
+              console.log(
+                `[PGL RN]       DataRow field payload exceeds message boundary: need ${flen} bytes, remaining ${rem}, next bytes: ${preview.join(' ')}`,
+              )
+              break
+            }
+            // Dump first up-to-8 bytes of payload
+            const pl = Math.min(8, flen)
+            const pprev: string[] = []
+            for (let k = 0; k < pl; k++) pprev.push(toHex(view.getUint8(p + k)))
+            console.log(
+              `[PGL RN]       field[${i}] payload[0..${pl}) = ${pprev.join(' ')}`,
+            )
+            p = need
+          }
+        } catch (e) {
+          console.log('[PGL RN]     DataRow introspection error:', e)
+        }
+      }
+      offset = end
+    }
+  } catch (e) {
+    console.log('[PGL RN] debugDumpWire failed:', e)
+  }
+}
 
 export interface ExecProtocolOptions {
   syncToFs?: boolean
@@ -139,7 +234,6 @@ export class PGliteReactNative {
     this.#handshakeDone = true
   }
 
-
   async close(): Promise<void> {
     if (this.#closed) return
     await getPGLiteNative().close()
@@ -175,8 +269,9 @@ export class PGliteReactNative {
     // Determine the correct OID for each parameter based on its JavaScript type
     const paramTypes =
       options?.paramTypes ||
-      (params.length > 0 ? params.map(param => this.getParamOid(param)) : undefined)
-    
+      (params.length > 0
+        ? params.map((param) => this.getParamOid(param))
+        : undefined)
 
     // Debug individual messages - use unnamed statement to match WASM version
     const parseMsg = protocolSerialize.parse({
@@ -199,7 +294,6 @@ export class PGliteReactNative {
       ),
       syncMsg,
     )
-
 
     const { messages: batchedMessages } = await this.execProtocol(
       completeSequence,
@@ -269,7 +363,6 @@ export class PGliteReactNative {
     return { rows, fields, ...(affectedRows ? { affectedRows } : {}) }
   }
 
-
   async execProtocolRaw(
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
@@ -317,12 +410,13 @@ export class PGliteReactNative {
     const data = await this.execProtocolRaw(message, { syncToFs })
     const results: any[] = []
 
+    // Dump the raw wire response summary and headers before parsing
+    debugDumpWire('recv dump before parse', data)
+
     try {
-      let messageCount = 0
       // Reset parser for each new protocol session to ensure clean state
-      this.#protocolParser = new Parser() 
+      this.#protocolParser = new Parser()
       this.#protocolParser.parse(data, (msg: any) => {
-        messageCount++
         results.push(msg)
         // Handle errors and notices like the web version
         if (msg.name === 'error') {
@@ -330,9 +424,14 @@ export class PGliteReactNative {
         }
         if (msg.name === 'notice' && onNotice) onNotice(msg as any)
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PGL RN] Protocol parser error:', error)
-      console.error('[PGL RN] Error stack:', error.stack)
+      // On error, try to dump again for correlation
+      try {
+        debugDumpWire('recv dump after error', data)
+      } catch (e) {
+        console.log('[PGL RN] secondary dump failed:', e)
+      }
     }
     return { messages: results, data }
   }
