@@ -98,7 +98,7 @@ export class Parser {
       // length is 1 Uint32BE - it is the length of the message EXCLUDING the code
       const length = this.#bufferView.getUint32(offset + CODE_LENGTH, false)
       const fullMessageLength = CODE_LENGTH + length
-      if (fullMessageLength + offset <= bufferFullLength) {
+      if ((fullMessageLength + offset <= bufferFullLength) && length > 0) {
         const message = this.#handlePacket(
           offset + HEADER_LENGTH,
           code,
