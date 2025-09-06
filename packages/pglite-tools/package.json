@@ -58,6 +58,9 @@
     "fs": false,
     "fs/promises": false
   },
+  "dependencies": {
+    "@electric-sql/pglite-base": "workspace:*"
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",

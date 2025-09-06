@@ -39,11 +39,10 @@ export default defineConfig([
   {
     entry: entryPoints,
     sourcemap: true,
-    // Temporarily disable DTS due to type issues - the main pglite package has types
-    // dts: {
-    //   entry: entryPoints,
-    //   resolve: true,
-    // },
+    dts: {
+      entry: entryPoints,
+      resolve: true,
+    },
     clean: true,
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS

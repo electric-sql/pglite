@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["@types/emscripten", "node"],
-    "paths": {
-      "@electric-sql/pglite-base": ["../pglite-base/src/index"],
-      "@electric-sql/pglite-base/*": ["../pglite-base/src/*"]
-    }
+    "types": ["@types/emscripten", "node"]
   },
   "include": [
     "src",
@@ -13,6 +9,7 @@
     "eslint.config.js",
     "test-setup.ts",
     "tsup.config.js",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "../../types/**/*"
   ]
 }

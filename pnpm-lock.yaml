@@ -300,6 +300,12 @@ importers:
 
   packages/pglite-react-native:
     dependencies:
+      '@electric-sql/pglite-base':
+        specifier: workspace:*
+        version: link:../pglite-base
+      async-mutex:
+        specifier: ^0.4.1
+        version: 0.4.1
       expo:
         specifier: '*'
         version: 53.0.22(@babel/core@7.28.4)(react-native@0.81.1(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1)
@@ -310,9 +316,6 @@ importers:
       '@electric-sql/pg-protocol':
         specifier: workspace:*
         version: link:../pg-protocol
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
       '@types/node':
         specifier: ^20.16.11
         version: 20.19.13
@@ -325,6 +328,9 @@ importers:
       react-native-nitro-modules:
         specifier: 0.29.0
         version: 0.29.0(react-native@0.81.1(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1)
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.0(@microsoft/api-extractor@7.52.11(@types/node@20.19.13))(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.2)
       typescript:
         specifier: ^5.0.0
         version: 5.9.2
@@ -488,6 +494,10 @@ importers:
         version: 2.1.9(@types/node@20.19.13)(jsdom@24.1.3)(lightningcss@1.27.0)(terser@5.44.0)
 
   packages/pglite-tools:
+    dependencies:
+      '@electric-sql/pglite-base':
+        specifier: workspace:*
+        version: link:../pglite-base
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.1

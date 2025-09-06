@@ -14,13 +14,15 @@ import {
   PGliteOptions,
   DataTransferContainer,
   Transaction,
-  getFsBundle,
-  instantiateWasm,
-  startWasmDownload,
   toPostgresName,
   PGDATA,
   WASM_PREFIX
 } from '@electric-sql/pglite-base'
+import {
+  getFsBundle,
+  instantiateWasm,
+  startWasmDownload,
+} from './utils.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
 import {
   type Filesystem,

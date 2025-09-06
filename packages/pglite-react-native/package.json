@@ -36,8 +36,11 @@
     "url": "https://github.com/electric-sql/pglite",
     "directory": "pglite/packages/pglite-react-native"
   },
+  "dependencies": {
+    "@electric-sql/pglite-base": "workspace:*",
+    "async-mutex": "^0.4.1"
+  },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:*",
     "react-native": ">=0.70.0",
     "expo": "*"
   },
@@ -47,16 +50,16 @@
     }
   },
   "devDependencies": {
-    "@electric-sql/pglite": "workspace:*",
     "@electric-sql/pg-protocol": "workspace:*",
     "@types/node": "^20.16.11",
     "nitro-codegen": "latest",
     "react-native-nitro-modules": "0.29.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "expo-modules-core": "^2.4.0"
   },
   "scripts": {
-    "build": "nitro-codegen src && tsc",
+    "build": "nitro-codegen src && tsup",
     "codegen": "nitro-codegen src",
     "build:android": "cd android && ./gradlew assembleRelease",
     "build:ios": "xcodebuild -project ios/PGLiteReactNative.xcodeproj",

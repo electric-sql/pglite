@@ -20,8 +20,6 @@
   },
   "dependencies": {
     "@electric-sql/pglite-react-native": "file:..",
-    "@electric-sql/pg-protocol": "file:../../pg-protocol",
-    "@electric-sql/pglite": "^0.3.7",
     "expo": "~53.0.20",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",

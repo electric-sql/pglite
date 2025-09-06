@@ -1,5 +1,5 @@
 import { WasiPreview1 } from './wasi/easywasi'
-import { type FS } from '@electric-sql/pglite'
+import { type FS } from '@electric-sql/pglite-base'
 import { PGlite } from '@electric-sql/pglite'
 type FSInterface = any // WASI FS interface
 
