@@ -3,7 +3,7 @@ import type {
   PGliteInterface,
   Results,
   Transaction,
-} from '../interface'
+} from '@electric-sql/pglite-base'
 import type {
   LiveQueryOptions,
   LiveIncrementalQueryOptions,
@@ -14,7 +14,7 @@ import type {
   Change,
   LiveQueryResults,
 } from './interface'
-import { uuid, formatQuery, debounceMutex } from '../utils.js'
+import { uuid, formatQuery, debounceMutex } from '@electric-sql/pglite-base'
 
 export type {
   LiveNamespace,

@@ -55,7 +55,10 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pglite-base": "workspace:*",
     "@eslint-react/eslint-plugin": "^1.14.3",
+    "@types/emscripten": "^1.39.13",
+    "@types/node": "^20.16.11",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.2",

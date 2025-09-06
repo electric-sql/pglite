@@ -1,10 +1,18 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["@types/emscripten", "node"],
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
+    "paths": {
+      "@electric-sql/pglite-base": ["../pglite-base/src/index"],
+      "@electric-sql/pglite-base/*": ["../pglite-base/src/*"]
+    }
   },
   "include": ["src", "src-webcomponent"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "../pglite-base" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

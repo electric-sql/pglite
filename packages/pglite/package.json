@@ -30,16 +30,6 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./template": {
-      "import": {
-        "types": "./dist/templating.d.ts",
-        "default": "./dist/templating.js"
-      },
-      "require": {
-        "types": "./dist/templating.d.cts",
-        "default": "./dist/templating.cjs"
-      }
-    },
     "./live": {
       "import": {
         "types": "./dist/live/index.d.ts",
@@ -58,6 +48,26 @@
       "require": {
         "types": "./dist/worker/index.d.cts",
         "default": "./dist/worker/index.cjs"
+      }
+    },
+    "./opfs-ahp": {
+      "import": {
+        "types": "./dist/fs/opfs-ahp.d.ts",
+        "default": "./dist/fs/opfs-ahp.js"
+      },
+      "require": {
+        "types": "./dist/fs/opfs-ahp.d.cts",
+        "default": "./dist/fs/opfs-ahp.cjs"
+      }
+    },
+    "./template": {
+      "import": {
+        "types": "./dist/templating.d.ts",
+        "default": "./dist/templating.js"
+      },
+      "require": {
+        "types": "./dist/templating.d.cts",
+        "default": "./dist/templating.cjs"
       }
     },
     "./vector": {
@@ -88,16 +98,6 @@
       "require": {
         "types": "./dist/fs/nodefs.d.cts",
         "default": "./dist/fs/nodefs.cjs"
-      }
-    },
-    "./opfs-ahp": {
-      "import": {
-        "types": "./dist/fs/opfs-ahp.d.ts",
-        "default": "./dist/fs/opfs-ahp.js"
-      },
-      "require": {
-        "types": "./dist/fs/opfs-ahp.d.cts",
-        "default": "./dist/fs/opfs-ahp.cjs"
       }
     },
     "./basefs": {
@@ -146,6 +146,9 @@
     "typecheck": "tsc --noEmit",
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
     "prepublishOnly": "pnpm check:exports"
+  },
+  "dependencies": {
+    "@electric-sql/pglite-base": "workspace:*"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",

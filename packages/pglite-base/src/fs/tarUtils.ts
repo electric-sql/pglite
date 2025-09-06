@@ -14,11 +14,11 @@ export async function dumpTar(
   const filename = dbname + (zipped ? '.tar.gz' : '.tar')
   const type = zipped ? 'application/x-gzip' : 'application/x-tar'
   if (typeof File !== 'undefined') {
-    return new File([compressed], filename, {
+    return new File([compressed as BlobPart], filename, {
       type,
     })
   } else {
-    return new Blob([compressed], {
+    return new Blob([compressed as BlobPart], {
       type,
     })
   }
@@ -36,7 +36,7 @@ export async function loadTar(
   file: File | Blob,
   pgDataDir: string,
 ): Promise<void> {
-  let tarball = new Uint8Array(await file.arrayBuffer())
+  let tarball: Uint8Array = new Uint8Array(await file.arrayBuffer() as ArrayBuffer)
   const filename =
     typeof File !== 'undefined' && file instanceof File ? file.name : undefined
   const compressed =
@@ -44,7 +44,7 @@ export async function loadTar(
     filename?.endsWith('.tgz') ||
     filename?.endsWith('.tar.gz')
   if (compressed) {
-    tarball = await unzip(tarball)
+    tarball = (await unzip(tarball)) as Uint8Array
   }
 
   let files
@@ -53,7 +53,7 @@ export async function loadTar(
   } catch (e) {
     if (e instanceof Error && e.message.includes('File is corrupted')) {
       // The file may be compressed, but had the wrong mime type, try unzipping it
-      tarball = await unzip(tarball)
+      tarball = (await unzip(tarball)) as Uint8Array
       files = untar(tarball)
     } else {
       throw e
@@ -150,7 +150,7 @@ export async function zipBrowser(file: Uint8Array): Promise<Uint8Array> {
   const writer = cs.writable.getWriter()
   const reader = cs.readable.getReader()
 
-  writer.write(file)
+  writer.write(file as BufferSource)
   writer.close()
 
   const chunks: Uint8Array[] = []
@@ -199,7 +199,7 @@ export async function unzipBrowser(file: Uint8Array): Promise<Uint8Array> {
   const writer = ds.writable.getWriter()
   const reader = ds.readable.getReader()
 
-  writer.write(file)
+  writer.write(file as BufferSource)
   writer.close()
 
   const chunks: Uint8Array[] = []

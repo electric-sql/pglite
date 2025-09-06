@@ -45,10 +45,10 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
    * Specialized version of `std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>`.
    */
   using std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer___ = std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>;
-  inline std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> create_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer___() {
+  inline std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> create_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer___() noexcept {
     return Promise<std::shared_ptr<ArrayBuffer>>::create();
   }
-  inline PromiseHolder<std::shared_ptr<ArrayBuffer>> wrap_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer___(std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> promise) {
+  inline PromiseHolder<std::shared_ptr<ArrayBuffer>> wrap_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer___(std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> promise) noexcept {
     return PromiseHolder<std::shared_ptr<ArrayBuffer>>(std::move(promise));
   }
   
@@ -63,14 +63,14 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   class Func_void_std__shared_ptr_ArrayBuffer__Wrapper final {
   public:
     explicit Func_void_std__shared_ptr_ArrayBuffer__Wrapper(std::function<void(const std::shared_ptr<ArrayBuffer>& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::shared_ptr<ArrayBuffer>& /* result */)>>(std::move(func))) {}
-    inline void call(ArrayBufferHolder result) const {
+    inline void call(ArrayBufferHolder result) const noexcept {
       _function->operator()(result.getArrayBuffer());
     }
   private:
     std::unique_ptr<std::function<void(const std::shared_ptr<ArrayBuffer>& /* result */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_std__shared_ptr_ArrayBuffer_ create_Func_void_std__shared_ptr_ArrayBuffer_(void* _Nonnull swiftClosureWrapper);
-  inline Func_void_std__shared_ptr_ArrayBuffer__Wrapper wrap_Func_void_std__shared_ptr_ArrayBuffer_(Func_void_std__shared_ptr_ArrayBuffer_ value) {
+  Func_void_std__shared_ptr_ArrayBuffer_ create_Func_void_std__shared_ptr_ArrayBuffer_(void* _Nonnull swiftClosureWrapper) noexcept;
+  inline Func_void_std__shared_ptr_ArrayBuffer__Wrapper wrap_Func_void_std__shared_ptr_ArrayBuffer_(Func_void_std__shared_ptr_ArrayBuffer_ value) noexcept {
     return Func_void_std__shared_ptr_ArrayBuffer__Wrapper(std::move(value));
   }
   
@@ -85,14 +85,14 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   class Func_void_std__exception_ptr_Wrapper final {
   public:
     explicit Func_void_std__exception_ptr_Wrapper(std::function<void(const std::exception_ptr& /* error */)>&& func): _function(std::make_unique<std::function<void(const std::exception_ptr& /* error */)>>(std::move(func))) {}
-    inline void call(std::exception_ptr error) const {
+    inline void call(std::exception_ptr error) const noexcept {
       _function->operator()(error);
     }
   private:
     std::unique_ptr<std::function<void(const std::exception_ptr& /* error */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* _Nonnull swiftClosureWrapper);
-  inline Func_void_std__exception_ptr_Wrapper wrap_Func_void_std__exception_ptr(Func_void_std__exception_ptr value) {
+  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* _Nonnull swiftClosureWrapper) noexcept;
+  inline Func_void_std__exception_ptr_Wrapper wrap_Func_void_std__exception_ptr(Func_void_std__exception_ptr value) noexcept {
     return Func_void_std__exception_ptr_Wrapper(std::move(value));
   }
   
@@ -101,8 +101,14 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
    * Specialized version of `std::optional<bool>`.
    */
   using std__optional_bool_ = std::optional<bool>;
-  inline std::optional<bool> create_std__optional_bool_(const bool& value) {
+  inline std::optional<bool> create_std__optional_bool_(const bool& value) noexcept {
     return std::optional<bool>(value);
+  }
+  inline bool has_value_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline bool get_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return *optional;
   }
   
   // pragma MARK: std::optional<ExecProtocolOptionsNative>
@@ -110,8 +116,14 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
    * Specialized version of `std::optional<ExecProtocolOptionsNative>`.
    */
   using std__optional_ExecProtocolOptionsNative_ = std::optional<ExecProtocolOptionsNative>;
-  inline std::optional<ExecProtocolOptionsNative> create_std__optional_ExecProtocolOptionsNative_(const ExecProtocolOptionsNative& value) {
+  inline std::optional<ExecProtocolOptionsNative> create_std__optional_ExecProtocolOptionsNative_(const ExecProtocolOptionsNative& value) noexcept {
     return std::optional<ExecProtocolOptionsNative>(value);
+  }
+  inline bool has_value_std__optional_ExecProtocolOptionsNative_(const std::optional<ExecProtocolOptionsNative>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline ExecProtocolOptionsNative get_std__optional_ExecProtocolOptionsNative_(const std::optional<ExecProtocolOptionsNative>& optional) noexcept {
+    return *optional;
   }
   
   // pragma MARK: std::shared_ptr<Promise<void>>
@@ -119,10 +131,10 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
    * Specialized version of `std::shared_ptr<Promise<void>>`.
    */
   using std__shared_ptr_Promise_void__ = std::shared_ptr<Promise<void>>;
-  inline std::shared_ptr<Promise<void>> create_std__shared_ptr_Promise_void__() {
+  inline std::shared_ptr<Promise<void>> create_std__shared_ptr_Promise_void__() noexcept {
     return Promise<void>::create();
   }
-  inline PromiseHolder<void> wrap_std__shared_ptr_Promise_void__(std::shared_ptr<Promise<void>> promise) {
+  inline PromiseHolder<void> wrap_std__shared_ptr_Promise_void__(std::shared_ptr<Promise<void>> promise) noexcept {
     return PromiseHolder<void>(std::move(promise));
   }
   
@@ -137,14 +149,14 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   class Func_void_Wrapper final {
   public:
     explicit Func_void_Wrapper(std::function<void()>&& func): _function(std::make_unique<std::function<void()>>(std::move(func))) {}
-    inline void call() const {
+    inline void call() const noexcept {
       _function->operator()();
     }
   private:
     std::unique_ptr<std::function<void()>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void create_Func_void(void* _Nonnull swiftClosureWrapper);
-  inline Func_void_Wrapper wrap_Func_void(Func_void value) {
+  Func_void create_Func_void(void* _Nonnull swiftClosureWrapper) noexcept;
+  inline Func_void_Wrapper wrap_Func_void(Func_void value) noexcept {
     return Func_void_Wrapper(std::move(value));
   }
   
@@ -153,28 +165,28 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
    * Specialized version of `std::shared_ptr<HybridPGLiteReactNativeSpec>`.
    */
   using std__shared_ptr_HybridPGLiteReactNativeSpec_ = std::shared_ptr<HybridPGLiteReactNativeSpec>;
-  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer);
-  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType);
+  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer) noexcept;
+  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType) noexcept;
   
   // pragma MARK: std::weak_ptr<HybridPGLiteReactNativeSpec>
   using std__weak_ptr_HybridPGLiteReactNativeSpec_ = std::weak_ptr<HybridPGLiteReactNativeSpec>;
-  inline std__weak_ptr_HybridPGLiteReactNativeSpec_ weakify_std__shared_ptr_HybridPGLiteReactNativeSpec_(const std::shared_ptr<HybridPGLiteReactNativeSpec>& strong) { return strong; }
+  inline std__weak_ptr_HybridPGLiteReactNativeSpec_ weakify_std__shared_ptr_HybridPGLiteReactNativeSpec_(const std::shared_ptr<HybridPGLiteReactNativeSpec>& strong) noexcept { return strong; }
   
   // pragma MARK: Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>
   using Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ = Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>;
-  inline Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ create_Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____(const std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>& value) {
+  inline Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ create_Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____(const std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>& value) noexcept {
     return Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>::withValue(value);
   }
-  inline Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ create_Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____(const std::exception_ptr& error) {
+  inline Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ create_Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>>::withError(error);
   }
   
   // pragma MARK: Result<std::shared_ptr<Promise<void>>>
   using Result_std__shared_ptr_Promise_void___ = Result<std::shared_ptr<Promise<void>>>;
-  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::shared_ptr<Promise<void>>& value) {
+  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::shared_ptr<Promise<void>>& value) noexcept {
     return Result<std::shared_ptr<Promise<void>>>::withValue(value);
   }
-  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::exception_ptr& error) {
+  inline Result_std__shared_ptr_Promise_void___ create_Result_std__shared_ptr_Promise_void___(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<void>>>::withError(error);
   }
 

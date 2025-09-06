@@ -1,15 +1,10 @@
 import { Mutex } from 'async-mutex'
-import { BasePGlite } from './base.js'
-import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
-import {
-  type Filesystem,
-  loadFs,
-  parseDataDir,
-  PGDATA,
-  WASM_PREFIX,
-} from './fs/index.js'
-import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
-import type {
+import { 
+  BasePGlite,
+  loadExtensionBundle, 
+  loadExtensions,
+  DumpTarCompressionOptions, 
+  loadTar,
   DebugLevel,
   ExecProtocolOptions,
   ExecProtocolResult,
@@ -19,14 +14,19 @@ import type {
   PGliteOptions,
   DataTransferContainer,
   Transaction,
-} from './interface.js'
-import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
-import {
   getFsBundle,
   instantiateWasm,
   startWasmDownload,
   toPostgresName,
-} from './utils.js'
+  PGDATA,
+  WASM_PREFIX
+} from '@electric-sql/pglite-base'
+import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
+import {
+  type Filesystem,
+  loadFs,
+  parseDataDir,
+} from './fs/index.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -43,7 +43,7 @@ export class PGlite
   implements PGliteInterface, AsyncDisposable
 {
   fs?: Filesystem
-  protected mod?: PostgresMod
+  protected mod!: PostgresMod
 
   readonly dataDir?: string
 

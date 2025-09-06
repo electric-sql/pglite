@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@types/emscripten", "node"],
+    "paths": {
+      "@electric-sql/pg-protocol": [
+        "./node_modules/@electric-sql/pg-protocol/src/index"
+      ],
+      "@electric-sql/pg-protocol/messages": [
+        "./node_modules/@electric-sql/pg-protocol/src/messages"
+      ]
+    }
+  },
+  "include": ["src", "tsup.config.ts"]
+}

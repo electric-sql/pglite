@@ -103,6 +103,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     readonly debug: DebugLevel
     readonly ready: boolean
     readonly closed: boolean
+    readonly Module: any // Postgres Emscripten Module
 
     close(): Promise<void>
     query<T>(

@@ -113,7 +113,8 @@ open class HybridPGLiteReactNativeSpec_cxx {
   public final func execProtocolRaw(message: ArrayBuffer, options: bridge.std__optional_ExecProtocolOptionsNative_) -> bridge.Result_std__shared_ptr_Promise_std__shared_ptr_ArrayBuffer____ {
     do {
       let __result = try self.__implementation.execProtocolRaw(message: message, options: { () -> ExecProtocolOptionsNative? in
-        if let __unwrapped = options.value {
+        if bridge.has_value_std__optional_ExecProtocolOptionsNative_(options) {
+          let __unwrapped = bridge.get_std__optional_ExecProtocolOptionsNative_(options)
           return __unwrapped
         } else {
           return nil

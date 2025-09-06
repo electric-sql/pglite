@@ -1,6 +1,6 @@
-import type { FsType, Filesystem } from './base.js'
+import type { FsType, Filesystem } from '@electric-sql/pglite-base'
 import { IdbFs } from './idbfs.js'
-import { MemoryFS } from './memoryfs.js'
+import { MemoryFS } from '@electric-sql/pglite-base'
 
 export {
   BaseFilesystem,
@@ -10,7 +10,7 @@ export {
   type Filesystem,
   type FsType,
   type FsStats,
-} from './base.js'
+} from '@electric-sql/pglite-base'
 
 export function parseDataDir(dataDir?: string) {
   let fsType: FsType
@@ -43,7 +43,7 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
   let fs: Filesystem
   if (dataDir && fsType === 'nodefs') {
     // Lazy load the nodefs to avoid bundling it in the browser
-    const { NodeFS } = await import('./nodefs.js')
+    const { NodeFS } = await import('@electric-sql/pglite-base/nodefs')
     fs = new NodeFS(dataDir)
   } else if (dataDir && fsType === 'idbfs') {
     fs = new IdbFs(dataDir)

@@ -9,25 +9,30 @@ const root = path.dirname(thisFile)
 const replaceAssertPlugin = {
   name: 'replace-assert',
   setup(build: any) {
-    // Resolve `assert` to a blank file
+    // Resolve `assert` to a blank file - using pglite-base polyfill
     build.onResolve({ filter: /^assert$/ }, (_args: any) => {
-      return { path: path.join(root, 'src', 'polyfills', 'blank.ts') }
+      return {
+        path: path.resolve(
+          './node_modules/@electric-sql/pglite-base/src/polyfills/blank.ts',
+        ),
+      }
     })
   },
 }
 
 const entryPoints = [
   'src/index.ts',
-  'src/fs/nodefs.ts',
+  'src/live/index.ts',
+  'src/worker/index.ts',
   'src/fs/opfs-ahp.ts',
+  'src/fs/nodefs.ts',
   'src/fs/base.ts',
   'src/templating.ts',
-  'src/live/index.ts',
   'src/vector/index.ts',
   'src/pg_ivm/index.ts',
-  'src/worker/index.ts',
 ]
 
+// Add contrib files
 const contribDir = path.join(root, 'src', 'contrib')
 const contribFiles = await fs.promises.readdir(contribDir)
 for (const file of contribFiles) {
@@ -35,6 +40,8 @@ for (const file of contribFiles) {
     entryPoints.push(`src/contrib/${file}`)
   }
 }
+
+// Restored proxy files that re-export from pglite-base for backward compatibility
 
 const minify = process.env.DEBUG === 'true' ? false : true
 

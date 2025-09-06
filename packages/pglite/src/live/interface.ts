@@ -1,4 +1,4 @@
-import type { Results } from '../interface'
+import type { Results } from '@electric-sql/pglite-base'
 
 export interface LiveQueryOptions<T = { [key: string]: any }> {
   query: string

@@ -199,7 +199,7 @@ export class PGLiteSocketHandler extends EventTarget {
         const promise = new Promise<number>((resolve, reject) => {
           this.log(`handleData: writing response to socket`)
           if (this.socket) {
-            this.socket.write(Buffer.from(result), (err?: Error) => {
+            this.socket.write(Buffer.from(result), (err?: Error | null) => {
               if (err) {
                 reject(`Error while writing to the socket ${err.toString()}`)
               } else {

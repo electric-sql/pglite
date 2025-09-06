@@ -1,5 +1,5 @@
 import { ChangeMessage } from '@electric-sql/client'
-import type { PGliteInterface, Transaction } from '@electric-sql/pglite'
+import type { PGliteInterface, Transaction } from '@electric-sql/pglite-base'
 import type { MapColumns, InsertChangeMessage } from './types'
 
 export interface ApplyMessageToTableOptions {

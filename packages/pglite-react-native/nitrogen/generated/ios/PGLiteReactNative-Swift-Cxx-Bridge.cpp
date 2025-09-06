@@ -14,7 +14,7 @@
 namespace margelo::nitro::electricsql::pglite::bridge::swift {
 
   // pragma MARK: std::function<void(const std::shared_ptr<ArrayBuffer>& /* result */)>
-  Func_void_std__shared_ptr_ArrayBuffer_ create_Func_void_std__shared_ptr_ArrayBuffer_(void* _Nonnull swiftClosureWrapper) {
+  Func_void_std__shared_ptr_ArrayBuffer_ create_Func_void_std__shared_ptr_ArrayBuffer_(void* _Nonnull swiftClosureWrapper) noexcept {
     auto swiftClosure = PGLiteReactNative::Func_void_std__shared_ptr_ArrayBuffer_::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const std::shared_ptr<ArrayBuffer>& result) mutable -> void {
       swiftClosure.call(ArrayBufferHolder(result));
@@ -22,7 +22,7 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   }
   
   // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
-  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* _Nonnull swiftClosureWrapper) {
+  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* _Nonnull swiftClosureWrapper) noexcept {
     auto swiftClosure = PGLiteReactNative::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const std::exception_ptr& error) mutable -> void {
       swiftClosure.call(error);
@@ -30,7 +30,7 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   }
   
   // pragma MARK: std::function<void()>
-  Func_void create_Func_void(void* _Nonnull swiftClosureWrapper) {
+  Func_void create_Func_void(void* _Nonnull swiftClosureWrapper) noexcept {
     auto swiftClosure = PGLiteReactNative::Func_void::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)]() mutable -> void {
       swiftClosure.call();
@@ -38,11 +38,11 @@ namespace margelo::nitro::electricsql::pglite::bridge::swift {
   }
   
   // pragma MARK: std::shared_ptr<HybridPGLiteReactNativeSpec>
-  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer) {
+  std::shared_ptr<HybridPGLiteReactNativeSpec> create_std__shared_ptr_HybridPGLiteReactNativeSpec_(void* _Nonnull swiftUnsafePointer) noexcept {
     PGLiteReactNative::HybridPGLiteReactNativeSpec_cxx swiftPart = PGLiteReactNative::HybridPGLiteReactNativeSpec_cxx::fromUnsafe(swiftUnsafePointer);
     return std::make_shared<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift>(swiftPart);
   }
-  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType) {
+  void* _Nonnull get_std__shared_ptr_HybridPGLiteReactNativeSpec_(std__shared_ptr_HybridPGLiteReactNativeSpec_ cppType) noexcept {
     std::shared_ptr<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::electricsql::pglite::HybridPGLiteReactNativeSpecSwift>(cppType);
     #ifdef NITRO_DEBUG
     if (swiftWrapper == nullptr) [[unlikely]] {

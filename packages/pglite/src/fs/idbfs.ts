@@ -1,9 +1,7 @@
-import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
-import type { PostgresMod } from '../postgresMod.js'
-import { PGlite } from '../pglite.js'
+import { EmscriptenBuiltinFilesystem, PGDATA, PostgresMod, PGliteInterface } from '@electric-sql/pglite-base'
 
 export class IdbFs extends EmscriptenBuiltinFilesystem {
-  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+  async init(pg: PGliteInterface, opts: Partial<PostgresMod>) {
     this.pg = pg
     const options: Partial<PostgresMod> = {
       ...opts,

@@ -8,8 +8,13 @@
       ],
       "@electric-sql/pg-protocol/messages": [
         "./node_modules/@electric-sql/pg-protocol/src/messages"
-      ]
+      ],
+      "@electric-sql/pglite-base": ["../pglite-base/src/index"],
+      "@electric-sql/pglite-base/*": ["../pglite-base/src/*"]
     }
   },
+  "references": [
+    { "path": "../pglite-base" }
+  ],
   "include": ["src", "tsup.config.ts", "vitest.config.ts"]
 }

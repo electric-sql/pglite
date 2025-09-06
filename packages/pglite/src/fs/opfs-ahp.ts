@@ -1,6 +1,4 @@
-import { BaseFilesystem, ERRNO_CODES, type FsStats } from './base.js'
-import type { PostgresMod } from '../postgresMod.js'
-import { PGlite } from '../pglite.js'
+import { BaseFilesystem, ERRNO_CODES, type FsStats, PostgresMod, PGliteInterface } from '@electric-sql/pglite-base'
 
 export interface OpfsAhpOptions {
   initialPoolSize?: number
@@ -106,7 +104,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     this.maintainedPoolSize = maintainedPoolSize
   }
 
-  async init(pg: PGlite, opts: Partial<PostgresMod>) {
+  async init(pg: PGliteInterface, opts: Partial<PostgresMod>) {
     await this.#init()
     return super.init(pg, opts)
   }

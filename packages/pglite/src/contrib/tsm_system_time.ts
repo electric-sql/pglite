@@ -1,19 +1,2 @@
-import type {
-  Extension,
-  ExtensionSetupResult,
-  PGliteInterface,
-} from '../interface'
-
-const setup = async (_pg: PGliteInterface, _emscriptenOpts: any) => {
-  return {
-    bundlePath: new URL(
-      '../../release/tsm_system_time.tar.gz',
-      import.meta.url,
-    ),
-  } satisfies ExtensionSetupResult
-}
-
-export const tsm_system_time = {
-  name: 'tsm_system_time',
-  setup,
-} satisfies Extension
+// Re-export tsm_system_time from pglite-base
+export * from '@electric-sql/pglite-base/contrib/tsm_system_time'

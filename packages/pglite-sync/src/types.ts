@@ -4,7 +4,7 @@ import type {
   Row,
   ChangeMessage,
 } from '@electric-sql/client'
-import { Transaction } from '@electric-sql/pglite'
+import { Transaction } from '@electric-sql/pglite-base'
 
 export type Lsn = bigint
 

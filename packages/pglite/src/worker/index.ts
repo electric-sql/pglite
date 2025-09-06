@@ -7,11 +7,11 @@ import type {
   PGliteInterfaceExtensions,
   PGliteOptions,
   Transaction,
-} from '../interface.js'
+} from '@electric-sql/pglite-base'
 import type { PGlite } from '../pglite.js'
-import { BasePGlite } from '../base.js'
-import { toPostgresName, uuid } from '../utils.js'
-import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
+import { BasePGlite } from '@electric-sql/pglite-base'
+import { toPostgresName, uuid } from '@electric-sql/pglite-base'
+import { DumpTarCompressionOptions } from '@electric-sql/pglite-base'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -288,6 +288,13 @@ export class PGliteWorker
    */
   get closed() {
     return this.#closed
+  }
+
+  /**
+   * The Postgres Emscripten Module (not accessible in worker context)
+   */
+  get Module() {
+    throw new Error('Module is not accessible in worker context')
   }
 
   /**

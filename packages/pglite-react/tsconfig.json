@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["@types/emscripten", "node"],
     "jsx": "react-jsx",
+    "paths": {
+      "@electric-sql/pglite-base": ["../pglite-base/src/index"],
+      "@electric-sql/pglite-base/*": ["../pglite-base/src/*"]
+    }
   },
   "include": [
     "src",

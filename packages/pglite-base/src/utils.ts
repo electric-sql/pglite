@@ -41,9 +41,8 @@ export async function instantiateWasm(
   const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
   if (IN_NODE) {
     const fs = await import('fs/promises')
-    const buffer = await fs.readFile(moduleUrl)
     const { module: newModule, instance } = await WebAssembly.instantiate(
-      buffer,
+      await fs.readFile(moduleUrl),
       imports,
     )
     cachedWasmModule = newModule
