@@ -1,16 +1,2 @@
-import type {
-  Extension,
-  ExtensionSetupResult,
-  PGliteInterface,
-} from '../interface'
-
-const setup = async (_pg: PGliteInterface, _emscriptenOpts: any) => {
-  return {
-    bundlePath: new URL('../../release/bloom.tar.gz', import.meta.url),
-  } satisfies ExtensionSetupResult
-}
-
-export const bloom = {
-  name: 'bloom',
-  setup,
-} satisfies Extension
+// Re-export bloom from pglite-base
+export * from '@electric-sql/pglite-base/contrib/bloom'

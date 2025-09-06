@@ -1,11 +1,14 @@
+// Re-export from pglite-base
+export * from '@electric-sql/pglite-base'
+
+// Export web-specific implementations
 export * from './pglite.js'
-export * from './interface.js'
-export * as types from './types.js'
-export * as parse from './parse.js'
+export { IdbFs } from './fs/idbfs.js'
+
+// Export additional dependencies
 export * as messages from '@electric-sql/pg-protocol/messages'
 export * as protocol from '@electric-sql/pg-protocol'
-export { MemoryFS } from './fs/memoryfs.js'
-export { IdbFs } from './fs/idbfs.js'
 export { Mutex } from 'async-mutex'
-export { uuid, formatQuery } from './utils.js'
-export type * as postgresMod from './postgresMod.js'
+
+// Export PostgresMod types and factory
+export * as postgresMod from './postgresMod.js'

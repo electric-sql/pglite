@@ -1,19 +1,2 @@
-import type {
-  Extension,
-  ExtensionSetupResult,
-  PGliteInterface,
-} from '../interface'
-
-const setup = async (_pg: PGliteInterface, _emscriptenOpts: any) => {
-  return {
-    bundlePath: new URL(
-      '../../release/tsm_system_rows.tar.gz',
-      import.meta.url,
-    ),
-  } satisfies ExtensionSetupResult
-}
-
-export const tsm_system_rows = {
-  name: 'tsm_system_rows',
-  setup,
-} satisfies Extension
+// Re-export tsm_system_rows from pglite-base
+export * from '@electric-sql/pglite-base/contrib/tsm_system_rows'

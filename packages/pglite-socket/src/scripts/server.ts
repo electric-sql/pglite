@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { PGlite, DebugLevel } from '@electric-sql/pglite'
+import { PGlite, type DebugLevel } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../index'
 import { parseArgs } from 'node:util'
 import { spawn, ChildProcess } from 'node:child_process'

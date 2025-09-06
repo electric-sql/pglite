@@ -1,0 +1,139 @@
+{
+  "name": "@electric-sql/pglite-base",
+  "version": "0.3.7",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "PGlite base package containing non-web-specific PostgreSQL WASM functionality for use in Node.js, Bun, and other non-browser environments.",
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "client",
+    "pglite",
+    "base"
+  ],
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./template": {
+      "import": {
+        "types": "./dist/templating.d.ts",
+        "default": "./dist/templating.js"
+      },
+      "require": {
+        "types": "./dist/templating.d.cts",
+        "default": "./dist/templating.cjs"
+      }
+    },
+    "./vector": {
+      "import": {
+        "types": "./dist/vector/index.d.ts",
+        "default": "./dist/vector/index.js"
+      },
+      "require": {
+        "types": "./dist/vector/index.d.cts",
+        "default": "./dist/vector/index.cjs"
+      }
+    },
+    "./pg_ivm": {
+      "import": {
+        "types": "./dist/pg_ivm/index.d.ts",
+        "default": "./dist/pg_ivm/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_ivm/index.d.cts",
+        "default": "./dist/pg_ivm/index.cjs"
+      }
+    },
+    "./nodefs": {
+      "import": {
+        "types": "./dist/fs/nodefs.d.ts",
+        "default": "./dist/fs/nodefs.js"
+      },
+      "require": {
+        "types": "./dist/fs/nodefs.d.cts",
+        "default": "./dist/fs/nodefs.cjs"
+      }
+    },
+    "./basefs": {
+      "import": {
+        "types": "./dist/fs/base.d.ts",
+        "default": "./dist/fs/base.js"
+      },
+      "require": {
+        "types": "./dist/fs/base.d.cts",
+        "default": "./dist/fs/base.cjs"
+      }
+    },
+    "./contrib/*": {
+      "types": "./dist/contrib/*.d.ts",
+      "import": "./dist/contrib/*.js",
+      "require": "./dist/contrib/*.cjs"
+    },
+    "./src/postgresMod": {
+      "import": {
+        "types": "./dist/postgresMod.d.ts",
+        "default": "./dist/postgresMod.js"
+      },
+      "require": {
+        "types": "./dist/postgresMod.d.cts",
+        "default": "./dist/postgresMod.cjs"
+      }
+    }
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/electric-sql/pglite",
+    "directory": "packages/pglite-base"
+  },
+  "scripts": {
+    "check:exports": "attw . --pack --profile node16",
+    "test": "pnpm test:basic && pnpm test:node",
+    "test:basic": "pnpm test:clean && vitest tests/*.test.js tests/*.test.ts tests/**/*.test.js tests/**/*.test.ts",
+    "test:node": "pnpm test:clean && pnpm vitest tests/targets/runtimes/node-*.test.js",
+    "test:clean": "rm -rf ./pgdata-test",
+    "build": "tsup",
+    "build:js": "tsup",
+    "lint": "eslint ./src --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src",
+    "typecheck": "tsc --noEmit",
+    "stylecheck": "pnpm lint && prettier --check ./src",
+    "prepublishOnly": "pnpm check:exports"
+  },
+  "dependencies": {
+    "tinytar": "^0.1.0"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
+    "@electric-sql/pg-protocol": "workspace:*",
+    "@types/emscripten": "^1.39.13",
+    "@types/node": "^20.16.11",
+    "@types/node-fetch": "^2.6.11",
+    "async-mutex": "^0.4.1",
+    "buffer": "^6.0.3",
+    "bun": "^1.1.30",
+    "tsup": "^8.5.0",
+    "vitest": "^2.1.2"
+  }
+}

@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.electricsql.pglite">
+
+  <application>
+    <!-- Initialize Nitro and environment as early as possible -->
+    <provider
+      android:name="com.electricsql.pglite.InitProvider"
+      android:authorities="${applicationId}.pglite-init-provider"
+      android:exported="false"
+      android:initOrder="100" />
+  </application>
+
+</manifest>
+

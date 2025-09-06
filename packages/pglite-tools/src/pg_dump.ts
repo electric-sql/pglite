@@ -1,8 +1,6 @@
 import { WasiPreview1 } from './wasi/easywasi'
-import { postgresMod } from '@electric-sql/pglite'
+import { type FS } from '@electric-sql/pglite-base'
 import { PGlite } from '@electric-sql/pglite'
-
-type FS = postgresMod.FS
 type FSInterface = any // WASI FS interface
 
 const IN_NODE =

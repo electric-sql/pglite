@@ -3,8 +3,8 @@
   "compilerOptions": {
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
-    "jsx": "react-jsx",
+    "jsx": "react-jsx"
   },
-  "include": ["src", "src-webcomponent"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }],
+  "include": ["src", "src-webcomponent"]
 }

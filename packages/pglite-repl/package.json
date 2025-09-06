@@ -71,6 +71,8 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pglite-base": "workspace:*",
+    "@types/emscripten": "^1.39.13",
     "@types/node": "^20.16.11",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

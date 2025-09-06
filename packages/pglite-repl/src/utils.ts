@@ -1,4 +1,4 @@
-import { type PGliteInterface } from '@electric-sql/pglite'
+import { type PGliteInterface } from '@electric-sql/pglite-base'
 import { describe } from 'psql-describe'
 import type { Results, Response } from './types'
 

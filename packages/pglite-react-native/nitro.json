@@ -1,0 +1,16 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["electricsql", "pglite"],
+  "ios": {
+    "iosModuleName": "PGLiteReactNative"
+  },
+  "android": {
+    "androidNamespace": ["com", "electricsql", "pglite"],
+    "androidCxxLibName": "PGLiteReactNative"
+  },
+  "autolinking": {
+    "PGLiteReactNative": {
+      "cpp": "PGLiteReactNative"
+    }
+  }
+}

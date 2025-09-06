@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "noEmit": false,
+    "outDir": "dist",
+    "paths": {
+      "@electric-sql/pg-protocol": [
+        "./node_modules/@electric-sql/pg-protocol/src/index"
+      ],
+      "@electric-sql/pg-protocol/messages": [
+        "./node_modules/@electric-sql/pg-protocol/src/messages"
+      ],
+      "@electric-sql/pglite-base": ["../pglite-base/src/index"],
+      "@electric-sql/pglite-base/*": ["../pglite-base/src/*"]
+    }
+  },
+  "include": ["src", "tsup.config.ts"]
+}
