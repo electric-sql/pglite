@@ -212,7 +212,7 @@ testDTC(async (defaultDataTransferContainer) => {
       logMemoryUsage('After DB init')
 
       await db.exec(`
-        CREATE TABLE data (
+        CREATE TEMPORARY TABLE data (
           blob jsonb DEFAULT '{}'::jsonb NOT NULL
         );
       `)
