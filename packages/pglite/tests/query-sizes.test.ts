@@ -181,4 +181,59 @@ testDTC(async (defaultDataTransferContainer) => {
       expect(result.rows[0].data).toBe('a'.repeat(sizeInBytes))
     })
   })
+
+  describe ('trigger oom', () => {
+
+    const MB = 1024 * 1024;
+
+    function getMemoryUsage() {
+      const usage = process.memoryUsage();
+      return {
+        rss: Math.round(usage.rss / MB),
+        heapUsed: Math.round(usage.heapUsed / MB),
+        heapTotal: Math.round(usage.heapTotal / MB),
+        external: Math.round(usage.external / MB),
+      };
+    }
+
+    function logMemoryUsage(label: string) {
+      const mem = getMemoryUsage();
+      console.log(
+        `[${label}] Memory: RSS=${mem.rss}MB, Heap=${mem.heapUsed}/${mem.heapTotal}MB, External=${mem.external}MB`,
+      );
+    }
+
+    function generateBlob(size: number): string {
+      const baseData = { padding: "x".repeat(size) };
+      return JSON.stringify(baseData);
+    }
+
+    async function run() {
+      logMemoryUsage("Initial");
+      const db = await PGlite.create();
+      logMemoryUsage("After DB init");
+
+      await db.exec(`
+        CREATE TABLE data (
+          blob jsonb DEFAULT '{}'::jsonb NOT NULL
+        );
+      `);
+      logMemoryUsage("After table creation");
+
+      const totalRows = 10000;
+      const blob = generateBlob(100000);
+      console.log("\nInserting 10,000 rows with ~100KB blobs...");
+
+      for (let row = 0; row < totalRows; row++) {
+        const insertQuery = `
+          INSERT INTO data (blob) 
+          VALUES ('${blob}')
+        `;
+        await db.exec(insertQuery);
+        logMemoryUsage(`After insert ${row + 1}`);
+      }
+    }
+
+    run();
+  })
 })
