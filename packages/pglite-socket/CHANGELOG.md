@@ -1,13 +1,13 @@
 # @electric-sql/pglite-socket
 
-## 1.0.0
+## 0.0.12
 
 ### Patch Changes
 
 - bd263aa: fix oom; other fixes
 - Updated dependencies [f12a582]
 - Updated dependencies [bd263aa]
-  - @electric-sql/pglite@0.4.0
+  - @electric-sql/pglite@0.3.8
 
 ## 0.0.12
 
