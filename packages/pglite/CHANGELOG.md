@@ -1,5 +1,15 @@
 # @electric-sql/pglite
 
+## 0.4.0
+
+### Minor Changes
+
+- f12a582: Ensure MessageContext and its children are actually cleared between queries
+
+### Patch Changes
+
+- bd263aa: fix oom; other fixes
+
 ## 0.3.7
 
 ### Patch Changes
