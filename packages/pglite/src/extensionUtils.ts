@@ -99,7 +99,15 @@ function loadExtension(
           false,
         )
       } else {
-        mod.FS.writeFile(filePath, file.data)
+        try {
+          const dirPath = filePath.substring(0, filePath.lastIndexOf("/"))
+          if (mod.FS.analyzePath(dirPath).exists === false) {
+            mod.FS.mkdirTree(dirPath)
+          } 
+          mod.FS.writeFile(filePath, file.data)
+        } catch (e) {
+          console.error(`Error writing file ${filePath}`, e)
+        }
       }
     }
   })
