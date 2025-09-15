@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "0.3.10",
+  "version": "0.3.12",
   "description": "ElectricSQL Sync for PGlite",
   "type": "module",
   "private": false,
@@ -59,8 +59,8 @@
     "dist"
   ],
   "dependencies": {
-    "@electric-sql/client": "1.0.0",
-    "@electric-sql/experimental": "1.0.0"
+    "@electric-sql/client": "^1.0.9",
+    "@electric-sql/experimental": "^1.0.9"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
@@ -73,6 +73,6 @@
     "vitest": "^2.1.2"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.3.7"
+    "@electric-sql/pglite": "workspace:0.3.8"
   }
 }

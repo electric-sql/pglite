@@ -359,11 +359,11 @@ importers:
   packages/pglite-sync:
     dependencies:
       '@electric-sql/client':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: ^1.0.9
+        version: 1.0.9
       '@electric-sql/experimental':
-        specifier: 1.0.0
-        version: 1.0.0(@electric-sql/client@1.0.0)
+        specifier: ^1.0.9
+        version: 1.0.9(@electric-sql/client@1.0.9)
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.1
@@ -798,13 +798,13 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@1.0.0':
-    resolution: {integrity: sha512-kGiVbBIlMqc/CeJpWZuLjxNkm0836NWxeMtIWH2w5IUK8pUL13hyxg3ZkR7+FlTGhpKuZRiCP5nPOH9D6wbhPw==}
+  '@electric-sql/client@1.0.9':
+    resolution: {integrity: sha512-9fLjGww+5mGBJ9o47sizCSkyLixjoA49IRh8jBVxzpDq4EGwv77k54df0hRYWtD4VoBQL+49MyT9KDfE/a5Ygw==}
 
-  '@electric-sql/experimental@1.0.0':
-    resolution: {integrity: sha512-wOKZyph3cvJ4J5fDwqDpR7nilPOHEFwAtbAM5X/PhV3JZCSzmkbosaQRWsxbHQ80MJv7gNFP960+TyqGAjqouQ==}
+  '@electric-sql/experimental@1.0.9':
+    resolution: {integrity: sha512-s+b+KbTrmoZVYfhIz4XXhVFENVxstvsEmK7tMf7jduGiR2sEj2QImaJe1Wb5y5GAurx5xm5MftsZ1Hx/nhhWgA==}
     peerDependencies:
-      '@electric-sql/client': 1.0.0
+      '@electric-sql/client': 1.0.9
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -1263,6 +1263,9 @@ packages:
   '@microsoft/api-extractor@7.47.7':
     resolution: {integrity: sha512-fNiD3G55ZJGhPOBPMKD/enozj8yxJSYyVJWxRWdcUtw842rvthDHJgUWq9gXQTensFlMHv2wGuCjjivPv53j0A==}
     hasBin: true
+
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@microsoft/tsdoc-config@0.17.0':
     resolution: {integrity: sha512-v/EYRXnCAIHxOHW+Plb6OWuUoMotxTN0GLatnpOb1xq0KuTNw/WI3pamJx/UbsoJP5k9MCw1QxvvhPcF9pH3Zg==}
@@ -3981,6 +3984,7 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+    deprecated: The work that was done in this beta branch won't be included in future versions
 
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
@@ -5242,13 +5246,15 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@1.0.0':
+  '@electric-sql/client@1.0.9':
+    dependencies:
+      '@microsoft/fetch-event-source': 2.0.1
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
 
-  '@electric-sql/experimental@1.0.0(@electric-sql/client@1.0.0)':
+  '@electric-sql/experimental@1.0.9(@electric-sql/client@1.0.9)':
     dependencies:
-      '@electric-sql/client': 1.0.0
+      '@electric-sql/client': 1.0.9
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.24.0
 
@@ -5667,6 +5673,8 @@ snapshots:
       typescript: 5.4.2
     transitivePeerDependencies:
       - '@types/node'
+
+  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@microsoft/tsdoc-config@0.17.0':
     dependencies:
