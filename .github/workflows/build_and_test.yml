@@ -36,7 +36,10 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]
     env:
       BUILD_CONFIG_FILE: postgres-pglite/.buildconfig
       TZ: UTC
@@ -48,7 +51,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: pnpm
       - name: Install
         working-directory: ${{ github.workspace }}
@@ -72,14 +75,14 @@ jobs:
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v${{ matrix.node }}
           path: ./packages/pglite/release/**
           retention-days: 60
       - name: Upload PGlite tools to Gihub artifacts
         id: upload-pglite-tools-dist-files
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-tools-dist-files-node-v20.x
+          name: pglite-tools-dist-files-node-v${{ matrix.node }}
           path: ./packages/pglite-tools/dist/**
           retention-days: 60
 
@@ -108,7 +111,7 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v${{ matrix.node }}
           path: ./packages/pglite/release
 
       - name: Install dependencies
