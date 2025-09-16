@@ -21,7 +21,7 @@ on:
 jobs:
   stylecheck:
     name: Stylecheck
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,7 +36,7 @@ jobs:
 
   build-all:
     name: Install, build all and test as described in README
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]
@@ -88,7 +88,7 @@ jobs:
 
   build-and-test-pglite:
     name: Build and Test PGLite
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]    
@@ -178,7 +178,7 @@ jobs:
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]    
@@ -214,7 +214,7 @@ jobs:
 
   publish-website-with-demos:
     name: Publish website with demos
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     needs: [build-and-test-pglite, build-and-test-pglite-dependents]
     steps:
       - name: Checkout
@@ -324,7 +324,7 @@ jobs:
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     needs: [build-all]
     steps:
       - uses: actions/checkout@v4
