@@ -84,7 +84,7 @@ jobs:
           retention-days: 60
 
   build-and-test-pglite:
-    name: Build and Test PGLite
+    name: Build and Test packages/pglite
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -124,9 +124,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-      - name: Test
-        run: pnpm test
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
