@@ -54,19 +54,19 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm install
 
-      - name: Build
+      - name: Build all
         working-directory: ${{ github.workspace }}
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
           pnpm build:all
 
-      - name: Build packages
-        run: pnpm --filter "pglite^..." build
-      - name: Typecheck packages
-        run: pnpm --filter "pglite^..." typecheck
-      - name: Test packages
-        run: pnpm --filter "pglite^..." test
+      - name: Typecheck pglite
+        working-directory: ${{ github.workspace }}/packages/pglite
+        run: pnpm typecheck
+      - name: Test pglite
+        working-directory: ${{ github.workspace }}/packages/pglite
+        run: pnpm test
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
