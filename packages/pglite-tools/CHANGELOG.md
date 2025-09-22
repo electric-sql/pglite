@@ -1,5 +1,13 @@
 # @electric-sql/pglite-tools
 
+## 0.2.14
+
+### Patch Changes
+
+- e40ccad: Upgrade emsdk
+- Updated dependencies [e40ccad]
+  - @electric-sql/pglite@0.3.9
+
 ## 0.2.13
 
 ### Patch Changes

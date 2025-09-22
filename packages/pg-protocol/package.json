@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pg-protocol",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "The postgres client/server binary protocol, implemented in TypeScript",
   "type": "module",
   "private": true,
