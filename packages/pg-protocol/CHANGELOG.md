@@ -1,5 +1,11 @@
 # @electric-sql/pg-protocol
 
+## 0.0.4
+
+### Patch Changes
+
+- e40ccad: Upgrade emsdk
+
 ## 0.0.3
 
 ### Patch Changes
