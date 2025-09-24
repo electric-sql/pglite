@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-socket",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "description": "A socket implementation for PGlite enabling remote connections",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
@@ -52,7 +52,7 @@
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",
     "@electric-sql/pglite": "workspace:*",
-    "@types/emscripten": "^1.39.13",
+    "@types/emscripten": "^1.41.1",
     "@types/node": "^20.16.11",
     "pg": "^8.14.0",
     "postgres": "^3.4.5",

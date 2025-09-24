@@ -3,6 +3,54 @@
 The following ORMs and Query Builders are known to work properly with
 PGlite:
 
+## Prisma
+
+[Prisma](https://prisma.io) is a modern, type-safe ORM for TypeScript and Node.js. Prisma includes built-in support for local development using PGlite via `prisma dev`.
+
+### Local development with `prisma dev`
+
+Prisma offers a local dev database powered by PGlite. Just run:
+
+```bash
+npx prisma init
+npx prisma dev
+```
+
+This starts a local Prisma Postgres instance backed by PGlite. Copy the connection string shown in the CLI and use it as your `DATABASE_URL`:
+
+```
+DATABASE_URL="prisma+postgres://localhost:PORT/?api_key=__API_KEY__"
+```
+
+You can then define models in your `schema.prisma` and use Prisma Client and migrations as usual:
+
+```prisma
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String?
+}
+```
+
+```bash
+npx prisma db push
+```
+
+```ts
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+await prisma.user.create({
+  data: { email: 'alice@example.com' },
+})
+
+const users = await prisma.user.findMany()
+console.log(users)
+```
+
+See the [Prisma local dev docs](https://www.prisma.io/docs/postgres/database/local-development) for more details.
+
 ## Drizzle
 
 [Drizzle](https://orm.drizzle.team) is a TypeScript ORM with support for many

@@ -1,5 +1,26 @@
 # @electric-sql/pglite-sync
 
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies [e40ccad]
+  - @electric-sql/pglite@0.3.9
+
+## 0.3.12
+
+### Patch Changes
+
+- da3cdf3: bump the version of the electric client used by the sync plugin
+
+## 0.3.11
+
+### Patch Changes
+
+- Updated dependencies [f12a582]
+- Updated dependencies [bd263aa]
+  - @electric-sql/pglite@0.3.8
+
 ## 0.3.10
 
 ### Patch Changes

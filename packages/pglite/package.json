@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.3.7",
+  "version": "0.3.9",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -150,7 +150,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",
-    "@types/emscripten": "^1.39.13",
+    "@types/emscripten": "^1.41.1",
     "@types/node": "^20.16.11",
     "@types/node-fetch": "^2.6.11",
     "async-mutex": "^0.4.1",

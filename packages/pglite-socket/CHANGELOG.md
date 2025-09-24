@@ -1,5 +1,22 @@
 # @electric-sql/pglite-socket
 
+## 0.0.14
+
+### Patch Changes
+
+- e40ccad: Upgrade emsdk
+- Updated dependencies [e40ccad]
+  - @electric-sql/pglite@0.3.9
+
+## 0.0.13
+
+### Patch Changes
+
+- bd263aa: fix oom; other fixes
+- Updated dependencies [f12a582]
+- Updated dependencies [bd263aa]
+  - @electric-sql/pglite@0.3.8
+
 ## 0.0.12
 
 ### Patch Changes
