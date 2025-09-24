@@ -28,8 +28,6 @@ export interface PostgresMod
   _pgl_initdb: () => number
   _pgl_backend: () => void
   _pgl_shutdown: () => void
-  _get_buffer_size: (fd: number) => number
-  _get_buffer_addr: (fd: number) => number
   _get_channel: () => number
   _interactive_write: (msgLength: number) => void
   _interactive_one: () => void
