@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.10
+
+### Patch Changes
+
+- ad765ed: initdb calls system to query the server configs. avoid that by hardcoding a return value of 123
+
 ## 0.3.9
 
 ### Patch Changes
