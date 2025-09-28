@@ -80,6 +80,16 @@
         "default": "./dist/pg_ivm/index.cjs"
       }
     },
+    "./postgis": {
+      "import": {
+        "types": "./dist/postgis/index.d.ts",
+        "default": "./dist/postgis/index.js"
+      },
+      "require": {
+        "types": "./dist/postgis/index.d.cts",
+        "default": "./dist/postgis/index.cjs"
+      }
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
