@@ -38,50 +38,39 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
   ('2023-05-30 20:00:00', 1, 'POINT(15.3652 -80.7331)'),
   ('2023-05-31 20:00:00', 1, 'POINT(15.2672 -85.7431)');`)
 
-//     const res = await pg.exec(`
-//     SELECT
-//       name,
-//       vec,
-//       vec <-> '[3,1,2]' AS distance
-//     FROM test;
-//   `)
 
-//       expect(res).toMatchObject([
-//         {
-//           rows: [
-//             {
-//               name: 'test1',
-//               vec: '[1,2,3]',
-//               distance: 2.449489742783178,
-//             },
-//             {
-//               name: 'test2',
-//               vec: '[4,5,6]',
-//               distance: 5.744562646538029,
-//             },
-//             {
-//               name: 'test3',
-//               vec: '[7,8,9]',
-//               distance: 10.677078252031311,
-//             },
-//           ],
-//           fields: [
-//             {
-//               name: 'name',
-//               dataTypeID: 25,
-//             },
-//             {
-//               name: 'vec',
-//               dataTypeID: 16385,
-//             },
-//             {
-//               name: 'distance',
-//               dataTypeID: 701,
-//             },
-//           ],
-//           affectedRows: 0,
-//         },
-//       ])
+    }),
+    it('cities', async () => {
+      const pg = new PGlite({
+        extensions: {
+          postgis,
+        },
+        defaultDataTransferContainer,
+      })
+
+      await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+      await pg.exec(`
+    CREATE TABLE cities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    location GEOMETRY(Point, 4326)
+);
+  `)
+      await pg.exec(`INSERT INTO cities (name, location)
+VALUES
+    ('New York', ST_GeomFromText('POINT(-74.0060 40.7128)', 4326)),
+    ('Los Angeles', ST_GeomFromText('POINT(-118.2437 34.0522)', 4326)),
+    ('Chicago', ST_GeomFromText('POINT(-87.6298 41.8781)', 4326));`)
+
+    await pg.exec(`WITH state_boundary AS (
+    SELECT ST_GeomFromText(
+        'POLYGON((-91 36, -91 43, -87 43, -87 36, -91 36))', 4326
+    ) AS geom
+)
+SELECT c.name
+FROM cities c, state_boundary s
+WHERE ST_Within(c.location, s.geom);`)
+
     })
   })
 })
