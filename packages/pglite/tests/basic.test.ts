@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
 
-await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
+await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
     importType === 'esm'
       ? await import('../dist/index.js')
@@ -12,9 +12,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
 
   describe(`basic`, () => {
     it('exec', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = await PGlite.create()
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -51,9 +49,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('query', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -94,9 +90,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('query templated', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       const tableName = identifier`test`
       await db.sql`
     CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -137,9 +131,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('types', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -301,7 +293,6 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
 
     it('custom parser and serializer', async () => {
       const db = new PGlite({
-        defaultDataTransferContainer,
         serializers: { 1700: (x) => x.toString() },
         parsers: { 1700: (x) => BigInt(x) },
       })
@@ -338,9 +329,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('params', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -374,9 +363,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('array params', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -429,9 +416,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('error', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
@@ -533,9 +518,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('copy to/from blob', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -603,9 +586,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('close', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -620,9 +601,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     })
 
     it('use same param multiple times', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
 
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
@@ -649,9 +628,7 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
       })
     })
     it('timezone', async () => {
-      const db = new PGlite({
-        defaultDataTransferContainer,
-      })
+      const db = new PGlite()
 
       const res = await db.query(
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,

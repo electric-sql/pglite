@@ -17,7 +17,6 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
-  DataTransferContainer,
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
@@ -61,8 +60,6 @@ export class PGlite
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
 
-  #dataTransferContainer: DataTransferContainer = 'cma'
-
   readonly debug: DebugLevel = 0
 
   #extensions: Extensions
@@ -77,6 +74,22 @@ export class PGlite
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+
+  static readonly RECV_BUF_SIZE: number = 16 * 1024 * 1024 // 16MB default
+
+  // receive data from wasm
+  #onWriteDataPtr: number = -1
+  // buffer that holds data received from wasm
+  #inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
+  // write index in the buffer
+  #writeOffset: number = 0
+
+  // send data to wasm
+  #onReadDataPtr: number = -1
+  // buffer that holds the data to be sent to wasm
+  #outputData: any = []
+  // read index in the buffer
+  #readOffset: number = 0
 
   /**
    * Create a new PGlite instance
@@ -124,11 +137,6 @@ export class PGlite
     // Enable relaxed durability if requested
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
-    }
-
-    // Set the default data transfer container
-    if (options?.defaultDataTransferContainer !== undefined) {
-      this.#dataTransferContainer = options.defaultDataTransferContainer
     }
 
     // Save the extensions for later use
@@ -370,6 +378,65 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+    // set the write callback
+    this.#onWriteDataPtr = (this.mod as any).addFunction(
+      (ptr: any, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        const copied = bytes.slice()
+
+        const requiredSize = this.#writeOffset + copied.length
+
+        if (requiredSize > this.#inputData.length) {
+          const newSize =
+            this.#inputData.length +
+            (this.#inputData.length >> 1) +
+            requiredSize
+          const newBuffer = new Uint8Array(newSize)
+          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+          this.#inputData = newBuffer
+        }
+
+        this.#inputData.set(copied, this.#writeOffset)
+        this.#writeOffset += copied.length
+
+        return this.#inputData.length
+      },
+      'iii',
+    )
+
+    // set the read callback
+    this.#onReadDataPtr = (this.mod as any).addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.log(e)
+        }
+        return length
+      },
+      'iii',
+    )
+
+    this.mod._set_read_write_cbs(this.#onReadDataPtr, this.#onWriteDataPtr)
+
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
@@ -575,88 +642,27 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(
-    message: Uint8Array,
-    options: { dataTransferContainer?: DataTransferContainer } = {},
-  ) {
-    let data
+  execProtocolRawSync(message: Uint8Array) {
+    // let data
     const mod = this.mod!
-
     // >0 set buffer content type to wire protocol
     mod._use_wire(1)
-    const msg_len = message.length
 
-    // TODO: if (message.length>CMA_B) force file
-
-    let currDataTransferContainer =
-      options.dataTransferContainer ?? this.#dataTransferContainer
-
-    // do we overflow allocated shared memory segment
-    if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
-
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // set buffer size so answer will be at size+0x2 pointer addr
-        mod._interactive_write(message.length)
-        // TODO: make it seg num * seg maxsize if multiple channels.
-        mod.HEAPU8.set(message, 1)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
-        const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-        mod._interactive_write(0)
-        mod.FS.writeFile(pg_lck, message)
-        mod.FS.rename(pg_lck, pg_in)
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
+    if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {
+      this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
     }
+    this.#readOffset = 0
+    this.#outputData = message
+
+    this.#writeOffset = 0
 
     // execute the message
-    mod._interactive_one()
+    mod._interactive_one(message.length, message[0])
 
-    const channel = mod._get_channel()
-    if (channel < 0) currDataTransferContainer = 'file'
+    this.#outputData = []
 
-    // TODO: use channel value for msg_start
-    if (channel > 0) currDataTransferContainer = 'cma'
-
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // Read responses from the buffer
-
-        const msg_start = msg_len + 2
-        const msg_end = msg_start + mod._interactive_read()
-        data = mod.HEAPU8.subarray(msg_start, msg_end)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-        try {
-          const fstat = mod.FS.stat(pg_out)
-          const stream = mod.FS.open(pg_out, 'r')
-          data = new Uint8Array(fstat.size)
-          mod.FS.read(stream, data, 0, fstat.size, 0)
-          mod.FS.unlink(pg_out)
-        } catch (x) {
-          // case of single X message.
-          data = new Uint8Array(0)
-        }
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
-    }
-
-    return data
+    if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
+    return new Uint8Array(0)
   }
 
   /**
@@ -672,9 +678,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true, dataTransferContainer }: ExecProtocolOptions = {},
+    { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message, { dataTransferContainer })
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
