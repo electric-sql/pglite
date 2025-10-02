@@ -237,12 +237,16 @@ export abstract class BasePGlite
         )
 
         const dataTypeIDs = parseDescribeStatementResults(
-          (
+          [...(
             await this.#execProtocolNoSync(
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
           ).messages,
+          ...
+          (await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+              .messages,
+          ]
         )
 
         const values = params.map((param, i) => {
