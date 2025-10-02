@@ -78,14 +78,14 @@ export class PGlite
   static readonly RECV_BUF_SIZE: number = 16 * 1024 * 1024 // 16MB default
 
   // receive data from wasm
-  #onWriteDataPtr: number = -1
+  #pglite_write: number = -1
   // buffer that holds data received from wasm
   #inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
   // write index in the buffer
   #writeOffset: number = 0
 
   // send data to wasm
-  #onReadDataPtr: number = -1
+  #pglite_read: number = -1
   // buffer that holds the data to be sent to wasm
   #outputData: any = []
   // read index in the buffer
@@ -379,7 +379,7 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // set the write callback
-    this.#onWriteDataPtr = (this.mod as any).addFunction(
+    this.#pglite_write = (this.mod as any).addFunction(
       (ptr: any, length: number) => {
         let bytes
         try {
@@ -411,7 +411,7 @@ export class PGlite
     )
 
     // set the read callback
-    this.#onReadDataPtr = (this.mod as any).addFunction(
+    this.#pglite_read = (this.mod as any).addFunction(
       (ptr: any, max_length: number) => {
         // copy current data to wasm buffer
         let length = this.#outputData.length - this.#readOffset
@@ -435,7 +435,7 @@ export class PGlite
       'iii',
     )
 
-    this.mod._set_read_write_cbs(this.#onReadDataPtr, this.#onWriteDataPtr)
+    this.mod._set_read_write_cbs(this.#pglite_read, this.#pglite_write)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()

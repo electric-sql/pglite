@@ -288,7 +288,10 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        results.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)).messages)
+        results.push(
+          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+            .messages,
+        )
       }
 
       await this._cleanupBlob()
