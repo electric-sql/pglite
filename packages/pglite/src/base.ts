@@ -228,7 +228,7 @@ export abstract class BasePGlite
       this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
 
-      let results
+      let results = []
 
       try {
         const { messages: parseResults } = await this.#execProtocolNoSync(
@@ -288,7 +288,7 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+        results.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)).messages)
       }
 
       await this._cleanupBlob()
