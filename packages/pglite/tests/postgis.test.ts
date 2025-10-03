@@ -33,36 +33,38 @@ await testEsmCjsAndDTC(async (importType, defaultDataTransferContainer) => {
     location GEOGRAPHY(POINT, 4326)
 );
   `)
-      await pg.exec(`INSERT INTO vehicle_location VALUES 
+      const inserted = await pg.query(`INSERT INTO vehicle_location VALUES 
   ('2023-05-29 20:00:00', 1, 'POINT(15.3672 -87.7231)'),
   ('2023-05-30 20:00:00', 1, 'POINT(15.3652 -80.7331)'),
   ('2023-05-31 20:00:00', 1, 'POINT(15.2672 -85.7431)');`)
 
-
+      expect(inserted.affectedRows).toEqual(3)
     }),
-    it('cities', async () => {
-      const pg = new PGlite({
-        extensions: {
-          postgis,
-        },
-        defaultDataTransferContainer,
-      })
+      it('cities', async () => {
+        const pg = new PGlite({
+          extensions: {
+            postgis,
+          },
+          defaultDataTransferContainer,
+        })
 
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-      await pg.exec(`
+        await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+        await pg.exec(`
     CREATE TABLE cities (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),
     location GEOMETRY(Point, 4326)
 );
   `)
-      await pg.exec(`INSERT INTO cities (name, location)
+        const inserted = await pg.query(`INSERT INTO cities (name, location)
 VALUES
     ('New York', ST_GeomFromText('POINT(-74.0060 40.7128)', 4326)),
     ('Los Angeles', ST_GeomFromText('POINT(-118.2437 34.0522)', 4326)),
     ('Chicago', ST_GeomFromText('POINT(-87.6298 41.8781)', 4326));`)
 
-    await pg.exec(`WITH state_boundary AS (
+        expect(inserted.affectedRows).toEqual(3)
+
+        const cities = await pg.query(`WITH state_boundary AS (
     SELECT ST_GeomFromText(
         'POLYGON((-91 36, -91 43, -87 43, -87 36, -91 36))', 4326
     ) AS geom
@@ -71,6 +73,10 @@ SELECT c.name
 FROM cities c, state_boundary s
 WHERE ST_Within(c.location, s.geom);`)
 
-    })
+        expect(cities.affectedRows).toBe(0)
+        expect(cities.rows[0]).toEqual({
+          name: 'Chicago',
+        })
+      })
   })
 })
