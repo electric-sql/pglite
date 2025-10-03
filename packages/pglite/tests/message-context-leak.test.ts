@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { testDTC } from './test-utils.js'
+import { testEsmCjsAndDTC } from './test-utils.js'
 import { PGlite } from '../dist/index.js'
 
 // This test isolates the MessageContext leak reported in
@@ -16,12 +16,12 @@ function makeJsonBlob(size: number): string {
   return JSON.stringify({ padding: 'x'.repeat(size) })
 }
 
-testDTC(async (defaultDataTransferContainer) => {
+testEsmCjsAndDTC(async () => {
   describe('MessageContext reset between queries', () => {
     let db: PGlite
 
     beforeEach(async () => {
-      db = new PGlite({ defaultDataTransferContainer })
+      db = new PGlite()
       await db.exec(`
         CREATE TABLE IF NOT EXISTS leak_test (
           id SERIAL PRIMARY KEY,
