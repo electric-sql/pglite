@@ -236,18 +236,16 @@ export abstract class BasePGlite
           options,
         )
 
-        const dataTypeIDs = parseDescribeStatementResults(
-          [...(
+        const dataTypeIDs = parseDescribeStatementResults([
+          ...(
             await this.#execProtocolNoSync(
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
           ).messages,
-          ...
-          (await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-              .messages,
-          ]
-        )
+          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+            .messages,
+        ])
 
         const values = params.map((param, i) => {
           const oid = dataTypeIDs[i]
@@ -342,7 +340,10 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        results.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)).messages)
+        results.push(
+          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+            .messages,
+        )
       }
       this._cleanupBlob()
       if (!this.#inTransaction) {
@@ -373,13 +374,17 @@ export abstract class BasePGlite
         options,
       )
 
-      let messages = (await this.#execProtocolNoSync(
-        serializeProtocol.describe({ type: 'S' }),
-        options,
-      )).messages
+      const messages = (
+        await this.#execProtocolNoSync(
+          serializeProtocol.describe({ type: 'S' }),
+          options,
+        )
+      ).messages
 
-      messages.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), 
-        options)).messages)
+      messages.push(
+        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+          .messages,
+      )
 
       const paramDescription = messages.find(
         (msg): msg is ParameterDescriptionMessage =>

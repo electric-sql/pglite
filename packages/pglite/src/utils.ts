@@ -142,20 +142,27 @@ export async function formatQuery(
   tx = tx ?? pg
 
   // Get the types of the parameters
-  let messages = []
+  const messages = []
   try {
     await pg.execProtocol(serializeProtocol.parse({ text: query }), {
       syncToFs: false,
     })
 
-    messages.push(...(await pg.execProtocol(serializeProtocol.describe({ type: 'S' }), {
+    messages.push(
+      ...(
+        await pg.execProtocol(serializeProtocol.describe({ type: 'S' }), {
           syncToFs: false,
-        })).messages)
+        })
+      ).messages,
+    )
   } finally {
-    messages.push(...(await pg.execProtocol(serializeProtocol.sync(), { syncToFs: false })).messages)
+    messages.push(
+      ...(await pg.execProtocol(serializeProtocol.sync(), { syncToFs: false }))
+        .messages,
+    )
   }
 
-  const dataTypeIDs = parseDescribeStatementResults(messages)    
+  const dataTypeIDs = parseDescribeStatementResults(messages)
 
   // replace $1, $2, etc with  %1L, %2L, etc
   const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
