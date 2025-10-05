@@ -9,13 +9,11 @@ const CONFIGURATIONS = new Map(
       label: 'PGlite Memory<br> (CMA Transport <em>default</em>)',
       db: 'pglite',
       dataDir: '',
-      options: { defaultDataTransferContainer: 'cma' },
     },
     {
       label: 'PGlite Memory<br> (File Transport)',
       db: 'pglite',
       dataDir: '',
-      options: { defaultDataTransferContainer: 'file' },
     },
     {
       label: 'PGlite IDB',
