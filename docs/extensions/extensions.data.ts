@@ -180,6 +180,21 @@ const baseExtensions: Extension[] = [
     size: 21380,
   },
   {
+    name: 'intarray',
+    description: `
+      The intarray module provides a number of useful functions and operators for 
+      manipulating null-free arrays of integers. There is also support for indexed 
+      searches using some of the operators.
+    `,
+    shortDescription: 'Operators for manipulating null-free arrays of integers',
+    docs: 'https://www.postgresql.org/docs/9.1/intarray.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/intarray',
+    importName: 'intarray',
+    core: true,
+    size: 14712,
+  },  
+  {
     name: 'isn',
     description: `
       The isn module provides data types for the following international product 
