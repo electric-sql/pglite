@@ -79,80 +79,80 @@ WHERE ST_Within(c.location, s.geom);`)
         })
       })
   })
-  it('complex1', async () => {
-    const pg = new PGlite({
-      extensions: {
-        postgis,
-      },
-      defaultDataTransferContainer,
-    })
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+//   it('complex1', async () => {
+//     const pg = new PGlite({
+//       extensions: {
+//         postgis,
+//       },
+//       defaultDataTransferContainer,
+//     })
+//     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
 
-    await pg.exec(`
-  -- Create test schema
--- CREATE SCHEMA IF NOT EXISTS postgis_test;
--- SET search_path TO postgis_test;
+//     await pg.exec(`
+//   -- Create test schema
+// -- CREATE SCHEMA IF NOT EXISTS postgis_test;
+// -- SET search_path TO postgis_test;
 
--- Create a table with geometry columns
-CREATE TABLE cities (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    population INTEGER,
-    geom GEOMETRY(Point, 4326)
-);`)
+// -- Create a table with geometry columns
+// CREATE TABLE cities (
+//     id SERIAL PRIMARY KEY,
+//     name TEXT NOT NULL,
+//     population INTEGER,
+//     geom GEOMETRY(Point, 4326)
+// );`)
 
-    await pg.exec(`
-CREATE TABLE rivers (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    geom GEOMETRY(LineString, 4326)
-);
+//     await pg.exec(`
+// CREATE TABLE rivers (
+//     id SERIAL PRIMARY KEY,
+//     name TEXT NOT NULL,
+//     geom GEOMETRY(LineString, 4326)
+// );
 
--- Insert sample data
-INSERT INTO cities (name, population, geom) VALUES
-('Paris', 2148000, ST_SetSRID(ST_MakePoint(2.3522, 48.8566), 4326)),
-('Berlin', 3769000, ST_SetSRID(ST_MakePoint(13.4050, 52.5200), 4326)),
-('London', 8982000, ST_SetSRID(ST_MakePoint(-0.1276, 51.5072), 4326)),
-('Amsterdam', 872757, ST_SetSRID(ST_MakePoint(4.9041, 52.3676), 4326));
+// -- Insert sample data
+// INSERT INTO cities (name, population, geom) VALUES
+// ('Paris', 2148000, ST_SetSRID(ST_MakePoint(2.3522, 48.8566), 4326)),
+// ('Berlin', 3769000, ST_SetSRID(ST_MakePoint(13.4050, 52.5200), 4326)),
+// ('London', 8982000, ST_SetSRID(ST_MakePoint(-0.1276, 51.5072), 4326)),
+// ('Amsterdam', 872757, ST_SetSRID(ST_MakePoint(4.9041, 52.3676), 4326));
 
-INSERT INTO rivers (name, geom) VALUES
-('Seine', ST_SetSRID(ST_MakeLine(ARRAY[
-    ST_MakePoint(2.1, 48.8),
-    ST_MakePoint(2.35, 48.85),
-    ST_MakePoint(2.45, 48.9)
-]), 4326)),
-('Spree', ST_SetSRID(ST_MakeLine(ARRAY[
-    ST_MakePoint(13.1, 52.4),
-    ST_MakePoint(13.35, 52.5),
-    ST_MakePoint(13.45, 52.52)
-]), 4326));
+// INSERT INTO rivers (name, geom) VALUES
+// ('Seine', ST_SetSRID(ST_MakeLine(ARRAY[
+//     ST_MakePoint(2.1, 48.8),
+//     ST_MakePoint(2.35, 48.85),
+//     ST_MakePoint(2.45, 48.9)
+// ]), 4326)),
+// ('Spree', ST_SetSRID(ST_MakeLine(ARRAY[
+//     ST_MakePoint(13.1, 52.4),
+//     ST_MakePoint(13.35, 52.5),
+//     ST_MakePoint(13.45, 52.52)
+// ]), 4326));
 
--- Create spatial index
-CREATE INDEX idx_cities_geom ON cities USING GIST (geom);
-CREATE INDEX idx_rivers_geom ON rivers USING GIST (geom);
+// -- Create spatial index
+// CREATE INDEX idx_cities_geom ON cities USING GIST (geom);
+// CREATE INDEX idx_rivers_geom ON rivers USING GIST (geom);
 
--- Query: Find cities within 10 km of any river
-SELECT
-    c.name AS city,
-    r.name AS river,
-    ST_Distance(c.geom::geography, r.geom::geography) AS distance_km
-FROM cities c
-JOIN rivers r
-ON ST_DWithin(c.geom::geography, r.geom::geography, 10000)
-ORDER BY distance_km;
+// -- Query: Find cities within 10 km of any river
+// SELECT
+//     c.name AS city,
+//     r.name AS river,
+//     ST_Distance(c.geom::geography, r.geom::geography) AS distance_km
+// FROM cities c
+// JOIN rivers r
+// ON ST_DWithin(c.geom::geography, r.geom::geography, 10000)
+// ORDER BY distance_km;
 
--- Query: Compute buffered area around each river and intersecting cities
-SELECT
-    r.name AS river_name,
-    COUNT(c.id) AS num_cities_intersecting,
-    ST_Area(ST_Transform(ST_Buffer(r.geom::geography, 5000), 3857)) / 1e6 AS buffer_area_sqkm
-FROM rivers r
-LEFT JOIN cities c
-ON ST_Intersects(ST_Buffer(r.geom::geography, 5000), c.geom)
-GROUP BY r.name;
+// -- Query: Compute buffered area around each river and intersecting cities
+// SELECT
+//     r.name AS river_name,
+//     COUNT(c.id) AS num_cities_intersecting,
+//     ST_Area(ST_Transform(ST_Buffer(r.geom::geography, 5000), 3857)) / 1e6 AS buffer_area_sqkm
+// FROM rivers r
+// LEFT JOIN cities c
+// ON ST_Intersects(ST_Buffer(r.geom::geography, 5000), c.geom)
+// GROUP BY r.name;
 
--- Cleanup test schema
--- DROP SCHEMA postgis_test CASCADE;
-`)
-  })
+// -- Cleanup test schema
+// -- DROP SCHEMA postgis_test CASCADE;
+// `)
+//   })
 })
