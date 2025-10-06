@@ -242,9 +242,7 @@ export abstract class BasePGlite
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
-          ).messages,
-          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-            .messages,
+          ).messages
         ])
 
         const values = params.map((param, i) => {
@@ -368,46 +366,19 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<DescribeQueryResult> {
+    let messages = []
     try {
       await this.#execProtocolNoSync(
         serializeProtocol.parse({ text: query, types: options?.paramTypes }),
         options,
       )
 
-      const messages = (
+      messages = (
         await this.#execProtocolNoSync(
           serializeProtocol.describe({ type: 'S' }),
           options,
         )
       ).messages
-
-      messages.push(
-        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-          .messages,
-      )
-
-      const paramDescription = messages.find(
-        (msg): msg is ParameterDescriptionMessage =>
-          msg.name === 'parameterDescription',
-      )
-      const resultDescription = messages.find(
-        (msg): msg is RowDescriptionMessage => msg.name === 'rowDescription',
-      )
-
-      const queryParams =
-        paramDescription?.dataTypeIDs.map((dataTypeID) => ({
-          dataTypeID,
-          serializer: this.serializers[dataTypeID],
-        })) ?? []
-
-      const resultFields =
-        resultDescription?.fields.map((field) => ({
-          name: field.name,
-          dataTypeID: field.dataTypeID,
-          parser: this.parsers[field.dataTypeID],
-        })) ?? []
-
-      return { queryParams, resultFields }
     } catch (e) {
       if (e instanceof DatabaseError) {
         const pgError = makePGliteError({
@@ -420,8 +391,31 @@ export abstract class BasePGlite
       }
       throw e
     } finally {
-      await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+      messages.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)).messages)
     }
+
+    const paramDescription = messages.find(
+      (msg): msg is ParameterDescriptionMessage =>
+        msg.name === 'parameterDescription',
+    )
+    const resultDescription = messages.find(
+      (msg): msg is RowDescriptionMessage => msg.name === 'rowDescription',
+    )
+
+    const queryParams =
+      paramDescription?.dataTypeIDs.map((dataTypeID) => ({
+        dataTypeID,
+        serializer: this.serializers[dataTypeID],
+      })) ?? []
+
+    const resultFields =
+      resultDescription?.fields.map((field) => ({
+        name: field.name,
+        dataTypeID: field.dataTypeID,
+        parser: this.parsers[field.dataTypeID],
+      })) ?? []
+
+    return { queryParams, resultFields }
   }
 
   /**
