@@ -15,7 +15,7 @@ it('intarray', async () => {
     CREATE TABLE articles (
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL,
-      tag_ids INTEGER[] -- This will store an array of integer tag IDs);`)
+      tag_ids INTEGER[]);`)
 
   await pg.exec(`
     INSERT INTO articles (title, tag_ids) VALUES
