@@ -79,16 +79,16 @@ WHERE ST_Within(c.location, s.geom);`)
         })
       })
   })
-    it('complex1', async () => {
-      const pg = new PGlite({
-        extensions: {
-          postgis,
-        },
-        defaultDataTransferContainer,
-      })
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+  it('complex1', async () => {
+    const pg = new PGlite({
+      extensions: {
+        postgis,
+      },
+      defaultDataTransferContainer,
+    })
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
 
-      const x = await pg.exec(`
+    await pg.exec(`
   -- Create test schema
 -- CREATE SCHEMA IF NOT EXISTS postgis_test;
 -- SET search_path TO postgis_test;
@@ -99,10 +99,9 @@ CREATE TABLE cities (
     name TEXT NOT NULL,
     population INTEGER,
     geom GEOMETRY(Point, 4326)
-);`
-      )
+);`)
 
-    const y = await pg.exec(`
+    await pg.exec(`
 CREATE TABLE rivers (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -155,8 +154,5 @@ GROUP BY r.name;
 -- Cleanup test schema
 -- DROP SCHEMA postgis_test CASCADE;
 `)
-
-        console.log(x)
-
-      })
+  })
 })
