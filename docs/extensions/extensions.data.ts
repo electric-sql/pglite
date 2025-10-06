@@ -193,7 +193,7 @@ const baseExtensions: Extension[] = [
     importName: 'intarray',
     core: true,
     size: 14712,
-  },  
+  },
   {
     name: 'isn',
     description: `
