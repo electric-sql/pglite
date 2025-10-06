@@ -6,8 +6,8 @@ export default defineConfig({
     dir: './tests',
     watch: false,
     typecheck: { enabled: true },
-    // testTimeout: 30000,
-    // hookTimeout: 30000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
     include: ['**/*.{test,test.web}.{js,ts}'],
     server: {
       deps: {
