@@ -645,8 +645,6 @@ export class PGlite
   execProtocolRawSync(message: Uint8Array) {
     // let data
     const mod = this.mod!
-    // >0 set buffer content type to wire protocol
-    mod._use_wire(1)
 
     if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {
       this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
