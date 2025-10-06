@@ -242,7 +242,7 @@ export abstract class BasePGlite
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
-          ).messages
+          ).messages,
         ])
 
         const values = params.map((param, i) => {
@@ -391,7 +391,10 @@ export abstract class BasePGlite
       }
       throw e
     } finally {
-      messages.push(...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)).messages)
+      messages.push(
+        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+          .messages,
+      )
     }
 
     const paramDescription = messages.find(
