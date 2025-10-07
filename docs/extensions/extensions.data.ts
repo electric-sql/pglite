@@ -262,6 +262,22 @@ const baseExtensions: Extension[] = [
     size: 2635,
   },
   {
+    name: 'pg_walinspect',
+    description: `
+      The pg_walinspect module provides SQL functions that allow you to inspect the 
+      contents of write-ahead log of a running PostgreSQL database cluster at a low level, 
+      which is useful for debugging, analytical, reporting or educational purposes. 
+      It is similar to pg_waldump, but accessible through SQL rather than a separate utility.
+    `,
+    shortDescription: 'Low-level WAL inspection',
+    docs: 'https://www.postgresql.org/docs/current/pgwalinspect.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_walinspect',
+    importName: 'pg_walinspect',
+    core: true,
+    size: 4689,
+  },
+  {
     name: 'pg_visibility',
     description: `
       The pg_visibility module provides a means for examining the visibility map (VM) 
