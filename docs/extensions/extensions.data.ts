@@ -243,6 +243,20 @@ const baseExtensions: Extension[] = [
     size: 1361,
   },
   {
+    name: 'xml2',
+    description: `
+      The xml2 module provides XPath querying and XSLT functionality. 
+      DEPRECATED! See docs!
+    `,
+    shortDescription: 'DEPRECATED! XPath querying and XSLT functionality',
+    docs: 'https://www.postgresql.org/docs/current/xml2.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/xml2',
+    importName: 'xml2',
+    core: true,
+    size: 403514,
+  },  
+  {
     name: 'unaccent',
     description: `
       unaccent is a text search dictionary that removes accents (diacritic signs) 
