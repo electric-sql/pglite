@@ -243,6 +243,21 @@ const baseExtensions: Extension[] = [
     size: 1361,
   },
   {
+    name: 'pg_buffercache',
+    description: `
+      The pg_buffercache module provides a means for examining what's happening in the 
+      shared buffer cache in real time. It also offers a low-level way to evict data 
+      from it, for testing purposes.
+    `,
+    shortDescription: 'Inspect PostgreSQL buffer cache state',
+    docs: 'https://www.postgresql.org/docs/current/pgbuffercache.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_buffercache',
+    importName: 'pg_buffercache',
+    core: true,
+    size: 3133,
+  },
+  {
     name: 'file_fdw',
     description: `
       The file_fdw module provides the foreign-data wrapper file_fdw, which can be 
