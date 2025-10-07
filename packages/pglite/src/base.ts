@@ -242,7 +242,8 @@ export abstract class BasePGlite
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
-          ).messages)
+          ).messages,
+        )
 
         const values = params.map((param, i) => {
           const oid = dataTypeIDs[i]

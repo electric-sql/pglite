@@ -195,6 +195,23 @@ const baseExtensions: Extension[] = [
     size: 14712,
   },
   {
+    name: 'file_fdw',
+    description: `
+      The file_fdw module provides the foreign-data wrapper file_fdw, which can be 
+      used to access data files in the server's file system, or to execute programs 
+      on the server and read their output. The data file or program output must be 
+      in a format that can be read by COPY FROM. Access to data files is currently 
+      read-only.
+    `,
+    shortDescription: "Acess data files in the server's file system",
+    docs: 'https://www.postgresql.org/docs/18/file-fdw.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/file_fdw',
+    importName: 'file_fdw',
+    core: true,
+    size: 4467,
+  },
+  {
     name: 'isn',
     description: `
       The isn module provides data types for the following international product 
