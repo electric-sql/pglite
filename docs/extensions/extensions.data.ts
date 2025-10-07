@@ -257,7 +257,7 @@ const baseExtensions: Extension[] = [
     importName: 'unaccent',
     core: true,
     size: 9323,
-  },  
+  },
   {
     name: 'pg_surgery',
     description: `

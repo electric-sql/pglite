@@ -13,7 +13,7 @@ it('unaccent', async () => {
 
   const result = await pg.query(`select ts_lexize('unaccent','Hôtel');`)
 
-  expect(result).toEqual([
+  expect(result.rows).toEqual([
     {
       ts_lexize: ['Hotel'],
     },
