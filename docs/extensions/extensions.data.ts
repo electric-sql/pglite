@@ -254,12 +254,27 @@ const baseExtensions: Extension[] = [
       only as a last resort.
     `,
     shortDescription: 'Perform low-level surgery on relation data',
-    docs: 'https://www.postgresql.org/docs/18/dict-int.html',
+    docs: 'https://www.postgresql.org/docs/current/pgsurgery.html',
     tags: ['postgres extension', 'postgres/contrib'],
     importPath: '@electric-sql/pglite/contrib/pg_surgery',
     importName: 'pg_surgery',
     core: true,
     size: 2635,
+  },
+  {
+    name: 'pg_visibility',
+    description: `
+      The pg_visibility module provides a means for examining the visibility map (VM) 
+      and page-level visibility information of a table. It also provides functions to 
+      check the integrity of a visibility map and to force it to be rebuilt.
+    `,
+    shortDescription: 'Visibility map information and utilities',
+    docs: 'https://www.postgresql.org/docs/current/pgvisibility.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_visibility',
+    importName: 'pg_visibility',
+    core: true,
+    size: 4159,
   },
   {
     name: 'pg_freespacemap',
