@@ -243,6 +243,22 @@ const baseExtensions: Extension[] = [
     size: 1361,
   },
   {
+    name: 'unaccent',
+    description: `
+      unaccent is a text search dictionary that removes accents (diacritic signs) 
+      from lexemes. It's a filtering dictionary, which means its output is always 
+      passed to the next dictionary (if any), unlike the normal behavior of 
+      dictionaries. This allows accent-insensitive processing for full text search.
+    `,
+    shortDescription: 'A text search dictionary which removes diacritics',
+    docs: 'https://www.postgresql.org/docs/current/unaccent.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/unaccent',
+    importName: 'unaccent',
+    core: true,
+    size: 9323,
+  },  
+  {
     name: 'pg_surgery',
     description: `
       The pg_surgery module provides various functions to perform surgery on a damaged 

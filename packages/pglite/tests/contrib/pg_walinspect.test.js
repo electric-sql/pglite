@@ -34,7 +34,8 @@ SELECT pg_current_wal_lsn() AS after_lsn;
 
   const _blsn = blsn.rows[0].before_lsn
   const _alsn = alsn.rows[0].after_lsn
-  const infos = await pg.query(`
+  const infos = await pg.query(
+    `
 SELECT * FROM pg_get_wal_block_info($1, $2)
 ORDER BY start_lsn, block_id
 LIMIT 200;`,
