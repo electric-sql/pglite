@@ -643,7 +643,6 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    // let data
     const mod = this.mod!
 
     if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {

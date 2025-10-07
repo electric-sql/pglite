@@ -236,14 +236,13 @@ export abstract class BasePGlite
           options,
         )
 
-        const dataTypeIDs = parseDescribeStatementResults([
-          ...(
+        const dataTypeIDs = parseDescribeStatementResults(
+          (
             await this.#execProtocolNoSync(
               serializeProtocol.describe({ type: 'S' }),
               options,
             )
-          ).messages,
-        ])
+          ).messages)
 
         const values = params.map((param, i) => {
           const oid = dataTypeIDs[i]
