@@ -195,6 +195,22 @@ const baseExtensions: Extension[] = [
     size: 14712,
   },
   {
+    name: 'dict_xsyn',
+    description: `
+      dict_xsyn (Extended Synonym Dictionary) is an example of an add-on dictionary 
+      template for full-text search. This dictionary type replaces words with groups 
+      of their synonyms, and so makes it possible to search for a word using any of 
+      its synonyms.
+    `,
+    shortDescription: 'Example synonym full-text search dictionary',
+    docs: 'https://www.postgresql.org/docs/18/dict-xsyn.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/dict_xsyn',
+    importName: 'dict_xsyn',
+    core: true,
+    size: 1948,
+  },
+  {
     name: 'file_fdw',
     description: `
       The file_fdw module provides the foreign-data wrapper file_fdw, which can be 
