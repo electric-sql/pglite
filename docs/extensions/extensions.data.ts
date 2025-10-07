@@ -211,6 +211,23 @@ const baseExtensions: Extension[] = [
     size: 1948,
   },
   {
+    name: 'dict_int',
+    description: `
+      dict_int is an example of an add-on dictionary template for full-text search. 
+      The motivation for this example dictionary is to control the indexing of integers 
+      (signed and unsigned), allowing such numbers to be indexed while preventing 
+      excessive growth in the number of unique words, which greatly affects the 
+      performance of searching.
+    `,
+    shortDescription: 'Example full-text search dictionary for integers',
+    docs: 'https://www.postgresql.org/docs/18/dict-int.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/dict_int',
+    importName: 'dict_int',
+    core: true,
+    size: 1361,
+  },
+  {
     name: 'file_fdw',
     description: `
       The file_fdw module provides the foreign-data wrapper file_fdw, which can be 
