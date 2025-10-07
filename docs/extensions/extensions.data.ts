@@ -211,6 +211,21 @@ const baseExtensions: Extension[] = [
     size: 1948,
   },
   {
+    name: 'pageinspect',
+    description: `
+      The pageinspect module provides functions that allow you to inspect the contents 
+      of database pages at a low level, which is useful for debugging purposes. All of 
+      these functions may be used only by superusers.
+    `,
+    shortDescription: 'Low-level inspection of database pages ',
+    docs: 'https://www.postgresql.org/docs/18/pageinspect.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pageinspect',
+    importName: 'pageinspect',
+    core: true,
+    size: 15923,
+  },
+  {
     name: 'dict_int',
     description: `
       dict_int is an example of an add-on dictionary template for full-text search. 
