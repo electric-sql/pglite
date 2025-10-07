@@ -243,6 +243,22 @@ const baseExtensions: Extension[] = [
     size: 1361,
   },
   {
+    name: 'pg_freespacemap',
+    description: `
+      The pg_freespacemap module provides a means for examining the free space map (FSM). 
+      It provides a function called pg_freespace, or two overloaded functions, to be precise. 
+      The functions show the value recorded in the free space map for a given page, or 
+      for all pages in the relation.
+    `,
+    shortDescription: 'Examine the free space map',
+    docs: 'https://www.postgresql.org/docs/current/pgfreespacemap.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_freespacemap',
+    importName: 'pg_freespacemap',
+    core: true,
+    size: 1485,
+  },
+  {
     name: 'pg_buffercache',
     description: `
       The pg_buffercache module provides a means for examining what's happening in the 
