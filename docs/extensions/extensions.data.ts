@@ -243,6 +243,25 @@ const baseExtensions: Extension[] = [
     size: 1361,
   },
   {
+    name: 'pg_surgery',
+    description: `
+      The pg_surgery module provides various functions to perform surgery on a damaged 
+      relation. These functions are unsafe by design and using them may corrupt 
+      (or further corrupt) your database. For example, these functions can easily be 
+      used to make a table inconsistent with its own indexes, to cause UNIQUE or 
+      FOREIGN KEY constraint violations, or even to make tuples visible which, when read, 
+      will cause a database server crash. They should be used with great caution and 
+      only as a last resort.
+    `,
+    shortDescription: 'Perform low-level surgery on relation data',
+    docs: 'https://www.postgresql.org/docs/18/dict-int.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_surgery',
+    importName: 'pg_surgery',
+    core: true,
+    size: 2635,
+  },
+  {
     name: 'pg_freespacemap',
     description: `
       The pg_freespacemap module provides a means for examining the free space map (FSM). 
