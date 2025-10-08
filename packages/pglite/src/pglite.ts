@@ -75,14 +75,14 @@ export class PGlite
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
-  static readonly RECV_BUF_SIZE: number = 16 * 1024 * 1024 // 16MB default
+  static readonly RECV_BUF_SIZE: number = 4 * 1024 * 1024 // 4MB default
 
   // receive data from wasm
   #pglite_write: number = -1
-  // buffer that holds data received from wasm
-  #inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
-  // write index in the buffer
-  #writeOffset: number = 0
+
+  #currentResults: BackendMessage[] = []
+  #currentThrowOnError: boolean = false
+  #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
 
   // send data to wasm
   #pglite_read: number = -1
@@ -379,7 +379,7 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // set the write callback
-    this.#pglite_write = (this.mod as any).addFunction(
+    this.#pglite_write = this.mod.addFunction(
       (ptr: any, length: number) => {
         let bytes
         try {
@@ -388,24 +388,10 @@ export class PGlite
           console.error('error', e)
           throw e
         }
-        const copied = bytes.slice()
-
-        const requiredSize = this.#writeOffset + copied.length
-
-        if (requiredSize > this.#inputData.length) {
-          const newSize =
-            this.#inputData.length +
-            (this.#inputData.length >> 1) +
-            requiredSize
-          const newBuffer = new Uint8Array(newSize)
-          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-          this.#inputData = newBuffer
-        }
-
-        this.#inputData.set(copied, this.#writeOffset)
-        this.#writeOffset += copied.length
-
-        return this.#inputData.length
+        this.#protocolParser.parse(bytes, (msg) => {
+          this.#parse(msg)
+        })
+        return length;
       },
       'iii',
     )
@@ -645,20 +631,14 @@ export class PGlite
   execProtocolRawSync(message: Uint8Array) {
     const mod = this.mod!
 
-    if (this.#inputData.buffer.byteLength > PGlite.RECV_BUF_SIZE) {
-      this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
-    }
     this.#readOffset = 0
     this.#outputData = message
-
-    this.#writeOffset = 0
 
     // execute the message
     mod._interactive_one(message.length, message[0])
 
     this.#outputData = []
 
-    if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
 
@@ -697,53 +677,59 @@ export class PGlite
       onNotice,
     }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
-    const data = await this.execProtocolRaw(message, { syncToFs })
-    const results: BackendMessage[] = []
+    this.#currentThrowOnError = throwOnError
+    this.#currentOnNotice = onNotice
+    this.#currentResults = []
 
-    this.#protocolParser.parse(data, (msg) => {
-      if (msg instanceof DatabaseError) {
-        this.#protocolParser = new ProtocolParser() // Reset the parser
-        if (throwOnError) {
-          throw msg
-        }
-        // TODO: Do we want to wrap the error in a custom error?
-      } else if (msg instanceof NoticeMessage) {
-        if (this.debug > 0) {
-          // Notice messages are warnings, we should log them
-          console.warn(msg)
-        }
-        if (onNotice) {
-          onNotice(msg)
-        }
-      } else if (msg instanceof CommandCompleteMessage) {
-        // Keep track of the transaction state
-        switch (msg.text) {
-          case 'BEGIN':
-            this.#inTransaction = true
-            break
-          case 'COMMIT':
-          case 'ROLLBACK':
-            this.#inTransaction = false
-            break
-        }
-      } else if (msg instanceof NotificationResponseMessage) {
-        // We've received a notification, call the listeners
-        const listeners = this.#notifyListeners.get(msg.channel)
-        if (listeners) {
-          listeners.forEach((cb) => {
-            // We use queueMicrotask so that the callback is called after any
-            // synchronous code has finished running.
-            queueMicrotask(() => cb(msg.payload))
-          })
-        }
-        this.#globalNotifyListeners.forEach((cb) => {
-          queueMicrotask(() => cb(msg.channel, msg.payload))
+    const data = await this.execProtocolRaw(message, { syncToFs })
+
+    this.#currentThrowOnError = false
+    this.#currentOnNotice = undefined
+    
+    return { messages: this.#currentResults, data }
+  }
+
+  #parse(msg: BackendMessage) {
+    if (msg instanceof DatabaseError) {
+      this.#protocolParser = new ProtocolParser() // Reset the parser
+      if (this.#currentThrowOnError) {
+        throw msg
+      }
+      // TODO: Do we want to wrap the error in a custom error?
+    } else if (msg instanceof NoticeMessage) {
+      if (this.debug > 0) {
+        // Notice messages are warnings, we should log them
+        console.warn(msg)
+      }
+      if (this.#currentOnNotice) {
+        this.#currentOnNotice(msg)
+      }
+    } else if (msg instanceof CommandCompleteMessage) {
+      // Keep track of the transaction state
+      switch (msg.text) {
+        case 'BEGIN':
+          this.#inTransaction = true
+          break
+        case 'COMMIT':
+        case 'ROLLBACK':
+          this.#inTransaction = false
+          break
+      }
+    } else if (msg instanceof NotificationResponseMessage) {
+      // We've received a notification, call the listeners
+      const listeners = this.#notifyListeners.get(msg.channel)
+      if (listeners) {
+        listeners.forEach((cb) => {
+          // We use queueMicrotask so that the callback is called after any
+          // synchronous code has finished running.
+          queueMicrotask(() => cb(msg.payload))
         })
       }
-      results.push(msg)
-    })
-
-    return { messages: results, data }
+      this.#globalNotifyListeners.forEach((cb) => {
+        queueMicrotask(() => cb(msg.channel, msg.payload))
+      })
+    }
+    this.#currentResults.push(msg)
   }
 
   /**

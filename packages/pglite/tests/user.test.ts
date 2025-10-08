@@ -28,6 +28,9 @@ describe('user', () => {
     INSERT INTO test2 (number) VALUES (42);
   `)
 
+    const test = await db.query('SELECT * FROM test2;')
+    expect(test.rows).toEqual([{ id: 1, number: 42 }])
+
     await db.exec('ALTER TABLE test2 OWNER TO test_user;')
 
     await db.close()
