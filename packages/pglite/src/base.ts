@@ -65,7 +65,7 @@ export abstract class BasePGlite
    */
   abstract execProtocolRaw(
     message: Uint8Array,
-    { syncToFs, dataTransferContainer }: ExecProtocolOptions,
+    { syncToFs }: ExecProtocolOptions,
   ): Promise<Uint8Array>
 
   /**
@@ -228,7 +228,7 @@ export abstract class BasePGlite
       this.#log('runQuery', query, params, options)
       await this._handleBlob(options?.blob)
 
-      let results
+      let results = []
 
       try {
         const { messages: parseResults } = await this.#execProtocolNoSync(
@@ -288,7 +288,10 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+        results.push(
+          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+            .messages,
+        )
       }
 
       await this._cleanupBlob()
@@ -315,7 +318,7 @@ export abstract class BasePGlite
       // No params so we can just send the query
       this.#log('runExec', query, options)
       await this._handleBlob(options?.blob)
-      let results
+      let results = []
       try {
         results = (
           await this.#execProtocolNoSync(
@@ -335,7 +338,10 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+        results.push(
+          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+            .messages,
+        )
       }
       this._cleanupBlob()
       if (!this.#inTransaction) {
@@ -360,38 +366,19 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<DescribeQueryResult> {
+    let messages = []
     try {
       await this.#execProtocolNoSync(
         serializeProtocol.parse({ text: query, types: options?.paramTypes }),
         options,
       )
 
-      const describeResults = await this.#execProtocolNoSync(
-        serializeProtocol.describe({ type: 'S' }),
-        options,
-      )
-      const paramDescription = describeResults.messages.find(
-        (msg): msg is ParameterDescriptionMessage =>
-          msg.name === 'parameterDescription',
-      )
-      const resultDescription = describeResults.messages.find(
-        (msg): msg is RowDescriptionMessage => msg.name === 'rowDescription',
-      )
-
-      const queryParams =
-        paramDescription?.dataTypeIDs.map((dataTypeID) => ({
-          dataTypeID,
-          serializer: this.serializers[dataTypeID],
-        })) ?? []
-
-      const resultFields =
-        resultDescription?.fields.map((field) => ({
-          name: field.name,
-          dataTypeID: field.dataTypeID,
-          parser: this.parsers[field.dataTypeID],
-        })) ?? []
-
-      return { queryParams, resultFields }
+      messages = (
+        await this.#execProtocolNoSync(
+          serializeProtocol.describe({ type: 'S' }),
+          options,
+        )
+      ).messages
     } catch (e) {
       if (e instanceof DatabaseError) {
         const pgError = makePGliteError({
@@ -404,8 +391,34 @@ export abstract class BasePGlite
       }
       throw e
     } finally {
-      await this.#execProtocolNoSync(serializeProtocol.sync(), options)
+      messages.push(
+        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
+          .messages,
+      )
     }
+
+    const paramDescription = messages.find(
+      (msg): msg is ParameterDescriptionMessage =>
+        msg.name === 'parameterDescription',
+    )
+    const resultDescription = messages.find(
+      (msg): msg is RowDescriptionMessage => msg.name === 'rowDescription',
+    )
+
+    const queryParams =
+      paramDescription?.dataTypeIDs.map((dataTypeID) => ({
+        dataTypeID,
+        serializer: this.serializers[dataTypeID],
+      })) ?? []
+
+    const resultFields =
+      resultDescription?.fields.map((field) => ({
+        name: field.name,
+        dataTypeID: field.dataTypeID,
+        parser: this.parsers[field.dataTypeID],
+      })) ?? []
+
+    return { queryParams, resultFields }
   }
 
   /**

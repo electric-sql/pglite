@@ -17,7 +17,6 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
-  DataTransferContainer,
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
@@ -61,8 +60,6 @@ export class PGlite
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
 
-  #dataTransferContainer: DataTransferContainer = 'cma'
-
   readonly debug: DebugLevel = 0
 
   #extensions: Extensions
@@ -77,6 +74,23 @@ export class PGlite
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+
+  static readonly RECV_BUF_SIZE: number = 4 * 1024 * 1024 // 4MB default
+
+  // receive data from wasm
+  #pglite_write: number = -1
+
+  #currentResults: BackendMessage[] = []
+  #currentThrowOnError: boolean = false
+  #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
+
+  // send data to wasm
+  #pglite_read: number = -1
+  // buffer that holds the data to be sent to wasm
+  #outputData: any = []
+  // read index in the buffer
+  #readOffset: number = 0
+  #currentDatabaseError: DatabaseError | null = null
 
   /**
    * Create a new PGlite instance
@@ -124,11 +138,6 @@ export class PGlite
     // Enable relaxed durability if requested
     if (options?.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
-    }
-
-    // Set the default data transfer container
-    if (options?.defaultDataTransferContainer !== undefined) {
-      this.#dataTransferContainer = options.defaultDataTransferContainer
     }
 
     // Save the extensions for later use
@@ -370,6 +379,48 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+    // set the write callback
+    this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
+      let bytes
+      try {
+        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+      } catch (e: any) {
+        console.error('error', e)
+        throw e
+      }
+      this.#protocolParser.parse(bytes, (msg) => {
+        this.#parse(msg)
+      })
+      return length
+    }, 'iii')
+
+    // set the read callback
+    this.#pglite_read = (this.mod as any).addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.log(e)
+        }
+        return length
+      },
+      'iii',
+    )
+
+    this.mod._set_read_write_cbs(this.#pglite_read, this.#pglite_write)
+
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
@@ -498,6 +549,8 @@ export class PGlite
     try {
       await this.execProtocol(serialize.end())
       this.mod!._pgl_shutdown()
+      this.mod!.removeFunction(this.#pglite_read)
+      this.mod!.removeFunction(this.#pglite_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -575,88 +628,18 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(
-    message: Uint8Array,
-    options: { dataTransferContainer?: DataTransferContainer } = {},
-  ) {
-    let data
+  execProtocolRawSync(message: Uint8Array) {
     const mod = this.mod!
 
-    // >0 set buffer content type to wire protocol
-    mod._use_wire(1)
-    const msg_len = message.length
-
-    // TODO: if (message.length>CMA_B) force file
-
-    let currDataTransferContainer =
-      options.dataTransferContainer ?? this.#dataTransferContainer
-
-    // do we overflow allocated shared memory segment
-    if (message.length >= mod.FD_BUFFER_MAX) currDataTransferContainer = 'file'
-
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // set buffer size so answer will be at size+0x2 pointer addr
-        mod._interactive_write(message.length)
-        // TODO: make it seg num * seg maxsize if multiple channels.
-        mod.HEAPU8.set(message, 1)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_lck = '/tmp/pglite/base/.s.PGSQL.5432.lck.in'
-        const pg_in = '/tmp/pglite/base/.s.PGSQL.5432.in'
-        mod._interactive_write(0)
-        mod.FS.writeFile(pg_lck, message)
-        mod.FS.rename(pg_lck, pg_in)
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
-    }
+    this.#readOffset = 0
+    this.#outputData = message
 
     // execute the message
-    mod._interactive_one()
+    mod._interactive_one(message.length, message[0])
 
-    const channel = mod._get_channel()
-    if (channel < 0) currDataTransferContainer = 'file'
+    this.#outputData = []
 
-    // TODO: use channel value for msg_start
-    if (channel > 0) currDataTransferContainer = 'cma'
-
-    switch (currDataTransferContainer) {
-      case 'cma': {
-        // Read responses from the buffer
-
-        const msg_start = msg_len + 2
-        const msg_end = msg_start + mod._interactive_read()
-        data = mod.HEAPU8.subarray(msg_start, msg_end)
-        break
-      }
-      case 'file': {
-        // Use socketfiles to emulate a socket connection
-        const pg_out = '/tmp/pglite/base/.s.PGSQL.5432.out'
-        try {
-          const fstat = mod.FS.stat(pg_out)
-          const stream = mod.FS.open(pg_out, 'r')
-          data = new Uint8Array(fstat.size)
-          mod.FS.read(stream, data, 0, fstat.size, 0)
-          mod.FS.unlink(pg_out)
-        } catch (x) {
-          // case of single X message.
-          data = new Uint8Array(0)
-        }
-        break
-      }
-      default:
-        throw new Error(
-          `Unknown data transfer container: ${currDataTransferContainer}`,
-        )
-    }
-
-    return data
+    return new Uint8Array(0)
   }
 
   /**
@@ -672,9 +655,9 @@ export class PGlite
    */
   async execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true, dataTransferContainer }: ExecProtocolOptions = {},
+    { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message, { dataTransferContainer })
+    const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
     }
@@ -694,14 +677,37 @@ export class PGlite
       onNotice,
     }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
-    const data = await this.execProtocolRaw(message, { syncToFs })
-    const results: BackendMessage[] = []
+    this.#currentThrowOnError = throwOnError
+    this.#currentOnNotice = onNotice
+    this.#currentResults = []
+    this.#currentDatabaseError = null
 
-    this.#protocolParser.parse(data, (msg) => {
+    const data = await this.execProtocolRaw(message, { syncToFs })
+
+    const databaseError = this.#currentDatabaseError
+    this.#currentThrowOnError = false
+    this.#currentOnNotice = undefined
+    this.#currentDatabaseError = null
+    const result = { messages: this.#currentResults, data }
+    this.#currentResults = []
+
+    if (throwOnError && databaseError) {
+      this.#protocolParser = new ProtocolParser() // Reset the parser
+      throw databaseError
+    }
+
+    return result
+  }
+
+  #parse(msg: BackendMessage) {
+    // keep the existing logic of throwing the first db exception
+    // as soon as there is a db error, we're not interested in the remaining data
+    // but since the parser is plugged into the pglite_write callback, we can't just throw
+    // and need to ack the messages received from the db
+    if (!this.#currentDatabaseError) {
       if (msg instanceof DatabaseError) {
-        this.#protocolParser = new ProtocolParser() // Reset the parser
-        if (throwOnError) {
-          throw msg
+        if (this.#currentThrowOnError) {
+          this.#currentDatabaseError = msg
         }
         // TODO: Do we want to wrap the error in a custom error?
       } else if (msg instanceof NoticeMessage) {
@@ -709,8 +715,8 @@ export class PGlite
           // Notice messages are warnings, we should log them
           console.warn(msg)
         }
-        if (onNotice) {
-          onNotice(msg)
+        if (this.#currentOnNotice) {
+          this.#currentOnNotice(msg)
         }
       } else if (msg instanceof CommandCompleteMessage) {
         // Keep track of the transaction state
@@ -737,10 +743,8 @@ export class PGlite
           queueMicrotask(() => cb(msg.channel, msg.payload))
         })
       }
-      results.push(msg)
-    })
-
-    return { messages: results, data }
+      this.#currentResults.push(msg)
+    }
   }
 
   /**
