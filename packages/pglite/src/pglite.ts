@@ -90,6 +90,7 @@ export class PGlite
   #outputData: any = []
   // read index in the buffer
   #readOffset: number = 0
+  #currentDatabaseError: DatabaseError | null = null
 
   /**
    * Create a new PGlite instance
@@ -551,6 +552,8 @@ export class PGlite
     try {
       await this.execProtocol(serialize.end())
       this.mod!._pgl_shutdown()
+      this.mod!.removeFunction(this.#pglite_read)
+      this.mod!.removeFunction(this.#pglite_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -680,56 +683,71 @@ export class PGlite
     this.#currentThrowOnError = throwOnError
     this.#currentOnNotice = onNotice
     this.#currentResults = []
+    this.#currentDatabaseError = null
 
     const data = await this.execProtocolRaw(message, { syncToFs })
 
+    const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
     this.#currentOnNotice = undefined
-    
-    return { messages: this.#currentResults, data }
+    this.#currentDatabaseError = null
+    const result = { messages: this.#currentResults, data }
+    this.#currentResults = []
+
+    if (throwOnError && databaseError) {
+      this.#protocolParser = new ProtocolParser() // Reset the parser
+      throw databaseError
+    }
+
+    return result
   }
 
   #parse(msg: BackendMessage) {
-    if (msg instanceof DatabaseError) {
-      this.#protocolParser = new ProtocolParser() // Reset the parser
-      if (this.#currentThrowOnError) {
-        throw msg
-      }
-      // TODO: Do we want to wrap the error in a custom error?
-    } else if (msg instanceof NoticeMessage) {
-      if (this.debug > 0) {
-        // Notice messages are warnings, we should log them
-        console.warn(msg)
-      }
-      if (this.#currentOnNotice) {
-        this.#currentOnNotice(msg)
-      }
-    } else if (msg instanceof CommandCompleteMessage) {
-      // Keep track of the transaction state
-      switch (msg.text) {
-        case 'BEGIN':
-          this.#inTransaction = true
-          break
-        case 'COMMIT':
-        case 'ROLLBACK':
-          this.#inTransaction = false
-          break
-      }
-    } else if (msg instanceof NotificationResponseMessage) {
-      // We've received a notification, call the listeners
-      const listeners = this.#notifyListeners.get(msg.channel)
-      if (listeners) {
-        listeners.forEach((cb) => {
-          // We use queueMicrotask so that the callback is called after any
-          // synchronous code has finished running.
-          queueMicrotask(() => cb(msg.payload))
+    // keep the existing logic of throwing the first db exception
+    // as soon as there is a db error, we're not interested in the remaining data
+    // but since the parser is plugged into the pglite_write callback, we can't just throw
+    // and need to ack the messages received from the db
+    if (!this.#currentDatabaseError) {
+      if (msg instanceof DatabaseError) {
+        if (this.#currentThrowOnError) {
+          this.#currentDatabaseError = msg
+        }
+        // TODO: Do we want to wrap the error in a custom error?
+      } else if (msg instanceof NoticeMessage) {
+        if (this.debug > 0) {
+          // Notice messages are warnings, we should log them
+          console.warn(msg)
+        }
+        if (this.#currentOnNotice) {
+          this.#currentOnNotice(msg)
+        }
+      } else if (msg instanceof CommandCompleteMessage) {
+        // Keep track of the transaction state
+        switch (msg.text) {
+          case 'BEGIN':
+            this.#inTransaction = true
+            break
+          case 'COMMIT':
+          case 'ROLLBACK':
+            this.#inTransaction = false
+            break
+        }
+      } else if (msg instanceof NotificationResponseMessage) {
+        // We've received a notification, call the listeners
+        const listeners = this.#notifyListeners.get(msg.channel)
+        if (listeners) {
+          listeners.forEach((cb) => {
+            // We use queueMicrotask so that the callback is called after any
+            // synchronous code has finished running.
+            queueMicrotask(() => cb(msg.payload))
+          })
+        }
+        this.#globalNotifyListeners.forEach((cb) => {
+          queueMicrotask(() => cb(msg.channel, msg.payload))
         })
       }
-      this.#globalNotifyListeners.forEach((cb) => {
-        queueMicrotask(() => cb(msg.channel, msg.payload))
-      })
+      this.#currentResults.push(msg)
     }
-    this.#currentResults.push(msg)
   }
 
   /**
