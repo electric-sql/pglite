@@ -30,7 +30,10 @@ export interface PostgresMod
   _interactive_write: (msgLength: number) => void
   _interactive_one: (length: number, peek: number) => void
   _set_read_write_cbs: (read_cb: number, write_cb: number) => void
-  addFunction: (cb: (ptr: any, length: number) => void, signature: string) => number
+  addFunction: (
+    cb: (ptr: any, length: number) => void,
+    signature: string,
+  ) => number
   removeFunction: (f: number) => void
 }
 

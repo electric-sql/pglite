@@ -380,22 +380,19 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // set the write callback
-    this.#pglite_write = this.mod.addFunction(
-      (ptr: any, length: number) => {
-        let bytes
-        try {
-          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-        } catch (e: any) {
-          console.error('error', e)
-          throw e
-        }
-        this.#protocolParser.parse(bytes, (msg) => {
-          this.#parse(msg)
-        })
-        return length;
-      },
-      'iii',
-    )
+    this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
+      let bytes
+      try {
+        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+      } catch (e: any) {
+        console.error('error', e)
+        throw e
+      }
+      this.#protocolParser.parse(bytes, (msg) => {
+        this.#parse(msg)
+      })
+      return length
+    }, 'iii')
 
     // set the read callback
     this.#pglite_read = (this.mod as any).addFunction(
