@@ -120,7 +120,7 @@ async function execPgDump({
       }
 
       // Handle query
-      const reply = pg.execProtocolRawSync(msgIn)
+      const reply = pg.execProtocolRawSync(msgIn, { streamParsing: false })
       FS.writeFileSync(pgOut, reply)
     }
     return 0

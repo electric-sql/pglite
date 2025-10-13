@@ -75,8 +75,6 @@ export class PGlite
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
-  static readonly RECV_BUF_SIZE: number = 4 * 1024 * 1024 // 4MB default
-
   // receive data from wasm
   #pglite_write: number = -1
 
@@ -91,6 +89,14 @@ export class PGlite
   // read index in the buffer
   #readOffset: number = 0
   #currentDatabaseError: DatabaseError | null = null
+  #streamParsing: boolean = true
+
+  static readonly RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
+  static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
+  // buffer that holds data received from wasm
+  #inputData = new Uint8Array(0)
+  // write index in the buffer
+  #writeOffset: number = 0
 
   /**
    * Create a new PGlite instance
@@ -388,9 +394,33 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      this.#protocolParser.parse(bytes, (msg) => {
-        this.#parse(msg)
-      })
+      if (this.#streamParsing) {
+        this.#protocolParser.parse(bytes, (msg) => {
+          this.#parse(msg)
+        })
+      } else {
+        const copied = bytes.slice()
+
+        let requiredSize = this.#writeOffset + copied.length
+
+        if (requiredSize > this.#inputData.length) {
+          const newSize =
+            this.#inputData.length +
+            (this.#inputData.length >> 1) +
+            requiredSize
+          if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+            requiredSize = PGlite.MAX_BUFFER_SIZE
+          }
+          const newBuffer = new Uint8Array(newSize)
+          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+          this.#inputData = newBuffer
+        }
+
+        this.#inputData.set(copied, this.#writeOffset)
+        this.#writeOffset += copied.length
+
+        return this.#inputData.length
+      }
       return length
     }, 'iii')
 
@@ -628,17 +658,29 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(message: Uint8Array) {
+  execProtocolRawSync(message: Uint8Array, options: { streamParsing : boolean} = { streamParsing: true}) {
     const mod = this.mod!
 
     this.#readOffset = 0
+    this.#writeOffset = 0
     this.#outputData = message
+    const currentStreamParsing = this.#streamParsing
+    this.#streamParsing = options.streamParsing
+
+    if (this.#streamParsing) {
+      this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
+    } else {
+      this.#inputData = new Uint8Array(0)
+    }
 
     // execute the message
     mod._interactive_one(message.length, message[0])
 
+    this.#streamParsing = currentStreamParsing
+
     this.#outputData = []
 
+    if (this.#streamParsing && this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
 
