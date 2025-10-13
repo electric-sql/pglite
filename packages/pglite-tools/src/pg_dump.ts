@@ -80,7 +80,7 @@ async function execPgDump({
   const acc: Uint8Array[] = []
   const FS = emscriptenFsToWasiFS(pg.Module.FS, acc)
 
-  // pg_dump expects raw protocol messages, save the current state 
+  // pg_dump expects raw protocol messages, save the current state
   // so we can set it back after the pg_dump execution has finished
   const currentStreamParsing = pg.streamParsing
   pg.streamParsing = false

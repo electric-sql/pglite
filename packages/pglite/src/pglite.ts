@@ -110,7 +110,7 @@ export class PGlite
     if (value) {
       this.#inputData = new Uint8Array(0)
     } else {
-      if (this.#inputData.length != PGlite.DEFAULT_RECV_BUF_SIZE) {
+      if (this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE) {
         this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
       }
     }
@@ -684,7 +684,10 @@ export class PGlite
     this.#writeOffset = 0
     this.#outputData = message
 
-    if (!this.#streamParsing && this.#inputData.length != PGlite.DEFAULT_RECV_BUF_SIZE) {
+    if (
+      !this.#streamParsing &&
+      this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE
+    ) {
       // the previous call might have increased the size of the buffer so reset it to its default
       this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
     }
@@ -694,7 +697,8 @@ export class PGlite
 
     this.#outputData = []
 
-    if (!this.#streamParsing && this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
+    if (!this.#streamParsing && this.#writeOffset)
+      return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
 
