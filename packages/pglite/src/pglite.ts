@@ -89,14 +89,33 @@ export class PGlite
   // read index in the buffer
   #readOffset: number = 0
   #currentDatabaseError: DatabaseError | null = null
-  #streamParsing: boolean = true
 
-  static readonly RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
+  // receiving data from the backend can be done in two ways:
+  // 1. parse received protocol into frontend messages as they arrive (stream parsing)
+  // 2. receive all protocol messages and don't parse them (needed for pg_dump)
+  #streamParsing: boolean = true
+  // these are needed for point 2 above
+  static readonly DEFAULT_RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
   static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
   // buffer that holds data received from wasm
   #inputData = new Uint8Array(0)
   // write index in the buffer
   #writeOffset: number = 0
+
+  get streamParsing(): boolean {
+    return this.#streamParsing
+  }
+
+  set streamParsing(value: boolean) {
+    if (value) {
+      if (this.#inputData.length != PGlite.DEFAULT_RECV_BUF_SIZE) {
+        this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
+      }
+    } else {
+      this.#inputData = new Uint8Array(0)
+    }
+    this.#streamParsing = value
+  }
 
   /**
    * Create a new PGlite instance
@@ -658,25 +677,20 @@ export class PGlite
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  execProtocolRawSync(message: Uint8Array, options: { streamParsing : boolean} = { streamParsing: true}) {
+  execProtocolRawSync(message: Uint8Array) {
     const mod = this.mod!
 
     this.#readOffset = 0
     this.#writeOffset = 0
     this.#outputData = message
-    const currentStreamParsing = this.#streamParsing
-    this.#streamParsing = options.streamParsing
 
-    if (this.#streamParsing) {
-      this.#inputData = new Uint8Array(PGlite.RECV_BUF_SIZE)
-    } else {
-      this.#inputData = new Uint8Array(0)
+    if (this.#streamParsing && this.#inputData.length != PGlite.DEFAULT_RECV_BUF_SIZE) {
+      // the previous call might have increased the size of the buffer so reset it to its default
+      this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
     }
 
     // execute the message
     mod._interactive_one(message.length, message[0])
-
-    this.#streamParsing = currentStreamParsing
 
     this.#outputData = []
 
