@@ -90,10 +90,7 @@ export class PGlite
   #readOffset: number = 0
   #currentDatabaseError: DatabaseError | null = null
 
-  // receiving data from the backend can be done in two ways:
-  // 1. parse received protocol into frontend messages as they arrive (stream parsing)
-  // 2. receive all protocol messages and don't parse them (needed for pg_dump)
-  #streamParsing: boolean = false
+  #keepRawResponse: boolean = true
   // these are needed for point 2 above
   static readonly DEFAULT_RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
   static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
@@ -398,11 +395,10 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      if (this.#streamParsing) {
-        this.#protocolParser.parse(bytes, (msg) => {
-          this.#parse(msg)
-        })
-      } else {
+      this.#protocolParser.parse(bytes, (msg) => {
+        this.#parse(msg)
+      })
+      if (this.#keepRawResponse) {
         const copied = bytes.slice()
 
         let requiredSize = this.#writeOffset + copied.length
@@ -670,7 +666,7 @@ export class PGlite
     this.#outputData = message
 
     if (
-      !this.#streamParsing &&
+      this.#keepRawResponse &&
       this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE
     ) {
       // the previous call might have increased the size of the buffer so reset it to its default
@@ -682,7 +678,7 @@ export class PGlite
 
     this.#outputData = []
 
-    if (!this.#streamParsing && this.#writeOffset)
+    if (this.#keepRawResponse && this.#writeOffset)
       return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
@@ -727,17 +723,48 @@ export class PGlite
     this.#currentResults = []
     this.#currentDatabaseError = null
 
-    this.#streamParsing = true
-
     const data = await this.execProtocolRaw(message, { syncToFs })
-
-    this.#streamParsing = false
 
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
     this.#currentOnNotice = undefined
     this.#currentDatabaseError = null
     const result = { messages: this.#currentResults, data }
+    this.#currentResults = []
+
+    if (throwOnError && databaseError) {
+      this.#protocolParser = new ProtocolParser() // Reset the parser
+      throw databaseError
+    }
+
+    return result
+  }
+
+  /**
+   * Execute a postgres wire protocol message
+   * @param message The postgres wire protocol message to execute
+   * @returns The parsed results of the query
+   */
+  async execProtocolStream(
+    message: Uint8Array,
+    { syncToFs, throwOnError = true, onNotice }: ExecProtocolOptions = {},
+  ): Promise<BackendMessage[]> {
+    this.#currentThrowOnError = throwOnError
+    this.#currentOnNotice = onNotice
+    this.#currentResults = []
+    this.#currentDatabaseError = null
+
+    this.#keepRawResponse = false
+
+    await this.execProtocolRaw(message, { syncToFs })
+
+    this.#keepRawResponse = true
+
+    const databaseError = this.#currentDatabaseError
+    this.#currentThrowOnError = false
+    this.#currentOnNotice = undefined
+    this.#currentDatabaseError = null
+    const result = this.#currentResults
     this.#currentResults = []
 
     if (throwOnError && databaseError) {

@@ -24,6 +24,7 @@ import {
   RowDescriptionMessage,
   ParameterDescriptionMessage,
   DatabaseError,
+  BackendMessage,
 } from '@electric-sql/pg-protocol/messages'
 import { makePGliteError } from './errors.js'
 
@@ -51,6 +52,16 @@ export abstract class BasePGlite
     message: Uint8Array,
     { syncToFs, onNotice }: ExecProtocolOptions,
   ): Promise<ExecProtocolResult>
+
+  /**
+   * Execute a postgres wire protocol message
+   * @param message The postgres wire protocol message to execute
+   * @returns The parsed results of the query
+   */
+  abstract execProtocolStream(
+    message: Uint8Array,
+    { syncToFs, onNotice }: ExecProtocolOptions,
+  ): Promise<BackendMessage[]>
 
   /**
    * Execute a postgres wire protocol message directly without wrapping the response.
@@ -137,8 +148,11 @@ export abstract class BasePGlite
   async #execProtocolNoSync(
     message: Uint8Array,
     options: ExecProtocolOptions = {},
-  ): Promise<ExecProtocolResult> {
-    return await this.execProtocol(message, { ...options, syncToFs: false })
+  ): Promise<BackendMessage[]> {
+    return await this.execProtocolStream(message, {
+      ...options,
+      syncToFs: false,
+    })
   }
 
   /**
@@ -231,18 +245,16 @@ export abstract class BasePGlite
       let results = []
 
       try {
-        const { messages: parseResults } = await this.#execProtocolNoSync(
+        const parseResults = await this.#execProtocolNoSync(
           serializeProtocol.parse({ text: query, types: options?.paramTypes }),
           options,
         )
 
         const dataTypeIDs = parseDescribeStatementResults(
-          (
-            await this.#execProtocolNoSync(
-              serializeProtocol.describe({ type: 'S' }),
-              options,
-            )
-          ).messages,
+          await this.#execProtocolNoSync(
+            serializeProtocol.describe({ type: 'S' }),
+            options,
+          ),
         )
 
         const values = params.map((param, i) => {
@@ -260,26 +272,20 @@ export abstract class BasePGlite
 
         results = [
           ...parseResults,
-          ...(
-            await this.#execProtocolNoSync(
-              serializeProtocol.bind({
-                values,
-              }),
-              options,
-            )
-          ).messages,
-          ...(
-            await this.#execProtocolNoSync(
-              serializeProtocol.describe({ type: 'P' }),
-              options,
-            )
-          ).messages,
-          ...(
-            await this.#execProtocolNoSync(
-              serializeProtocol.execute({}),
-              options,
-            )
-          ).messages,
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.bind({
+              values,
+            }),
+            options,
+          )),
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.describe({ type: 'P' }),
+            options,
+          )),
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.execute({}),
+            options,
+          )),
         ]
       } catch (e) {
         if (e instanceof DatabaseError) {
@@ -289,8 +295,10 @@ export abstract class BasePGlite
         throw e
       } finally {
         results.push(
-          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-            .messages,
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.sync(),
+            options,
+          )),
         )
       }
 
@@ -320,12 +328,10 @@ export abstract class BasePGlite
       await this._handleBlob(options?.blob)
       let results = []
       try {
-        results = (
-          await this.#execProtocolNoSync(
-            serializeProtocol.query(query),
-            options,
-          )
-        ).messages
+        results = await this.#execProtocolNoSync(
+          serializeProtocol.query(query),
+          options,
+        )
       } catch (e) {
         if (e instanceof DatabaseError) {
           const pgError = makePGliteError({
@@ -339,8 +345,10 @@ export abstract class BasePGlite
         throw e
       } finally {
         results.push(
-          ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-            .messages,
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.sync(),
+            options,
+          )),
         )
       }
       this._cleanupBlob()
@@ -373,12 +381,10 @@ export abstract class BasePGlite
         options,
       )
 
-      messages = (
-        await this.#execProtocolNoSync(
-          serializeProtocol.describe({ type: 'S' }),
-          options,
-        )
-      ).messages
+      messages = await this.#execProtocolNoSync(
+        serializeProtocol.describe({ type: 'S' }),
+        options,
+      )
     } catch (e) {
       if (e instanceof DatabaseError) {
         const pgError = makePGliteError({
@@ -392,8 +398,7 @@ export abstract class BasePGlite
       throw e
     } finally {
       messages.push(
-        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options))
-          .messages,
+        ...(await this.#execProtocolNoSync(serializeProtocol.sync(), options)),
       )
     }
 
