@@ -148,6 +148,7 @@ async function execPgDump({
   await pg.runExclusive(async () => {
     exitCode = wasi.start(app.instance.exports)
   })
+
   return [exitCode!, acc, errorMessage]
 }
 

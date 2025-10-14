@@ -12,7 +12,7 @@
     "ci:publish": "pnpm changeset publish",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
-    "wasm:build": "cd postgres-pglite && ./build-with-docker.sh; cd .. && mkdir -p ./packages/pglite/release/ && cp ./postgres-pglite/dist/bin/pglite.* ./packages/pglite/release/ && cp ./postgres-pglite/dist/extensions/*.tar.gz ./packages/pglite/release/",
+    "wasm:build": "cd postgres-pglite && ./build-with-docker.sh && cd .. && mkdir -p ./packages/pglite/release/ && cp ./postgres-pglite/dist/bin/pglite.* ./packages/pglite/release/ && cp ./postgres-pglite/dist/extensions/*.tar.gz ./packages/pglite/release/",
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all"
