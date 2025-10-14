@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.11
+
+### Patch Changes
+
+- 9a104b9: Added dict_int, dict_xsyn, file_fdw, intarray, pageinspect, pg_buffercache, pg_freespacemap, pg_surgery, pg_visibility, pg_walinspect, unaccent contrib extensions
+
 ## 0.3.10
 
 ### Patch Changes
