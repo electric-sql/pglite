@@ -80,11 +80,6 @@ async function execPgDump({
   const acc: Uint8Array[] = []
   const FS = emscriptenFsToWasiFS(pg.Module.FS, acc)
 
-  // pg_dump expects raw protocol messages, save the current state
-  // so we can set it back after the pg_dump execution has finished
-  const currentStreamParsing = pg.streamParsing
-  pg.streamParsing = false
-
   const wasi = new WasiPreview1({
     fs: FS,
     args: ['pg_dump', ...args],
@@ -154,7 +149,6 @@ async function execPgDump({
     exitCode = wasi.start(app.instance.exports)
   })
 
-  pg.streamParsing = currentStreamParsing
   return [exitCode!, acc, errorMessage]
 }
 

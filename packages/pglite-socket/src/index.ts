@@ -43,7 +43,6 @@ export class PGLiteSocketHandler extends EventTarget {
   constructor(options: PGLiteSocketHandlerOptions) {
     super()
     this.db = options.db
-    this.db.streamParsing = false
     this.closeOnDetach = options.closeOnDetach ?? false
     this.inspect = options.inspect ?? false
     this.debug = options.debug ?? false

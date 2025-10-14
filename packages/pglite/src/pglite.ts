@@ -93,7 +93,7 @@ export class PGlite
   // receiving data from the backend can be done in two ways:
   // 1. parse received protocol into frontend messages as they arrive (stream parsing)
   // 2. receive all protocol messages and don't parse them (needed for pg_dump)
-  #streamParsing: boolean = true
+  #streamParsing: boolean = false
   // these are needed for point 2 above
   static readonly DEFAULT_RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
   static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
@@ -101,21 +101,6 @@ export class PGlite
   #inputData = new Uint8Array(0)
   // write index in the buffer
   #writeOffset: number = 0
-
-  get streamParsing(): boolean {
-    return this.#streamParsing
-  }
-
-  set streamParsing(value: boolean) {
-    if (value) {
-      this.#inputData = new Uint8Array(0)
-    } else {
-      if (this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE) {
-        this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
-      }
-    }
-    this.#streamParsing = value
-  }
 
   /**
    * Create a new PGlite instance
@@ -742,7 +727,11 @@ export class PGlite
     this.#currentResults = []
     this.#currentDatabaseError = null
 
+    this.#streamParsing = true
+
     const data = await this.execProtocolRaw(message, { syncToFs })
+
+    this.#streamParsing = false
 
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
