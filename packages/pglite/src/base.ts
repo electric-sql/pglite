@@ -1,5 +1,5 @@
 import { query as queryTemplate } from './templating.js'
-import { parseDescribeStatementResults, parseResults } from './parse.js'
+import { parseDescribeStatementResults, parseResult, parseResults } from './parse.js'
 import {
   type Serializer,
   type Parser,
@@ -247,7 +247,17 @@ export abstract class BasePGlite
       try {
         const parseResults = await this.#execProtocolNoSync(
           serializeProtocol.parse({ text: query, types: options?.paramTypes }),
-          options,
+          {
+            onResult: (result) => {
+              console.log(result)
+              if (options?.onResult) {
+                const parsed = parseResult(result, this.parsers, options, undefined)
+                options.onResult(parsed)
+              }
+            },
+            onNotice: options?.onNotice,
+            
+          },
         )
 
         const dataTypeIDs = parseDescribeStatementResults(

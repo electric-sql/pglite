@@ -26,6 +26,7 @@ export interface QueryOptions {
   serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
+  onResult?: (result: Results) => void
   paramTypes?: number[]
 }
 
@@ -33,6 +34,7 @@ export interface ExecProtocolOptions {
   syncToFs?: boolean
   throwOnError?: boolean
   onNotice?: (notice: NoticeMessage) => void
+  onResult?: (msg: BackendMessage) => void
 }
 
 export interface ExtensionSetupResult<TNamespace = any> {

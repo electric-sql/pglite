@@ -59,7 +59,9 @@ await testEsmCjsAndDTC(async (importType) => {
       await db.query("INSERT INTO test (name) VALUES ('test');")
       const selectResult = await db.query(`
     SELECT * FROM test;
-  `)
+  `, undefined, { onResult: (msg) => {
+    console.log(msg)
+  }})
 
       expect(selectResult).toEqual({
         rows: [

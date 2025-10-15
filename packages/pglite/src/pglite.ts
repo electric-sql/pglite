@@ -98,6 +98,7 @@ export class PGlite
   #inputData = new Uint8Array(0)
   // write index in the buffer
   #writeOffset: number = 0
+  #currentOnResult: ((msg: BackendMessage) => void) | undefined
 
   /**
    * Create a new PGlite instance
@@ -747,10 +748,11 @@ export class PGlite
    */
   async execProtocolStream(
     message: Uint8Array,
-    { syncToFs, throwOnError = true, onNotice }: ExecProtocolOptions = {},
+    { syncToFs, throwOnError = true, onNotice, onResult }: ExecProtocolOptions = {},
   ): Promise<BackendMessage[]> {
     this.#currentThrowOnError = throwOnError
     this.#currentOnNotice = onNotice
+    this.#currentOnResult = onResult
     this.#currentResults = []
     this.#currentDatabaseError = null
 
@@ -763,6 +765,7 @@ export class PGlite
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
     this.#currentOnNotice = undefined
+    this.#currentOnResult = undefined
     this.#currentDatabaseError = null
     const result = this.#currentResults
     this.#currentResults = []
@@ -818,6 +821,9 @@ export class PGlite
         this.#globalNotifyListeners.forEach((cb) => {
           queueMicrotask(() => cb(msg.channel, msg.payload))
         })
+      }
+      if (this.#currentOnResult) {
+        this.#currentOnResult(msg)
       }
       this.#currentResults.push(msg)
     }

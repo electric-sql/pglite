@@ -86,6 +86,78 @@ export function parseResults(
   return resultSets
 }
 
+export function parseResult(
+  message: BackendMessage,
+  defaultParsers: Record<number | string, Parser>,
+  options?: QueryOptions,
+  blob?: Blob,
+): Results {
+  let resultSet: Results | null = null
+  let currentResultSet: Results = { rows: [], fields: [] }
+  let affectedRows = 0
+  const parsers = { ...defaultParsers, ...options?.parsers }
+
+  switch (message.name) {
+      case 'rowDescription': {
+        const msg = message as RowDescriptionMessage
+        currentResultSet.fields = msg.fields.map((field) => ({
+          name: field.name,
+          dataTypeID: field.dataTypeID,
+        }))
+        break
+      }
+      case 'dataRow': {
+        if (!currentResultSet) break
+        const msg = message as DataRowMessage
+        if (options?.rowMode === 'array') {
+          currentResultSet.rows.push(
+            msg.fields.map((field, i) =>
+              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
+            ),
+          )
+        } else {
+          // rowMode === "object"
+          currentResultSet.rows.push(
+            Object.fromEntries(
+              msg.fields.map((field, i) => [
+                currentResultSet!.fields[i].name,
+                parseType(
+                  field,
+                  currentResultSet!.fields[i].dataTypeID,
+                  parsers,
+                ),
+              ]),
+            ),
+          )
+        }
+        break
+      }
+      case 'commandComplete': {
+        const msg = message as CommandCompleteMessage
+        affectedRows += retrieveRowCount(msg)
+
+        resultSet = {
+          ...currentResultSet,
+          affectedRows,
+          ...(blob ? { blob } : {}),
+        }
+
+        currentResultSet = { rows: [], fields: [] }
+        break
+      }
+  }
+
+  if (!resultSet) {
+    resultSet = {
+      affectedRows: 0,
+      rows: [],
+      fields: [],
+    }
+  }
+
+  return resultSet
+}
+
 function retrieveRowCount(msg: CommandCompleteMessage): number {
   const parts = msg.text.split(' ')
   switch (parts[0]) {
