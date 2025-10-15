@@ -82,7 +82,6 @@ async function execPgDump({
 
   // pg_dump expects raw protocol messages, save the current state
   // so we can set it back after the pg_dump execution has finished
-  const currentStreamParsing = pg.streamParsing
   pg.streamParsing = false
 
   const wasi = new WasiPreview1({
@@ -154,7 +153,6 @@ async function execPgDump({
     exitCode = wasi.start(app.instance.exports)
   })
 
-  pg.streamParsing = currentStreamParsing
   return [exitCode!, acc, errorMessage]
 }
 
