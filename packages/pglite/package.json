@@ -80,6 +80,16 @@
         "default": "./dist/pg_ivm/index.cjs"
       }
     },
+    "./pgtap": {
+      "import": {
+        "types": "./dist/pgtap/index.d.ts",
+        "default": "./dist/pgtap/index.js"
+      },
+      "require": {
+        "types": "./dist/pgtap/index.d.cts",
+        "default": "./dist/pgtap/index.cjs"
+      }
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
