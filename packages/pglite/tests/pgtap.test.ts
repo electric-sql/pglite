@@ -64,7 +64,7 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(res[1].rows).toEqual([{ plan: '1..1' }])
       expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
 
-      // to issues reported in finish step
+      // no issues reported in finish step
       expect(res[3].rows.length).toBe(0)
     })
 
@@ -355,6 +355,8 @@ await testEsmCjsAndDTC(async (importType) => {
             'ok 9 - testuser should have specific database privileges',
         },
       ])
+      // no issues reported in finish step
+      expect(res[22].rows.length).toBe(0)
     })
   })
 })
