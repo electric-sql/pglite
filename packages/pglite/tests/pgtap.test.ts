@@ -63,7 +63,7 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(res.length).toBe(5)
       expect(res[1].rows).toEqual([{ plan: '1..1' }])
       expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
-      
+
       // to issues reported in finish step
       expect(res[3].rows.length).toBe(0)
     })
