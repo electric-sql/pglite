@@ -181,7 +181,7 @@ await testEsmCjsAndDTC(async (importType) => {
         `)
 
       expect(res.length).toBe(6)
-      // we don't care about the outputs of the other statements
+      // we don't care about the outputs of the other SQL statements before
       expect(res[4].rows).toEqual([
         { runtests: '# Subtest: public.test_user()' },
         { runtests: '    ok 1 - Should have no users' },
@@ -189,6 +189,171 @@ await testEsmCjsAndDTC(async (importType) => {
         { runtests: '    1..2' },
         { runtests: 'ok 1 - public.test_user' },
         { runtests: '1..1' },
+      ])
+    })
+
+    it('should run in-depth assertion tests', async () => {
+      const pg = new PGlite({
+        extensions: {
+          pgtap,
+        },
+      })
+
+      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
+
+      const res = await pg.exec(`
+          BEGIN;
+
+          -- Create test user and grant privileges
+          CREATE USER testuser WITH PASSWORD 'testpass';
+          GRANT CONNECT ON DATABASE postgres TO testuser;
+          GRANT TEMPORARY ON DATABASE postgres TO testuser;
+          GRANT CREATE ON DATABASE postgres TO testuser;
+          
+
+          -- Create tables and sample data
+          CREATE TABLE users (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              email TEXT UNIQUE,
+              age INTEGER CHECK (age >= 0),
+              created_at TIMESTAMP DEFAULT NOW()
+          );
+
+          CREATE TABLE expected_users (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              email TEXT UNIQUE,
+              age INTEGER CHECK (age >= 0),
+              created_at TIMESTAMP DEFAULT NOW()
+          );
+
+          CREATE TABLE large_table (
+              id SERIAL PRIMARY KEY,
+              indexed_col INTEGER,
+              data TEXT
+          );
+
+          CREATE INDEX idx_large_table ON large_table(indexed_col);
+
+          -- Insert sample data
+          INSERT INTO users (name, email, age) VALUES 
+              ('alice', 'alice@example.com', 30),
+              ('bob', 'bob@example.com', 25),
+              ('charlie', 'charlie@example.com', 35);
+          
+          INSERT INTO expected_users (name, email, age) VALUES 
+              ('alice', 'alice@example.com', 30),
+              ('bob', 'bob@example.com', 25),
+              ('charlie', 'charlie@example.com', 35);
+          
+          INSERT INTO large_table (indexed_col, data)
+          SELECT i, 'data_' || i FROM generate_series(1, 1000) i;
+          
+          -- Plan the number of tests
+          SELECT plan(9);
+          
+          -- 1. results_eq() - Query result comparison
+          SELECT results_eq(
+              'SELECT name, email, age FROM users ORDER BY id',
+              'SELECT name, email, age FROM expected_users ORDER BY id',
+              'Users table should match expected results'
+          );
+          
+          -- 2. set_eq() - Set comparison (order doesn't matter)
+          SELECT set_eq(
+              'SELECT name FROM users',
+              ARRAY['alice', 'bob', 'charlie'],
+              'Should have exactly these users (any order)'
+          );
+          
+          -- 3. bag_eq() - Bag comparison (allows duplicates)
+          SELECT bag_eq(
+              'SELECT name FROM users WHERE age > 20',
+              ARRAY['alice', 'bob', 'charlie'],
+              'Should have these users with age > 20'
+          );
+          
+          -- 4. throws_ok() - Exception testing
+          SELECT throws_ok(
+              'INSERT INTO users (id, name) VALUES (NULL, ''test'')',
+              '23502',
+              'null value in column "id" of relation "users" violates not-null constraint',
+              'Should enforce NOT NULL constraint on id'
+          );
+          
+          -- 5. Another throws_ok() - Check constraint violation
+          SELECT throws_ok(
+              'INSERT INTO users (name, age) VALUES (''invalid'', -5)',
+              '23514',
+              'new row for relation "users" violates check constraint "users_age_check"',
+              'Should enforce CHECK constraint on age'
+          );
+          
+          -- 6. performs_ok() - Performance testing
+          SELECT performs_ok(
+              'SELECT * FROM large_table WHERE indexed_col = 123',
+              1000,
+              'Indexed query should complete within 1 second'
+          );
+          
+          -- 7. has_table() - Schema verification
+          SELECT has_table('users', 'Should have users table');
+          
+          -- 8. col_type_is() - Column type verification
+          SELECT col_type_is(
+              'users',
+              'email',
+              'text',
+              'email column should be TEXT type'
+          );
+          
+          -- 9. database_privs_are() - Privilege verification
+          SELECT database_privs_are(
+              'postgres',
+              'testuser',
+              ARRAY['CONNECT', 'TEMPORARY', 'CREATE'],
+              'testuser should have specific database privileges'
+          );
+         
+          SELECT * FROM finish();
+          ROLLBACK;
+        `)
+
+      expect(res.length).toBe(24)
+      // we don't care about the outputs of the other SQL statements before
+      expect(res[12].rows).toEqual([{ plan: '1..9' }])
+      expect(res[13].rows).toEqual([
+        { results_eq: 'ok 1 - Users table should match expected results' },
+      ])
+      expect(res[14].rows).toEqual([
+        { set_eq: 'ok 2 - Should have exactly these users (any order)' },
+      ])
+      expect(res[15].rows).toEqual([
+        { bag_eq: 'ok 3 - Should have these users with age > 20' },
+      ])
+      expect(res[16].rows).toEqual([
+        { throws_ok: 'ok 4 - Should enforce NOT NULL constraint on id' },
+      ])
+      expect(res[17].rows).toEqual([
+        { throws_ok: 'ok 5 - Should enforce CHECK constraint on age' },
+      ])
+      expect(res[18].rows).toEqual([
+        {
+          performs_ok: 'ok 6 - Indexed query should complete within 1 second',
+        },
+      ])
+      expect(res[19].rows).toEqual([
+        { has_table: 'ok 7 - Should have users table' },
+      ])
+      expect(res[20].rows).toEqual([
+        { col_type_is: 'ok 8 - email column should be TEXT type' },
+      ])
+      expect(res[21].rows).toEqual([
+        {
+          database_privs_are:
+            'ok 9 - testuser should have specific database privileges',
+        },
       ])
     })
   })
