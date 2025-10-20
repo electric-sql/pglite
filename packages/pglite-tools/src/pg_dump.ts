@@ -1,70 +1,10 @@
-import { WasiPreview1 } from './wasi/easywasi'
-import { postgresMod } from '@electric-sql/pglite'
 import { PGlite } from '@electric-sql/pglite'
+import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 
-type FS = postgresMod.FS
-type FSInterface = any // WASI FS interface
-
-const IN_NODE =
-  typeof process === 'object' &&
-  typeof process.versions === 'object' &&
-  typeof process.versions.node === 'string'
-
-/**
- * Emscripten FS is not quite compatible with WASI
- * so we need to patch it
- */
-function emscriptenFsToWasiFS(fs: FS, acc: any[]): FSInterface & FS {
-  const requiredMethods = [
-    'appendFileSync',
-    'fsyncSync',
-    'linkSync',
-    'setFlagsSync',
-    'mkdirSync',
-    'readdirSync',
-    'readFileSync',
-    'readlinkSync',
-    'renameSync',
-    'rmdirSync',
-    'statSync',
-    'symlinkSync',
-    'truncateSync',
-    'unlinkSync',
-    'utimesSync',
-    'writeFileSync',
-  ]
-  return {
-    // Bind all methods to the FS instance
-    ...fs,
-    // Add missing methods
-    ...Object.fromEntries(
-      requiredMethods
-        .map((method) => {
-          const target = method.slice(0, method.length - 4)
-          if (!(target in fs)) {
-            return [
-              method,
-              () => {
-                throw new Error(`${target} not implemented.`)
-              },
-            ]
-          }
-          return [
-            method,
-            (...args: any[]) => {
-              if (method === 'writeFileSync' && args[0] === '/tmp/out.sql') {
-                acc.push(args[1])
-              }
-              return (fs as any)[target](...args)
-            },
-          ]
-        })
-        .filter(
-          (entry): entry is [string, (fs: FS) => any] => entry !== undefined,
-        ),
-    ),
-  } as FSInterface & FS
-}
+// const IN_NODE =
+//   typeof process === 'object' &&
+//   typeof process.versions === 'object' &&
+//   typeof process.versions.node === 'string'
 
 /**
  * Inner function to execute pg_dump
@@ -76,84 +16,59 @@ async function execPgDump({
   pg: PGlite
   args: string[]
 }): Promise<[number, Uint8Array[], string]> {
-  const bin = new URL('./pg_dump.wasm', import.meta.url)
+  // const bin = new URL('./pg_dump.wasm', import.meta.url)
   const acc: Uint8Array[] = []
-  const FS = emscriptenFsToWasiFS(pg.Module.FS, acc)
-
-  // pg_dump expects raw protocol messages, save the current state
-  // so we can set it back after the pg_dump execution has finished
-  pg.streamParsing = false
-
-  const wasi = new WasiPreview1({
-    fs: FS,
-    args: ['pg_dump', ...args],
-    env: {
-      PWD: '/',
-    },
-  })
-
-  wasi.stdout = (_buffer) => {
-    // console.log('stdout', _buffer)
-  }
-  const textDecoder = new TextDecoder()
-  let errorMessage = ''
-
-  wasi.stderr = (_buffer) => {
-    const text = textDecoder.decode(_buffer)
-    if (text) errorMessage += text
-  }
-  wasi.sched_yield = () => {
-    const pgIn = '/tmp/pglite/base/.s.PGSQL.5432.in'
-    const pgOut = '/tmp/pglite/base/.s.PGSQL.5432.out'
-    if (FS.analyzePath(pgIn).exists) {
-      // call interactive one
-      const msgIn = FS.readFileSync(pgIn)
-
-      // BYPASS the file socket emulation in PGlite
-      FS.unlinkSync(pgIn)
-
-      // Handle auth request
-      if (msgIn[0] === 0) {
-        const reply = new Uint8Array([
-          ...authOk,
-          ...versionParam,
-          ...readyForQuery,
-        ])
-        FS.writeFileSync(pgOut, reply)
-        return 0
+  let pgdump_write, pgdump_read
+  let currentResponse: Uint8Array = new Uint8Array()
+  let currentReadOffset = 0
+  let emscriptenOpts: Partial<PgDumpMod> = {
+    arguments: args,
+    noExitRuntime: false,
+    preRun: [
+      (mod: PgDumpMod) => {
+        mod.onRuntimeInitialized = () => {
+          pgdump_write = mod.addFunction((ptr: any, length: number) => {
+          let bytes
+          try {
+            bytes = mod.HEAPU8.subarray(ptr, ptr + length)
+          } catch (e: any) {
+            console.error('error', e)
+            throw e
+          }
+          currentResponse = pg.execProtocolRawSync(bytes)
+          currentReadOffset = 0
+          }, 'iii')
+          pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
+          // copy current data to wasm buffer
+          let length = currentResponse.length - currentReadOffset
+          if (length > max_length) {
+            length = max_length
+          }
+          try {
+            mod.HEAP8.set(
+              (currentResponse).subarray(
+                currentReadOffset,
+                currentReadOffset + length,
+              ),
+              ptr,
+            )
+            currentReadOffset += length
+          } catch (e) {
+            console.log(e)
+          }
+          return length
+        }, 'iii')
+        mod._set_read_write_cbs(pgdump_read, pgdump_write)
       }
-
-      // Handle query
-      const reply = pg.execProtocolRawSync(msgIn)
-      FS.writeFileSync(pgOut, reply)
     }
-    return 0
-  }
+  ]}
 
-  // Postgres can complain if the binary is not on the filesystem
-  // so we create a dummy file
-  await FS.writeFile('/pg_dump', '\0', { mode: 18 })
+  await PgDumpModFactory(emscriptenOpts)
 
-  let app: WebAssembly.WebAssemblyInstantiatedSource
+  // a._main([])
+  // (mod as any).callMain()
 
-  if (IN_NODE) {
-    const fs = await import('fs/promises')
-    const blob = await fs.readFile(bin)
-    app = await WebAssembly.instantiate(blob, {
-      wasi_snapshot_preview1: wasi as any,
-    })
-  } else {
-    app = await WebAssembly.instantiateStreaming(fetch(bin), {
-      wasi_snapshot_preview1: wasi as any,
-    })
-  }
-
-  let exitCode: number
-  await pg.runExclusive(async () => {
-    exitCode = wasi.start(app.instance.exports)
-  })
-
-  return [exitCode!, acc, errorMessage]
+  return [0, acc, '']
 }
 
 interface PgDumpOptions {
@@ -210,42 +125,42 @@ export async function pgDump({
 
 // Wire protocol messages for simulating auth handshake:
 
-function charToByte(char: string) {
-  return char.charCodeAt(0)
-}
+// function charToByte(char: string) {
+//   return char.charCodeAt(0)
+// }
 
-// Function to convert an integer to a 4-byte array (Int32)
-function int32ToBytes(value: number) {
-  const buffer = new ArrayBuffer(4)
-  const view = new DataView(buffer)
-  view.setInt32(0, value, false) // false for big-endian
-  return new Uint8Array(buffer)
-}
+// // Function to convert an integer to a 4-byte array (Int32)
+// function int32ToBytes(value: number) {
+//   const buffer = new ArrayBuffer(4)
+//   const view = new DataView(buffer)
+//   view.setInt32(0, value, false) // false for big-endian
+//   return new Uint8Array(buffer)
+// }
 
 // Convert a string to a Uint8Array with a null terminator (C string)
-function stringToBytes(str: string) {
-  const utf8Encoder = new TextEncoder()
-  const strBytes = utf8Encoder.encode(str) // UTF-8 encoding
-  return new Uint8Array([...strBytes, 0]) // Append null terminator
-}
+// function stringToBytes(str: string) {
+//   const utf8Encoder = new TextEncoder()
+//   const strBytes = utf8Encoder.encode(str) // UTF-8 encoding
+//   return new Uint8Array([...strBytes, 0]) // Append null terminator
+// }
 
-const authOk = new Uint8Array([
-  charToByte('R'),
-  ...int32ToBytes(8),
-  ...int32ToBytes(0),
-])
-const readyForQuery = new Uint8Array([
-  charToByte('Z'),
-  ...int32ToBytes(5),
-  charToByte('I'),
-])
+// const authOk = new Uint8Array([
+//   charToByte('R'),
+//   ...int32ToBytes(8),
+//   ...int32ToBytes(0),
+// ])
+// const readyForQuery = new Uint8Array([
+//   charToByte('Z'),
+//   ...int32ToBytes(5),
+//   charToByte('I'),
+// ])
 
-const svParamName = stringToBytes('server_version')
-const svParamValue = stringToBytes('16.3 (PGlite 0.2.0)')
-const svTotalLength = 4 + svParamName.length + svParamValue.length
-const versionParam = new Uint8Array([
-  charToByte('S'),
-  ...int32ToBytes(svTotalLength),
-  ...svParamName,
-  ...svParamValue,
-])
+// const svParamName = stringToBytes('server_version')
+// const svParamValue = stringToBytes('16.3 (PGlite 0.2.0)')
+// const svTotalLength = 4 + svParamName.length + svParamValue.length
+// const versionParam = new Uint8Array([
+//   charToByte('S'),
+//   ...int32ToBytes(svTotalLength),
+//   ...svParamName,
+//   ...svParamValue,
+// ])

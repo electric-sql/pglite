@@ -425,7 +425,7 @@ export class PGlite
     }, 'iii')
 
     // set the read callback
-    this.#pglite_read = (this.mod as any).addFunction(
+    this.#pglite_read = this.mod.addFunction(
       (ptr: any, max_length: number) => {
         // copy current data to wasm buffer
         let length = this.#outputData.length - this.#readOffset

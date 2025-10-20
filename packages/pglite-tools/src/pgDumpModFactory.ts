@@ -1,4 +1,4 @@
-import PgDumpModFactory from '../release/pg_dump.cjs'
+import PgDumpModFactory from '../release/pg_dump.js'
 
 type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
@@ -28,6 +28,7 @@ export interface PgDumpMod
     signature: string,
   ) => number
   removeFunction: (f: number) => void
+  _main: (args: string[]) => number
 }
 
 type PgDumpFactory<T extends PgDumpMod = PgDumpMod> = (
