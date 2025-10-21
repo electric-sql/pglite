@@ -1,10 +1,22 @@
 import { PGlite } from '@electric-sql/pglite'
 import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 
-// const IN_NODE =
-//   typeof process === 'object' &&
-//   typeof process.versions === 'object' &&
-//   typeof process.versions.node === 'string'
+const IN_NODE =
+  typeof process === 'object' &&
+  typeof process.versions === 'object' &&
+  typeof process.versions.node === 'string'
+
+async function getFsBundle(): Promise<ArrayBuffer> {
+  const fsBundleUrl = new URL('../release/pg_dump.data', import.meta.url)
+  if (IN_NODE) {
+    const fs = await import('fs/promises')
+    const fileData = await fs.readFile(fsBundleUrl)
+    return fileData.buffer
+  } else {
+    const response = await fetch(fsBundleUrl)
+    return response.arrayBuffer()
+  }
+}
 
 /**
  * Inner function to execute pg_dump
@@ -15,60 +27,75 @@ async function execPgDump({
 }: {
   pg: PGlite
   args: string[]
-}): Promise<[number, Uint8Array[], string]> {
+}): Promise<[number, string, string]> {
   // const bin = new URL('./pg_dump.wasm', import.meta.url)
-  const acc: Uint8Array[] = []
   let pgdump_write, pgdump_read
-  let currentResponse: Uint8Array = new Uint8Array()
-  let currentReadOffset = 0
+
+  const fsBundleBuffer = await getFsBundle()
+
   let emscriptenOpts: Partial<PgDumpMod> = {
     arguments: args,
     noExitRuntime: false,
+    getPreloadedPackage: (remotePackageName, remotePackageSize) => {
+      if (remotePackageName === 'pg_dump.data') {
+        if (fsBundleBuffer.byteLength !== remotePackageSize) {
+          throw new Error(
+            `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
+          )
+        }
+        return fsBundleBuffer
+      }
+      throw new Error(`Unknown package: ${remotePackageName}`)
+    },
     preRun: [
       (mod: PgDumpMod) => {
         mod.onRuntimeInitialized = () => {
+          let currentResponse: Uint8Array = new Uint8Array()
+          let currentReadOffset = 0
           pgdump_write = mod.addFunction((ptr: any, length: number) => {
-          let bytes
-          try {
-            bytes = mod.HEAPU8.subarray(ptr, ptr + length)
-          } catch (e: any) {
-            console.error('error', e)
-            throw e
-          }
-          currentResponse = pg.execProtocolRawSync(bytes)
-          currentReadOffset = 0
-          }, 'iii')
+            let bytes
+            try {
+              bytes = mod.HEAPU8.subarray(ptr, ptr + length)
+            } catch (e: any) {
+              console.error('error', e)
+              throw e
+            }
+            currentResponse = pg.execProtocolRawSync(bytes)
+            currentReadOffset = 0
+            return length
+            }, 'iii')
+
           pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
-          // copy current data to wasm buffer
-          let length = currentResponse.length - currentReadOffset
-          if (length > max_length) {
-            length = max_length
-          }
-          try {
-            mod.HEAP8.set(
-              (currentResponse).subarray(
-                currentReadOffset,
-                currentReadOffset + length,
-              ),
-              ptr,
-            )
-            currentReadOffset += length
-          } catch (e) {
-            console.log(e)
-          }
-          return length
+            // copy current data to wasm buffer
+            let length = currentResponse.length - currentReadOffset
+            if (length > max_length) {
+              length = max_length
+            }
+            try {
+              mod.HEAP8.set(
+                (currentResponse).subarray(
+                  currentReadOffset,
+                  currentReadOffset + length,
+                ),
+                ptr,
+              )
+              currentReadOffset += length
+            } catch (e) {
+              console.log(e)
+            }
+            return length
         }, 'iii')
         mod._set_read_write_cbs(pgdump_read, pgdump_write)
+        mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
       }
     }
   ]}
 
-  await PgDumpModFactory(emscriptenOpts)
+  const mod = await PgDumpModFactory(emscriptenOpts)
 
-  // a._main([])
-  // (mod as any).callMain()
+  const bytes = mod.FS.readFile('/tmp/out.sql', { encoding: 'utf8' })
 
-  return [0, acc, '']
+  return [0, bytes, '']
 }
 
 interface PgDumpOptions {
@@ -115,10 +142,10 @@ export async function pgDump({
     )
   }
 
-  const file = new File(acc, fileName, {
+  const file = new File([acc], fileName, {
     type: 'text/plain',
   })
-  pg.Module.FS.unlink(outFile)
+  // pg.Module.FS.unlink(outFile)
 
   return file
 }
