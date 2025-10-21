@@ -7,8 +7,9 @@ beforeAll(() => {
   // Check if we need to build
   const distPath = join(__dirname, '../dist')
   const wasmPath = join(distPath, 'pg_dump.wasm')
+  const dataPath = join(distPath, 'pg_dump.data')
 
-  if (!existsSync(wasmPath)) {
+  if (!existsSync(wasmPath) || !existsSync(dataPath)) {
     console.log('Building project before running tests...')
     execSync('pnpm build', { stdio: 'inherit' })
   }
