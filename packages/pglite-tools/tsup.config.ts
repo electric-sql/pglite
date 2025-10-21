@@ -23,6 +23,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     onSuccess: async () => {
       cpSync(resolve('release/pg_dump.wasm'), resolve('dist/pg_dump.wasm'))
+      cpSync(resolve('release/pg_dump.data'), resolve('dist/pg_dump.data'))
     }
   },
 ])
