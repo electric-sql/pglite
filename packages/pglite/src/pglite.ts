@@ -425,29 +425,26 @@ export class PGlite
     }, 'iii')
 
     // set the read callback
-    this.#pglite_read = this.mod.addFunction(
-      (ptr: any, max_length: number) => {
-        // copy current data to wasm buffer
-        let length = this.#outputData.length - this.#readOffset
-        if (length > max_length) {
-          length = max_length
-        }
-        try {
-          this.mod!.HEAP8.set(
-            (this.#outputData as Uint8Array).subarray(
-              this.#readOffset,
-              this.#readOffset + length,
-            ),
-            ptr,
-          )
-          this.#readOffset += length
-        } catch (e) {
-          console.log(e)
-        }
-        return length
-      },
-      'iii',
-    )
+    this.#pglite_read = this.mod.addFunction((ptr: any, max_length: number) => {
+      // copy current data to wasm buffer
+      let length = this.#outputData.length - this.#readOffset
+      if (length > max_length) {
+        length = max_length
+      }
+      try {
+        this.mod!.HEAP8.set(
+          (this.#outputData as Uint8Array).subarray(
+            this.#readOffset,
+            this.#readOffset + length,
+          ),
+          ptr,
+        )
+        this.#readOffset += length
+      } catch (e) {
+        console.log(e)
+      }
+      return length
+    }, 'iii')
 
     this.mod._set_read_write_cbs(this.#pglite_read, this.#pglite_write)
 

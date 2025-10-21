@@ -33,7 +33,7 @@ async function execPgDump({
 
   const fsBundleBuffer = await getFsBundle()
 
-  let emscriptenOpts: Partial<PgDumpMod> = {
+  const emscriptenOpts: Partial<PgDumpMod> = {
     arguments: args,
     noExitRuntime: false,
     getPreloadedPackage: (remotePackageName, remotePackageSize) => {
@@ -63,7 +63,7 @@ async function execPgDump({
             currentResponse = pg.execProtocolRawSync(bytes)
             currentReadOffset = 0
             return length
-            }, 'iii')
+          }, 'iii')
 
           pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
             // copy current data to wasm buffer
@@ -73,7 +73,7 @@ async function execPgDump({
             }
             try {
               mod.HEAP8.set(
-                (currentResponse).subarray(
+                currentResponse.subarray(
                   currentReadOffset,
                   currentReadOffset + length,
                 ),
@@ -84,12 +84,13 @@ async function execPgDump({
               console.log(e)
             }
             return length
-        }, 'iii')
-        mod._set_read_write_cbs(pgdump_read, pgdump_write)
-        mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-      }
-    }
-  ]}
+          }, 'iii')
+          mod._set_read_write_cbs(pgdump_read, pgdump_write)
+          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+        }
+      },
+    ],
+  }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
 
