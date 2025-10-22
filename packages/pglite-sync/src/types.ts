@@ -3,6 +3,7 @@ import type {
   ShapeStreamInterface,
   Row,
   ChangeMessage,
+  FetchError,
 } from '@electric-sql/client'
 import { Transaction } from '@electric-sql/pglite'
 
@@ -29,6 +30,7 @@ export interface SyncShapesToTablesOptions {
   useCopy?: boolean // DEPRECATED: use initialInsertMethod instead
   initialInsertMethod?: InitialInsertMethod
   onInitialSync?: () => void
+  onError?: (error: FetchError | Error) => void
 }
 
 export interface SyncShapesToTablesResult {
@@ -47,6 +49,7 @@ export interface SyncShapeToTableOptions {
   useCopy?: boolean // DEPRECATED: use initialInsertMethod instead
   initialInsertMethod?: InitialInsertMethod
   onInitialSync?: () => void
+  onError?: (error: FetchError | Error) => void
   onMustRefetch?: (tx: Transaction) => Promise<void>
 }
 
