@@ -142,6 +142,13 @@ jobs:
           name: pglite-dist-node-v${{ matrix.node }}
           path: ./packages/pglite/dist/*
 
+      - name: Upload pg_dump (wasm) distribution artifact
+        id: upload-pg_dump-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pg_dump-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-tools/dist/*
+
       - name: Upload PGlite package artifact
         id: upload-pglite-package
         uses: actions/upload-artifact@v4
@@ -191,6 +198,12 @@ jobs:
           name: pglite-dist-node-v${{ matrix.node }}
           path: ./packages/pglite/dist/
 
+      - name: Download pg_dump build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pg_dump-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-tools/dist/
+      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
