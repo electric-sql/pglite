@@ -1,23 +1,6 @@
 import { PGlite } from '@electric-sql/pglite'
 import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 
-const IN_NODE =
-  typeof process === 'object' &&
-  typeof process.versions === 'object' &&
-  typeof process.versions.node === 'string'
-
-async function getFsBundle(): Promise<ArrayBuffer> {
-  const fsBundleUrl = new URL('../release/pg_dump.data', import.meta.url)
-  if (IN_NODE) {
-    const fs = await import('fs/promises')
-    const fileData = await fs.readFile(fsBundleUrl)
-    return fileData.buffer
-  } else {
-    const response = await fetch(fsBundleUrl)
-    return response.arrayBuffer()
-  }
-}
-
 /**
  * Inner function to execute pg_dump
  */
@@ -28,25 +11,11 @@ async function execPgDump({
   pg: PGlite
   args: string[]
 }): Promise<[number, string, string]> {
-  // const bin = new URL('./pg_dump.wasm', import.meta.url)
   let pgdump_write, pgdump_read
-
-  const fsBundleBuffer = await getFsBundle()
 
   const emscriptenOpts: Partial<PgDumpMod> = {
     arguments: args,
     noExitRuntime: false,
-    getPreloadedPackage: (remotePackageName, remotePackageSize) => {
-      if (remotePackageName === 'pg_dump.data') {
-        if (fsBundleBuffer.byteLength !== remotePackageSize) {
-          throw new Error(
-            `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
-          )
-        }
-        return fsBundleBuffer
-      }
-      throw new Error(`Unknown package: ${remotePackageName}`)
-    },
     preRun: [
       (mod: PgDumpMod) => {
         mod.onRuntimeInitialized = () => {
