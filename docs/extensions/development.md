@@ -96,6 +96,7 @@ $ ls -lah myawesomeextension
 ```
 
 Now append the **folder name** to `SUBDIRS` inside `postgres-pglite/pglite/Makefile`:
+
 ```
 SUBDIRS = \
 		pg_ivm \
@@ -223,13 +224,12 @@ We welcome contributions! Open a PR so anyone using PGlite can also use your ext
 
 If you get stuck, have a look at how other Postgres extensions are build for PGlite. Take a look at `pg_ivm`, `pgvector` or `pgtap`. You can also reach out on [Discord](https://discord.com/channels/933657521581858818/1212676471588520006) for help!
 
-
 ### Unhappy path
 
 This section is still under development.
 
 As mentioned before, some extensions require more effort to integrate with PGlite. Usually the difficulties arrise from the fact that the extension itself has dependencies that need to be compiled for WASM, which in turn might have other dependencies that need to be compiled for WASM and so on. The entire chain of dependencies needs to be built for WASM.
 
-Another source of pain for building an extension is the need to export symbols from the dependencies or from PGlite itself. Sometimes these are obvious only at runtime. 
+Another source of pain for building an extension is the need to export symbols from the dependencies or from PGlite itself. Sometimes these are obvious only at runtime.
 
 We are still working on documentation and examples showing how to build more complex Postgres extensions for use with PGlite. Please check back soon, or reach out on [Discord](https://discord.com/channels/933657521581858818/1212676471588520006) if you would like to try building a particular extension for PGlite.
