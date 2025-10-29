@@ -19,7 +19,7 @@ describe('pgDump', () => {
 
     for (let i = 0; i < 5; i++) {
       const fileName = `dump_${i}.sql`
-      const dump = await pgDump({ pg, fileName })
+      const dump = await pgDump({ pg, fileName, verbose: true })
 
       expect(dump).toBeInstanceOf(File)
       expect(dump.name).toBe(fileName)
@@ -47,7 +47,7 @@ describe('pgDump', () => {
       INSERT INTO test2 (value) VALUES (42);
     `)
 
-    const dump = await pgDump({ pg })
+    const dump = await pgDump({ pg, verbose: true })
     const content = await dump.text()
 
     // Check for table creation
@@ -63,7 +63,7 @@ describe('pgDump', () => {
 
   it('should respect custom filename', async () => {
     const pg = await PGlite.create()
-    const dump = await pgDump({ pg, fileName: 'custom.sql' })
+    const dump = await pgDump({ pg, fileName: 'custom.sql', verbose: true })
 
     expect(dump.name).toBe('custom.sql')
   })
@@ -76,7 +76,7 @@ describe('pgDump', () => {
     `)
 
     // Use --schema-only to exclude data
-    const dump = await pgDump({ pg, args: ['--schema-only'] })
+    const dump = await pgDump({ pg, args: ['--schema-only'], verbose: true })
     const content = await dump.text()
 
     expect(content).toContain('CREATE TABLE public.test')
@@ -97,7 +97,7 @@ describe('pgDump', () => {
     ).rows[0].search_path
 
     // Dump database
-    const dump = await pgDump({ pg: pg1 })
+    const dump = await pgDump({ pg: pg1, verbose: true })
     const dumpContent = await dump.text()
 
     // Create new database and restore
@@ -122,7 +122,7 @@ describe('pgDump', () => {
     await pg.exec(`SET SEARCH_PATH = amigo;`)
     const initialSearchPath = await pg.query('SHOW SEARCH_PATH;')
 
-    const dump = await pgDump({ pg })
+    const dump = await pgDump({ pg, verbose: true })
     await dump.text()
 
     const finalSearchPath = await pg.query('SHOW SEARCH_PATH;')

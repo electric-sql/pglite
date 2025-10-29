@@ -7,15 +7,31 @@ import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 async function execPgDump({
   pg,
   args,
+  verbose
 }: {
   pg: PGlite
   args: string[]
+  verbose: boolean
 }): Promise<[number, string, string]> {
   let pgdump_write, pgdump_read
-
+  let exitStatus = 0
+  let stderrOutput: string = ''
+  let stdoutOutput: string = ''
   const emscriptenOpts: Partial<PgDumpMod> = {
     arguments: args,
     noExitRuntime: false,
+    print: (text) => {
+      verbose && console.info("stdout:", text)
+      stdoutOutput += text
+    },
+    printErr: (text) => {
+      verbose && console.error("stderr:", text);
+      stderrOutput += text;
+    },
+    onExit: (status: number) => {
+      console.log("Program exited with status:", status);
+      exitStatus = status
+    },
     preRun: [
       (mod: PgDumpMod) => {
         mod.onRuntimeInitialized = () => {
@@ -62,16 +78,19 @@ async function execPgDump({
   }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
-
-  const bytes = mod.FS.readFile('/tmp/out.sql', { encoding: 'utf8' })
-
-  return [0, bytes, '']
+  let bytes = ''
+  if (!exitStatus) {
+    bytes = mod.FS.readFile('/tmp/out.sql', { encoding: 'utf8' })
+  }
+  
+  return [exitStatus, bytes, stderrOutput]
 }
 
 interface PgDumpOptions {
   pg: PGlite
   args?: string[]
   fileName?: string
+  verbose?: boolean
 }
 
 /**
@@ -81,6 +100,7 @@ export async function pgDump({
   pg,
   args,
   fileName = 'dump.sql',
+  verbose = false
 }: PgDumpOptions) {
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
@@ -99,9 +119,12 @@ export async function pgDump({
     'postgres',
   ]
 
+  if (verbose) baseArgs.push('--verbose')
+
   const [exitCode, acc, errorMessage] = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
+    verbose
   })
 
   pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
@@ -120,44 +143,3 @@ export async function pgDump({
   return file
 }
 
-// Wire protocol messages for simulating auth handshake:
-
-// function charToByte(char: string) {
-//   return char.charCodeAt(0)
-// }
-
-// // Function to convert an integer to a 4-byte array (Int32)
-// function int32ToBytes(value: number) {
-//   const buffer = new ArrayBuffer(4)
-//   const view = new DataView(buffer)
-//   view.setInt32(0, value, false) // false for big-endian
-//   return new Uint8Array(buffer)
-// }
-
-// Convert a string to a Uint8Array with a null terminator (C string)
-// function stringToBytes(str: string) {
-//   const utf8Encoder = new TextEncoder()
-//   const strBytes = utf8Encoder.encode(str) // UTF-8 encoding
-//   return new Uint8Array([...strBytes, 0]) // Append null terminator
-// }
-
-// const authOk = new Uint8Array([
-//   charToByte('R'),
-//   ...int32ToBytes(8),
-//   ...int32ToBytes(0),
-// ])
-// const readyForQuery = new Uint8Array([
-//   charToByte('Z'),
-//   ...int32ToBytes(5),
-//   charToByte('I'),
-// ])
-
-// const svParamName = stringToBytes('server_version')
-// const svParamValue = stringToBytes('16.3 (PGlite 0.2.0)')
-// const svTotalLength = 4 + svParamName.length + svParamValue.length
-// const versionParam = new Uint8Array([
-//   charToByte('S'),
-//   ...int32ToBytes(svTotalLength),
-//   ...svParamName,
-//   ...svParamValue,
-// ])

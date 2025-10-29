@@ -29,6 +29,9 @@ export interface PgDumpMod
   ) => number
   removeFunction: (f: number) => void
   _main: (args: string[]) => number
+  onExit: (status: number) => void
+  print: (test: string) => void
+  printErr: (text: string) => void
 }
 
 type PgDumpFactory<T extends PgDumpMod = PgDumpMod> = (
