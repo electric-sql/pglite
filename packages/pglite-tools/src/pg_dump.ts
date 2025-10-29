@@ -29,7 +29,6 @@ async function execPgDump({
       stderrOutput += text;
     },
     onExit: (status: number) => {
-      console.log("Program exited with status:", status);
       exitStatus = status
     },
     preRun: [
@@ -138,7 +137,6 @@ export async function pgDump({
   const file = new File([acc], fileName, {
     type: 'text/plain',
   })
-  // pg.Module.FS.unlink(outFile)
 
   return file
 }
