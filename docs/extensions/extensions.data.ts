@@ -278,6 +278,21 @@ const baseExtensions: Extension[] = [
     size: 2635,
   },
   {
+    name: 'pgtap',
+    description: `
+    pgTAP is a suite of database functions that make it easy to write TAP-emitting unit 
+    tests in psql scripts or xUnit-style test functions. The TAP output is suitable for 
+    harvesting, analysis, and reporting by a TAP harness, such as those used in Perl 
+    applications.
+    `,
+    shortDescription: 'pgTAP',
+    docs: 'https://pgtap.org',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pgtap',
+    importName: 'pgtap',
+    size: 239428,
+  },
+  {
     name: 'pg_walinspect',
     description: `
       The pg_walinspect module provides SQL functions that allow you to inspect the 
