@@ -106,7 +106,7 @@ SUBDIRS = \
 
 These steps allow our build environment to pick up the extension's code, then build and package it for PGlite. The backend build process will output a `myawesomeextension.tar.gz` containing the WASM code and/or any data dependencies of the extension.
 
-#### Happy path - frontend part
+#### Frontend
 
 PGlite's frontend code is in the main [PGLite repo](https://github.com/electric-sql/pglite)
 
