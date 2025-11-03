@@ -162,5 +162,5 @@ describe('pgDump', () => {
     expect(content).toContain("'test1-row1'")
     expect(content).toContain('INSERT INTO public.test2')
     expect(content).toContain('42')
-  })  
+  })
 })
