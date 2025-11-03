@@ -207,7 +207,7 @@ jobs:
       - name: Download pg_dump build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pg_dump-dist-node-v${{ matrix.node }}
+          name: pglite-tools-dist-files-node-v20.x
           path: ./packages/pglite-tools/dist/
       
       - name: Install dependencies
