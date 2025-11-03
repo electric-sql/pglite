@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.12
+
+### Patch Changes
+
+- ce0e74e: Added pgTAP extension.
+
 ## 0.3.11
 
 ### Patch Changes
