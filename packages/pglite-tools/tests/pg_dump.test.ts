@@ -129,4 +129,38 @@ describe('pgDump', () => {
 
     expect(initialSearchPath).toEqual(finalSearchPath)
   })
+
+  it('specify datadir: should dump a database with tables and data', async () => {
+    const pg = await PGlite.create({
+      dataDir: '/tmp/my_data_dir',
+    })
+
+    // Create test tables and insert data
+    await pg.exec(`
+      CREATE TABLE test1 (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );
+      INSERT INTO test1 (name) VALUES ('test1-row1');
+      
+      CREATE TABLE test2 (
+        id SERIAL PRIMARY KEY,
+        value INTEGER
+      );
+      INSERT INTO test2 (value) VALUES (42);
+    `)
+
+    const dump = await pgDump({ pg })
+    const content = await dump.text()
+
+    // Check for table creation
+    expect(content).toContain('CREATE TABLE public.test1')
+    expect(content).toContain('CREATE TABLE public.test2')
+
+    // Check for data inserts
+    expect(content).toContain('INSERT INTO public.test1')
+    expect(content).toContain("'test1-row1'")
+    expect(content).toContain('INSERT INTO public.test2')
+    expect(content).toContain('42')
+  })  
 })
