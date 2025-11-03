@@ -7,12 +7,12 @@ import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 async function execPgDump({
   pg,
   args,
-  verbose
+  verbose,
 }: {
   pg: PGlite
   args: string[]
   verbose: boolean
-}): Promise<[number, string, string]> {
+}): Promise<[number, string, string, string]> {
   let pgdump_write, pgdump_read
   let exitStatus = 0
   let stderrOutput: string = ''
@@ -21,12 +21,12 @@ async function execPgDump({
     arguments: args,
     noExitRuntime: false,
     print: (text) => {
-      verbose && console.info("stdout:", text)
+      verbose && console.info('stdout:', text)
       stdoutOutput += text
     },
     printErr: (text) => {
-      verbose && console.error("stderr:", text);
-      stderrOutput += text;
+      verbose && console.error('stderr:', text)
+      stderrOutput += text
     },
     onExit: (status: number) => {
       exitStatus = status
@@ -81,8 +81,8 @@ async function execPgDump({
   if (!exitStatus) {
     bytes = mod.FS.readFile('/tmp/out.sql', { encoding: 'utf8' })
   }
-  
-  return [exitStatus, bytes, stderrOutput]
+
+  return [exitStatus, bytes, stderrOutput, stdoutOutput]
 }
 
 interface PgDumpOptions {
@@ -99,7 +99,7 @@ export async function pgDump({
   pg,
   args,
   fileName = 'dump.sql',
-  verbose = false
+  verbose = false,
 }: PgDumpOptions) {
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
@@ -123,7 +123,7 @@ export async function pgDump({
   const [exitCode, acc, errorMessage] = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
-    verbose
+    verbose,
   })
 
   pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
@@ -140,4 +140,3 @@ export async function pgDump({
 
   return file
 }
-
