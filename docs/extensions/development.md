@@ -79,7 +79,7 @@ and create a new branch to track your work:
 $ git checkout -b myghname/myawesomeextension
 ```
 
-#### Happy path - backend part
+#### Backend
 
 PGlite's backend code is in the repo [postgres-pglite](https://github.com/electric-sql/postgres-pglite) and is downloaded as a submodule dependency of the main repo. You will add your extension's code as a new submodule dependency:
 
