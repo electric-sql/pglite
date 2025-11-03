@@ -216,7 +216,7 @@ $ pnpm test
 
 Fix any errors that occur, re-run the tests! Iterate until everything works as expected.
 
-#### Happy path: open a PR
+#### Contributing an extension to the project
 
 We welcome contributions! Open a PR so anyone using PGlite can also use your extension!
 
