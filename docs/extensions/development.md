@@ -194,7 +194,7 @@ const baseExtensions: Extension[] = [
 ]
 ```
 
-#### Happy path: add tests
+#### Tests
 
 To make sure that your extension works, you need to add some tests for it. We use [vitest](https://vitest.dev/). They will be run as part of our CI/CD pipeline.
 Add a file `packages/pglite/tests/myawesomeextension.test.ts` and write there your tests. Have a look inside that folder `packages/pglite/tests` at other tests to get an idea how they work.
