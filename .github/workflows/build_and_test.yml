@@ -170,7 +170,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: Built bundles
+          body-includes: '- PGlite:'
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4

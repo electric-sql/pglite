@@ -1,4 +1,4 @@
-import PgDumpModFactory from '../release/pg_dump.js'
+import PgDumpModFactory from '../release/pg_dump'
 
 type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
