@@ -45,7 +45,7 @@
     }
   },
   "scripts": {
-    "build": "tsup && tsx scripts/bundle-wasm.ts",
+    "build": "tsup",
     "check:exports": "attw . --pack --profile node16",
     "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./src ./tests",
