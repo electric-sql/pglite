@@ -201,7 +201,7 @@ jobs:
       - name: Download pglite-tools WASM build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-tools-dist-files-node-v${{ matrix.node }}
+          name: pglite-tools-release-files-node-v20
           path: ./packages/pglite-tools/release/
       
       - name: Install dependencies
