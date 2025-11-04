@@ -185,7 +185,7 @@ describe('pgDump', () => {
       INSERT INTO test2 (value) VALUES (42);
     `)
 
-    const dump = await pgDump({ pg, args: ["--quote-all-identifiers"] })
+    const dump = await pgDump({ pg, args: ['--quote-all-identifiers'] })
     const content = await dump.text()
 
     // Check for table creation
@@ -197,5 +197,5 @@ describe('pgDump', () => {
     expect(content).toContain("'test1-row1'")
     expect(content).toContain('INSERT INTO "public"."test2"')
     expect(content).toContain('42')
-  })  
+  })
 })
