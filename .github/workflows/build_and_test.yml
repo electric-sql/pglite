@@ -153,7 +153,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pg_dump-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-tools/dist/*
+          path: ./packages/pglite-tools/release/*
 
       - name: Upload PGlite package artifact
         id: upload-pglite-package
@@ -208,7 +208,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-tools-dist-files-node-v20.x
-          path: ./packages/pglite-tools/dist/
+          path: ./packages/pglite-tools/release/
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -358,6 +358,13 @@ jobs:
         with:
           name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
+
+      - name: Download pg_dump build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-dist-files-node-v20.x
+          path: ./packages/pglite-tools/release/
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
       - name: Create Release Pull Request or Publish
