@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { pgDump } from '../dist/pg_dump.js'
+import * as fs from 'fs/promises'
 
 describe('pgDump', () => {
   it('should dump an empty database', async () => {
@@ -19,7 +20,7 @@ describe('pgDump', () => {
 
     for (let i = 0; i < 5; i++) {
       const fileName = `dump_${i}.sql`
-      const dump = await pgDump({ pg, fileName, verbose: true })
+      const dump = await pgDump({ pg, fileName })
 
       expect(dump).toBeInstanceOf(File)
       expect(dump.name).toBe(fileName)
@@ -47,7 +48,7 @@ describe('pgDump', () => {
       INSERT INTO test2 (value) VALUES (42);
     `)
 
-    const dump = await pgDump({ pg, verbose: true })
+    const dump = await pgDump({ pg })
     const content = await dump.text()
 
     // Check for table creation
@@ -63,7 +64,7 @@ describe('pgDump', () => {
 
   it('should respect custom filename', async () => {
     const pg = await PGlite.create()
-    const dump = await pgDump({ pg, fileName: 'custom.sql', verbose: true })
+    const dump = await pgDump({ pg, fileName: 'custom.sql' })
 
     expect(dump.name).toBe('custom.sql')
   })
@@ -76,7 +77,7 @@ describe('pgDump', () => {
     `)
 
     // Use --schema-only to exclude data
-    const dump = await pgDump({ pg, args: ['--schema-only'], verbose: true })
+    const dump = await pgDump({ pg, args: ['--schema-only'] })
     const content = await dump.text()
 
     expect(content).toContain('CREATE TABLE public.test')
@@ -97,7 +98,7 @@ describe('pgDump', () => {
     ).rows[0].search_path
 
     // Dump database
-    const dump = await pgDump({ pg: pg1, verbose: true })
+    const dump = await pgDump({ pg: pg1 })
     const dumpContent = await dump.text()
 
     // Create new database and restore
@@ -122,7 +123,7 @@ describe('pgDump', () => {
     await pg.exec(`SET SEARCH_PATH = amigo;`)
     const initialSearchPath = await pg.query('SHOW SEARCH_PATH;')
 
-    const dump = await pgDump({ pg, verbose: true })
+    const dump = await pgDump({ pg })
     await dump.text()
 
     const finalSearchPath = await pg.query('SHOW SEARCH_PATH;')
@@ -131,8 +132,10 @@ describe('pgDump', () => {
   })
 
   it('specify datadir: should dump a database with tables and data', async () => {
+    const dataDir = '/tmp/pg_dump_pglite_data_dir'
+    await fs.rm(dataDir, { force: true, recursive: true })
     const pg = await PGlite.create({
-      dataDir: '/tmp/my_data_dir',
+      dataDir: dataDir,
     })
 
     // Create test tables and insert data
