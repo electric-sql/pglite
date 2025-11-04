@@ -1,18 +1,40 @@
 import { PGlite } from '@electric-sql/pglite'
 import PgDumpModFactory, { PgDumpMod } from './pgDumpModFactory'
 
+const dumpFilePath = '/tmp/out.sql'
+
+/**
+ * Creates a new Uint8Array based on two different ArrayBuffers
+ *
+ * @private
+ * @param {ArrayBuffers} buffer1 The first buffer.
+ * @param {ArrayBuffers} buffer2 The second buffer.
+ * @return {ArrayBuffers} The new ArrayBuffer created out of the two.
+ */
+function concat(buffer1: ArrayBuffer, buffer2: ArrayBuffer) {
+  const tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength)
+  tmp.set(new Uint8Array(buffer1), 0)
+  tmp.set(new Uint8Array(buffer2), buffer1.byteLength)
+  return tmp
+}
+
+interface ExecResult {
+  exitCode: number
+  fileContents: string
+  stderr: string
+  stdout: string
+}
+
 /**
  * Inner function to execute pg_dump
  */
 async function execPgDump({
   pg,
   args,
-  verbose,
 }: {
   pg: PGlite
   args: string[]
-  verbose: boolean
-}): Promise<[number, string, string, string]> {
+}): Promise<ExecResult> {
   let pgdump_write, pgdump_read
   let exitStatus = 0
   let stderrOutput: string = ''
@@ -21,11 +43,9 @@ async function execPgDump({
     arguments: args,
     noExitRuntime: false,
     print: (text) => {
-      verbose && console.info('stdout:', text)
       stdoutOutput += text
     },
     printErr: (text) => {
-      verbose && console.error('stderr:', text)
       stderrOutput += text
     },
     onExit: (status: number) => {
@@ -34,8 +54,8 @@ async function execPgDump({
     preRun: [
       (mod: PgDumpMod) => {
         mod.onRuntimeInitialized = () => {
-          let currentResponse: Uint8Array = new Uint8Array()
-          let currentReadOffset = 0
+          let bufferedBytes: Uint8Array = new Uint8Array()
+
           pgdump_write = mod.addFunction((ptr: any, length: number) => {
             let bytes
             try {
@@ -44,32 +64,27 @@ async function execPgDump({
               console.error('error', e)
               throw e
             }
-            currentResponse = pg.execProtocolRawSync(bytes)
-            currentReadOffset = 0
+            const currentResponse = pg.execProtocolRawSync(bytes)
+            bufferedBytes = concat(bufferedBytes, currentResponse)
             return length
           }, 'iii')
 
           pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
-            // copy current data to wasm buffer
-            let length = currentResponse.length - currentReadOffset
+            let length = bufferedBytes.length
             if (length > max_length) {
               length = max_length
             }
             try {
-              mod.HEAP8.set(
-                currentResponse.subarray(
-                  currentReadOffset,
-                  currentReadOffset + length,
-                ),
-                ptr,
-              )
-              currentReadOffset += length
+              mod.HEAP8.set(bufferedBytes.subarray(0, length), ptr)
             } catch (e) {
-              console.log(e)
+              console.error(e)
             }
+            bufferedBytes = bufferedBytes.subarray(length, bufferedBytes.length)
             return length
           }, 'iii')
+
           mod._set_read_write_cbs(pgdump_read, pgdump_write)
+          // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
       },
@@ -77,12 +92,17 @@ async function execPgDump({
   }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
-  let bytes = ''
+  let fileContents = ''
   if (!exitStatus) {
-    bytes = mod.FS.readFile('/tmp/out.sql', { encoding: 'utf8' })
+    fileContents = mod.FS.readFile(dumpFilePath, { encoding: 'utf8' })
   }
 
-  return [exitStatus, bytes, stderrOutput, stdoutOutput]
+  return {
+    exitCode: exitStatus,
+    fileContents,
+    stderr: stderrOutput,
+    stdout: stdoutOutput,
+  }
 }
 
 interface PgDumpOptions {
@@ -99,14 +119,12 @@ export async function pgDump({
   pg,
   args,
   fileName = 'dump.sql',
-  verbose = false,
 }: PgDumpOptions) {
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
   const search_path = getSearchPath.rows[0].search_path
 
-  const outFile = `/tmp/out.sql`
   const baseArgs = [
     '-U',
     'postgres',
@@ -114,27 +132,24 @@ export async function pgDump({
     '-j',
     '1',
     '-f',
-    outFile,
+    dumpFilePath,
     'postgres',
   ]
 
-  if (verbose) baseArgs.push('--verbose')
-
-  const [exitCode, acc, errorMessage] = await execPgDump({
+  const execResult = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
-    verbose,
   })
 
   pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
 
-  if (exitCode !== 0) {
+  if (execResult.exitCode !== 0) {
     throw new Error(
-      `pg_dump failed with exit code ${exitCode}. \nError message: ${errorMessage}`,
+      `pg_dump failed with exit code ${execResult.exitCode}. \nError message: ${execResult.stderr}`,
     )
   }
 
-  const file = new File([acc], fileName, {
+  const file = new File([execResult.fileContents], fileName, {
     type: 'text/plain',
   })
 
