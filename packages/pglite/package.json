@@ -90,6 +90,16 @@
         "default": "./dist/pgtap/index.cjs"
       }
     },
+    "./pg_uuidv7": {
+      "import": {
+        "types": "./dist/pg_uuidv7/index.d.ts",
+        "default": "./dist/pg_uuidv7/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_uuidv7/index.d.cts",
+        "default": "./dist/pg_uuidv7/index.cjs"
+      }
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",

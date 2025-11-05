@@ -293,6 +293,17 @@ const baseExtensions: Extension[] = [
     size: 239428,
   },
   {
+    name: 'pg_uuidv7',
+    description: `
+    A tiny Postgres extension to create valid version 7 UUIDs in Postgres.`,
+    shortDescription: 'Use the new v7 UUIDs in Postgres',
+    docs: 'https://github.com/fboulnois/pg_uuidv7/',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pg_uuidv7',
+    importName: 'pg_uuidv7',
+    size: 1522,
+  },
+  {
     name: 'pg_walinspect',
     description: `
       The pg_walinspect module provides SQL functions that allow you to inspect the 
