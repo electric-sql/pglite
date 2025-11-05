@@ -173,6 +173,13 @@ async function main() {
 
 ```
 
+To make it available in our online [REPL](https://pglite.dev/repl/), add the extension to `docs/repl/allExtensions.ts`:
+
+```
+export { myawesomeextension } from '@electric-sql/pglite/myawesomeextension
+
+```
+
 Finally, add the extension description to `docs/extensions/extensions.data.ts`, inside `baseExtensions`:
 
 ```
