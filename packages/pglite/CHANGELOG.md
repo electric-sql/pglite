@@ -1,5 +1,17 @@
 # @electric-sql/pglite
 
+## 0.3.13
+
+### Patch Changes
+
+- ad3d0d8: Updated pg_dump to use callback data exchange; built pg_dump with emscripten
+
+## 0.3.12
+
+### Patch Changes
+
+- ce0e74e: Added pgTAP extension.
+
 ## 0.3.11
 
 ### Patch Changes

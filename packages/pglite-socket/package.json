@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-socket",
-  "version": "0.0.16",
+  "version": "0.0.18",
   "description": "A socket implementation for PGlite enabling remote connections",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",

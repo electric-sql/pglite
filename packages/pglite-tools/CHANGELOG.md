@@ -1,5 +1,20 @@
 # @electric-sql/pglite-tools
 
+## 0.2.18
+
+### Patch Changes
+
+- ad3d0d8: Updated pg_dump to use callback data exchange; built pg_dump with emscripten
+- Updated dependencies [ad3d0d8]
+  - @electric-sql/pglite@0.3.13
+
+## 0.2.17
+
+### Patch Changes
+
+- Updated dependencies [ce0e74e]
+  - @electric-sql/pglite@0.3.12
+
 ## 0.2.16
 
 ### Patch Changes

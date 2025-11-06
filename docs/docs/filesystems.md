@@ -30,9 +30,9 @@ To use the in-memory FS you can use one of these methods:
 
 ### Platform Support
 
-| Node | Bun | Chrome | Safari | Firefox |
-| ---- | --- | ------ | ------ | ------- |
-| ✓    | ✓   | ✓      | ✓      | ✓       |
+| Node | Bun | Deno | Chrome | Safari | Firefox |
+| ---- | --- | ---- | ------ | ------ | ------- |
+| ✓    | ✓   | ✓    | ✓      | ✓      | ✓       |
 
 ## Node FS
 
@@ -54,9 +54,9 @@ To use the Node FS you can use one of these methods:
 
 #### Platform Support
 
-| Node | Bun | Chrome | Safari | Firefox |
-| ---- | --- | ------ | ------ | ------- |
-| ✓    | ✓   |        |        |         |
+| Node | Bun | Deno | Chrome | Safari | Firefox |
+| ---- | --- | ---- | ------ | ------ | ------- |
+| ✓    | ✓   | ✓    |        |        |         |
 
 ## IndexedDB FS
 
@@ -80,9 +80,9 @@ The IndexedDB filesystem works at the file level, storing whole files (Postgres 
 
 ### Platform Support
 
-| Node | Bun | Chrome | Safari | Firefox |
-| ---- | --- | ------ | ------ | ------- |
-|      |     | ✓      | ✓      | ✓       |
+| Node | Bun | Deno | Chrome | Safari | Firefox |
+| ---- | --- | ---- | ------ | ------ | ------- |
+|      |     |      | ✓      | ✓      | ✓       |
 
 ## OPFS AHP FS
 
@@ -104,9 +104,9 @@ To use the OPFS AHP FS you can use one of these methods:
 
 ### Platform Support
 
-| Node | Bun | Chrome | Safari | Firefox |
-| ---- | --- | ------ | ------ | ------- |
-|      |     | ✓      |        | ✓       |
+| Node | Bun | Deno | Chrome | Safari | Firefox |
+| ---- | --- | ---- | ------ | ------ | ------- |
+|      |     |      | ✓      |        | ✓       |
 
 Unfortunately, Safari appears to have a limit of 252 open sync access handles, this prevents this VFS from working due to a standard Postgres install consisting of over 300 files.
 

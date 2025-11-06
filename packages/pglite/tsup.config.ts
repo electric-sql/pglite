@@ -25,6 +25,8 @@ const entryPoints = [
   'src/live/index.ts',
   'src/vector/index.ts',
   'src/pg_ivm/index.ts',
+  'src/pgtap/index.ts',
+  'src/pg_uuidv7/index.ts',
   'src/worker/index.ts',
 ]
 
