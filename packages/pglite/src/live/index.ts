@@ -88,7 +88,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           )
 
           // Get the tables used in the view and add triggers to notify when they change
-          let tables = await getTablesForView(tx, `live_query_${id}_view`)
+          const tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
           if (isWindowed) {
@@ -318,7 +318,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           )
 
           // Get the tables used in the view and add triggers to notify when they change
-          let tables = await getTablesForView(tx, `live_query_${id}_view`)
+          const tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
           // Get the columns of the view
@@ -718,10 +718,17 @@ export type PGliteWithLive = PGliteInterface & {
 async function getTablesForView(
   tx: Transaction | PGliteInterface,
   viewName: string,
-): Promise<{ table_name: string; schema_name: string; table_oid: number; schema_oid: number }[]> {
+): Promise<
+  {
+    table_name: string
+    schema_name: string
+    table_oid: number
+    schema_oid: number
+  }[]
+> {
   const result = await tx.query<{
     table_name: string
-    schema_name: string    
+    schema_name: string
     table_oid: number
     schema_oid: number
   }>(
@@ -788,15 +795,18 @@ async function getTablesForView(
  */
 async function addNotifyTriggersToTables(
   tx: Transaction | PGliteInterface,
-  tables: { table_name: string; table_oid: number; schema_name:string; schema_oid: number }[],
+  tables: {
+    table_name: string
+    table_oid: number
+    schema_name: string
+    schema_oid: number
+  }[],
   tableNotifyTriggersAdded: Set<string>,
 ) {
   const triggers = tables
     .filter(
       (table) =>
-        !tableNotifyTriggersAdded.has(
-          `${table.schema_oid}_${table.table_oid}`,
-        ),
+        !tableNotifyTriggersAdded.has(`${table.schema_oid}_${table.table_oid}`),
     )
     .map((table) => {
       return `
