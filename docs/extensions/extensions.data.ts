@@ -538,7 +538,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/contrib/pgcrypto',
     importName: 'pgcrypto',
     core: true,
-    size: 123,
+    size: 1004373,
   },
   {
     name: 'pg_ivm',
