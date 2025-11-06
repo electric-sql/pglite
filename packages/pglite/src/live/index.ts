@@ -74,7 +74,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let dead = false
 
       let results: LiveQueryResults<T>
-      let tables: { table_name: string; schema_name: string }[]
 
       let unsubList: Array<(tx?: Transaction) => Promise<void>>
       const init = async () => {
@@ -89,7 +88,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           )
 
           // Get the tables used in the view and add triggers to notify when they change
-          tables = await getTablesForView(tx, `live_query_${id}_view`)
+          const tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
           if (isWindowed) {
@@ -126,7 +125,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           unsubList = await Promise.all(
             tables!.map((table) =>
               tx.listen(
-                `"table_change__${table.schema_name}__${table.table_name}"`,
+                `"table_change__${table.schema_oid}__${table.table_oid}"`,
                 async () => {
                   refresh()
                 },
@@ -305,7 +304,6 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       const id = uuid().replace(/-/g, '')
       let dead = false
 
-      let tables: { table_name: string; schema_name: string }[]
       let stateSwitch: 1 | 2 = 1
       let changes: Results<Change<T>>
 
@@ -320,7 +318,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           )
 
           // Get the tables used in the view and add triggers to notify when they change
-          tables = await getTablesForView(tx, `live_query_${id}_view`)
+          const tables = await getTablesForView(tx, `live_query_${id}_view`)
           await addNotifyTriggersToTables(tx, tables, tableNotifyTriggersAdded)
 
           // Get the columns of the view
@@ -420,7 +418,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           unsubList = await Promise.all(
             tables!.map((table) =>
               tx.listen(
-                `"table_change__${table.schema_name}__${table.table_name}"`,
+                `"table_change__${table.schema_oid}__${table.table_oid}"`,
                 async () => {
                   refresh()
                 },
@@ -720,10 +718,19 @@ export type PGliteWithLive = PGliteInterface & {
 async function getTablesForView(
   tx: Transaction | PGliteInterface,
   viewName: string,
-): Promise<{ table_name: string; schema_name: string }[]> {
+): Promise<
+  {
+    table_name: string
+    schema_name: string
+    table_oid: number
+    schema_oid: number
+  }[]
+> {
   const result = await tx.query<{
     table_name: string
     schema_name: string
+    table_oid: number
+    schema_oid: number
   }>(
     `
       WITH RECURSIVE view_dependencies AS (
@@ -731,6 +738,8 @@ async function getTablesForView(
         SELECT DISTINCT
           cl.relname AS dependent_name,
           n.nspname AS schema_name,
+          cl.oid AS dependent_oid,
+          n.oid AS schema_oid,
           cl.relkind = 'v' AS is_view
         FROM pg_rewrite r
         JOIN pg_depend d ON r.oid = d.objid
@@ -748,6 +757,8 @@ async function getTablesForView(
         SELECT DISTINCT
           cl.relname AS dependent_name,
           n.nspname AS schema_name,
+          cl.oid AS dependent_oid,
+          n.oid AS schema_oid,
           cl.relkind = 'v' AS is_view
         FROM view_dependencies vd
         JOIN pg_rewrite r ON vd.dependent_name = (
@@ -760,7 +771,9 @@ async function getTablesForView(
       )
       SELECT DISTINCT
         dependent_name AS table_name,
-        schema_name
+        schema_name,
+        dependent_oid AS table_oid,
+        schema_oid
       FROM view_dependencies
       WHERE NOT is_view; -- Exclude intermediate views
     `,
@@ -770,6 +783,8 @@ async function getTablesForView(
   return result.rows.map((row) => ({
     table_name: row.table_name,
     schema_name: row.schema_name,
+    table_oid: row.table_oid,
+    schema_oid: row.schema_oid,
   }))
 }
 
@@ -780,27 +795,30 @@ async function getTablesForView(
  */
 async function addNotifyTriggersToTables(
   tx: Transaction | PGliteInterface,
-  tables: { table_name: string; schema_name: string }[],
+  tables: {
+    table_name: string
+    table_oid: number
+    schema_name: string
+    schema_oid: number
+  }[],
   tableNotifyTriggersAdded: Set<string>,
 ) {
   const triggers = tables
     .filter(
       (table) =>
-        !tableNotifyTriggersAdded.has(
-          `${table.schema_name}_${table.table_name}`,
-        ),
+        !tableNotifyTriggersAdded.has(`${table.schema_oid}_${table.table_oid}`),
     )
     .map((table) => {
       return `
-      CREATE OR REPLACE FUNCTION "_notify_${table.schema_name}_${table.table_name}"() RETURNS TRIGGER AS $$
+      CREATE OR REPLACE FUNCTION "_notify_${table.schema_oid}_${table.table_oid}"() RETURNS TRIGGER AS $$
       BEGIN
-        PERFORM pg_notify('table_change__${table.schema_name}__${table.table_name}', '');
+        PERFORM pg_notify('table_change__${table.schema_oid}__${table.table_oid}', '');
         RETURN NULL;
       END;
       $$ LANGUAGE plpgsql;
-      CREATE OR REPLACE TRIGGER "_notify_trigger_${table.schema_name}_${table.table_name}"
+      CREATE OR REPLACE TRIGGER "_notify_trigger_${table.schema_oid}_${table.table_oid}"
       AFTER INSERT OR UPDATE OR DELETE ON "${table.schema_name}"."${table.table_name}"
-      FOR EACH STATEMENT EXECUTE FUNCTION "_notify_${table.schema_name}_${table.table_name}"();
+      FOR EACH STATEMENT EXECUTE FUNCTION "_notify_${table.schema_oid}_${table.table_oid}"();
       `
     })
     .join('\n')
@@ -808,7 +826,7 @@ async function addNotifyTriggersToTables(
     await tx.exec(triggers)
   }
   tables.map((table) =>
-    tableNotifyTriggersAdded.add(`${table.schema_name}_${table.table_name}`),
+    tableNotifyTriggersAdded.add(`${table.schema_oid}_${table.table_oid}`),
   )
 }
 
