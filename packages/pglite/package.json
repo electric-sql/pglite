@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -88,6 +88,16 @@
       "require": {
         "types": "./dist/pgtap/index.d.cts",
         "default": "./dist/pgtap/index.cjs"
+      }
+    },
+    "./pg_uuidv7": {
+      "import": {
+        "types": "./dist/pg_uuidv7/index.d.ts",
+        "default": "./dist/pg_uuidv7/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_uuidv7/index.d.cts",
+        "default": "./dist/pg_uuidv7/index.cjs"
       }
     },
     "./nodefs": {
