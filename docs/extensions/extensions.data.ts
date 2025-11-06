@@ -530,8 +530,9 @@ const baseExtensions: Extension[] = [
   {
     name: 'pgcrypto',
     description: `
+    The pgcrypto module provides cryptographic functions for PostgreSQL.
     `,
-    shortDescription: '',
+    shortDescription: 'The pgcrypto module provides cryptographic functions for PostgreSQL.',
     docs: 'https://www.postgresql.org/docs/current/pgcrypto.html',
     tags: ['postgres extension', 'postgres/contrib'],
     importPath: '@electric-sql/pglite/contrib/pgcrypto',
