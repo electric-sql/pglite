@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.3.14
+
+### Patch Changes
+
+- 8785034: Added pg_uuidv7 extension.
+- 90cfee8: live extension: use schema.oid + table.oid in trigger identifiers
+
 ## 0.3.13
 
 ### Patch Changes
