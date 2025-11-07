@@ -79,16 +79,16 @@ WHERE ST_Within(c.location, s.geom);`)
         })
       })
   })
-    it('complex1', async () => {
-      const pg = new PGlite({
-        extensions: {
-          postgis,
-        },
-        defaultDataTransferContainer,
-      })
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+  it('complex1', async () => {
+    const pg = new PGlite({
+      extensions: {
+        postgis,
+      },
+      defaultDataTransferContainer,
+    })
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
 
-      await pg.exec(`
+    await pg.exec(`
     -- Create test schema
   -- CREATE SCHEMA IF NOT EXISTS postgis_test;
   -- SET search_path TO postgis_test;
@@ -101,7 +101,7 @@ WHERE ST_Within(c.location, s.geom);`)
       geom GEOMETRY(Point, 4326)
   );`)
 
-      await pg.exec(`
+    await pg.exec(`
   CREATE TABLE rivers (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
@@ -154,5 +154,5 @@ WHERE ST_Within(c.location, s.geom);`)
   -- Cleanup test schema
   -- DROP SCHEMA postgis_test CASCADE;
   `)
-    })
+  })
 })
