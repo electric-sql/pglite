@@ -40,6 +40,9 @@ const shape = await pg.electric.syncShapeToTable({
   shapeKey: 'todo', // or null if the shape state does not need to be persisted
   table: 'todo',
   primaryKey: ['id'],
+  onError: (error) => {
+    console.error('Shape sync error', error)
+  }
 })
 ```
 
@@ -66,6 +69,9 @@ const sync = await pg.electric.syncShapesToTables({
   key: 'my-sync', // or null if the sync state does not need to be persisted
   onInitialSync: () => {
     console.log('Initial sync complete')
+  },
+  onError: (error) => {
+    console.error('Sync error', error)
   }
 })
 

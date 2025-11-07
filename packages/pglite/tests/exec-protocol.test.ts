@@ -22,6 +22,7 @@ describe('exec protocol', () => {
       'commandComplete',
       'readyForQuery',
     ])
+    expect(result.data.length).toEqual(66)
   })
 
   it('should perform an extended query', async () => {

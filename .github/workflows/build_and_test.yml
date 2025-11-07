@@ -75,12 +75,13 @@ jobs:
           name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release/**
           retention-days: 60
-      - name: Upload PGlite tools to Gihub artifacts
-        id: upload-pglite-tools-dist-files
+
+      - name: Upload pglite-tools build artifacts to Github artifacts
+        id: upload-pglite-tools-release-files
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-tools-dist-files-node-v20.x
-          path: ./packages/pglite-tools/dist/**
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release/**
           retention-days: 60
 
   build-and-test-pglite:
@@ -110,6 +111,12 @@ jobs:
         with:
           name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
+
+      - name: Download pglite-tools WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release
 
       - name: Install dependencies
         run: |
@@ -157,7 +164,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: Built bundles
+          body-includes: '- PGlite:'
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4
@@ -191,6 +198,12 @@ jobs:
           name: pglite-dist-node-v${{ matrix.node }}
           path: ./packages/pglite/dist/
 
+      - name: Download pglite-tools WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release/
+      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -205,6 +218,13 @@ jobs:
 
       - name: Test packages
         run: pnpm --filter="...^pglite" test
+
+      - name: Upload pglite-tools distribution artifact
+        id: upload-pglite-tools-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-tools-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-tools/dist/*        
 
   publish-website-with-demos:
     name: Publish website with demos
@@ -227,6 +247,12 @@ jobs:
           name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
 
+      - name: Download pglite-tools WASM build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release          
+
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -245,10 +271,10 @@ jobs:
           name: pglite-interim-build-files-node-v20.x
           path: /tmp/web
 
-      - name: Download PGlite tools build artifacts
+      - name: Download pglite-tools dist artifacts to tmp
         uses: actions/download-artifact@v4
         with:
-          name: pglite-tools-dist-files-node-v20.x
+          name: pglite-tools-dist-node-v20.x
           path: /tmp/pglite-tools
 
       - name: Build demo site
@@ -333,6 +359,13 @@ jobs:
         with:
           name: pglite-interim-build-files-node-v20.x
           path: ./packages/pglite/release
+
+      - name: Download pglite-tools build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release/
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
       - name: Create Release Pull Request or Publish

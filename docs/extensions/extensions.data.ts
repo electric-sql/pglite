@@ -180,6 +180,209 @@ const baseExtensions: Extension[] = [
     size: 21380,
   },
   {
+    name: 'intarray',
+    description: `
+      The intarray module provides a number of useful functions and operators for 
+      manipulating null-free arrays of integers. There is also support for indexed 
+      searches using some of the operators.
+    `,
+    shortDescription: 'Operators for manipulating null-free arrays of integers',
+    docs: 'https://www.postgresql.org/docs/9.1/intarray.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/intarray',
+    importName: 'intarray',
+    core: true,
+    size: 14712,
+  },
+  {
+    name: 'dict_xsyn',
+    description: `
+      dict_xsyn (Extended Synonym Dictionary) is an example of an add-on dictionary 
+      template for full-text search. This dictionary type replaces words with groups 
+      of their synonyms, and so makes it possible to search for a word using any of 
+      its synonyms.
+    `,
+    shortDescription: 'Example synonym full-text search dictionary',
+    docs: 'https://www.postgresql.org/docs/18/dict-xsyn.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/dict_xsyn',
+    importName: 'dict_xsyn',
+    core: true,
+    size: 1948,
+  },
+  {
+    name: 'pageinspect',
+    description: `
+      The pageinspect module provides functions that allow you to inspect the contents 
+      of database pages at a low level, which is useful for debugging purposes. All of 
+      these functions may be used only by superusers.
+    `,
+    shortDescription: 'Low-level inspection of database pages ',
+    docs: 'https://www.postgresql.org/docs/18/pageinspect.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pageinspect',
+    importName: 'pageinspect',
+    core: true,
+    size: 15923,
+  },
+  {
+    name: 'dict_int',
+    description: `
+      dict_int is an example of an add-on dictionary template for full-text search. 
+      The motivation for this example dictionary is to control the indexing of integers 
+      (signed and unsigned), allowing such numbers to be indexed while preventing 
+      excessive growth in the number of unique words, which greatly affects the 
+      performance of searching.
+    `,
+    shortDescription: 'Example full-text search dictionary for integers',
+    docs: 'https://www.postgresql.org/docs/18/dict-int.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/dict_int',
+    importName: 'dict_int',
+    core: true,
+    size: 1361,
+  },
+  {
+    name: 'unaccent',
+    description: `
+      unaccent is a text search dictionary that removes accents (diacritic signs) 
+      from lexemes. It's a filtering dictionary, which means its output is always 
+      passed to the next dictionary (if any), unlike the normal behavior of 
+      dictionaries. This allows accent-insensitive processing for full text search.
+    `,
+    shortDescription: 'A text search dictionary which removes diacritics',
+    docs: 'https://www.postgresql.org/docs/current/unaccent.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/unaccent',
+    importName: 'unaccent',
+    core: true,
+    size: 9323,
+  },
+  {
+    name: 'pg_surgery',
+    description: `
+      The pg_surgery module provides various functions to perform surgery on a damaged 
+      relation. These functions are unsafe by design and using them may corrupt 
+      (or further corrupt) your database. For example, these functions can easily be 
+      used to make a table inconsistent with its own indexes, to cause UNIQUE or 
+      FOREIGN KEY constraint violations, or even to make tuples visible which, when read, 
+      will cause a database server crash. They should be used with great caution and 
+      only as a last resort.
+    `,
+    shortDescription: 'Perform low-level surgery on relation data',
+    docs: 'https://www.postgresql.org/docs/current/pgsurgery.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_surgery',
+    importName: 'pg_surgery',
+    core: true,
+    size: 2635,
+  },
+  {
+    name: 'pgtap',
+    description: `
+    pgTAP is a suite of database functions that make it easy to write TAP-emitting unit 
+    tests in psql scripts or xUnit-style test functions. The TAP output is suitable for 
+    harvesting, analysis, and reporting by a TAP harness, such as those used in Perl 
+    applications.
+    `,
+    shortDescription: 'pgTAP',
+    docs: 'https://pgtap.org',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pgtap',
+    importName: 'pgtap',
+    size: 239428,
+  },
+  {
+    name: 'pg_uuidv7',
+    description: `
+    A tiny Postgres extension to create valid version 7 UUIDs in Postgres.`,
+    shortDescription: 'Use the new v7 UUIDs in Postgres',
+    docs: 'https://github.com/fboulnois/pg_uuidv7/',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pg_uuidv7',
+    importName: 'pg_uuidv7',
+    size: 1522,
+  },
+  {
+    name: 'pg_walinspect',
+    description: `
+      The pg_walinspect module provides SQL functions that allow you to inspect the 
+      contents of write-ahead log of a running PostgreSQL database cluster at a low level, 
+      which is useful for debugging, analytical, reporting or educational purposes. 
+      It is similar to pg_waldump, but accessible through SQL rather than a separate utility.
+    `,
+    shortDescription: 'Low-level WAL inspection',
+    docs: 'https://www.postgresql.org/docs/current/pgwalinspect.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_walinspect',
+    importName: 'pg_walinspect',
+    core: true,
+    size: 4689,
+  },
+  {
+    name: 'pg_visibility',
+    description: `
+      The pg_visibility module provides a means for examining the visibility map (VM) 
+      and page-level visibility information of a table. It also provides functions to 
+      check the integrity of a visibility map and to force it to be rebuilt.
+    `,
+    shortDescription: 'Visibility map information and utilities',
+    docs: 'https://www.postgresql.org/docs/current/pgvisibility.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_visibility',
+    importName: 'pg_visibility',
+    core: true,
+    size: 4159,
+  },
+  {
+    name: 'pg_freespacemap',
+    description: `
+      The pg_freespacemap module provides a means for examining the free space map (FSM). 
+      It provides a function called pg_freespace, or two overloaded functions, to be precise. 
+      The functions show the value recorded in the free space map for a given page, or 
+      for all pages in the relation.
+    `,
+    shortDescription: 'Examine the free space map',
+    docs: 'https://www.postgresql.org/docs/current/pgfreespacemap.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_freespacemap',
+    importName: 'pg_freespacemap',
+    core: true,
+    size: 1485,
+  },
+  {
+    name: 'pg_buffercache',
+    description: `
+      The pg_buffercache module provides a means for examining what's happening in the 
+      shared buffer cache in real time. It also offers a low-level way to evict data 
+      from it, for testing purposes.
+    `,
+    shortDescription: 'Inspect PostgreSQL buffer cache state',
+    docs: 'https://www.postgresql.org/docs/current/pgbuffercache.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_buffercache',
+    importName: 'pg_buffercache',
+    core: true,
+    size: 3133,
+  },
+  {
+    name: 'file_fdw',
+    description: `
+      The file_fdw module provides the foreign-data wrapper file_fdw, which can be 
+      used to access data files in the server's file system, or to execute programs 
+      on the server and read their output. The data file or program output must be 
+      in a format that can be read by COPY FROM. Access to data files is currently 
+      read-only.
+    `,
+    shortDescription: "Acess data files in the server's file system",
+    docs: 'https://www.postgresql.org/docs/18/file-fdw.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/file_fdw',
+    importName: 'file_fdw',
+    core: true,
+    size: 4467,
+  },
+  {
     name: 'isn',
     description: `
       The isn module provides data types for the following international product 

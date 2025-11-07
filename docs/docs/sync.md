@@ -51,6 +51,9 @@ const shape = await pg.electric.syncShapeToTable({
   table: 'todo',
   primaryKey: ['id'],
   shapeKey: 'todo', // or null if the shape state does not need to be persisted
+  onError: (error) => {
+    console.error('Shape sync error', error)
+  },
 })
 
 // Stop syncing when done
@@ -86,6 +89,9 @@ const sync = await pg.electric.syncShapesToTables({
   key: 'my-sync', // or null if the sync state does not need to be persisted
   onInitialSync: () => {
     console.log('Initial sync complete')
+  },
+  onError: (error) => {
+    console.error('Sync error', error)
   },
 })
 
@@ -142,6 +148,9 @@ It takes the following options as an object:
 - `onInitialSync: () => void`<br>
   A callback that is called when the initial sync is complete.
 
+- `onError?: (error: FetchError | Error) => void`<br>
+  Optional callback invoked when the underlying shape stream encounters an error.
+
 - `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
   A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.
 
@@ -190,6 +199,9 @@ The `syncShapesToTables` API allows syncing multiple shapes into multiple tables
 
 - `onInitialSync?: () => void`<br>
   Optional callback that fires when initial sync is complete for all shapes.
+
+- `onError?: (error: FetchError | Error) => void`<br>
+  Optional callback invoked when the underlying multi-shape stream encounters an error.
 
 - `onMustRefetch?: (tx: Transaction) => Promise<void>`<br>
   A callback for when the shape must be refetched after Electric sends the `must-refetch` control message. When provided, the subscription will bypass the single-shape-per-table lock and you can use the provided transaction to perform the required cleanup of synced rows before the shape data is re-inserted from scratch. This is ideal when there is clear separation of shapes, such as date ranges.

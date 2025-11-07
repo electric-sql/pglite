@@ -11,6 +11,7 @@ import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { toPostgresName, uuid } from '../utils.js'
 import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
+import { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -345,6 +346,15 @@ export class PGliteWorker
   }
 
   /**
+   * Execute a postgres wire protocol message
+   * @param message The postgres wire protocol message to execute
+   * @returns The result of the query
+   */
+  async execProtocolStream(message: Uint8Array): Promise<BackendMessage[]> {
+    return await this.#rpc('execProtocolStream', message)
+  }
+
+  /**
    * Sync the database to the filesystem
    * @returns Promise that resolves when the database is synced to the filesystem
    */
@@ -637,6 +647,10 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       } else {
         return { messages, data }
       }
+    },
+    async execProtocolStream(message: Uint8Array) {
+      const messages = await db.execProtocolStream(message)
+      return messages
     },
     async execProtocolRaw(message: Uint8Array) {
       const result = await db.execProtocolRaw(message)
