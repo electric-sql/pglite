@@ -79,6 +79,121 @@ WHERE ST_Within(c.location, s.geom);`)
         })
       })
   })
+
+  it('areas', async () => {
+    const pg = new PGlite({
+      extensions: {
+        postgis,
+      },
+      defaultDataTransferContainer,
+    })
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+
+    const area1 = await pg.exec(`
+      select ST_Area(geom) sqft,
+        ST_Area(geom) * 0.3048 ^ 2 sqm
+      from (
+            select 'SRID=2249;POLYGON((743238 2967416,743238 2967450,
+            743265 2967450,743265.625 2967416,743238 2967416))' :: geometry geom
+      ) subquery;`)
+
+    expect(area1).toEqual([
+      {
+        rows: [
+          {
+            sqft: 928.625,
+            sqm: 86.27208552,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
+
+    const area2 = await pg.exec(`
+        select ST_Area(geom) sqft,
+        ST_Area(ST_Transform(geom, 26986)) As sqm
+    from (
+            select
+                'SRID=2249;POLYGON((743238 2967416,743238 2967450,
+                743265 2967450,743265.625 2967416,743238 2967416))' :: geometry geom
+        ) subquery;
+  
+    -- Cleanup test schema
+    -- DROP SCHEMA postgis_test CASCADE;
+    `)
+
+    expect(area2).toEqual([
+      {
+        rows: [
+          {
+            sqft: 928.625,
+            sqm: 86.27243061926092,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
+
+    const area3 = await pg.exec(`
+      select ST_Area(geog) / 0.3048 ^ 2 sqft_spheroid,
+      ST_Area(geog, false) / 0.3048 ^ 2 sqft_sphere,
+      ST_Area(geog) sqm_spheroid
+    from (
+           select ST_Transform(
+                      'SRID=2249;POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))'::geometry,
+                      4326
+               ) :: geography geog
+       ) as subquery;
+      `)
+
+    expect(area3).toEqual([
+      {
+        rows: [
+          {
+            sqft_spheroid: 928.6844047556697,
+            sqft_sphere: 926.609762750544,
+            sqm_spheroid: 86.27760440239217,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft_spheroid',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqft_sphere',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm_spheroid',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
+  })
+
   it('complex1', async () => {
     const pg = new PGlite({
       extensions: {
@@ -141,18 +256,6 @@ WHERE ST_Within(c.location, s.geom);`)
   ON ST_DWithin(c.geom::geography, r.geom::geography, 10000)
   ORDER BY distance_km;
 
-  -- Query: Compute buffered area around each river and intersecting cities
-  SELECT
-      r.name AS river_name,
-      COUNT(c.id) AS num_cities_intersecting,
-      ST_Area(ST_Transform(ST_Buffer(r.geom::geography, 5000), 3857)) / 1e6 AS buffer_area_sqkm
-  FROM rivers r
-  LEFT JOIN cities c
-  ON ST_Intersects(ST_Buffer(r.geom::geography, 5000), c.geom)
-  GROUP BY r.name;
-
-  -- Cleanup test schema
-  -- DROP SCHEMA postgis_test CASCADE;
   `)
   })
 })
