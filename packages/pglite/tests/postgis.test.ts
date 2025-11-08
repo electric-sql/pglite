@@ -194,7 +194,7 @@ WHERE ST_Within(c.location, s.geom);`)
     ])
   })
 
-  it('topology', async () => {
+  it('ST_Polygonize', async () => {
     const pg = new PGlite({
       extensions: {
         postgis,
