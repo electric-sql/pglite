@@ -194,6 +194,49 @@ WHERE ST_Within(c.location, s.geom);`)
     ])
   })
 
+  it('topology', async () => {
+    const pg = new PGlite({
+      extensions: {
+        postgis,
+      },
+      defaultDataTransferContainer,
+    })
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+    const res = await pg.exec(`
+      WITH data(geom) AS (VALUES
+    ('LINESTRING (180 40, 30 20, 20 90)'::geometry)
+    ,('LINESTRING (180 40, 160 160)'::geometry)
+    ,('LINESTRING (80 60, 120 130, 150 80)'::geometry)
+    ,('LINESTRING (80 60, 150 80)'::geometry)
+    ,('LINESTRING (20 90, 70 70, 80 130)'::geometry)
+    ,('LINESTRING (80 130, 160 160)'::geometry)
+    ,('LINESTRING (20 90, 20 160, 70 190)'::geometry)
+    ,('LINESTRING (70 190, 80 130)'::geometry)
+    ,('LINESTRING (70 190, 160 160)'::geometry)
+    )
+    SELECT ST_AsText( ST_Polygonize( geom ))
+        FROM data;
+    `)
+
+    expect(res).toEqual([
+      {
+        rows: [
+          {
+            st_astext:
+              'GEOMETRYCOLLECTION(POLYGON((180 40,30 20,20 90,70 70,80 130,160 160,180 40),(150 80,120 130,80 60,150 80)),POLYGON((80 60,120 130,150 80,80 60)),POLYGON((80 130,70 70,20 90,20 160,70 190,80 130)),POLYGON((160 160,80 130,70 190,160 160)))',
+          },
+        ],
+        fields: [
+          {
+            name: 'st_astext',
+            dataTypeID: 25,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
+  })
+
   it('complex1', async () => {
     const pg = new PGlite({
       extensions: {
