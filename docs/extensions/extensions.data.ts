@@ -293,6 +293,19 @@ const baseExtensions: Extension[] = [
     size: 239428,
   },
   {
+    name: 'postgis',
+    description: `
+      PostGIS extends the capabilities of the PostgreSQL relational database by adding 
+      support for storing, indexing, and querying geospatial data.
+    `,
+    shortDescription: 'Storing, indexing, and querying geospatial data.',
+    docs: 'postgis.net',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/postgis',
+    importName: 'postgis',
+    size: 7895452,
+  },
+  {
     name: 'pg_uuidv7',
     description: `
     A tiny Postgres extension to create valid version 7 UUIDs in Postgres.`,
