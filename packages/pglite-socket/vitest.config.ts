@@ -7,7 +7,6 @@ export default defineConfig({
     typecheck: { enabled: true },
     environment: 'node',
     testTimeout: 30000,
-    hookTimeout: 30000,
     watch: false,
     dir: './tests',
     maxWorkers: 1,
