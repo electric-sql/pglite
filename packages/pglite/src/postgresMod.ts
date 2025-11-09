@@ -24,16 +24,17 @@ export interface PostgresMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
-  _use_wire: (state: number) => void
   _pgl_initdb: () => number
   _pgl_backend: () => void
   _pgl_shutdown: () => void
-  _get_buffer_size: (fd: number) => number
-  _get_buffer_addr: (fd: number) => number
-  _get_channel: () => number
   _interactive_write: (msgLength: number) => void
-  _interactive_one: () => void
-  _interactive_read: () => number
+  _interactive_one: (length: number, peek: number) => void
+  _set_read_write_cbs: (read_cb: number, write_cb: number) => void
+  addFunction: (
+    cb: (ptr: any, length: number) => void,
+    signature: string,
+  ) => number
+  removeFunction: (f: number) => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

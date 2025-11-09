@@ -1,5 +1,48 @@
 # @electric-sql/pglite
 
+## 0.3.14
+
+### Patch Changes
+
+- 8785034: Added pg_uuidv7 extension.
+- 90cfee8: live extension: use schema.oid + table.oid in trigger identifiers
+
+## 0.3.13
+
+### Patch Changes
+
+- ad3d0d8: Updated pg_dump to use callback data exchange; built pg_dump with emscripten
+
+## 0.3.12
+
+### Patch Changes
+
+- ce0e74e: Added pgTAP extension.
+
+## 0.3.11
+
+### Patch Changes
+
+- 9a104b9: Added dict_int, dict_xsyn, file_fdw, intarray, pageinspect, pg_buffercache, pg_freespacemap, pg_surgery, pg_visibility, pg_walinspect, unaccent contrib extensions
+
+## 0.3.10
+
+### Patch Changes
+
+- ad765ed: initdb calls system to query the server configs. avoid that by hardcoding a return value of 123
+
+## 0.3.9
+
+### Patch Changes
+
+- e40ccad: Upgrade emsdk
+
+## 0.3.8
+
+### Patch Changes
+
+- f12a582: Ensure MessageContext and its children are actually cleared between queries
+
 ## 0.3.7
 
 ### Patch Changes

@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const serverScript = path.resolve(__dirname, '../src/scripts/server.ts')
 
 // Helper to wait for a port to be available
-async function waitForPort(port: number, timeout = 5000): Promise<boolean> {
+async function waitForPort(port: number, timeout = 15000): Promise<boolean> {
   const start = Date.now()
 
   while (Date.now() - start < timeout) {

@@ -1,5 +1,58 @@
 # @electric-sql/pglite-socket
 
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [8785034]
+- Updated dependencies [90cfee8]
+  - @electric-sql/pglite@0.3.14
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies [ad3d0d8]
+  - @electric-sql/pglite@0.3.13
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [ce0e74e]
+  - @electric-sql/pglite@0.3.12
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [9a104b9]
+  - @electric-sql/pglite@0.3.11
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [ad765ed]
+  - @electric-sql/pglite@0.3.10
+
+## 0.0.14
+
+### Patch Changes
+
+- e40ccad: Upgrade emsdk
+- Updated dependencies [e40ccad]
+  - @electric-sql/pglite@0.3.9
+
+## 0.0.13
+
+### Patch Changes
+
+- bd263aa: fix oom; other fixes
+- Updated dependencies [f12a582]
+- Updated dependencies [bd263aa]
+  - @electric-sql/pglite@0.3.8
+
 ## 0.0.12
 
 ### Patch Changes

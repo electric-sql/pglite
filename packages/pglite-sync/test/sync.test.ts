@@ -41,6 +41,42 @@ describe('pglite-sync', () => {
     await pg.exec(`TRUNCATE todo;`)
   })
 
+  it('passes onError through to MultiShapeStream.subscribe', async () => {
+    const subscribe = vi.fn().mockReturnValue(() => {})
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe,
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        todos: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    const onError = vi.fn()
+
+    await pg.electric.syncShapesToTables({
+      shapes: {
+        todos: {
+          shape: {
+            url: 'http://localhost:3000/v1/shape',
+            params: { table: 'todo' },
+          },
+          table: 'todo',
+          primaryKey: ['id'],
+        },
+      },
+      key: null,
+      onError,
+    })
+
+    expect(subscribe).toHaveBeenCalled()
+    const [, passedOnError] = subscribe.mock.calls[0]
+    expect(passedOnError).toBe(onError)
+  })
+
   it('handles inserts/updates/deletes', async () => {
     let feedMessage: (
       lsn: number,

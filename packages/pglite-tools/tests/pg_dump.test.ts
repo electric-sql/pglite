@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { pgDump } from '../dist/pg_dump.js'
+import * as fs from 'fs/promises'
 
 describe('pgDump', () => {
   it('should dump an empty database', async () => {
@@ -128,5 +129,73 @@ describe('pgDump', () => {
     const finalSearchPath = await pg.query('SHOW SEARCH_PATH;')
 
     expect(initialSearchPath).toEqual(finalSearchPath)
+  })
+
+  it('specify datadir: should dump a database with tables and data', async () => {
+    const dataDir = '/tmp/pg_dump_pglite_data_dir'
+    await fs.rm(dataDir, { force: true, recursive: true })
+    const pg = await PGlite.create({
+      dataDir: dataDir,
+    })
+
+    // Create test tables and insert data
+    await pg.exec(`
+      CREATE TABLE test1 (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );
+      INSERT INTO test1 (name) VALUES ('test1-row1');
+      
+      CREATE TABLE test2 (
+        id SERIAL PRIMARY KEY,
+        value INTEGER
+      );
+      INSERT INTO test2 (value) VALUES (42);
+    `)
+
+    const dump = await pgDump({ pg })
+    const content = await dump.text()
+
+    // Check for table creation
+    expect(content).toContain('CREATE TABLE public.test1')
+    expect(content).toContain('CREATE TABLE public.test2')
+
+    // Check for data inserts
+    expect(content).toContain('INSERT INTO public.test1')
+    expect(content).toContain("'test1-row1'")
+    expect(content).toContain('INSERT INTO public.test2')
+    expect(content).toContain('42')
+  })
+
+  it('param --quote-all-identifiers should work', async () => {
+    const pg = await PGlite.create()
+
+    // Create test tables and insert data
+    await pg.exec(`
+      CREATE TABLE test1 (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );
+      INSERT INTO test1 (name) VALUES ('test1-row1');
+      
+      CREATE TABLE test2 (
+        id SERIAL PRIMARY KEY,
+        value INTEGER
+      );
+      INSERT INTO test2 (value) VALUES (42);
+    `)
+
+    const dump = await pgDump({ pg, args: ['--quote-all-identifiers'] })
+    const content = await dump.text()
+
+    // Check for table creation
+    expect(content).toContain('CREATE TABLE "public"."test1"')
+    expect(content).toContain('CREATE TABLE "public"."test2"')
+
+    // Check for data inserts
+    expect(content).toContain('INSERT INTO "public"."test1"')
+    expect(content).toContain("'test1-row1'")
+    expect(content).toContain('INSERT INTO "public"."test2"')
+    expect(content).toContain('42')
   })
 })

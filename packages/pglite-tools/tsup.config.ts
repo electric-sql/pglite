@@ -1,3 +1,5 @@
+import { cpSync } from 'fs'
+import { resolve } from 'path'
 import { defineConfig } from 'tsup'
 
 const entryPoints = [
@@ -19,5 +21,8 @@ export default defineConfig([
     minify: minify,
     shims: true,
     format: ['esm', 'cjs'],
+    onSuccess: async () => {
+      cpSync(resolve('release/pg_dump.wasm'), resolve('dist/pg_dump.wasm'))
+    }
   },
 ])
