@@ -28,10 +28,10 @@ export interface PgDumpMod
     signature: string,
   ) => number
   removeFunction: (f: number) => void
-  _main: (args: string[]) => number
   onExit: (status: number) => void
   print: (test: string) => void
   printErr: (text: string) => void
+  callMain: (args?: string[]) => number
 }
 
 type PgDumpFactory<T extends PgDumpMod = PgDumpMod> = (

@@ -36,11 +36,10 @@ async function execPgDump({
   args: string[]
 }): Promise<ExecResult> {
   let pgdump_write, pgdump_read
-  let exitStatus = 0
+  let exitCode = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
   const emscriptenOpts: Partial<PgDumpMod> = {
-    arguments: args,
     noExitRuntime: false,
     print: (text) => {
       stdoutOutput += text
@@ -49,7 +48,7 @@ async function execPgDump({
       stderrOutput += text
     },
     onExit: (status: number) => {
-      exitStatus = status
+      exitCode = status
     },
     preRun: [
       (mod: PgDumpMod) => {
@@ -92,13 +91,14 @@ async function execPgDump({
   }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
+  mod.callMain(args)
   let fileContents = ''
-  if (!exitStatus) {
+  if (!exitCode) {
     fileContents = mod.FS.readFile(dumpFilePath, { encoding: 'utf8' })
   }
 
   return {
-    exitCode: exitStatus,
+    exitCode,
     fileContents,
     stderr: stderrOutput,
     stdout: stdoutOutput,
