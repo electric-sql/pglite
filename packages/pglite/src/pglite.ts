@@ -446,7 +446,7 @@ export class PGlite
       return length
     }, 'iii')
 
-    this.mod._set_read_write_cbs(this.#pglite_read, this.#pglite_write)
+    this.mod._pgl_set_rw_cbs(this.#pglite_read, this.#pglite_write)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -671,7 +671,7 @@ export class PGlite
     }
 
     // execute the message
-    mod._interactive_one(message.length, message[0])
+    mod._pgl_interactive_one(message.length, message[0])
 
     this.#outputData = []
 

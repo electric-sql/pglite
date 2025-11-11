@@ -22,7 +22,7 @@ export interface PgDumpMod
   FS: FS
   WASM_PREFIX: string
   INITIAL_MEMORY: number
-  _set_read_write_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
   addFunction: (
     cb: (ptr: any, length: number) => void,
     signature: string,

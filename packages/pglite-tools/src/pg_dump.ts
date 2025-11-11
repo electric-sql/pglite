@@ -82,7 +82,7 @@ async function execPgDump({
             return length
           }, 'iii')
 
-          mod._set_read_write_cbs(pgdump_read, pgdump_write)
+          mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
           // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
