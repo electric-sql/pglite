@@ -86,7 +86,7 @@ jobs:
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]    
@@ -179,7 +179,7 @@ jobs:
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]    
@@ -344,7 +344,7 @@ jobs:
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     needs: [build-all]
     steps:
       - uses: actions/checkout@v4
