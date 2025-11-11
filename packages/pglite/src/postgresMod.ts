@@ -20,7 +20,6 @@ export interface PostgresMod
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
   FS: FS
-  FD_BUFFER_MAX: number
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
