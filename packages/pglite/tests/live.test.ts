@@ -460,6 +460,9 @@ await testEsmCjsAndDTC(async (importType) => {
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
       )
+      
+      // Check that references haven't changed between updates.
+      expect(initialResults.rows[0]).toBe(updatedResults.rows[0])
 
       expect(updatedResults.rows).toEqual([
         { id: 1, number: 10 },
