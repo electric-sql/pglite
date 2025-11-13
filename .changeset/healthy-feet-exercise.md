@@ -2,4 +2,4 @@
 '@electric-sql/pglite': patch
 ---
 
-Updated useLiveIncrementalQuery hook to maintain object references after applying changes.
+Updated live.incrementalQuery to maintain object references across changes.
