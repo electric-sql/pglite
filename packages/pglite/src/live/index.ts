@@ -4,24 +4,21 @@ import type {
   Results,
   Transaction,
 } from '../interface'
+import { debounceMutex, formatQuery, uuid } from '../utils.js'
 import type {
-  LiveQueryOptions,
-  LiveIncrementalQueryOptions,
+  Change,
+  LiveChanges,
   LiveChangesOptions,
+  LiveIncrementalQueryOptions,
   LiveNamespace,
   LiveQuery,
-  LiveChanges,
-  Change,
+  LiveQueryOptions,
   LiveQueryResults,
 } from './interface'
-import { uuid, formatQuery, debounceMutex } from '../utils.js'
 
 export type {
-  LiveNamespace,
-  LiveQuery,
-  LiveChanges,
-  Change,
-  LiveQueryResults,
+  Change, LiveChanges, LiveNamespace,
+  LiveQuery, LiveQueryResults
 } from './interface.js'
 
 const MAX_RETRIES = 5
@@ -326,7 +323,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             ...(
               await tx.query<any>(`
                 SELECT column_name, data_type, udt_name
-                FROM information_schema.columns 
+                FROM information_schema.columns
                 WHERE table_name = 'live_query_${id}_view'
               `)
             ).rows,
@@ -349,63 +346,63 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 curr AS (SELECT LAG("${key}") OVER () as __after__, * FROM live_query_${id}_state${curr}),
                 data_diff AS (
                   -- INSERT operations: Include all columns
-                  SELECT 
+                  SELECT
                     'INSERT' AS __op__,
                     ${columns
-                      .map(
-                        ({ column_name }) =>
-                          `curr."${column_name}" AS "${column_name}"`,
-                      )
-                      .join(',\n')},
+                .map(
+                  ({ column_name }) =>
+                    `curr."${column_name}" AS "${column_name}"`,
+                )
+                .join(',\n')},
                     ARRAY[]::text[] AS __changed_columns__
                   FROM curr
                   LEFT JOIN prev ON curr.${key} = prev.${key}
                   WHERE prev.${key} IS NULL
                 UNION ALL
                   -- DELETE operations: Include only the primary key
-                  SELECT 
+                  SELECT
                     'DELETE' AS __op__,
                     ${columns
-                      .map(({ column_name, data_type, udt_name }) => {
-                        if (column_name === key) {
-                          return `prev."${column_name}" AS "${column_name}"`
-                        } else {
-                          return `NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``} AS "${column_name}"`
-                        }
-                      })
-                      .join(',\n')},
+                .map(({ column_name, data_type, udt_name }) => {
+                  if (column_name === key) {
+                    return `prev."${column_name}" AS "${column_name}"`
+                  } else {
+                    return `NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``} AS "${column_name}"`
+                  }
+                })
+                .join(',\n')},
                       ARRAY[]::text[] AS __changed_columns__
                   FROM prev
                   LEFT JOIN curr ON prev.${key} = curr.${key}
                   WHERE curr.${key} IS NULL
                 UNION ALL
                   -- UPDATE operations: Include only changed columns
-                  SELECT 
+                  SELECT
                     'UPDATE' AS __op__,
                     ${columns
-                      .map(({ column_name, data_type, udt_name }) =>
-                        column_name === key
-                          ? `curr."${column_name}" AS "${column_name}"`
-                          : `CASE 
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
+                .map(({ column_name, data_type, udt_name }) =>
+                  column_name === key
+                    ? `curr."${column_name}" AS "${column_name}"`
+                    : `CASE
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
                               THEN curr."${column_name}"
                               ELSE NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``}
                               END AS "${column_name}"`,
-                      )
-                      .join(',\n')},
+                )
+                .join(',\n')},
                       ARRAY(SELECT unnest FROM unnest(ARRAY[${columns
-                        .filter(({ column_name }) => column_name !== key)
-                        .map(
-                          ({ column_name }) =>
-                            `CASE
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
-                              THEN '${column_name}' 
-                              ELSE NULL 
+                .filter(({ column_name }) => column_name !== key)
+                .map(
+                  ({ column_name }) =>
+                    `CASE
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
+                              THEN '${column_name}'
+                              ELSE NULL
                               END`,
-                        )
-                        .join(
-                          ', ',
-                        )}]) WHERE unnest IS NOT NULL) AS __changed_columns__
+                )
+                .join(
+                  ', ',
+                )}]) WHERE unnest IS NOT NULL) AS __changed_columns__
                   FROM curr
                   INNER JOIN prev ON curr.${key} = prev.${key}
                   WHERE NOT (curr IS NOT DISTINCT FROM prev)
@@ -440,7 +437,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             await pg.transaction(async (tx) => {
               // Populate the state table
               await tx.exec(`
-                INSERT INTO live_query_${id}_state${stateSwitch} 
+                INSERT INTO live_query_${id}_state${stateSwitch}
                   SELECT * FROM live_query_${id}_view;
               `)
 
@@ -478,10 +475,10 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         runChangeCallbacks(callbacks, [
           ...(reset
             ? [
-                {
-                  __op__: 'RESET' as const,
-                },
-              ]
+              {
+                __op__: 'RESET' as const,
+              },
+            ]
             : []),
           ...changes!.rows,
         ])
@@ -576,6 +573,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         : []
       const rowsMap: Map<any, any> = new Map()
       const afterMap: Map<any, any> = new Map()
+      const rowCache = new WeakMap<any, any>()
       let lastRows: T[] = []
       let firstRun = true
 
@@ -634,7 +632,12 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             break
           }
           // Remove the __after__ key from the exposed row
-          const cleanObj = { ...obj }
+          const cleanObj = rowCache.get(obj) ?? { ...obj }
+
+          if (!rowCache.has(obj)) {
+            rowCache.set(obj, cleanObj)
+          }
+
           delete cleanObj.__after__
           rows.push(cleanObj)
           lastKey = nextKey
