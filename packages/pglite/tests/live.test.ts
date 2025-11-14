@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
 
 await testEsmCjsAndDTC(async (importType) => {
@@ -460,7 +460,7 @@ await testEsmCjsAndDTC(async (importType) => {
       await new Promise((resolve) =>
         eventTarget.addEventListener('change', resolve, { once: true }),
       )
-      
+
       // Check that references haven't changed between updates.
       expect(initialResults.rows[0]).toBe(updatedResults.rows[0])
 
@@ -1358,9 +1358,9 @@ await testEsmCjsAndDTC(async (importType) => {
       const { initialResults, unsubscribe } = await db.live.query(
         `SELECT
           id,
-          statement 
+          statement
         FROM testTable
-        WHERE 
+        WHERE
           statement ILIKE '%pglite%'
         ORDER BY id;`,
         [],
