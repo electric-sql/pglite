@@ -528,7 +528,7 @@ await testEsmCjsAndDTC(async (importType) => {
       let updatedResults
       const eventTarget = new EventTarget()
 
-      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+      const { initialResults } = await db.live.incrementalQuery(
         'SELECT * FROM testTable WHERE number <= 50 ORDER BY number;',
         [],
         'id',
