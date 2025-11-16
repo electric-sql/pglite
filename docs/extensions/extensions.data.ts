@@ -17,6 +17,7 @@ const baseExtensions: Extension[] = [
     importName: 'vector',
     core: true,
     size: 43953,
+    activation: true,
   },
   {
     name: 'live',
@@ -47,6 +48,7 @@ const baseExtensions: Extension[] = [
     importName: 'amcheck',
     core: true,
     size: 18815,
+    activation: true,
   },
   {
     name: 'auto_explain',
@@ -61,6 +63,12 @@ const baseExtensions: Extension[] = [
     importName: 'auto_explain',
     core: true,
     size: 3125,
+    activation: `await pg.exec(\`
+            LOAD 'auto_explain';
+            SET auto_explain.log_min_duration = '0';
+            SET auto_explain.log_analyze = 'true';
+          \`)
+        `,
   },
   {
     name: 'bloom',
@@ -78,6 +86,7 @@ const baseExtensions: Extension[] = [
     importName: 'bloom',
     core: true,
     size: 6197,
+    activation: true,
   },
   {
     name: 'btree_gin',
@@ -92,6 +101,7 @@ const baseExtensions: Extension[] = [
     importName: 'btree_gin',
     core: true,
     size: 6347,
+    activation: true,
   },
   {
     name: 'btree_gist',
@@ -106,6 +116,7 @@ const baseExtensions: Extension[] = [
     importName: 'btree_gist',
     core: true,
     size: 24181,
+    activation: true,
   },
   {
     name: 'citext',
@@ -121,6 +132,7 @@ const baseExtensions: Extension[] = [
     importName: 'citext',
     core: true,
     size: 4983,
+    activation: true,
   },
   {
     name: 'cube',
@@ -134,6 +146,7 @@ const baseExtensions: Extension[] = [
     importName: 'cube',
     core: true,
     size: 15104,
+    activation: true,
   },
   {
     name: 'earthdistance',
@@ -148,6 +161,7 @@ const baseExtensions: Extension[] = [
     importName: 'earthdistance',
     core: true,
     size: 2220,
+    activation: true,
   },
   {
     name: 'fuzzystrmatch',
@@ -162,6 +176,7 @@ const baseExtensions: Extension[] = [
     importName: 'fuzzystrmatch',
     core: true,
     size: 12026,
+    activation: true,
   },
   {
     name: 'hstore',
@@ -178,6 +193,7 @@ const baseExtensions: Extension[] = [
     importName: 'hstore',
     core: true,
     size: 21380,
+    activation: true,
   },
   {
     name: 'intarray',
@@ -193,6 +209,7 @@ const baseExtensions: Extension[] = [
     importName: 'intarray',
     core: true,
     size: 14712,
+    activation: true,
   },
   {
     name: 'dict_xsyn',
@@ -209,6 +226,7 @@ const baseExtensions: Extension[] = [
     importName: 'dict_xsyn',
     core: true,
     size: 1948,
+    activation: true,
   },
   {
     name: 'pageinspect',
@@ -224,6 +242,7 @@ const baseExtensions: Extension[] = [
     importName: 'pageinspect',
     core: true,
     size: 15923,
+    activation: true,
   },
   {
     name: 'dict_int',
@@ -241,6 +260,7 @@ const baseExtensions: Extension[] = [
     importName: 'dict_int',
     core: true,
     size: 1361,
+    activation: true,
   },
   {
     name: 'unaccent',
@@ -257,6 +277,7 @@ const baseExtensions: Extension[] = [
     importName: 'unaccent',
     core: true,
     size: 9323,
+    activation: true,
   },
   {
     name: 'pg_surgery',
@@ -276,6 +297,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_surgery',
     core: true,
     size: 2635,
+    activation: true,
   },
   {
     name: 'pgtap',
@@ -291,6 +313,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/pgtap',
     importName: 'pgtap',
     size: 239428,
+    activation: true,
   },
   {
     name: 'pg_uuidv7',
@@ -302,6 +325,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/pg_uuidv7',
     importName: 'pg_uuidv7',
     size: 1522,
+    activation: true,
   },
   {
     name: 'pg_walinspect',
@@ -318,6 +342,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_walinspect',
     core: true,
     size: 4689,
+    activation: true,
   },
   {
     name: 'pg_visibility',
@@ -333,6 +358,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_visibility',
     core: true,
     size: 4159,
+    activation: true,
   },
   {
     name: 'pg_freespacemap',
@@ -349,6 +375,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_freespacemap',
     core: true,
     size: 1485,
+    activation: true,
   },
   {
     name: 'pg_buffercache',
@@ -364,6 +391,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_buffercache',
     core: true,
     size: 3133,
+    activation: true,
   },
   {
     name: 'file_fdw',
@@ -381,6 +409,15 @@ const baseExtensions: Extension[] = [
     importName: 'file_fdw',
     core: true,
     size: 4467,
+    activation: `await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
+          await pg.exec('CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;')
+          await pg.exec(\`CREATE FOREIGN TABLE file_contents (line text)
+              SERVER file_server
+              OPTIONS (
+                filename '/tmp/pglite/bin/postgres', 
+                format 'text'
+              );
+          \`)`,
   },
   {
     name: 'isn',
@@ -395,6 +432,7 @@ const baseExtensions: Extension[] = [
     importName: 'isn',
     core: true,
     size: 31417,
+    activation: true,
   },
   {
     name: 'lo',
@@ -409,6 +447,7 @@ const baseExtensions: Extension[] = [
     importName: 'lo',
     core: true,
     size: 1822,
+    activation: true,
   },
   {
     name: 'ltree',
@@ -424,6 +463,7 @@ const baseExtensions: Extension[] = [
     importName: 'ltree',
     core: true,
     size: 19553,
+    activation: true,
   },
   {
     name: 'pg_trgm',
@@ -439,6 +479,7 @@ const baseExtensions: Extension[] = [
     importName: 'pg_trgm',
     core: true,
     size: 16208,
+    activation: true,
   },
   {
     name: 'seg',
@@ -454,6 +495,7 @@ const baseExtensions: Extension[] = [
     importName: 'seg',
     core: true,
     size: 10426,
+    activation: true,
   },
   {
     name: 'tablefunc',
@@ -469,6 +511,7 @@ const baseExtensions: Extension[] = [
     importName: 'tablefunc',
     core: true,
     size: 5824,
+    activation: true,
   },
   {
     name: 'tcn',
@@ -484,6 +527,7 @@ const baseExtensions: Extension[] = [
     importName: 'tcn',
     core: true,
     size: 1914,
+    activation: true,
   },
   {
     name: 'tsm_system_rows',
@@ -498,6 +542,7 @@ const baseExtensions: Extension[] = [
     importName: 'tsm_system_rows',
     core: true,
     size: 2048,
+    activation: true,
   },
   {
     name: 'tsm_system_time',
@@ -511,6 +556,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/contrib/tsm_system_time',
     importName: 'tsm_system_time',
     size: 2099,
+    activation: true,
   },
   {
     name: 'uuid-ossp',
@@ -526,6 +572,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/contrib/uuid_ossp',
     importName: 'uuid_ossp',
     size: 17936,
+    activation: true,
   },
   {
     name: 'pg_ivm',
@@ -544,6 +591,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/pg_ivm',
     importName: 'pg_ivm',
     size: 24865,
+    activation: true,
   },
 ]
 
@@ -570,6 +618,7 @@ export interface Extension {
   core?: boolean
   npmPackage?: string
   size?: number
+  activation?: boolean | string
 }
 
 export default {
@@ -600,6 +649,12 @@ export default {
           `
         }
         if (extension.importName && extension.importPath) {
+          const activation =
+            extension.activation &&
+            (typeof extension.activation === 'string'
+              ? extension.activation
+              : `await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.name.includes('-') ? `"${extension.name}"` : extension.name};');`)
+
           description +=
             '\n\n' +
             dedent`
@@ -608,8 +663,8 @@ export default {
           const pg = new PGlite({
             extensions: { ${extension.importName} }
           });
-          ${'```'}
-          `
+          ${activation ? activation : ''}
+          ${'\n```'}`
         }
         descriptionHtml = md.render(description)
       }
