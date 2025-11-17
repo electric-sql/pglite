@@ -332,6 +332,7 @@ export class PGlite
           }
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
+          // mod.FS.mkdir('/tmp') && mod.FS.chmod('/tmp', 0o700)
         },
         (mod: any) => {
           mod.ENV.MODE = 'REACT'
@@ -345,7 +346,7 @@ export class PGlite
           mod.ENV.PGTZ = 'UTC'
           // mod.ENV.PGCLIENTENCODING = 'UTF8'
           //   mod.ENV.PGDATABASE = 'template1'
-          //   mod.ENV.PG_COLOR = 'always'
+          mod.ENV.PG_COLOR = 'always'
         },
       ],
     }
