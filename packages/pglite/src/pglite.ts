@@ -214,12 +214,12 @@ export class PGlite
     const extensionInitFns: Array<() => Promise<void>> = []
 
     const args = [
-      `PGDATA=${PGDATA}`,
-      `PREFIX=${WASM_PREFIX}`,
-      `PGUSER=${options.username ?? 'postgres'}`,
-      `PGDATABASE=${options.database ?? 'template1'}`,
-      'MODE=REACT',
-      'REPL=N',
+      // `PGDATA=${PGDATA}`,
+      // `PREFIX=${WASM_PREFIX}`,
+      // `PGUSER=${options.username ?? 'postgres'}`,
+      // `PGDATABASE=${options.database ?? 'template1'}`,
+      // 'MODE=REACT',
+      // 'REPL=N',
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
@@ -333,18 +333,19 @@ export class PGlite
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
         },
-        // (mod: any) => {
-        //   mod.ENV.MODE = "REACT"
-        //   mod.ENV.PGDATA = PGDATA
-        //   mod.ENV.PREFIX = WASM_PREFIX
-        //   mod.ENV.PGUSER = options.username ?? 'postgres'
-        //   mod.ENV.PGDATABASE = options.database ?? 'template1'
-        //   mod.ENV.LC_CTYPE = 'en_US.UTF-8'
-        //   mod.ENV.TZ = 'UTC'
-        //   mod.ENV.PGTZ = 'UTC'
-        //   mod.ENV.PGDATABASE = 'template1'
-        //   mod.ENV.PG_COLOR = 'always'
-        // }
+        (mod: any) => {
+          mod.ENV.MODE = 'REACT'
+          mod.ENV.PGDATA = PGDATA
+          mod.ENV.PREFIX = WASM_PREFIX
+          mod.ENV.PGUSER = options.username ?? 'postgres'
+          mod.ENV.PGDATABASE = options.database ?? 'template1'
+          mod.REPL = 'N'
+          //   mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+          //   mod.ENV.TZ = 'UTC'
+          //   mod.ENV.PGTZ = 'UTC'
+          //   mod.ENV.PGDATABASE = 'template1'
+          //   mod.ENV.PG_COLOR = 'always'
+        },
       ],
     }
 
@@ -398,63 +399,72 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-      // set the write callback
-    this.#pglite_socket_write = this.mod.addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      this.#protocolParser.parse(bytes, (msg) => {
-        this.#parse(msg)
-      })
-      if (this.#keepRawResponse) {
-        const copied = bytes.slice()
-        let requiredSize = this.#writeOffset + copied.length
-        if (requiredSize > this.#inputData.length) {
-          const newSize =
-            this.#inputData.length +
-            (this.#inputData.length >> 1) +
-            requiredSize
-          if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-            requiredSize = PGlite.MAX_BUFFER_SIZE
-          }
-          const newBuffer = new Uint8Array(newSize)
-          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-          this.#inputData = newBuffer
+    // set the write callback
+    this.#pglite_socket_write = this.mod.addFunction(
+      (ptr: any, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
         }
-        this.#inputData.set(copied, this.#writeOffset)
-        this.#writeOffset += copied.length
-        return this.#inputData.length
-      }
-      return length
-    }, 'iii')
+        this.#protocolParser.parse(bytes, (msg) => {
+          this.#parse(msg)
+        })
+        if (this.#keepRawResponse) {
+          const copied = bytes.slice()
+          let requiredSize = this.#writeOffset + copied.length
+          if (requiredSize > this.#inputData.length) {
+            const newSize =
+              this.#inputData.length +
+              (this.#inputData.length >> 1) +
+              requiredSize
+            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+              requiredSize = PGlite.MAX_BUFFER_SIZE
+            }
+            const newBuffer = new Uint8Array(newSize)
+            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+            this.#inputData = newBuffer
+          }
+          this.#inputData.set(copied, this.#writeOffset)
+          this.#writeOffset += copied.length
+          return this.#inputData.length
+        }
+        return length
+      },
+      'iii',
+    )
 
     // set the read callback
-    this.#pglite_socket_read = this.mod.addFunction((ptr: any, max_length: number) => {
-      // copy current data to wasm buffer
-      let length = this.#outputData.length - this.#readOffset
-      if (length > max_length) {
-        length = max_length
-      }
-      try {
-        this.mod!.HEAP8.set(
-          (this.#outputData as Uint8Array).subarray(
-            this.#readOffset,
-            this.#readOffset + length,
-          ),
-          ptr,
-        )
-        this.#readOffset += length
-      } catch (e) {
-        console.error(e)
-      }
-      return length
-    }, 'iii')
+    this.#pglite_socket_read = this.mod.addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.error(e)
+        }
+        return length
+      },
+      'iii',
+    )
 
-    this.mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
+    this.mod._pgl_set_rw_cbs(
+      this.#pglite_socket_read,
+      this.#pglite_socket_write,
+    )
 
     this.mod.callMain(args)
 
