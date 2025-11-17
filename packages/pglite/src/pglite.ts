@@ -346,7 +346,7 @@ export class PGlite
           mod.ENV.PGTZ = 'UTC'
           // mod.ENV.PGCLIENTENCODING = 'UTF8'
           //   mod.ENV.PGDATABASE = 'template1'
-          mod.ENV.PG_COLOR = 'always'
+          // mod.ENV.PG_COLOR = 'always'
         },
       ],
     }
