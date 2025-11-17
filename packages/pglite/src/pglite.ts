@@ -76,14 +76,14 @@ export class PGlite
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
   // receive data from wasm
-  #pglite_write: number = -1
+  #pglite_socket_write: number = -1
 
   #currentResults: BackendMessage[] = []
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
 
   // send data to wasm
-  #pglite_read: number = -1
+  #pglite_socket_read: number = -1
   // buffer that holds the data to be sent to wasm
   #outputData: any = []
   // read index in the buffer
@@ -333,6 +333,18 @@ export class PGlite
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
         },
+        // (mod: any) => {
+        //   mod.ENV.MODE = "REACT"
+        //   mod.ENV.PGDATA = PGDATA
+        //   mod.ENV.PREFIX = WASM_PREFIX
+        //   mod.ENV.PGUSER = options.username ?? 'postgres'
+        //   mod.ENV.PGDATABASE = options.database ?? 'template1'
+        //   mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+        //   mod.ENV.TZ = 'UTC'
+        //   mod.ENV.PGTZ = 'UTC'
+        //   mod.ENV.PGDATABASE = 'template1'
+        //   mod.ENV.PG_COLOR = 'always'
+        // }
       ],
     }
 
@@ -386,8 +398,8 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-    // set the write callback
-    this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
+      // set the write callback
+    this.#pglite_socket_write = this.mod.addFunction((ptr: any, length: number) => {
       let bytes
       try {
         bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
@@ -400,9 +412,7 @@ export class PGlite
       })
       if (this.#keepRawResponse) {
         const copied = bytes.slice()
-
         let requiredSize = this.#writeOffset + copied.length
-
         if (requiredSize > this.#inputData.length) {
           const newSize =
             this.#inputData.length +
@@ -415,17 +425,15 @@ export class PGlite
           newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
           this.#inputData = newBuffer
         }
-
         this.#inputData.set(copied, this.#writeOffset)
         this.#writeOffset += copied.length
-
         return this.#inputData.length
       }
       return length
     }, 'iii')
 
     // set the read callback
-    this.#pglite_read = this.mod.addFunction((ptr: any, max_length: number) => {
+    this.#pglite_socket_read = this.mod.addFunction((ptr: any, max_length: number) => {
       // copy current data to wasm buffer
       let length = this.#outputData.length - this.#readOffset
       if (length > max_length) {
@@ -441,12 +449,14 @@ export class PGlite
         )
         this.#readOffset += length
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
       return length
     }, 'iii')
 
-    this.mod._pgl_set_rw_cbs(this.#pglite_read, this.#pglite_write)
+    this.mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
+
+    this.mod.callMain(args)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -576,8 +586,8 @@ export class PGlite
     try {
       await this.execProtocol(serialize.end())
       this.mod!._pgl_shutdown()
-      this.mod!.removeFunction(this.#pglite_read)
-      this.mod!.removeFunction(this.#pglite_write)
+      this.mod!.removeFunction(this.#pglite_socket_read)
+      this.mod!.removeFunction(this.#pglite_socket_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {

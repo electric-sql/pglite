@@ -33,6 +33,7 @@ export interface PostgresMod
     signature: string,
   ) => number
   removeFunction: (f: number) => void
+  callMain: (args?: string[]) => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
