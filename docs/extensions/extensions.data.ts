@@ -63,12 +63,7 @@ const baseExtensions: Extension[] = [
     importName: 'auto_explain',
     core: true,
     size: 3125,
-    activation: `await pg.exec(\`
-            LOAD 'auto_explain';
-            SET auto_explain.log_min_duration = '0';
-            SET auto_explain.log_analyze = 'true';
-          \`)
-        `,
+    activation: true,
   },
   {
     name: 'bloom',
@@ -409,15 +404,7 @@ const baseExtensions: Extension[] = [
     importName: 'file_fdw',
     core: true,
     size: 4467,
-    activation: `await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
-          await pg.exec('CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;')
-          await pg.exec(\`CREATE FOREIGN TABLE file_contents (line text)
-              SERVER file_server
-              OPTIONS (
-                filename '/tmp/pglite/bin/postgres', 
-                format 'text'
-              );
-          \`)`,
+    activation: true,
   },
   {
     name: 'isn',
@@ -649,12 +636,6 @@ export default {
           `
         }
         if (extension.importName && extension.importPath) {
-          const activation =
-            extension.activation &&
-            (typeof extension.activation === 'string'
-              ? extension.activation
-              : `await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.name.includes('-') ? `"${extension.name}"` : extension.name};');`)
-
           description +=
             '\n\n' +
             dedent`
@@ -663,7 +644,7 @@ export default {
           const pg = new PGlite({
             extensions: { ${extension.importName} }
           });
-          ${activation ? activation : ''}
+          ${extension.activation ? `await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.name.includes('-') ? `"${extension.name}"` : extension.name};');` : ''}
           ${'\n```'}`
         }
         descriptionHtml = md.render(description)
