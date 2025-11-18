@@ -467,7 +467,7 @@ export class PGlite
       this.#pglite_socket_write,
     )
 
-    this.mod.callMain(args)
+    this.mod._pgl_startup(args)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
