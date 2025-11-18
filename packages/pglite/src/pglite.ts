@@ -340,11 +340,10 @@ export class PGlite
           mod.ENV.PREFIX = WASM_PREFIX
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'template1'
-          mod.REPL = 'N'
           mod.ENV.LC_CTYPE = 'en_US.UTF-8'
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
-          // mod.ENV.PGCLIENTENCODING = 'UTF8'
+          mod.ENV.PGCLIENTENCODING = 'UTF8'
           //   mod.ENV.PGDATABASE = 'template1'
           // mod.ENV.PG_COLOR = 'always'
         },
