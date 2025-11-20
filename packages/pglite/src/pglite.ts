@@ -1019,4 +1019,8 @@ export class PGlite
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
     return this.#listenMutex.runExclusive(fn)
   }
+
+  callMain(args: string[]) {
+    this.mod!.callMain(args)
+  }
 }
