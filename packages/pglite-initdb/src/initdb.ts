@@ -84,9 +84,8 @@ async function execInitdb({
           // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
 
-          system = mod.addFunction((cmd: string) => {
-            pg.callMain(cmd)
-            return 
+          system = mod.addFunction((cmd: string[]) => {
+            return pg.callMain(cmd)
           }, 'vi')
 
           mod._pgl_set_system_fn(system)
