@@ -120,8 +120,11 @@ async function execInitdb({
                 let arr = new Array<number>()
                 while (i < size - 1 && i < pgstdout.length) {
                   arr.push(pgstdout.charCodeAt(i))
-                  if (pgstdout[i++] === '\n') break;
+                  if (pgstdout[i++] === '\n') {
+                    break;
+                  }
                 }
+                if (arr.length === pgstdout.length && pgstdout[pgstdout.length] !== '\n') arr.push('\n'.charCodeAt(0))
                 pgstdout = pgstdout.substring(i)
                 if (arr.length) {
                   arr.push('\0'.charCodeAt(0))
