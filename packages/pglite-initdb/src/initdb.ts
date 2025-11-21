@@ -90,7 +90,7 @@ async function execInitdb({
             // todo: check it is indeed exec'ing postgres
             pg.Module.FS = mod.FS
             let cmd = ''
-            let c = String.fromCharCode(mod.HEAPU8[cmd_ptr])
+            let c = String.fromCharCode(mod.HEAPU8[cmd_ptr++])
             while (c != '\0') {
               cmd += c
               c = String.fromCharCode(mod.HEAPU8[cmd_ptr++])
