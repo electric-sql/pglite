@@ -27,6 +27,7 @@ export interface InitdbMod
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
+  _pgl_set_fgets_fn: (fgets_fn: number) => void
   addFunction: (
     fn: CallableFunction,
     signature: string,

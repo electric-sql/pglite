@@ -24,9 +24,11 @@ async function execInitdb({
   args: string[]
 }): Promise<ExecResult> {
   // let pgdump_write, pgdump_read, 
-  let system, popen
+  let system, popen, fgets
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
+  let pgstderr = ''
+  let pgstdout = ''
   const emscriptenOpts: Partial<InitdbMod> = {
     arguments: args,
     noExitRuntime: false,
@@ -97,11 +99,9 @@ async function execInitdb({
             }
             const postgresArgs = cmd.split(' ')
             postgresArgs.shift()
-            let stderr = ''
-            let stdout = ''
-            const onPostgresPrint = (text: string) => stdout += text
+            const onPostgresPrint = (text: string) => pgstdout += text
             pg.addPrintCb(onPostgresPrint)
-            const onPostgresPrintErr = (text: string) => stderr += text
+            const onPostgresPrintErr = (text: string) => pgstderr += text
             pg.addPrintErrCb(onPostgresPrintErr)
             const result = pg.callMain(postgresArgs)
             console.log(result)
@@ -111,6 +111,33 @@ async function execInitdb({
           }, 'ppi')
 
           mod._pgl_set_popen_fn(popen)
+
+          fgets = mod.addFunction((str: number, size: number, stream: number) => {
+            console.log(str, size, stream)
+            if (stream == 99) {
+              if (pgstdout.length) {
+                let i = 0
+                let arr = new Array<number>()
+                while (i < size - 1 && i < pgstdout.length) {
+                  arr.push(pgstdout.charCodeAt(i))
+                  if (pgstdout[i++] === '\n') break;
+                }
+                pgstdout = pgstdout.substring(i)
+                if (arr.length) {
+                  arr.push('\0'.charCodeAt(0))
+                  mod.HEAP8.set(arr, str)
+                  return str
+                }
+                return null;
+              } else {
+                return null;
+              }
+            } else {
+              throw 'unknown stream'
+            }
+          }, 'pipp')
+
+          mod._pgl_set_fgets_fn(fgets)
         }
       },
     ],
