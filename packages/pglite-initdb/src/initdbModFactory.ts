@@ -19,17 +19,20 @@ export interface InitdbMod
   preInit: Array<{ (mod: InitdbMod): void }>
   preRun: Array<{ (mod: InitdbMod): void }>
   postRun: Array<{ (mod: InitdbMod): void }>
+  thisProgram: string
+  ENV: Record<string,string>
   FS: FS
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
   _pgl_set_system_fn: (system_fn: number) => void
+  _pgl_set_popen_fn: (popen_fn: number) => void
   addFunction: (
-    cb: (ptr: any, length: number) => void,
+    fn: CallableFunction,
     signature: string,
   ) => number
   removeFunction: (f: number) => void
-  _main: (args: string[]) => number
+  callMain: (args: string[]) => number
   onExit: (status: number) => void
   print: (test: string) => void
   printErr: (text: string) => void

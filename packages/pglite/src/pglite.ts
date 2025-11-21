@@ -467,7 +467,7 @@ export class PGlite
       this.#pglite_socket_write,
     )
 
-    this.mod._pgl_startup(args)
+    // this.mod._pgl_startup(args)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -494,69 +494,69 @@ export class PGlite
     await loadExtensions(this.mod, (...args) => this.#log(...args))
 
     // Initialize the database
-    const idb = this.mod._pgl_initdb()
+    // const idb = this.mod._pgl_initdb()
 
-    if (!idb) {
-      // This would be a sab worker crash before pg_initdb can be called
-      throw new Error('INITDB failed to return value')
-    }
+    // if (!idb) {
+    //   // This would be a sab worker crash before pg_initdb can be called
+    //   throw new Error('INITDB failed to return value')
+    // }
 
-    // initdb states:
-    // - populating pgdata
-    // - reconnect a previous db
-    // - found valid db+user
-    // currently unhandled:
-    // - db does not exist
-    // - user is invalid for db
+    // // initdb states:
+    // // - populating pgdata
+    // // - reconnect a previous db
+    // // - found valid db+user
+    // // currently unhandled:
+    // // - db does not exist
+    // // - user is invalid for db
 
-    if (idb & 0b0001) {
-      // this would be a wasm crash inside pg_initdb from a sab worker.
-      throw new Error('INITDB: failed to execute')
-    } else if (idb & 0b0010) {
-      // initdb was called to init PGDATA if required
-      const pguser = options.username ?? 'postgres'
-      const pgdatabase = options.database ?? 'template1'
-      if (idb & 0b0100) {
-        // initdb has found a previous database
-        if (idb & (0b0100 | 0b1000)) {
-          // initdb found db+user, and we switched to that user
-        } else {
-          // TODO: invalid user for db?
-          throw new Error(
-            `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
-          )
-        }
-      } else {
-        // initdb has created a new database for us, we can only continue if we are
-        // in template1 and the user is postgres
-        if (pgdatabase !== 'template1' && pguser !== 'postgres') {
-          // throw new Error(`Invalid database ${pgdatabase} requested`);
-          throw new Error(
-            `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
-          )
-        }
-      }
-    }
+    // if (idb & 0b0001) {
+    //   // this would be a wasm crash inside pg_initdb from a sab worker.
+    //   throw new Error('INITDB: failed to execute')
+    // } else if (idb & 0b0010) {
+    //   // initdb was called to init PGDATA if required
+    //   const pguser = options.username ?? 'postgres'
+    //   const pgdatabase = options.database ?? 'template1'
+    //   if (idb & 0b0100) {
+    //     // initdb has found a previous database
+    //     if (idb & (0b0100 | 0b1000)) {
+    //       // initdb found db+user, and we switched to that user
+    //     } else {
+    //       // TODO: invalid user for db?
+    //       throw new Error(
+    //         `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
+    //       )
+    //     }
+    //   } else {
+    //     // initdb has created a new database for us, we can only continue if we are
+    //     // in template1 and the user is postgres
+    //     if (pgdatabase !== 'template1' && pguser !== 'postgres') {
+    //       // throw new Error(`Invalid database ${pgdatabase} requested`);
+    //       throw new Error(
+    //         `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
+    //       )
+    //     }
+    //   }
+    // }
 
-    // (re)start backed after possible initdb boot/single.
-    this.mod._pgl_backend()
+    // // (re)start backed after possible initdb boot/single.
+    // this.mod._pgl_backend()
 
-    // Sync any changes back to the persisted store (if there is one)
-    // TODO: only sync here if initdb did init db.
-    await this.syncToFs()
+    // // Sync any changes back to the persisted store (if there is one)
+    // // TODO: only sync here if initdb did init db.
+    // await this.syncToFs()
 
-    this.#ready = true
+    // this.#ready = true
 
-    // Set the search path to public for this connection
-    await this.exec('SET search_path TO public;')
+    // // Set the search path to public for this connection
+    // await this.exec('SET search_path TO public;')
 
-    // Init array types
-    await this._initArrayTypes()
+    // // Init array types
+    // await this._initArrayTypes()
 
-    // Init extensions
-    for (const initFn of extensionInitFns) {
-      await initFn()
-    }
+    // // Init extensions
+    // for (const initFn of extensionInitFns) {
+    //   await initFn()
+    // }
   }
 
   /**
