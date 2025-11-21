@@ -19,6 +19,7 @@ export interface PostgresMod
   preInit: Array<{ (mod: PostgresMod): void }>
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
+  thisProgram: string
   FS: FS
   WASM_PREFIX: string
   INITIAL_MEMORY: number

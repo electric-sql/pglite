@@ -93,11 +93,21 @@ async function execInitdb({
             let c = String.fromCharCode(mod.HEAPU8[cmd_ptr])
             while (c != '\0') {
               cmd += c
-              cmd_ptr++;
-              c = String.fromCharCode(mod.HEAPU8[cmd_ptr])
+              c = String.fromCharCode(mod.HEAPU8[cmd_ptr++])
             }
             const postgresArgs = cmd.split(' ')
-            return pg.callMain(postgresArgs)
+            postgresArgs.shift()
+            let stderr = ''
+            let stdout = ''
+            const onPostgresPrint = (text: string) => stdout += text
+            pg.addPrintCb(onPostgresPrint)
+            const onPostgresPrintErr = (text: string) => stderr += text
+            pg.addPrintErrCb(onPostgresPrintErr)
+            const result = pg.callMain(postgresArgs)
+            console.log(result)
+            pg.removePrintCb(onPostgresPrint)
+            pg.removePrintErrCb(onPostgresPrintErr)
+            return 99; // this is supposed to be a file descriptor
           }, 'ppi')
 
           mod._pgl_set_popen_fn(popen)

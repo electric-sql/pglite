@@ -37,6 +37,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+const postgresExePath = '/var/bin/postgresql/postgres'
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -198,6 +200,39 @@ export class PGlite
     return pg as any
   }
 
+  #printCbs = new Set<(text: string) => void>()
+  #printErrCbs = new Set<(text: string) => void>()
+
+  addPrintCb(print: (t: string) => void) {
+    this.#printCbs.add(print)
+  }
+
+  removePrintCb(print: (t: string) => void) {
+    this.#printCbs.delete(print)
+  }
+
+  addPrintErrCb(printErr: (t: string) => void) {
+    this.#printErrCbs.add(printErr)
+  }
+
+  removePrintErrCb(printErr: (t: string) => void) {
+    this.#printErrCbs.delete(printErr)
+  }
+
+  #print(text: string): void {
+    if (this.debug) {
+      console.debug(text)
+    }
+    this.#printCbs.forEach(c => c(text))
+  }
+
+  #printErr(text: string): void {
+    if (this.debug) {
+      console.error(text)
+    }
+    this.#printErrCbs.forEach((c => c(text)))
+  }
+
   /**
    * Initialize the database
    * @returns A promise that resolves when the database is ready
@@ -244,13 +279,17 @@ export class PGlite
     })
 
     let emscriptenOpts: Partial<PostgresMod> = {
+      thisProgram: postgresExePath,
       WASM_PREFIX,
       arguments: args,
       INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
-      ...(this.debug > 0
-        ? { print: console.info, printErr: console.error }
-        : { print: () => {}, printErr: () => {} }),
+      print: (text: string) => {
+        this.#print(text)
+      }, 
+      printErr: (text: string) => {
+        this.#printErr(text)
+      },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
