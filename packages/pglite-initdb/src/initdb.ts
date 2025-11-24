@@ -4,8 +4,7 @@ import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 export const WASM_PREFIX = '/pglite'
 export const PGDATA = WASM_PREFIX + '/' + 'db'
 
-const initdbExePath = '/var/bin/postgresql/initdb'
-const postgresExePath = '/var/bin/postgresql/postgres'
+const initdbExePath = '/tmp/pglite/bin/initdb'
 
 interface ExecResult {
   exitCode: number
@@ -41,9 +40,6 @@ async function execInitdb({
     },
     preRun: [
       (mod: InitdbMod) => {
-        mod.ENV.PGDATA = PGDATA
-      },
-      (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           // let bufferedBytes: Uint8Array = new Uint8Array()
 
@@ -76,9 +72,6 @@ async function execInitdb({
 
           // mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
           // default $HOME in emscripten is /home/web_user
-          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-          mod.FS.chmod(initdbExePath, 0o0555)
-          mod.FS.chmod(postgresExePath, 0o0555)
           system = mod.addFunction((cmd: string[]) => {
             // todo: check it is indeed exec'ing postgres
             pg.Module.FS = mod.FS
@@ -124,7 +117,9 @@ async function execInitdb({
                     break;
                   }
                 }
-                if (arr.length === pgstdout.length && pgstdout[pgstdout.length] !== '\n') arr.push('\n'.charCodeAt(0))
+                if (arr.length === pgstdout.length && pgstdout[pgstdout.length] !== '\n') {
+                  arr.push('\n'.charCodeAt(0))
+                }
                 pgstdout = pgstdout.substring(i)
                 if (arr.length) {
                   arr.push('\0'.charCodeAt(0))
@@ -143,6 +138,16 @@ async function execInitdb({
           mod._pgl_set_fgets_fn(fgets)
         }
       },
+      (mod: InitdbMod) => {
+        mod.ENV.PGDATA = PGDATA
+      },
+      (mod: InitdbMod) => {
+        // mod.FS.mkdir("/");
+        mod.FS.mount(mod.PROXYFS, {
+          root: '/tmp',
+          fs: pg.__FS!
+        }, '/tmp')
+      },      
     ],
   }
 

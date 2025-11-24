@@ -22,6 +22,7 @@ export interface InitdbMod
   thisProgram: string
   ENV: Record<string,string>
   FS: FS
+  PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void

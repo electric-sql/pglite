@@ -37,7 +37,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-const postgresExePath = '/var/bin/postgresql/postgres'
+const postgresExePath = '/tmp/pglite/bin/postgres'
+const initdbExePath = '/tmp/pglite/bin/initdb'
 
 export class PGlite
   extends BasePGlite
@@ -45,6 +46,10 @@ export class PGlite
 {
   fs?: Filesystem
   protected mod?: PostgresMod
+
+  get __FS() {
+    return this.mod?.FS
+  }
 
   readonly dataDir?: string
 
@@ -371,7 +376,11 @@ export class PGlite
           }
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
-          // mod.FS.mkdir('/tmp') && mod.FS.chmod('/tmp', 0o700)
+        },
+        (mod: any) => {
+          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+          mod.FS.chmod(initdbExePath, 0o0555)
+          mod.FS.chmod(postgresExePath, 0o0555)
         },
         (mod: any) => {
           mod.ENV.MODE = 'REACT'
