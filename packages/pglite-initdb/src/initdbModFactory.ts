@@ -29,6 +29,7 @@ export interface InitdbMod
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_fgets_fn: (fgets_fn: number) => void
+  _pgl_set_errno: (errno: number) => number
   addFunction: (
     fn: CallableFunction,
     signature: string,

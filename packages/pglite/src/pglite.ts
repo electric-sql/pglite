@@ -37,8 +37,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-const postgresExePath = '/tmp/pglite/bin/postgres'
-const initdbExePath = '/tmp/pglite/bin/initdb'
+const postgresExePath = '/pglite/bin/postgres'
+const initdbExePath = '/pglite/bin/initdb'
 
 export class PGlite
   extends BasePGlite

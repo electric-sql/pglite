@@ -2,9 +2,9 @@ import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 
 export const WASM_PREFIX = '/pglite'
-export const PGDATA = WASM_PREFIX + '/' + 'db'
+export const PGDATA = WASM_PREFIX + '/data'
 
-const initdbExePath = '/tmp/pglite/bin/initdb'
+const initdbExePath = '/pglite/bin/initdb'
 
 interface ExecResult {
   exitCode: number
@@ -41,56 +41,20 @@ async function execInitdb({
     preRun: [
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
-          // let bufferedBytes: Uint8Array = new Uint8Array()
-
-          // pgdump_write = mod.addFunction((ptr: any, length: number) => {
-          //   let bytes
-          //   try {
-          //     bytes = mod.HEAPU8.subarray(ptr, ptr + length)
-          //   } catch (e: any) {
-          //     console.error('error', e)
-          //     throw e
-          //   }
-          //   const currentResponse = pg.execProtocolRawSync(bytes)
-          //   bufferedBytes = concat(bufferedBytes, currentResponse)
-          //   return length
-          // }, 'iii')
-
-          // pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
-          //   let length = bufferedBytes.length
-          //   if (length > max_length) {
-          //     length = max_length
-          //   }
-          //   try {
-          //     mod.HEAP8.set(bufferedBytes.subarray(0, length), ptr)
-          //   } catch (e) {
-          //     console.error(e)
-          //   }
-          //   bufferedBytes = bufferedBytes.subarray(length, bufferedBytes.length)
-          //   return length
-          // }, 'iii')
-
-          // mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
           // default $HOME in emscripten is /home/web_user
-          system = mod.addFunction((cmd: string[]) => {
+          system = mod.addFunction((cmd_ptr: number) => {
             // todo: check it is indeed exec'ing postgres
-            pg.Module.FS = mod.FS
-            return pg.callMain(cmd)
-          }, 'vi')
+            const postgresArgs = getArgs(mod.HEAPU8, cmd_ptr)
+            postgresArgs.shift()
+            return pg.callMain(postgresArgs)
+          }, 'pi')
 
           mod._pgl_set_system_fn(system)
 
           popen = mod.addFunction((cmd_ptr: number, mode: number) => {
             console.log(mode)
             // todo: check it is indeed exec'ing postgres
-            pg.Module.FS = mod.FS
-            let cmd = ''
-            let c = String.fromCharCode(mod.HEAPU8[cmd_ptr++])
-            while (c != '\0') {
-              cmd += c
-              c = String.fromCharCode(mod.HEAPU8[cmd_ptr++])
-            }
-            const postgresArgs = cmd.split(' ')
+            let postgresArgs = getArgs(mod.HEAPU8, cmd_ptr)
             postgresArgs.shift()
             const onPostgresPrint = (text: string) => pgstdout += text
             pg.addPrintCb(onPostgresPrint)
@@ -131,7 +95,9 @@ async function execInitdb({
                 return null;
               }
             } else {
-              throw 'unknown stream'
+              mod._pgl_set_errno(1);
+              return null;
+              // throw 'PGlite: unknown stream'
             }
           }, 'pipp')
 
@@ -142,11 +108,11 @@ async function execInitdb({
         mod.ENV.PGDATA = PGDATA
       },
       (mod: InitdbMod) => {
-        // mod.FS.mkdir("/");
+        mod.FS.mkdir("/pglite");
         mod.FS.mount(mod.PROXYFS, {
-          root: '/tmp',
+          root: '/pglite',
           fs: pg.__FS!
-        }, '/tmp')
+        }, '/pglite')
       },      
     ],
   }
@@ -167,19 +133,28 @@ interface InitdbOptions {
   args?: string[]
 }
 
+function getArgs(heapu8: Uint8Array, cmd_ptr: number) {
+  let cmd = ''
+  let c = String.fromCharCode(heapu8[cmd_ptr++])
+  while (c != '\0') {
+    cmd += c
+    c = String.fromCharCode(heapu8[cmd_ptr++])
+  }
+  const postgresArgs = cmd.split(' ')
+  return postgresArgs
+}
+
 /**
- * Execute pg_dump
+ * Execute initdb
  */
 export async function initdb({
   pg,
   args
 }: InitdbOptions) {
 
-
-
   const execResult = await execInitdb({
     pg,
-    args: [initdbExePath, ...(args ?? [])],
+    args: [...(args ?? [])],
   })
 
   if (execResult.exitCode !== 0) {
