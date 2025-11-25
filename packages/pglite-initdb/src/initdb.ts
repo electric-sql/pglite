@@ -24,7 +24,7 @@ async function execInitdb({
   args: string[]
 }): Promise<ExecResult> {
   // let pgdump_write, pgdump_read, 
-  let system, popen
+  let system, popen, fgets
   let initdbStderr: number[] = []
   let initdbStdout: number[] = []
   let pgstderr: number[] = []
@@ -95,39 +95,39 @@ async function execInitdb({
 
           mod._pgl_set_popen_fn(popen)
 
-          // fgets = mod.addFunction((str: number, size: number, stream: number) => {
-          //   // console.log(str, size, stream)
-          //   if (stream == 99) {
-          //     if (pgstdout.length) {
-          //       let i = 0
-          //       let arr = new Array<number>()
-          //       while (i < size - 1 && i < pgstdout.length) {
-          //         arr.push(pgstdout.charCodeAt(i))
-          //         if (pgstdout[i++] === '\n') {
-          //           break;
-          //         }
-          //       }
-          //       if (arr.length === pgstdout.length && pgstdout[pgstdout.length] !== '\n') {
-          //         arr.push('\n'.charCodeAt(0))
-          //       }
-          //       pgstdout = pgstdout.substring(i)
-          //       if (arr.length) {
-          //         arr.push('\0'.charCodeAt(0))
-          //         mod.HEAP8.set(arr, str)
-          //         return str
-          //       }
-          //       return null;
-          //     } else {
-          //       return null;
-          //     }
-          //   } else {
-          //     mod._pgl_set_errno(1);
-          //     return null;
-          //     // throw 'PGlite: unknown stream'
-          //   }
-          // }, 'pipp')
+          fgets = mod.addFunction((str: number, size: number, stream: number) => {
+            // console.log(str, size, stream)
+            if (stream == 99) {
+              if (pgstdout.length) {
+                let i = 0
+                let arr = new Array<number>()
+                while (i < size - 1 && i < pgstdout.length) {
+                  arr.push(pgstdout[i])
+                  if (pgstdout[i++] === '\n'.charCodeAt(0)) {
+                    break;
+                  }
+                }
+                // if (arr.length === pgstdout.length && pgstdout[pgstdout.length] !== '\n'.charCodeAt(0)) {
+                //   arr.push('\n'.charCodeAt(0))
+                // }
+                pgstdout = pgstdout.slice(i)
+                if (arr.length) {
+                  arr.push('\0'.charCodeAt(0))
+                  mod.HEAP8.set(arr, str)
+                  return str
+                }
+                return null;
+              } else {
+                return null;
+              }
+            } else {
+              mod._pgl_set_errno(1);
+              return null;
+              // throw 'PGlite: unknown stream'
+            }
+          }, 'pipp')
 
-          // mod._pgl_set_fgets_fn(fgets)
+          mod._pgl_set_fgets_fn(fgets)
         }
       },
       (mod: InitdbMod) => {
