@@ -205,38 +205,54 @@ export class PGlite
     return pg as any
   }
 
-  #printCbs = new Set<(text: string) => void>()
-  #printErrCbs = new Set<(text: string) => void>()
+  #stdoutCbs = new Set<(c: number) => void>()
+  #stderrCbs = new Set<(c: number) => void>()
 
-  addPrintCb(print: (t: string) => void) {
-    this.#printCbs.add(print)
+  addStdoutCb(stdout_cb: (c: number) => void) {
+    this.#stdoutCbs.add(stdout_cb)
   }
 
-  removePrintCb(print: (t: string) => void) {
-    this.#printCbs.delete(print)
+  removeStdoutCb(stdout_cb: (c: number) => void) {
+    this.#stdoutCbs.delete(stdout_cb)
   }
 
-  addPrintErrCb(printErr: (t: string) => void) {
-    this.#printErrCbs.add(printErr)
+  addStderrCb(stderr_cb: (c: number) => void) {
+    this.#stderrCbs.add(stderr_cb)
   }
 
-  removePrintErrCb(printErr: (t: string) => void) {
-    this.#printErrCbs.delete(printErr)
+  removeStderrCb(stderr_cb: (c: number) => void) {
+    this.#stderrCbs.delete(stderr_cb)
   }
 
-  #print(text: string): void {
-    if (this.debug) {
-      console.debug(text)
-    }
-    this.#printCbs.forEach(c => c(text))
+  // #print(text: string): void {
+  //   if (this.debug) {
+  //     console.debug(text)
+  //   }
+  //   this.#stdoutCbs.forEach(c => c(text))
+  // }
+
+  // #printErr(text: string): void {
+  //   if (this.debug) {
+  //     console.error(text)
+  //   }
+  //   this.#stderrCbs.forEach((c => c(text)))
+  // }
+
+  #pgl_stdin(): number | null {
+    console.log('stdin called')
+    return null
+  }
+  #pgl_stdout(c: number): any {
+    // if (this.debug) {
+    //   console.debug(text)
+    // }
+    this.#stdoutCbs.forEach(cb => cb(c))
+  }
+  #pgl_stderr(c: number): any {
+    this.#stderrCbs.forEach(cb => cb(c))
+    // console.log('stderr called', c)
   }
 
-  #printErr(text: string): void {
-    if (this.debug) {
-      console.error(text)
-    }
-    this.#printErrCbs.forEach((c => c(text)))
-  }
 
   /**
    * Initialize the database
@@ -289,12 +305,12 @@ export class PGlite
       arguments: args,
       INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
-      print: (text: string) => {
-        this.#print(text)
-      }, 
-      printErr: (text: string) => {
-        this.#printErr(text)
-      },
+      // print: (text: string) => {
+      //   this.#print(text)
+      // }, 
+      // printErr: (text: string) => {
+      //   this.#printErr(text)
+      // },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
@@ -376,6 +392,9 @@ export class PGlite
           }
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
+        },
+        (mod: PostgresMod) => {
+          mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), (c: number) => this.#pgl_stderr(c))
         },
         (mod: any) => {
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
@@ -606,7 +625,6 @@ export class PGlite
     //   await initFn()
     // }
   }
-
   /**
    * The Postgres Emscripten Module
    */
