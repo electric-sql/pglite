@@ -46,7 +46,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.info(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       await new Promise<void>((resolve) => {
@@ -61,7 +66,7 @@ describe('Server Script Tests', () => {
           resolve()
         })
       })
-    }, 10000)
+    })
 
     it('should accept and use debug level parameter', async () => {
       const testPort = getTestPort()
@@ -75,7 +80,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.info(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       // Wait for server to start
@@ -90,7 +100,7 @@ describe('Server Script Tests', () => {
           resolve()
         })
       })
-    }, 10000)
+    })
   })
 
   describe('Server Startup and Connectivity', () => {
@@ -123,7 +133,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.info(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       // Wait for server to be ready
@@ -141,7 +156,7 @@ describe('Server Script Tests', () => {
 
       expect(output).toContain('PGlite database initialized')
       expect(output).toContain(`"port":${testPort}`)
-    }, 10000)
+    })
 
     it('should work with memory database', async () => {
       const testPort = getTestPort()
@@ -156,13 +171,18 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.info(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
       expect(output).toContain('Initializing PGLite with database: memory://')
-    }, 10000)
+    })
   })
 
   describe('Configuration Options', () => {
@@ -195,7 +215,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.info(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
@@ -208,6 +233,6 @@ describe('Server Script Tests', () => {
           resolve()
         })
       })
-    }, 10000)
+    })
   })
 })
