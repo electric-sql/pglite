@@ -76,14 +76,14 @@ export class PGlite
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
   // receive data from wasm
-  #pglite_write: number = -1
+  #pglite_socket_write: number = -1
 
   #currentResults: BackendMessage[] = []
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
 
   // send data to wasm
-  #pglite_read: number = -1
+  #pglite_socket_read: number = -1
   // buffer that holds the data to be sent to wasm
   #outputData: any = []
   // read index in the buffer
@@ -214,12 +214,12 @@ export class PGlite
     const extensionInitFns: Array<() => Promise<void>> = []
 
     const args = [
-      `PGDATA=${PGDATA}`,
-      `PREFIX=${WASM_PREFIX}`,
-      `PGUSER=${options.username ?? 'postgres'}`,
-      `PGDATABASE=${options.database ?? 'template1'}`,
-      'MODE=REACT',
-      'REPL=N',
+      // `PGDATA=${PGDATA}`,
+      // `PREFIX=${WASM_PREFIX}`,
+      // `PGUSER=${options.username ?? 'postgres'}`,
+      // `PGDATABASE=${options.database ?? 'template1'}`,
+      // 'MODE=REACT',
+      // 'REPL=N',
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
@@ -332,6 +332,20 @@ export class PGlite
           }
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
+          // mod.FS.mkdir('/tmp') && mod.FS.chmod('/tmp', 0o700)
+        },
+        (mod: any) => {
+          mod.ENV.MODE = 'REACT'
+          mod.ENV.PGDATA = PGDATA
+          mod.ENV.PREFIX = WASM_PREFIX
+          mod.ENV.PGUSER = options.username ?? 'postgres'
+          mod.ENV.PGDATABASE = options.database ?? 'template1'
+          mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+          mod.ENV.TZ = 'UTC'
+          mod.ENV.PGTZ = 'UTC'
+          mod.ENV.PGCLIENTENCODING = 'UTF8'
+          //   mod.ENV.PGDATABASE = 'template1'
+          // mod.ENV.PG_COLOR = 'always'
         },
       ],
     }
@@ -387,66 +401,73 @@ export class PGlite
     this.mod = await PostgresModFactory(emscriptenOpts)
 
     // set the write callback
-    this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      this.#protocolParser.parse(bytes, (msg) => {
-        this.#parse(msg)
-      })
-      if (this.#keepRawResponse) {
-        const copied = bytes.slice()
-
-        let requiredSize = this.#writeOffset + copied.length
-
-        if (requiredSize > this.#inputData.length) {
-          const newSize =
-            this.#inputData.length +
-            (this.#inputData.length >> 1) +
-            requiredSize
-          if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-            requiredSize = PGlite.MAX_BUFFER_SIZE
-          }
-          const newBuffer = new Uint8Array(newSize)
-          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-          this.#inputData = newBuffer
+    this.#pglite_socket_write = this.mod.addFunction(
+      (ptr: any, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
         }
-
-        this.#inputData.set(copied, this.#writeOffset)
-        this.#writeOffset += copied.length
-
-        return this.#inputData.length
-      }
-      return length
-    }, 'iii')
+        this.#protocolParser.parse(bytes, (msg) => {
+          this.#parse(msg)
+        })
+        if (this.#keepRawResponse) {
+          const copied = bytes.slice()
+          let requiredSize = this.#writeOffset + copied.length
+          if (requiredSize > this.#inputData.length) {
+            const newSize =
+              this.#inputData.length +
+              (this.#inputData.length >> 1) +
+              requiredSize
+            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+              requiredSize = PGlite.MAX_BUFFER_SIZE
+            }
+            const newBuffer = new Uint8Array(newSize)
+            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+            this.#inputData = newBuffer
+          }
+          this.#inputData.set(copied, this.#writeOffset)
+          this.#writeOffset += copied.length
+          return this.#inputData.length
+        }
+        return length
+      },
+      'iii',
+    )
 
     // set the read callback
-    this.#pglite_read = this.mod.addFunction((ptr: any, max_length: number) => {
-      // copy current data to wasm buffer
-      let length = this.#outputData.length - this.#readOffset
-      if (length > max_length) {
-        length = max_length
-      }
-      try {
-        this.mod!.HEAP8.set(
-          (this.#outputData as Uint8Array).subarray(
-            this.#readOffset,
-            this.#readOffset + length,
-          ),
-          ptr,
-        )
-        this.#readOffset += length
-      } catch (e) {
-        console.log(e)
-      }
-      return length
-    }, 'iii')
+    this.#pglite_socket_read = this.mod.addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.error(e)
+        }
+        return length
+      },
+      'iii',
+    )
 
-    this.mod._set_read_write_cbs(this.#pglite_read, this.#pglite_write)
+    this.mod._pgl_set_rw_cbs(
+      this.#pglite_socket_read,
+      this.#pglite_socket_write,
+    )
+
+    this.mod._pgl_startup(args)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -576,8 +597,8 @@ export class PGlite
     try {
       await this.execProtocol(serialize.end())
       this.mod!._pgl_shutdown()
-      this.mod!.removeFunction(this.#pglite_read)
-      this.mod!.removeFunction(this.#pglite_write)
+      this.mod!.removeFunction(this.#pglite_socket_read)
+      this.mod!.removeFunction(this.#pglite_socket_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -671,7 +692,7 @@ export class PGlite
     }
 
     // execute the message
-    mod._interactive_one(message.length, message[0])
+    mod._pgl_interactive_one(message.length, message[0])
 
     this.#outputData = []
 
