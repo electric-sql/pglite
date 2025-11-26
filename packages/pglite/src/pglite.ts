@@ -238,8 +238,12 @@ export class PGlite
   //   this.#stderrCbs.forEach((c => c(text)))
   // }
 
+  pgl_stdin: any
+
   #pgl_stdin(): number | null {
-    console.log('stdin called')
+    if (this.pgl_stdin) {
+      return this.pgl_stdin()
+    }
     return null
   }
   #pgl_stdout(c: number): any {

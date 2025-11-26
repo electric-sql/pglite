@@ -24,11 +24,20 @@ async function execInitdb({
   args: string[]
 }): Promise<ExecResult> {
   // let pgdump_write, pgdump_read, 
-  let system, popen, fgets
+  let system_fn, popen_fn, pclose_fn
+  let fgets_fn, fputs_fn
+  // let read_fn, write_fn
   let initdbStderr: number[] = []
   let initdbStdout: number[] = []
   let pgstderr: number[] = []
   let pgstdout: number[] = []
+  let pgstdin: number[] = []
+  let needToCallPGmain = false
+  let postgresArgs: string[] = []
+  let onPGstdout = (c: number) => pgstdout.push(c)
+  let onPGstderr = (c: number) => pgstderr.push(c)
+  let onPGstdin = () => { return pgstdin.length ? pgstdin.shift() : null }
+  let prevPGstdin: any
 
   const initdb_stdin = (): number | null => {
     console.log('stdin called')
@@ -68,34 +77,81 @@ async function execInitdb({
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           // default $HOME in emscripten is /home/web_user
-          system = mod.addFunction((cmd_ptr: number) => {
+          system_fn = mod.addFunction((cmd_ptr: number) => {
             // todo: check it is indeed exec'ing postgres
             const postgresArgs = getArgs(mod.HEAPU8, cmd_ptr)
             postgresArgs.shift()
             return pg.callMain(postgresArgs)
           }, 'pi')
 
-          mod._pgl_set_system_fn(system)
+          mod._pgl_set_system_fn(system_fn)
 
-          popen = mod.addFunction((cmd_ptr: number, _mode: number) => {
+          popen_fn = mod.addFunction((cmd_ptr: number, _mode: number) => {
             // console.log(mode)
             // todo: check it is indeed exec'ing postgres
-            let postgresArgs = getArgs(mod.HEAPU8, cmd_ptr)
+            const mode = String.fromCharCode(mod.HEAPU8[_mode])
+            postgresArgs = getArgs(mod.HEAPU8, cmd_ptr)
             postgresArgs.shift()
-            const onPGstdout = (c: number) => pgstdout.push(c)
             pg.addStdoutCb(onPGstdout)
-            const onPGstderr = (c: number) => pgstderr.push(c)
             pg.addStderrCb(onPGstderr)
-            pg.callMain(postgresArgs)
-            // console.log(result)
-            pg.removeStdoutCb(onPGstdout)
-            pg.removeStderrCb(onPGstderr)
+            if (mode === 'r') {
+              pg.callMain(postgresArgs)
+              // console.log(result)
+              pg.removeStdoutCb(onPGstdout)
+              pg.removeStderrCb(onPGstderr)
+            } else {
+              if (mode === 'w') {
+                // defer calling main until initdb exe has finished writing to pg's stdin
+                prevPGstdin = pg.pgl_stdin
+                pg.pgl_stdin = onPGstdin
+                needToCallPGmain = true
+              } else {
+                throw `Unexpected popen mode value ${mode}`
+              }
+            }
+
             return 99; // this is supposed to be a file descriptor
           }, 'ppi')
 
-          mod._pgl_set_popen_fn(popen)
+          mod._pgl_set_popen_fn(popen_fn)
 
-          fgets = mod.addFunction((str: number, size: number, stream: number) => {
+          pclose_fn = mod.addFunction((stream: number) => {
+            if (stream === 99) {
+              // if the last popen had mode w, execute now postgres' main()
+              if (needToCallPGmain) {
+                needToCallPGmain = false
+                const result = pg.callMain(postgresArgs)
+                // console.log(result)
+                pg.removeStdoutCb(onPGstdout)
+                pg.removeStderrCb(onPGstderr)
+                pg.pgl_stdin = prevPGstdin
+                pgstdin = []
+                return result
+              }
+            } else {
+              return mod._pclose(stream)
+            }
+
+          }, 'pi')
+
+          mod._pgl_set_pclose_fn(pclose_fn)          
+
+          // read_fn = mod.addFunction((fd: number, buf: number, count: number) => {
+          //   // console.log(str, size, stream)
+          //   if (fd == 99) {
+          //     if (pgstdout.length > count) throw 'PGlite: unhandled'
+          //     mod.HEAPU8.set(pgstdout, buf)
+          //     const result = pgstdout.length
+          //     pgstdout = []
+          //     return result
+          //   } else {
+          //     return mod._read(fd, buf, count);
+          //   }
+          // }, 'pipi')
+
+          // mod._pgl_set_read_fn(read_fn)
+
+          fgets_fn = mod.addFunction((str: number, size: number, stream: number) => {
             // console.log(str, size, stream)
             if (stream == 99) {
               if (pgstdout.length) {
@@ -121,20 +177,52 @@ async function execInitdb({
                 return null;
               }
             } else {
-              mod._pgl_set_errno(1);
-              return null;
+              // mod._pgl_set_errno(1);
+              return mod._fgets(str, size, stream);
               // throw 'PGlite: unknown stream'
             }
           }, 'pipp')
 
-          mod._pgl_set_fgets_fn(fgets)
+          mod._pgl_set_fgets_fn(fgets_fn)
+
+          // ssize_t write(int fd, const void *buf, size_t count);
+          // write_fn = mod.addFunction((fd: number, buf: number, count: number) => {
+          //   // console.log(str, size, stream)
+          //   if (fd == 99) {
+          //     const values = mod.HEAPU8.subarray(buf, count)
+          //     pgstdin.push(...values)
+          //     return count
+          //   } else {
+          //     return mod._write(fd, buf, count)
+          //   }
+          // }, 'pipi')
+
+          // mod._pgl_set_write_fn(write_fn)
+
+          fputs_fn = mod.addFunction((s: number, stream: number) => {
+            // console.log(str, size, stream)
+            if (stream == 99) {
+              while (1) {
+                const curr = mod.HEAP8.at(s++)
+                if (curr === '\0'.charCodeAt(0)) {
+                  break;
+                } 
+                pgstdin.push(curr!)
+              }
+              return s;
+            } else {
+              return mod._fputs(s, stream);
+            }
+          }, 'ppi')
+
+          mod._pgl_set_fputs_fn(fputs_fn)
         }
       },
       (mod: InitdbMod) => {
         mod.ENV.PGDATA = PGDATA
       },
       (mod: InitdbMod) => {
-        mod.FS.mkdir("/pglite");
+        mod.FS.mkdir('/pglite');
         mod.FS.mount(mod.PROXYFS, {
           root: '/pglite',
           fs: pg.__FS!
@@ -159,12 +247,12 @@ interface InitdbOptions {
   args?: string[]
 }
 
-function getArgs(heapu8: Uint8Array, cmd_ptr: number) {
+function getArgs(HEAPU8: Uint8Array, cmd_ptr: number) {
   let cmd = ''
-  let c = String.fromCharCode(heapu8[cmd_ptr++])
+  let c = String.fromCharCode(HEAPU8[cmd_ptr++])
   while (c != '\0') {
     cmd += c
-    c = String.fromCharCode(heapu8[cmd_ptr++])
+    c = String.fromCharCode(HEAPU8[cmd_ptr++])
   }
   let postgresArgs: string[] = []
   let parsed = parse(cmd)
