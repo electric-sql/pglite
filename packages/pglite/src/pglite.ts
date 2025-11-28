@@ -252,10 +252,10 @@ export class PGlite
     // }
     this.#stdoutCbs.forEach(cb => cb(c))
   }
-  #pgl_stderr(c: number): any {
-    this.#stderrCbs.forEach(cb => cb(c))
-    // console.log('stderr called', c)
-  }
+  // #pgl_stderr(c: number): any {
+  //   this.#stderrCbs.forEach(cb => cb(c))
+  //   // console.log('stderr called', c)
+  // }
 
 
   /**
@@ -312,9 +312,10 @@ export class PGlite
       // print: (text: string) => {
       //   this.#print(text)
       // }, 
-      // printErr: (text: string) => {
-      //   this.#printErr(text)
-      // },
+      printErr: (text: string) => {
+        console.error("pgliteerror", text)
+        // this.#printErr(text)
+      },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
@@ -398,7 +399,7 @@ export class PGlite
           mod.FS.mkdev('/dev/blob', devId)
         },
         (mod: PostgresMod) => {
-          mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), (c: number) => this.#pgl_stderr(c))
+          mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), null)
         },
         (mod: any) => {
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
@@ -1090,7 +1091,7 @@ export class PGlite
     return this.#listenMutex.runExclusive(fn)
   }
 
-  callMain(args: string[]) {
-    this.mod!.callMain(args)
+  callMain(args: string[]): number {
+    return this.mod!.callMain(args)
   }
 }

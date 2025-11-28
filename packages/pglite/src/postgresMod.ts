@@ -24,11 +24,16 @@ export interface PostgresMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
+  UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
+  allocateUTF8: (s: string) => number
+  allocateUTF8OnStack: (s: string) => number
+  stringToUTF8OnStack: (s: string) => number
   // _pgl_initdb: () => number
   // _pgl_backend: () => void
   _pgl_shutdown: () => void
   _pgl_interactive_one: (length: number, peek: number) => void
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_chdir: (pathPtr: number) => number
   // _pgl_startup: (args?: string[]) => number
   addFunction: (
     cb: (ptr: any, length: number) => void,

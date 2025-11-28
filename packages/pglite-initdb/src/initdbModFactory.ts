@@ -26,7 +26,9 @@ export interface InitdbMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
-  allocateUTF8: (v: string) => number
+  allocateUTF8: (s: string) => number
+  allocateUTF8OnStack: (s: string) => number
+  stringToUTF8OnStack: (s: string) => number
   ___errno_location: () => number
   _strerror: (errno: number) => number
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
@@ -34,17 +36,13 @@ export interface InitdbMod
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
   _pclose: (stream: number) => number  
-  _pgl_set_fgets_fn: (fgets_fn: number) => void
-  _pgl_set_fputs_fn: (fputs_fn: number) => void
+  // _pgl_set_fgets_fn: (fgets_fn: number) => void
+  // _pgl_set_fputs_fn: (fputs_fn: number) => void
   // _pgl_set_errno: (errno: number) => number
-  _fgets: (str: number, size: number, stream: number) => number
-  _fputs: (s: number, stream: number) => number
+  // _fgets: (str: number, size: number, stream: number) => number
+  // _fputs: (s: number, stream: number) => number
   _fopen: (path: number, mode: number) => number
   _fclose: (stream: number) => number
-  // _read: (fd: number, buf: number, count: number) => number
-  // _write: (fd: number, buf: number, count: number) => number
-  // _pgl_set_read_fn: (fn: number) => number
-  // _pgl_set_write_fn: (fn: number) => number
   addFunction: (
     fn: CallableFunction,
     signature: string,
