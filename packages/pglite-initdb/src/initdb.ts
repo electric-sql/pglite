@@ -1,6 +1,7 @@
 import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
+import assert from 'assert'
 
 export const PGDATA = '/pglite/data'
 
@@ -36,9 +37,37 @@ async function execInitdb({
   let onPGstdout = (c: number) => pgstdout.push(c)
   let onPGstderr = (c: number) => pgstderr.push(c)
   let onPGstdin = () => { return pgstdin.length ? pgstdin.shift() : null }
-  let prevPGstdin: any
   let pgliteinout_fd: number
-  // let cwd = '/'
+  let pgMainResult = 0
+
+  const callPgMain = (args: string[]) => {
+    const firstArg = args.shift()
+    console.log('firstArg', firstArg)
+    assert(firstArg, '/pglite/bin/postgres')
+
+    const stat = pg.Module.FS.analyzePath(PGDATA)
+    if (stat.exists) {
+      pg.Module.FS.chdir(PGDATA)
+    }
+    const prevPGstdin = pg.pgl_stdin
+    pg.pgl_stdin = onPGstdin
+    pg.addStdoutCb(onPGstdout)
+    pg.addStderrCb(onPGstderr)
+    pgstderr = []
+    pgstdout = []
+    pg.Module.HEAPU8.set(origHEAPU8)
+
+    console.log('executing pg main with', args)
+    const result = pg.callMain(args)
+    console.log(result)
+
+    pg.removeStdoutCb(onPGstdout)
+    pg.removeStderrCb(onPGstderr)
+    pg.pgl_stdin = prevPGstdin
+    postgresArgs = []
+    pgstdin = []
+    return result
+  }  
 
   const initdb_stdin = (): number | null => {
     console.log('stdin called')
@@ -82,16 +111,9 @@ async function execInitdb({
           // default $HOME in emscripten is /home/web_user
           system_fn = mod.addFunction((cmd_ptr: number) => {
             // todo: check it is indeed exec'ing postgres
-            const postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
-            postgresArgs.shift()
-            // cwd = mod.FS.cwd()
-            const stat = pg.__FS!.analyzePath(PGDATA)
-            if (stat.exists) {
-              pg.__FS!.chdir(PGDATA)
-            }
-            pg.Module.HEAPU8.set(origHEAPU8)
-            const mainResult = pg.callMain(postgresArgs)
-            return mainResult
+            const args = getArgs(mod.UTF8ToString(cmd_ptr))
+            const pgMainReturn = callPgMain(args)
+            return pgMainReturn
           }, 'pi')
 
           mod._pgl_set_system_fn(system_fn)
@@ -100,27 +122,17 @@ async function execInitdb({
             // console.log(mode)
             // todo: check it is indeed exec'ing postgres
             const smode = mod.UTF8ToString(mode)
-            postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
-            postgresArgs.shift()
-            pg.addStdoutCb(onPGstdout)
-            pg.addStderrCb(onPGstderr)
+            const args = getArgs(mod.UTF8ToString(cmd_ptr))
+
             if (smode === 'r') {
               // cwd = mod.FS.cwd()
-              const stat = pg.__FS!.analyzePath(PGDATA)
-              if (stat.exists) {
-                pg.__FS!.chdir(PGDATA)
-              }
-              pg.Module.HEAPU8.set(origHEAPU8)
-              const result = pg.callMain(postgresArgs)
-              console.log(result)
-              pg.removeStdoutCb(onPGstdout)
-              pg.removeStderrCb(onPGstderr)
+              // we need the result to return it on pclose()
+              pgMainResult = callPgMain(args)
             } else {
               if (smode === 'w') {
+                postgresArgs = args
                 // cwd = mod.FS.cwd()
                 // defer calling main until initdb exe has finished writing to pg's stdin
-                prevPGstdin = pg.pgl_stdin
-                pg.pgl_stdin = onPGstdin
                 needToCallPGmain = true
               } else {
                 throw `Unexpected popen mode value ${smode}`
@@ -142,27 +154,16 @@ async function execInitdb({
 
           pclose_fn = mod.addFunction((stream: number) => {
             if (stream === pgliteinout_fd) {
+              let result = 0
               // if the last popen had mode w, execute now postgres' main()
               if (needToCallPGmain) {
                 needToCallPGmain = false
-                pg.Module.HEAPU8.set(origHEAPU8)
-                const stat = pg.__FS!.analyzePath(PGDATA)
-                if (stat.exists) {
-                  pg.__FS!.chdir(PGDATA)
-                }
-                const result = pg.callMain(postgresArgs)
-                // console.log(result)
-                pg.removeStdoutCb(onPGstdout)
-                pg.removeStderrCb(onPGstderr)
-                pg.pgl_stdin = prevPGstdin
-                pgstdin = []
-                const closeResult = mod._fclose(stream)
-                console.log(closeResult)
+                result = callPgMain(postgresArgs)
                 return result
               }
               const closeResult = mod._fclose(stream)
               console.log(closeResult)
-              return 0
+              return pgMainResult
             } else {
               return mod._pclose(stream)
             }
@@ -179,7 +180,7 @@ async function execInitdb({
         mod.FS.mkdir('/pglite');
         mod.FS.mount(mod.PROXYFS, {
           root: '/pglite',
-          fs: pg.__FS!
+          fs: pg.Module.FS
         }, '/pglite')
       },
       (mod: InitdbMod) => {
@@ -230,6 +231,8 @@ async function execInitdb({
     stderr: '', //stderrOutput,
     stdout: '', //stdoutOutput,
   }
+
+
 }
 
 interface InitdbOptions {
@@ -238,13 +241,13 @@ interface InitdbOptions {
 }
 
 function getArgs(cmd: string) {
-  let postgresArgs: string[] = []
+  let a: string[] = []
   let parsed = parse(cmd)
   for (let i = 0; i < parsed.length; i++) {
     if (parsed[i].op) break;
-    postgresArgs.push(parsed[i])
+    a.push(parsed[i])
   }
-  return postgresArgs
+  return a
 }
 
 /**
