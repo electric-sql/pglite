@@ -40,16 +40,13 @@ import {
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
 {
   fs?: Filesystem
   protected mod?: PostgresMod
-
-  get __FS() {
-    return this.mod?.FS
-  }
 
   readonly dataDir?: string
 
@@ -105,6 +102,10 @@ export class PGlite
   #inputData = new Uint8Array(0)
   // write index in the buffer
   #writeOffset: number = 0
+  #system_fn: number = -1
+  #popen_fn: number = -1
+  #pclose_fn: number = -1
+  // #pipe_fn: number = -1
 
   /**
    * Create a new PGlite instance
@@ -337,6 +338,11 @@ export class PGlite
         throw new Error(`Unknown package: ${remotePackageName}`)
       },
       preRun: [
+        (mod: PostgresMod) => {
+            mod.onRuntimeInitialized = () => {
+              this.#onRuntimeInitialized(mod)
+            }
+        },
         (mod: any) => {
           // Register /dev/blob device
           // This is used to read and write blobs when used in COPY TO/FROM
@@ -472,73 +478,6 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-    // set the write callback
-    this.#pglite_socket_write = this.mod.addFunction(
-      (ptr: any, length: number) => {
-        let bytes
-        try {
-          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-        } catch (e: any) {
-          console.error('error', e)
-          throw e
-        }
-        this.#protocolParser.parse(bytes, (msg) => {
-          this.#parse(msg)
-        })
-        if (this.#keepRawResponse) {
-          const copied = bytes.slice()
-          let requiredSize = this.#writeOffset + copied.length
-          if (requiredSize > this.#inputData.length) {
-            const newSize =
-              this.#inputData.length +
-              (this.#inputData.length >> 1) +
-              requiredSize
-            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-              requiredSize = PGlite.MAX_BUFFER_SIZE
-            }
-            const newBuffer = new Uint8Array(newSize)
-            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-            this.#inputData = newBuffer
-          }
-          this.#inputData.set(copied, this.#writeOffset)
-          this.#writeOffset += copied.length
-          return this.#inputData.length
-        }
-        return length
-      },
-      'iii',
-    )
-
-    // set the read callback
-    this.#pglite_socket_read = this.mod.addFunction(
-      (ptr: any, max_length: number) => {
-        // copy current data to wasm buffer
-        let length = this.#outputData.length - this.#readOffset
-        if (length > max_length) {
-          length = max_length
-        }
-        try {
-          this.mod!.HEAP8.set(
-            (this.#outputData as Uint8Array).subarray(
-              this.#readOffset,
-              this.#readOffset + length,
-            ),
-            ptr,
-          )
-          this.#readOffset += length
-        } catch (e) {
-          console.error(e)
-        }
-        return length
-      },
-      'iii',
-    )
-
-    this.mod._pgl_set_rw_cbs(
-      this.#pglite_socket_read,
-      this.#pglite_socket_write,
-    )
-
     // this.mod._pgl_startup(args)
 
     // Sync the filesystem from any previous store
@@ -629,6 +568,175 @@ export class PGlite
     // for (const initFn of extensionInitFns) {
     //   await initFn()
     // }
+  }
+  #onRuntimeInitialized(mod: PostgresMod) {
+    // default $HOME in emscripten is /home/web_user
+    this.#system_fn = mod.addFunction((cmd_ptr: number) => {
+      // todo: check it is indeed exec'ing postgres
+      // const postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
+      // postgresArgs.shift()
+      // // cwd = mod.FS.cwd()
+      // const stat = this.Module.FS.analyzePath(PGDATA)
+      // if (stat.exists) {
+      //   this.Module.FS.chdir(PGDATA)
+      // }
+      // // this.Module.HEAPU8.set(origHEAPU8)
+      // const mainResult = this.Module.callMain(postgresArgs)
+      // return mainResult
+      console.log(mod.UTF8ToString(cmd_ptr))
+      return 1;
+    }, 'pi')
+
+    mod._pgl_set_system_fn(this.#system_fn)
+
+    this.#popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
+      // console.log(mode)
+      // todo: check it is indeed exec'ing postgres
+      // const smode = mod.UTF8ToString(mode)
+      // postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
+      // postgresArgs.shift()
+      // pg.addStdoutCb(onPGstdout)
+      // pg.addStderrCb(onPGstderr)
+      // if (smode === 'r') {
+      //   // cwd = mod.FS.cwd()
+      //   const stat = pg.Module.FS.analyzePath(PGDATA)
+      //   if (stat.exists) {
+      //     pg.Module.FS.chdir(PGDATA)
+      //   }
+      //   pg.Module.HEAPU8.set(origHEAPU8)
+      //   const result = pg.callMain(postgresArgs)
+      //   console.log(result)
+      //   pg.removeStdoutCb(onPGstdout)
+      //   pg.removeStderrCb(onPGstderr)
+      // } else {
+      //   if (smode === 'w') {
+      //     // cwd = mod.FS.cwd()
+      //     // defer calling main until initdb exe has finished writing to pg's stdin
+      //     prevPGstdin = pg.pgl_stdin
+      //     pg.pgl_stdin = onPGstdin
+      //     needToCallPGmain = true
+      //   } else {
+      //     throw `Unexpected popen mode value ${smode}`
+      //   }
+      // }
+      // const path = mod.allocateUTF8('/dev/pgliteinout')
+      // pgliteinout_fd = mod._fopen(path, mode);
+      // if (pgliteinout_fd === -1) {
+      //   const errno = mod.HEAPU8[mod.___errno_location()]
+      //   let error = mod._strerror(errno)
+      //   let errstr = mod.UTF8ToString(error)
+      //   console.error('errno error', errno , errstr)
+      //   throw errstr
+      // }
+      // return pgliteinout_fd;
+      console.log(mod.UTF8ToString(cmd_ptr), mod.UTF8ToString(mode))
+    }, 'ppi')
+
+    mod._pgl_set_popen_fn(this.#popen_fn)
+  
+    this.#pclose_fn = mod.addFunction((stream: number) => {
+      // if (stream === pgliteinout_fd) {
+      //   // if the last popen had mode w, execute now postgres' main()
+      //   if (needToCallPGmain) {
+      //     needToCallPGmain = false
+      //     const stat = pg.Module.FS.analyzePath(PGDATA)
+      //     if (stat.exists) {
+      //       pg.Module.FS.chdir(PGDATA)
+      //     }
+      //     pg.Module.HEAPU8.set(origHEAPU8)
+      //     const result = pg.callMain(postgresArgs)
+      //     // console.log(result)
+      //     pg.removeStdoutCb(onPGstdout)
+      //     pg.removeStderrCb(onPGstderr)
+      //     pg.pgl_stdin = prevPGstdin
+      //     pgstdin = []
+      //     const closeResult = mod._fclose(stream)
+      //     console.log(closeResult)
+      //     return result
+      //   }
+      //   const closeResult = mod._fclose(stream)
+      //   console.log(closeResult)
+      //   return 0
+      // } else {
+      //   return mod._pclose(stream)
+      // }
+      console.log("pclose_fn", stream)
+    }, 'pi')
+
+    mod._pgl_set_pclose_fn(this.#pclose_fn)
+
+    // set the write callback
+    this.#pglite_socket_write = mod.addFunction(
+      (ptr: any, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        this.#protocolParser.parse(bytes, (msg) => {
+          this.#parse(msg)
+        })
+        if (this.#keepRawResponse) {
+          const copied = bytes.slice()
+          let requiredSize = this.#writeOffset + copied.length
+          if (requiredSize > this.#inputData.length) {
+            const newSize =
+              this.#inputData.length +
+              (this.#inputData.length >> 1) +
+              requiredSize
+            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+              requiredSize = PGlite.MAX_BUFFER_SIZE
+            }
+            const newBuffer = new Uint8Array(newSize)
+            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+            this.#inputData = newBuffer
+          }
+          this.#inputData.set(copied, this.#writeOffset)
+          this.#writeOffset += copied.length
+          return this.#inputData.length
+        }
+        return length
+      },
+      'iii')
+
+    // set the read callback
+    this.#pglite_socket_read = mod.addFunction(
+      (ptr: any, max_length: number) => {
+        // copy current data to wasm buffer
+        let length = this.#outputData.length - this.#readOffset
+        if (length > max_length) {
+          length = max_length
+        }
+        try {
+          this.mod!.HEAP8.set(
+            (this.#outputData as Uint8Array).subarray(
+              this.#readOffset,
+              this.#readOffset + length,
+            ),
+            ptr,
+          )
+          this.#readOffset += length
+        } catch (e) {
+          console.error(e)
+        }
+        return length
+      },
+      'iii',
+    )
+
+    mod._pgl_set_rw_cbs(
+      this.#pglite_socket_read,
+      this.#pglite_socket_write,
+    )
+
+    // this.#pipe_fn = mod.addFunction((fd: number) => {
+    //   console.log(fd)
+    //   return 0;
+    // }, 'pi')
+
+    // mod._pgl_set_pipe_fn(this.#pipe_fn)    
   }
   /**
    * The Postgres Emscripten Module

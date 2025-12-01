@@ -2,10 +2,24 @@ import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
 import assert from 'assert'
+import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
 
 const initdbExePath = '/pglite/bin/initdb'
+// "-c", "zero_damaged_pages=on"
+const baseArgs = [
+"-c", "log_checkpoints=false",
+"-c", "search_path=pg_catalog",
+"-c", "exit_on_error=true",
+"-c", "ignore_invalid_pages=on",
+"-c", "temp_buffers=8MB",
+"-c", "work_mem=4MB",
+"-c", "fsync=on",
+"-c", "synchronous_commit=on",
+"-c", "wal_buffers=4MB",
+"-c", "min_wal_size=80MB",
+"-c", "shared_buffers=128MB"]
 
 interface ExecResult {
   exitCode: number
@@ -24,7 +38,7 @@ async function execInitdb({
   args: string[]
 }): Promise<ExecResult> {
   // let pgdump_write, pgdump_read, 
-  let system_fn, popen_fn, pclose_fn
+  let system_fn, popen_fn, pclose_fn, pipe_fn
   // let fgets_fn, fputs_fn
   // let read_fn, write_fn
   // let initdbStderr: number[] = []
@@ -39,11 +53,11 @@ async function execInitdb({
   let onPGstdin = () => { return pgstdin.length ? pgstdin.shift() : null }
   let pgliteinout_fd: number
   let pgMainResult = 0
-
+  let i = 0
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
     console.log('firstArg', firstArg)
-    assert(firstArg, '/pglite/bin/postgres')
+    assert(firstArg === '/pglite/bin/postgres', `trying to execute ${firstArg}`)
 
     const stat = pg.Module.FS.analyzePath(PGDATA)
     if (stat.exists) {
@@ -57,6 +71,16 @@ async function execInitdb({
     pgstdout = []
     pg.Module.HEAPU8.set(origHEAPU8)
 
+    if (args[0] === '--single' || args[0] === '--boot') {
+      if (args[args.length-1] !== 'template1') {
+        args.push(...baseArgs)
+      } else {
+        const x = args.pop()
+        args.push(...baseArgs, x!)
+      }
+    }
+
+    fs.writeFileSync(`/tmp/pgstdin${i++}`, new TextDecoder().decode(new Uint8Array(pgstdin)))
     console.log('executing pg main with', args)
     const result = pg.callMain(args)
     console.log(result)
@@ -170,7 +194,14 @@ async function execInitdb({
 
           }, 'pi')
 
-          mod._pgl_set_pclose_fn(pclose_fn)          
+          mod._pgl_set_pclose_fn(pclose_fn)
+          
+          pipe_fn = mod.addFunction((fd: number) => {
+            console.log(fd)
+            return 0;
+          }, 'pi')
+
+          mod._pgl_set_pipe_fn(pipe_fn)
         }
       },
       (mod: InitdbMod) => {
@@ -211,6 +242,7 @@ async function execInitdb({
             length: number,
             _position: number,
           ) => {
+            assert(_position === pgstdin.length, `_position is ${_position}`)
             pgstdin.push(...buffer.slice(offset, offset + length))
             return length
           },
@@ -258,9 +290,12 @@ export async function initdb({
   args
 }: InitdbOptions) {
 
+
+
   const execResult = await execInitdb({
     pg,
-    args: [...(args ?? [])],
+    args: ["--wal-segsize=1", "--allow-group-access", "--no-sync", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
+      ...baseArgs, ...(args ?? [])],
   })
 
   if (execResult.exitCode !== 0) {

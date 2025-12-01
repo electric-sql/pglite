@@ -31,9 +31,13 @@ export interface PostgresMod
   // _pgl_initdb: () => number
   // _pgl_backend: () => void
   _pgl_shutdown: () => void
+  _pgl_set_system_fn: (system_fn: number) => void
+  _pgl_set_popen_fn: (popen_fn: number) => void
+  _pgl_set_pclose_fn: (pclose_fn: number) => void
   _pgl_interactive_one: (length: number, peek: number) => void
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
   _pgl_chdir: (pathPtr: number) => number
+  _pgl_set_pipe_fn: (pipe_fn: number) => number
   // _pgl_startup: (args?: string[]) => number
   addFunction: (
     cb: (ptr: any, length: number) => void,
