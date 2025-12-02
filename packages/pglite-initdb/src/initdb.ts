@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
 import assert from 'assert'
-import fs from 'node:fs'
+// import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
 
@@ -45,15 +45,19 @@ async function execInitdb({
   let initdbStdout: number[] = []
   let pgstderr: number[] = []
   let pgstdout: number[] = []
-  let pgstdin: number[] = []
+  let pgstdin: Uint8Array
   let needToCallPGmain = false
   let postgresArgs: string[] = []
   let onPGstdout = (c: number) => pgstdout.push(c)
   let onPGstderr = (c: number) => pgstderr.push(c)
-  let onPGstdin = () => { return pgstdin.length ? pgstdin.shift() : null }
-  let pgliteinout_fd: number
+  let onPGstdin = () => {
+    return i < pgstdin.length ? pgstdin.at(i++) : null
+  }
+  let pglitein_fd: number
+  let pgliteout_fd: number
   let pgMainResult = 0
   let i = 0
+  
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
     console.log('firstArg', firstArg)
@@ -71,16 +75,33 @@ async function execInitdb({
     pgstdout = []
     pg.Module.HEAPU8.set(origHEAPU8)
 
-    if (args[0] === '--single' || args[0] === '--boot') {
-      if (args[args.length-1] !== 'template1') {
-        args.push(...baseArgs)
-      } else {
+    if (args[0] === '--boot') {
+      args.push(...baseArgs, "-X", "1048576")
+    }
+
+    if (args[0] === '--single') {
+      if (args[args.length-1] === 'template1') {
         const x = args.pop()
-        args.push(...baseArgs, x!)
+        args.push(...baseArgs, "-B", "16", "-S", "512", "-f", "siobtnmh", x!)
       }
     }
 
-    fs.writeFileSync(`/tmp/pgstdin${i++}`, new TextDecoder().decode(new Uint8Array(pgstdin)))
+    // if (args[0] === '--single' || args[0] === '--boot') {
+    //   if (args[args.length-1] !== 'template1') {
+    //     args.push(...baseArgs)
+    //   } else {
+        
+    //     args.push(...baseArgs, x!)
+    //   }
+    // }
+
+    // fs.writeFileSync(`/tmp/pgstdin${i++}`, new TextDecoder().decode(new Uint8Array(pgstdin)))
+
+    pgstdin = pg.Module.FS.readFile('/pglite/pgstdin')
+    i = 0
+
+    pg.Module.FS.writeFile('/pglite/pgstdout', '')
+
     console.log('executing pg main with', args)
     const result = pg.callMain(args)
     console.log(result)
@@ -89,7 +110,8 @@ async function execInitdb({
     pg.removeStderrCb(onPGstderr)
     pg.pgl_stdin = prevPGstdin
     postgresArgs = []
-    pgstdin = []
+    pg.Module.FS.writeFile('/pglite/pgstdin', '')
+    pg.Module.FS.writeFile('/pglite/pgstdout', new Uint8Array(pgstdout))
     return result
   }  
 
@@ -137,7 +159,7 @@ async function execInitdb({
             // todo: check it is indeed exec'ing postgres
             const args = getArgs(mod.UTF8ToString(cmd_ptr))
             const pgMainReturn = callPgMain(args)
-            return pgMainReturn
+             return pgMainReturn
           }, 'pi')
 
           mod._pgl_set_system_fn(system_fn)
@@ -152,32 +174,47 @@ async function execInitdb({
               // cwd = mod.FS.cwd()
               // we need the result to return it on pclose()
               pgMainResult = callPgMain(args)
+
+              const path = mod.allocateUTF8('/pglite/pgstdout')
+              pgliteout_fd = mod._fopen(path, mode);
+              if (pgliteout_fd === -1) {
+                const errno = mod.HEAPU8[mod.___errno_location()]
+                let error = mod._strerror(errno)
+                let errstr = mod.UTF8ToString(error)
+                console.error('errno error', errno , errstr)
+                throw errstr
+              }
+              return pgliteout_fd;
+
             } else {
               if (smode === 'w') {
                 postgresArgs = args
                 // cwd = mod.FS.cwd()
                 // defer calling main until initdb exe has finished writing to pg's stdin
                 needToCallPGmain = true
+
+                const path = mod.allocateUTF8('/pglite/pgstdin')
+                pglitein_fd = mod._fopen(path, mode);
+                if (pglitein_fd === -1) {
+                  const errno = mod.HEAPU8[mod.___errno_location()]
+                  let error = mod._strerror(errno)
+                  let errstr = mod.UTF8ToString(error)
+                  console.error('errno error', errno , errstr)
+                  throw errstr
+                }
+                return pglitein_fd;
+
               } else {
                 throw `Unexpected popen mode value ${smode}`
               }
             }
-            const path = mod.allocateUTF8('/dev/pgliteinout')
-            pgliteinout_fd = mod._fopen(path, mode);
-            if (pgliteinout_fd === -1) {
-              const errno = mod.HEAPU8[mod.___errno_location()]
-              let error = mod._strerror(errno)
-              let errstr = mod.UTF8ToString(error)
-              console.error('errno error', errno , errstr)
-              throw errstr
-            }
-            return pgliteinout_fd;
+
           }, 'ppi')
 
           mod._pgl_set_popen_fn(popen_fn)
 
           pclose_fn = mod.addFunction((stream: number) => {
-            if (stream === pgliteinout_fd) {
+            if (stream === pglitein_fd) {
               let result = 0
               // if the last popen had mode w, execute now postgres' main()
               if (needToCallPGmain) {
@@ -214,43 +251,43 @@ async function execInitdb({
           fs: pg.Module.FS
         }, '/pglite')
       },
-      (mod: InitdbMod) => {
-        // Register /dev/pgliteinout device
-        const devId = mod.FS.makedev(64, 0)
-        const devOpt = {
-          open: (_stream: any) => {},
-          close: (_stream: any) => {},
-          read: (
-            _stream: any,
-            buffer: Uint8Array,
-            offset: number,
-            length: number,
-            position: number,
-          ) => {
-            const contents = new Uint8Array(pgstdout)
-            if (position >= contents.length) return 0
-            const size = Math.min(contents.length - position, length)
-            for (let i = 0; i < size; i++) {
-              buffer[offset + i] = contents[position + i]
-            }
-            return size
-          },
-          write: (
-            _stream: any,
-            buffer: Uint8Array,
-            offset: number,
-            length: number,
-            _position: number,
-          ) => {
-            assert(_position === pgstdin.length, `_position is ${_position}`)
-            pgstdin.push(...buffer.slice(offset, offset + length))
-            return length
-          },
-          // llseek: (_stream: any, _offset: number, _whence: number) => {}
-        }
-        mod.FS.registerDevice(devId, devOpt)
-        mod.FS.mkdev('/dev/pgliteinout', devId)
-      }
+      // (mod: InitdbMod) => {
+      //   // Register /dev/pgliteinout device
+      //   const devId = mod.FS.makedev(64, 0)
+      //   const devOpt = {
+      //     open: (_stream: any) => {},
+      //     close: (_stream: any) => {},
+      //     read: (
+      //       _stream: any,
+      //       buffer: Uint8Array,
+      //       offset: number,
+      //       length: number,
+      //       position: number,
+      //     ) => {
+      //       const contents = new Uint8Array(pgstdout)
+      //       if (position >= contents.length) return 0
+      //       const size = Math.min(contents.length - position, length)
+      //       for (let i = 0; i < size; i++) {
+      //         buffer[offset + i] = contents[position + i]
+      //       }
+      //       return size
+      //     },
+      //     write: (
+      //       _stream: any,
+      //       buffer: Uint8Array,
+      //       offset: number,
+      //       length: number,
+      //       _position: number,
+      //     ) => {
+      //       assert(_position === pgstdin.length, `_position is ${_position}`)
+      //       pgstdin.push(...buffer.slice(offset, offset + length))
+      //       return length
+      //     },
+      //     // llseek: (_stream: any, _offset: number, _whence: number) => {}
+      //   }
+      //   mod.FS.registerDevice(devId, devOpt)
+      //   mod.FS.mkdev('/dev/pgliteinout', devId)
+      // }
     ],
   }
 
@@ -294,7 +331,7 @@ export async function initdb({
 
   const execResult = await execInitdb({
     pg,
-    args: ["--wal-segsize=1", "--allow-group-access", "--no-sync", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
+    args: ["--wal-segsize=1", "--allow-group-access", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
       ...baseArgs, ...(args ?? [])],
   })
 
