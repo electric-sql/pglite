@@ -7,12 +7,32 @@ import assert from 'assert'
 export const PGDATA = '/pglite/data'
 
 const initdbExePath = '/pglite/bin/initdb'
+const pgstdoutPath = '/pglite/pgstdout'
+const pgstdinPath = '/pglite/pgstdin'
+
 // "-c", "zero_damaged_pages=on"
+// "-c", "checkpoint_flush_after=1",
+// const baseArgs = [
+// // "-d", "1",
+// "-c", "log_checkpoints=false",
+// "-c", "search_path=pg_catalog",
+// "-c", "exit_on_error=true",
+// "-c", "ignore_invalid_pages=on",
+// "-c", "temp_buffers=8MB",
+// "-c", "work_mem=4MB",
+// "-c", "fsync=on",
+// // "-c", "checkpoint_flush_after=1",
+// // "-c", "synchronous_commit=on",
+// "-c", "backend_flush_after=1",
+// "-c", "wal_buffers=4MB",
+// "-c", "min_wal_size=80MB",
+// "-c", "shared_buffers=128MB"]
+
 const baseArgs = [
 "-c", "log_checkpoints=false",
 "-c", "search_path=pg_catalog",
 "-c", "exit_on_error=true",
-"-c", "ignore_invalid_pages=on",
+"-c", "ignore_invalid_pages=off",
 "-c", "temp_buffers=8MB",
 "-c", "work_mem=4MB",
 "-c", "fsync=on",
@@ -20,6 +40,8 @@ const baseArgs = [
 "-c", "wal_buffers=4MB",
 "-c", "min_wal_size=80MB",
 "-c", "shared_buffers=128MB"]
+
+// const baseArgs: string[] = []
 
 interface ExecResult {
   exitCode: number
@@ -38,26 +60,31 @@ async function execInitdb({
   args: string[]
 }): Promise<ExecResult> {
   // let pgdump_write, pgdump_read, 
-  let system_fn, popen_fn, pclose_fn, pipe_fn
+  let system_fn, popen_fn, pclose_fn
   // let fgets_fn, fputs_fn
   // let read_fn, write_fn
   // let initdbStderr: number[] = []
-  let initdbStdout: number[] = []
-  let pgstderr: number[] = []
-  let pgstdout: number[] = []
-  let pgstdin: Uint8Array
+  // let initdbStdout: number[] = []
+  // let pgstderr: number[] = []
+  // let pgstdout: number[] = []
+  // let pgstdin: Uint8Array
   let needToCallPGmain = false
   let postgresArgs: string[] = []
-  let onPGstdout = (c: number) => pgstdout.push(c)
-  let onPGstderr = (c: number) => pgstderr.push(c)
-  let onPGstdin = () => {
-    return i < pgstdin.length ? pgstdin.at(i++) : null
-  }
-  let pglitein_fd: number
-  let pgliteout_fd: number
+  // let onPGstdout = (c: number) => pgstdout.push(c)
+  // let onPGstderr = (c: number) => pgstderr.push(c)
+  // let onPGstdin = () => {
+  //   return i < pgstdin.length ? pgstdin.at(i++) : null
+  // }
+  // let pglitein_fd: number
+  // let pgliteout_fd: number
   let pgMainResult = 0
-  let i = 0
-  
+  // let i = 0
+  // let debugFileIndex = 0
+  let pglite_stdin_fd = 0
+  let initdb_stdin_fd = 0
+  let pglite_stdout_fd = 0
+  let initdb_stdout_fd = 0
+
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
     console.log('firstArg', firstArg)
@@ -67,22 +94,41 @@ async function execInitdb({
     if (stat.exists) {
       pg.Module.FS.chdir(PGDATA)
     }
-    const prevPGstdin = pg.pgl_stdin
-    pg.pgl_stdin = onPGstdin
-    pg.addStdoutCb(onPGstdout)
-    pg.addStderrCb(onPGstderr)
-    pgstderr = []
-    pgstdout = []
-    pg.Module.HEAPU8.set(origHEAPU8)
+    // const prevPGstdin = pg.pgl_stdin
+    // pg.pgl_stdin = onPGstdin
+    // pg.addStdoutCb(onPGstdout)
+    // pg.addStderrCb(onPGstderr)
+    // pgstderr = []
+    // pgstdout = []
+
+    // if (args[0] === '--check') {
+    //   return 123;
+    // }
 
     if (args[0] === '--boot') {
-      args.push(...baseArgs, "-X", "1048576")
+      // args.push(...baseArgs, "-B", "16", "-X", "1048576")
+      args = [
+        "--boot",
+        "-D", PGDATA,
+        "-d", "5",
+        ...baseArgs,
+        "-X", 
+        "1048576"]
     }
 
     if (args[0] === '--single') {
       if (args[args.length-1] === 'template1') {
         const x = args.pop()
-        args.push(...baseArgs, "-B", "16", "-S", "512", "-f", "siobtnmh", x!)
+        // args.push(...baseArgs, "-d", "1", "-F", x!) //"-B", "16", "-S", "512", "-f", "siobtnmh",
+        args = [
+          "--single",
+          "-d", "1",
+          "-B", "16", "-S", "512", "-f", "siobtnmh",
+          "-D", PGDATA,
+          "-O", "-j",
+          ...baseArgs,
+          x!
+        ]
       }
     }
 
@@ -95,41 +141,50 @@ async function execInitdb({
     //   }
     // }
 
-    // fs.writeFileSync(`/tmp/pgstdin${i++}`, new TextDecoder().decode(new Uint8Array(pgstdin)))
+    
+    // i = 0
+    // fs.writeFileSync(`/tmp/pgstdin${debugFileIndex++}`, pg.Module.FS.readFile(pgstdinPath))
 
-    pgstdin = pg.Module.FS.readFile('/pglite/pgstdin')
-    i = 0
-
-    pg.Module.FS.writeFile('/pglite/pgstdout', '')
+    pg.Module.FS.writeFile(pgstdoutPath, '')
+    pg.Module.HEAPU8.set(origHEAPU8)
 
     console.log('executing pg main with', args)
     const result = pg.callMain(args)
+    // pg.Module._pgl_proc_exit(66)
+    // pg.Module.___funcs_on_exit()
+    // pg.Module._fflush(0);
     console.log(result)
+    pglite_stdin_fd && pg.Module._fclose(pglite_stdin_fd)
+    pglite_stdout_fd && pg.Module._fclose(pglite_stdout_fd)
 
-    pg.removeStdoutCb(onPGstdout)
-    pg.removeStderrCb(onPGstderr)
-    pg.pgl_stdin = prevPGstdin
+    pglite_stdin_fd = 0
+    pglite_stdout_fd = 0
+    // pg.removeStdoutCb(onPGstdout)
+    // pg.removeStderrCb(onPGstderr)
+    // pg.pgl_stdin = prevPGstdin
     postgresArgs = []
-    pg.Module.FS.writeFile('/pglite/pgstdin', '')
-    pg.Module.FS.writeFile('/pglite/pgstdout', new Uint8Array(pgstdout))
+    
+    pg.Module.FS.writeFile(pgstdinPath, '')
+
+    // pg.Module.FS.writeFile('/pglite/pgstdout', new Uint8Array(pgstdout))
     return result
   }  
 
-  const initdb_stdin = (): number | null => {
-    console.log('stdin called')
-    if (pgstdout.length) {
-      return pgstdout.shift() ?? null
-    } else {
-      return null
-    }
-  }
+  // const initdb_stdin = (): number | null => {
+  //   console.log('stdin called')
+  //   if (pgstdout.length) {
+  //     return pgstdout.shift() ?? null
+  //   } else {
+  //     return null
+  //   }
+  // }
 
-  const initdb_stdout = (c: number): any => {
-    // if (this.debug) {
-    //   console.debug(text)
-    // }
-    initdbStdout.push(c)
-  }
+  // const initdb_stdout = (c: number): any => {
+  //   // if (this.debug) {
+  //   //   console.debug(text)
+  //   // }
+  //   initdbStdout.push(c)
+  // }
 
   // const initdb_stderr = (c: number): any => {
   //   initdbStderr.push(c)
@@ -149,60 +204,57 @@ async function execInitdb({
       console.error("initdberr", text)
     },
     preRun: [
-      (mod: InitdbMod) => {
-        mod.FS.init(initdb_stdin, initdb_stdout, null)
-      },
+      // (mod: InitdbMod) => {
+      //   mod.FS.init(initdb_stdin, initdb_stdout, null)
+      // },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           // default $HOME in emscripten is /home/web_user
           system_fn = mod.addFunction((cmd_ptr: number) => {
-            // todo: check it is indeed exec'ing postgres
-            const args = getArgs(mod.UTF8ToString(cmd_ptr))
-            const pgMainReturn = callPgMain(args)
-             return pgMainReturn
+            postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
+            return callPgMain(postgresArgs)
           }, 'pi')
 
           mod._pgl_set_system_fn(system_fn)
 
           popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
             // console.log(mode)
-            // todo: check it is indeed exec'ing postgres
             const smode = mod.UTF8ToString(mode)
-            const args = getArgs(mod.UTF8ToString(cmd_ptr))
+            postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
 
             if (smode === 'r') {
-              // cwd = mod.FS.cwd()
-              // we need the result to return it on pclose()
-              pgMainResult = callPgMain(args)
-
-              const path = mod.allocateUTF8('/pglite/pgstdout')
-              pgliteout_fd = mod._fopen(path, mode);
-              if (pgliteout_fd === -1) {
-                const errno = mod.HEAPU8[mod.___errno_location()]
-                let error = mod._strerror(errno)
-                let errstr = mod.UTF8ToString(error)
-                console.error('errno error', errno , errstr)
-                throw errstr
+              {
+                const pglite_path = pg.Module.stringToUTF8OnStack(pgstdoutPath)
+                const wmode = pg.Module.stringToUTF8OnStack('w')
+                pglite_stdout_fd = pg.Module._pgl_freopen(pglite_path, wmode, 1)
+                pgMainResult = callPgMain(postgresArgs)
               }
-              return pgliteout_fd;
+              
+              {
+                const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
+                initdb_stdin_fd = mod._fopen(initdb_path, mode)
+              }              
+
+              return initdb_stdin_fd;
 
             } else {
               if (smode === 'w') {
-                postgresArgs = args
                 // cwd = mod.FS.cwd()
                 // defer calling main until initdb exe has finished writing to pg's stdin
+                
                 needToCallPGmain = true
-
-                const path = mod.allocateUTF8('/pglite/pgstdin')
-                pglitein_fd = mod._fopen(path, mode);
-                if (pglitein_fd === -1) {
-                  const errno = mod.HEAPU8[mod.___errno_location()]
-                  let error = mod._strerror(errno)
-                  let errstr = mod.UTF8ToString(error)
-                  console.error('errno error', errno , errstr)
-                  throw errstr
+                {
+                  const pglite_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
+                  const rmode = pg.Module.stringToUTF8OnStack('r')
+                  pglite_stdin_fd = pg.Module._pgl_freopen(pglite_path, rmode, 0)
                 }
-                return pglitein_fd;
+
+                {
+                  const path = mod.stringToUTF8OnStack(pgstdinPath)
+                  initdb_stdout_fd = mod._fopen(path, mode)
+                }
+                  
+                return initdb_stdout_fd;
 
               } else {
                 throw `Unexpected popen mode value ${smode}`
@@ -214,13 +266,11 @@ async function execInitdb({
           mod._pgl_set_popen_fn(popen_fn)
 
           pclose_fn = mod.addFunction((stream: number) => {
-            if (stream === pglitein_fd) {
-              let result = 0
+            if (stream === initdb_stdin_fd || stream === initdb_stdout_fd) {
               // if the last popen had mode w, execute now postgres' main()
               if (needToCallPGmain) {
                 needToCallPGmain = false
-                result = callPgMain(postgresArgs)
-                return result
+                pgMainResult = callPgMain(postgresArgs)
               }
               const closeResult = mod._fclose(stream)
               console.log(closeResult)
@@ -232,13 +282,6 @@ async function execInitdb({
           }, 'pi')
 
           mod._pgl_set_pclose_fn(pclose_fn)
-          
-          pipe_fn = mod.addFunction((fd: number) => {
-            console.log(fd)
-            return 0;
-          }, 'pi')
-
-          mod._pgl_set_pipe_fn(pipe_fn)
         }
       },
       (mod: InitdbMod) => {
@@ -332,7 +375,7 @@ export async function initdb({
   const execResult = await execInitdb({
     pg,
     args: ["--wal-segsize=1", "--allow-group-access", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
-      ...baseArgs, ...(args ?? [])],
+      ...(args ?? [])],
   })
 
   if (execResult.exitCode !== 0) {

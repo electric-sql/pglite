@@ -105,6 +105,9 @@ export class PGlite
   #system_fn: number = -1
   #popen_fn: number = -1
   #pclose_fn: number = -1
+  // externalCommandStream: FS.FSStream | null = null
+  externalCommandStreamFd: number | null = null
+
   // #pipe_fn: number = -1
 
   /**
@@ -238,6 +241,17 @@ export class PGlite
   //   }
   //   this.#stderrCbs.forEach((c => c(text)))
   // }
+
+  handleExternalCmd(cmd: string, mode: string) {
+    if (cmd.startsWith('locale -a') && mode === 'r') {
+      const filePath = this.mod!.stringToUTF8OnStack('/pglite/locale-a')
+      const smode = this.mod!.stringToUTF8OnStack(mode)
+      return this.mod!._fopen(filePath, smode)
+      // return this.mod!.FS.open('/pglite/locale-a', mode)
+    }
+    throw 'Unhandled cmd'
+  }
+
 
   pgl_stdin: any
 
@@ -590,76 +604,21 @@ export class PGlite
     mod._pgl_set_system_fn(this.#system_fn)
 
     this.#popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
-      // console.log(mode)
-      // todo: check it is indeed exec'ing postgres
-      // const smode = mod.UTF8ToString(mode)
-      // postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
-      // postgresArgs.shift()
-      // pg.addStdoutCb(onPGstdout)
-      // pg.addStderrCb(onPGstderr)
-      // if (smode === 'r') {
-      //   // cwd = mod.FS.cwd()
-      //   const stat = pg.Module.FS.analyzePath(PGDATA)
-      //   if (stat.exists) {
-      //     pg.Module.FS.chdir(PGDATA)
-      //   }
-      //   pg.Module.HEAPU8.set(origHEAPU8)
-      //   const result = pg.callMain(postgresArgs)
-      //   console.log(result)
-      //   pg.removeStdoutCb(onPGstdout)
-      //   pg.removeStderrCb(onPGstderr)
-      // } else {
-      //   if (smode === 'w') {
-      //     // cwd = mod.FS.cwd()
-      //     // defer calling main until initdb exe has finished writing to pg's stdin
-      //     prevPGstdin = pg.pgl_stdin
-      //     pg.pgl_stdin = onPGstdin
-      //     needToCallPGmain = true
-      //   } else {
-      //     throw `Unexpected popen mode value ${smode}`
-      //   }
-      // }
-      // const path = mod.allocateUTF8('/dev/pgliteinout')
-      // pgliteinout_fd = mod._fopen(path, mode);
-      // if (pgliteinout_fd === -1) {
-      //   const errno = mod.HEAPU8[mod.___errno_location()]
-      //   let error = mod._strerror(errno)
-      //   let errstr = mod.UTF8ToString(error)
-      //   console.error('errno error', errno , errstr)
-      //   throw errstr
-      // }
-      // return pgliteinout_fd;
-      console.log(mod.UTF8ToString(cmd_ptr), mod.UTF8ToString(mode))
-    }, 'ppi')
+      const smode = mod.UTF8ToString(mode)
+      const args = mod.UTF8ToString(cmd_ptr)
+      this.externalCommandStreamFd = this.handleExternalCmd(args, smode)
+      return this.externalCommandStreamFd!
+      }, 'ppp')
 
     mod._pgl_set_popen_fn(this.#popen_fn)
   
     this.#pclose_fn = mod.addFunction((stream: number) => {
-      // if (stream === pgliteinout_fd) {
-      //   // if the last popen had mode w, execute now postgres' main()
-      //   if (needToCallPGmain) {
-      //     needToCallPGmain = false
-      //     const stat = pg.Module.FS.analyzePath(PGDATA)
-      //     if (stat.exists) {
-      //       pg.Module.FS.chdir(PGDATA)
-      //     }
-      //     pg.Module.HEAPU8.set(origHEAPU8)
-      //     const result = pg.callMain(postgresArgs)
-      //     // console.log(result)
-      //     pg.removeStdoutCb(onPGstdout)
-      //     pg.removeStderrCb(onPGstderr)
-      //     pg.pgl_stdin = prevPGstdin
-      //     pgstdin = []
-      //     const closeResult = mod._fclose(stream)
-      //     console.log(closeResult)
-      //     return result
-      //   }
-      //   const closeResult = mod._fclose(stream)
-      //   console.log(closeResult)
-      //   return 0
-      // } else {
-      //   return mod._pclose(stream)
-      // }
+      if (stream === this.externalCommandStreamFd) {
+        this.mod!._fclose(this.externalCommandStreamFd!)
+        this.externalCommandStreamFd = null
+      } else {
+        throw `Unhandled pclose ${stream}`
+      }
       console.log("pclose_fn", stream)
     }, 'pi')
 
@@ -729,14 +688,7 @@ export class PGlite
     mod._pgl_set_rw_cbs(
       this.#pglite_socket_read,
       this.#pglite_socket_write,
-    )
-
-    // this.#pipe_fn = mod.addFunction((fd: number) => {
-    //   console.log(fd)
-    //   return 0;
-    // }, 'pi')
-
-    // mod._pgl_set_pipe_fn(this.#pipe_fn)    
+    )  
   }
   /**
    * The Postgres Emscripten Module

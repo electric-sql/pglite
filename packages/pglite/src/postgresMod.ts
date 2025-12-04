@@ -21,12 +21,11 @@ export interface PostgresMod
   postRun: Array<{ (mod: PostgresMod): void }>
   thisProgram: string
   FS: FS
+  PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
-  allocateUTF8: (s: string) => number
-  allocateUTF8OnStack: (s: string) => number
   stringToUTF8OnStack: (s: string) => number
   // _pgl_initdb: () => number
   // _pgl_backend: () => void
@@ -36,8 +35,13 @@ export interface PostgresMod
   _pgl_set_pclose_fn: (pclose_fn: number) => void
   _pgl_interactive_one: (length: number, peek: number) => void
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
-  _pgl_chdir: (pathPtr: number) => number
   _pgl_set_pipe_fn: (pipe_fn: number) => number
+  _pgl_freopen: (filepath: number, mode: number, stream: number) => number
+  _fopen: (path: number, mode: number) => number
+  _fclose: (stream: number) => number
+  _fflush: (stream: number) => void
+  _pgl_proc_exit: (code: number) => number
+  ___funcs_on_exit: () => void
   // _pgl_startup: (args?: string[]) => number
   addFunction: (
     cb: (ptr: any, length: number) => void,

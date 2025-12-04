@@ -26,8 +26,6 @@ export interface InitdbMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
-  allocateUTF8: (s: string) => number
-  allocateUTF8OnStack: (s: string) => number
   stringToUTF8OnStack: (s: string) => number
   ___errno_location: () => number
   _strerror: (errno: number) => number
@@ -38,6 +36,7 @@ export interface InitdbMod
   _pgl_set_pipe_fn: (pipe_fn: number) => void
   _pclose: (stream: number) => number
   _pipe: (fd: number) => number
+  _pgl_freopen: (filepath: number, mode: number, stream: number) => number
   // _pgl_set_fgets_fn: (fgets_fn: number) => void
   // _pgl_set_fputs_fn: (fputs_fn: number) => void
   // _pgl_set_errno: (errno: number) => number
