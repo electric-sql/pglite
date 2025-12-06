@@ -685,10 +685,10 @@ export class PGlite
       'iii',
     )
 
-    mod._pgl_set_rw_cbs(
-      this.#pglite_socket_read,
-      this.#pglite_socket_write,
-    )  
+    // mod._pgl_set_rw_cbs(
+    //   this.#pglite_socket_read,
+    //   this.#pglite_socket_write,
+    // )  
   }
   /**
    * The Postgres Emscripten Module

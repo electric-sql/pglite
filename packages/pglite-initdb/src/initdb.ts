@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
 import assert from 'assert'
-// import fs from 'node:fs'
+import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
 
@@ -16,7 +16,7 @@ const baseArgs = [
 "-c", "log_checkpoints=false",
 "-c", "search_path=pg_catalog",
 "-c", "exit_on_error=true",
-"-c", "ignore_invalid_pages=off",
+"-c", "ignore_invalid_pages=on",
 "-c", "temp_buffers=8MB",
 "-c", "work_mem=4MB",
 "-c", "fsync=on",
@@ -46,26 +46,27 @@ async function execInitdb({
 
   let pgMainResult = 0
 
-  let pglite_stdin_fd = 0
-  let initdb_stdin_fd = 0
-  let pglite_stdout_fd = 0
-  let initdb_stdout_fd = 0
+  // let pglite_stdin_fd = -1
+  let initdb_stdin_fd = -1
+  // let pglite_stdout_fd = -1
+  let initdb_stdout_fd = -1
+  let i_pgstdin = 0
 
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
     console.log('firstArg', firstArg)
     assert(firstArg === '/pglite/bin/postgres', `trying to execute ${firstArg}`)
 
-    const stat = pg.Module.FS.analyzePath(PGDATA)
-    if (stat.exists) {
-      pg.Module.FS.chdir(PGDATA)
-    }
+    // const stat = pg.Module.FS.analyzePath(PGDATA)
+    // if (stat.exists) {
+    //   pg.Module.FS.chdir(PGDATA)
+    // }
 
     if (args[0] === '--boot') {
       args = [
         "--boot",
         "-D", PGDATA,
-        "-d", "5",
+        "-d", "1",
         ...baseArgs,
         "-X", 
         "1048576"]
@@ -76,7 +77,7 @@ async function execInitdb({
         const x = args.pop()
         args = [
           "--single",
-          "-d", "1",
+          // "-d", "1",
           "-B", "16", "-S", "512", "-f", "siobtnmh",
           "-D", PGDATA,
           "-O", "-j",
@@ -86,27 +87,28 @@ async function execInitdb({
       }
     }
 
-    // fs.writeFileSync(`/tmp/pgstdin${debugFileIndex++}`, pg.Module.FS.readFile(pgstdinPath))
+    fs.writeFileSync(`/tmp/pgstdin${i_pgstdin}`, pg.Module.FS.readFile(pgstdinPath))
+    fs.writeFileSync(`/tmp/pgstdout${i_pgstdin++}`, pg.Module.FS.readFile(pgstdoutPath))
 
-    pg.Module.FS.writeFile(pgstdoutPath, '')
+    // pg.Module.FS.writeFile(pgstdoutPath, '')
     pg.Module.HEAPU8.set(origHEAPU8)
 
     console.log('executing pg main with', args)
     const result = pg.callMain(args)
-    pg.Module.HEAPU8.set(origHEAPU8)
+    // pg.Module.HEAPU8.set(origHEAPU8)
     // pg.Module._pgl_proc_exit(66)
     // pg.Module.___funcs_on_exit()
     // pg.Module._fflush(0);
     console.log(result)
-    pglite_stdin_fd && pg.Module._fclose(pglite_stdin_fd)
-    pglite_stdout_fd && pg.Module._fclose(pglite_stdout_fd)
+    // pglite_stdin_fd && pg.Module._fclose(pglite_stdin_fd)
+    // pglite_stdout_fd && pg.Module._fclose(pglite_stdout_fd)
 
-    pglite_stdin_fd = 0
-    pglite_stdout_fd = 0
+    // pglite_stdin_fd = 0
+    // pglite_stdout_fd = 0
 
     postgresArgs = []
     
-    pg.Module.FS.writeFile(pgstdinPath, '')
+    // pg.Module.FS.writeFile(pgstdinPath, '')
 
     // pg.Module.FS.writeFile('/pglite/pgstdout', new Uint8Array(pgstdout))
     return result
@@ -121,9 +123,9 @@ async function execInitdb({
     // print: (text) => {
     //   stdoutOutput += text
     // },
-    printErr: (text) => {
-      console.error("initdberr", text)
-    },
+    // printErr: (text) => {
+    //   console.error("initdberr", text)
+    // },
     preRun: [
       // (mod: InitdbMod) => {
       //   mod.FS.init(initdb_stdin, initdb_stdout, null)
@@ -143,33 +145,12 @@ async function execInitdb({
             postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
 
             if (smode === 'r') {
-              // pglite stdout -> initdb stdin
-              const pglite_path = pg.Module.stringToUTF8OnStack(pgstdoutPath)
-              const wmode = pg.Module.stringToUTF8OnStack('w')
-              pglite_stdout_fd = pg.Module._pgl_freopen(pglite_path, wmode, 1)
               pgMainResult = callPgMain(postgresArgs)
-              
-              const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
-              initdb_stdin_fd = mod._fopen(initdb_path, mode)
               return initdb_stdin_fd;
-
             } else {
               if (smode === 'w') {
-                // initdb stdout -> pglite stdin
                 needToCallPGmain = true
-                {
-                  const pglite_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
-                  const rmode = pg.Module.stringToUTF8OnStack('r')
-                  pglite_stdin_fd = pg.Module._pgl_freopen(pglite_path, rmode, 0)
-                }
-
-                {
-                  const path = mod.stringToUTF8OnStack(pgstdinPath)
-                  initdb_stdout_fd = mod._fopen(path, mode)
-                }
-                  
                 return initdb_stdout_fd;
-
               } else {
                 throw `Unexpected popen mode value ${smode}`
               }
@@ -186,8 +167,8 @@ async function execInitdb({
                 needToCallPGmain = false
                 pgMainResult = callPgMain(postgresArgs)
               }
-              const closeResult = mod._fclose(stream)
-              console.log(closeResult)
+              // const closeResult = mod._fclose(stream)
+              // console.log(closeResult)
               return pgMainResult
             } else {
               return mod._pclose(stream)
@@ -196,6 +177,27 @@ async function execInitdb({
           }, 'pi')
 
           mod._pgl_set_pclose_fn(pclose_fn)
+
+          {
+            const pglite_stdin_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
+            const rmode = pg.Module.stringToUTF8OnStack('r')
+             pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
+            const pglite_stdout_path = pg.Module.stringToUTF8OnStack(pgstdoutPath)
+            const wmode = pg.Module.stringToUTF8OnStack('w')
+             pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
+          }
+  
+          {
+            const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
+            const rmode = mod.stringToUTF8OnStack('r')
+            initdb_stdin_fd = mod._fopen(initdb_path, rmode)
+  
+            const path = mod.stringToUTF8OnStack(pgstdinPath)
+            const wmode = mod.stringToUTF8OnStack('w')
+            initdb_stdout_fd = mod._fopen(path, wmode)
+          }
+
+          // pg.Module.FS.chdir(PGDATA)
         }
       },
       (mod: InitdbMod) => {
