@@ -7,6 +7,6 @@ describe('initdb', () => {
     const pg = await PGlite.create()
     const result = await initdb({ pg })
 
-    expect(result).toBeInstanceOf(0)
+    expect(result).toBe(0)
   })
 })

@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
 import assert from 'assert'
-import fs from 'node:fs'
+// import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
 
@@ -13,17 +13,23 @@ const pgstdinPath = '/pglite/pgstdin'
 // "-c", "zero_damaged_pages=on"
 // "-c", "checkpoint_flush_after=1",
 const baseArgs = [
-"-c", "log_checkpoints=false",
-"-c", "search_path=pg_catalog",
-"-c", "exit_on_error=true",
+"-c", "ignore_checksum_failure=on",
+// "-c", "log_checkpoints=false",
+// "-c", "search_path=pg_catalog",
+// "-c", "exit_on_error=true",
 "-c", "ignore_invalid_pages=on",
-"-c", "temp_buffers=8MB",
-"-c", "work_mem=4MB",
+"-c", "zero_damaged_pages=on",
+"-c", "ignore_system_indexes=on",
+// "-c", "temp_buffers=8MB",
+// "-c", "work_mem=4MB",
 "-c", "fsync=on",
 "-c", "synchronous_commit=on",
-"-c", "wal_buffers=4MB",
-"-c", "min_wal_size=80MB",
-"-c", "shared_buffers=128MB"]
+// "-c", "wal_buffers=4MB",
+// "-c", "min_wal_size=80MB",
+// "-c", "shared_buffers=128MB"
+]
+
+// const baseArgs: string[] = []
 
 interface ExecResult {
   exitCode: number
@@ -50,7 +56,7 @@ async function execInitdb({
   let initdb_stdin_fd = -1
   // let pglite_stdout_fd = -1
   let initdb_stdout_fd = -1
-  let i_pgstdin = 0
+  // let i_pgstdin = 0
 
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
@@ -63,32 +69,40 @@ async function execInitdb({
     // }
 
     if (args[0] === '--boot') {
+
+      console.log("boot")
       args = [
         "--boot",
         "-D", PGDATA,
         "-d", "1",
         ...baseArgs,
+        // "-r", "/dev/null",
         "-X", 
         "1048576"]
     }
 
     if (args[0] === '--single') {
+      console.log("--single")
       if (args[args.length-1] === 'template1') {
         const x = args.pop()
         args = [
           "--single",
-          // "-d", "1",
+          "-d", "1",
           "-B", "16", "-S", "512", "-f", "siobtnmh",
           "-D", PGDATA,
           "-O", "-j",
-          ...baseArgs,
+          // "-r", "/dev/null",
           x!
         ]
       }
     }
 
-    fs.writeFileSync(`/tmp/pgstdin${i_pgstdin}`, pg.Module.FS.readFile(pgstdinPath))
-    fs.writeFileSync(`/tmp/pgstdout${i_pgstdin++}`, pg.Module.FS.readFile(pgstdoutPath))
+    // if (args[0] === '--check') {
+    //   args.push("-r", "/dev/null")
+    // }
+
+    // fs.writeFileSync(`/tmp/pgstdin${i_pgstdin}`, pg.Module.FS.readFile(pgstdinPath))
+    // fs.writeFileSync(`/tmp/pgstdout${i_pgstdin++}`, pg.Module.FS.readFile(pgstdoutPath))
 
     // pg.Module.FS.writeFile(pgstdoutPath, '')
     pg.Module.HEAPU8.set(origHEAPU8)
@@ -120,12 +134,12 @@ async function execInitdb({
     arguments: args,
     noExitRuntime: false,
     thisProgram: initdbExePath,
-    // print: (text) => {
-    //   stdoutOutput += text
-    // },
-    // printErr: (text) => {
-    //   console.error("initdberr", text)
-    // },
+    print: (text) => {
+      console.log("initdbout", text)
+    },
+    printErr: (text) => {
+      console.error("initdberr", text)
+    },
     preRun: [
       // (mod: InitdbMod) => {
       //   mod.FS.init(initdb_stdin, initdb_stdout, null)
@@ -232,6 +246,7 @@ interface InitdbOptions {
 function getArgs(cmd: string) {
   let a: string[] = []
   let parsed = parse(cmd)
+  // console.log("parsed args", parsed)
   for (let i = 0; i < parsed.length; i++) {
     if (parsed[i].op) break;
     a.push(parsed[i])
@@ -252,7 +267,7 @@ export async function initdb({
   const execResult = await execInitdb({
     pg,
     args: ["--wal-segsize=1", "--allow-group-access", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
-      ...(args ?? [])],
+      ...baseArgs, ...(args ?? [])],
   })
 
   if (execResult.exitCode !== 0) {
