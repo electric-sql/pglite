@@ -107,6 +107,7 @@ export class PGlite
   #pclose_fn: number = -1
   // externalCommandStream: FS.FSStream | null = null
   externalCommandStreamFd: number | null = null
+  currentStdout: string = ''
 
   // #pipe_fn: number = -1
 
@@ -252,7 +253,6 @@ export class PGlite
     throw 'Unhandled cmd'
   }
 
-
   pgl_stdin: any
 
   #pgl_stdin(): number | null {
@@ -324,13 +324,13 @@ export class PGlite
       arguments: args,
       INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
-      // print: (text: string) => {
-      //   this.#print(text)
-      // }, 
-      printErr: (text: string) => {
-        console.error("pgliteerror", text)
-        // this.#printErr(text)
+      print: (text: string) => {
+        this.currentStdout += text
       },
+      // printErr: (text: string) => {
+      //   console.error("pgliteerror", text)
+      //   // this.#printErr(text)
+      // },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
