@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { pgcrypto } from '../../dist/contrib/pgcrypto.js'
-import * as openpgp from 'openpgp';
+import * as openpgp from 'openpgp'
 
 describe('pg_pgcryptotrgm', () => {
   it('digest', async () => {
@@ -96,22 +96,22 @@ describe('pg_pgcryptotrgm', () => {
       rsaBits: 2048,
       userIDs: [{ name: 'PGlite', email: 'hello@pglite.dev' }],
       passphrase: '',
-    });
+    })
 
     const toEncrypt = 'PGlite@$#%!^$&*WQFgjqPkVERewfreg094340f1012-='
 
     const e2 = await pg.exec(
-`
+      `
 WITH encrypted AS (
     SELECT pgp_pub_encrypt('${toEncrypt}', dearmor('${publicKey}')) AS encrypted
 )
 SELECT
     pgp_pub_decrypt(encrypted, dearmor('${privateKey}')) as decrypted_output
 FROM encrypted;
-`)
+`,
+    )
     expect(e2[0].rows[0].decrypted_output, toEncrypt)
   })
-
 })
 
-// TODO: 
+// TODO:
