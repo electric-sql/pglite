@@ -64,6 +64,7 @@ async function createPlugin(
     useCopy = false, // DEPRECATED: use initialInsertMethod instead
     initialInsertMethod = 'insert',
     onInitialSync,
+    onError,
   }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
     let unsubscribed = false
     await initMetadataTables()
@@ -416,7 +417,7 @@ async function createPlugin(
         // Await a timeout to start a new task and allow other connections to do work
         await new Promise((resolve) => setTimeout(resolve))
       }
-    })
+    }, onError)
 
     streams.push({
       stream: multiShapeStream,
@@ -465,6 +466,7 @@ async function createPlugin(
       useCopy: options.useCopy, // DEPRECATED: use initialInsertMethod instead
       initialInsertMethod: options.initialInsertMethod,
       onInitialSync: options.onInitialSync,
+      onError: options.onError,
     })
     return {
       unsubscribe: multiShapeSub.unsubscribe,

@@ -1,5 +1,17 @@
 # @electric-sql/pglite-sync
 
+## 0.4.0
+
+### Minor Changes
+
+- 408500c: Allow passing in onError to 'syncShapesToTables'
+
+### Patch Changes
+
+- Updated dependencies [8785034]
+- Updated dependencies [90cfee8]
+  - @electric-sql/pglite@0.3.14
+
 ## 0.3.17
 
 ### Patch Changes
