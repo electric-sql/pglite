@@ -545,6 +545,20 @@ const baseExtensions: Extension[] = [
     importName: 'pg_ivm',
     size: 24865,
   },
+  {
+    name: 'pgcrypto',
+    description: `
+    The pgcrypto module provides cryptographic functions for PostgreSQL.
+    `,
+    shortDescription:
+      'The pgcrypto module provides cryptographic functions for PostgreSQL.',
+    docs: 'https://www.postgresql.org/docs/current/pgcrypto.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pgcrypto',
+    importName: 'pgcrypto',
+    core: true,
+    size: 1004373,
+  },
 ]
 
 const tags = [
