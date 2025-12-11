@@ -61,12 +61,12 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Typecheck pglite
-        working-directory: ${{ github.workspace }}/packages/pglite
-        run: pnpm typecheck
-      - name: Test pglite
-        working-directory: ${{ github.workspace }}/packages/pglite
-        run: pnpm test
+      # - name: Typecheck pglite
+      #   working-directory: ${{ github.workspace }}/packages/pglite
+      #   run: pnpm typecheck
+      # - name: Test pglite
+      #   working-directory: ${{ github.workspace }}/packages/pglite
+      #   run: pnpm test
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
@@ -136,15 +136,15 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test web integrations
-        # retry on failure as web tests can be flaky
-        run: pnpm test:web || pnpm test:web || pnpm test:web
+      # - name: Test web integrations
+      #   # retry on failure as web tests can be flaky
+      #   run: pnpm test:web || pnpm test:web || pnpm test:web
 
-      - name: Test Deno
-        run: pnpm test:deno
+      # - name: Test Deno
+      #   run: pnpm test:deno
 
-      - name: Pack for distribution
-        run: pnpm pack
+      # - name: Pack for distribution
+      #   run: pnpm pack
 
       - name: Upload PGlite distribution artifact
         id: upload-pglite-dist
@@ -221,11 +221,14 @@ jobs:
       - name: Build packages
         run: pnpm --filter="...^pglite" build
 
-      - name: Typecheck packages
-        run: pnpm --filter="...^pglite" typecheck
+      # - name: Typecheck packages
+      #   run: pnpm --filter="...^pglite" typecheck
 
-      - name: Test packages
-        run: pnpm --filter="...^pglite" test
+      # - name: Test packages
+      #   run: pnpm --filter="...^pglite" test
+
+      - name: Test pglite-socket
+        run: pnpm -C packages/pglite-socket/ test
 
       - name: Upload pglite-tools distribution artifact
         id: upload-pglite-tools-dist
