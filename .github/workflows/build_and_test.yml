@@ -89,7 +89,7 @@ jobs:
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]
+        node: [20.x, 21.x, v22.20.0, 23.x, 24.x]
       fail-fast: false
     defaults:
       run:
@@ -106,6 +106,9 @@ jobs:
       - uses: denoland/setup-deno@v1
         with:
           deno-version: vx.x.x
+      
+      - name: Show node version
+        run: node -v
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
@@ -183,7 +186,7 @@ jobs:
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
+        node: [20.x, 21.x, v22.20.0, 23.x, 24.x]    
       fail-fast: false
     needs: [build-and-test-pglite]
     steps:
