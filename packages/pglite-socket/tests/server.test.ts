@@ -75,7 +75,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data)
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data)
       })
 
       // Wait for server to start
@@ -123,7 +128,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data)
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data)
       })
 
       // Wait for server to be ready
@@ -156,7 +166,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data)
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data)
       })
 
       const isReady = await waitForPort(testPort)
@@ -195,14 +210,19 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data)
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data)
       })
 
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
       serverProcess.kill()
       await new Promise<void>((resolve) => {
-        serverProcess.on('exit', () => {
+        serverProcess!.on('exit', () => {
           expect(output).toContain(`"host":"0.0.0.0"`)
           serverProcess = null
           resolve()
