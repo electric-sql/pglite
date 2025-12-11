@@ -386,6 +386,18 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+        // experiment on wasmTable get
+        const prevGet = this.mod.wasmTable.get
+        this.mod.wasmTable.get = (index: number) => {
+          const result = prevGet.call(this.mod!.wasmTable, index);
+          if (!result) {
+            console.error('pglite: function index not found in wasmTable', index)
+            throw `pglite: function index not found in wasmTable ${index}`
+            // search the js.symbols file for index
+          }
+          return result
+        }
+
     // set the write callback
     this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
       let bytes
