@@ -59,7 +59,7 @@ jobs:
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
-          pnpm build:all
+          pnpm build:all:debug
 
       - name: Test socket server
         run: pnpm -C packages/pglite-socket test
