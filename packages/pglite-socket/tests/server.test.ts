@@ -67,7 +67,7 @@ describe('Server Script Tests', () => {
       const testPort = getTestPort()
       const serverProcess = spawn(
         'tsx',
-        [serverScript, '--port', testPort.toString()],
+        [serverScript, '--port', testPort.toString(), '--debug', '4'],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
