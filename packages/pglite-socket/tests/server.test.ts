@@ -40,7 +40,7 @@ describe('Server Script Tests', () => {
 
   describe('Help and Basic Functionality', () => {
     it('should show help when --help flag is used', async () => {
-      const serverProcess = spawn('tsx', [serverScript, '--help'], {
+      const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       })
 
@@ -66,8 +66,8 @@ describe('Server Script Tests', () => {
     it('should accept and use debug level parameter', async () => {
       const testPort = getTestPort()
       const serverProcess = spawn(
-        'tsx',
-        [serverScript, '--port', testPort.toString(), '--debug', '2'],
+        'npx',
+        ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
@@ -75,7 +75,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       // Wait for server to start
@@ -114,8 +119,8 @@ describe('Server Script Tests', () => {
       const testPort = getTestPort()
 
       serverProcess = spawn(
-        'tsx',
-        [serverScript, '--port', testPort.toString()],
+        'npx',
+        ['tsx', serverScript, '--port', testPort.toString()],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
@@ -123,7 +128,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       // Wait for server to be ready
@@ -147,8 +157,8 @@ describe('Server Script Tests', () => {
       const testPort = getTestPort()
 
       serverProcess = spawn(
-        'tsx',
-        [serverScript, '--port', testPort.toString(), '--db', 'memory://'],
+        'npx',
+        ['tsx', serverScript, '--port', testPort.toString(), '--db', 'memory://'],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
@@ -156,7 +166,12 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
@@ -186,8 +201,8 @@ describe('Server Script Tests', () => {
       const testPort = getTestPort()
 
       serverProcess = spawn(
-        'tsx',
-        [serverScript, '--port', testPort.toString(), '--host', '0.0.0.0'],
+        'npx',
+        ['tsx', serverScript, '--port', testPort.toString(), '--host', '0.0.0.0'],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
@@ -195,14 +210,19 @@ describe('Server Script Tests', () => {
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
+        console.log(data.toString())
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
       serverProcess.kill()
       await new Promise<void>((resolve) => {
-        serverProcess.on('exit', () => {
+        serverProcess!.on('exit', () => {
           expect(output).toContain(`"host":"0.0.0.0"`)
           serverProcess = null
           resolve()
