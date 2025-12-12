@@ -61,9 +61,13 @@ jobs:
         run: |
           pnpm build:all
 
+      - name: Test socket server
+        run: pnpm -C packages/pglite-socket test
+
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm typecheck
+
       - name: Test pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
