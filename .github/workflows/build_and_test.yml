@@ -56,8 +56,6 @@ jobs:
 
       - name: Build all
         working-directory: ${{ github.workspace }}
-        env:
-          PGSRC: ${{ github.workspace }}/postgres-pglite
         run: |
           pnpm build:all
 
@@ -283,8 +281,6 @@ jobs:
 
       - name: Build demo site
         env:
-          PGSRC: ${{ github.workspace }}/postgres-pglite
-          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
           PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
