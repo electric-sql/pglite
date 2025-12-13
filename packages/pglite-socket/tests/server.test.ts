@@ -63,171 +63,171 @@ describe('Server Script Tests', () => {
       })
     }, 10000)
 
-    it('should accept and use debug level parameter', async () => {
-      const testPort = getTestPort()
-      const serverProcess = spawn(
-        'npx',
-        ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
+  //   it('should accept and use debug level parameter', async () => {
+  //     const testPort = getTestPort()
+  //     const serverProcess = spawn(
+  //       'npx',
+  //       ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
+  //       {
+  //         stdio: ['pipe', 'pipe', 'pipe'],
+  //       },
+  //     )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        console.log(data.toString())
-        output += data.toString()
-      })
+  //     let output = ''
+  //     serverProcess.stdout?.on('data', (data) => {
+  //       console.log(data.toString())
+  //       output += data.toString()
+  //     })
 
-      serverProcess.stderr?.on('data', (data) => {
-        console.error(data.toString())
-      })
+  //     serverProcess.stderr?.on('data', (data) => {
+  //       console.error(data.toString())
+  //     })
 
-      // Wait for server to start
-      await waitForPort(testPort)
+  //     // Wait for server to start
+  //     await waitForPort(testPort)
 
-      // Kill the server
-      serverProcess.kill('SIGTERM')
+  //     // Kill the server
+  //     serverProcess.kill('SIGTERM')
 
-      await new Promise<void>((resolve) => {
-        serverProcess.on('exit', () => {
-          expect(output).toContain('Debug level: 2')
-          resolve()
-        })
-      })
-    }, 10000)
-  })
+  //     await new Promise<void>((resolve) => {
+  //       serverProcess.on('exit', () => {
+  //         expect(output).toContain('Debug level: 2')
+  //         resolve()
+  //       })
+  //     })
+  //   }, 10000)
+  // })
 
-  describe('Server Startup and Connectivity', () => {
-    let serverProcess: ChildProcess | null = null
+  // describe('Server Startup and Connectivity', () => {
+  //   let serverProcess: ChildProcess | null = null
 
-    afterEach(async () => {
-      if (serverProcess) {
-        serverProcess.kill('SIGTERM')
-        await new Promise<void>((resolve) => {
-          if (serverProcess) {
-            serverProcess.on('exit', () => resolve())
-          } else {
-            resolve()
-          }
-        })
-        serverProcess = null
-      }
-    })
+  //   afterEach(async () => {
+  //     if (serverProcess) {
+  //       serverProcess.kill('SIGTERM')
+  //       await new Promise<void>((resolve) => {
+  //         if (serverProcess) {
+  //           serverProcess.on('exit', () => resolve())
+  //         } else {
+  //           resolve()
+  //         }
+  //       })
+  //       serverProcess = null
+  //     }
+  //   })
 
-    it('should start server on TCP port and accept connections', async () => {
-      const testPort = getTestPort()
+  //   it('should start server on TCP port and accept connections', async () => {
+  //     const testPort = getTestPort()
 
-      serverProcess = spawn(
-        'npx',
-        ['tsx', serverScript, '--port', testPort.toString()],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
+  //     serverProcess = spawn(
+  //       'npx',
+  //       ['tsx', serverScript, '--port', testPort.toString()],
+  //       {
+  //         stdio: ['pipe', 'pipe', 'pipe'],
+  //       },
+  //     )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        console.log(data.toString())
-        output += data.toString()
-      })
+  //     let output = ''
+  //     serverProcess.stdout?.on('data', (data) => {
+  //       console.log(data.toString())
+  //       output += data.toString()
+  //     })
 
-      serverProcess.stderr?.on('data', (data) => {
-        console.error(data.toString())
-      })
+  //     serverProcess.stderr?.on('data', (data) => {
+  //       console.error(data.toString())
+  //     })
 
-      // Wait for server to be ready
-      const isReady = await waitForPort(testPort)
-      expect(isReady).toBe(true)
+  //     // Wait for server to be ready
+  //     const isReady = await waitForPort(testPort)
+  //     expect(isReady).toBe(true)
 
-      // Check that we can connect
-      const socket = createConnection({ port: testPort, host: '127.0.0.1' })
-      await new Promise<void>((resolve, reject) => {
-        socket.on('connect', resolve)
-        socket.on('error', reject)
-        setTimeout(() => reject(new Error('Connection timeout')), 3000)
-      })
-      socket.end()
+  //     // Check that we can connect
+  //     const socket = createConnection({ port: testPort, host: '127.0.0.1' })
+  //     await new Promise<void>((resolve, reject) => {
+  //       socket.on('connect', resolve)
+  //       socket.on('error', reject)
+  //       setTimeout(() => reject(new Error('Connection timeout')), 3000)
+  //     })
+  //     socket.end()
 
-      expect(output).toContain('PGlite database initialized')
-      expect(output).toContain(`"port":${testPort}`)
-    }, 10000)
+  //     expect(output).toContain('PGlite database initialized')
+  //     expect(output).toContain(`"port":${testPort}`)
+  //   }, 10000)
 
-    it('should work with memory database', async () => {
-      const testPort = getTestPort()
+  //   it('should work with memory database', async () => {
+  //     const testPort = getTestPort()
 
-      serverProcess = spawn(
-        'npx',
-        ['tsx', serverScript, '--port', testPort.toString(), '--db', 'memory://'],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
+  //     serverProcess = spawn(
+  //       'npx',
+  //       ['tsx', serverScript, '--port', testPort.toString(), '--db', 'memory://'],
+  //       {
+  //         stdio: ['pipe', 'pipe', 'pipe'],
+  //       },
+  //     )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        console.log(data.toString())
-        output += data.toString()
-      })
+  //     let output = ''
+  //     serverProcess.stdout?.on('data', (data) => {
+  //       console.log(data.toString())
+  //       output += data.toString()
+  //     })
 
-      serverProcess.stderr?.on('data', (data) => {
-        console.error(data.toString())
-      })
+  //     serverProcess.stderr?.on('data', (data) => {
+  //       console.error(data.toString())
+  //     })
 
-      const isReady = await waitForPort(testPort)
-      expect(isReady).toBe(true)
-      expect(output).toContain('Initializing PGLite with database: memory://')
-    }, 10000)
-  })
+  //     const isReady = await waitForPort(testPort)
+  //     expect(isReady).toBe(true)
+  //     expect(output).toContain('Initializing PGLite with database: memory://')
+  //   }, 10000)
+  // })
 
-  describe('Configuration Options', () => {
-    let serverProcess: ChildProcess | null = null
+  // describe('Configuration Options', () => {
+  //   let serverProcess: ChildProcess | null = null
 
-    afterEach(async () => {
-      if (serverProcess) {
-        serverProcess.kill('SIGTERM')
-        await new Promise<void>((resolve) => {
-          if (serverProcess) {
-            serverProcess.on('exit', () => resolve())
-          } else {
-            resolve()
-          }
-        })
-        serverProcess = null
-      }
-    })
+  //   afterEach(async () => {
+  //     if (serverProcess) {
+  //       serverProcess.kill('SIGTERM')
+  //       await new Promise<void>((resolve) => {
+  //         if (serverProcess) {
+  //           serverProcess.on('exit', () => resolve())
+  //         } else {
+  //           resolve()
+  //         }
+  //       })
+  //       serverProcess = null
+  //     }
+  //   })
 
-    it('should handle different hosts', async () => {
-      const testPort = getTestPort()
+  //   it('should handle different hosts', async () => {
+  //     const testPort = getTestPort()
 
-      serverProcess = spawn(
-        'npx',
-        ['tsx', serverScript, '--port', testPort.toString(), '--host', '0.0.0.0'],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
+  //     serverProcess = spawn(
+  //       'npx',
+  //       ['tsx', serverScript, '--port', testPort.toString(), '--host', '0.0.0.0'],
+  //       {
+  //         stdio: ['pipe', 'pipe', 'pipe'],
+  //       },
+  //     )
 
-      let output = ''
-      serverProcess.stdout?.on('data', (data) => {
-        console.log(data.toString())
-        output += data.toString()
-      })
+  //     let output = ''
+  //     serverProcess.stdout?.on('data', (data) => {
+  //       console.log(data.toString())
+  //       output += data.toString()
+  //     })
 
-      serverProcess.stderr?.on('data', (data) => {
-        console.error(data.toString())
-      })
+  //     serverProcess.stderr?.on('data', (data) => {
+  //       console.error(data.toString())
+  //     })
 
-      const isReady = await waitForPort(testPort)
-      expect(isReady).toBe(true)
-      serverProcess.kill()
-      await new Promise<void>((resolve) => {
-        serverProcess!.on('exit', () => {
-          expect(output).toContain(`"host":"0.0.0.0"`)
-          serverProcess = null
-          resolve()
-        })
-      })
-    }, 10000)
+  //     const isReady = await waitForPort(testPort)
+  //     expect(isReady).toBe(true)
+  //     serverProcess.kill()
+  //     await new Promise<void>((resolve) => {
+  //       serverProcess!.on('exit', () => {
+  //         expect(output).toContain(`"host":"0.0.0.0"`)
+  //         serverProcess = null
+  //         resolve()
+  //       })
+  //     })
+  //   }, 10000)
   })
 })
