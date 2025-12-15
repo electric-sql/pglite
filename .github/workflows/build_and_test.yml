@@ -62,6 +62,12 @@ jobs:
       - name: Install vitest globally
         run: pnpm i -g vitest tsx
 
+      - name: Build server js
+        run: pnpm -C packages/pglite-socket/ build
+
+      - name: Run server js
+        run: node packages/pglite-socket/dist/scripts/server.js
+
       - name: Run server socket independently
         run: tsx ./packages/pglite-socket/src/scripts/server.ts
 
