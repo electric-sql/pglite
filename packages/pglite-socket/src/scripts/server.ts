@@ -331,7 +331,7 @@
 
 import { PGlite } from '@electric-sql/pglite'
 
-  PGlite.create().then( async pg => {
+  PGlite.create({ debug: 2 }).then( async pg => {
     const result = await pg.exec('SELECT version();')
     console.log('sserver.ts dummy test: version ', result)
   })
