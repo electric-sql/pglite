@@ -63,7 +63,7 @@ jobs:
         run: pnpm i -g vitest tsx
 
       - name: Run server socket independently
-        run: tsx ./packages/pglite-socket/src/scripts/server.ts --debug 2
+        run: tsx ./packages/pglite-socket/src/scripts/server.ts
 
       - name: Test socket server
         run: vitest run ./packages/pglite-socket/tests/server.test.ts
