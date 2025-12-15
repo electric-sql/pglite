@@ -312,6 +312,10 @@ async function main() {
     process.exit(0)
   }
 
+  const pglite = await PGlite.create()
+  const result = await pglite.exec('SELECT version();')
+  console.log('server.ts dummy test: version ', result)
+
   try {
     const config = PGLiteServerRunner.parseConfig()
     const serverRunner = new PGLiteServerRunner(config)
