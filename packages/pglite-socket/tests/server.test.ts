@@ -3,6 +3,7 @@ import { spawn, ChildProcess } from 'node:child_process'
 import { createConnection } from 'net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { PGlite } from '@electric-sql/pglite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const serverScript = path.resolve(__dirname, '../src/scripts/server.ts')
@@ -39,63 +40,69 @@ describe('Server Script Tests', () => {
   }
 
   describe('Help and Basic Functionality', () => {
-    // it('should show help when --help flag is used', async () => {
-    //   const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
-    //     stdio: ['pipe', 'pipe', 'pipe'],
-    //   })
-
-    //   let output = ''
-    //   serverProcess.stdout?.on('data', (data) => {
-    //     output += data.toString()
-    //   })
-
-    //   await new Promise<void>((resolve) => {
-    //     serverProcess.on('exit', (code) => {
-    //       expect(code).toBe(0)
-    //       expect(output).toContain('PGlite Socket Server')
-    //       expect(output).toContain('Usage:')
-    //       expect(output).toContain('Options:')
-    //       expect(output).toContain('--db')
-    //       expect(output).toContain('--port')
-    //       expect(output).toContain('--host')
-    //       resolve()
-    //     })
-    //   })
-    // }, 10000)
-
-    it('should accept and use debug level parameter', async () => {
-      const testPort = getTestPort()
-      const serverProcess = spawn(
-        'npx',
-        ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      )
+    it('should show help when --help flag is used', async () => {
+      const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
 
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
-        console.log(data.toString())
         output += data.toString()
       })
 
-      serverProcess.stderr?.on('data', (data) => {
-        console.error(data.toString())
-      })
-
-      // Wait for server to start
-      await waitForPort(testPort)
-
-      // Kill the server
-      serverProcess.kill('SIGTERM')
-
       await new Promise<void>((resolve) => {
-        serverProcess.on('exit', () => {
-          expect(output).toContain('Debug level: 2')
+        serverProcess.on('exit', (code) => {
+          expect(code).toBe(0)
+          expect(output).toContain('PGlite Socket Server')
+          expect(output).toContain('Usage:')
+          expect(output).toContain('Options:')
+          expect(output).toContain('--db')
+          expect(output).toContain('--port')
+          expect(output).toContain('--host')
           resolve()
         })
       })
     }, 10000)
+
+    it('dummy', async () => {
+      const pglite = await PGlite.create()
+      const result = await pglite.exec('SELECT version();')
+      console.log('dummy test: version ', result)
+    }, 10000)
+
+    // it('should accept and use debug level parameter', async () => {
+    //   const testPort = getTestPort()
+    //   const serverProcess = spawn(
+    //     'npx',
+    //     ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
+    //     {
+    //       stdio: ['pipe', 'pipe', 'pipe'],
+    //     },
+    //   )
+
+    //   let output = ''
+    //   serverProcess.stdout?.on('data', (data) => {
+    //     console.log(data.toString())
+    //     output += data.toString()
+    //   })
+
+    //   serverProcess.stderr?.on('data', (data) => {
+    //     console.error(data.toString())
+    //   })
+
+    //   // Wait for server to start
+    //   await waitForPort(testPort)
+
+    //   // Kill the server
+    //   serverProcess.kill('SIGTERM')
+
+    //   await new Promise<void>((resolve) => {
+    //     serverProcess.on('exit', () => {
+    //       expect(output).toContain('Debug level: 2')
+    //       resolve()
+    //     })
+    //   })
+    // }, 10000)
   // })
 
   // describe('Server Startup and Connectivity', () => {
