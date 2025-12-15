@@ -61,6 +61,22 @@ jobs:
         run: |
           pnpm build:all
 
+      - name: Upload PGlite Interim to Github artifacts
+        id: upload-pglite-interim-build-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-interim-build-files-node-v20.x
+          path: ./packages/pglite/release/**
+          retention-days: 30
+
+      - name: Upload pglite-tools build artifacts to Github artifacts
+        id: upload-pglite-tools-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release/**
+          retention-days: 30          
+
       - name: Install vitest globally
         run: pnpm i -g vitest tsx
 
@@ -86,22 +102,6 @@ jobs:
       - name: Test pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
-
-      - name: Upload PGlite Interim to Github artifacts
-        id: upload-pglite-interim-build-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-interim-build-files-node-v20.x
-          path: ./packages/pglite/release/**
-          retention-days: 60
-
-      - name: Upload pglite-tools build artifacts to Github artifacts
-        id: upload-pglite-tools-release-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-tools-release-files-node-v20.x
-          path: ./packages/pglite-tools/release/**
-          retention-days: 60
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
