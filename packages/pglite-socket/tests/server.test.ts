@@ -40,6 +40,12 @@ describe('Server Script Tests', () => {
   }
 
   describe('Help and Basic Functionality', () => {
+    it('dummy', async () => {
+      const pglite = await PGlite.create()
+      const result = await pglite.exec('SELECT version();')
+      console.log('dummy test: version ', result)
+    }, 10000)
+
     it('should show help when --help flag is used', async () => {
       const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -62,12 +68,6 @@ describe('Server Script Tests', () => {
           resolve()
         })
       })
-    }, 10000)
-
-    it('dummy', async () => {
-      const pglite = await PGlite.create()
-      const result = await pglite.exec('SELECT version();')
-      console.log('dummy test: version ', result)
     }, 10000)
 
     // it('should accept and use debug level parameter', async () => {
