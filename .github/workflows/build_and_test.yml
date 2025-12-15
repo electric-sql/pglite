@@ -60,7 +60,7 @@ jobs:
           pnpm build:all
 
       - name: Test socket server
-        run: vitest run ./packages/pglite-socket/tests/server.test.ts
+        run: npx vitest run ./packages/pglite-socket/tests/server.test.ts
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
