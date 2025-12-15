@@ -47,7 +47,7 @@ describe('Server Script Tests', () => {
     }, 10000)
 
     it('should show help when --help flag is used', async () => {
-      const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
+      const serverProcess = spawn('tsx',[serverScript, '--help'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       })
 
@@ -58,6 +58,7 @@ describe('Server Script Tests', () => {
 
       await new Promise<void>((resolve) => {
         serverProcess.on('exit', (code) => {
+          console.log(output)
           expect(code).toBe(0)
           expect(output).toContain('PGlite Socket Server')
           expect(output).toContain('Usage:')
@@ -70,39 +71,39 @@ describe('Server Script Tests', () => {
       })
     }, 10000)
 
-    // it('should accept and use debug level parameter', async () => {
-    //   const testPort = getTestPort()
-    //   const serverProcess = spawn(
-    //     'npx',
-    //     ['tsx', serverScript, '--port', testPort.toString(), '--debug', '2'],
-    //     {
-    //       stdio: ['pipe', 'pipe', 'pipe'],
-    //     },
-    //   )
+    it('should accept and use debug level parameter', async () => {
+      const testPort = getTestPort()
+      const serverProcess = spawn(
+        'tsx',
+        [serverScript, '-u', '/tmp/.s.PGSQL.5432', '--debug', '2'],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      )
 
-    //   let output = ''
-    //   serverProcess.stdout?.on('data', (data) => {
-    //     console.log(data.toString())
-    //     output += data.toString()
-    //   })
+      let output = ''
+      serverProcess.stdout?.on('data', (data) => {
+        console.log(data.toString())
+        output += data.toString()
+      })
 
-    //   serverProcess.stderr?.on('data', (data) => {
-    //     console.error(data.toString())
-    //   })
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
+      })
 
-    //   // Wait for server to start
-    //   await waitForPort(testPort)
+      // Wait for server to start
+      await waitForPort(testPort)
 
-    //   // Kill the server
-    //   serverProcess.kill('SIGTERM')
+      // Kill the server
+      serverProcess.kill('SIGTERM')
 
-    //   await new Promise<void>((resolve) => {
-    //     serverProcess.on('exit', () => {
-    //       expect(output).toContain('Debug level: 2')
-    //       resolve()
-    //     })
-    //   })
-    // }, 10000)
+      await new Promise<void>((resolve) => {
+        serverProcess.on('exit', () => {
+          expect(output).toContain('Debug level: 2')
+          resolve()
+        })
+      })
+    }, 10000)
   // })
 
   // describe('Server Startup and Connectivity', () => {
