@@ -50,6 +50,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      
       - name: Install
         working-directory: ${{ github.workspace }}
         run: pnpm install
@@ -66,7 +68,7 @@ jobs:
         run: pnpm -C packages/pglite-socket/ build
 
       - name: Run server js
-        run: node packages/pglite-socket/dist/scripts/server.js
+        run: bun packages/pglite-socket/dist/scripts/server.js
 
       - name: Run server socket independently
         run: tsx ./packages/pglite-socket/src/scripts/server.ts
