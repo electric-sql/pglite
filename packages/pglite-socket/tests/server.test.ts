@@ -47,7 +47,7 @@ describe('Server Script Tests', () => {
     }, 10000)
 
     it('should show help when --help flag is used', async () => {
-      const serverProcess = spawn('tsx',[serverScript, '--help'], {
+      const serverProcess = spawn('npx', ['tsx', serverScript, '--help'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       })
 
@@ -74,8 +74,8 @@ describe('Server Script Tests', () => {
     it('should accept and use debug level parameter', async () => {
       const testPort = getTestPort()
       const serverProcess = spawn(
-        'tsx',
-        [serverScript, '-u', '/tmp/.s.PGSQL.5432', '--debug', '2'],
+        'npx',
+        ['tsx', serverScript, '-u', '/tmp/.s.PGSQL.5432', '--debug', '2'],
         {
           stdio: ['pipe', 'pipe', 'pipe'],
         },
