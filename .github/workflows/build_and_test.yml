@@ -59,8 +59,11 @@ jobs:
         run: |
           pnpm build:all
 
+      - name: Install vitest globally
+        run: pnpm i -g vitest
+
       - name: Test socket server
-        run: npx vitest run ./packages/pglite-socket/tests/server.test.ts
+        run: vitest run ./packages/pglite-socket/tests/server.test.ts
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
