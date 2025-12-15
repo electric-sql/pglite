@@ -130,9 +130,10 @@ class PGLiteServerRunner {
     console.log(`Initializing PGLite with database: ${this.config.dbPath}`)
     console.log(`Debug level: ${this.config.debugLevel}`)
 
-    this.db = new PGlite(this.config.dbPath, { debug: this.config.debugLevel })
-    await this.db.waitReady
+    this.db = await PGlite.create(this.config.dbPath, { debug: this.config.debugLevel })
     console.log('PGlite database initialized')
+    console.log('exiting now')
+    process.exit(0)
   }
 
   private setupServerEventHandlers(): void {
