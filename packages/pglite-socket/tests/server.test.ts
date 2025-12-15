@@ -41,7 +41,7 @@ describe('Server Script Tests', () => {
 
   describe('Help and Basic Functionality', () => {
     it('dummy', async () => {
-      const pglite = await PGlite.create()
+      const pglite = await PGlite.create({ debug: 2 })
       const result = await pglite.exec('SELECT version();')
       console.log('dummy test: version ', result)
     }, 10000)
