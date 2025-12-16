@@ -64,33 +64,17 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Upload PGlite Interim to Github artifacts
-        id: upload-pglite-interim-build-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-interim-build-files-node-v20.x
-          path: ./packages/pglite/release/**
-          retention-days: 30
-
-      - name: Upload pglite-tools build artifacts to Github artifacts
-        id: upload-pglite-tools-release-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-tools-release-files-node-v20.x
-          path: ./packages/pglite-tools/release/**
-          retention-days: 30          
-
       - name: Build server js
         run: pnpm -C packages/pglite-socket/ build
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Run server js with bun
-        run: bun --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
+        run: bun packages/pglite-socket/dist/scripts/server.js
       
       - name: Run server js with node
-        run: node --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
+        run: node packages/pglite-socket/dist/scripts/server.js
 
       - name: Install vitest globally
         run: pnpm i -g vitest tsx
@@ -108,6 +92,22 @@ jobs:
       - name: Test pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
+
+      - name: Upload PGlite Interim to Github artifacts
+        id: upload-pglite-interim-build-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-interim-build-files-node-v20.x
+          path: ./packages/pglite/release/**
+          retention-days: 30
+
+      - name: Upload pglite-tools build artifacts to Github artifacts
+        id: upload-pglite-tools-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-tools-release-files-node-v20.x
+          path: ./packages/pglite-tools/release/**
+          retention-days: 30
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
