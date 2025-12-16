@@ -386,18 +386,6 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-        // experiment on wasmTable get
-        const prevGet = this.mod.wasmTable.get
-        this.mod.wasmTable.get = (index: number) => {
-          const result = prevGet.call(this.mod!.wasmTable, index);
-          if (!result) {
-            console.error('pglite: function index not found in wasmTable', index)
-            // throw `pglite: function index not found in wasmTable ${index}`
-            // search the js.symbols file for index
-          }
-          return result
-        }
-
     // set the write callback
     this.#pglite_write = this.mod.addFunction((ptr: any, length: number) => {
       let bytes
@@ -586,10 +574,10 @@ export class PGlite
 
     // Close the database
     try {
-      // this.mod!.removeFunction(this.#pglite_read)
-      // this.mod!.removeFunction(this.#pglite_write)
       await this.execProtocol(serialize.end())
       this.mod!._pgl_shutdown()
+      this.mod!.removeFunction(this.#pglite_read)
+      this.mod!.removeFunction(this.#pglite_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
