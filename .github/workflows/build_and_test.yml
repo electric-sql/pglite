@@ -83,14 +83,14 @@ jobs:
       - name: Build server js
         run: pnpm -C packages/pglite-socket/ build
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run server js with bun
         run: bun --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
       
       - name: Run server js with node
         run: node --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Install vitest globally
         run: pnpm i -g vitest tsx
