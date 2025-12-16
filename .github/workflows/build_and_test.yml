@@ -84,10 +84,10 @@ jobs:
         run: pnpm -C packages/pglite-socket/ build
 
       - name: Run server js with bun
-        run: bun packages/pglite-socket/dist/scripts/server.js
+        run: bun --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
       
       - name: Run server js with node
-        run: node packages/pglite-socket/dist/scripts/server.js
+        run: node --no-liftoff --no-wasm-tier-up packages/pglite-socket/dist/scripts/server.js
 
       - name: Install vitest globally
         run: pnpm i -g vitest tsx
