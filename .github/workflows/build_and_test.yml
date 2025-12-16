@@ -56,8 +56,8 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm install
 
-      - name: Get Node version
-        run: node -v && npm -v && pnpm -v
+      - name: Get runtimes versions
+        run: node -v && npm -v && pnpm -v && bun -v
 
       - name: Build all
         working-directory: ${{ github.workspace }}
@@ -80,9 +80,6 @@ jobs:
           path: ./packages/pglite-tools/release/**
           retention-days: 30          
 
-      - name: Install vitest globally
-        run: pnpm i -g vitest tsx
-
       - name: Build server js
         run: pnpm -C packages/pglite-socket/ build
 
@@ -91,6 +88,9 @@ jobs:
       
       - name: Run server js with node
         run: node packages/pglite-socket/dist/scripts/server.js
+
+      - name: Install vitest globally
+        run: pnpm i -g vitest tsx
 
       - name: Run server socket independently
         run: tsx ./packages/pglite-socket/src/scripts/server.ts
