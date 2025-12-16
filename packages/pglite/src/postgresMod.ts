@@ -16,7 +16,6 @@ export type FS = typeof FS & {
 
 export interface PostgresMod
   extends Omit<EmscriptenModule, 'preInit' | 'preRun' | 'postRun'> {
-  wasmTable: WebAssembly.Table
   preInit: Array<{ (mod: PostgresMod): void }>
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
