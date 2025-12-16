@@ -71,9 +71,7 @@ describe('pg_pgcryptotrgm', () => {
 
     await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
 
-    const res = await pg.query(
-      "SELECT armor(digest('test', 'sha1')) as value;",
-    )
+    const res = await pg.query("SELECT armor(digest('test', 'sha1')) as value;")
     expect(res.rows[0].value).toContain('-----BEGIN PGP MESSAGE-----')
     expect(res.rows[0].value).toContain('-----END PGP MESSAGE-----')
   })
@@ -168,10 +166,9 @@ FROM encrypted;
     )
     const armored = res.rows[0].armored
 
-    const res2 = await pg.query(
-      `SELECT * FROM pgp_armor_headers($1);`,
-      [armored],
-    )
+    const res2 = await pg.query(`SELECT * FROM pgp_armor_headers($1);`, [
+      armored,
+    ])
     expect(res2.rows).toContainEqual({ key: 'key1', value: 'value1' })
   })
 
