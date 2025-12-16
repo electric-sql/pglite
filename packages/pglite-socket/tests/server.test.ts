@@ -49,6 +49,10 @@ describe('Server Script Tests', () => {
         output += data.toString()
       })
 
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
+      })
+
       await new Promise<void>((resolve) => {
         serverProcess.on('exit', (code) => {
           expect(code).toBe(0)
@@ -76,6 +80,10 @@ describe('Server Script Tests', () => {
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       // Wait for server to start
@@ -126,6 +134,10 @@ describe('Server Script Tests', () => {
         output += data.toString()
       })
 
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
+      })
+
       // Wait for server to be ready
       const isReady = await waitForPort(testPort)
       expect(isReady).toBe(true)
@@ -157,6 +169,10 @@ describe('Server Script Tests', () => {
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
@@ -196,6 +212,10 @@ describe('Server Script Tests', () => {
       let output = ''
       serverProcess.stdout?.on('data', (data) => {
         output += data.toString()
+      })
+
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(data.toString())
       })
 
       const isReady = await waitForPort(testPort)
