@@ -73,6 +73,10 @@ async function main() {
     '.js',
     '.cjs',
   ])
+  await findAndReplaceInDir('./dist/age', /\.\.\/release\//g, '', [
+    '.js',
+    '.cjs',
+  ])
   await findAndReplaceInDir(
     './dist',
     `require("./postgres.js")`,
