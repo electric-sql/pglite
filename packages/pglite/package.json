@@ -80,6 +80,16 @@
         "default": "./dist/pg_ivm/index.cjs"
       }
     },
+    "./pg_session_jwt": {
+      "import": {
+        "types": "./dist/pg_session_jwt/index.d.ts",
+        "default": "./dist/pg_session_jwt/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_session_jwt/index.d.cts",
+        "default": "./dist/pg_session_jwt/index.cjs"
+      }
+    },
     "./pgtap": {
       "import": {
         "types": "./dist/pgtap/index.d.ts",

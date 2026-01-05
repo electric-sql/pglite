@@ -545,6 +545,19 @@ const baseExtensions: Extension[] = [
     importName: 'pg_ivm',
     size: 24865,
   },
+  {
+    name: 'pg_session_jwt',
+    description: `
+    pg_session_jwt is a PostgreSQL extension designed to handle authenticated sessions through a JWT.
+    It can validate JWTs against a JWK (JSON Web Key) configured at startup, or fall back to PostgREST-compatible
+    \`request.jwt.claims\` when a JWK is not configured.
+    `,
+    shortDescription: 'Authenticated sessions through a JWT.',
+    docs: 'https://github.com/neondatabase/pg_session_jwt',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pg_session_jwt',
+    importName: 'pg_session_jwt',
+  },
 ]
 
 const tags = [

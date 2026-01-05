@@ -65,6 +65,10 @@ async function main() {
     '.js',
     '.cjs',
   ])
+  await findAndReplaceInDir('./dist/pg_session_jwt', /\.\.\/release\//g, '', [
+    '.js',
+    '.cjs',
+  ])
   await findAndReplaceInDir('./dist/pgtap', /\.\.\/release\//g, '', [
     '.js',
     '.cjs',
