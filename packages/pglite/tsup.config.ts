@@ -28,6 +28,7 @@ const entryPoints = [
   'src/pgtap/index.ts',
   'src/pg_uuidv7/index.ts',
   'src/worker/index.ts',
+  'src/pg_hashids/index.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')
