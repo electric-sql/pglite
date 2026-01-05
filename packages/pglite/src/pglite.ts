@@ -992,7 +992,7 @@ export class PGlite
 
   async clone(): Promise<PGliteInterface> {
     const dump = await this.dumpDataDir('none')
-    return PGlite.create({ loadDataDir: dump })
+    return PGlite.create({ loadDataDir: dump, extensions: this.#extensions })
   }
 
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
