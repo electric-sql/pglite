@@ -549,8 +549,13 @@ const baseExtensions: Extension[] = [
     name: 'pg_session_jwt',
     description: `
     pg_session_jwt is a PostgreSQL extension designed to handle authenticated sessions through a JWT.
-    It can validate JWTs against a JWK (JSON Web Key) configured at startup, or fall back to PostgREST-compatible
-    \`request.jwt.claims\` when a JWK is not configured.
+
+    PGlite currently provides a compatibility shim that supports the PostgREST-compatible \`request.jwt.claims\`
+    fallback mode (e.g. \`auth.user_id()\` / \`auth.session()\`).
+
+    If you want the real neondatabase/pg_session_jwt (Rust/pgrx, JWK signature validation) to compile to WASM,
+    we’ll need to add Rust/pgrx-to-emscripten support in the builder; the current backend pipeline expects
+    PGXS/make install.
     `,
     shortDescription: 'Authenticated sessions through a JWT.',
     docs: 'https://github.com/neondatabase/pg_session_jwt',

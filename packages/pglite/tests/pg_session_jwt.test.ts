@@ -25,14 +25,18 @@ await testEsmCjsAndDTC(async (importType) => {
       })
 
       await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_session_jwt;')
-      await pg.exec(
-        `select set_config('request.jwt.claims', '{"sub":"user_123","role":"anon"}', true);`,
-      )
+      await pg.transaction(async (tx) => {
+        // `set_config(..., true)` is LOCAL to the current transaction, mirroring
+        // how PostgREST sets `request.jwt.claims`.
+        await tx.query(
+          `select set_config('request.jwt.claims', '{"sub":"user_123","role":"anon"}', true);`,
+        )
 
-      const res = await pg.query<{ user_id: string | null }>(
-        'select auth.user_id() as user_id;',
-      )
-      expect(res.rows[0].user_id).toBe('user_123')
+        const res = await tx.query<{ user_id: string | null }>(
+          'select auth.user_id() as user_id;',
+        )
+        expect(res.rows[0].user_id).toBe('user_123')
+      })
     })
   })
 })
