@@ -144,6 +144,16 @@
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
+    },
+    "./pg_hashids": {
+      "import": {
+        "types": "./dist/pg_hashids/index.d.ts",
+        "default": "./dist/pg_hashids/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_hashids/index.d.cts",
+        "default": "./dist/pg_hashids/index.cjs"
+      }
     }
   },
   "type": "module",
