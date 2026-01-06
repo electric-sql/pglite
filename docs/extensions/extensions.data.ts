@@ -297,13 +297,14 @@ const baseExtensions: Extension[] = [
     description: `
       PostGIS extends the capabilities of the PostgreSQL relational database by adding 
       support for storing, indexing, and querying geospatial data.
+      *No GDAL support atm.
     `,
     shortDescription: 'Storing, indexing, and querying geospatial data.',
     docs: 'postgis.net',
     tags: ['postgres extension'],
-    importPath: '@electric-sql/pglite/postgis',
+    importPath: '@electric-sql/pglite-postgis',
     importName: 'postgis',
-    size: 7895452,
+    size: 7901736,
   },
   {
     name: 'pg_uuidv7',
