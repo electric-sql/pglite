@@ -5,6 +5,7 @@ import { vector } from '../dist/vector/index.js'
 worker({
   async init() {
     const pg = new PGlite({
+      dataDir: 'idb://my-pgdata',
       extensions: {
         vector,
       },

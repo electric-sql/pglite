@@ -67,6 +67,13 @@
             }
             console.log('Leader has changed, clearing output ...')
             output.textContent = ''
+            setTimeout(async () => {
+              console.log('requesting incrementalQuery')
+              let incResult = await pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
+                const output = document.getElementById('output')
+                output.textContent = JSON.stringify(data.rows, null, 2)
+              })
+          }, 200)
           })
 
           console.log('Ready!')
@@ -90,10 +97,11 @@
 
           setTimeout(async () => {
             let incResult = await pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
+              console.log('requesting incrementalQuery')
               const output = document.getElementById('output')
               output.textContent = JSON.stringify(data.rows, null, 2)
             })
-          }, 500)
+          }, 200)
         </script>
       </div>
       <div id="log"></div>
