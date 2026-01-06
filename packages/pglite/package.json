@@ -188,6 +188,7 @@
     "bun": "^1.1.30",
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
+    "openpgp": "^6.3.0",
     "playwright": "^1.48.0",
     "tinytar": "^0.1.0",
     "vitest": "^2.1.2"
