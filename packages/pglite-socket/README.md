@@ -160,6 +160,7 @@ pglite-server --help
 - `-h, --host=HOST` - Host to bind to (default: 127.0.0.1)
 - `-u, --path=UNIX` - Unix socket to bind to (takes precedence over host:port)
 - `-v, --debug=LEVEL` - Debug level 0-5 (default: 0)
+- `-e, --extensions=LIST` - Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis)
 - `-r, --run=COMMAND` - Command to run after server starts
 - `--include-database-url` - Include DATABASE_URL in subprocess environment
 - `--shutdown-timeout=MS` - Timeout for graceful subprocess shutdown in ms (default: 5000)
