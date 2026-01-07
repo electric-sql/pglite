@@ -95,9 +95,7 @@ jobs:
         working-directory: ./packages/pglite
     needs: [build-all]
     steps:
-      - name: Update ubuntu packages
-        run: apt update
-        
+
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -108,6 +106,9 @@ jobs:
       - uses: denoland/setup-deno@v1
         with:
           deno-version: vx.x.x
+
+      - name: Update ubuntu packages
+        run: apt update
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v4
