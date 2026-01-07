@@ -249,7 +249,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pglite-tools-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-tools/dist/*        
+          path: ./packages/pglite-tools/dist/*
+
+      - name: Upload pglite-postgis distribution artifact
+        id: upload-pglite-postgis-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-postgis-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-postgis/dist/*                  
 
   publish-website-with-demos:
     name: Publish website with demos
@@ -289,6 +296,12 @@ jobs:
         with:
           name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/
+
+      - name: Download pglite-postgis dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-dist-node-v20.x
+          path: ./packages/pglite-postgis/dist/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
