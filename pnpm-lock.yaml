@@ -340,6 +340,9 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
+      '@electric-sql/pglite-postgis':
+        specifier: workspace:*
+        version: link:../pglite-postgis
       '@types/emscripten':
         specifier: ^1.41.1
         version: 1.41.1
