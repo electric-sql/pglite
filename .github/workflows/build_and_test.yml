@@ -64,9 +64,14 @@ jobs:
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm typecheck
+      
       - name: Test pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
+
+      - name: Test pglite-postgis
+        working-directory: ${{ github.workspace }}/packages/pglite-postgis
+        run: pnpm test        
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
@@ -83,6 +88,14 @@ jobs:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/**
           retention-days: 60
+
+      - name: Upload pglite-postgis build artifacts to Github artifacts
+        id: upload-pglite-postgis-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release/**
+          retention-days: 60          
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
@@ -117,6 +130,12 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release
+
+      - name: Download pglite-postgis build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release        
 
       - name: Install dependencies
         run: |
@@ -203,6 +222,12 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/
+
+      - name: Download pglite-postgis build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release/
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -224,7 +249,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pglite-tools-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-tools/dist/*        
+          path: ./packages/pglite-tools/dist/*
+
+      - name: Upload pglite-postgis distribution artifact
+        id: upload-pglite-postgis-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-postgis-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-postgis/dist/*                  
 
   publish-website-with-demos:
     name: Publish website with demos
@@ -253,11 +285,23 @@ jobs:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release          
 
+      - name: Download pglite-postgis build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release/  
+
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/
+
+      - name: Download pglite-postgis dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-dist-node-v20.x
+          path: ./packages/pglite-postgis/dist/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -365,6 +409,12 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/
+
+      - name: Download pglite-postgis build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release/
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
