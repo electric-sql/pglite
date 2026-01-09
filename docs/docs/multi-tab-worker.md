@@ -53,6 +53,8 @@ In addition to having all the standard methods of the [`PGlite` interface](./api
 - `id: string`<br>
   This is an optional `id` to group your PGlite workers. The leader election is run between all `PGliteWorker`s with the same `id`.<br>
   If not provided, the url to the worker is concatenated with the `dataDir` option to create an id.
+- `singleTab: boolean`<br>
+  Set to `true` if using `PGliteWorker` in an environment without `navigator.locks` support, such as a Capacitor app. These webviews have no tabs so there is no need to run a leader election. Defaults to `false`.
 - `meta: any`<br>
   Any additional metadata you would like to pass to the worker process `init` function.
 
