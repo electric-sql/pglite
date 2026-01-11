@@ -563,7 +563,7 @@ const baseExtensions: Extension[] = [
     name: 'pg_hashids',
     description: `
       Hashids is a small open-source library that generates short, unique, non-sequential
-      ids from numbers. It converts numbers like 347 into strings like “yr8”. You can also
+      ids from numbers. It converts numbers like 347 into strings like "yr8". You can also
       decode those ids back. This is useful in bundling several parameters into one or simply
       using them as short UIDs.
       `,
@@ -574,6 +574,20 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/pg_hashids',
     importName: 'pg_hashids',
     size: 4212,
+  },
+  {
+    name: 'pg_textsearch',
+    description: `
+      PostgreSQL extension for BM25 relevance-ranked full-text search.
+      Provides a bm25 index access method for efficient full-text search with
+      BM25 ranking, supporting multiple languages and custom parameters.
+      `,
+    shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
+    docs: 'https://github.com/timescale/pg_textsearch',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pg_textsearch',
+    importName: 'pg_textsearch',
+    size: 0,
   },
 ]
 
