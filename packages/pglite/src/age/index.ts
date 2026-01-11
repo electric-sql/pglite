@@ -34,7 +34,7 @@ const setup = async (
     // operator class names WITHOUT schema qualification (e.g., "graphid_ops").
     // PostgreSQL must be able to find these in search_path.
     // We prepend ag_catalog to ensure AGE functions work correctly.
-    await pg.exec("SET search_path = ag_catalog, \"$user\", public;")
+    await pg.exec('SET search_path = ag_catalog, "$user", public;')
 
     // Verify hooks are active by attempting a simple cypher parse.
     // This validates that post_parse_analyze_hook is working.
@@ -88,4 +88,3 @@ export const age = {
   name: 'age',
   setup,
 } satisfies Extension
-
