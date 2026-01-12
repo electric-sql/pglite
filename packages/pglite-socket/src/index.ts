@@ -186,7 +186,6 @@ export class PGLiteSocketHandler extends EventTarget {
     this.lastActivityTime = Date.now()
 
     // Set up socket options
-    socket.setKeepAlive(true, 30000)
     socket.setNoDelay(true)
 
     // Set up idle timeout if configured
@@ -520,7 +519,12 @@ export class PGLiteSocketServer extends EventTarget {
     if (options.path) {
       this.path = options.path
     } else {
-      this.port = options.port ?? 5432
+      if (typeof options.port === 'number') {
+        // Keep port undefined on port 0, will be set by the OS when we start the server.
+        this.port = options.port ?? options.port
+      } else {
+        this.port = 5432
+      }
       this.host = options.host || '127.0.0.1'
     }
     this.inspect = options.inspect ?? false
@@ -583,7 +587,15 @@ export class PGLiteSocketServer extends EventTarget {
           resolve()
         })
       } else {
-        this.server.listen(this.port, this.host, () => {
+        const server = this.server
+        server.listen(this.port, this.host, () => {
+          const address = server.address()
+          // We are not using pipes, so return type should be AddressInfo
+          if (address === null || typeof address !== 'object') {
+            throw Error('Expected address info')
+          }
+          // Assign the new port number
+          this.port = address.port
           this.log(`start: server listening on ${this.getServerConn()}`)
           this.dispatchEvent(
             new CustomEvent('listening', {
