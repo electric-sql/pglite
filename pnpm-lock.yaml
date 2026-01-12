@@ -340,9 +340,6 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
-      '@electric-sql/pglite-postgis':
-        specifier: workspace:*
-        version: link:../pglite-postgis
       '@types/emscripten':
         specifier: ^1.41.1
         version: 1.41.1
@@ -2080,7 +2077,6 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 

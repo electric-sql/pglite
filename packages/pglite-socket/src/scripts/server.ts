@@ -43,7 +43,7 @@ const args = parseArgs({
       type: 'string',
       short: 'e',
       default: undefined,
-      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis)',
+      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto)',
     },
     run: {
       type: 'string',
@@ -79,7 +79,7 @@ Options:
   -h, --host=HOST     Host to bind to (default: 127.0.0.1)
   -u, --path=UNIX     Unix socket to bind to (default: undefined). Takes precedence over host:port
   -v, --debug=LEVEL   Debug level 0-5 (default: 0)
-  -e, --extensions=LIST  Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis)
+  -e, --extensions=LIST  Comma-separated list of extensions to load (e.g., vector,pgcrypto)
   -r, --run=COMMAND   Command to run after server starts
   --include-database-url  Include DATABASE_URL in subprocess environment
   --shutdown-timeout=MS   Timeout for graceful subprocess shutdown in ms (default: 5000)
@@ -170,7 +170,7 @@ class PGLiteServerRunner {
             const mod = await import(`@electric-sql/pglite/contrib/${name}`)
             ext = mod[name] as Extension
           } catch {
-            // Fall back to external package (e.g., @electric-sql/pglite-postgis)
+            // Fall back to external package (e.g., @electric-sql/pglite-<extension>)
             const mod = await import(`@electric-sql/pglite-${name}`)
             ext = mod[name] as Extension
           }
