@@ -13,7 +13,7 @@ import { PGLiteSocketServer } from '../src'
 import { spawn, ChildProcess } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import fs from 'fs';
+import fs from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -568,8 +568,7 @@ describe(`PGLite Socket Server`, () => {
         idle_timeout: 5,
         connect_timeout: 10,
         max: 1,
-      })      
-
+      })
     })
 
     afterAll(async () => {
@@ -674,6 +673,6 @@ describe(`PGLite Socket Server`, () => {
         SELECT id_decode(${hash}, 'salt', 10, 'abcdefghijABCDEFGHIJ1234567890') as id
       `
       expect(decodeResult[0].id[0]).toBe('1234567')
-    })    
+    })
   })
 })

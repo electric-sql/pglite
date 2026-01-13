@@ -175,7 +175,9 @@ class PGLiteServerRunner {
           ext = mod[exportName] as Extension
           if (ext) {
             extensions[exportName] = ext
-            console.log(`Imported extension '${exportName}' from '${packagePath}'`)
+            console.log(
+              `Imported extension '${exportName}' from '${packagePath}'`,
+            )
           }
         } else if (builtInExtensions.includes(name)) {
           // Built-in extension (e.g., @electric-sql/pglite/vector)

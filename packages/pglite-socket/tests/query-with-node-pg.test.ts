@@ -13,7 +13,7 @@ import { PGLiteSocketServer } from '../src'
 import { spawn, ChildProcess } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import fs from 'fs';
+import fs from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -608,7 +608,6 @@ describe(`PGLite Socket Server`, () => {
         connectionTimeoutMillis: 10000,
       })
       await client.connect()
-
     })
 
     afterAll(async () => {
