@@ -532,5 +532,20 @@ describe(`PGLite Socket Server`, () => {
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
     })
+
+    it('should handle large queries that split across TCP packets', async () => {
+      // Create a table
+      await client.query(`CREATE TABLE test_users (id SERIAL, data TEXT)`)
+      
+      // Generate >64KB payload to force TCP fragmentation
+      const largeData = 'x'.repeat(100_000) // 100KB string
+      
+      // Insert large data
+      const result = await client.query(`
+        INSERT INTO test_users (data) VALUES ('${largeData}') RETURNING *
+      `)
+      
+      expect(result.rows[0].data).toBe(largeData)
+    })    
   })
 })
