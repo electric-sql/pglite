@@ -44,6 +44,7 @@ export interface InitdbMod
   // _fputs: (s: number, stream: number) => number
   _fopen: (path: number, mode: number) => number
   _fclose: (stream: number) => number
+  _fflush: (stream: number) => number
   addFunction: (
     fn: CallableFunction,
     signature: string,

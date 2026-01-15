@@ -253,20 +253,20 @@ export class PGlite
   }
 
 
-  pgl_stdin: any
+  // pgl_stdin: any
 
-  #pgl_stdin(): number | null {
-    if (this.pgl_stdin) {
-      return this.pgl_stdin()
-    }
-    return null
-  }
-  #pgl_stdout(c: number): any {
-    // if (this.debug) {
-    //   console.debug(text)
-    // }
-    this.#stdoutCbs.forEach(cb => cb(c))
-  }
+  // #pgl_stdin(): number | null {
+  //   if (this.pgl_stdin) {
+  //     return this.pgl_stdin()
+  //   }
+  //   return null
+  // }
+  // #pgl_stdout(c: number): any {
+  //   // if (this.debug) {
+  //   //   console.debug(text)
+  //   // }
+  //   this.#stdoutCbs.forEach(cb => cb(c))
+  // }
   // #pgl_stderr(c: number): any {
   //   this.#stderrCbs.forEach(cb => cb(c))
   //   // console.log('stderr called', c)
@@ -325,12 +325,13 @@ export class PGlite
       INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
       // print: (text: string) => {
-      //   this.#print(text)
+      //   console.log('pgliteout', text)
+      //   // this.#print(text)
       // }, 
-      printErr: (text: string) => {
-        console.error("pgliteerror", text)
-        // this.#printErr(text)
-      },
+      // printErr: (text: string) => {
+      //   console.error("pgliteerror", text)
+      //   // this.#printErr(text)
+      // },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
@@ -418,9 +419,9 @@ export class PGlite
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
         },
-        (mod: PostgresMod) => {
-          mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), null)
-        },
+        // (mod: PostgresMod) => {
+        //   mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), null)
+        // },
         (mod: any) => {
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
           mod.FS.chmod(initdbExePath, 0o0555)
