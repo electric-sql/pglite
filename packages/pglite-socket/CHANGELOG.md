@@ -1,5 +1,15 @@
 # @electric-sql/pglite-socket
 
+## 0.0.20
+
+### Patch Changes
+
+- 54a4873: allow extensions to be loaded via '-e/--extensions <list>' cmd line parameter'
+- 45bff97: added pgcrypto extension
+- Updated dependencies [45bff97]
+- Updated dependencies [5ec474f]
+  - @electric-sql/pglite@0.3.15
+
 ## 0.0.19
 
 ### Patch Changes
