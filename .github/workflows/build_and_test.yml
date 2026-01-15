@@ -340,6 +340,7 @@ jobs:
   changesets-release:
     if: github.event_name == 'push'
     permissions:
+      id-token: write # Required for npm trusted publishing (OIDC)
       contents: write # to create release (changesets/action)
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
@@ -377,4 +378,3 @@ jobs:
           title: 'chore: publish new package versions'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
