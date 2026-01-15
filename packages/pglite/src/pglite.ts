@@ -669,6 +669,10 @@ export class PGlite
       // the previous call might have increased the size of the buffer so reset it to its default
       this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
     }
+    this.#readOffset = 0
+    this.#outputData = message
+
+    this.#writeOffset = 0
 
     // execute the message
     mod._interactive_one(message.length, message[0])

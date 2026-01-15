@@ -12,9 +12,10 @@
     "ci:publish": "pnpm changeset publish",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
+    "wasm:copy-postgis": "mkdir -p ./packages/pglite-postgis/release && cp ./postgres-pglite/dist/extensions/postgis/postgis.tar.gz ./packages/pglite-postgis/release",
     "wasm:copy-pgdump": "mkdir -p ./packages/pglite-tools/release && cp ./postgres-pglite/dist/bin/pg_dump.* ./packages/pglite-tools/release",
     "wasm:copy-pglite": "mkdir -p ./packages/pglite/release/ && cp ./postgres-pglite/dist/bin/pglite.* ./packages/pglite/release/ && cp ./postgres-pglite/dist/extensions/*.tar.gz ./packages/pglite/release/",
-    "wasm:build": "cd postgres-pglite && ./build-with-docker.sh && cd .. && pnpm wasm:copy-pglite && pnpm wasm:copy-pgdump",
+    "wasm:build": "cd postgres-pglite && ./build-with-docker.sh && cd .. && pnpm wasm:copy-pglite && pnpm wasm:copy-pgdump && pnpm wasm:copy-postgis",
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all"
