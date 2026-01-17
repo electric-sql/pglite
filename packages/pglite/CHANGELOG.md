@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.3.15
+
+### Patch Changes
+
+- 45bff97: added pgcrypto extension
+- 5ec474f: Added pg_hashids extension.
+
 ## 0.3.14
 
 ### Patch Changes
