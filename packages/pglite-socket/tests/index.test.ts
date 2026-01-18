@@ -105,7 +105,7 @@ describe('PGLiteSocketHandler', () => {
   afterEach(async () => {
     // Ensure handler is detached
     if (handler?.isAttached) {
-      handler.detach(true)
+      await handler.detach(true)
     }
   })
 
@@ -126,7 +126,7 @@ describe('PGLiteSocketHandler', () => {
     expect(handler.isAttached).toBe(true)
 
     // Then detach
-    handler.detach(false)
+    await handler.detach(false)
     expect(handler.isAttached).toBe(false)
     expect(mockSocket.removeAllListeners).toHaveBeenCalled()
   })
@@ -136,7 +136,7 @@ describe('PGLiteSocketHandler', () => {
     await handler.attach(mockSocket)
 
     // Detach with close option
-    handler.detach(true)
+    await handler.detach(true)
     expect(handler.isAttached).toBe(false)
     expect(mockSocket.end).toHaveBeenCalled()
   })
