@@ -24,6 +24,7 @@ class QueryQueueManager {
   private processing = false
   private db: PGlite
   private debug: boolean
+  private lastHandlerId: null | number = null
 
   constructor(db: PGlite, debug = false) {
     this.db = db
@@ -66,7 +67,25 @@ class QueryQueueManager {
     this.processing = true
 
     while (this.queue.length > 0) {
-      const query = this.queue.shift()
+      let query
+
+      if (this.db.isInTransaction() && this.lastHandlerId) {
+        const i = this.queue.findIndex(
+          (q) => q.handlerId === this.lastHandlerId,
+        )
+        if (i === -1) {
+          // we didn't find any other query from the same client!
+          this.log(
+            `transaction started, but no query from the same handler id found in queue`,
+            this.lastHandlerId,
+          )
+          query = null
+        } else {
+          query = this.queue.splice(i, 1)[0]
+        }
+      } else {
+        query = this.queue.shift()
+      }
       if (!query) break
 
       const waitTime = Date.now() - query.timestamp
@@ -83,6 +102,7 @@ class QueryQueueManager {
         this.log(
           `query from handler #${query.handlerId} completed, ${result.length} bytes`,
         )
+        this.lastHandlerId = query.handlerId
         query.resolve(result)
       } catch (error) {
         this.log(`query from handler #${query.handlerId} failed:`, error)
@@ -91,7 +111,7 @@ class QueryQueueManager {
     }
 
     this.processing = false
-    this.log(`queue processing complete, queue is empty`)
+    this.log(`queue processing complete, queue length is`, this.queue.length)
   }
 
   getQueueLength(): number {
@@ -110,6 +130,14 @@ class QueryQueueManager {
     const removed = before - this.queue.length
     if (removed > 0) {
       this.log(`cleared ${removed} queries for handler #${handlerId}`)
+    }
+  }
+
+  async clearTransactionIfNeeded(handlerId: number): Promise<void> {
+    if (this.db.isInTransaction() && this.lastHandlerId === handlerId) {
+      this.db.exec('ROLLBACK')
+      this.lastHandlerId = null
+      await this.processQueue()
     }
   }
 }
@@ -202,8 +230,7 @@ export class PGLiteSocketHandler extends EventTarget {
 
       setImmediate(async () => {
         try {
-          const result = await this.handleData(data)
-          this.log(`socket on data sent: ${result} bytes`)
+          await this.handleData(data)
         } catch (err) {
           this.log('socket on data error: ', err)
           this.handleError(err as Error)
@@ -237,7 +264,7 @@ export class PGLiteSocketHandler extends EventTarget {
     }, this.idleTimeout)
   }
 
-  public detach(close?: boolean): PGLiteSocketHandler {
+  public async detach(close?: boolean): Promise<PGLiteSocketHandler> {
     this.log(`detach: detaching socket, close=${close ?? this.closeOnDetach}`)
 
     if (this.idleTimer) {
@@ -247,6 +274,8 @@ export class PGLiteSocketHandler extends EventTarget {
 
     // Clear any pending queries for this handler
     this.queryQueue.clearQueueForHandler(this.id)
+
+    await this.queryQueue.clearTransactionIfNeeded(this.id)
 
     if (!this.socket) {
       this.log(`detach: no socket attached, nothing to do`)
@@ -372,6 +401,7 @@ export class PGLiteSocketHandler extends EventTarget {
                   this.log(`handleData: error writing to socket:`, err)
                   reject(err)
                 } else {
+                  this.log(`handleData: socket sent: ${result.length} bytes`)
                   resolve(result.length)
                 }
               })
@@ -385,7 +415,7 @@ export class PGLiteSocketHandler extends EventTarget {
           })
         }
 
-        totalProcessed += message.length
+        totalProcessed += result.length
       }
 
       // Emit data event with byte sizes

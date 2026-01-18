@@ -61,6 +61,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
+          debug: true,
         })
 
         // Add event listeners for debugging
@@ -554,10 +555,48 @@ describe(`PGLite Socket Server`, () => {
 
       expect(result.rows[0].data).toBe(largeData)
     })
+
+    it('should handle concurrent clients with interleaved transaction and query', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      try {
+        // Client 1 starts a transaction (don't await yet)
+        const beginResult = await client.query('BEGIN')
+
+        // Client 2 makes a simple SELECT 1 query (don't await yet)
+        const selectPromise = client2.query('SELECT 999999 as one')
+
+        // Small delay to ensure SELECT is sent before ROLLBACK
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client 1 rolls back the transaction (don't await yet)
+        const rollbackResult = await client.query('ROLLBACK')
+
+        const selectResult = await selectPromise
+
+        // Verify results
+        expect(beginResult.command).toBe('BEGIN')
+        expect(selectResult.rows[0].one).toBe(999999)
+        expect(rollbackResult.command).toBe('ROLLBACK')
+      } finally {
+        await client2.end()
+      }
+    }, 30000)
   })
 
   describe('with extensions via CLI', () => {
-    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now().toString()}`
+    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     fs.mkdirSync(UNIX_SOCKET_DIR_PATH)
     const UNIX_SOCKET_PATH = `${UNIX_SOCKET_DIR_PATH}/.s.PGSQL.5432`
     let serverProcess: ChildProcess | null = null

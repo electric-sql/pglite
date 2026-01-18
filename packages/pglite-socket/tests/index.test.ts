@@ -83,6 +83,7 @@ const createMockQueryQueue = () => {
   return {
     enqueue: vi.fn().mockResolvedValue(new Uint8Array(0)),
     clearQueueForHandler: vi.fn(),
+    clearTransactionIfNeeded: vi.fn(),
     getQueueLength: vi.fn().mockReturnValue(0),
   }
 }
