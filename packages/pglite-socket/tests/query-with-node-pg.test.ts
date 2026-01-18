@@ -633,7 +633,7 @@ describe(`PGLite Socket Server`, () => {
 
         expect(selectResult.rows[0].val).toBe(123456)
       } catch {
-        
+        // swallow
       }
     }, 30000)
   })
