@@ -593,6 +593,61 @@ describe(`PGLite Socket Server`, () => {
         await client2.end()
       }
     }, 30000)
+
+    it('should process pending queries when transaction owner disconnects', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      client.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // Client starts a transaction
+        const beginResult = await client.query('BEGIN')
+        expect(beginResult.command).toBe('BEGIN')
+
+        // Client 2 sends a query (will be blocked because client is in transaction)
+        const selectPromise = client2.query('SELECT 123456 as val')
+
+        // Small delay to ensure SELECT is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(client as any).connection.stream.destroy()
+
+        // Client 2's query should complete successfully after transaction is cleared
+        const selectResult = await selectPromise
+
+        expect(selectResult.rows[0].val).toBe(123456)
+      } finally {
+        await client2.end()
+        // Reconnect client for afterEach cleanup
+        if (DEBUG_TESTS) {
+          client = new Client({
+            connectionString: DEBUG_TESTS_REAL_SERVER,
+            connectionTimeoutMillis: 10000,
+            statement_timeout: 5000,
+          })
+        } else {
+          client = new Client(connectionConfig)
+        }
+        await client.connect()
+      }
+    }, 30000)
   })
 
   describe('with extensions via CLI', () => {
