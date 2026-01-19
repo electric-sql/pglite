@@ -144,6 +144,16 @@
         "types": "./dist/pg_hashids/index.d.cts",
         "default": "./dist/pg_hashids/index.cjs"
       }
+    },
+    "./pg_textsearch": {
+      "import": {
+        "types": "./dist/pg_textsearch/index.d.ts",
+        "default": "./dist/pg_textsearch/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_textsearch/index.d.cts",
+        "default": "./dist/pg_textsearch/index.cjs"
+      }
     }
   },
   "type": "module",
