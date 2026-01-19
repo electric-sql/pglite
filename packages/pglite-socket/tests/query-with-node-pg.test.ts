@@ -633,6 +633,161 @@ describe(`PGLite Socket Server`, () => {
 
         expect(selectResult.rows[0].val).toBe(123456)
       } catch {
+        expect(false, 'Should not happen')
+      }
+    }, 30000)
+
+    it('interleaved transactions should work', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second bob connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      alice.on('error', () => {
+        // Suppress the expected "Connection terminated unexpectedly" error
+      })
+
+      // Client starts a transaction
+      const aliceBegin = await alice.query('BEGIN')
+      expect(aliceBegin.command).toBe('BEGIN')
+
+      // Client 2 begins its own transaction
+      const bobBegin = bob.query('BEGIN')
+
+      // Small delay to ensure client2.BEGIN is enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      const aliceInsertPromise = alice.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Alice', 'alice@example.com')
+        RETURNING *
+      `)
+
+      const bobInsertPromise = bob.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Bob', 'bob@example.com')
+        RETURNING *
+      `)
+
+      // Small delay to ensure both inserts are enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      // bob commits
+      const bobCommit = bob.query('COMMIT')
+
+      // alice rolls back
+      const aliceRollback = alice.query('ROLLBACK')
+
+      await Promise.all([
+        bobBegin,
+        aliceInsertPromise,
+        bobInsertPromise,
+        aliceRollback,
+        bobCommit,
+      ])
+
+      // Verify only Bob was commited
+      const testUsers = await bob.query('SELECT * FROM test_users')
+      expect(testUsers.rows.length).toBe(1)
+      expect(testUsers.rows[0].name).toBe('Bob')
+    }, 30000)
+
+    it('interleaved transactions should work when one client crashes', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await bob.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second client connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      alice.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // alice starts a transaction
+        const aliceBegin = await alice.query('BEGIN')
+        expect(aliceBegin.command).toBe('BEGIN')
+
+        // bob begins its own transaction
+        const bobBegin = bob.query('BEGIN')
+
+        // Small delay to ensure client2.BEGIN is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // alice inserts data
+        alice.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Alice', 'alice@example.com')
+          RETURNING *
+        `)
+
+        // client inserts data
+        const bobInsert = bob.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Bob', 'bob@example.com')
+          RETURNING *
+        `)
+
+        // Small delay to ensure both inserts are enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client2 abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(alice as any).connection.stream.destroy()
+
+        // bob commits
+        const bobCommit = bob.query('COMMIT')
+
+        await Promise.all([bobBegin, bobInsert, bobCommit])
+
+        // Verify only Bob was commited
+        const selectResult = await bob.query('SELECT * FROM test_users')
+        expect(selectResult.rows.length).toBe(1)
+        expect(selectResult.rows[0].name).toBe('Bob')
+      } catch {
         // swallow
       }
     }, 30000)
