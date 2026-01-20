@@ -4,16 +4,9 @@ import { initdb } from '../dist/initdb.js'
 
 describe('initdb', () => {
   it('should init a database', async () => {
-    // const pg = await PGlite.create('/home/tdr/Desktop/electric/newpglite/fs0/beforesingle')
     const pg = await PGlite.create()
-    let result = -1
-    try {
-      result = await initdb({ pg, args: ["--no-clean"] })
-
-    } catch {
-      console.log("Caught error")
-    }
-
-    expect(result).toBe(0)
+    let result = await initdb({ pg, args: ["--no-clean"] })
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).contains('You can now start the database server using')
   })
 })

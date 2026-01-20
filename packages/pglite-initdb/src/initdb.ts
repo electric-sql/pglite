@@ -203,7 +203,7 @@ export async function initdb({
   pg,
   debug,
   args
-}: InitdbOptions) {
+}: InitdbOptions): Promise<ExecResult> {
 
   const execResult = await execInitdb({
     pg,
@@ -218,5 +218,5 @@ export async function initdb({
     )
   }
 
-  return execResult.exitCode
+  return execResult
 }
