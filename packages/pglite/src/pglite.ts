@@ -209,38 +209,17 @@ export class PGlite
     return pg as any
   }
 
-  #stdoutCbs = new Set<(c: number) => void>()
-  #stderrCbs = new Set<(c: number) => void>()
-
-  addStdoutCb(stdout_cb: (c: number) => void) {
-    this.#stdoutCbs.add(stdout_cb)
+  #print(text: string): void {
+    if (this.debug) {
+      console.debug(text)
+    }
   }
 
-  removeStdoutCb(stdout_cb: (c: number) => void) {
-    this.#stdoutCbs.delete(stdout_cb)
+  #printErr(text: string): void {
+    if (this.debug) {
+      console.error(text)
+    }
   }
-
-  addStderrCb(stderr_cb: (c: number) => void) {
-    this.#stderrCbs.add(stderr_cb)
-  }
-
-  removeStderrCb(stderr_cb: (c: number) => void) {
-    this.#stderrCbs.delete(stderr_cb)
-  }
-
-  // #print(text: string): void {
-  //   if (this.debug) {
-  //     console.debug(text)
-  //   }
-  //   this.#stdoutCbs.forEach(c => c(text))
-  // }
-
-  // #printErr(text: string): void {
-  //   if (this.debug) {
-  //     console.error(text)
-  //   }
-  //   this.#stderrCbs.forEach((c => c(text)))
-  // }
 
   handleExternalCmd(cmd: string, mode: string) {
     if (cmd.startsWith('locale -a') && mode === 'r') {
@@ -251,27 +230,6 @@ export class PGlite
     }
     throw 'Unhandled cmd'
   }
-
-
-  // pgl_stdin: any
-
-  // #pgl_stdin(): number | null {
-  //   if (this.pgl_stdin) {
-  //     return this.pgl_stdin()
-  //   }
-  //   return null
-  // }
-  // #pgl_stdout(c: number): any {
-  //   // if (this.debug) {
-  //   //   console.debug(text)
-  //   // }
-  //   this.#stdoutCbs.forEach(cb => cb(c))
-  // }
-  // #pgl_stderr(c: number): any {
-  //   this.#stderrCbs.forEach(cb => cb(c))
-  //   // console.log('stderr called', c)
-  // }
-
 
   /**
    * Initialize the database
@@ -324,14 +282,14 @@ export class PGlite
       arguments: args,
       INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
-      // print: (text: string) => {
-      //   console.log('pgliteout', text)
-      //   // this.#print(text)
-      // }, 
-      // printErr: (text: string) => {
-      //   console.error("pgliteerror", text)
-      //   // this.#printErr(text)
-      // },
+      print: (text: string) => {
+        // console.log('pgliteout', text)
+        this.#print(text)
+      }, 
+      printErr: (text: string) => {
+        // console.error("pgliteerror", text)
+        this.#printErr(text)
+      },
       instantiateWasm: (imports, successCallback) => {
         instantiateWasm(imports, options.wasmModule).then(
           ({ instance, module }) => {
@@ -620,7 +578,7 @@ export class PGlite
       } else {
         throw `Unhandled pclose ${stream}`
       }
-      console.log("pclose_fn", stream)
+      this.#log("pclose_fn", stream)
     }, 'pi')
 
     mod._pgl_set_pclose_fn(this.#pclose_fn)

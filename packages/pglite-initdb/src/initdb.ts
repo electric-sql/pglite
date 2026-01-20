@@ -10,26 +10,6 @@ const initdbExePath = '/pglite/bin/initdb'
 const pgstdoutPath = '/pglite/pgstdout'
 const pgstdinPath = '/pglite/pgstdin'
 
-// "-c", "zero_damaged_pages=on"
-// "-c", "checkpoint_flush_after=1",
-const baseArgs = [
-"-c", "ignore_checksum_failure=on",
-// "-c", "log_checkpoints=false",
-// "-c", "search_path=pg_catalog",
-// "-c", "exit_on_error=true",
-"-c", "ignore_invalid_pages=on",
-"-c", "zero_damaged_pages=on",
-"-c", "ignore_system_indexes=on",
-// "-c", "temp_buffers=8MB",
-// "-c", "work_mem=4MB",
-"-c", "fsync=on",
-"-c", "synchronous_commit=on",
-// "-c", "wal_buffers=4MB",
-// "-c", "min_wal_size=80MB",
-// "-c", "shared_buffers=128MB"
-]
-
-// const baseArgs: string[] = []
 
 interface ExecResult {
   exitCode: number
@@ -37,11 +17,19 @@ interface ExecResult {
   stdout: string
 }
 
+function log(debug?: number, ...args: any[]) {
+  if (debug && debug > 0) {
+    console.log('initdb: ', ...args)
+  }
+}
+
 async function execInitdb({
   pg,
+  debug,
   args,
 }: {
   pg: PGlite
+  debug?: number
   args: string[]
 }): Promise<ExecResult> {
 
@@ -57,74 +45,25 @@ async function execInitdb({
   // let pglite_stdout_fd = -1
   let initdb_stdout_fd = -1
   // let i_pgstdin = 0
+  let stderrOutput: string = ''
+  let stdoutOutput: string = ''
 
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
-    console.log('firstArg', firstArg)
+    log(debug, 'initdb: firstArg', firstArg)
     assert(firstArg === '/pglite/bin/postgres', `trying to execute ${firstArg}`)
 
-    // const stat = pg.Module.FS.analyzePath(PGDATA)
-    // if (stat.exists) {
-    //   pg.Module.FS.chdir(PGDATA)
-    // }
-
-    if (args[0] === '--boot') {
-
-      console.log("boot")
-      args = [
-        "--boot",
-        "-D", PGDATA,
-        "-d", "1",
-        ...baseArgs,
-        // "-r", "/dev/null",
-        "-X", 
-        "1048576"]
-    }
-
-    if (args[0] === '--single') {
-      console.log("--single")
-      if (args[args.length-1] === 'template1') {
-        const x = args.pop()
-        args = [
-          "--single",
-          "-d", "1",
-          "-B", "16", "-S", "512", "-f", "siobtnmh",
-          "-D", PGDATA,
-          "-O", "-j",
-          // "-r", "/dev/null",
-          x!
-        ]
-      }
-    }
-
-    // if (args[0] === '--check') {
-    //   args.push("-r", "/dev/null")
-    // }
-
-    // fs.writeFileSync(`/tmp/pgstdin${i_pgstdin}`, pg.Module.FS.readFile(pgstdinPath))
-    // fs.writeFileSync(`/tmp/pgstdout${i_pgstdin++}`, pg.Module.FS.readFile(pgstdoutPath))
-
-    // pg.Module.FS.writeFile(pgstdoutPath, '')
     pg.Module.HEAPU8.set(origHEAPU8)
 
-    console.log('executing pg main with', args)
+    log(debug, 'executing pg main with', args)
     const result = pg.callMain(args)
-    // pg.Module.HEAPU8.set(origHEAPU8)
-    // pg.Module._pgl_proc_exit(66)
-    // pg.Module.___funcs_on_exit()
-    // pg.Module._fflush(0);
-    console.log(result)
-    // pglite_stdin_fd && pg.Module._fclose(pglite_stdin_fd)
-    // pglite_stdout_fd && pg.Module._fclose(pglite_stdout_fd)
 
-    // pglite_stdin_fd = 0
-    // pglite_stdout_fd = 0
+    log(debug, result)
+
 
     postgresArgs = []
-    
-    // pg.Module.FS.writeFile(pgstdinPath, '')
 
-    // pg.Module.FS.writeFile('/pglite/pgstdout', new Uint8Array(pgstdout))
+
     return result
   }  
 
@@ -135,10 +74,12 @@ async function execInitdb({
     noExitRuntime: false,
     thisProgram: initdbExePath,
     print: (text) => {
-      console.log("initdbout", text)
+      stdoutOutput += text
+      log(debug, 'initdbout', text)
     },
     printErr: (text) => {
-      console.error("initdberr", text)
+      stderrOutput += text
+      log(debug, 'initdberr', text)
     },
     preRun: [
       // (mod: InitdbMod) => {
@@ -229,17 +170,18 @@ async function execInitdb({
 
   const initDbMod = await InitdbModFactory(emscriptenOpts)
 
+  log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
-
   return {
     exitCode: result,
-    stderr: '', //stderrOutput,
-    stdout: '', //stdoutOutput,
+    stderr: stderrOutput,
+    stdout: stdoutOutput,
   }
 }
 
 interface InitdbOptions {
   pg: PGlite
+  debug?: number
   args?: string[]
 }
 
@@ -259,20 +201,20 @@ function getArgs(cmd: string) {
  */
 export async function initdb({
   pg,
+  debug,
   args
 }: InitdbOptions) {
 
-
-
   const execResult = await execInitdb({
     pg,
-    args: ["--wal-segsize=1", "--allow-group-access", "-E", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
-      ...baseArgs, ...(args ?? [])],
+    debug,
+    args: ["--allow-group-access", "--encoding", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
+    ...(args ?? [])],
   })
 
   if (execResult.exitCode !== 0) {
     throw new Error(
-      `initdb failed with exit code ${execResult.exitCode}. \nError message: ${execResult.stderr}`,
+      `initdb failed with exit code ${execResult.exitCode}. \nError message: ${execResult.stderr}\n Stdout: ${execResult.stdout}`,
     )
   }
 
