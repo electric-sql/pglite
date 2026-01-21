@@ -61,6 +61,12 @@ const args = parseArgs({
       default: '5000',
       help: 'Timeout in milliseconds for graceful subprocess shutdown (default: 5000)',
     },
+    'max-connections': {
+      type: 'string',
+      short: 'm',
+      default: '1',
+      help: 'Maximum concurrent connections (default: 1)',
+    },
     help: {
       type: 'boolean',
       short: '?',
@@ -85,6 +91,7 @@ Options:
   -r, --run=COMMAND   Command to run after server starts
   --include-database-url  Include DATABASE_URL in subprocess environment
   --shutdown-timeout=MS   Timeout for graceful subprocess shutdown in ms (default: 5000)
+  -m, --max-connections=N Maximum concurrent connections (default is no concurrency: 1)
 `
 
 interface ServerConfig {
@@ -97,6 +104,7 @@ interface ServerConfig {
   runCommand?: string
   includeDatabaseUrl: boolean
   shutdownTimeout: number
+  maxConnections: number
 }
 
 class PGLiteServerRunner {
@@ -123,6 +131,7 @@ class PGLiteServerRunner {
       runCommand: args.values.run as string,
       includeDatabaseUrl: args.values['include-database-url'] as boolean,
       shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
+      maxConnections: parseInt(args.values['max-connections'] as string, 10),
     }
   }
 
@@ -281,6 +290,7 @@ class PGLiteServerRunner {
         host: this.config.host,
         path: this.config.path,
         inspect: this.config.debugLevel > 0,
+        maxConnections: this.config.maxConnections,
       })
 
       // Create subprocess manager
