@@ -61,6 +61,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
+          maxConnections: 100,
         })
 
         // Add event listeners for debugging

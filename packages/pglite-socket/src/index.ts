@@ -560,7 +560,7 @@ export class PGLiteSocketServer extends EventTarget {
     this.inspect = options.inspect ?? false
     this.debug = options.debug ?? false
     this.idleTimeout = options.idleTimeout ?? 0
-    this.maxConnections = options.maxConnections ?? 100
+    this.maxConnections = options.maxConnections ?? 1
 
     // Create the shared query queue
     this.queryQueue = new QueryQueueManager(this.db, this.debug)

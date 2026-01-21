@@ -421,7 +421,7 @@ testSocket(async (connOptions) => {
         const socket1 = createMockSocket()
         const socket2 = createMockSocket()
 
-        // Check initial stats
+        // Check initial stats (maxConnections is set to 100 in beforeEach)
         let stats = server.getStats()
         expect(stats.activeConnections).toBe(0)
         expect(stats.maxConnections).toBe(100)
