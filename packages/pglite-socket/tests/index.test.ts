@@ -9,11 +9,7 @@ import {
   afterAll,
 } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
-import {
-  PGLiteSocketHandler,
-  PGLiteSocketServer,
-  CONNECTION_QUEUE_TIMEOUT,
-} from '../src'
+import { PGLiteSocketHandler, PGLiteSocketServer } from '../src'
 import { Socket, createConnection } from 'net'
 import { existsSync } from 'fs'
 import { unlink } from 'fs/promises'
@@ -55,6 +51,7 @@ const createMockSocket = () => {
     writable: true,
     remoteAddress: '127.0.0.1',
     remotePort: 12345,
+    setNoDelay: vi.fn(),
 
     // Mock on method with tracking of handlers
     on: vi
@@ -81,28 +78,35 @@ const createMockSocket = () => {
   return mockSocket as unknown as Socket
 }
 
+// Create a mock QueryQueueManager for testing
+const createMockQueryQueue = () => {
+  return {
+    enqueue: vi.fn().mockResolvedValue(new Uint8Array(0)),
+    clearQueueForHandler: vi.fn(),
+    clearTransactionIfNeeded: vi.fn(),
+    getQueueLength: vi.fn().mockReturnValue(0),
+  }
+}
+
 describe('PGLiteSocketHandler', () => {
-  let db: PGlite
   let handler: PGLiteSocketHandler
   let mockSocket: ReturnType<typeof createMockSocket> & {
     eventHandlers: Record<string, Array<(data: any) => void>>
   }
+  let mockQueryQueue: ReturnType<typeof createMockQueryQueue>
 
   beforeEach(async () => {
-    // Create a PGlite instance for testing
-    db = await PGlite.create()
-    handler = new PGLiteSocketHandler({ db })
+    // Create a mock query queue for testing
+    mockQueryQueue = createMockQueryQueue()
+    handler = new PGLiteSocketHandler({ queryQueue: mockQueryQueue as any })
     mockSocket = createMockSocket() as any
   })
 
   afterEach(async () => {
-    // Ensure handler is detached before closing the database
+    // Ensure handler is detached
     if (handler?.isAttached) {
-      handler.detach(true)
+      await handler.detach(true)
     }
-
-    // Clean up
-    await db.close()
   })
 
   it('should attach to a socket', async () => {
@@ -122,7 +126,7 @@ describe('PGLiteSocketHandler', () => {
     expect(handler.isAttached).toBe(true)
 
     // Then detach
-    handler.detach(false)
+    await handler.detach(false)
     expect(handler.isAttached).toBe(false)
     expect(mockSocket.removeAllListeners).toHaveBeenCalled()
   })
@@ -132,7 +136,7 @@ describe('PGLiteSocketHandler', () => {
     await handler.attach(mockSocket)
 
     // Detach with close option
-    handler.detach(true)
+    await handler.detach(true)
     expect(handler.isAttached).toBe(false)
     expect(mockSocket.end).toHaveBeenCalled()
   })
@@ -299,30 +303,16 @@ testSocket(async (connOptions) => {
       ).resolves.not.toThrow()
     })
 
-    describe('Connection queuing', () => {
-      // Mock implementation details
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      let handleConnectionSpy: any
-      let processNextInQueueSpy: any
-      let attachSocketToNewHandlerSpy: any
-
+    describe('Connection multiplexing', () => {
       beforeEach(() => {
-        // Create a server with a short timeout for testing
+        // Create a server for testing
         server = new PGLiteSocketServer({
           db,
           host: connOptions.host,
           port: connOptions.port,
           path: connOptions.path,
-          connectionQueueTimeout: 100, // Very short timeout for testing
+          maxConnections: 100,
         })
-
-        // Spy on internal methods
-        handleConnectionSpy = vi.spyOn(server as any, 'handleConnection')
-        processNextInQueueSpy = vi.spyOn(server as any, 'processNextInQueue')
-        attachSocketToNewHandlerSpy = vi.spyOn(
-          server as any,
-          'attachSocketToNewHandler',
-        )
       })
 
       it('should create a handler for a new connection', async () => {
@@ -338,133 +328,127 @@ testSocket(async (connOptions) => {
         // Handle connection
         await (server as any).handleConnection(socket1)
 
-        // Verify handler was created
-        expect(attachSocketToNewHandlerSpy).toHaveBeenCalledWith(
-          socket1,
-          expect.anything(),
-        )
+        // Verify handler was created and tracked
+        expect((server as any).handlers.size).toBe(1)
         expect(connectionHandler).toHaveBeenCalled()
       })
 
-      it('should queue a second connection when first is active', async () => {
+      it('should handle multiple simultaneous connections', async () => {
         await server.start()
 
         // Setup event listeners
-        const queuedConnectionHandler = vi.fn()
-        server.addEventListener('queuedConnection', queuedConnectionHandler)
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-
-        // Handle first connection
-        await (server as any).handleConnection(socket1)
-
-        // The first socket should be attached directly
-        expect(attachSocketToNewHandlerSpy).toHaveBeenCalledWith(
-          socket1,
-          expect.anything(),
-        )
-
-        // Handle second connection - should be queued
-        await (server as any).handleConnection(socket2)
-
-        // The second connection should be queued
-        expect(queuedConnectionHandler).toHaveBeenCalledTimes(1)
-        expect(queuedConnectionHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: expect.objectContaining({
-              queueSize: 1,
-            }),
-          }),
-        )
-      })
-
-      it('should process next connection when current connection closes', async () => {
-        await server.start()
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-
-        // Setup event listener
         const connectionHandler = vi.fn()
         server.addEventListener('connection', connectionHandler)
 
-        // Handle first connection
+        // Create mock sockets
+        const socket1 = createMockSocket()
+        const socket2 = createMockSocket()
+        const socket3 = createMockSocket()
+
+        // Handle connections - all should be accepted simultaneously
         await (server as any).handleConnection(socket1)
-
-        // Handle second connection (will be queued)
         await (server as any).handleConnection(socket2)
+        await (server as any).handleConnection(socket3)
 
-        // First connection should be active, but clear the handler for next assertions
-        expect(connectionHandler).toHaveBeenCalled()
-        connectionHandler.mockClear()
+        // All three sockets should have handlers (multiplexed)
+        expect((server as any).handlers.size).toBe(3)
+        expect(connectionHandler).toHaveBeenCalledTimes(3)
 
-        // Simulate closing the first connection
-        const activeHandler = (server as any).activeHandler
-        activeHandler.dispatchEvent(new CustomEvent('close'))
-
-        // The next connection should be processed
-        expect(processNextInQueueSpy).toHaveBeenCalled()
-        expect(attachSocketToNewHandlerSpy).toHaveBeenCalledWith(
-          socket2,
-          expect.anything(),
-        )
+        // None should be closed - they're all active
+        expect(socket1.end).not.toHaveBeenCalled()
+        expect(socket2.end).not.toHaveBeenCalled()
+        expect(socket3.end).not.toHaveBeenCalled()
       })
 
-      it('should timeout queued connections after specified time', async () => {
+      it('should remove handler when connection closes', async () => {
         await server.start()
-
-        // Setup event listeners
-        const queueTimeoutHandler = vi.fn()
-        server.addEventListener('queueTimeout', queueTimeoutHandler)
 
         // Create mock sockets
         const socket1 = createMockSocket()
         const socket2 = createMockSocket()
 
-        // Handle first connection
+        // Handle connections
         await (server as any).handleConnection(socket1)
-
-        // Handle second connection (will be queued)
         await (server as any).handleConnection(socket2)
 
-        // Fast-forward time to trigger timeout
-        vi.advanceTimersByTime(1001)
+        // Both should be tracked
+        expect((server as any).handlers.size).toBe(2)
 
-        // The queued connection should timeout
-        expect(queueTimeoutHandler).toHaveBeenCalledTimes(1)
-        expect(socket2.end).toHaveBeenCalled()
+        // Get the first handler and simulate close
+        const handlers = Array.from((server as any).handlers)
+        const handler1 = handlers[0] as PGLiteSocketHandler
+        handler1.dispatchEvent(new CustomEvent('close'))
+
+        // First handler should be removed, second still active
+        expect((server as any).handlers.size).toBe(1)
       })
 
-      it('should use default timeout value from CONNECTION_QUEUE_TIMEOUT', async () => {
-        // Create server without specifying timeout
-        const defaultServer = new PGLiteSocketServer({
+      it('should reject connections when max connections reached', async () => {
+        // Create server with low max connections
+        server = new PGLiteSocketServer({
           db,
           host: connOptions.host,
           port: connOptions.port,
           path: connOptions.path,
+          maxConnections: 2,
         })
 
-        // Check that it's using the default timeout
-        expect((defaultServer as any).connectionQueueTimeout).toBe(
-          CONNECTION_QUEUE_TIMEOUT,
-        )
+        await server.start()
+
+        // Create mock sockets
+        const socket1 = createMockSocket()
+        const socket2 = createMockSocket()
+        const socket3 = createMockSocket()
+
+        // Handle first two connections - should succeed
+        await (server as any).handleConnection(socket1)
+        await (server as any).handleConnection(socket2)
+
+        expect((server as any).handlers.size).toBe(2)
+
+        // Third connection should be rejected
+        await (server as any).handleConnection(socket3)
+
+        // Third socket should be closed
+        expect(socket3.end).toHaveBeenCalled()
+        expect((server as any).handlers.size).toBe(2)
       })
 
-      it('should clean up queue when stopping the server', async () => {
+      it('should provide stats about active connections', async () => {
         await server.start()
 
         // Create mock sockets
         const socket1 = createMockSocket()
         const socket2 = createMockSocket()
 
-        // Handle first connection
-        await (server as any).handleConnection(socket1)
+        // Check initial stats
+        let stats = server.getStats()
+        expect(stats.activeConnections).toBe(0)
+        expect(stats.maxConnections).toBe(100)
 
-        // Handle second connection (will be queued)
+        // Handle connections
+        await (server as any).handleConnection(socket1)
         await (server as any).handleConnection(socket2)
+
+        // Check updated stats
+        stats = server.getStats()
+        expect(stats.activeConnections).toBe(2)
+      })
+
+      it('should clean up all handlers when stopping the server', async () => {
+        await server.start()
+
+        // Create mock sockets
+        const socket1 = createMockSocket()
+        const socket2 = createMockSocket()
+        const socket3 = createMockSocket()
+
+        // Handle connections
+        await (server as any).handleConnection(socket1)
+        await (server as any).handleConnection(socket2)
+        await (server as any).handleConnection(socket3)
+
+        expect((server as any).handlers.size).toBe(3)
 
         // Stop the server
         await server.stop()
@@ -472,9 +456,10 @@ testSocket(async (connOptions) => {
         // All connections should be closed
         expect(socket1.end).toHaveBeenCalled()
         expect(socket2.end).toHaveBeenCalled()
+        expect(socket3.end).toHaveBeenCalled()
 
-        // Queue should be emptied
-        expect((server as any).connectionQueue).toHaveLength(0)
+        // Handlers should be cleared
+        expect((server as any).handlers.size).toBe(0)
       })
 
       it('should start server with OS-assigned port when port is 0', async () => {
