@@ -192,3 +192,42 @@ const pgliteDb = await getPGliteInstance()
 Check [TypeORM documentation](https://typeorm.io/data-source)
 and [typeorm-pglite](https://github.com/muraliprajapati/typeorm-pglite) documentation for
 more details.
+
+## Nano Queries
+
+[Nano Queries](https://nano-queries.js.org/) is a database-agnostic state of the art query builder.
+
+It work everywhere JavaScript can be run, build a safe queries for anything, including PGLite.
+
+Features to highlight:
+- That is not an ORM. It is a 100% natural query builder
+- Simple API to build complex queries
+- Laziness. First-class support for dynamic query building and lateral query extension
+- Nested queries
+- Easy to extend. Build your own modules from primitives
+
+Nano Queries by its design does not require any "drivers"/"adapters"/"compilers" or any other addons to work with PGLite:
+
+```javascript
+import { PGlite } from '@electric-sql/pglite';
+import { ConfigurableSQLBuilder, SQLCompiler } from 'nano-queries';
+
+// SQL builder must be configured once
+const { sql, compile } = new ConfigurableSQLBuilder(
+	new SQLCompiler({
+		getPlaceholder(valueIndex) {
+			return '$' + (valueIndex + 1);
+		},
+	}),
+);
+
+const currentYear = new Date().getFullYear();
+const { sql, bindings } = compile(sql`SELECT title FROM movies WHERE release_year = ${currentYear}`);
+// Returns query with placeholders and array with bindings equal to
+// {
+//   sql: "SELECT title FROM movies WHERE release_year = $1",
+//   bindings: [2026],
+// }
+
+await db.query(sql, bindings);
+```
