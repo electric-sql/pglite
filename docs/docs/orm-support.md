@@ -213,7 +213,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { ConfigurableSQLBuilder, SQLCompiler } from 'nano-queries';
 
 // SQL builder must be configured once
-const { sql, compile } = new ConfigurableSQLBuilder(
+const { sql, compile, where } = new ConfigurableSQLBuilder(
 	new SQLCompiler({
 		getPlaceholder(valueIndex) {
 			return '$' + (valueIndex + 1);
@@ -221,13 +221,31 @@ const { sql, compile } = new ConfigurableSQLBuilder(
 	}),
 );
 
-const currentYear = new Date().getFullYear();
-const { sql, bindings } = compile(sql`SELECT title FROM movies WHERE release_year = ${currentYear}`);
-// Returns query with placeholders and array with bindings equal to
+const userInput = {
+  year: 2007,
+  rating: 4.1,
+};
+
+
+// You may nest one query into another
+const filter = where();
+const query = sql`SELECT title FROM movies ${filter} LIMIT 100`;
+
+// A query segment can be extended any time before compiling
+filter.and(sql`release_year = ${userInput.year}`);
+
+// That's useful to build a complex conditional queries
+if (userInput.rating > 0) {
+  filter.and(sql`rating >= ${userInput.rating}`);
+}
+
+const movies = compile(query);
 // {
-//   sql: "SELECT title FROM movies WHERE release_year = $1",
-//   bindings: [2026],
+//   sql: 'SELECT title FROM movies WHERE release_year = $1 AND rating >= $2 LIMIT 100',
+//   bindings: [2007, 4.1],
 // }
 
-await db.query(sql, bindings);
+await db.query(movies.sql, movies.bindings);
 ```
+
+[Run this demo](https://stackblitz.com/edit/stackblitz-starters-rxhqvgfr?file=pglite.js&view=editor) with movies data in a sandbox & play.
