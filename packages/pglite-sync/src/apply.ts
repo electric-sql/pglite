@@ -23,16 +23,38 @@ export async function applyMessageToTable({
 }: ApplyMessageToTableOptions) {
   const data = mapColumns ? doMapColumns(mapColumns, message) : message.value
 
+  // Check if this is a move-in message (from subquery-based shapes)
+  const isMoveIn = (message.headers as Record<string, unknown>).is_move_in === true
+
   switch (message.headers.operation) {
     case 'insert': {
       if (debug) console.log('inserting', data)
       const columns = Object.keys(data)
+
+      // Build ON CONFLICT clause for move-in messages
+      let onConflictClause = ''
+      if (isMoveIn && primaryKey && primaryKey.length > 0) {
+        const nonPkColumns = columns.filter((c) => !primaryKey.includes(c))
+        if (nonPkColumns.length > 0) {
+          onConflictClause = `
+            ON CONFLICT (${primaryKey.map((c) => `"${c}"`).join(', ')})
+            DO UPDATE SET ${nonPkColumns.map((c) => `"${c}" = EXCLUDED."${c}"`).join(', ')}
+          `
+        } else {
+          onConflictClause = `
+            ON CONFLICT (${primaryKey.map((c) => `"${c}"`).join(', ')})
+            DO NOTHING
+          `
+        }
+      }
+
       return await pg.query(
         `
             INSERT INTO "${schema}"."${table}"
             (${columns.map((s) => '"' + s + '"').join(', ')})
             VALUES
             (${columns.map((_v, i) => '$' + (i + 1)).join(', ')})
+            ${onConflictClause}
           `,
         columns.map((column) => data[column]),
       )
@@ -86,6 +108,7 @@ export interface BulkApplyMessagesToTableOptions {
   schema?: string
   messages: InsertChangeMessage[]
   mapColumns?: MapColumns
+  primaryKey?: string[]
   debug: boolean
 }
 
@@ -95,6 +118,7 @@ export async function applyInsertsToTable({
   schema = 'public',
   messages,
   mapColumns,
+  primaryKey,
   debug,
 }: BulkApplyMessagesToTableOptions) {
   // Map the messages to the data to be inserted
@@ -103,6 +127,12 @@ export async function applyInsertsToTable({
   )
 
   if (debug) console.log('inserting', data)
+
+  // Check if any message is a move-in (from subquery-based shapes)
+  // Move-in data can overlap with existing data, so we need ON CONFLICT handling
+  const hasMoveIn = messages.some(
+    (m) => (m.headers as Record<string, unknown>).is_move_in === true,
+  )
 
   // Get column names from the first message
   const columns = Object.keys(data[0])
@@ -176,11 +206,31 @@ export async function applyInsertsToTable({
 
   // Helper function to execute a batch insert
   const executeBatch = async (batch: Record<string, any>[]) => {
+    // Build ON CONFLICT clause for move-in messages
+    // Move-in data can contain rows that already exist from initial sync
+    let onConflictClause = ''
+    if (hasMoveIn && primaryKey && primaryKey.length > 0) {
+      const nonPkColumns = columns.filter((c) => !primaryKey.includes(c))
+      if (nonPkColumns.length > 0) {
+        onConflictClause = `
+          ON CONFLICT (${primaryKey.map((c) => `"${c}"`).join(', ')})
+          DO UPDATE SET ${nonPkColumns.map((c) => `"${c}" = EXCLUDED."${c}"`).join(', ')}
+        `
+      } else {
+        // All columns are primary key, just ignore duplicates
+        onConflictClause = `
+          ON CONFLICT (${primaryKey.map((c) => `"${c}"`).join(', ')})
+          DO NOTHING
+        `
+      }
+    }
+
     const sql = `
       INSERT INTO "${schema}"."${table}"
       (${columns.map((s) => `"${s}"`).join(', ')})
       VALUES
       ${batch.map((_, j) => `(${columns.map((_v, k) => '$' + (j * columns.length + k + 1)).join(', ')})`).join(', ')}
+      ${onConflictClause}
     `
     const values = batch.flatMap((message) =>
       columns.map((column) => message[column]),

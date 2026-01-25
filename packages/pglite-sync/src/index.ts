@@ -255,6 +255,7 @@ async function createPlugin(
                 schema: shape.schema,
                 messages: initialInserts as InsertChangeMessage[],
                 mapColumns: shape.mapColumns,
+                primaryKey: shape.primaryKey,
                 debug,
               })
 
@@ -282,6 +283,7 @@ async function createPlugin(
                   schema: shape.schema,
                   messages: bulkInserts as InsertChangeMessage[],
                   mapColumns: shape.mapColumns,
+                  primaryKey: shape.primaryKey,
                   debug,
                 })
                 bulkInserts.length = 0
