@@ -1,10 +1,15 @@
 {
   "name": "@electric-sql/pglite-socket",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "A socket implementation for PGlite enabling remote connections",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite",
+    "directory": "packages/pglite-socket"
+  },  
   "keywords": [
     "postgres",
     "sql",

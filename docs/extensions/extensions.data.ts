@@ -545,6 +545,36 @@ const baseExtensions: Extension[] = [
     importName: 'pg_ivm',
     size: 24865,
   },
+  {
+    name: 'pgcrypto',
+    description: `
+    The pgcrypto module provides cryptographic functions for PostgreSQL.
+    `,
+    shortDescription:
+      'The pgcrypto module provides cryptographic functions for PostgreSQL.',
+    docs: 'https://www.postgresql.org/docs/current/pgcrypto.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pgcrypto',
+    importName: 'pgcrypto',
+    core: true,
+    size: 1148162,
+  },
+  {
+    name: 'pg_hashids',
+    description: `
+      Hashids is a small open-source library that generates short, unique, non-sequential
+      ids from numbers. It converts numbers like 347 into strings like “yr8”. You can also
+      decode those ids back. This is useful in bundling several parameters into one or simply
+      using them as short UIDs.
+      `,
+    shortDescription:
+      'Short unique id generator for PostgreSQL, using hashids.',
+    docs: 'https://github.com/iCyberon/pg_hashids',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/pg_hashids',
+    importName: 'pg_hashids',
+    size: 4212,
+  },
 ]
 
 const tags = [
