@@ -1,4 +1,3 @@
-import { PGlite } from '@electric-sql/pglite'
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
 import assert from 'assert'
@@ -10,6 +9,19 @@ const initdbExePath = '/pglite/bin/initdb'
 const pgstdoutPath = '/pglite/pgstdout'
 const pgstdinPath = '/pglite/pgstdin'
 
+/**
+ * Interface defining what initdb needs from a PGlite instance.
+ * This avoids a circular dependency between pglite and pglite-initdb.
+ */
+export interface PGliteForInitdb {
+  Module: {
+    HEAPU8: Uint8Array
+    stringToUTF8OnStack(str: string): number
+    _pgl_freopen(path: number, mode: number, fd: number): void
+    FS: any
+  }
+  callMain(args: string[]): number
+}
 
 interface ExecResult {
   exitCode: number
@@ -28,7 +40,7 @@ async function execInitdb({
   debug,
   args,
 }: {
-  pg: PGlite
+  pg: PGliteForInitdb
   debug?: number
   args: string[]
 }): Promise<ExecResult> {
@@ -184,7 +196,7 @@ async function execInitdb({
 }
 
 interface InitdbOptions {
-  pg: PGlite
+  pg: PGliteForInitdb
   debug?: number
   args?: string[]
 }

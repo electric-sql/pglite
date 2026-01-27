@@ -167,6 +167,9 @@
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
     "prepublishOnly": "pnpm check:exports"
   },
+  "dependencies": {
+    "@electric-sql/pglite-initdb": "workspace:*"
+  },  
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",

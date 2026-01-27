@@ -37,6 +37,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+import { initdb } from '@electric-sql/pglite-initdb'
+
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 
@@ -478,7 +480,13 @@ export class PGlite
     await loadExtensions(this.mod, (...args) => this.#log(...args))
 
     // Initialize the database
-    // const idb = this.mod._pgl_initdb()
+    const initdbResult = await initdb({ pg: this, debug: options.debug })
+
+    if (initdbResult.exitCode !== 0) {
+      throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+    }
+
+    this.startInSingleMode()
 
     // if (!idb) {
     //   // This would be a sab worker crash before pg_initdb can be called
@@ -525,22 +533,22 @@ export class PGlite
     // // (re)start backed after possible initdb boot/single.
     // this.mod._pgl_backend()
 
-    // // Sync any changes back to the persisted store (if there is one)
-    // // TODO: only sync here if initdb did init db.
-    // await this.syncToFs()
+    // Sync any changes back to the persisted store (if there is one)
+    // TODO: only sync here if initdb did init db.
+    await this.syncToFs()
 
-    // this.#ready = true
+    this.#ready = true
 
-    // // Set the search path to public for this connection
-    // await this.exec('SET search_path TO public;')
+    // Set the search path to public for this connection
+    await this.exec('SET search_path TO public;')
 
-    // // Init array types
-    // await this._initArrayTypes()
+    // Init array types
+    await this._initArrayTypes()
 
-    // // Init extensions
-    // for (const initFn of extensionInitFns) {
-    //   await initFn()
-    // }
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn()
+    }
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
@@ -1113,7 +1121,7 @@ export class PGlite
     return this.mod!.callMain(args)
   }
 
-  startInSingle(): void {
+  startInSingleMode(): void {
     this.mod!._pgl_setDoPGliteExit(1);
 
     const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
