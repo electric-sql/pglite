@@ -542,6 +542,7 @@ export class PGlite
     //   await initFn()
     // }
   }
+
   #onRuntimeInitialized(mod: PostgresMod) {
     // default $HOME in emscripten is /home/web_user
     this.#system_fn = mod.addFunction((cmd_ptr: number) => {
@@ -627,18 +628,15 @@ export class PGlite
         if (length > max_length) {
           length = max_length
         }
-        try {
-          this.mod!.HEAP8.set(
-            (this.#outputData as Uint8Array).subarray(
-              this.#readOffset,
-              this.#readOffset + length,
-            ),
-            ptr,
-          )
-          this.#readOffset += length
-        } catch (e) {
-          console.error(e)
-        }
+        this.mod!.HEAP8.set(
+          (this.#outputData as Uint8Array).subarray(
+            this.#readOffset,
+            this.#readOffset + length,
+          ),
+          ptr,
+        )
+        this.#readOffset += length
+        
         return length
       },
       'iii',
@@ -685,10 +683,8 @@ export class PGlite
 
     // Close the database
     try {
+      this.mod!._pgl_setDoPGliteExit(0)
       await this.execProtocol(serialize.end())
-      this.mod!._pgl_shutdown()
-      this.mod!.removeFunction(this.#pglite_socket_read)
-      this.mod!.removeFunction(this.#pglite_socket_write)
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -698,6 +694,9 @@ export class PGlite
       } else {
         throw e
       }
+    } finally {
+      this.mod!.removeFunction(this.#pglite_socket_read)
+      this.mod!.removeFunction(this.#pglite_socket_write)
     }
 
     // Close the filesystem
@@ -782,7 +781,7 @@ export class PGlite
     }
 
     // execute the message
-    mod._pgl_interactive_one(message.length, message[0])
+    mod._PostgresMainLoopOnce();
 
     this.#outputData = []
 
@@ -1112,5 +1111,16 @@ export class PGlite
 
   callMain(args: string[]): number {
     return this.mod!.callMain(args)
+  }
+
+  startInSingle(): void {
+    this.mod!._pgl_setDoPGliteExit(1);
+
+    const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
+    const result = this.mod!.callMain(singleModeArgs)
+    if (result !== 99) {
+      throw new Error('PGlite failed to initialize properly')
+    }
+    this.mod!._pgl_initPGlite();
   }
 }
