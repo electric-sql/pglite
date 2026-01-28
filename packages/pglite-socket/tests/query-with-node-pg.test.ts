@@ -10,6 +10,13 @@ import {
 import { Client } from 'pg'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../src'
+import { spawn, ChildProcess } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import fs from 'fs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /**
  * Debug configuration for testing
@@ -531,6 +538,180 @@ describe(`PGLite Socket Server`, () => {
 
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
+    })
+  })
+
+  describe('with extensions via CLI', () => {
+    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now().toString()}`
+    fs.mkdirSync(UNIX_SOCKET_DIR_PATH)
+    const UNIX_SOCKET_PATH = `${UNIX_SOCKET_DIR_PATH}/.s.PGSQL.5432`
+    let serverProcess: ChildProcess | null = null
+    let client: typeof Client.prototype
+
+    beforeAll(async () => {
+      // Start the server with extensions via CLI using tsx for dev or node for dist
+      const serverScript = join(__dirname, '../src/scripts/server.ts')
+      serverProcess = spawn(
+        'npx',
+        [
+          'tsx',
+          serverScript,
+          '--path',
+          UNIX_SOCKET_PATH,
+          '--extensions',
+          'vector,pg_uuidv7,@electric-sql/pglite/pg_hashids:pg_hashids',
+        ],
+        {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      )
+
+      // Wait for server to be ready by checking for "listening" message
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Server startup timeout'))
+        }, 30000)
+
+        const onData = (data: Buffer) => {
+          const output = data.toString()
+          if (output.includes('listening')) {
+            clearTimeout(timeout)
+            resolve()
+          }
+        }
+
+        serverProcess!.stdout?.on('data', onData)
+        serverProcess!.stderr?.on('data', (data) => {
+          console.error('Server stderr:', data.toString())
+        })
+
+        serverProcess!.on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+
+        serverProcess!.on('exit', (code) => {
+          if (code !== 0 && code !== null) {
+            clearTimeout(timeout)
+            reject(new Error(`Server exited with code ${code}`))
+          }
+        })
+      })
+
+      console.log('Server with extensions started')
+
+      client = new Client({
+        host: UNIX_SOCKET_DIR_PATH,
+        database: 'postgres',
+        user: 'postgres',
+        password: 'postgres',
+        connectionTimeoutMillis: 10000,
+      })
+      await client.connect()
+    })
+
+    afterAll(async () => {
+      if (client) {
+        await client.end().catch(() => {})
+      }
+
+      if (serverProcess) {
+        serverProcess.kill('SIGTERM')
+        await new Promise<void>((resolve) => {
+          serverProcess!.on('exit', () => resolve())
+          setTimeout(resolve, 2000) // Force resolve after 2s
+        })
+      }
+    })
+
+    it('should load and use vector extension', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS vector')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'vector'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('vector')
+
+      // Create a table with vector column
+      await client.query(`
+        CREATE TABLE test_vectors (
+          id SERIAL PRIMARY KEY,
+          name TEXT,
+          vec vector(3)
+        )
+      `)
+
+      // Insert test data
+      await client.query(`
+        INSERT INTO test_vectors (name, vec) VALUES
+          ('test1', '[1,2,3]'),
+          ('test2', '[4,5,6]'),
+          ('test3', '[7,8,9]')
+      `)
+
+      // Query with vector distance
+      const result = await client.query(`
+        SELECT name, vec, vec <-> '[3,1,2]' AS distance
+        FROM test_vectors
+        ORDER BY distance
+      `)
+
+      expect(result.rows).toHaveLength(3)
+      expect(result.rows[0].name).toBe('test1')
+      expect(result.rows[0].vec).toBe('[1,2,3]')
+      expect(parseFloat(result.rows[0].distance)).toBeCloseTo(2.449, 2)
+    })
+
+    it('should load and use pg_uuidv7 extension', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS pg_uuidv7')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'pg_uuidv7'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('pg_uuidv7')
+
+      // Generate a UUIDv7
+      const result = await client.query('SELECT uuid_generate_v7() as uuid')
+      expect(result.rows[0].uuid).toHaveLength(36)
+
+      // Test uuid_v7_to_timestamptz function
+      const tsResult = await client.query(`
+        SELECT uuid_v7_to_timestamptz('018570bb-4a7d-7c7e-8df4-6d47afd8c8fc') as ts
+      `)
+      const timestamp = new Date(tsResult.rows[0].ts)
+      expect(timestamp.toISOString()).toBe('2023-01-02T04:26:40.637Z')
+    })
+
+    it('should load and use pg_hashids extension from npm package path', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS pg_hashids')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'pg_hashids'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('pg_hashids')
+
+      // Test id_encode function
+      const result = await client.query(`
+        SELECT id_encode(1234567, 'salt', 10, 'abcdefghijABCDEFGHIJ1234567890') as hash
+      `)
+      expect(result.rows[0].hash).toBeTruthy()
+      expect(typeof result.rows[0].hash).toBe('string')
+
+      // Test id_decode function (round-trip)
+      const hash = result.rows[0].hash
+      const decodeResult = await client.query(`
+        SELECT id_decode('${hash}', 'salt', 10, 'abcdefghijABCDEFGHIJ1234567890') as id
+      `)
+      expect(decodeResult.rows[0].id[0]).toBe('1234567')
     })
   })
 })

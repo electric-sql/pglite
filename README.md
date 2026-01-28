@@ -179,6 +179,16 @@ And follow the instructions to create an appropriate changeset. Please ensure an
 
 PGlite builds on the work of [Stas Kelvich](https://github.com/kelvich) of [Neon](https://neon.tech) in this [Postgres fork](https://github.com/electric-sql/postgres-wasm).
 
+## Sponsors
+
+Big shoutout to everybody supporting us!
+
+### Blacksmith
+
+<a href="https://blacksmith.sh">
+  <img src="./docs/img/blacksmith-logo-white-on-black.svg" width="350px"/>
+</a>
+
 ## License
 
 PGlite is dual-licensed under the terms of the [Apache License 2.0](https://github.com/electric-sql/pglite/blob/main/LICENSE) and the [PostgreSQL License](https://github.com/electric-sql/pglite/blob/main/POSTGRES-LICENSE), you can choose which you prefer.
