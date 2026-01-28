@@ -109,6 +109,7 @@ export class PGlite
   #pclose_fn: number = -1
   // externalCommandStream: FS.FSStream | null = null
   externalCommandStreamFd: number | null = null
+  #running: boolean = false
 
   // #pipe_fn: number = -1
 
@@ -379,9 +380,6 @@ export class PGlite
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
         },
-        // (mod: PostgresMod) => {
-        //   mod.FS.init(() => { return this.#pgl_stdin() }, (c: number) => this.#pgl_stdout(c), null)
-        // },
         (mod: any) => {
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
           mod.FS.chmod(initdbExePath, 0o0555)
@@ -486,7 +484,7 @@ export class PGlite
       throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
     }
 
-    this.startInSingleMode()
+    this.#startInSingleMode()
 
     // if (!idb) {
     //   // This would be a sab worker crash before pg_initdb can be called
@@ -691,7 +689,7 @@ export class PGlite
 
     // Close the database
     try {
-      this.mod!._pgl_setDoPGliteExit(0)
+      this.mod!._pgl_setPGliteActive(0)
       await this.execProtocol(serialize.end())
     } catch (e) {
       const err = e as { name: string; status: number }
@@ -712,6 +710,8 @@ export class PGlite
 
     this.#closed = true
     this.#closing = false
+    this.#ready = false
+    this.#running = false
   }
 
   /**
@@ -789,7 +789,16 @@ export class PGlite
     }
 
     // execute the message
-    mod._PostgresMainLoopOnce();
+    try {
+      mod._PostgresMainLoopOnce();
+    } catch (e: any) {
+      if (e.status === 100) {
+        // this is the siglongjmp call that a Database exception has occured
+        mod._PostgresMainLongJmp();
+      } else {
+        throw e
+      }
+    }
 
     this.#outputData = []
 
@@ -1121,8 +1130,12 @@ export class PGlite
     return this.mod!.callMain(args)
   }
 
-  startInSingleMode(): void {
-    this.mod!._pgl_setDoPGliteExit(1);
+  #startInSingleMode(): void {
+    if (this.#running) {
+      throw new Error('PGlite single mode already running')
+    }
+    
+    this.mod!._pgl_setPGliteActive(1);
 
     const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
     const result = this.mod!.callMain(singleModeArgs)
@@ -1130,5 +1143,6 @@ export class PGlite
       throw new Error('PGlite failed to initialize properly')
     }
     this.mod!._pgl_initPGlite();
+    this.#running = true
   }
 }

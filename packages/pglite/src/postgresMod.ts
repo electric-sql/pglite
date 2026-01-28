@@ -45,7 +45,8 @@ export interface PostgresMod
   removeFunction: (f: number) => void
   callMain: (args?: string[]) => number
   _PostgresMainLoopOnce: () => void
-  _pgl_setDoPGliteExit: (newValue: number) => number
+  _PostgresMainLongJmp: () => void
+  _pgl_setPGliteActive: (newValue: number) => number
   _pgl_initPGlite: () => void
 }
 
