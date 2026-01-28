@@ -47,7 +47,7 @@ export interface PostgresMod
   _PostgresMainLoopOnce: () => void
   _PostgresMainLongJmp: () => void
   _pgl_setPGliteActive: (newValue: number) => number
-  _pgl_initPGlite: () => void
+  _pgl_startPGlite: () => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

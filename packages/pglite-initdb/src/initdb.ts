@@ -228,11 +228,5 @@ export async function initdb({
     ...(args ?? [])],
   })
 
-  if (execResult.exitCode !== 0) {
-    throw new Error(
-      `initdb failed with exit code ${execResult.exitCode}. \nError message: ${execResult.stderr}\n Stdout: ${execResult.stdout}`,
-    )
-  }
-
   return execResult
 }

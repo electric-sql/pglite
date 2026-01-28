@@ -481,7 +481,11 @@ export class PGlite
     const initdbResult = await initdb({ pg: this, debug: options.debug })
 
     if (initdbResult.exitCode !== 0) {
-      throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+      if (initdbResult.stderr.includes('exists but is not empty')) {
+        // initdb found database, that's fine
+      } else {
+        throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+      }
     }
 
     this.#startInSingleMode()
@@ -1142,7 +1146,7 @@ export class PGlite
     if (result !== 99) {
       throw new Error('PGlite failed to initialize properly')
     }
-    this.mod!._pgl_initPGlite();
+    this.mod!._pgl_startPGlite();
     this.#running = true
   }
 }
