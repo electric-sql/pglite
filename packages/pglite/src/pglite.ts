@@ -283,7 +283,6 @@ export class PGlite
       thisProgram: postgresExePath,
       WASM_PREFIX,
       arguments: args,
-      INITIAL_MEMORY: options.initialMemory,
       noExitRuntime: true,
       print: (text: string) => {
         // console.log('pgliteout', text)
@@ -716,6 +715,9 @@ export class PGlite
     this.#closing = false
     this.#ready = false
     this.#running = false
+
+    // this.mod!.emscripten_force_exit(0);
+    // tdrz: how do I shut down the runtime? emscripten_force_exit is not a function
   }
 
   /**
@@ -1141,11 +1143,11 @@ export class PGlite
     
     this.mod!._pgl_setPGliteActive(1);
 
-    const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
-    const result = this.mod!.callMain(singleModeArgs)
-    if (result !== 99) {
-      throw new Error('PGlite failed to initialize properly')
-    }
+    // const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
+    // const result = this.mod!.callMain(singleModeArgs)
+    // if (result !== 99) {
+    //   throw new Error('PGlite failed to initialize properly')
+    // }
     this.mod!._pgl_startPGlite();
     this.#running = true
   }

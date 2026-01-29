@@ -185,8 +185,6 @@ async function execInitdb({
   log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
 
-  // again reset the heap before returning
-  pg.Module.HEAPU8.set(origHEAPU8)
 
   return {
     exitCode: result,

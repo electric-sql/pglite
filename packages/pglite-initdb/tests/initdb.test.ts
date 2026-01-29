@@ -4,8 +4,8 @@ import { initdb } from '../dist/initdb.js'
 
 describe('initdb', () => {
   it('should init a database', async () => {
-    const pg = await PGlite.create()
-    let result = await initdb({ pg, args: ["--no-clean"] })
+    // const pg = await PGlite.create()
+    let result = await initdb({ args: ["--no-clean"] })
     expect(result.exitCode).toBe(0)
     expect(result.stdout).contains('You can now start the database server using')
   })
@@ -14,7 +14,6 @@ describe('initdb', () => {
     let result = await initdb({ pg, args: ["--no-clean"], debug: 5 })
     expect(result.exitCode).toBe(0)
     expect(result.stdout).contains('You can now start the database server using')
-    pg.startInSingle()
     const selectResult = await pg.exec('SELECT 1')
     console.log(selectResult)
   })

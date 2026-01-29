@@ -23,7 +23,6 @@ export interface PostgresMod
   FS: FS
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
-  INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
   stringToUTF8OnStack: (s: string) => number
