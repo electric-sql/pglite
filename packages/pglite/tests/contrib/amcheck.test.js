@@ -31,45 +31,53 @@ it('amcheck', async () => {
 
   expect(res.rows).toEqual([
     {
-      bt_index_check: '',
-      relname: 'pg_proc_proname_args_nsp_index',
+      bt_index_check: "",
+      relname: "pg_proc_proname_args_nsp_index",
       relpages: 32,
     },
     {
-      bt_index_check: '',
-      relname: 'pg_description_o_c_o_index',
+      bt_index_check: "",
+      relname: "pg_description_o_c_o_index",
       relpages: 23,
     },
     {
-      bt_index_check: '',
-      relname: 'pg_attribute_relid_attnam_index',
+      bt_index_check: "",
+      relname: "pg_attribute_relid_attnam_index",
       relpages: 15,
     },
-    { bt_index_check: '', relname: 'pg_proc_oid_index', relpages: 12 },
     {
-      bt_index_check: '',
-      relname: 'pg_attribute_relid_attnum_index',
+      bt_index_check: "",
+      relname: "pg_proc_oid_index",
+      relpages: 12,
+    },
+    {
+      bt_index_check: "",
+      relname: "pg_attribute_relid_attnum_index",
       relpages: 11,
     },
     {
-      bt_index_check: '',
-      relname: 'pg_depend_depender_index',
+      bt_index_check: "",
+      relname: "pg_depend_depender_index",
       relpages: 10,
     },
     {
-      bt_index_check: '',
-      relname: 'pg_depend_reference_index',
+      bt_index_check: "",
+      relname: "pg_depend_reference_index",
       relpages: 8,
     },
-    { bt_index_check: '', relname: 'pg_amop_opr_fam_index', relpages: 6 },
     {
-      bt_index_check: '',
-      relname: 'pg_amop_fam_strat_index',
+      bt_index_check: "",
+      relname: "pg_amop_fam_strat_index",
       relpages: 6,
     },
     {
-      bt_index_check: '',
-      relname: 'pg_operator_oprname_l_r_n_index',
+      bt_index_check: "",
+      relname: "pg_operator_oprname_l_r_n_index",
+      relpages: 6,
+    },
+    {
+      bt_index_check: "",
+      relname: "pg_amop_opr_fam_index",
       relpages: 6,
     },
   ])
