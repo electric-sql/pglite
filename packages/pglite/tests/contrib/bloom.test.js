@@ -9,7 +9,7 @@ it('bloom', async () => {
     },
   })
 
-  await pg.exec('CREATE EXTENSION IF NOT EXISTS bloom;')
+  const result = await pg.exec('CREATE EXTENSION IF NOT EXISTS bloom;')
 
   await pg.exec(`
     CREATE TABLE IF NOT EXISTS test (
@@ -22,6 +22,9 @@ it('bloom', async () => {
   await pg.exec("INSERT INTO test (name) VALUES ('test1');")
   await pg.exec("INSERT INTO test (name) VALUES ('test2');")
   await pg.exec("INSERT INTO test (name) VALUES ('test3');")
+  // in previous versions, we were running PGlite with '"-f", "siobtnmh",' which disabled some query plans.
+  // now, to force Postgres to use the bloom filter, we disable sequential scans for this test
+  await pg.exec(`SET enable_seqscan = off;`)
 
   const res = await pg.query(`
     SELECT
