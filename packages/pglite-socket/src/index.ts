@@ -135,7 +135,7 @@ class QueryQueueManager {
 
   async clearTransactionIfNeeded(handlerId: number): Promise<void> {
     if (this.db.isInTransaction() && this.lastHandlerId === handlerId) {
-      this.db.exec('ROLLBACK')
+      await this.db.exec('ROLLBACK')
       this.lastHandlerId = null
       await this.processQueue()
     }
