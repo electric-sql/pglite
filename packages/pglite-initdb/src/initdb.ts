@@ -27,6 +27,7 @@ interface ExecResult {
   exitCode: number
   stderr: string
   stdout: string
+  dataFolder: string
 }
 
 function log(debug?: number, ...args: any[]) {
@@ -185,11 +186,13 @@ async function execInitdb({
   log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
 
-
+  pg.Module.HEAPU8.set(origHEAPU8)
+  
   return {
     exitCode: result,
     stderr: stderrOutput,
     stdout: stdoutOutput,
+    dataFolder: PGDATA
   }
 }
 

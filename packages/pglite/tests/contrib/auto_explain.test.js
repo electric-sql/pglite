@@ -3,7 +3,7 @@ import { PGlite } from '../../dist/index.js'
 import { auto_explain } from '../../dist/contrib/auto_explain.js'
 
 it('auto_explain', async () => {
-  const pg = new PGlite({
+  const pg = await PGlite.create({
     extensions: {
       auto_explain,
     },

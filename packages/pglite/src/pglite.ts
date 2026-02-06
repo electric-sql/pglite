@@ -50,6 +50,10 @@ export class PGlite
   fs?: Filesystem
   protected mod?: PostgresMod
 
+  get ENV(): any  {
+    return this.mod?.ENV
+  }
+
   readonly dataDir?: string
 
   #ready = false
@@ -384,7 +388,7 @@ export class PGlite
           mod.FS.chmod(initdbExePath, 0o0555)
           mod.FS.chmod(postgresExePath, 0o0555)
         },
-        (mod: any) => {
+        (mod: PostgresMod) => {
           mod.ENV.MODE = 'REACT'
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PREFIX = WASM_PREFIX
@@ -480,14 +484,19 @@ export class PGlite
     const initdbResult = await initdb({ pg: this, debug: options.debug })
 
     if (initdbResult.exitCode !== 0) {
-      if (initdbResult.stderr.includes('exists but is not empty')) {
-        // initdb found database, that's fine
-      } else {
-        throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
-      }
+      throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+      // if (initdbResult.stderr.includes('exists but is not empty')) {
+      //   // initdb found database, that's fine, but we still need to start it in single mode
+      //   this.#startInSingleMode()
+      // } else {
+      //   throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+      // }
     }
 
-    this.#startInSingleMode()
+
+    this.mod!._pgl_setPGliteActive(1);
+    this.#startInSingleMode({ pgDataFolder: initdbResult.dataFolder })
+    this.#setPGliteActive()
 
     // if (!idb) {
     //   // This would be a sab worker crash before pg_initdb can be called
@@ -1136,19 +1145,20 @@ export class PGlite
     return this.mod!.callMain(args)
   }
 
-  #startInSingleMode(): void {
+  #setPGliteActive(): void {
     if (this.#running) {
       throw new Error('PGlite single mode already running')
     }
     
-    this.mod!._pgl_setPGliteActive(1);
-
-    // const singleModeArgs = ['--single', '-j', '-D', '/pglite/data', 'template1']
-    // const result = this.mod!.callMain(singleModeArgs)
-    // if (result !== 99) {
-    //   throw new Error('PGlite failed to initialize properly')
-    // }
     this.mod!._pgl_startPGlite();
     this.#running = true
+  }
+
+  #startInSingleMode(opts: { pgDataFolder: string }): void {
+    const singleModeArgs = ['--single', '-F', '-O', '-j', '-c', 'search_path=pg_catalog', '-c', 'exit_on_error=false', '-c', 'log_checkpoints=false', '-D', opts.pgDataFolder, this.mod!.ENV.PGDATABASE ]
+    const result = this.mod!.callMain(singleModeArgs)
+    if (result !== 99) {
+      throw new Error('PGlite failed to initialize properly')
+    }
   }
 }

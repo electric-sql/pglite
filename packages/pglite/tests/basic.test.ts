@@ -46,6 +46,8 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
+
+      await db.close()
     })
 
     it('query', async () => {
