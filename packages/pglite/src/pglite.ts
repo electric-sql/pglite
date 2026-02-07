@@ -5,7 +5,6 @@ import {
   type Filesystem,
   loadFs,
   parseDataDir,
-  PGDATA,
   WASM_PREFIX,
 } from './fs/index.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
@@ -37,7 +36,7 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-import { initdb } from '@electric-sql/pglite-initdb'
+import { initdb, PGDATA } from '@electric-sql/pglite-initdb'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -459,6 +458,8 @@ export class PGlite
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
+    if (!options.noInitDb) {
+
     // If the user has provided a tarball to load the database from, do that now.
     // We do this after the initial sync so that we can throw if the database
     // already exists.
@@ -468,96 +469,111 @@ export class PGlite
       }
       this.#log('pglite: loading data from tarball')
       await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
-    }
 
-    // Check and log if the database exists
-    if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-      this.#log('pglite: found DB, resuming')
     } else {
-      this.#log('pglite: no db')
+      // Check and log if the database exists
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        this.#log('pglite: found DB, resuming')
+      } else {
+        this.#log('pglite: no db')
+
+        const pg_initdb_opts = { ...options }
+        pg_initdb_opts.noInitDb = true
+        pg_initdb_opts.dataDir = undefined
+        const pg_initDb = await PGlite.create(pg_initdb_opts)
+        
+        // Initialize the database
+        const initdbResult = await initdb({ pg: pg_initDb, debug: options.debug })
+        
+        if (initdbResult.exitCode !== 0) {
+          // throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+          if (initdbResult.stderr.includes('exists but is not empty')) {
+            // initdb found database, that's fine, but we still need to start it in single mode
+            // this.#startInSingleMode()
+          } else {
+            throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+          }
+        }
+        
+        
+        const pgdatatar = await pg_initDb.dumpDataDir('none')
+        pg_initDb.close()
+        await loadTar(this.mod.FS, pgdatatar, PGDATA)
+      }
     }
 
-    // Start compiling dynamic extensions present in FS.
-    await loadExtensions(this.mod, (...args) => this.#log(...args))
+      // Start compiling dynamic extensions present in FS.
+      await loadExtensions(this.mod, (...args) => this.#log(...args))
+      
+      this.mod!._pgl_setPGliteActive(1);
+      this.#startInSingleMode({ pgDataFolder: PGDATA })
+      this.#setPGliteActive()
 
-    // Initialize the database
-    const initdbResult = await initdb({ pg: this, debug: options.debug })
-
-    if (initdbResult.exitCode !== 0) {
-      throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
-      // if (initdbResult.stderr.includes('exists but is not empty')) {
-      //   // initdb found database, that's fine, but we still need to start it in single mode
-      //   this.#startInSingleMode()
-      // } else {
-      //   throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+      // if (!idb) {
+      //   // This would be a sab worker crash before pg_initdb can be called
+      //   throw new Error('INITDB failed to return value')
       // }
-    }
 
+      // // initdb states:
+      // // - populating pgdata
+      // // - reconnect a previous db
+      // // - found valid db+user
+      // // currently unhandled:
+      // // - db does not exist
+      // // - user is invalid for db
 
-    this.mod!._pgl_setPGliteActive(1);
-    this.#startInSingleMode({ pgDataFolder: initdbResult.dataFolder })
-    this.#setPGliteActive()
+      // if (idb & 0b0001) {
+      //   // this would be a wasm crash inside pg_initdb from a sab worker.
+      //   throw new Error('INITDB: failed to execute')
+      // } else if (idb & 0b0010) {
+      //   // initdb was called to init PGDATA if required
+      //   const pguser = options.username ?? 'postgres'
+      //   const pgdatabase = options.database ?? 'template1'
+      //   if (idb & 0b0100) {
+      //     // initdb has found a previous database
+      //     if (idb & (0b0100 | 0b1000)) {
+      //       // initdb found db+user, and we switched to that user
+      //     } else {
+      //       // TODO: invalid user for db?
+      //       throw new Error(
+      //         `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
+      //       )
+      //     }
+      //   } else {
+      //     // initdb has created a new database for us, we can only continue if we are
+      //     // in template1 and the user is postgres
+      //     if (pgdatabase !== 'template1' && pguser !== 'postgres') {
+      //       // throw new Error(`Invalid database ${pgdatabase} requested`);
+      //       throw new Error(
+      //         `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
+      //       )
+      //     }
+      //   }
+      // }
 
-    // if (!idb) {
-    //   // This would be a sab worker crash before pg_initdb can be called
-    //   throw new Error('INITDB failed to return value')
-    // }
+      // // (re)start backed after possible initdb boot/single.
+      // this.mod._pgl_backend()
 
-    // // initdb states:
-    // // - populating pgdata
-    // // - reconnect a previous db
-    // // - found valid db+user
-    // // currently unhandled:
-    // // - db does not exist
-    // // - user is invalid for db
+      // Sync any changes back to the persisted store (if there is one)
+      // TODO: only sync here if initdb did init db.
+      await this.syncToFs()
 
-    // if (idb & 0b0001) {
-    //   // this would be a wasm crash inside pg_initdb from a sab worker.
-    //   throw new Error('INITDB: failed to execute')
-    // } else if (idb & 0b0010) {
-    //   // initdb was called to init PGDATA if required
-    //   const pguser = options.username ?? 'postgres'
-    //   const pgdatabase = options.database ?? 'template1'
-    //   if (idb & 0b0100) {
-    //     // initdb has found a previous database
-    //     if (idb & (0b0100 | 0b1000)) {
-    //       // initdb found db+user, and we switched to that user
-    //     } else {
-    //       // TODO: invalid user for db?
-    //       throw new Error(
-    //         `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
-    //       )
-    //     }
-    //   } else {
-    //     // initdb has created a new database for us, we can only continue if we are
-    //     // in template1 and the user is postgres
-    //     if (pgdatabase !== 'template1' && pguser !== 'postgres') {
-    //       // throw new Error(`Invalid database ${pgdatabase} requested`);
-    //       throw new Error(
-    //         `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
-    //       )
-    //     }
-    //   }
-    // }
+      this.#ready = true
 
-    // // (re)start backed after possible initdb boot/single.
-    // this.mod._pgl_backend()
+      // Set the search path to public for this connection
+      await this.exec('SET search_path TO public;')
 
-    // Sync any changes back to the persisted store (if there is one)
-    // TODO: only sync here if initdb did init db.
-    await this.syncToFs()
+      if (options.username) {
+        await this.exec(`SET ROLE ${options.username};`)
+      }
 
-    this.#ready = true
+      // Init array types
+      await this._initArrayTypes()
 
-    // Set the search path to public for this connection
-    await this.exec('SET search_path TO public;')
-
-    // Init array types
-    await this._initArrayTypes()
-
-    // Init extensions
-    for (const initFn of extensionInitFns) {
-      await initFn()
+      // Init extensions
+      for (const initFn of extensionInitFns) {
+        await initFn()
+      }
     }
   }
 
@@ -703,6 +719,7 @@ export class PGlite
     try {
       this.mod!._pgl_setPGliteActive(0)
       await this.execProtocol(serialize.end())
+      this.mod!._pgl_run_atexit_funcs()
     } catch (e) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -725,8 +742,14 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    // this.mod!.emscripten_force_exit(0);
-    // tdrz: how do I shut down the runtime? emscripten_force_exit is not a function
+    try {
+      this.mod!._emscripten_force_exit(0);
+    } catch (e: any) {
+      this.#log(e)
+      if (e.status !== 0) {
+        // we might want to throw if return value is not 0
+      } 
+    }
   }
 
   /**

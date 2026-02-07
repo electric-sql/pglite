@@ -186,7 +186,7 @@ async function execInitdb({
   log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
 
-  pg.Module.HEAPU8.set(origHEAPU8)
+  // pg.Module.HEAPU8.set(origHEAPU8)
   
   return {
     exitCode: result,

@@ -48,6 +48,8 @@ export interface PostgresMod
   _pgl_setPGliteActive: (newValue: number) => number
   _pgl_startPGlite: () => void
   ENV: any
+  _emscripten_force_exit: (status: number) => void
+  _pgl_run_atexit_funcs: () => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
