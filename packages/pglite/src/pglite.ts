@@ -837,6 +837,8 @@ export class PGlite
         throw e
       }
     }
+    
+    mod._pgl_pq_flush();
 
     this.#outputData = []
 

@@ -154,11 +154,7 @@ export abstract class BasePGlite
       syncToFs: false,
     })
 
-    const results2 = await this.execProtocolStream(await serializeProtocol.flush(), {
-      ...options,
-      syncToFs: false,
-    })
-    return [...results, ...results2]
+    return results
   }
 
   /**
