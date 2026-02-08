@@ -836,10 +836,10 @@ export class PGlite
       } else {
         throw e
       }
+    } finally {
+      mod._pgl_pq_flush();
     }
     
-    mod._pgl_pq_flush();
-
     this.#outputData = []
 
     if (this.#keepRawResponse && this.#writeOffset)
