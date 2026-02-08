@@ -727,7 +727,7 @@ export class PGlite
         // An earlier build of PGlite would throw an error here when closing
         // leaving this here for now. I believe it was a bug in Emscripten.
       } else {
-        throw e
+        // throw e
       }
     } finally {
       this.mod!.removeFunction(this.#pglite_socket_read)
@@ -1059,7 +1059,7 @@ export class PGlite
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
         this.#notifyListeners.delete(pgChannel)
       }
-      throw e
+      // throw e
     }
     return async (tx?: Transaction) => {
       await this.unlisten(pgChannel, callback, tx)

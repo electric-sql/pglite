@@ -13,6 +13,7 @@ it('auto_explain', async () => {
     LOAD 'auto_explain';
     SET auto_explain.log_min_duration = '0';
     SET auto_explain.log_analyze = 'true';
+    SET auto_explain.log_level = 'NOTICE';
   `)
 
   const notices = []
