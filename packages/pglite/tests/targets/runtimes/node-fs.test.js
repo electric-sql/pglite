@@ -1,5 +1,5 @@
 import { tests } from './base.js'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
 import * as fs from 'fs/promises'
 import { PGlite } from '../../../dist/index.js'
 
@@ -26,7 +26,7 @@ describe('NODEFS', () => {
 
     const ret1 = await pg1.query('SELECT * FROM test;')
 
-    // emscripten NODEFS peciliarities: need to close everything to flush to disk
+    // emscripten NODEFS peculiarities: need to close everything to flush to disk
     await pg1.close()
 
     // now reusing the same folder should work!

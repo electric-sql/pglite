@@ -46,6 +46,7 @@ export interface PostgresMod
   callMain: (args?: string[]) => number
   _PostgresMainLoopOnce: () => void
   _PostgresMainLongJmp: () => void
+  _PostgresSendReadyForQueryIfNecessary: () => void
   _pgl_setPGliteActive: (newValue: number) => number
   _pgl_startPGlite: () => void
   ENV: any

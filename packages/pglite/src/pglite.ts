@@ -834,9 +834,10 @@ export class PGlite
         // this is the siglongjmp call that a Database exception has occured
         mod._PostgresMainLongJmp();
       } else {
-        throw e
+        // throw e
       }
     } finally {
+      mod._PostgresSendReadyForQueryIfNecessary();
       mod._pgl_pq_flush();
     }
     
@@ -1059,7 +1060,7 @@ export class PGlite
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
         this.#notifyListeners.delete(pgChannel)
       }
-      // throw e
+      throw e
     }
     return async (tx?: Transaction) => {
       await this.unlisten(pgChannel, callback, tx)

@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { expectToThrowAsync } from './test-utils.js'
 import * as fs from 'fs/promises'
 import { PGlite } from '../dist/index.js'
 
 describe('user', () => {
+  afterAll(async() => {
+    await fs.rm('./pgdata-test-user', { force: true, recursive: true })
+  })
   it('user switching', async () => {
     await fs.rm('./pgdata-test-user', { force: true, recursive: true })
 

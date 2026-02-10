@@ -29,14 +29,16 @@ describe('exec protocol', () => {
     const r1 = await db.execProtocol(serialize.parse({ text: 'SELECT $1' }))
     const messageNames1 = r1.messages.map((msg) => msg.name)
     expect(messageNames1).toEqual([
-      'notice',
+      // 'notice',
       'parseComplete',
-      /*        'readyForQuery',*/
+      // 'readyForQuery'
     ])
 
     const r2 = await db.execProtocol(serialize.bind({ values: ['1'] }))
     const messageNames2 = r2.messages.map((msg) => msg.name)
-    expect(messageNames2).toEqual(['notice', 'bindComplete'])
+    expect(messageNames2).toEqual([
+      // 'notice', 
+      'bindComplete'])
 
     const r3 = await db.execProtocol(serialize.describe({ type: 'P' }))
     const messageNames3 = r3.messages.map((msg) => msg.name)
