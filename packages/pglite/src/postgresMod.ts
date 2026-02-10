@@ -20,6 +20,7 @@ export interface PostgresMod
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
   thisProgram: string
+  stdin: (() => number | null) | null
   FS: FS
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string

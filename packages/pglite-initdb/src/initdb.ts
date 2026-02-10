@@ -1,6 +1,11 @@
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
-import assert from 'assert'
+
+function assert(condition: unknown, message?: string): asserts condition {
+  if (!condition) {
+    throw new Error(message ?? 'Assertion failed')
+  }
+}
 // import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
@@ -86,6 +91,8 @@ async function execInitdb({
     arguments: args,
     noExitRuntime: false,
     thisProgram: initdbExePath,
+    // Provide a stdin that returns EOF to avoid browser prompt
+    stdin: () => null,
     print: (text) => {
       stdoutOutput += text
       log(debug, 'initdbout', text)

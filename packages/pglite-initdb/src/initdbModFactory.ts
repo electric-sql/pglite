@@ -20,6 +20,7 @@ export interface InitdbMod
   preRun: Array<{ (mod: InitdbMod): void }>
   postRun: Array<{ (mod: InitdbMod): void }>
   thisProgram: string
+  stdin: (() => number | null) | null
   ENV: Record<string,string>
   FS: FS
   PROXYFS: Emscripten.FileSystemType

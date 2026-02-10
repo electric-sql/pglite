@@ -287,6 +287,8 @@ export class PGlite
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
+      // Provide a stdin that returns EOF to avoid browser prompt
+      stdin: () => null,
       print: (text: string) => {
         // console.log('pgliteout', text)
         this.#print(text)
@@ -480,6 +482,8 @@ export class PGlite
         const pg_initdb_opts = { ...options }
         pg_initdb_opts.noInitDb = true
         pg_initdb_opts.dataDir = undefined
+        pg_initdb_opts.extensions = undefined
+        pg_initdb_opts.loadDataDir = undefined
         const pg_initDb = await PGlite.create(pg_initdb_opts)
         
         // Initialize the database
