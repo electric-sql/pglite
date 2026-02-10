@@ -539,10 +539,595 @@ describe(`PGLite Socket Server`, () => {
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
     })
+
+    it('should handle large queries that split across TCP packets', async () => {
+      // Create a table
+      await client.query(`CREATE TABLE test_users (id SERIAL, data TEXT)`)
+
+      // Generate >64KB payload to force TCP fragmentation
+      const largeData = 'x'.repeat(100_000) // 100KB string
+
+      // Insert large data
+      const result = await client.query(`
+        INSERT INTO test_users (data) VALUES ('${largeData}') RETURNING *
+      `)
+
+      expect(result.rows[0].data).toBe(largeData)
+    })
+
+    it('should handle concurrent clients with interleaved transaction and query', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      try {
+        // Client 1 starts a transaction (don't await yet)
+        const beginResult = await client.query('BEGIN')
+
+        // Client 2 makes a simple SELECT 1 query (don't await yet)
+        const selectPromise = client2.query('SELECT 999999 as one')
+
+        // Small delay to ensure SELECT is sent before ROLLBACK
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client 1 rolls back the transaction (don't await yet)
+        const rollbackResult = await client.query('ROLLBACK')
+
+        const selectResult = await selectPromise
+
+        // Verify results
+        expect(beginResult.command).toBe('BEGIN')
+        expect(selectResult.rows[0].one).toBe(999999)
+        expect(rollbackResult.command).toBe('ROLLBACK')
+      } finally {
+        await client2.end()
+      }
+    }, 30000)
+
+    it('should process pending queries when transaction owner disconnects', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      client2.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // Client starts a transaction
+        const beginResult = await client2.query('BEGIN')
+        expect(beginResult.command).toBe('BEGIN')
+
+        // Client 2 sends a query (will be blocked because client is in transaction)
+        const selectPromise = client.query('SELECT 123456 as val')
+
+        // Small delay to ensure SELECT is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(client2 as any).connection.stream.destroy()
+
+        // Client 2's query should complete successfully after transaction is cleared
+        const selectResult = await selectPromise
+
+        expect(selectResult.rows[0].val).toBe(123456)
+      } catch {
+        expect(false, 'Should not happen')
+      }
+    }, 30000)
+
+    it('interleaved transactions should work', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second bob connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      alice.on('error', () => {
+        // Suppress the expected "Connection terminated unexpectedly" error
+      })
+
+      // Client starts a transaction
+      const aliceBegin = await alice.query('BEGIN')
+      expect(aliceBegin.command).toBe('BEGIN')
+
+      // Client 2 begins its own transaction
+      const bobBegin = bob.query('BEGIN')
+
+      // Small delay to ensure client2.BEGIN is enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      const aliceInsertPromise = alice.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Alice', 'alice@example.com')
+        RETURNING *
+      `)
+
+      const bobInsertPromise = bob.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Bob', 'bob@example.com')
+        RETURNING *
+      `)
+
+      // Small delay to ensure both inserts are enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      // bob commits
+      const bobCommit = bob.query('COMMIT')
+
+      // alice rolls back
+      const aliceRollback = alice.query('ROLLBACK')
+
+      await Promise.all([
+        bobBegin,
+        aliceInsertPromise,
+        bobInsertPromise,
+        aliceRollback,
+        bobCommit,
+      ])
+
+      // Verify only Bob was commited
+      const testUsers = await bob.query('SELECT * FROM test_users')
+      expect(testUsers.rows.length).toBe(1)
+      expect(testUsers.rows[0].name).toBe('Bob')
+    }, 30000)
+
+    it('interleaved transactions should work when one client crashes', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await bob.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second client connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      alice.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // alice starts a transaction
+        const aliceBegin = await alice.query('BEGIN')
+        expect(aliceBegin.command).toBe('BEGIN')
+
+        // bob begins its own transaction
+        const bobBegin = bob.query('BEGIN')
+
+        // Small delay to ensure client2.BEGIN is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // alice inserts data
+        alice.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Alice', 'alice@example.com')
+          RETURNING *
+        `)
+
+        // client inserts data
+        const bobInsert = bob.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Bob', 'bob@example.com')
+          RETURNING *
+        `)
+
+        // Small delay to ensure both inserts are enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client2 abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(alice as any).connection.stream.destroy()
+
+        // bob commits
+        const bobCommit = bob.query('COMMIT')
+
+        await Promise.all([bobBegin, bobInsert, bobCommit])
+
+        // Verify only Bob was commited
+        const selectResult = await bob.query('SELECT * FROM test_users')
+        expect(selectResult.rows.length).toBe(1)
+        expect(selectResult.rows[0].name).toBe('Bob')
+      } catch {
+        // swallow
+      }
+    }, 30000)
+
+    it('should support physical replication slot with two clients', async () => {
+      // Client 1 (regular client) creates a table
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT
+        )
+      `)
+
+      // Create a physical replication slot (doesn't require any plugins)
+      const slotName = 'test_slot_' + Date.now()
+      const createSlotResult = await client.query(
+        `SELECT * FROM pg_create_physical_replication_slot($1)`,
+        [slotName],
+      )
+      expect(createSlotResult.rows[0].slot_name).toBe(slotName)
+
+      // Verify the slot exists
+      const slotCheck = await client.query(
+        `SELECT slot_name, slot_type, active FROM pg_replication_slots WHERE slot_name = $1`,
+        [slotName],
+      )
+      expect(slotCheck.rows.length).toBe(1)
+      expect(slotCheck.rows[0].slot_name).toBe(slotName)
+      expect(slotCheck.rows[0].slot_type).toBe('physical')
+
+      // Insert some data with client 1
+      await client.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Alice', 'alice@example.com'),
+          ('Bob', 'bob@example.com')
+      `)
+
+      // Client 2: Create a replication connection
+      let replicationClient: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        replicationClient = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          replication: 'database',
+        })
+      } else {
+        replicationClient = new Client({
+          ...connectionConfig,
+          replication: 'database',
+        })
+      }
+      await replicationClient.connect()
+
+      try {
+        // Use the replication client to check the slot status
+        const slotStatus = await replicationClient.query(
+          `SELECT slot_name, slot_type, restart_lsn FROM pg_replication_slots WHERE slot_name = $1`,
+          [slotName],
+        )
+        expect(slotStatus.rows.length).toBe(1)
+        expect(slotStatus.rows[0].slot_name).toBe(slotName)
+
+        // Get current WAL position
+        const walPos = await client.query(`SELECT pg_current_wal_lsn() as lsn`)
+        expect(walPos.rows[0].lsn).toBeTruthy()
+
+        // Insert more data
+        await client.query(`
+          INSERT INTO test_users (name, email)
+          VALUES ('Charlie', 'charlie@example.com')
+        `)
+
+        // Verify data was inserted
+        const users = await client.query(
+          `SELECT COUNT(*)::int as count FROM test_users`,
+        )
+        expect(users.rows[0].count).toBe(3)
+
+        // Both clients can see the same data
+        const replicationClientUsers = await replicationClient.query(
+          `SELECT COUNT(*)::int as count FROM test_users`,
+        )
+        expect(replicationClientUsers.rows[0].count).toBe(3)
+      } finally {
+        // Clean up
+        await replicationClient.end()
+        await client.query(`SELECT pg_drop_replication_slot($1)`, [slotName])
+      }
+    }, 30000)
+
+    // Logical replication with pgoutput requires the pgoutput plugin which is not
+    // currently built into PGlite. This test works against a real PostgreSQL server.
+    it('should support logical replication with pgoutput plugin', async () => {
+      // Client 1 (regular client) creates a table
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT
+        )
+      `)
+
+      // Create a logical replication slot using pgoutput plugin
+      const slotName = 'test_logical_slot_' + Date.now()
+      const createSlotResult = await client.query(
+        `SELECT * FROM pg_create_logical_replication_slot($1, 'pgoutput')`,
+        [slotName],
+      )
+      expect(createSlotResult.rows[0].slot_name).toBe(slotName)
+
+      // Create a publication for the table
+      await client.query(`CREATE PUBLICATION test_pub FOR TABLE test_users`)
+
+      // Insert some data with client 1
+      await client.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Alice', 'alice@example.com'),
+          ('Bob', 'bob@example.com')
+      `)
+
+      // Client 2: Create a replication connection
+      let replicationClient: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        replicationClient = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          replication: 'database',
+        })
+      } else {
+        replicationClient = new Client({
+          ...connectionConfig,
+          replication: 'database',
+        })
+      }
+      await replicationClient.connect()
+
+      try {
+        // Verify the slot exists and is logical
+        const slotCheck = await client.query(
+          `SELECT slot_name, slot_type, plugin FROM pg_replication_slots WHERE slot_name = $1`,
+          [slotName],
+        )
+        expect(slotCheck.rows.length).toBe(1)
+        expect(slotCheck.rows[0].slot_name).toBe(slotName)
+        expect(slotCheck.rows[0].slot_type).toBe('logical')
+        expect(slotCheck.rows[0].plugin).toBe('pgoutput')
+
+        // Peek at changes using pg_logical_slot_peek_binary_changes
+        // (pgoutput produces binary output, so we must use the binary function)
+        const peekResult = await client.query(
+          `SELECT * FROM pg_logical_slot_peek_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_pub')`,
+          [slotName],
+        )
+
+        // We should have changes (BEGIN, INSERT x2, COMMIT at minimum)
+        expect(peekResult.rows.length).toBeGreaterThan(0)
+
+        // Now consume the changes using pg_logical_slot_get_binary_changes
+        const getResult = await client.query(
+          `SELECT * FROM pg_logical_slot_get_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_pub')`,
+          [slotName],
+        )
+
+        // Should have consumed changes
+        expect(getResult.rows.length).toBeGreaterThan(0)
+
+        // Peeking again should show no new changes (since we consumed them)
+        const peekAgainResult = await client.query(
+          `SELECT * FROM pg_logical_slot_peek_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_pub')`,
+          [slotName],
+        )
+        expect(peekAgainResult.rows.length).toBe(0)
+
+        // Insert more data with client 1
+        await client.query(`
+          INSERT INTO test_users (name, email)
+          VALUES ('Charlie', 'charlie@example.com')
+        `)
+
+        // New changes should be available
+        const newChangesResult = await client.query(
+          `SELECT * FROM pg_logical_slot_peek_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_pub')`,
+          [slotName],
+        )
+        expect(newChangesResult.rows.length).toBeGreaterThan(0)
+
+        // The replication client can also query the slot
+        const replicationSlotCheck = await replicationClient.query(
+          `SELECT slot_name, plugin FROM pg_replication_slots WHERE slot_name = $1`,
+          [slotName],
+        )
+        expect(replicationSlotCheck.rows[0].slot_name).toBe(slotName)
+      } finally {
+        // Clean up
+        await replicationClient.end()
+        // Ignore errors during cleanup (slot may not exist if test failed early)
+        await client
+          .query(`SELECT pg_drop_replication_slot($1)`, [slotName])
+          .catch(() => {})
+        await client
+          .query(`DROP PUBLICATION IF EXISTS test_pub`)
+          .catch(() => {})
+      }
+    }, 30000)
+
+    it('should receive correct data through logical replication slot', async () => {
+      // Create a table with specific columns
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          age INTEGER
+        )
+      `)
+
+      // Create a logical replication slot
+      const slotName = 'test_data_slot_' + Date.now()
+      await client.query(
+        `SELECT * FROM pg_create_logical_replication_slot($1, 'pgoutput')`,
+        [slotName],
+      )
+
+      // Create a publication for the table
+      await client.query(
+        `CREATE PUBLICATION test_data_pub FOR TABLE test_users`,
+      )
+
+      // Insert specific data that we'll verify in the replication output
+      const testData = [
+        { name: 'Alice Smith', email: 'alice@example.com', age: 30 },
+        { name: 'Bob Jones', email: 'bob@example.com', age: 25 },
+        { name: 'Charlie Brown', email: 'charlie@example.com', age: 35 },
+      ]
+
+      for (const row of testData) {
+        await client.query(
+          `INSERT INTO test_users (name, email, age) VALUES ($1, $2, $3)`,
+          [row.name, row.email, row.age],
+        )
+      }
+
+      // Create a second client with replication mode
+      let replicationClient: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        replicationClient = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          replication: 'database',
+        })
+      } else {
+        replicationClient = new Client({
+          ...connectionConfig,
+          replication: 'database',
+        })
+      }
+      await replicationClient.connect()
+
+      try {
+        // Get the binary changes from the replication slot
+        const changesResult = await client.query(
+          `SELECT lsn, xid, data FROM pg_logical_slot_get_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_data_pub')`,
+          [slotName],
+        )
+
+        // Should have multiple rows (BEGIN, INSERT x3, COMMIT, etc.)
+        expect(changesResult.rows.length).toBeGreaterThan(0)
+
+        // Collect all binary data from the changes
+        const allData = changesResult.rows
+          .map((row) => row.data as Buffer)
+          .filter((data) => data && data.length > 0)
+
+        // Concatenate all binary data to search through it
+        const combinedBuffer = Buffer.concat(allData)
+        const combinedString = combinedBuffer.toString('utf8')
+
+        // Verify that each piece of inserted data appears in the replication output
+        for (const row of testData) {
+          expect(combinedString).toContain(row.name)
+          expect(combinedString).toContain(row.email)
+        }
+
+        // Verify the replication client can also read the slot info
+        const slotInfo = await replicationClient.query(
+          `SELECT slot_name, plugin, slot_type FROM pg_replication_slots WHERE slot_name = $1`,
+          [slotName],
+        )
+        expect(slotInfo.rows[0].slot_name).toBe(slotName)
+        expect(slotInfo.rows[0].plugin).toBe('pgoutput')
+        expect(slotInfo.rows[0].slot_type).toBe('logical')
+
+        // Insert more data and verify it shows up
+        const newRow = {
+          name: 'Diana Prince',
+          email: 'diana@example.com',
+          age: 28,
+        }
+        await client.query(
+          `INSERT INTO test_users (name, email, age) VALUES ($1, $2, $3)`,
+          [newRow.name, newRow.email, newRow.age],
+        )
+
+        // Get the new changes
+        const newChangesResult = await client.query(
+          `SELECT lsn, xid, data FROM pg_logical_slot_get_binary_changes($1, NULL, NULL, 'proto_version', '1', 'publication_names', 'test_data_pub')`,
+          [slotName],
+        )
+
+        const newData = newChangesResult.rows
+          .map((row) => row.data as Buffer)
+          .filter((data) => data && data.length > 0)
+        const newCombinedBuffer = Buffer.concat(newData)
+        const newCombinedString = newCombinedBuffer.toString('utf8')
+
+        // Verify the new data appears
+        expect(newCombinedString).toContain(newRow.name)
+        expect(newCombinedString).toContain(newRow.email)
+        expect(newCombinedString).toContain(newRow.age)
+
+        // Verify previous data does NOT appear (it was already consumed)
+        expect(newCombinedString).not.toContain('Alice Smith')
+        expect(newCombinedString).not.toContain('Bob Jones')
+      } finally {
+        await replicationClient.end()
+        await client
+          .query(`SELECT pg_drop_replication_slot($1)`, [slotName])
+          .catch(() => {})
+        await client
+          .query(`DROP PUBLICATION IF EXISTS test_data_pub`)
+          .catch(() => {})
+      }
+    }, 30000)
   })
 
   describe('with extensions via CLI', () => {
-    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now().toString()}`
+    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     fs.mkdirSync(UNIX_SOCKET_DIR_PATH)
     const UNIX_SOCKET_PATH = `${UNIX_SOCKET_DIR_PATH}/.s.PGSQL.5432`
     let serverProcess: ChildProcess | null = null
