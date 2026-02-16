@@ -16,3 +16,7 @@ node_modules
 
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# Local test logs
+packages/pglite/tests/crash-safety/*.log
+prompt_history.txt

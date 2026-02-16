@@ -4,8 +4,11 @@ import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 
+// TODO: Add locking for browser backends via Web Locks API
+
 export class NodeFS extends EmscriptenBuiltinFilesystem {
   protected rootDir: string
+  #lockFd: number | null = null
 
   constructor(dataDir: string) {
     super(dataDir)
@@ -17,6 +20,10 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
 
   async init(pg: PGlite, opts: Partial<PostgresMod>) {
     this.pg = pg
+
+    this.#acquireLock()
+    this.#cleanPartialInit()
+
     const options: Partial<PostgresMod> = {
       ...opts,
       preRun: [
@@ -31,7 +38,105 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
     return { emscriptenOpts: options }
   }
 
+  // Lock file is a sibling (mydb.lock) to avoid polluting the PG data dir
+  #acquireLock() {
+    const lockPath = this.rootDir + '.lock'
+
+    if (fs.existsSync(lockPath)) {
+      try {
+        const content = fs.readFileSync(lockPath, 'utf-8').trim()
+        const lines = content.split('\n')
+        const pid = parseInt(lines[0], 10)
+
+        if (pid && !isNaN(pid) && this.#isProcessAlive(pid)) {
+          throw new Error(
+            `Data directory "${this.rootDir}" is locked by another PGlite instance ` +
+              `(PID ${pid}). Close the other instance first, or delete ` +
+              `"${lockPath}" if the process is no longer running.`,
+          )
+        }
+        // Stale lock from a dead process — safe to take over
+      } catch (e) {
+        // Re-throw lock errors, ignore parse errors (corrupt lock file = stale)
+        if (e instanceof Error && e.message.includes('is locked by')) {
+          throw e
+        }
+      }
+    }
+
+    // Write our PID to the lock file and keep the fd open
+    this.#lockFd = fs.openSync(lockPath, 'w')
+    fs.writeSync(this.#lockFd, `${process.pid}\n${Date.now()}\n`)
+  }
+
+  #releaseLock() {
+    if (this.#lockFd !== null) {
+      try {
+        fs.closeSync(this.#lockFd)
+      } catch {
+        // Ignore errors on close
+      }
+      this.#lockFd = null
+
+      const lockPath = this.rootDir + '.lock'
+      try {
+        fs.unlinkSync(lockPath)
+      } catch {
+        // Ignore errors on unlink (dir may already be cleaned up)
+      }
+    }
+  }
+
+  // If initdb was killed mid-way, the data dir is incomplete and unrecoverable.
+  // A fully initialized PG always has 3+ databases in base/ (template0, template1, postgres).
+  #cleanPartialInit() {
+    try {
+      const entries = fs.readdirSync(this.rootDir)
+      if (entries.length === 0) return
+
+      const pgVersionPath = path.join(this.rootDir, 'PG_VERSION')
+      if (!fs.existsSync(pgVersionPath)) {
+        this.#moveDataDirToBackup()
+        return
+      }
+
+      const basePath = path.join(this.rootDir, 'base')
+      if (fs.existsSync(basePath)) {
+        const databases = fs.readdirSync(basePath)
+        if (databases.length < 3) {
+          this.#moveDataDirToBackup()
+          return
+        }
+      } else {
+        this.#moveDataDirToBackup()
+      }
+    } catch {
+      // If we can't read the directory, let PostgreSQL handle the error
+    }
+  }
+
+  #moveDataDirToBackup() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const backupPath = `${this.rootDir}.corrupt-${timestamp}`
+    fs.renameSync(this.rootDir, backupPath)
+    fs.mkdirSync(this.rootDir)
+    console.warn(
+      `PGlite: Detected partially-initialized data directory. ` +
+        `Moved to "${backupPath}" for recovery. A fresh database will be created.`,
+    )
+  }
+
+  #isProcessAlive(pid: number): boolean {
+    try {
+      process.kill(pid, 0) // signal 0 = check if process exists
+      return true
+    } catch {
+      return false // ESRCH = process doesn't exist
+    }
+  }
+
   async closeFs(): Promise<void> {
+    this.#releaseLock()
     this.pg!.Module.FS.quit()
   }
 }
