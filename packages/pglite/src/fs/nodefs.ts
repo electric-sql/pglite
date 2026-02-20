@@ -22,7 +22,6 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
     this.pg = pg
 
     this.#acquireLock()
-    this.#cleanPartialInit()
 
     const options: Partial<PostgresMod> = {
       ...opts,
@@ -50,15 +49,15 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
 
         if (pid && !isNaN(pid) && this.#isProcessAlive(pid)) {
           throw new Error(
-            `Data directory "${this.rootDir}" is locked by another PGlite instance ` +
-              `(PID ${pid}). Close the other instance first, or delete ` +
-              `"${lockPath}" if the process is no longer running.`,
+            `PGlite data directory "${this.rootDir}" is already in use by another instance (PID ${pid}). ` +
+              `Close the other instance or use a different data directory. ` +
+              `Delete "${lockPath}" if PID ${pid} is no longer running.`,
           )
         }
         // Stale lock from a dead process — safe to take over
       } catch (e) {
         // Re-throw lock errors, ignore parse errors (corrupt lock file = stale)
-        if (e instanceof Error && e.message.includes('is locked by')) {
+        if (e instanceof Error && e.message.includes('already in use')) {
           throw e
         }
       }
@@ -85,45 +84,6 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
         // Ignore errors on unlink (dir may already be cleaned up)
       }
     }
-  }
-
-  // If initdb was killed mid-way, the data dir is incomplete and unrecoverable.
-  // A fully initialized PG always has 3+ databases in base/ (template0, template1, postgres).
-  #cleanPartialInit() {
-    try {
-      const entries = fs.readdirSync(this.rootDir)
-      if (entries.length === 0) return
-
-      const pgVersionPath = path.join(this.rootDir, 'PG_VERSION')
-      if (!fs.existsSync(pgVersionPath)) {
-        this.#moveDataDirToBackup()
-        return
-      }
-
-      const basePath = path.join(this.rootDir, 'base')
-      if (fs.existsSync(basePath)) {
-        const databases = fs.readdirSync(basePath)
-        if (databases.length < 3) {
-          this.#moveDataDirToBackup()
-          return
-        }
-      } else {
-        this.#moveDataDirToBackup()
-      }
-    } catch {
-      // If we can't read the directory, let PostgreSQL handle the error
-    }
-  }
-
-  #moveDataDirToBackup() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const backupPath = `${this.rootDir}.corrupt-${timestamp}`
-    fs.renameSync(this.rootDir, backupPath)
-    fs.mkdirSync(this.rootDir)
-    console.warn(
-      `PGlite: Detected partially-initialized data directory. ` +
-        `Moved to "${backupPath}" for recovery. A fresh database will be created.`,
-    )
   }
 
   #isProcessAlive(pid: number): boolean {
