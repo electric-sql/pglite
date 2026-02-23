@@ -131,7 +131,7 @@ async function createPlugin(
 
     // We also have to track the last lsn that we have committed
     // This is across all shapes
-    const lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
+    let lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
 
     // We need our own aborter to be able to abort the streams but still accept the
     // signals from the user for each shape, and so we monitor the user provided signal
@@ -320,6 +320,7 @@ async function createPlugin(
             debug,
           })
         }
+        lastCommittedLsn = targetLsn
         if (unsubscribed) {
           await tx.rollback()
         }
