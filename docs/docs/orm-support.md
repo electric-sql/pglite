@@ -192,3 +192,33 @@ const pgliteDb = await getPGliteInstance()
 Check [TypeORM documentation](https://typeorm.io/data-source)
 and [typeorm-pglite](https://github.com/muraliprajapati/typeorm-pglite) documentation for
 more details.
+
+## MikroORM
+
+[MikroORM](https://mikro-orm.io/) is a TypeScript ORM for Node.js based on Data Mapper, Unit of Work and Identity Map patterns. Key features include:
+
+- Implicit Transactions
+- Clean and Simple Entity Definition
+- Modelling Relationships
+
+To use MikroORM with PGlite, install the required dependencies, including the third-party library [mikro-orm-pglite](https://www.npmjs.com/package/mikro-orm-pglite):
+
+```bash
+npm i @electric-sql/pglite @mikro-orm/postgresql mikro-orm-pglite
+```
+
+Next, configure the `driver` option for MikroORM to use `PGliteDriver`:
+
+```javascript
+import { MikroORM } from '@mikro-orm/core'
+import { PGliteDriver } from 'mikro-orm-pglite'
+
+const orm = await MikroORM.init({
+  driver: PGliteDriver,
+  dbName: 'postgres',
+})
+
+await orm.close()
+```
+
+See the [MikroORM PGlite Driver documentation](https://github.com/harryplusplus/mikro-orm-pglite#readme) for more details.
