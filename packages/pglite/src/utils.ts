@@ -1,5 +1,5 @@
-import type { PGliteInterface, Transaction } from './interface.js'
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
+import type { PGliteInterface, Transaction } from './interface.js'
 import { parseDescribeStatementResults } from './parse.js'
 import { TEXT } from './types.js'
 
@@ -246,4 +246,50 @@ export function toPostgresName(input: string): string {
     output = input.toLowerCase()
   }
   return output
+}
+
+export class DoublyLinkedList<T> {
+  #afterMap = new Map<T | null, T>()
+  #beforeMap = new Map<T | null, T>()
+
+  clear() {
+    this.#afterMap.clear()
+    this.#beforeMap.clear()
+  }
+
+  getAfter(afterId: T) {
+    return this.#afterMap.get(afterId)
+  }
+
+  insert(id: T, afterId: T) {
+    const existingNext = this.#afterMap.get(afterId)
+    if (existingNext !== undefined) {
+      this.#afterMap.set(id, existingNext)
+      this.#beforeMap.set(existingNext, id)
+    }
+    this.#afterMap.set(afterId, id)
+    this.#beforeMap.set(id, afterId)
+  }
+
+  delete(id: T) {
+    const prevKey = this.#beforeMap.get(id)
+    const nextKey = this.#afterMap.get(id)
+
+    if (prevKey !== null && prevKey !== undefined) {
+      if (nextKey !== null && nextKey !== undefined) {
+        this.#afterMap.set(prevKey, nextKey)
+        this.#beforeMap.set(nextKey, prevKey)
+      } else {
+        this.#afterMap.delete(prevKey)
+      }
+    } else {
+      if (nextKey === null || prevKey === undefined) {
+        this.#afterMap.delete(prevKey!)
+      }
+      this.#beforeMap.delete(nextKey!)
+    }
+
+    this.#afterMap.delete(id)
+    this.#beforeMap.delete(id)
+  }
 }

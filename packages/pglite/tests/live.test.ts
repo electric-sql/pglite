@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
 
 await testEsmCjsAndDTC(async (importType) => {
@@ -461,6 +461,9 @@ await testEsmCjsAndDTC(async (importType) => {
         eventTarget.addEventListener('change', resolve, { once: true }),
       )
 
+      // Check that references haven't changed between updates.
+      expect(initialResults.rows[0]).toBe(updatedResults.rows[0])
+
       expect(updatedResults.rows).toEqual([
         { id: 1, number: 10 },
         { id: 2, number: 20 },
@@ -493,6 +496,69 @@ await testEsmCjsAndDTC(async (importType) => {
         { id: 1, number: 10 },
         { id: 3, number: 15 },
         { id: 2, number: 20 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+    })
+
+    it('basic live incremental query with overwrites', async () => {
+      const db = await PGlite.create({
+        extensions: { live },
+      })
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id INT PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS childTable (
+          id INT PRIMARY KEY,
+          parentId INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (id, number)
+        SELECT i, i*10 AS number FROM generate_series(1, 5) AS t(i);
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults } = await db.live.incrementalQuery(
+        'SELECT * FROM testTable WHERE number <= 50 ORDER BY number;',
+        [],
+        'id',
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 3, number: 30 },
+        { id: 4, number: 40 },
+        { id: 5, number: 50 },
+      ])
+
+      await db.transaction(async (tx) => {
+        await tx.exec('DELETE FROM testTable WHERE id = 3;')
+        await tx.exec('INSERT INTO testTable (id, number) VALUES (6, 35);')
+      })
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, number: 10 },
+        { id: 2, number: 20 },
+        { id: 6, number: 35 },
         { id: 4, number: 40 },
         { id: 5, number: 50 },
       ])
@@ -1292,9 +1358,9 @@ await testEsmCjsAndDTC(async (importType) => {
       const { initialResults, unsubscribe } = await db.live.query(
         `SELECT
           id,
-          statement 
+          statement
         FROM testTable
-        WHERE 
+        WHERE
           statement ILIKE '%pglite%'
         ORDER BY id;`,
         [],

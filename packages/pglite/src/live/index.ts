@@ -4,23 +4,23 @@ import type {
   Results,
   Transaction,
 } from '../interface'
+import { debounceMutex, DoublyLinkedList, formatQuery, uuid } from '../utils.js'
 import type {
-  LiveQueryOptions,
-  LiveIncrementalQueryOptions,
+  Change,
+  LiveChanges,
   LiveChangesOptions,
+  LiveIncrementalQueryOptions,
   LiveNamespace,
   LiveQuery,
-  LiveChanges,
-  Change,
+  LiveQueryOptions,
   LiveQueryResults,
 } from './interface'
-import { uuid, formatQuery, debounceMutex } from '../utils.js'
 
 export type {
+  Change,
+  LiveChanges,
   LiveNamespace,
   LiveQuery,
-  LiveChanges,
-  Change,
   LiveQueryResults,
 } from './interface.js'
 
@@ -326,7 +326,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             ...(
               await tx.query<any>(`
                 SELECT column_name, data_type, udt_name
-                FROM information_schema.columns 
+                FROM information_schema.columns
                 WHERE table_name = 'live_query_${id}_view'
               `)
             ).rows,
@@ -349,7 +349,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 curr AS (SELECT LAG("${key}") OVER () as __after__, * FROM live_query_${id}_state${curr}),
                 data_diff AS (
                   -- INSERT operations: Include all columns
-                  SELECT 
+                  SELECT
                     'INSERT' AS __op__,
                     ${columns
                       .map(
@@ -363,7 +363,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                   WHERE prev.${key} IS NULL
                 UNION ALL
                   -- DELETE operations: Include only the primary key
-                  SELECT 
+                  SELECT
                     'DELETE' AS __op__,
                     ${columns
                       .map(({ column_name, data_type, udt_name }) => {
@@ -380,14 +380,14 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                   WHERE curr.${key} IS NULL
                 UNION ALL
                   -- UPDATE operations: Include only changed columns
-                  SELECT 
+                  SELECT
                     'UPDATE' AS __op__,
                     ${columns
                       .map(({ column_name, data_type, udt_name }) =>
                         column_name === key
                           ? `curr."${column_name}" AS "${column_name}"`
-                          : `CASE 
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
+                          : `CASE
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
                               THEN curr."${column_name}"
                               ELSE NULL${data_type === 'USER-DEFINED' ? `::${udt_name}` : ``}
                               END AS "${column_name}"`,
@@ -398,9 +398,9 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                         .map(
                           ({ column_name }) =>
                             `CASE
-                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}" 
-                              THEN '${column_name}' 
-                              ELSE NULL 
+                              WHEN curr."${column_name}" IS DISTINCT FROM prev."${column_name}"
+                              THEN '${column_name}'
+                              ELSE NULL
                               END`,
                         )
                         .join(
@@ -440,7 +440,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             await pg.transaction(async (tx) => {
               // Populate the state table
               await tx.exec(`
-                INSERT INTO live_query_${id}_state${stateSwitch} 
+                INSERT INTO live_query_${id}_state${stateSwitch}
                   SELECT * FROM live_query_${id}_view;
               `)
 
@@ -575,7 +575,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         ? [callback]
         : []
       const rowsMap: Map<any, any> = new Map()
-      const afterMap: Map<any, any> = new Map()
+      const idList = new DoublyLinkedList<any>()
+      const rowCache = new WeakMap<any, any>()
       let lastRows: T[] = []
       let firstRun = true
 
@@ -594,28 +595,27 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           switch (op) {
             case 'RESET':
               rowsMap.clear()
-              afterMap.clear()
+              idList.clear()
               break
             case 'INSERT':
               rowsMap.set(obj[key], obj)
-              afterMap.set(obj.__after__, obj[key])
+
+              idList.insert(obj[key], obj.__after__)
               break
-            case 'DELETE': {
-              const oldObj = rowsMap.get(obj[key])
+            case 'DELETE':
               rowsMap.delete(obj[key])
-              // null is the starting point, we don't delete it as another insert
-              // may have happened thats replacing it
-              if (oldObj.__after__ !== null) {
-                afterMap.delete(oldObj.__after__)
-              }
+
+              idList.delete(obj[key])
               break
-            }
             case 'UPDATE': {
-              const newObj = { ...(rowsMap.get(obj[key]) ?? {}) }
+              const oldObj = rowsMap.get(obj[key])
+              const newObj = { ...(oldObj ?? {}) }
+
               for (const columnName of changedColumns) {
                 newObj[columnName] = obj[columnName]
                 if (columnName === '__after__') {
-                  afterMap.set(obj.__after__, obj[key])
+                  idList.delete(obj[key])
+                  idList.insert(newObj[key], newObj.__after__)
                 }
               }
               rowsMap.set(obj[key], newObj)
@@ -628,13 +628,18 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         const rows: T[] = []
         let lastKey: any = null
         for (let i = 0; i < rowsMap.size; i++) {
-          const nextKey = afterMap.get(lastKey)
+          const nextKey = idList.getAfter(lastKey)
           const obj = rowsMap.get(nextKey)
           if (!obj) {
             break
           }
           // Remove the __after__ key from the exposed row
-          const cleanObj = { ...obj }
+          const cleanObj = rowCache.get(obj) ?? { ...obj }
+
+          if (!rowCache.has(obj)) {
+            rowCache.set(obj, cleanObj)
+          }
+
           delete cleanObj.__after__
           rows.push(cleanObj)
           lastKey = nextKey
