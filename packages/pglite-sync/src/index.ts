@@ -255,6 +255,7 @@ async function createPlugin(
                 schema: shape.schema,
                 messages: initialInserts as InsertChangeMessage[],
                 mapColumns: shape.mapColumns,
+                primaryKey: shape.primaryKey,
                 debug,
               })
 
@@ -282,6 +283,7 @@ async function createPlugin(
                   schema: shape.schema,
                   messages: bulkInserts as InsertChangeMessage[],
                   mapColumns: shape.mapColumns,
+                  primaryKey: shape.primaryKey,
                   debug,
                 })
                 bulkInserts.length = 0
@@ -351,7 +353,14 @@ async function createPlugin(
             typeof message.headers.lsn === 'string'
               ? BigInt(message.headers.lsn)
               : BigInt(0) // we default to 0 if there no lsn on the message
-          if (lsn <= lastCommittedLsnForShape) {
+
+          // Move-in messages from subquery-based shapes don't have an LSN
+          // because they come from direct DB queries, not from replication.
+          // We should never skip these based on LSN filtering.
+          const isMoveIn = (message.headers as Record<string, unknown>)
+            .is_move_in === true
+
+          if (!isMoveIn && lsn <= lastCommittedLsnForShape) {
             // We are replaying changes / have already seen this lsn
             // skip and move on to the next message
             return
