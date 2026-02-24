@@ -111,7 +111,7 @@ class QueryQueueManager {
       }
 
       this.log(
-       `query from handler #${query.handlerId} completed, ${result.length} bytes`,
+        `query from handler #${query.handlerId} completed, ${result.length} bytes`,
       )
       this.lastHandlerId = query.handlerId
       query.resolve(result)
