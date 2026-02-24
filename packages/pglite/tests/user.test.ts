@@ -4,7 +4,7 @@ import * as fs from 'fs/promises'
 import { PGlite } from '../dist/index.js'
 
 describe('user', () => {
-  afterAll(async() => {
+  afterAll(async () => {
     await fs.rm('./pgdata-test-user', { force: true, recursive: true })
   })
   it('user switching', async () => {
@@ -61,7 +61,6 @@ describe('user', () => {
     await expectToThrowAsync(async () => {
       await db2.query('SET ROLE postgres;')
     })
-
   })
 
   it('switch to user created after initial run', async () => {

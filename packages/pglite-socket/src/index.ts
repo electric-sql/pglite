@@ -179,10 +179,31 @@ export class PGLiteSocketHandler extends EventTarget {
     // Print the incoming data to the console
     this.inspectData('incoming', data)
 
+    if (data[0] === 'X'.charCodeAt(0)) {
+      this.log('Exit request received from the client')
+      // ignore, because processing this resets some global values
+      // we should probably close the server side socket here
+      return 0
+    }
+
     try {
-      // Process the raw protocol data
-      this.log(`handleData: sending data to PGlite for processing`)
-      const result = await this.db.execProtocolRaw(new Uint8Array(data))
+      let result: Uint8Array;
+      if (data[0] === 0) {
+        // startup pass
+        result = this.db.processStartupPacket(data)
+      } else {
+
+        // if (data[0] === 'J'.charCodeAt(0)) {
+        //   this.log("Received password from client");
+        //   // accept any password
+        //   // this.db.sendConnData();
+        //   return 0;
+        // }
+
+        // Process the raw protocol data
+        this.log(`handleData: sending data to PGlite for processing`)
+        result = await this.db.execProtocolRaw(new Uint8Array(data))
+      }
 
       this.log(`handleData: received ${result.length} bytes from PGlite`)
 

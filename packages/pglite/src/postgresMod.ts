@@ -48,11 +48,15 @@ export interface PostgresMod
   _PostgresMainLoopOnce: () => void
   _PostgresMainLongJmp: () => void
   _PostgresSendReadyForQueryIfNecessary: () => void
+  _ProcessStartupPacket: (Port: number, ssl_done: boolean, gss_done: boolean) => number
   _pgl_setPGliteActive: (newValue: number) => number
   _pgl_startPGlite: () => void
+  _pgl_getMyProcPort: () => number
+  _pgl_sendConnData: () => void
   ENV: any
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
+  _pq_buffer_remaining_data: () => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

@@ -18,8 +18,16 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
           // as the fs will ber persisted in the indexeddb as a database with
           // the path as the name.
           // Use try-catch for mkdir as directories may already exist from the fs bundle
-          try { mod.FS.mkdir(`/pglite`) } catch (e) { /* already exists */ }
-          try { mod.FS.mkdir(`/pglite/${this.dataDir}`) } catch (e) { /* already exists */ }
+          try {
+            mod.FS.mkdir(`/pglite`)
+          } catch (e) {
+            /* already exists */
+          }
+          try {
+            mod.FS.mkdir(`/pglite/${this.dataDir}`)
+          } catch (e) {
+            /* already exists */
+          }
           mod.FS.mount(idbfs, {}, `/pglite/${this.dataDir}`)
           mod.FS.symlink(`/pglite/${this.dataDir}`, PGDATA)
         },

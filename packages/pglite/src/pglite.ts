@@ -40,8 +40,18 @@ import { initdb, PGDATA } from '@electric-sql/pglite-initdb'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
-
-
+const defaultStartParams = [
+      '--single',
+      '-F',
+      '-O',
+      '-j',
+      '-c',
+      'search_path=pg_catalog',
+      '-c',
+      'exit_on_error=false',
+      '-c',
+      'log_checkpoints=false',
+  ]
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -49,7 +59,7 @@ export class PGlite
   fs?: Filesystem
   protected mod?: PostgresMod
 
-  get ENV(): any  {
+  get ENV(): any {
     return this.mod?.ENV
   }
 
@@ -290,11 +300,9 @@ export class PGlite
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
-        // console.log('pgliteout', text)
         this.#print(text)
-      }, 
+      },
       printErr: (text: string) => {
-        // console.error("pgliteerror", text)
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
@@ -319,9 +327,9 @@ export class PGlite
       },
       preRun: [
         (mod: PostgresMod) => {
-            mod.onRuntimeInitialized = () => {
-              this.#onRuntimeInitialized(mod)
-            }
+          mod.onRuntimeInitialized = () => {
+            this.#onRuntimeInitialized(mod)
+          }
         },
         (mod: any) => {
           // Register /dev/blob device
@@ -461,56 +469,58 @@ export class PGlite
     await this.fs!.initialSyncFs()
 
     if (!options.noInitDb) {
-
-    // If the user has provided a tarball to load the database from, do that now.
-    // We do this after the initial sync so that we can throw if the database
-    // already exists.
-    if (options.loadDataDir) {
-      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-        throw new Error('Database already exists, cannot load from tarball')
-      }
-      this.#log('pglite: loading data from tarball')
-      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
-
-    } else {
-      // Check and log if the database exists
-      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-        this.#log('pglite: found DB, resuming')
-      } else {
-        this.#log('pglite: no db')
-
-        const pg_initdb_opts = { ...options }
-        pg_initdb_opts.noInitDb = true
-        pg_initdb_opts.dataDir = undefined
-        pg_initdb_opts.extensions = undefined
-        pg_initdb_opts.loadDataDir = undefined
-        const pg_initDb = await PGlite.create(pg_initdb_opts)
-        
-        // Initialize the database
-        const initdbResult = await initdb({ pg: pg_initDb, debug: options.debug })
-        
-        if (initdbResult.exitCode !== 0) {
-          // throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
-          if (initdbResult.stderr.includes('exists but is not empty')) {
-            // initdb found database, that's fine, but we still need to start it in single mode
-            // this.#startInSingleMode()
-          } else {
-            throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
-          }
+      // If the user has provided a tarball to load the database from, do that now.
+      // We do this after the initial sync so that we can throw if the database
+      // already exists.
+      if (options.loadDataDir) {
+        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+          throw new Error('Database already exists, cannot load from tarball')
         }
-        
-        
-        const pgdatatar = await pg_initDb.dumpDataDir('none')
-        pg_initDb.close()
-        await loadTar(this.mod.FS, pgdatatar, PGDATA)
+        this.#log('pglite: loading data from tarball')
+        await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+      } else {
+        // Check and log if the database exists
+        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+          this.#log('pglite: found DB, resuming')
+        } else {
+          this.#log('pglite: no db')
+
+          const pg_initdb_opts = { ...options }
+          pg_initdb_opts.noInitDb = true
+          pg_initdb_opts.dataDir = undefined
+          pg_initdb_opts.extensions = undefined
+          pg_initdb_opts.loadDataDir = undefined
+          const pg_initDb = await PGlite.create(pg_initdb_opts)
+
+          // Initialize the database
+          const initdbResult = await initdb({
+            pg: pg_initDb,
+            debug: options.debug,
+          })
+
+          if (initdbResult.exitCode !== 0) {
+            // throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
+            if (initdbResult.stderr.includes('exists but is not empty')) {
+              // initdb found database, that's fine, but we still need to start it in single mode
+              // this.#startInSingleMode()
+            } else {
+              throw new Error(
+                'INITDB failed to initialize: ' + initdbResult.stderr,
+              )
+            }
+          }
+
+          const pgdatatar = await pg_initDb.dumpDataDir('none')
+          pg_initDb.close()
+          await loadTar(this.mod.FS, pgdatatar, PGDATA)
+        }
       }
-    }
 
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
-      
-      this.mod!._pgl_setPGliteActive(1);
-      this.#startInSingleMode({ pgDataFolder: PGDATA })
+
+      this.mod!._pgl_setPGliteActive(1)
+      this.#startInSingleMode({ pgDataFolder: PGDATA, startParams: defaultStartParams })
       this.#setPGliteActive()
 
       // if (!idb) {
@@ -595,8 +605,8 @@ export class PGlite
       // // this.Module.HEAPU8.set(origHEAPU8)
       // const mainResult = this.Module.callMain(postgresArgs)
       // return mainResult
-      console.log(mod.UTF8ToString(cmd_ptr))
-      return 1;
+      this.#log('executing', mod.UTF8ToString(cmd_ptr))
+      return 1
     }, 'pi')
 
     mod._pgl_set_system_fn(this.#system_fn)
@@ -606,10 +616,10 @@ export class PGlite
       const args = mod.UTF8ToString(cmd_ptr)
       this.externalCommandStreamFd = this.handleExternalCmd(args, smode)
       return this.externalCommandStreamFd!
-      }, 'ppp')
+    }, 'ppp')
 
     mod._pgl_set_popen_fn(this.#popen_fn)
-  
+
     this.#pclose_fn = mod.addFunction((stream: number) => {
       if (stream === this.externalCommandStreamFd) {
         this.mod!._fclose(this.externalCommandStreamFd!)
@@ -617,46 +627,44 @@ export class PGlite
       } else {
         throw `Unhandled pclose ${stream}`
       }
-      this.#log("pclose_fn", stream)
+      this.#log('pclose_fn', stream)
     }, 'pi')
 
     mod._pgl_set_pclose_fn(this.#pclose_fn)
 
     // set the write callback
-    this.#pglite_socket_write = mod.addFunction(
-      (ptr: any, length: number) => {
-        let bytes
-        try {
-          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-        } catch (e: any) {
-          console.error('error', e)
-          throw e
-        }
-        this.#protocolParser.parse(bytes, (msg) => {
-          this.#parse(msg)
-        })
-        if (this.#keepRawResponse) {
-          const copied = bytes.slice()
-          let requiredSize = this.#writeOffset + copied.length
-          if (requiredSize > this.#inputData.length) {
-            const newSize =
-              this.#inputData.length +
-              (this.#inputData.length >> 1) +
-              requiredSize
-            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-              requiredSize = PGlite.MAX_BUFFER_SIZE
-            }
-            const newBuffer = new Uint8Array(newSize)
-            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-            this.#inputData = newBuffer
+    this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
+      let bytes
+      try {
+        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+      } catch (e: any) {
+        console.error('error', e)
+        throw e
+      }
+      this.#protocolParser.parse(bytes, (msg) => {
+        this.#parse(msg)
+      })
+      if (this.#keepRawResponse) {
+        const copied = bytes.slice()
+        let requiredSize = this.#writeOffset + copied.length
+        if (requiredSize > this.#inputData.length) {
+          const newSize =
+            this.#inputData.length +
+            (this.#inputData.length >> 1) +
+            requiredSize
+          if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+            requiredSize = PGlite.MAX_BUFFER_SIZE
           }
-          this.#inputData.set(copied, this.#writeOffset)
-          this.#writeOffset += copied.length
-          return this.#inputData.length
+          const newBuffer = new Uint8Array(newSize)
+          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+          this.#inputData = newBuffer
         }
-        return length
-      },
-      'iii')
+        this.#inputData.set(copied, this.#writeOffset)
+        this.#writeOffset += copied.length
+        return this.#inputData.length
+      }
+      return length
+    }, 'iii')
 
     // set the read callback
     this.#pglite_socket_read = mod.addFunction(
@@ -674,16 +682,13 @@ export class PGlite
           ptr,
         )
         this.#readOffset += length
-        
+
         return length
       },
       'iii',
     )
 
-    mod._pgl_set_rw_cbs(
-      this.#pglite_socket_read,
-      this.#pglite_socket_write,
-    )
+    mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
   }
   /**
    * The Postgres Emscripten Module
@@ -747,12 +752,12 @@ export class PGlite
     this.#running = false
 
     try {
-      this.mod!._emscripten_force_exit(0);
+      this.mod!._emscripten_force_exit(0)
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
         // we might want to throw if return value is not 0
-      } 
+      }
     }
   }
 
@@ -832,19 +837,29 @@ export class PGlite
 
     // execute the message
     try {
-      mod._PostgresMainLoopOnce();
-    } catch (e: any) {
-      if (e.status === 100) {
-        // this is the siglongjmp call that a Database exception has occured
-        mod._PostgresMainLongJmp();
-      } else {
-        // throw e
+      // a single message might contain multiple instructions
+      // postgresMainLoopOnce returns after each one
+      while (this.#readOffset < message.length || mod._pq_buffer_remaining_data() > 0) {
+        try {
+          mod._PostgresMainLoopOnce()
+        } catch (e: any) {
+          // we catch here only the "known" exceptions
+          if (e.status === 100) {
+            // this is the siglongjmp call that a Database exception has occured
+            // it is handled gracefully by postgres
+            mod._PostgresMainLongJmp()
+          } else {
+            throw e
+          }
+          // even if there is an exception caused by one of the instructions,
+          // we need to continue processing the rest of the bundled ones
+        }
       }
     } finally {
-      mod._PostgresSendReadyForQueryIfNecessary();
-      mod._pgl_pq_flush();
+      mod._PostgresSendReadyForQueryIfNecessary()
+      mod._pgl_pq_flush()
     }
-    
+
     this.#outputData = []
 
     if (this.#keepRawResponse && this.#writeOffset)
@@ -1179,16 +1194,46 @@ export class PGlite
     if (this.#running) {
       throw new Error('PGlite single mode already running')
     }
-    
-    this.mod!._pgl_startPGlite();
+
+    this.mod!._pgl_startPGlite()
     this.#running = true
   }
 
-  #startInSingleMode(opts: { pgDataFolder: string }): void {
-    const singleModeArgs = ['--single', '-F', '-O', '-j', '-c', 'search_path=pg_catalog', '-c', 'exit_on_error=false', '-c', 'log_checkpoints=false', '-D', opts.pgDataFolder, this.mod!.ENV.PGDATABASE ]
+  #startInSingleMode(opts: { pgDataFolder: string, startParams: string[] }): void {
+    const singleModeArgs = [
+      ...opts.startParams,
+      '-D',
+      opts.pgDataFolder,
+      this.mod!.ENV.PGDATABASE,
+    ]
     const result = this.mod!.callMain(singleModeArgs)
     if (result !== 99) {
       throw new Error('PGlite failed to initialize properly')
     }
   }
+
+  processStartupPacket(message: Uint8Array): Uint8Array {
+    this.#readOffset = 0
+    this.#writeOffset = 0    
+    this.#outputData = message
+    const myProcPort = this.mod!._pgl_getMyProcPort()
+    const result = this.mod!._ProcessStartupPacket(myProcPort, true, true)
+    if (result !== 0) {
+      throw new Error(`Cannot process startup packet + ${message.toString()}`)
+    }
+
+    this.mod!._pgl_sendConnData();
+
+    this.mod!._pgl_pq_flush()
+    this.#outputData = []
+
+    if (this.#writeOffset)
+      return this.#inputData.subarray(0, this.#writeOffset)
+    return new Uint8Array(0)
+  }
+
+  // sendConnData() {
+  //   this.mod!._pgl_sendConnData();
+  //   this.mod!._pgl_pq_flush()
+  // }
 }

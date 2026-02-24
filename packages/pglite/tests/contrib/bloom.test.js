@@ -9,7 +9,7 @@ it('bloom', async () => {
     },
   })
 
-  const result = await pg.exec('CREATE EXTENSION IF NOT EXISTS bloom;')
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS bloom;')
 
   await pg.exec(`
     CREATE TABLE IF NOT EXISTS test (

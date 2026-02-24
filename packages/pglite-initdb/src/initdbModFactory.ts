@@ -21,7 +21,7 @@ export interface InitdbMod
   postRun: Array<{ (mod: InitdbMod): void }>
   thisProgram: string
   stdin: (() => number | null) | null
-  ENV: Record<string,string>
+  ENV: Record<string, string>
   FS: FS
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
@@ -46,10 +46,7 @@ export interface InitdbMod
   _fopen: (path: number, mode: number) => number
   _fclose: (stream: number) => number
   _fflush: (stream: number) => number
-  addFunction: (
-    fn: CallableFunction,
-    signature: string,
-  ) => number
+  addFunction: (fn: CallableFunction, signature: string) => number
   removeFunction: (f: number) => void
   callMain: (args: string[]) => number
   onExit: (status: number) => void

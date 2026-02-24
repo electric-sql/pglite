@@ -8,13 +8,12 @@ tests('node', './pgdata-test', 'node.fs')
 describe('NODEFS', () => {
   const folderPath = './pgdata-persisted'
   beforeEach(async () => {
-      await fs.rm(folderPath, { force: true, recursive: true })
+    await fs.rm(folderPath, { force: true, recursive: true })
   })
   afterAll(async () => {
-      await fs.rm(folderPath, { force: true, recursive: true })    
+    await fs.rm(folderPath, { force: true, recursive: true })
   })
   it('reuse persisted folder', async () => {
-
     await fs.rm(folderPath, { force: true, recursive: true })
     const pg1 = new PGlite(folderPath)
     await pg1.exec(`

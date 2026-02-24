@@ -50,7 +50,6 @@ async function execInitdb({
   debug?: number
   args: string[]
 }): Promise<ExecResult> {
-
   let system_fn, popen_fn, pclose_fn
 
   let needToCallPGmain = false
@@ -78,12 +77,10 @@ async function execInitdb({
 
     log(debug, result)
 
-
     postgresArgs = []
 
-
     return result
-  }  
+  }
 
   const origHEAPU8 = pg.Module.HEAPU8.slice()
 
@@ -121,16 +118,15 @@ async function execInitdb({
 
             if (smode === 'r') {
               pgMainResult = callPgMain(postgresArgs)
-              return initdb_stdin_fd;
+              return initdb_stdin_fd
             } else {
               if (smode === 'w') {
                 needToCallPGmain = true
-                return initdb_stdout_fd;
+                return initdb_stdout_fd
               } else {
                 throw `Unexpected popen mode value ${smode}`
               }
             }
-
           }, 'ppi')
 
           mod._pgl_set_popen_fn(popen_fn)
@@ -148,7 +144,6 @@ async function execInitdb({
             } else {
               return mod._pclose(stream)
             }
-
           }, 'pi')
 
           mod._pgl_set_pclose_fn(pclose_fn)
@@ -156,17 +151,18 @@ async function execInitdb({
           {
             const pglite_stdin_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
             const rmode = pg.Module.stringToUTF8OnStack('r')
-             pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
-            const pglite_stdout_path = pg.Module.stringToUTF8OnStack(pgstdoutPath)
+            pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
+            const pglite_stdout_path =
+              pg.Module.stringToUTF8OnStack(pgstdoutPath)
             const wmode = pg.Module.stringToUTF8OnStack('w')
-             pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
+            pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
           }
-  
+
           {
             const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
             const rmode = mod.stringToUTF8OnStack('r')
             initdb_stdin_fd = mod._fopen(initdb_path, rmode)
-  
+
             const path = mod.stringToUTF8OnStack(pgstdinPath)
             const wmode = mod.stringToUTF8OnStack('w')
             initdb_stdout_fd = mod._fopen(path, wmode)
@@ -179,11 +175,15 @@ async function execInitdb({
         mod.ENV.PGDATA = PGDATA
       },
       (mod: InitdbMod) => {
-        mod.FS.mkdir('/pglite');
-        mod.FS.mount(mod.PROXYFS, {
-          root: '/pglite',
-          fs: pg.Module.FS
-        }, '/pglite')
+        mod.FS.mkdir('/pglite')
+        mod.FS.mount(
+          mod.PROXYFS,
+          {
+            root: '/pglite',
+            fs: pg.Module.FS,
+          },
+          '/pglite',
+        )
       },
     ],
   }
@@ -194,12 +194,12 @@ async function execInitdb({
   const result = initDbMod.callMain(args)
 
   // pg.Module.HEAPU8.set(origHEAPU8)
-  
+
   return {
     exitCode: result,
     stderr: stderrOutput,
     stdout: stdoutOutput,
-    dataFolder: PGDATA
+    dataFolder: PGDATA,
   }
 }
 
@@ -210,11 +210,11 @@ interface InitdbOptions {
 }
 
 function getArgs(cmd: string) {
-  let a: string[] = []
-  let parsed = parse(cmd)
+  const a: string[] = []
+  const parsed = parse(cmd)
   // console.log("parsed args", parsed)
   for (let i = 0; i < parsed.length; i++) {
-    if (parsed[i].op) break;
+    if (parsed[i].op) break
     a.push(parsed[i])
   }
   return a
@@ -226,14 +226,19 @@ function getArgs(cmd: string) {
 export async function initdb({
   pg,
   debug,
-  args
+  args,
 }: InitdbOptions): Promise<ExecResult> {
-
   const execResult = await execInitdb({
     pg,
     debug,
-    args: ["--allow-group-access", "--encoding", "UTF8", "--locale=C.UTF-8", "--locale-provider=libc",
-    ...(args ?? [])],
+    args: [
+      '--allow-group-access',
+      '--encoding', 'UTF8',
+      '--locale=C.UTF-8',
+      '--locale-provider=libc',
+      '--auth=trust',
+      ...(args ?? []),
+    ],
   })
 
   return execResult
