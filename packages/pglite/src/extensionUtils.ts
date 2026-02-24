@@ -85,8 +85,7 @@ function loadExtension(
     if (!file.name.startsWith('.')) {
       const filePath = mod.WASM_PREFIX + '/' + file.name
       if (file.name.endsWith('.so')) {
-        const nameWithSo = file.name.split('/').pop()!        // e.g. 'postgis-3.so'
-        const nameWithoutSo = nameWithSo.slice(0, -3)        // e.g. 'postgis-3'
+        const soName = file.name.split('/').pop()!  // e.g. 'postgis-3.so'
         const dirPath = dirname(filePath)
         // Wrap createPreloadedFile in a Promise so loadExtensions can await the
         // async WASM compilation done by Emscripten's wasm preload plugin.
@@ -106,7 +105,7 @@ function loadExtension(
           // preloadedWasm under the path with .so.
           mod.FS.createPreloadedFile(
             dirPath,
-            nameWithSo,
+            soName,
             file.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
             true,
             true,
@@ -116,17 +115,6 @@ function loadExtension(
           )
         })
         soPreloadPromises.push(soPreload)
-        // Also write to the path without .so so PostgreSQL's dlopen() can find the file
-        // as a fallback if the preloadedWasm lookup misses.
-        const filePathWithoutSo = dirPath + '/' + nameWithoutSo
-        try {
-          if (mod.FS.analyzePath(dirPath).exists === false) {
-            mod.FS.mkdirTree(dirPath)
-          }
-          mod.FS.writeFile(filePathWithoutSo, file.data)
-        } catch (e) {
-          console.error(`Error writing file ${filePathWithoutSo}`, e)
-        }
       } else {
         try {
           const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
