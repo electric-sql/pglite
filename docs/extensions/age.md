@@ -152,16 +152,16 @@ main()
 
 AGE supports a subset of the Cypher query language. Key clauses include:
 
-| Clause | Description | Example |
-|--------|-------------|---------|
-| `CREATE` | Create nodes and relationships | `CREATE (n:Label {prop: 'value'})` |
-| `MATCH` | Find patterns in the graph | `MATCH (n:Label) RETURN n` |
-| `WHERE` | Filter results | `WHERE n.age > 25` |
-| `RETURN` | Specify what to return | `RETURN n.name, n.age` |
-| `SET` | Update properties | `SET n.prop = 'new value'` |
-| `DELETE` | Remove nodes/relationships | `DELETE n` or `DETACH DELETE n` |
-| `ORDER BY` | Sort results | `ORDER BY n.name DESC` |
-| `LIMIT` | Limit result count | `LIMIT 10` |
+| Clause     | Description                    | Example                            |
+| ---------- | ------------------------------ | ---------------------------------- |
+| `CREATE`   | Create nodes and relationships | `CREATE (n:Label {prop: 'value'})` |
+| `MATCH`    | Find patterns in the graph     | `MATCH (n:Label) RETURN n`         |
+| `WHERE`    | Filter results                 | `WHERE n.age > 25`                 |
+| `RETURN`   | Specify what to return         | `RETURN n.name, n.age`             |
+| `SET`      | Update properties              | `SET n.prop = 'new value'`         |
+| `DELETE`   | Remove nodes/relationships     | `DELETE n` or `DETACH DELETE n`    |
+| `ORDER BY` | Sort results                   | `ORDER BY n.name DESC`             |
+| `LIMIT`    | Limit result count             | `LIMIT 10`                         |
 
 ## Data Types
 
@@ -171,7 +171,7 @@ AGE returns data as `agtype`, a JSON-like format:
 // Vertex (node)
 {id: 123, label: 'Person', properties: {name: 'Alice'}}::vertex
 
-// Edge (relationship)  
+// Edge (relationship)
 {id: 456, startid: 123, endid: 789, label: 'KNOWS', properties: {}}::edge
 
 // Scalar values are JSON-encoded
@@ -188,8 +188,8 @@ All AGE functions are in the `ag_catalog` schema. The extension automatically se
 
 ```typescript
 // Both work:
-await pg.exec("SELECT create_graph('g');")  // search_path includes ag_catalog
-await pg.exec("SELECT ag_catalog.create_graph('g');")  // explicit
+await pg.exec("SELECT create_graph('g');") // search_path includes ag_catalog
+await pg.exec("SELECT ag_catalog.create_graph('g');") // explicit
 ```
 
 ### Column Definitions
@@ -201,8 +201,8 @@ Cypher queries require column definitions in the `as` clause:
 SELECT * FROM ag_catalog.cypher('g', $$ RETURN 1 $$) as (v ag_catalog.agtype);
 
 // Multiple columns
-SELECT * FROM ag_catalog.cypher('g', $$ 
-  MATCH (n) RETURN n.name, n.age 
+SELECT * FROM ag_catalog.cypher('g', $$
+  MATCH (n) RETURN n.name, n.age
 $$) as (name ag_catalog.agtype, age ag_catalog.agtype);
 ```
 
@@ -217,5 +217,3 @@ $$) as (name ag_catalog.agtype, age ag_catalog.agtype);
 - [Apache AGE Documentation](https://age.apache.org/age-manual/master/index.html)
 - [Cypher Query Language](https://neo4j.com/docs/cypher-manual/current/)
 - [AGE GitHub Repository](https://github.com/apache/age)
-
-
