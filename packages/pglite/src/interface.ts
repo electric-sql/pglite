@@ -81,6 +81,12 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
   database?: string
+  /**
+   * Extra postgres GUC settings passed as `-c key=value` at backend startup.
+   * Use this for postmaster settings that must be set before the server starts
+   * (for example `wal_level=logical`).
+   */
+  postgresConfig?: Record<string, string | number | boolean>
   fs?: Filesystem
   debug?: DebugLevel
   relaxedDurability?: boolean
