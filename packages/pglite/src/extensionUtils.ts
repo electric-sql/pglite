@@ -64,7 +64,9 @@ export async function loadExtensions(
     }
     if (blob) {
       const bytes = new Uint8Array(await blob.arrayBuffer())
-      loadExtension(mod, ext, bytes, log)
+      // Await all async WASM precompilations so preloadedWasm is populated
+      // before dlopen is called during postgres startup.
+      await Promise.all(loadExtension(mod, ext, bytes, log))
     } else {
       console.error('Could not get binary data for extension:', ext)
     }
@@ -76,28 +78,55 @@ function loadExtension(
   _ext: string,
   bytes: Uint8Array,
   log: (...args: any[]) => void,
-) {
+): Promise<void>[] {
+  const soPreloadPromises: Promise<void>[] = []
   const data = tinyTar.untar(bytes)
   data.forEach((file: any) => {
     if (!file.name.startsWith('.')) {
       const filePath = mod.WASM_PREFIX + '/' + file.name
       if (file.name.endsWith('.so')) {
-        const extOk = (...args: any[]) => {
-          log('pgfs:ext OK', filePath, args)
+        const nameWithSo = file.name.split('/').pop()!        // e.g. 'postgis-3.so'
+        const nameWithoutSo = nameWithSo.slice(0, -3)        // e.g. 'postgis-3'
+        const dirPath = dirname(filePath)
+        // Wrap createPreloadedFile in a Promise so loadExtensions can await the
+        // async WASM compilation done by Emscripten's wasm preload plugin.
+        // The plugin calls extOk only after preloadedWasm[path] is set, so
+        // awaiting this ensures dlopen finds the pre-compiled module.
+        const soPreload = new Promise<void>((resolve, reject) => {
+          const extOk = (...args: any[]) => {
+            log('pgfs:ext OK', filePath, args)
+            resolve()
+          }
+          const extFail = (...args: any[]) => {
+            log('pgfs:ext FAIL', filePath, args)
+            reject(new Error(`Failed to preload ${filePath}`))
+          }
+          // Keep the .so suffix so Emscripten's wasm preload plugin canHandle() matches,
+          // triggering async WebAssembly.instantiate. The compiled module is stored in
+          // preloadedWasm under the path with .so.
+          mod.FS.createPreloadedFile(
+            dirPath,
+            nameWithSo,
+            file.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
+            true,
+            true,
+            extOk,
+            extFail,
+            false,
+          )
+        })
+        soPreloadPromises.push(soPreload)
+        // Also write to the path without .so so PostgreSQL's dlopen() can find the file
+        // as a fallback if the preloadedWasm lookup misses.
+        const filePathWithoutSo = dirPath + '/' + nameWithoutSo
+        try {
+          if (mod.FS.analyzePath(dirPath).exists === false) {
+            mod.FS.mkdirTree(dirPath)
+          }
+          mod.FS.writeFile(filePathWithoutSo, file.data)
+        } catch (e) {
+          console.error(`Error writing file ${filePathWithoutSo}`, e)
         }
-        const extFail = (...args: any[]) => {
-          log('pgfs:ext FAIL', filePath, args)
-        }
-        mod.FS.createPreloadedFile(
-          dirname(filePath),
-          file.name.split('/').pop()!.slice(0, -3),
-          file.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
-          true,
-          true,
-          extOk,
-          extFail,
-          false,
-        )
       } else {
         try {
           const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
@@ -111,6 +140,7 @@ function loadExtension(
       }
     }
   })
+  return soPreloadPromises
 }
 
 function dirname(path: string) {
