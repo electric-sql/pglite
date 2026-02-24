@@ -48,7 +48,11 @@ export interface PostgresMod
   _PostgresMainLoopOnce: () => void
   _PostgresMainLongJmp: () => void
   _PostgresSendReadyForQueryIfNecessary: () => void
-  _ProcessStartupPacket: (Port: number, ssl_done: boolean, gss_done: boolean) => number
+  _ProcessStartupPacket: (
+    Port: number,
+    ssl_done: boolean,
+    gss_done: boolean,
+  ) => number
   _pgl_setPGliteActive: (newValue: number) => number
   _pgl_startPGlite: () => void
   _pgl_getMyProcPort: () => number

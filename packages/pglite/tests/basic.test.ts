@@ -134,7 +134,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('types', async () => {
       const db = await PGlite.create()
-      const createTableResult = await db.query(`
+      await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
       text TEXT,
@@ -153,7 +153,6 @@ await testEsmCjsAndDTC(async (importType) => {
       test_undefined INT
     );
   `)
-        console.log(createTableResult)
 
       await db.query(
         `

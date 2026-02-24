@@ -187,12 +187,11 @@ export class PGLiteSocketHandler extends EventTarget {
     }
 
     try {
-      let result: Uint8Array;
+      let result: Uint8Array
       if (data[0] === 0) {
         // startup pass
         result = this.db.processStartupPacket(data)
       } else {
-
         // if (data[0] === 'J'.charCodeAt(0)) {
         //   this.log("Received password from client");
         //   // accept any password

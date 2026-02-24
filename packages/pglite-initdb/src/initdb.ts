@@ -233,7 +233,8 @@ export async function initdb({
     debug,
     args: [
       '--allow-group-access',
-      '--encoding', 'UTF8',
+      '--encoding',
+      'UTF8',
       '--locale=C.UTF-8',
       '--locale-provider=libc',
       '--auth=trust',

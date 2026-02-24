@@ -41,17 +41,17 @@ import { initdb, PGDATA } from '@electric-sql/pglite-initdb'
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 const defaultStartParams = [
-      '--single',
-      '-F',
-      '-O',
-      '-j',
-      '-c',
-      'search_path=pg_catalog',
-      '-c',
-      'exit_on_error=false',
-      '-c',
-      'log_checkpoints=false',
-  ]
+  '--single',
+  '-F',
+  '-O',
+  '-j',
+  '-c',
+  'search_path=pg_catalog',
+  '-c',
+  'exit_on_error=false',
+  '-c',
+  'log_checkpoints=false',
+]
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -520,7 +520,10 @@ export class PGlite
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
       this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({ pgDataFolder: PGDATA, startParams: defaultStartParams })
+      this.#startInSingleMode({
+        pgDataFolder: PGDATA,
+        startParams: defaultStartParams,
+      })
       this.#setPGliteActive()
 
       // if (!idb) {
@@ -839,7 +842,10 @@ export class PGlite
     try {
       // a single message might contain multiple instructions
       // postgresMainLoopOnce returns after each one
-      while (this.#readOffset < message.length || mod._pq_buffer_remaining_data() > 0) {
+      while (
+        this.#readOffset < message.length ||
+        mod._pq_buffer_remaining_data() > 0
+      ) {
         try {
           mod._PostgresMainLoopOnce()
         } catch (e: any) {
@@ -1199,7 +1205,10 @@ export class PGlite
     this.#running = true
   }
 
-  #startInSingleMode(opts: { pgDataFolder: string, startParams: string[] }): void {
+  #startInSingleMode(opts: {
+    pgDataFolder: string
+    startParams: string[]
+  }): void {
     const singleModeArgs = [
       ...opts.startParams,
       '-D',
@@ -1214,7 +1223,7 @@ export class PGlite
 
   processStartupPacket(message: Uint8Array): Uint8Array {
     this.#readOffset = 0
-    this.#writeOffset = 0    
+    this.#writeOffset = 0
     this.#outputData = message
     const myProcPort = this.mod!._pgl_getMyProcPort()
     const result = this.mod!._ProcessStartupPacket(myProcPort, true, true)
@@ -1222,13 +1231,12 @@ export class PGlite
       throw new Error(`Cannot process startup packet + ${message.toString()}`)
     }
 
-    this.mod!._pgl_sendConnData();
+    this.mod!._pgl_sendConnData()
 
     this.mod!._pgl_pq_flush()
     this.#outputData = []
 
-    if (this.#writeOffset)
-      return this.#inputData.subarray(0, this.#writeOffset)
+    if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
 
