@@ -85,7 +85,7 @@ function loadExtension(
     if (!file.name.startsWith('.')) {
       const filePath = mod.WASM_PREFIX + '/' + file.name
       if (file.name.endsWith('.so')) {
-        const soName = file.name.split('/').pop()!  // e.g. 'postgis-3.so'
+        const soName = file.name.split('/').pop()! // e.g. 'postgis-3.so'
         const dirPath = dirname(filePath)
         // Wrap createPreloadedFile in a Promise so loadExtensions can await the
         // async WASM compilation done by Emscripten's wasm preload plugin.
