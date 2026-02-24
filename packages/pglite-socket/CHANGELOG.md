@@ -1,5 +1,11 @@
 # @electric-sql/pglite-socket
 
+## 0.0.21
+
+### Patch Changes
+
+- 8a03647: Fix: Message buffering, connection handling, and concurrent connection support;
+
 ## 0.0.20
 
 ### Patch Changes
