@@ -93,28 +93,28 @@ class QueryQueueManager {
         `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
       )
 
+      let result: Uint8Array
       if (query.message[0] === 0) {
         // startup pass
-        const result = this.db.processStartupPacket(query.message)
-        this.lastHandlerId = query.handlerId
-        query.resolve(result)
+        result = this.db.processStartupPacket(query.message)
       } else {
         try {
           // Execute the query with exclusive access to PGlite
-          const result = await this.db.runExclusive(async () => {
+          result = await this.db.runExclusive(async () => {
             return await this.db.execProtocolRaw(query.message)
           })
-
-          this.log(
-            `query from handler #${query.handlerId} completed, ${result.length} bytes`,
-          )
-          this.lastHandlerId = query.handlerId
-          query.resolve(result)
         } catch (error) {
           this.log(`query from handler #${query.handlerId} failed:`, error)
           query.reject(error as Error)
+          return
         }
       }
+
+      this.log(
+       `query from handler #${query.handlerId} completed, ${result.length} bytes`,
+      )
+      this.lastHandlerId = query.handlerId
+      query.resolve(result)
     }
 
     this.processing = false
