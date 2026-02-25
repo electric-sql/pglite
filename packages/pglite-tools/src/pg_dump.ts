@@ -63,16 +63,8 @@ async function execPgDump({
               console.error('error', e)
               throw e
             }
-            if (bytes[0] === 'X'.charCodeAt(0)) {
-              // ignore exit - tdrz: move this to execProtocolRawSync
-              // console.log('exit')
-            } else if (bytes[0] === 0) {
-              const startupPacket = pg.processStartupPacket(bytes)
-              bufferedBytes = startupPacket
-            } else {
-              const currentResponse = pg.execProtocolRawSync(bytes)
-              bufferedBytes = concat(bufferedBytes, currentResponse)
-            }
+            const currentResponse = pg.execProtocolRawSync(bytes)
+            bufferedBytes = concat(bufferedBytes, currentResponse)
             return length
           }, 'iii')
 
@@ -91,6 +83,7 @@ async function execPgDump({
           }, 'iii')
 
           mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
+          
           // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }

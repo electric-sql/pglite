@@ -838,6 +838,17 @@ export class PGlite
       this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
     }
 
+    if (message[0] === 'X'.charCodeAt(0)) {
+      // ignore exit
+      return new Uint8Array(0)
+    }
+
+    if (message[0] === 0) {
+      // startup pass
+      const result = this.processStartupPacket(message)
+      return result
+    }
+
     // execute the message
     try {
       // a single message might contain multiple instructions

@@ -93,21 +93,16 @@ class QueryQueueManager {
         `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
       )
 
-      let result: Uint8Array
-      if (query.message[0] === 0) {
-        // startup pass
-        result = this.db.processStartupPacket(query.message)
-      } else {
-        try {
-          // Execute the query with exclusive access to PGlite
-          result = await this.db.runExclusive(async () => {
-            return await this.db.execProtocolRaw(query.message)
-          })
-        } catch (error) {
-          this.log(`query from handler #${query.handlerId} failed:`, error)
-          query.reject(error as Error)
-          return
-        }
+      let result
+      try {
+        // Execute the query with exclusive access to PGlite
+        result = await this.db.runExclusive(async () => {
+          return await this.db.execProtocolRaw(query.message)
+        })
+      } catch (error) {
+        this.log(`query from handler #${query.handlerId} failed:`, error)
+        query.reject(error as Error)
+        return
       }
 
       this.log(
@@ -333,12 +328,6 @@ export class PGLiteSocketHandler extends EventTarget {
     // Print the incoming data to the console
     this.inspectData('incoming', data)
 
-    if (data[0] === 'X'.charCodeAt(0)) {
-      this.log('Exit request received from the client')
-      // ignore, because processing this resets some global values
-      // we should probably close the server side socket here
-      return 0
-    }
 
     try {
       let totalProcessed = 0
