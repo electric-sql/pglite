@@ -328,7 +328,6 @@ export class PGLiteSocketHandler extends EventTarget {
     // Print the incoming data to the console
     this.inspectData('incoming', data)
 
-
     try {
       let totalProcessed = 0
 
