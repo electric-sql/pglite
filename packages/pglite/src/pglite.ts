@@ -855,7 +855,8 @@ export class PGlite
             // it is handled gracefully by postgres
             mod._PostgresMainLongJmp()
           } else {
-            throw e
+            break
+            // throw e
           }
           // even if there is an exception caused by one of the instructions,
           // we need to continue processing the rest of the bundled ones

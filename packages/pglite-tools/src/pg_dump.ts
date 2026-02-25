@@ -63,8 +63,16 @@ async function execPgDump({
               console.error('error', e)
               throw e
             }
-            const currentResponse = pg.execProtocolRawSync(bytes)
-            bufferedBytes = concat(bufferedBytes, currentResponse)
+            if (bytes[0] === 'X'.charCodeAt(0)) {
+              // ignore exit - tdrz: move this to execProtocolRawSync
+              // console.log('exit')
+            } else if (bytes[0] === 0) {
+              const startupPacket = pg.processStartupPacket(bytes)
+              bufferedBytes = startupPacket
+            } else {
+              const currentResponse = pg.execProtocolRawSync(bytes)
+              bufferedBytes = concat(bufferedBytes, currentResponse)
+            }
             return length
           }, 'iii')
 
@@ -127,13 +135,13 @@ export async function pgDump({
 
   const baseArgs = [
     '-U',
-    'postgres',
+    'web_user',
     '--inserts',
     '-j',
     '1',
     '-f',
     dumpFilePath,
-    'postgres',
+    'template1',
   ]
 
   const execResult = await execPgDump({
@@ -141,7 +149,16 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
+  const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
+  console.log(deallocateResult)
+
+  const setSearchPathResult = await pg.exec(`SET SEARCH_PATH = ${search_path}`)
+  console.log(setSearchPathResult)
+
+  const newSearchPath = await pg.query<{ search_path: string }>(
+    'SHOW SEARCH_PATH;',
+  )
+  console.log(newSearchPath)
 
   if (execResult.exitCode !== 0) {
     throw new Error(
