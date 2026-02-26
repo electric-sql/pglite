@@ -149,7 +149,22 @@
   "type": "module",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "!dist/auth_delay.tar.gz",
+    "!dist/basebackup_to_shell.tar.gz",
+    "!dist/basic_archive.tar.gz",
+    "!dist/dblink.tar.gz",
+    "!dist/intagg.tar.gz",
+    "!dist/oid2name.tar.gz",
+    "!dist/pg_prewarm.tar.gz",
+    "!dist/pg_stat_statements.tar.gz",
+    "!dist/pglite.html",
+    "!dist/pgrowlocks.tar.gz",
+    "!dist/pgstattuple.tar.gz",
+    "!dist/spi.tar.gz",
+    "!dist/test_decoding.tar.gz",
+    "!dist/vacuumlo.tar.gz",
+    "!dist/xml2.tar.gz"
   ],
   "repository": {
     "type": "git",
