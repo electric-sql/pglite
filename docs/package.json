@@ -20,6 +20,7 @@
   "dependencies": {
     "@electric-sql/pglite": "workspace:*",
     "@electric-sql/pglite-repl": "workspace:*",
+    "@electric-sql/pglite-postgis": "workspace:*",
     "@uiw/codemirror-theme-github": "^4.23.0",
     "dedent": "^1.5.3"
   }

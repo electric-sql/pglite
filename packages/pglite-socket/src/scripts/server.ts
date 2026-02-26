@@ -43,7 +43,7 @@ const args = parseArgs({
       type: 'string',
       short: 'e',
       default: undefined,
-      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto)',
+      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis)',
     },
     run: {
       type: 'string',
@@ -86,7 +86,7 @@ Options:
   -u, --path=UNIX     Unix socket to bind to (default: undefined). Takes precedence over host:port
   -v, --debug=LEVEL   Debug level 0-5 (default: 0)
   -e, --extensions=LIST  Comma-separated list of extensions to load
-                         Formats: vector, pgcrypto (built-in/contrib)
+                         Formats: vector, pgcrypto,postgis (built-in/contrib)
                                   @org/package/path:exportedName (npm package)
   -r, --run=COMMAND   Command to run after server starts
   --include-database-url  Include DATABASE_URL in subprocess environment
