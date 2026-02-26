@@ -513,7 +513,10 @@ export class PGlite
       this.mod!._pgl_setPGliteActive(1)
       this.#startInSingleMode({
         pgDataFolder: PGDATA,
-        startParams: [...defaultStartParams, ...(this.debug ? ['-d', this.debug.toString()] : [])],
+        startParams: [
+          ...defaultStartParams,
+          ...(this.debug ? ['-d', this.debug.toString()] : []),
+        ],
       })
       this.#setPGliteActive()
 
