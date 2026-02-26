@@ -149,10 +149,12 @@ export abstract class BasePGlite
     message: Uint8Array,
     options: ExecProtocolOptions = {},
   ): Promise<BackendMessage[]> {
-    return await this.execProtocolStream(message, {
+    const results = await this.execProtocolStream(message, {
       ...options,
       syncToFs: false,
     })
+
+    return results
   }
 
   /**
@@ -294,6 +296,12 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
+        results.push(
+          ...(await this.#execProtocolNoSync(
+            serializeProtocol.flush(),
+            options,
+          )),
+        )
         results.push(
           ...(await this.#execProtocolNoSync(
             serializeProtocol.sync(),

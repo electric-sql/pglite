@@ -3,7 +3,7 @@ import { PGlite } from '../../dist/index.js'
 import { auto_explain } from '../../dist/contrib/auto_explain.js'
 
 it('auto_explain', async () => {
-  const pg = new PGlite({
+  const pg = await PGlite.create({
     extensions: {
       auto_explain,
     },
@@ -13,6 +13,7 @@ it('auto_explain', async () => {
     LOAD 'auto_explain';
     SET auto_explain.log_min_duration = '0';
     SET auto_explain.log_analyze = 'true';
+    SET auto_explain.log_level = 'NOTICE';
   `)
 
   const notices = []

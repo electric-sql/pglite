@@ -19,22 +19,48 @@ export interface PostgresMod
   preInit: Array<{ (mod: PostgresMod): void }>
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
+  thisProgram: string
+  stdin: (() => number | null) | null
   FS: FS
-  FD_BUFFER_MAX: number
+  PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
-  INITIAL_MEMORY: number
   pg_extensions: Record<string, Promise<Blob | null>>
-  _pgl_initdb: () => number
-  _pgl_backend: () => void
+  UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
+  stringToUTF8OnStack: (s: string) => number
   _pgl_shutdown: () => void
-  _interactive_write: (msgLength: number) => void
-  _interactive_one: (length: number, peek: number) => void
-  _set_read_write_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_system_fn: (system_fn: number) => void
+  _pgl_set_popen_fn: (popen_fn: number) => void
+  _pgl_set_pclose_fn: (pclose_fn: number) => void
+  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_pipe_fn: (pipe_fn: number) => number
+  _pgl_freopen: (filepath: number, mode: number, stream: number) => number
+  _pgl_pq_flush: () => void
+  _fopen: (path: number, mode: number) => number
+  _fclose: (stream: number) => number
+  _fflush: (stream: number) => void
+  _pgl_proc_exit: (code: number) => number
   addFunction: (
     cb: (ptr: any, length: number) => void,
     signature: string,
   ) => number
   removeFunction: (f: number) => void
+  callMain: (args?: string[]) => number
+  _PostgresMainLoopOnce: () => void
+  _PostgresMainLongJmp: () => void
+  _PostgresSendReadyForQueryIfNecessary: () => void
+  _ProcessStartupPacket: (
+    Port: number,
+    ssl_done: boolean,
+    gss_done: boolean,
+  ) => number
+  _pgl_setPGliteActive: (newValue: number) => number
+  _pgl_startPGlite: () => void
+  _pgl_getMyProcPort: () => number
+  _pgl_sendConnData: () => void
+  ENV: any
+  _emscripten_force_exit: (status: number) => void
+  _pgl_run_atexit_funcs: () => void
+  _pq_buffer_remaining_data: () => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
