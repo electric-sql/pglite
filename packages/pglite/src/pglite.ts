@@ -263,12 +263,6 @@ export class PGlite
     const extensionInitFns: Array<() => Promise<void>> = []
 
     const args = [
-      // `PGDATA=${PGDATA}`,
-      // `PREFIX=${WASM_PREFIX}`,
-      // `PGUSER=${options.username ?? 'postgres'}`,
-      // `PGDATABASE=${options.database ?? 'template1'}`,
-      // 'MODE=REACT',
-      // 'REPL=N',
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
@@ -331,7 +325,7 @@ export class PGlite
             this.#onRuntimeInitialized(mod)
           }
         },
-        (mod: any) => {
+        (mod: PostgresMod) => {
           // Register /dev/blob device
           // This is used to read and write blobs when used in COPY TO/FROM
           // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
@@ -392,7 +386,7 @@ export class PGlite
           mod.FS.registerDevice(devId, devOpt)
           mod.FS.mkdev('/dev/blob', devId)
         },
-        (mod: any) => {
+        (mod: PostgresMod) => {
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
           mod.FS.chmod(initdbExePath, 0o0555)
           mod.FS.chmod(postgresExePath, 0o0555)
@@ -407,7 +401,6 @@ export class PGlite
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
-          //   mod.ENV.PGDATABASE = 'template1'
           // mod.ENV.PG_COLOR = 'always'
         },
       ],
@@ -462,8 +455,6 @@ export class PGlite
 
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
-
-    // this.mod._pgl_startup(args)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -522,54 +513,9 @@ export class PGlite
       this.mod!._pgl_setPGliteActive(1)
       this.#startInSingleMode({
         pgDataFolder: PGDATA,
-        startParams: defaultStartParams,
+        startParams: [...defaultStartParams, ...(this.debug ? ['-d', this.debug.toString()] : [])],
       })
       this.#setPGliteActive()
-
-      // if (!idb) {
-      //   // This would be a sab worker crash before pg_initdb can be called
-      //   throw new Error('INITDB failed to return value')
-      // }
-
-      // // initdb states:
-      // // - populating pgdata
-      // // - reconnect a previous db
-      // // - found valid db+user
-      // // currently unhandled:
-      // // - db does not exist
-      // // - user is invalid for db
-
-      // if (idb & 0b0001) {
-      //   // this would be a wasm crash inside pg_initdb from a sab worker.
-      //   throw new Error('INITDB: failed to execute')
-      // } else if (idb & 0b0010) {
-      //   // initdb was called to init PGDATA if required
-      //   const pguser = options.username ?? 'postgres'
-      //   const pgdatabase = options.database ?? 'template1'
-      //   if (idb & 0b0100) {
-      //     // initdb has found a previous database
-      //     if (idb & (0b0100 | 0b1000)) {
-      //       // initdb found db+user, and we switched to that user
-      //     } else {
-      //       // TODO: invalid user for db?
-      //       throw new Error(
-      //         `INITDB: Invalid db ${pgdatabase}/user ${pguser} combination`,
-      //       )
-      //     }
-      //   } else {
-      //     // initdb has created a new database for us, we can only continue if we are
-      //     // in template1 and the user is postgres
-      //     if (pgdatabase !== 'template1' && pguser !== 'postgres') {
-      //       // throw new Error(`Invalid database ${pgdatabase} requested`);
-      //       throw new Error(
-      //         `INITDB: created a new datadir ${PGDATA}, but an alternative db ${pgdatabase}/user ${pguser} was requested`,
-      //       )
-      //     }
-      //   }
-      // }
-
-      // // (re)start backed after possible initdb boot/single.
-      // this.mod._pgl_backend()
 
       // Sync any changes back to the persisted store (if there is one)
       // TODO: only sync here if initdb did init db.
