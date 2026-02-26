@@ -61,18 +61,6 @@ jobs:
         run: |
           pnpm build:all
 
-      - name: Typecheck pglite
-        working-directory: ${{ github.workspace }}/packages/pglite
-        run: pnpm typecheck
-      
-      - name: Test pglite
-        working-directory: ${{ github.workspace }}/packages/pglite
-        run: pnpm test
-
-      - name: Test pglite-postgis
-        working-directory: ${{ github.workspace }}/packages/pglite-postgis
-        run: pnpm test        
-
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v4
@@ -95,7 +83,19 @@ jobs:
         with:
           name: pglite-postgis-release-files-node-v20.x
           path: ./packages/pglite-postgis/release/**
-          retention-days: 60          
+          retention-days: 60
+
+      - name: Typecheck pglite
+        working-directory: ${{ github.workspace }}/packages/pglite
+        run: pnpm typecheck
+      
+      - name: Test pglite
+        working-directory: ${{ github.workspace }}/packages/pglite
+        run: pnpm test
+
+      - name: Test pglite-postgis
+        working-directory: ${{ github.workspace }}/packages/pglite-postgis
+        run: pnpm test        
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
