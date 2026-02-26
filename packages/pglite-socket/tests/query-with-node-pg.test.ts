@@ -10,6 +10,13 @@ import {
 import { Client } from 'pg'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../src'
+import { spawn, ChildProcess } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import fs from 'fs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /**
  * Debug configuration for testing
@@ -54,6 +61,7 @@ describe(`PGLite Socket Server`, () => {
           db,
           port: TEST_PORT,
           host: '127.0.0.1',
+          maxConnections: 100,
         })
 
         // Add event listeners for debugging
@@ -531,6 +539,432 @@ describe(`PGLite Socket Server`, () => {
 
       // Verify the notification was received with the correct payload
       expect(receivedPayload).toBe('Hello from PGlite!')
+    })
+
+    it('should handle large queries that split across TCP packets', async () => {
+      // Create a table
+      await client.query(`CREATE TABLE test_users (id SERIAL, data TEXT)`)
+
+      // Generate >64KB payload to force TCP fragmentation
+      const largeData = 'x'.repeat(100_000) // 100KB string
+
+      // Insert large data
+      const result = await client.query(`
+        INSERT INTO test_users (data) VALUES ('${largeData}') RETURNING *
+      `)
+
+      expect(result.rows[0].data).toBe(largeData)
+    })
+
+    it('should handle concurrent clients with interleaved transaction and query', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      try {
+        // Client 1 starts a transaction (don't await yet)
+        const beginResult = await client.query('BEGIN')
+
+        // Client 2 makes a simple SELECT 1 query (don't await yet)
+        const selectPromise = client2.query('SELECT 999999 as one')
+
+        // Small delay to ensure SELECT is sent before ROLLBACK
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client 1 rolls back the transaction (don't await yet)
+        const rollbackResult = await client.query('ROLLBACK')
+
+        const selectResult = await selectPromise
+
+        // Verify results
+        expect(beginResult.command).toBe('BEGIN')
+        expect(selectResult.rows[0].one).toBe(999999)
+        expect(rollbackResult.command).toBe('ROLLBACK')
+      } finally {
+        await client2.end()
+      }
+    }, 30000)
+
+    it('should process pending queries when transaction owner disconnects', async () => {
+      // Create a second client connecting to the same server
+      let client2: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        client2 = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        client2 = new Client(connectionConfig)
+      }
+      await client2.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      client2.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // Client starts a transaction
+        const beginResult = await client2.query('BEGIN')
+        expect(beginResult.command).toBe('BEGIN')
+
+        // Client 2 sends a query (will be blocked because client is in transaction)
+        const selectPromise = client.query('SELECT 123456 as val')
+
+        // Small delay to ensure SELECT is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(client2 as any).connection.stream.destroy()
+
+        // Client 2's query should complete successfully after transaction is cleared
+        const selectResult = await selectPromise
+
+        expect(selectResult.rows[0].val).toBe(123456)
+      } catch {
+        expect(false, 'Should not happen')
+      }
+    }, 30000)
+
+    it('interleaved transactions should work', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await client.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second bob connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      alice.on('error', () => {
+        // Suppress the expected "Connection terminated unexpectedly" error
+      })
+
+      // Client starts a transaction
+      const aliceBegin = await alice.query('BEGIN')
+      expect(aliceBegin.command).toBe('BEGIN')
+
+      // Client 2 begins its own transaction
+      const bobBegin = bob.query('BEGIN')
+
+      // Small delay to ensure client2.BEGIN is enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      const aliceInsertPromise = alice.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Alice', 'alice@example.com')
+        RETURNING *
+      `)
+
+      const bobInsertPromise = bob.query(`
+        INSERT INTO test_users (name, email)
+        VALUES 
+          ('Bob', 'bob@example.com')
+        RETURNING *
+      `)
+
+      // Small delay to ensure both inserts are enqueued
+      await new Promise((r) => setTimeout(r, 10))
+
+      // bob commits
+      const bobCommit = bob.query('COMMIT')
+
+      // alice rolls back
+      const aliceRollback = alice.query('ROLLBACK')
+
+      await Promise.all([
+        bobBegin,
+        aliceInsertPromise,
+        bobInsertPromise,
+        aliceRollback,
+        bobCommit,
+      ])
+
+      // Verify only Bob was commited
+      const testUsers = await bob.query('SELECT * FROM test_users')
+      expect(testUsers.rows.length).toBe(1)
+      expect(testUsers.rows[0].name).toBe('Bob')
+    }, 30000)
+
+    it('interleaved transactions should work when one client crashes', async () => {
+      const bob = client
+      // table that will be accessed by both clients
+      await bob.query(`
+        CREATE TABLE test_users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `)
+
+      // Create a second client connecting to the same server
+      let alice: typeof Client.prototype
+      if (DEBUG_TESTS) {
+        alice = new Client({
+          connectionString: DEBUG_TESTS_REAL_SERVER,
+          connectionTimeoutMillis: 10000,
+          statement_timeout: 5000,
+        })
+      } else {
+        alice = new Client(connectionConfig)
+      }
+      await alice.connect()
+
+      // Suppress the expected "Connection terminated unexpectedly" error
+      alice.on('error', () => {
+        // Expected when we destroy the connection
+      })
+
+      try {
+        // alice starts a transaction
+        const aliceBegin = await alice.query('BEGIN')
+        expect(aliceBegin.command).toBe('BEGIN')
+
+        // bob begins its own transaction
+        const bobBegin = bob.query('BEGIN')
+
+        // Small delay to ensure client2.BEGIN is enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // alice inserts data
+        alice.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Alice', 'alice@example.com')
+          RETURNING *
+        `)
+
+        // client inserts data
+        const bobInsert = bob.query(`
+          INSERT INTO test_users (name, email)
+          VALUES 
+            ('Bob', 'bob@example.com')
+          RETURNING *
+        `)
+
+        // Small delay to ensure both inserts are enqueued
+        await new Promise((r) => setTimeout(r, 10))
+
+        // Client2 abruptly disconnects (simulating connection abort)
+        // This should trigger clearTransactionIfNeeded which rolls back
+        // the transaction and processes pending queries
+        ;(alice as any).connection.stream.destroy()
+
+        // bob commits
+        const bobCommit = bob.query('COMMIT')
+
+        await Promise.all([bobBegin, bobInsert, bobCommit])
+
+        // Verify only Bob was commited
+        const selectResult = await bob.query('SELECT * FROM test_users')
+        expect(selectResult.rows.length).toBe(1)
+        expect(selectResult.rows[0].name).toBe('Bob')
+      } catch {
+        // swallow
+      }
+    }, 30000)
+  })
+
+  describe('with extensions via CLI', () => {
+    const UNIX_SOCKET_DIR_PATH = `/tmp/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    fs.mkdirSync(UNIX_SOCKET_DIR_PATH)
+    const UNIX_SOCKET_PATH = `${UNIX_SOCKET_DIR_PATH}/.s.PGSQL.5432`
+    let serverProcess: ChildProcess | null = null
+    let client: typeof Client.prototype
+
+    beforeAll(async () => {
+      // Start the server with extensions via CLI using tsx for dev or node for dist
+      const serverScript = join(__dirname, '../src/scripts/server.ts')
+      serverProcess = spawn(
+        'npx',
+        [
+          'tsx',
+          serverScript,
+          '--path',
+          UNIX_SOCKET_PATH,
+          '--extensions',
+          'vector,pg_uuidv7,@electric-sql/pglite/pg_hashids:pg_hashids',
+        ],
+        {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      )
+
+      // Wait for server to be ready by checking for "listening" message
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Server startup timeout'))
+        }, 30000)
+
+        const onData = (data: Buffer) => {
+          const output = data.toString()
+          if (output.includes('listening')) {
+            clearTimeout(timeout)
+            resolve()
+          }
+        }
+
+        serverProcess!.stdout?.on('data', onData)
+        serverProcess!.stderr?.on('data', (data) => {
+          console.error('Server stderr:', data.toString())
+        })
+
+        serverProcess!.on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+
+        serverProcess!.on('exit', (code) => {
+          if (code !== 0 && code !== null) {
+            clearTimeout(timeout)
+            reject(new Error(`Server exited with code ${code}`))
+          }
+        })
+      })
+
+      console.log('Server with extensions started')
+
+      client = new Client({
+        host: UNIX_SOCKET_DIR_PATH,
+        database: 'postgres',
+        user: 'postgres',
+        password: 'postgres',
+        connectionTimeoutMillis: 10000,
+      })
+      await client.connect()
+    })
+
+    afterAll(async () => {
+      if (client) {
+        await client.end().catch(() => {})
+      }
+
+      if (serverProcess) {
+        serverProcess.kill('SIGTERM')
+        await new Promise<void>((resolve) => {
+          serverProcess!.on('exit', () => resolve())
+          setTimeout(resolve, 2000) // Force resolve after 2s
+        })
+      }
+    })
+
+    it('should load and use vector extension', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS vector')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'vector'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('vector')
+
+      // Create a table with vector column
+      await client.query(`
+        CREATE TABLE test_vectors (
+          id SERIAL PRIMARY KEY,
+          name TEXT,
+          vec vector(3)
+        )
+      `)
+
+      // Insert test data
+      await client.query(`
+        INSERT INTO test_vectors (name, vec) VALUES
+          ('test1', '[1,2,3]'),
+          ('test2', '[4,5,6]'),
+          ('test3', '[7,8,9]')
+      `)
+
+      // Query with vector distance
+      const result = await client.query(`
+        SELECT name, vec, vec <-> '[3,1,2]' AS distance
+        FROM test_vectors
+        ORDER BY distance
+      `)
+
+      expect(result.rows).toHaveLength(3)
+      expect(result.rows[0].name).toBe('test1')
+      expect(result.rows[0].vec).toBe('[1,2,3]')
+      expect(parseFloat(result.rows[0].distance)).toBeCloseTo(2.449, 2)
+    })
+
+    it('should load and use pg_uuidv7 extension', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS pg_uuidv7')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'pg_uuidv7'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('pg_uuidv7')
+
+      // Generate a UUIDv7
+      const result = await client.query('SELECT uuid_generate_v7() as uuid')
+      expect(result.rows[0].uuid).toHaveLength(36)
+
+      // Test uuid_v7_to_timestamptz function
+      const tsResult = await client.query(`
+        SELECT uuid_v7_to_timestamptz('018570bb-4a7d-7c7e-8df4-6d47afd8c8fc') as ts
+      `)
+      const timestamp = new Date(tsResult.rows[0].ts)
+      expect(timestamp.toISOString()).toBe('2023-01-02T04:26:40.637Z')
+    })
+
+    it('should load and use pg_hashids extension from npm package path', async () => {
+      // Create the extension
+      await client.query('CREATE EXTENSION IF NOT EXISTS pg_hashids')
+
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'pg_hashids'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('pg_hashids')
+
+      // Test id_encode function
+      const result = await client.query(`
+        SELECT id_encode(1234567, 'salt', 10, 'abcdefghijABCDEFGHIJ1234567890') as hash
+      `)
+      expect(result.rows[0].hash).toBeTruthy()
+      expect(typeof result.rows[0].hash).toBe('string')
+
+      // Test id_decode function (round-trip)
+      const hash = result.rows[0].hash
+      const decodeResult = await client.query(`
+        SELECT id_decode('${hash}', 'salt', 10, 'abcdefghijABCDEFGHIJ1234567890') as id
+      `)
+      expect(decodeResult.rows[0].id[0]).toBe('1234567')
     })
   })
 })

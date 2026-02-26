@@ -679,8 +679,11 @@ export class PGlite
 
     this.#outputData = []
 
-    if (this.#keepRawResponse && this.#writeOffset)
-      return this.#inputData.subarray(0, this.#writeOffset)
+    if (this.#keepRawResponse && this.#writeOffset) {
+      // reusing the buffer might lead to unexpected behavior if a previous query has a view into the buffer
+      // therefore, better return a copy of the response
+      return new Uint8Array(this.#inputData.subarray(0, this.#writeOffset))
+    }
     return new Uint8Array(0)
   }
 
