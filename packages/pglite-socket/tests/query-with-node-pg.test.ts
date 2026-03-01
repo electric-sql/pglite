@@ -11,6 +11,7 @@ import { Client } from 'pg'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../src'
 import { spawn, ChildProcess } from 'node:child_process'
+import { createConnection } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import fs from 'fs'
@@ -792,6 +793,36 @@ describe(`PGLite Socket Server`, () => {
         // swallow
       }
     }, 30000)
+
+    it('should handle CancelRequest without crashing', async () => {
+      // Test raw CancelRequest wire protocol handling
+      const socket = createConnection({ host: '127.0.0.1', port: TEST_PORT })
+
+      await new Promise<void>((resolve, reject) => {
+        socket.on('connect', resolve)
+        socket.on('error', reject)
+      })
+
+      // Send CancelRequest: [length=16][code=80877102 (0x04D2162E)][processID=0][secretKey=0]
+      const cancelRequest = Buffer.alloc(16)
+      cancelRequest.writeInt32BE(16, 0)
+      cancelRequest.writeInt32BE(80877102, 4)
+      cancelRequest.writeInt32BE(0, 8) // processID
+      cancelRequest.writeInt32BE(0, 12) // secretKey
+      socket.write(cancelRequest)
+
+      // Wait briefly for server to process (no response expected)
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      socket.destroy()
+
+      // Verify server still works after receiving CancelRequest
+      const testClient = new Client(connectionConfig)
+      await testClient.connect()
+      const result = await testClient.query('SELECT 1 as one')
+      expect(result.rows[0].one).toBe(1)
+      await testClient.end()
+    })
   })
 
   describe('with extensions via CLI', () => {

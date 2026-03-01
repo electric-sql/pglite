@@ -5,6 +5,8 @@ import { type Server, type Socket, createServer } from 'net'
 export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
 export const SSL_REQUEST_CODE = 80877103
 export const SSL_REQUEST_LENGTH = 8
+export const CANCEL_REQUEST_CODE = 80877102
+export const CANCEL_REQUEST_LENGTH = 16
 
 /**
  * Represents a queued query waiting for PGlite access
@@ -346,6 +348,26 @@ export class PGLiteSocketHandler extends EventTarget {
     return false
   }
 
+  // CancelRequest arrives on its own connection during startup, before any
+  // typed message. PGlite has no backend process to signal, so we consume the
+  // message and silently drop it (the wire protocol expects no response).
+  private handleCancelRequest(): boolean {
+    if (this.messageBuffer.length < CANCEL_REQUEST_LENGTH) {
+      return false
+    }
+
+    const len = this.messageBuffer.readInt32BE(0)
+    const code = this.messageBuffer.readInt32BE(4)
+
+    if (len === CANCEL_REQUEST_LENGTH && code === CANCEL_REQUEST_CODE) {
+      this.messageBuffer = this.messageBuffer.slice(CANCEL_REQUEST_LENGTH)
+      this.log('handleData: CancelRequest received, ignoring (not supported)')
+      return true
+    }
+
+    return false
+  }
+
   private async handleData(data: Buffer): Promise<number> {
     if (!this.socket || !this.active) {
       this.log(`handleData: no active socket, ignoring data`)
@@ -365,6 +387,10 @@ export class PGLiteSocketHandler extends EventTarget {
 
       while (this.messageBuffer.length > 0) {
         if (this.handleSslRequest()) {
+          continue
+        }
+
+        if (this.handleCancelRequest()) {
           continue
         }
 
