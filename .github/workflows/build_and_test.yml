@@ -95,6 +95,7 @@ jobs:
         working-directory: ./packages/pglite
     needs: [build-all]
     steps:
+
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -340,18 +341,19 @@ jobs:
   changesets-release:
     if: github.event_name == 'push'
     permissions:
+      id-token: write # Required for npm trusted publishing (OIDC)
       contents: write # to create release (changesets/action)
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
     name: Make a PR or publish
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     needs: [build-all]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24  # Required for npm trusted publishing (npm 11.5.1+)
           cache: pnpm
 
       - name: Download PGlite WASM build artifacts
@@ -377,4 +379,3 @@ jobs:
           title: 'chore: publish new package versions'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

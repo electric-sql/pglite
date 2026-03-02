@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { PGlite, DebugLevel } from '@electric-sql/pglite'
+import type { Extension, Extensions } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../index'
 import { parseArgs } from 'node:util'
 import { spawn, ChildProcess } from 'node:child_process'
@@ -38,6 +39,12 @@ const args = parseArgs({
       default: '0',
       help: 'Debug level (0-5)',
     },
+    extensions: {
+      type: 'string',
+      short: 'e',
+      default: undefined,
+      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto)',
+    },
     run: {
       type: 'string',
       short: 'r',
@@ -53,6 +60,12 @@ const args = parseArgs({
       type: 'string',
       default: '5000',
       help: 'Timeout in milliseconds for graceful subprocess shutdown (default: 5000)',
+    },
+    'max-connections': {
+      type: 'string',
+      short: 'm',
+      default: '1',
+      help: 'Maximum concurrent connections (default: 1)',
     },
     help: {
       type: 'boolean',
@@ -72,9 +85,13 @@ Options:
   -h, --host=HOST     Host to bind to (default: 127.0.0.1)
   -u, --path=UNIX     Unix socket to bind to (default: undefined). Takes precedence over host:port
   -v, --debug=LEVEL   Debug level 0-5 (default: 0)
+  -e, --extensions=LIST  Comma-separated list of extensions to load
+                         Formats: vector, pgcrypto (built-in/contrib)
+                                  @org/package/path:exportedName (npm package)
   -r, --run=COMMAND   Command to run after server starts
   --include-database-url  Include DATABASE_URL in subprocess environment
   --shutdown-timeout=MS   Timeout for graceful subprocess shutdown in ms (default: 5000)
+  -m, --max-connections=N Maximum concurrent connections (default is no concurrency: 1)
 `
 
 interface ServerConfig {
@@ -83,9 +100,11 @@ interface ServerConfig {
   host: string
   path?: string
   debugLevel: DebugLevel
+  extensionNames?: string[]
   runCommand?: string
   includeDatabaseUrl: boolean
   shutdownTimeout: number
+  maxConnections: number
 }
 
 class PGLiteServerRunner {
@@ -99,15 +118,20 @@ class PGLiteServerRunner {
   }
 
   static parseConfig(): ServerConfig {
+    const extensionsArg = args.values.extensions as string | undefined
     return {
       dbPath: args.values.db as string,
       port: parseInt(args.values.port as string, 10),
       host: args.values.host as string,
       path: args.values.path as string,
       debugLevel: parseInt(args.values.debug as string, 10) as DebugLevel,
+      extensionNames: extensionsArg
+        ? extensionsArg.split(',').map((e) => e.trim())
+        : undefined,
       runCommand: args.values.run as string,
       includeDatabaseUrl: args.values['include-database-url'] as boolean,
       shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
+      maxConnections: parseInt(args.values['max-connections'] as string, 10),
     }
   }
 
@@ -126,11 +150,86 @@ class PGLiteServerRunner {
     }
   }
 
+  private async importExtensions(): Promise<Extensions | undefined> {
+    if (!this.config.extensionNames?.length) {
+      return undefined
+    }
+
+    const extensions: Extensions = {}
+
+    // Built-in extensions that are not in contrib
+    const builtInExtensions = [
+      'vector',
+      'live',
+      'pg_hashids',
+      'pg_ivm',
+      'pg_uuidv7',
+      'pgtap',
+    ]
+
+    for (const name of this.config.extensionNames) {
+      let ext: Extension | null = null
+
+      try {
+        // Check if this is a custom package path (contains ':')
+        // Format: @org/package/path:exportedName or package/path:exportedName
+        if (name.includes(':')) {
+          const [packagePath, exportName] = name.split(':')
+          if (!packagePath || !exportName) {
+            throw new Error(
+              `Invalid extension format '${name}'. Expected: package/path:exportedName`,
+            )
+          }
+          const mod = await import(packagePath)
+          ext = mod[exportName] as Extension
+          if (ext) {
+            extensions[exportName] = ext
+            console.log(
+              `Imported extension '${exportName}' from '${packagePath}'`,
+            )
+          }
+        } else if (builtInExtensions.includes(name)) {
+          // Built-in extension (e.g., @electric-sql/pglite/vector)
+          const mod = await import(`@electric-sql/pglite/${name}`)
+          ext = mod[name] as Extension
+          if (ext) {
+            extensions[name] = ext
+            console.log(`Imported extension: ${name}`)
+          }
+        } else {
+          // Try contrib first (e.g., @electric-sql/pglite/contrib/pgcrypto)
+          try {
+            const mod = await import(`@electric-sql/pglite/contrib/${name}`)
+            ext = mod[name] as Extension
+          } catch {
+            // Fall back to external package (e.g., @electric-sql/pglite-<extension>)
+            const mod = await import(`@electric-sql/pglite-${name}`)
+            ext = mod[name] as Extension
+          }
+          if (ext) {
+            extensions[name] = ext
+            console.log(`Imported extension: ${name}`)
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to import extension '${name}':`, error)
+        throw new Error(`Failed to import extension '${name}'`)
+      }
+    }
+
+    return Object.keys(extensions).length > 0 ? extensions : undefined
+  }
+
   private async initializeDatabase(): Promise<void> {
     console.log(`Initializing PGLite with database: ${this.config.dbPath}`)
     console.log(`Debug level: ${this.config.debugLevel}`)
 
-    this.db = new PGlite(this.config.dbPath, { debug: this.config.debugLevel })
+    const extensions = await this.importExtensions()
+
+    this.db = new PGlite(this.config.dbPath, {
+      debug: this.config.debugLevel,
+      extensions,
+    })
     await this.db.waitReady
     console.log('PGlite database initialized')
   }
@@ -191,6 +290,7 @@ class PGLiteServerRunner {
         host: this.config.host,
         path: this.config.path,
         inspect: this.config.debugLevel > 0,
+        maxConnections: this.config.maxConnections,
       })
 
       // Create subprocess manager
