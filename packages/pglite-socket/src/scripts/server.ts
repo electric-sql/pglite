@@ -165,6 +165,7 @@ class PGLiteServerRunner {
       'pg_ivm',
       'pg_uuidv7',
       'pgtap',
+      'pg_textsearch'
     ]
 
     for (const name of this.config.extensionNames) {
