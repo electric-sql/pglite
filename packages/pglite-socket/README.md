@@ -9,7 +9,7 @@ There are two main components to this package:
 
 The package also includes a [CLI](#cli-usage) for quickly starting a PGlite socket server.
 
-Note: Although PGlite is a single-connection database, it is possible to have multiple simultaneous connections open with pglite-server. This is achieved through a multiplexer implemented in the  server (see the parameter `-m, --max-connections`). This is different from a normal Postgres installation, so not all use cases are guaranteed to work.
+Note: Although PGlite is a single-connection database, it is possible to open and use multiple simultaneous connections with pglite-server. This is achieved through a multiplexer implemented in the  server (see the parameter `-m, --max-connections`). This is different from a normal Postgres installation, so not all use cases are guaranteed to work.
 
 ## Installation
 
