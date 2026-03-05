@@ -776,7 +776,10 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    return this.#execProtocolRawSync(message, { keepRawResponse: true, parseResults: false })
+    return this.#execProtocolRawSync(message, {
+      keepRawResponse: true,
+      parseResults: false,
+    })
   }
 
   /**
@@ -786,7 +789,10 @@ export class PGlite
    * else nothing is returned
    * if parseResults = true, parsing of the messages will be done as they arrive
    */
-  #execProtocolRawSync(message: Uint8Array, opts: { keepRawResponse: boolean, parseResults: boolean }) {
+  #execProtocolRawSync(
+    message: Uint8Array,
+    opts: { keepRawResponse: boolean; parseResults: boolean },
+  ) {
     const mod = this.mod!
 
     this.#readOffset = 0
@@ -868,8 +874,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-
-    const data = this.#execProtocolRaw(message, { keepRawResponse: true, parseResults: false})
+    const data = this.#execProtocolRaw(message, {
+      keepRawResponse: true,
+      parseResults: false,
+    })
 
     if (syncToFs) {
       await this.syncToFs()
@@ -879,9 +887,16 @@ export class PGlite
 
   async #execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true, keepRawResponse = false, parseResults = true }: ExecProtocolOptions = {},
+    {
+      syncToFs = true,
+      keepRawResponse = false,
+      parseResults = true,
+    }: ExecProtocolOptions = {},
   ) {
-    const data = this.#execProtocolRawSync(message, { keepRawResponse, parseResults })
+    const data = this.#execProtocolRawSync(message, {
+      keepRawResponse,
+      parseResults,
+    })
     if (syncToFs) {
       await this.syncToFs()
     }
@@ -932,7 +947,11 @@ export class PGlite
     this.#currentResults = []
     this.#currentDatabaseError = null
 
-    const data = await this.#execProtocolRaw(message, { syncToFs, keepRawResponse, parseResults })
+    const data = await this.#execProtocolRaw(message, {
+      syncToFs,
+      keepRawResponse,
+      parseResults,
+    })
 
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
