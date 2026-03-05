@@ -107,7 +107,7 @@ export class PGlite
   // read index in the buffer
   #readOffset: number = 0
 
-  keepRawResponse: boolean = false
+  #keepRawResponse: boolean = false
   #parseResults: boolean = true
 
   // these are needed for point 2 above
@@ -599,7 +599,7 @@ export class PGlite
           if (parsedMsg) this.#currentResults.push(parsedMsg)
         })
       }
-      if (this.keepRawResponse) {
+      if (this.#keepRawResponse) {
         const copied = bytes.slice()
         let requiredSize = this.#writeOffset + copied.length
         if (requiredSize > this.#inputData.length) {
@@ -776,14 +776,27 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
+    return this.#execProtocolRawSync(message, { keepRawResponse: true, parseResults: false })
+  }
+
+  /**
+   * Execute a postgres wire protocol synchronously
+   * @param message The postgres wire protocol message to execute
+   * @returns If keepRawResponse = true, the direct message data response produced by Postgres if
+   * else nothing is returned
+   * if parseResults = true, parsing of the messages will be done as they arrive
+   */
+  #execProtocolRawSync(message: Uint8Array, opts: { keepRawResponse: boolean, parseResults: boolean }) {
     const mod = this.mod!
 
     this.#readOffset = 0
     this.#writeOffset = 0
     this.#outputData = message
+    this.#keepRawResponse = opts.keepRawResponse
+    this.#parseResults = opts.parseResults
 
     if (
-      this.keepRawResponse &&
+      this.#keepRawResponse &&
       this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE
     ) {
       // the previous call might have increased the size of the buffer so reset it to its default
@@ -832,7 +845,7 @@ export class PGlite
 
     this.#outputData = []
 
-    if (this.keepRawResponse && this.#writeOffset) {
+    if (this.#keepRawResponse && this.#writeOffset) {
       // reusing the buffer might lead to unexpected behavior if a previous query has a view into the buffer
       // therefore, better return a copy of the response
       return new Uint8Array(this.#inputData.subarray(0, this.#writeOffset))
@@ -855,14 +868,8 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const keepRawResponse = this.keepRawResponse
-    this.keepRawResponse = true
-    const parseResults = this.#parseResults
-    this.#parseResults = false
 
-    const data = this.#execProtocolRaw(message)
-    this.keepRawResponse = keepRawResponse
-    this.#parseResults = parseResults
+    const data = this.#execProtocolRaw(message, { keepRawResponse: true, parseResults: false})
 
     if (syncToFs) {
       await this.syncToFs()
@@ -872,9 +879,9 @@ export class PGlite
 
   async #execProtocolRaw(
     message: Uint8Array,
-    { syncToFs = true }: ExecProtocolOptions = {},
+    { syncToFs = true, keepRawResponse = false, parseResults = true }: ExecProtocolOptions = {},
   ) {
-    const data = this.execProtocolRawSync(message)
+    const data = this.#execProtocolRawSync(message, { keepRawResponse, parseResults })
     if (syncToFs) {
       await this.syncToFs()
     }
@@ -925,10 +932,7 @@ export class PGlite
     this.#currentResults = []
     this.#currentDatabaseError = null
 
-    this.keepRawResponse = keepRawResponse
-    this.#parseResults = parseResults
-
-    const data = await this.#execProtocolRaw(message, { syncToFs })
+    const data = await this.#execProtocolRaw(message, { syncToFs, keepRawResponse, parseResults })
 
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false

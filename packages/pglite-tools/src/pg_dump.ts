@@ -137,14 +137,10 @@ export async function pgDump({
     'template1',
   ]
 
-  const prevKeepRawResponse = pg.keepRawResponse
-  // const prevParseResults = pg.parseResults
-  pg.keepRawResponse = true
   const execResult = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
   })
-  pg.keepRawResponse = prevKeepRawResponse
 
   const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
   console.log(deallocateResult)
