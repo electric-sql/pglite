@@ -63,9 +63,8 @@ async function execPgDump({
               console.error('error', e)
               throw e
             }
-            pg.execProtocolRaw(bytes, { syncToFs: true, keepRawResponse: true, parseResults: false }).then(r => {
-              bufferedBytes = concat(bufferedBytes, r)
-            })
+            const currentResponse = pg.execProtocolRawSync(bytes)
+            bufferedBytes = concat(bufferedBytes, currentResponse)
             return length
           }, 'iii')
 
@@ -138,10 +137,14 @@ export async function pgDump({
     'template1',
   ]
 
+  const prevKeepRawResponse = pg.keepRawResponse
+  // const prevParseResults = pg.parseResults
+  pg.keepRawResponse = true
   const execResult = await execPgDump({
     pg,
     args: [...(args ?? []), ...baseArgs],
   })
+  pg.keepRawResponse = prevKeepRawResponse
 
   const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
   console.log(deallocateResult)

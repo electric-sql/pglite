@@ -107,7 +107,7 @@ export class PGlite
   // read index in the buffer
   #readOffset: number = 0
 
-  #keepRawResponse: boolean = false
+  keepRawResponse: boolean = false
   #parseResults: boolean = true
 
   // these are needed for point 2 above
@@ -599,7 +599,7 @@ export class PGlite
           if (parsedMsg) this.#currentResults.push(parsedMsg)
         })
       }
-      if (this.#keepRawResponse) {
+      if (this.keepRawResponse) {
         const copied = bytes.slice()
         let requiredSize = this.#writeOffset + copied.length
         if (requiredSize > this.#inputData.length) {
@@ -783,7 +783,7 @@ export class PGlite
     this.#outputData = message
 
     if (
-      this.#keepRawResponse &&
+      this.keepRawResponse &&
       this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE
     ) {
       // the previous call might have increased the size of the buffer so reset it to its default
@@ -832,7 +832,7 @@ export class PGlite
 
     this.#outputData = []
 
-    if (this.#keepRawResponse && this.#writeOffset) {
+    if (this.keepRawResponse && this.#writeOffset) {
       // reusing the buffer might lead to unexpected behavior if a previous query has a view into the buffer
       // therefore, better return a copy of the response
       return new Uint8Array(this.#inputData.subarray(0, this.#writeOffset))
@@ -855,13 +855,13 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    const keepRawResponse = this.#keepRawResponse
-    this.#keepRawResponse = true
+    const keepRawResponse = this.keepRawResponse
+    this.keepRawResponse = true
     const parseResults = this.#parseResults
     this.#parseResults = false
 
     const data = this.#execProtocolRaw(message)
-    this.#keepRawResponse = keepRawResponse
+    this.keepRawResponse = keepRawResponse
     this.#parseResults = parseResults
 
     if (syncToFs) {
@@ -913,7 +913,7 @@ export class PGlite
     this.#currentResults = []
     this.#currentDatabaseError = null
 
-    this.#keepRawResponse = keepRawResponse
+    this.keepRawResponse = keepRawResponse
     this.#parseResults = parseResults
 
     const data = await this.#execProtocolRaw(message, { syncToFs })
