@@ -11,7 +11,6 @@ import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { toPostgresName, uuid } from '../utils.js'
 import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
-import { BackendMessage } from '@electric-sql/pg-protocol/messages'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -350,7 +349,7 @@ export class PGliteWorker
    * @param message The postgres wire protocol message to execute
    * @returns The result of the query
    */
-  async execProtocolStream(message: Uint8Array): Promise<BackendMessage[]> {
+  async execProtocolStream(message: Uint8Array): Promise<ExecProtocolResult> {
     return await this.#rpc('execProtocolStream', message)
   }
 
@@ -649,8 +648,8 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       }
     },
     async execProtocolStream(message: Uint8Array) {
-      const messages = await db.execProtocolStream(message)
-      return messages
+      const result = await db.execProtocolStream(message)
+      return result
     },
     async execProtocolRaw(message: Uint8Array) {
       const result = await db.execProtocolRaw(message)

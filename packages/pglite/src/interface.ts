@@ -32,6 +32,8 @@ export interface QueryOptions {
 export interface ExecProtocolOptions {
   syncToFs?: boolean
   throwOnError?: boolean
+  keepRawResponse?: boolean
+  parseResults?: boolean
   onNotice?: (notice: NoticeMessage) => void
 }
 

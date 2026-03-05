@@ -60,8 +60,8 @@ export abstract class BasePGlite
    */
   abstract execProtocolStream(
     message: Uint8Array,
-    { syncToFs, onNotice }: ExecProtocolOptions,
-  ): Promise<BackendMessage[]>
+    { syncToFs, keepRawResponse, parseResults, onNotice }: ExecProtocolOptions,
+  ): Promise<ExecProtocolResult>
 
   /**
    * Execute a postgres wire protocol message directly without wrapping the response.
@@ -151,10 +151,12 @@ export abstract class BasePGlite
   ): Promise<BackendMessage[]> {
     const results = await this.execProtocolStream(message, {
       ...options,
+      keepRawResponse: false,
+      parseResults: true,
       syncToFs: false,
     })
 
-    return results
+    return results.messages
   }
 
   /**

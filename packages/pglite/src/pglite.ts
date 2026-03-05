@@ -30,7 +30,6 @@ import {
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
 import {
   BackendMessage,
-  CommandCompleteMessage,
   DatabaseError,
   NoticeMessage,
   NotificationResponseMessage,
@@ -68,7 +67,6 @@ export class PGlite
   #ready = false
   #closing = false
   #closed = false
-  #inTransaction = false
   #relaxedDurability = false
 
   readonly waitReady: Promise<void>
@@ -100,6 +98,7 @@ export class PGlite
   #currentResults: BackendMessage[] = []
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
+  #currentDatabaseError: DatabaseError | null = null
 
   // send data to wasm
   #pglite_socket_read: number = -1
@@ -107,9 +106,10 @@ export class PGlite
   #outputData: any = []
   // read index in the buffer
   #readOffset: number = 0
-  #currentDatabaseError: DatabaseError | null = null
 
-  #keepRawResponse: boolean = true
+  #keepRawResponse: boolean = false
+  #parseResults: boolean = true
+
   // these are needed for point 2 above
   static readonly DEFAULT_RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
   static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
@@ -593,9 +593,12 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      this.#protocolParser.parse(bytes, (msg) => {
-        this.#parse(msg)
-      })
+      if (this.#parseResults) {
+        this.#protocolParser.parse(bytes, (msg) => {
+          const parsedMsg = this.#parse(msg)
+          if (parsedMsg) this.#currentResults.push(parsedMsg)
+        })
+      }
       if (this.#keepRawResponse) {
         const copied = bytes.slice()
         let requiredSize = this.#writeOffset + copied.length
@@ -852,6 +855,25 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
+    const keepRawResponse = this.#keepRawResponse
+    this.#keepRawResponse = true
+    const parseResults = this.#parseResults
+    this.#parseResults = false
+
+    const data = this.#execProtocolRaw(message)
+    this.#keepRawResponse = keepRawResponse
+    this.#parseResults = parseResults
+
+    if (syncToFs) {
+      await this.syncToFs()
+    }
+    return data
+  }
+
+  async #execProtocolRaw(
+    message: Uint8Array,
+    { syncToFs = true }: ExecProtocolOptions = {},
+  ) {
     const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
@@ -869,15 +891,32 @@ export class PGlite
     {
       syncToFs = true,
       throwOnError = true,
+      keepRawResponse = true,
+      parseResults = true,
       onNotice,
     }: ExecProtocolOptions = {},
+  ): Promise<ExecProtocolResult> {
+    return this.execProtocolStream(message, { syncToFs, keepRawResponse, parseResults, throwOnError, onNotice })
+  }
+
+  /**
+   * Execute a postgres wire protocol message
+   * @param message The postgres wire protocol message to execute
+   * @returns The parsed results of the query
+   */
+  async execProtocolStream(
+    message: Uint8Array,
+    { syncToFs, throwOnError = true, keepRawResponse = false, parseResults = true, onNotice }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
     this.#currentThrowOnError = throwOnError
     this.#currentOnNotice = onNotice
     this.#currentResults = []
     this.#currentDatabaseError = null
 
-    const data = await this.execProtocolRaw(message, { syncToFs })
+    this.#keepRawResponse = keepRawResponse
+    this.#parseResults = parseResults
+
+    const data = await this.#execProtocolRaw(message, { syncToFs })
 
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
@@ -894,42 +933,7 @@ export class PGlite
     return result
   }
 
-  /**
-   * Execute a postgres wire protocol message
-   * @param message The postgres wire protocol message to execute
-   * @returns The parsed results of the query
-   */
-  async execProtocolStream(
-    message: Uint8Array,
-    { syncToFs, throwOnError = true, onNotice }: ExecProtocolOptions = {},
-  ): Promise<BackendMessage[]> {
-    this.#currentThrowOnError = throwOnError
-    this.#currentOnNotice = onNotice
-    this.#currentResults = []
-    this.#currentDatabaseError = null
-
-    this.#keepRawResponse = false
-
-    await this.execProtocolRaw(message, { syncToFs })
-
-    this.#keepRawResponse = true
-
-    const databaseError = this.#currentDatabaseError
-    this.#currentThrowOnError = false
-    this.#currentOnNotice = undefined
-    this.#currentDatabaseError = null
-    const result = this.#currentResults
-    this.#currentResults = []
-
-    if (throwOnError && databaseError) {
-      this.#protocolParser = new ProtocolParser() // Reset the parser
-      throw databaseError
-    }
-
-    return result
-  }
-
-  #parse(msg: BackendMessage) {
+  #parse(msg: BackendMessage): BackendMessage | null {
     // keep the existing logic of throwing the first db exception
     // as soon as there is a db error, we're not interested in the remaining data
     // but since the parser is plugged into the pglite_write callback, we can't just throw
@@ -948,17 +952,6 @@ export class PGlite
         if (this.#currentOnNotice) {
           this.#currentOnNotice(msg)
         }
-      } else if (msg instanceof CommandCompleteMessage) {
-        // Keep track of the transaction state
-        switch (msg.text) {
-          case 'BEGIN':
-            this.#inTransaction = true
-            break
-          case 'COMMIT':
-          case 'ROLLBACK':
-            this.#inTransaction = false
-            break
-        }
       } else if (msg instanceof NotificationResponseMessage) {
         // We've received a notification, call the listeners
         const listeners = this.#notifyListeners.get(msg.channel)
@@ -973,8 +966,9 @@ export class PGlite
           queueMicrotask(() => cb(msg.channel, msg.payload))
         })
       }
-      this.#currentResults.push(msg)
+      return msg
     }
+    return null
   }
 
   /**
@@ -982,7 +976,8 @@ export class PGlite
    * @returns True if the database is in a transaction, false otherwise
    */
   isInTransaction() {
-    return this.#inTransaction
+    const result = this.mod!._IsTransactionBlock()
+    return result !== 0
   }
 
   /**

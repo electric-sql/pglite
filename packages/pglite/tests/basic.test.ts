@@ -637,5 +637,32 @@ await testEsmCjsAndDTC(async (importType) => {
       )
       expect(res.rows.length).toEqual(1)
     })
+    // it('streaming results', async () => {
+    //   const db = await PGlite.create()
+    //   await db.exec(`
+    //   CREATE TABLE employees (
+    //   id SERIAL PRIMARY KEY,
+    //   name TEXT,
+    //   department TEXT,
+    //   salary NUMERIC);`)
+
+    //   await db.exec(`INSERT INTO employees (id, name, department, salary) VALUES
+    //     (1, 'Alice', 'Engineering', 75000),
+    //     (2, 'Bob', 'Sales', 50000),
+    //     (3, 'Charlie', 'Engineering', 80000);`)
+
+    //   const canonicalResults = await db.exec(`SELECT * FROM employees;`)        
+
+    //   let counter: number = 0
+    //   await db.exec(`SELECT * FROM employees;`, 
+    //     { 
+    //       onResult: (r) => {
+    //         console.log(r)
+    //         counter++
+    //       }
+    //     })
+
+    //   expect(counter).toEqual(3)
+    // })    
   })
 })
