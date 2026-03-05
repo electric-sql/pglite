@@ -651,11 +651,11 @@ await testEsmCjsAndDTC(async (importType) => {
     //     (2, 'Bob', 'Sales', 50000),
     //     (3, 'Charlie', 'Engineering', 80000);`)
 
-    //   const canonicalResults = await db.exec(`SELECT * FROM employees;`)        
+    //   const canonicalResults = await db.exec(`SELECT * FROM employees;`)
 
     //   let counter: number = 0
-    //   await db.exec(`SELECT * FROM employees;`, 
-    //     { 
+    //   await db.exec(`SELECT * FROM employees;`,
+    //     {
     //       onResult: (r) => {
     //         console.log(r)
     //         counter++
@@ -663,6 +663,6 @@ await testEsmCjsAndDTC(async (importType) => {
     //     })
 
     //   expect(counter).toEqual(3)
-    // })    
+    // })
   })
 })

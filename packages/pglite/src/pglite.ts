@@ -896,7 +896,13 @@ export class PGlite
       onNotice,
     }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
-    return this.execProtocolStream(message, { syncToFs, keepRawResponse, parseResults, throwOnError, onNotice })
+    return this.execProtocolStream(message, {
+      syncToFs,
+      keepRawResponse,
+      parseResults,
+      throwOnError,
+      onNotice,
+    })
   }
 
   /**
@@ -906,7 +912,13 @@ export class PGlite
    */
   async execProtocolStream(
     message: Uint8Array,
-    { syncToFs, throwOnError = true, keepRawResponse = false, parseResults = true, onNotice }: ExecProtocolOptions = {},
+    {
+      syncToFs,
+      throwOnError = true,
+      keepRawResponse = false,
+      parseResults = true,
+      onNotice,
+    }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
     this.#currentThrowOnError = throwOnError
     this.#currentOnNotice = onNotice
