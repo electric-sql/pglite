@@ -33,6 +33,7 @@ export abstract class BasePGlite
 {
   serializers: Record<number | string, Serializer> = { ...serializers }
   parsers: Record<number | string, Parser> = { ...parsers }
+  currentQueryOptions: QueryOptions | undefined
   #arrayTypesInitialized = false
 
   // # Abstract properties:
@@ -241,6 +242,7 @@ export abstract class BasePGlite
     params: any[] = [],
     options?: QueryOptions,
   ): Promise<Results<T>> {
+    this.currentQueryOptions = options
     return await this._runExclusiveQuery(async () => {
       // We need to parse, bind and execute a query with parameters
       this.#log('runQuery', query, params, options)
@@ -332,6 +334,7 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<Array<Results>> {
+    this.currentQueryOptions = options
     return await this._runExclusiveQuery(async () => {
       // No params so we can just send the query
       this.#log('runExec', query, options)

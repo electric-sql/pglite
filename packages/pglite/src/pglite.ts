@@ -16,6 +16,7 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  Results,
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
@@ -36,6 +37,7 @@ import {
 } from '@electric-sql/pg-protocol/messages'
 
 import { initdb, PGDATA } from '@electric-sql/pglite-initdb'
+import { parseResult, StreamCallbackEvent } from './parse.js'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -57,6 +59,7 @@ export class PGlite
 {
   fs?: Filesystem
   protected mod?: PostgresMod
+  #currentFields: Results['fields'] = []
 
   get ENV(): any {
     return this.mod?.ENV
@@ -99,7 +102,7 @@ export class PGlite
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
   #currentDatabaseError: DatabaseError | null = null
-
+  
   // send data to wasm
   #pglite_socket_read: number = -1
   // buffer that holds the data to be sent to wasm
@@ -595,8 +598,17 @@ export class PGlite
       }
       if (this.#parseResults) {
         this.#protocolParser.parse(bytes, (msg) => {
-          const parsedMsg = this.#parse(msg)
-          if (parsedMsg) this.#currentResults.push(parsedMsg)
+          if (this.currentQueryOptions?.onData) {
+            const parsedMsg = this.#parse(msg)
+            if (parsedMsg) {
+              if (parsedMsg.tag === 'rowDescription') {
+                this.#currentFields = parsedMsg.fields
+              }
+              this.currentQueryOptions.onData(parsedMsg)
+            }
+          } else {
+            this.#currentResults.push(msg)
+          }
         })
       }
       if (this.#keepRawResponse) {
@@ -946,6 +958,7 @@ export class PGlite
     this.#currentOnNotice = onNotice
     this.#currentResults = []
     this.#currentDatabaseError = null
+    this.#currentFields = []
 
     const data = await this.#execProtocolRaw(message, {
       syncToFs,
@@ -957,6 +970,7 @@ export class PGlite
     this.#currentThrowOnError = false
     this.#currentOnNotice = undefined
     this.#currentDatabaseError = null
+    this.#currentFields = []
     const result = { messages: this.#currentResults, data }
     this.#currentResults = []
 
@@ -968,7 +982,7 @@ export class PGlite
     return result
   }
 
-  #parse(msg: BackendMessage): BackendMessage | null {
+  #parse(msg: BackendMessage): StreamCallbackEvent | undefined {
     // keep the existing logic of throwing the first db exception
     // as soon as there is a db error, we're not interested in the remaining data
     // but since the parser is plugged into the pglite_write callback, we can't just throw
@@ -1000,10 +1014,12 @@ export class PGlite
         this.#globalNotifyListeners.forEach((cb) => {
           queueMicrotask(() => cb(msg.channel, msg.payload))
         })
+      } else {
+        return parseResult(msg, this.parsers, this.#currentFields, this.currentQueryOptions)
       }
-      return msg
+      return undefined
     }
-    return null
+    return undefined
   }
 
   /**

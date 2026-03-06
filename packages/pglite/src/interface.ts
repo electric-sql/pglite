@@ -5,6 +5,7 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import { StreamCallbackEvent } from './parse.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -26,6 +27,7 @@ export interface QueryOptions {
   serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
+  onData?: (data: StreamCallbackEvent) => void
   paramTypes?: number[]
 }
 
