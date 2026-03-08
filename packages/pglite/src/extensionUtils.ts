@@ -12,14 +12,14 @@ export async function loadExtensionBundle(
     const zlib = await import('zlib')
     const { Writable } = await import('stream')
     const { pipeline } = await import('stream/promises')
-    
+
     if (!fs.existsSync(bundlePath)) {
       throw new Error(`Extension bundle not found: ${bundlePath}`)
     }
-    
+
     const gunzip = zlib.createGunzip()
     const chunks: Uint8Array[] = []
-    
+
     await pipeline(
       fs.createReadStream(bundlePath),
       gunzip,
@@ -95,10 +95,10 @@ const preloadedExtensions = [
   '.ogg',
   '.wav',
   '.mp3',
-];
+]
 
 function canPreloadFile(fileName: string) {
-  return preloadedExtensions.some(ext => fileName.endsWith(ext))
+  return preloadedExtensions.some((ext) => fileName.endsWith(ext))
 }
 
 export function loadFile(
@@ -109,7 +109,7 @@ export function loadFile(
 ) {
   const fileName = fullPath.split('/').pop()!
   const dirPath = dirname(fullPath)
-  
+
   if (canPreloadFile(fileName)) {
     const extOk = (...args: any[]) => {
       log('pgfs:ext OK', fullPath, args)

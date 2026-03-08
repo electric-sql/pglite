@@ -34,7 +34,7 @@ it('file_fdw with loadFile', async () => {
   })
 
   const text = 'PGlite %^&!@#'
-  const data = new TextEncoder().encode(text);
+  const data = new TextEncoder().encode(text)
   pg.loadFile('/tmp/dummy1/dummy2/myfile.txt', data)
 
   await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
