@@ -38,7 +38,7 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_description_o_c_o_index',
-      relpages: 23,
+      relpages: 27,
     },
     {
       bt_index_check: '',
@@ -67,17 +67,17 @@ it('amcheck', async () => {
     },
     {
       bt_index_check: '',
+      relname: 'pg_collation_name_enc_nsp_index',
+      relpages: 7,
+    },
+    {
+      bt_index_check: '',
       relname: 'pg_amop_fam_strat_index',
       relpages: 6,
     },
     {
       bt_index_check: '',
       relname: 'pg_operator_oprname_l_r_n_index',
-      relpages: 6,
-    },
-    {
-      bt_index_check: '',
-      relname: 'pg_amop_opr_fam_index',
       relpages: 6,
     },
   ])

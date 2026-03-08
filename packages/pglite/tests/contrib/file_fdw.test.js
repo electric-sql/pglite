@@ -25,3 +25,31 @@ it('file_fdw', async () => {
     },
   ])
 })
+
+it('file_fdw with loadFile', async () => {
+  const pg = await PGlite.create({
+    extensions: {
+      file_fdw,
+    },
+  })
+
+  const text = 'PGlite %^&!@#'
+  const data = new TextEncoder().encode(text);
+  pg.loadFile('/tmp/dummy1/dummy2/myfile.txt', data)
+
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
+  await pg.exec('CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;')
+  await pg.exec(`CREATE FOREIGN TABLE file_contents (line text)
+    SERVER file_server
+    OPTIONS (
+        filename '/tmp/dummy1/dummy2/myfile.txt',
+        format 'text'
+    );`)
+
+  const contents = await pg.query(`SELECT * FROM file_contents;`)
+  expect(contents.rows).toEqual([
+    {
+      line: text,
+    },
+  ])
+})

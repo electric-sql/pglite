@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex'
 import { BasePGlite } from './base.js'
-import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
+import { loadExtensionBundle, loadExtensions, loadFile } from './extensionUtils.js'
 import {
   type Filesystem,
   loadFs,
@@ -1202,6 +1202,10 @@ export class PGlite
 
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
+  }
+
+  loadFile(fullPath: string, bytes: Uint8Array) {
+    return loadFile(this.mod!, fullPath, bytes, (...args) => this.#log(...args))
   }
 
   // sendConnData() {
