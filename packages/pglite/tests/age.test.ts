@@ -45,6 +45,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       const res = await pg.query<{ extname: string }>(`
         SELECT extname FROM pg_extension WHERE extname = 'age'
@@ -65,6 +70,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       // Create a new graph using ag_catalog.create_graph()
       // This creates the graph metadata and necessary internal tables
@@ -86,6 +96,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       // Create and then drop a graph
       await pg.exec("SELECT ag_catalog.create_graph('temp_graph');")
@@ -110,6 +125,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('cypher_test');")
 
@@ -148,6 +168,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('edge_test');")
 
@@ -186,6 +211,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('hook_test');")
 
@@ -213,6 +243,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('where_test');")
 
@@ -252,6 +287,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('explain_test');")
 
@@ -278,6 +318,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('unicode_test');")
 
@@ -315,6 +360,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('error_test');")
 
@@ -340,6 +390,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('update_test');")
 
@@ -383,6 +438,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('delete_test');")
 
@@ -425,6 +485,11 @@ await testEsmCjsAndDTC(async (importType) => {
           age,
         },
       })
+      await pg.exec(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `)
 
       await pg.exec("SELECT ag_catalog.create_graph('order_test');")
 
@@ -466,6 +531,11 @@ await testEsmCjsAndDTC(async (importType) => {
         pg = new PGlite({
           extensions: { age },
         })
+        await pg.exec(`
+          CREATE EXTENSION IF NOT EXISTS age;
+          LOAD 'age';
+          SET search_path = ag_catalog, "$user", public;
+        `)
 
         // Create a social network graph
         await pg.exec("SELECT ag_catalog.create_graph('social');")
