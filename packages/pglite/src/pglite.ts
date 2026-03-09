@@ -37,6 +37,8 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
+const POSTGRES_CONFIG_ENV_NAME = 'PGLITE_POSTGRES_CONFIG'
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -212,12 +214,18 @@ export class PGlite
 
     const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
     const extensionInitFns: Array<() => Promise<void>> = []
+    const serializedPostgresConfig = serializePostgresConfig(
+      options.postgresConfig,
+    )
 
     const args = [
       `PGDATA=${PGDATA}`,
       `PREFIX=${WASM_PREFIX}`,
       `PGUSER=${options.username ?? 'postgres'}`,
       `PGDATABASE=${options.database ?? 'template1'}`,
+      ...(serializedPostgresConfig
+        ? [`${POSTGRES_CONFIG_ENV_NAME}=${serializedPostgresConfig}`]
+        : []),
       'MODE=REACT',
       'REPL=N',
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -584,6 +592,9 @@ export class PGlite
         // Database closed successfully
         // An earlier build of PGlite would throw an error here when closing
         // leaving this here for now. I believe it was a bug in Emscripten.
+      } else if (e === Infinity) {
+        // Some emscripten shutdown paths can surface a numeric sentinel
+        // instead of ExitStatus(0) even though shutdown completed.
       } else {
         throw e
       }
@@ -1001,4 +1012,66 @@ export class PGlite
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
     return this.#listenMutex.runExclusive(fn)
   }
+}
+
+const POSTGRES_GUC_NAME_RE = /^[A-Za-z_][A-Za-z0-9_.-]*$/
+const POSTGRES_CONFIG_ENTRY_SEPARATOR = ';'
+
+function serializePostgresConfig(
+  config?: Record<string, string | number | boolean>,
+) {
+  if (!config) {
+    return null
+  }
+
+  const entries = Object.entries(config).sort(([a], [b]) => a.localeCompare(b))
+  if (entries.length === 0) {
+    return null
+  }
+
+  return entries
+    .map(
+      ([name, value]) =>
+        `${formatPostgresGucName(name)}=${formatPostgresGucValue(value)}`,
+    )
+    .join(POSTGRES_CONFIG_ENTRY_SEPARATOR)
+}
+
+function formatPostgresGucName(name: string) {
+  if (!POSTGRES_GUC_NAME_RE.test(name)) {
+    throw new Error(`Invalid postgresConfig key: ${name}`)
+  }
+  if (name.includes(POSTGRES_CONFIG_ENTRY_SEPARATOR)) {
+    throw new Error(
+      `Invalid postgresConfig key (contains '${POSTGRES_CONFIG_ENTRY_SEPARATOR}'): ${name}`,
+    )
+  }
+  return name
+}
+
+function formatPostgresGucValue(value: string | number | boolean) {
+  let normalized: string
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new Error(`Invalid postgresConfig value: ${value}`)
+    }
+    normalized = String(value)
+  } else if (typeof value === 'boolean') {
+    normalized = value ? 'on' : 'off'
+  } else {
+    normalized = value
+  }
+
+  if (
+    normalized.includes(POSTGRES_CONFIG_ENTRY_SEPARATOR) ||
+    normalized.includes('\n') ||
+    normalized.includes('\r') ||
+    normalized.includes('\0')
+  ) {
+    throw new Error(
+      `Invalid postgresConfig value (contains disallowed separator/control character): ${normalized}`,
+    )
+  }
+
+  return normalized
 }
