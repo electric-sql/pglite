@@ -5,6 +5,7 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import { StreamCallbackEvent } from './parse.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -26,12 +27,15 @@ export interface QueryOptions {
   serializers?: SerializerOptions
   blob?: Blob | File
   onNotice?: (notice: NoticeMessage) => void
+  onData?: (data: StreamCallbackEvent) => void
   paramTypes?: number[]
 }
 
 export interface ExecProtocolOptions {
   syncToFs?: boolean
   throwOnError?: boolean
+  keepRawResponse?: boolean
+  parseResults?: boolean
   onNotice?: (notice: NoticeMessage) => void
 }
 
@@ -78,6 +82,7 @@ export interface DumpDataDirResult {
 }
 
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
+  noInitDb?: boolean
   dataDir?: string
   username?: string
   database?: string

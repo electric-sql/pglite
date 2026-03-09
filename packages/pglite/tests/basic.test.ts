@@ -46,6 +46,8 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
+
+      await db.close()
     })
 
     it('query', async () => {
@@ -131,7 +133,7 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('types', async () => {
-      const db = new PGlite()
+      const db = await PGlite.create()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -416,7 +418,7 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('error', async () => {
-      const db = new PGlite()
+      const db = await PGlite.create()
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
@@ -634,6 +636,33 @@ await testEsmCjsAndDTC(async (importType) => {
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
       )
       expect(res.rows.length).toEqual(1)
+    })
+    it('streaming results', async () => {
+      const db = await PGlite.create()
+      await db.exec(`
+      CREATE TABLE employees (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      department TEXT,
+      salary NUMERIC);`)
+
+      await db.exec(`INSERT INTO employees (id, name, department, salary) VALUES
+        (1, 'Alice', 'Engineering', 75000),
+        (2, 'Bob', 'Sales', 50000),
+        (3, 'Charlie', 'Engineering', 80000);`)
+
+      const canonicalResults = await db.exec(`SELECT * FROM employees;`)
+
+      let counter: number = 0
+      await db.exec(`SELECT * FROM employees;`,
+        {
+          onData: (r) => {
+            console.log(r)
+            if (r.tag === 'dataRow') counter++
+          }
+        })
+
+      expect(counter).toEqual(3)
     })
   })
 })

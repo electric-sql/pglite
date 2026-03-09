@@ -52,6 +52,9 @@ const copyFiles = async (srcDir: string, destDir: string) => {
 
 async function main() {
   await copyFiles('./release', './dist')
+  // Copy initdb.wasm from pglite-initdb package
+  await fs.copyFile('../pglite-initdb/release/initdb.wasm', './dist/initdb.wasm')
+  console.log('Copied initdb.wasm to ./dist/initdb.wasm')
   await findAndReplaceInDir('./dist', /\.\.\/release\//g, './', ['.js', '.cjs'])
   await findAndReplaceInDir('./dist/contrib', /\.\.\/release\//g, '', [
     '.js',

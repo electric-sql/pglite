@@ -84,18 +84,18 @@ $ git checkout -b myghname/myawesomeextension
 PGlite's backend code is in the repo [postgres-pglite](https://github.com/electric-sql/postgres-pglite) and is downloaded as a submodule dependency of the main repo. You will add your extension's code as a new submodule dependency:
 
 ```
-$ cd postgres-pglite/pglite
+$ cd postgres-pglite/pglite/other_extensions
 $ git submodule add <myawesomeextension_url>
 ```
 
-This **should** create a new folder `postgres-pglite/pglite/myawesomeextension` where the extension code has been downloaded. Check it:
+This **should** create a new folder `postgres-pglite/pglite/other_extensions/myawesomeextension` where the extension code has been downloaded. Check it:
 
 ```
 $ ls -lah myawesomeextension
 <the extension files should be listed here>
 ```
 
-Now append the **folder name** to `SUBDIRS` inside `postgres-pglite/pglite/Makefile`:
+Now append the **folder name** to `SUBDIRS` inside `postgres-pglite/pglite/other_extensions/Makefile`:
 
 ```
 SUBDIRS = \

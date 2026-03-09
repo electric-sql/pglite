@@ -36,11 +36,10 @@ async function execPgDump({
   args: string[]
 }): Promise<ExecResult> {
   let pgdump_write, pgdump_read
-  let exitStatus = 0
+  let exitCode = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
   const emscriptenOpts: Partial<PgDumpMod> = {
-    arguments: args,
     noExitRuntime: false,
     print: (text) => {
       stdoutOutput += text
@@ -49,7 +48,7 @@ async function execPgDump({
       stderrOutput += text
     },
     onExit: (status: number) => {
-      exitStatus = status
+      exitCode = status
     },
     preRun: [
       (mod: PgDumpMod) => {
@@ -83,7 +82,8 @@ async function execPgDump({
             return length
           }, 'iii')
 
-          mod._set_read_write_cbs(pgdump_read, pgdump_write)
+          mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
+
           // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
@@ -92,13 +92,14 @@ async function execPgDump({
   }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
+  mod.callMain(args)
   let fileContents = ''
-  if (!exitStatus) {
+  if (!exitCode) {
     fileContents = mod.FS.readFile(dumpFilePath, { encoding: 'utf8' })
   }
 
   return {
-    exitCode: exitStatus,
+    exitCode,
     fileContents,
     stderr: stderrOutput,
     stdout: stdoutOutput,
@@ -127,13 +128,13 @@ export async function pgDump({
 
   const baseArgs = [
     '-U',
-    'postgres',
+    'web_user',
     '--inserts',
     '-j',
     '1',
     '-f',
     dumpFilePath,
-    'postgres',
+    'template1',
   ]
 
   const execResult = await execPgDump({
@@ -141,7 +142,16 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
+  const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
+  console.log(deallocateResult)
+
+  const setSearchPathResult = await pg.exec(`SET SEARCH_PATH = ${search_path}`)
+  console.log(setSearchPathResult)
+
+  const newSearchPath = await pg.query<{ search_path: string }>(
+    'SHOW SEARCH_PATH;',
+  )
+  console.log(newSearchPath)
 
   if (execResult.exitCode !== 0) {
     throw new Error(

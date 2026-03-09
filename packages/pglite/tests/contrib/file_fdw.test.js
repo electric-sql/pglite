@@ -14,7 +14,7 @@ it('file_fdw', async () => {
   await pg.exec(`CREATE FOREIGN TABLE file_contents (line text)
     SERVER file_server
     OPTIONS (
-        filename '/tmp/pglite/bin/postgres',
+        filename '/pglite/bin/postgres',
         format 'text'
     );`)
 

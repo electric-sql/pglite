@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
+import * as fs from 'fs/promises'
 
 describe('dump', () => {
   it('dump data dir and load it', async () => {
@@ -28,7 +29,9 @@ describe('dump', () => {
   })
 
   it('dump persisted data dir and load it', async () => {
-    const pg1 = new PGlite('./pgdata-test-dump')
+    const folderPath = './pgdata-test-dump'
+    await fs.rm(folderPath, { force: true, recursive: true })
+    const pg1 = new PGlite(folderPath)
     await pg1.exec(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -50,6 +53,9 @@ describe('dump', () => {
     const ret2 = await pg2.query('SELECT * FROM test;')
 
     expect(ret1).toEqual(ret2)
+
+    await pg1.close()
+    await pg2.close()
   })
 
   it('dump data dir and load it no compression', async () => {

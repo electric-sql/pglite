@@ -1,0 +1,61 @@
+import InitdbModFactory from '../release/initdb'
+
+type IDBFS = Emscripten.FileSystemType & {
+  quit: () => void
+  dbs: Record<string, IDBDatabase>
+}
+
+export type FS = typeof FS & {
+  filesystems: {
+    MEMFS: Emscripten.FileSystemType
+    NODEFS: Emscripten.FileSystemType
+    IDBFS: IDBFS
+  }
+  quit: () => void
+}
+
+export interface InitdbMod
+  extends Omit<EmscriptenModule, 'preInit' | 'preRun' | 'postRun'> {
+  preInit: Array<{ (mod: InitdbMod): void }>
+  preRun: Array<{ (mod: InitdbMod): void }>
+  postRun: Array<{ (mod: InitdbMod): void }>
+  thisProgram: string
+  stdin: (() => number | null) | null
+  ENV: Record<string, string>
+  FS: FS
+  PROXYFS: Emscripten.FileSystemType
+  WASM_PREFIX: string
+  INITIAL_MEMORY: number
+  UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
+  stringToUTF8OnStack: (s: string) => number
+  ___errno_location: () => number
+  _strerror: (errno: number) => number
+  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_system_fn: (system_fn: number) => void
+  _pgl_set_popen_fn: (popen_fn: number) => void
+  _pgl_set_pclose_fn: (pclose_fn: number) => void
+  _pgl_set_pipe_fn: (pipe_fn: number) => void
+  _pclose: (stream: number) => number
+  _pipe: (fd: number) => number
+  _pgl_freopen: (filepath: number, mode: number, stream: number) => number
+  // _pgl_set_fgets_fn: (fgets_fn: number) => void
+  // _pgl_set_fputs_fn: (fputs_fn: number) => void
+  // _pgl_set_errno: (errno: number) => number
+  // _fgets: (str: number, size: number, stream: number) => number
+  // _fputs: (s: number, stream: number) => number
+  _fopen: (path: number, mode: number) => number
+  _fclose: (stream: number) => number
+  _fflush: (stream: number) => number
+  addFunction: (fn: CallableFunction, signature: string) => number
+  removeFunction: (f: number) => void
+  callMain: (args: string[]) => number
+  onExit: (status: number) => void
+  print: (test: string) => void
+  printErr: (text: string) => void
+}
+
+type PgDumpFactory<T extends InitdbMod = InitdbMod> = (
+  moduleOverrides?: Partial<T>,
+) => Promise<T>
+
+export default InitdbModFactory as PgDumpFactory<InitdbMod>

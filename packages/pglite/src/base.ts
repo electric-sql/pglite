@@ -33,6 +33,7 @@ export abstract class BasePGlite
 {
   serializers: Record<number | string, Serializer> = { ...serializers }
   parsers: Record<number | string, Parser> = { ...parsers }
+  currentQueryOptions: QueryOptions | undefined
   #arrayTypesInitialized = false
 
   // # Abstract properties:
@@ -60,8 +61,8 @@ export abstract class BasePGlite
    */
   abstract execProtocolStream(
     message: Uint8Array,
-    { syncToFs, onNotice }: ExecProtocolOptions,
-  ): Promise<BackendMessage[]>
+    { syncToFs, keepRawResponse, parseResults, onNotice }: ExecProtocolOptions,
+  ): Promise<ExecProtocolResult>
 
   /**
    * Execute a postgres wire protocol message directly without wrapping the response.
@@ -149,10 +150,14 @@ export abstract class BasePGlite
     message: Uint8Array,
     options: ExecProtocolOptions = {},
   ): Promise<BackendMessage[]> {
-    return await this.execProtocolStream(message, {
+    const results = await this.execProtocolStream(message, {
       ...options,
+      keepRawResponse: false,
+      parseResults: true,
       syncToFs: false,
     })
+
+    return results.messages
   }
 
   /**
@@ -237,6 +242,7 @@ export abstract class BasePGlite
     params: any[] = [],
     options?: QueryOptions,
   ): Promise<Results<T>> {
+    this.currentQueryOptions = options
     return await this._runExclusiveQuery(async () => {
       // We need to parse, bind and execute a query with parameters
       this.#log('runQuery', query, params, options)
@@ -296,6 +302,12 @@ export abstract class BasePGlite
       } finally {
         results.push(
           ...(await this.#execProtocolNoSync(
+            serializeProtocol.flush(),
+            options,
+          )),
+        )
+        results.push(
+          ...(await this.#execProtocolNoSync(
             serializeProtocol.sync(),
             options,
           )),
@@ -322,6 +334,7 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<Array<Results>> {
+    this.currentQueryOptions = options
     return await this._runExclusiveQuery(async () => {
       // No params so we can just send the query
       this.#log('runExec', query, options)
