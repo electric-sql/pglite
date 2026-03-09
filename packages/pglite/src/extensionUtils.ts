@@ -101,6 +101,21 @@ function canPreloadFile(fileName: string) {
   return preloadedExtensions.some((ext) => fileName.endsWith(ext))
 }
 
+export function loadFiles(
+  mod: PostgresMod,
+  files: [
+    {
+      fullPath: string
+      bytes: Uint8Array
+    },
+  ],
+  log: (...args: any[]) => void,
+) {
+  files.forEach((f) => {
+    loadFile(mod, f.fullPath, f.bytes, log)
+  })
+}
+
 export function loadFile(
   mod: PostgresMod,
   fullPath: string,

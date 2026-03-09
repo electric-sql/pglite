@@ -3,7 +3,7 @@ import { BasePGlite } from './base.js'
 import {
   loadExtensionBundle,
   loadExtensions,
-  loadFile,
+  loadFiles,
 } from './extensionUtils.js'
 import {
   type Filesystem,
@@ -1208,8 +1208,8 @@ export class PGlite
     return new Uint8Array(0)
   }
 
-  loadFile(fullPath: string, bytes: Uint8Array) {
-    return loadFile(this.mod!, fullPath, bytes, (...args) => this.#log(...args))
+  loadFiles(files: [{ fullPath: string; bytes: Uint8Array }]) {
+    loadFiles(this.mod!, files, (...args) => this.#log(...args))
   }
 
   // sendConnData() {

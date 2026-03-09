@@ -35,7 +35,7 @@ it('file_fdw with loadFile', async () => {
 
   const text = 'PGlite %^&!@#'
   const data = new TextEncoder().encode(text)
-  pg.loadFile('/tmp/dummy1/dummy2/myfile.txt', data)
+  pg.loadFiles([{ fullPath: '/tmp/dummy1/dummy2/myfile.txt', bytes: data }])
 
   await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
   await pg.exec('CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;')
