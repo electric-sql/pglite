@@ -46,6 +46,8 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
+
+      await db.close()
     })
 
     it('query', async () => {
@@ -131,7 +133,7 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('types', async () => {
-      const db = new PGlite()
+      const db = await PGlite.create()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -416,7 +418,7 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('error', async () => {
-      const db = new PGlite()
+      const db = await PGlite.create()
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')

@@ -80,37 +80,78 @@ function loadExtension(
   const data = tinyTar.untar(bytes)
   data.forEach((file: any) => {
     if (!file.name.startsWith('.')) {
-      const filePath = mod.WASM_PREFIX + '/' + file.name
-      if (file.name.endsWith('.so')) {
-        const extOk = (...args: any[]) => {
-          log('pgfs:ext OK', filePath, args)
-        }
-        const extFail = (...args: any[]) => {
-          log('pgfs:ext FAIL', filePath, args)
-        }
-        mod.FS.createPreloadedFile(
-          dirname(filePath),
-          file.name.split('/').pop()!.slice(0, -3),
-          file.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
-          true,
-          true,
-          extOk,
-          extFail,
-          false,
-        )
-      } else {
-        try {
-          const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
-          if (mod.FS.analyzePath(dirPath).exists === false) {
-            mod.FS.mkdirTree(dirPath)
-          }
-          mod.FS.writeFile(filePath, file.data)
-        } catch (e) {
-          console.error(`Error writing file ${filePath}`, e)
-        }
-      }
+      const fullPath = mod.WASM_PREFIX + '/' + file.name
+      return loadFile(mod, fullPath, file.data, log)
     }
   })
+}
+
+const preloadedExtensions = [
+  '.so',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.bmp',
+  '.ogg',
+  '.wav',
+  '.mp3',
+]
+
+function canPreloadFile(fileName: string) {
+  return preloadedExtensions.some((ext) => fileName.endsWith(ext))
+}
+
+export function loadFiles(
+  mod: PostgresMod,
+  files: [
+    {
+      fullPath: string
+      bytes: Uint8Array
+    },
+  ],
+  log: (...args: any[]) => void,
+) {
+  files.forEach((f) => {
+    loadFile(mod, f.fullPath, f.bytes, log)
+  })
+}
+
+export function loadFile(
+  mod: PostgresMod,
+  fullPath: string,
+  bytes: Uint8Array,
+  log: (...args: any[]) => void,
+) {
+  const fileName = fullPath.split('/').pop()!
+  const dirPath = dirname(fullPath)
+
+  if (canPreloadFile(fileName)) {
+    const extOk = (...args: any[]) => {
+      log('pgfs:ext OK', fullPath, args)
+    }
+    const extFail = (...args: any[]) => {
+      log('pgfs:ext FAIL', fullPath, args)
+    }
+    mod.FS.createPreloadedFile(
+      dirPath,
+      fileName!.slice(0, -3),
+      bytes as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
+      true,
+      true,
+      extOk,
+      extFail,
+      false,
+    )
+  } else {
+    try {
+      if (mod.FS.analyzePath(dirPath).exists === false) {
+        mod.FS.mkdirTree(dirPath)
+      }
+      mod.FS.writeFile(fullPath, bytes)
+    } catch (e) {
+      console.error(`Error writing file ${fullPath}`, e)
+    }
+  }
 }
 
 function dirname(path: string) {

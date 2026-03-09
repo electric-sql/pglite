@@ -38,14 +38,18 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_description_o_c_o_index',
-      relpages: 23,
+      relpages: 27,
     },
     {
       bt_index_check: '',
       relname: 'pg_attribute_relid_attnam_index',
       relpages: 15,
     },
-    { bt_index_check: '', relname: 'pg_proc_oid_index', relpages: 12 },
+    {
+      bt_index_check: '',
+      relname: 'pg_proc_oid_index',
+      relpages: 12,
+    },
     {
       bt_index_check: '',
       relname: 'pg_attribute_relid_attnum_index',
@@ -61,7 +65,11 @@ it('amcheck', async () => {
       relname: 'pg_depend_reference_index',
       relpages: 8,
     },
-    { bt_index_check: '', relname: 'pg_amop_opr_fam_index', relpages: 6 },
+    {
+      bt_index_check: '',
+      relname: 'pg_collation_name_enc_nsp_index',
+      relpages: 7,
+    },
     {
       bt_index_check: '',
       relname: 'pg_amop_fam_strat_index',

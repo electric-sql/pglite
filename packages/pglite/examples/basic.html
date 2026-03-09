@@ -21,7 +21,7 @@
         console.log('Starting...')
 
         // In-memory database:
-        const pg = new PGlite()
+        const pg = await PGlite.create()
         // Or, stored in indexedDB:
         // const pg = new PGlite('pgdata');
 

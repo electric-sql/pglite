@@ -78,6 +78,7 @@ export interface DumpDataDirResult {
 }
 
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
+  noInitDb?: boolean
   dataDir?: string
   username?: string
   database?: string
