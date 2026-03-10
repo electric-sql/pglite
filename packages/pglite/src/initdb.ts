@@ -7,11 +7,12 @@ function assert(condition: unknown, message?: string): asserts condition {
   }
 }
 
-export const PGDATA = '/pglite/data'
+export const PGLITE_ROOT = '/pglite'
+export const PGDATA = PGLITE_ROOT +'/data'
 
-const initdbExePath = '/pglite/bin/initdb'
-const pgstdoutPath = '/pglite/pgstdout'
-const pgstdinPath = '/pglite/pgstdin'
+const initdbExePath = PGLITE_ROOT + '/bin/initdb'
+const pgstdoutPath = PGLITE_ROOT + '/pgstdout'
+const pgstdinPath = PGLITE_ROOT + '/pgstdin'
 
 /**
  * Interface defining what initdb needs from a PGlite instance.
@@ -164,14 +165,14 @@ async function execInitdb({
         mod.ENV.PGDATA = PGDATA
       },
       (mod: InitdbMod) => {
-        mod.FS.mkdir('/pglite')
+        mod.FS.mkdir(PGLITE_ROOT)
         mod.FS.mount(
           mod.PROXYFS,
           {
-            root: '/pglite',
+            root: PGLITE_ROOT,
             fs: pg.Module.FS,
           },
-          '/pglite',
+          PGLITE_ROOT,
         )
       },
     ],

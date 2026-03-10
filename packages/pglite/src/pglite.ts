@@ -36,7 +36,7 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-import { initdb, PGDATA } from '@electric-sql/pglite-initdb'
+import { initdb, PGDATA } from './initdb'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -812,7 +812,11 @@ export class PGlite
           // we catch here only the "known" exceptions
           if (e.status === 100) {
             // this is the siglongjmp call that a Database exception has occured
-            // it is handled gracefully by postgres
+            // the original Postgres code makes a longjmp into main, handles the exception, 
+            // then re-enters the processing loop
+            // to keep original code changes to a minimum, we extract the exception handling to a separate function
+            // that we call whenever the exception longjmp is executed
+            // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
           } else {
             break

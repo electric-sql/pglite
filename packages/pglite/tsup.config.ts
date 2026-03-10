@@ -52,7 +52,6 @@ export default defineConfig([
     },
     clean: true,
     external: ['../release/pglite.js', '../release/pglite.cjs'],
-    noExternal: ['@electric-sql/pglite-initdb'],
     esbuildPlugins: [replaceAssertPlugin],
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
