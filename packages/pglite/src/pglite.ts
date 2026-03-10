@@ -600,7 +600,6 @@ export class PGlite
         }
         this.#inputData.set(copied, this.#writeOffset)
         this.#writeOffset += copied.length
-        return this.#inputData.length
       }
       return length
     }, 'iii')
@@ -924,7 +923,7 @@ export class PGlite
   #parse(msg: BackendMessage) {
     // keep the existing logic of throwing the first db exception
     // as soon as there is a db error, we're not interested in the remaining data
-    // but since the parser is plugged into the pglite_write callback, we can't just throw
+    // but since the parser is plugged into the pglite_socket_write callback, we can't just throw
     // and need to ack the messages received from the db
     if (!this.#currentDatabaseError) {
       if (msg instanceof DatabaseError) {
