@@ -9,7 +9,7 @@ There are two main components to this package:
 
 The package also includes a [CLI](#cli-usage) for quickly starting a PGlite socket server.
 
-Note: As PGlite is a single-connection database, it is not possible to have multiple simultaneous connections open. This means that the socket server will only support a single client connection at a time. While a `PGLiteSocketServer` or `PGLiteSocketHandler` are attached to a PGlite instance they hold an exclusive lock preventing any other connections, or queries on the PGlite instance.
+Note: Although PGlite is a single-connection database, it is possible to open and use multiple simultaneous connections with pglite-server. This is achieved through a multiplexer implemented in the server (see the parameter `-m, --max-connections`). This is different from a normal Postgres installation, so not all use cases are guaranteed to work.
 
 ## Installation
 
@@ -164,6 +164,7 @@ pglite-server --help
 - `-r, --run=COMMAND` - Command to run after server starts
 - `--include-database-url` - Include DATABASE_URL in subprocess environment
 - `--shutdown-timeout=MS` - Timeout for graceful subprocess shutdown in ms (default: 5000)
+- `-m, --max-connections=N` - Maximum concurrent connections (default is no concurrency: 1)
 
 ### Development Server Integration
 
@@ -251,7 +252,7 @@ const sql = postgres(process.env.DATABASE_URL)
 
 ### Limitations and Tips
 
-- Remember that PGlite only supports one connection at a time. If you're unable to connect, make sure no other client is currently connected.
+- Multiple concurrent connections are supported through a **multiplexer** over the single conn, therefore not all cases might be covered.
 - For development purposes, using an in-memory database (`--db=memory://`) is fastest but data won't persist after the server is stopped.
 - For persistent storage, specify a file path for the database (e.g., `--db=./data/mydb`).
 - When using debug mode (`--debug=1` or higher), additional protocol information will be displayed in the console.
@@ -259,6 +260,7 @@ const sql = postgres(process.env.DATABASE_URL)
 - SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
 - When using `--run`, the server will automatically shut down if the subprocess exits with a non-zero code.
 - Use `--shutdown-timeout` to adjust how long to wait for graceful subprocess termination (default: 5 seconds).
+- Use `--max-connections=10` to allow up to 10 concurrent connections (default: 1, no concurrent connections).
 
 ## License
 

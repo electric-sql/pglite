@@ -658,6 +658,8 @@ export default {
           const pg = new PGlite({
             extensions: { ${extension.importName} }
           });
+          
+          await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.importName};')
           ${'```'}
           `
         }

@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.3.16
+
+### Patch Changes
+
+- 3dfa40f: Add Apache AGE graph database extension support
+
 ## 0.3.15
 
 ### Patch Changes

@@ -10,7 +10,7 @@ There are two main components to this package:
 The package also includes a [CLI](#cli-usage) for quickly starting a PGlite socket server.
 
 :::info
-As PGlite is a single-connection database, it is not possible to have multiple simultaneous connections open. This means that the socket server will only support a single client connection at a time. While a `PGLiteSocketServer` or `PGLiteSocketHandler` are attached to a PGlite instance they hold an exclusive lock preventing any other connections, or queries on the PGlite instance.
+Although PGlite is a single-connection database, it is possible to open and use multiple simultaneous connections with pglite-server. This is achieved through a multiplexer implemented in the server (see the parameter `-m, --max-connections`). This is different from a normal Postgres installation, so not all use cases are guaranteed to work.
 :::
 
 ## Installation
@@ -306,7 +306,7 @@ export const sql = process.env.USE_PGLITE
 
 :::warning Important Limitations
 
-- Remember that PGlite only supports one connection at a time. If you're unable to connect, make sure no other client is currently connected.
+- Multiple concurrent connections are supported through a **multiplexer** over the single conn, therefore not all cases might be covered.
 - SSL connections are **NOT** supported. For `psql`, set env var `PGSSLMODE=disable`.
   :::
 
