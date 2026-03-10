@@ -575,6 +575,26 @@ const baseExtensions: Extension[] = [
     importName: 'pg_hashids',
     size: 4212,
   },
+  {
+    name: 'Apache AGE',
+    description: `
+      An extension for PostgreSQL that enables users to leverage a graph database on top of 
+      the existing relational databases. AGE is an acronym for A Graph Extension and is 
+      inspired by Bitnine's AgensGraph, a multi-model database fork of PostgreSQL. The basic 
+      principle of the project is to create a single storage that handles both the relational 
+      and graph data model so that the users can use the standard ANSI SQL along with openCypher, 
+      one of the most popular graph query languages today. There is a strong need for cohesive, 
+      easy-to-implement multi-model databases. As an extension of PostgreSQL, AGE supports all 
+      the functionalities and features of PostgreSQL while also offering a graph model to boot.
+      `,
+    shortDescription:
+      'Leverage a graph database on top of the existing relational databases.',
+    docs: 'https://github.com/apache/age',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/age',
+    importName: 'age',
+    size: 141551,
+  },
 ]
 
 const tags = [
@@ -638,6 +658,8 @@ export default {
           const pg = new PGlite({
             extensions: { ${extension.importName} }
           });
+          
+          await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.importName};')
           ${'```'}
           `
         }
