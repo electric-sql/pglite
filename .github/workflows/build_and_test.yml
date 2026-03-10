@@ -84,14 +84,6 @@ jobs:
           path: ./packages/pglite-tools/release/**
           retention-days: 60
 
-      - name: Upload pglite-initdb build artifacts to Github artifacts
-        id: upload-pglite-initdb-release-files
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-initdb-release-files-node-v20.x
-          path: ./packages/pglite-initdb/release/**
-          retention-days: 60          
-
   build-and-test-pglite:
     name: Build and Test packages/pglite
     runs-on: blacksmith-32vcpu-ubuntu-2204
@@ -126,12 +118,6 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release
-
-      - name: Download pglite-initdb WASM build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-initdb-release-files-node-v20.x
-          path: ./packages/pglite-initdb/release
 
       - name: Install dependencies
         run: |
@@ -219,12 +205,6 @@ jobs:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/
 
-      - name: Download pglite-initdb WASM build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-initdb-release-files-node-v20.x
-          path: ./packages/pglite-initdb/release/          
-      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -273,12 +253,6 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release       
-
-      - name: Download pglite-initdb WASM build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-initdb-release-files-node-v20.x
-          path: ./packages/pglite-initdb/release
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
@@ -393,12 +367,6 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/
-
-      - name: Download pglite-initdb build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pglite-initdb-release-files-node-v20.x
-          path: ./packages/pglite-initdb/release/
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
