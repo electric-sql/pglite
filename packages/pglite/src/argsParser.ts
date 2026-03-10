@@ -67,13 +67,9 @@ function matchAll(s: string, r: RegExp): RegExpExecArray[] {
   return matches
 }
 
-function getVar(
-  env: Env,
-  pre: string,
-  key: string,
-): string {
+function getVar(env: Env, pre: string, key: string): string {
   let r: unknown = typeof env === 'function' ? env(key) : env[key]
-  if (typeof r === 'undefined' && key != '') {
+  if (typeof r === 'undefined' && key !== '') {
     r = ''
   } else if (typeof r === 'undefined') {
     r = '$'
@@ -185,7 +181,7 @@ function parseInternal(
         } else if (quote) {
           if (c === quote) {
             quote = false
-          } else if (quote == SQ) {
+          } else if (quote === SQ) {
             out += c
           } else {
             if (c === BS) {

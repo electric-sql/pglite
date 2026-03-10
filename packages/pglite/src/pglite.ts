@@ -59,6 +59,10 @@ export class PGlite
   fs?: Filesystem
   protected mod?: PostgresMod
 
+  // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
+  // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
+  private readonly POSTGRES_MAIN_LONGJMP = 100
+
   get ENV(): any {
     return this.mod?.ENV
   }
@@ -120,11 +124,8 @@ export class PGlite
   #system_fn: number = -1
   #popen_fn: number = -1
   #pclose_fn: number = -1
-  // externalCommandStream: FS.FSStream | null = null
   externalCommandStreamFd: number | null = null
   #running: boolean = false
-
-  // #pipe_fn: number = -1
 
   /**
    * Create a new PGlite instance
@@ -242,9 +243,8 @@ export class PGlite
       const filePath = this.mod!.stringToUTF8OnStack('/pglite/locale-a')
       const smode = this.mod!.stringToUTF8OnStack(mode)
       return this.mod!._fopen(filePath, smode)
-      // return this.mod!.FS.open('/pglite/locale-a', mode)
     }
-    throw 'Unhandled cmd'
+    throw new Error('Unhandled cmd')
   }
 
   /**
@@ -401,7 +401,6 @@ export class PGlite
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
-          // mod.ENV.PG_COLOR = 'always'
         },
       ],
     }
@@ -470,18 +469,18 @@ export class PGlite
         this.#log('pglite: loading data from tarball')
         await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
       } else {
-        // Check and log if the database exists
+        // Check if the database exists in the file system, if not we run initdb
         if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
           this.#log('pglite: found DB, resuming')
         } else {
-          this.#log('pglite: no db')
+          this.#log('pglite: no db in filesystem, running initdb')
 
-          const pg_initdb_opts = { ...options }
-          pg_initdb_opts.noInitDb = true
-          pg_initdb_opts.dataDir = undefined
-          pg_initdb_opts.extensions = undefined
-          pg_initdb_opts.loadDataDir = undefined
-          const pg_initDb = await PGlite.create(pg_initdb_opts)
+          const pgInitDbOpts = { ...options }
+          pgInitDbOpts.noInitDb = true
+          pgInitDbOpts.dataDir = undefined
+          pgInitDbOpts.extensions = undefined
+          pgInitDbOpts.loadDataDir = undefined
+          const pg_initDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
           const initdbResult = await initdb({
@@ -490,11 +489,7 @@ export class PGlite
           })
 
           if (initdbResult.exitCode !== 0) {
-            // throw new Error('INITDB failed to initialize: ' + initdbResult.stderr)
-            if (initdbResult.stderr.includes('exists but is not empty')) {
-              // initdb found database, that's fine, but we still need to start it in single mode
-              // this.#startInSingleMode()
-            } else {
+            if (!initdbResult.stderr.includes('exists but is not empty')) {
               throw new Error(
                 'INITDB failed to initialize: ' + initdbResult.stderr,
               )
@@ -504,6 +499,10 @@ export class PGlite
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
           await loadTar(this.mod.FS, pgdatatar, PGDATA)
+
+          // Sync any changes back to the persisted store (if there is one)
+          // TODO: only sync here if initdb did init db.
+          await this.syncToFs()
         }
       }
 
@@ -519,10 +518,6 @@ export class PGlite
         ],
       })
       this.#setPGliteActive()
-
-      // Sync any changes back to the persisted store (if there is one)
-      // TODO: only sync here if initdb did init db.
-      await this.syncToFs()
 
       this.#ready = true
 
@@ -545,19 +540,11 @@ export class PGlite
 
   #onRuntimeInitialized(mod: PostgresMod) {
     // default $HOME in emscripten is /home/web_user
+    // we override system() to intercept any calls that might generate unexpected output
     this.#system_fn = mod.addFunction((cmd_ptr: number) => {
-      // todo: check it is indeed exec'ing postgres
-      // const postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
-      // postgresArgs.shift()
-      // // cwd = mod.FS.cwd()
-      // const stat = this.Module.FS.analyzePath(PGDATA)
-      // if (stat.exists) {
-      //   this.Module.FS.chdir(PGDATA)
-      // }
-      // // this.Module.HEAPU8.set(origHEAPU8)
-      // const mainResult = this.Module.callMain(postgresArgs)
-      // return mainResult
-      this.#log('executing', mod.UTF8ToString(cmd_ptr))
+      this.#log(
+        `Postgres tried to execute ${mod.UTF8ToString(cmd_ptr)}, returning 1.`,
+      )
       return 1
     }, 'pi')
 
@@ -681,14 +668,14 @@ export class PGlite
       this.mod!._pgl_setPGliteActive(0)
       await this.execProtocol(serialize.end())
       this.mod!._pgl_run_atexit_funcs()
-    } catch (e) {
+    } catch (e: any) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
         // Database closed successfully
         // An earlier build of PGlite would throw an error here when closing
         // leaving this here for now. I believe it was a bug in Emscripten.
       } else {
-        // throw e
+        this.#log(`An error occured while closing the db`, e.toString())
       }
     } finally {
       this.mod!.removeFunction(this.#pglite_socket_read)
@@ -704,11 +691,13 @@ export class PGlite
     this.#running = false
 
     try {
-      this.mod!._emscripten_force_exit(0)
+      // exit the runtime. since we're using `noExitRuntime: true` on our module,
+      // we need to do this explicitly
+      this.mod!._emscripten_force_exit(/* exit code */ 0)
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
-        // we might want to throw if return value is not 0
+        this.#log('Error when exiting', e.toString())
       }
     }
   }
@@ -794,13 +783,13 @@ export class PGlite
 
     if (message[0] === 0) {
       // startup pass
-      const result = this.processStartupPacket(message)
+      const result = this.#processStartupPacket(message)
       return result
     }
 
     // execute the message
     try {
-      // a single message might contain multiple instructions
+      // a single message might contain multiple batched queries
       // postgresMainLoopOnce returns after each one
       while (
         this.#readOffset < message.length ||
@@ -810,20 +799,17 @@ export class PGlite
           mod._PostgresMainLoopOnce()
         } catch (e: any) {
           // we catch here only the "known" exceptions
-          if (e.status === 100) {
+          if (e.status === this.POSTGRES_MAIN_LONGJMP) {
             // this is the siglongjmp call that a Database exception has occured
-            // the original Postgres code makes a longjmp into main, handles the exception, 
+            // the original Postgres code makes a longjmp into main, handles the exception,
             // then re-enters the processing loop
             // to keep original code changes to a minimum, we extract the exception handling to a separate function
             // that we call whenever the exception longjmp is executed
             // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
-          } else {
-            break
-            // throw e
           }
-          // even if there is an exception caused by one of the instructions,
-          // we need to continue processing the rest of the bundled ones
+          // even if there is an exception caused by one of the batched queries,
+          // we need to continue processing the rest without throwing.
         }
       }
     } finally {
@@ -1189,7 +1175,7 @@ export class PGlite
     }
   }
 
-  processStartupPacket(message: Uint8Array): Uint8Array {
+  #processStartupPacket(message: Uint8Array): Uint8Array {
     this.#readOffset = 0
     this.#writeOffset = 0
     this.#outputData = message
@@ -1207,9 +1193,4 @@ export class PGlite
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
   }
-
-  // sendConnData() {
-  //   this.mod!._pgl_sendConnData();
-  //   this.mod!._pgl_pq_flush()
-  // }
 }
