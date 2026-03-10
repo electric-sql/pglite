@@ -171,6 +171,7 @@ export class PGLiteSocketHandler extends EventTarget {
   private debug: boolean
   private readonly id: number
   private messageBuffer: Buffer = Buffer.alloc(0)
+  private startupComplete = false
   private idleTimer?: NodeJS.Timeout
   private idleTimeout: number
   private lastActivityTime: number = Date.now()
@@ -303,6 +304,7 @@ export class PGLiteSocketHandler extends EventTarget {
     this.socket = null
     this.active = false
     this.messageBuffer = Buffer.alloc(0)
+    this.startupComplete = false
 
     this.log(`detach: handler cleaned up`)
     return this
@@ -333,26 +335,52 @@ export class PGLiteSocketHandler extends EventTarget {
         // Determine message length
         let messageLength = 0
         let isComplete = false
+        let isStartupMessage = false
 
-        // Handle startup message (no type byte, just length)
-        if (this.messageBuffer.length >= 4) {
+        // During startup phase, check for untyped protocol messages
+        // (SSLRequest, CancelRequest, StartupMessage — all lack a type byte)
+        if (!this.startupComplete && this.messageBuffer.length >= 8) {
           const firstInt = this.messageBuffer.readInt32BE(0)
+          const secondInt = this.messageBuffer.readInt32BE(4)
 
-          if (this.messageBuffer.length >= 8) {
-            const secondInt = this.messageBuffer.readInt32BE(4)
-            // PostgreSQL 3.0 protocol version
-            if (secondInt === 196608 || secondInt === 0x00030000) {
-              messageLength = firstInt
-              isComplete = this.messageBuffer.length >= messageLength
+          // SSLRequest: client asks if server supports SSL
+          // Format: [length=8][code=80877103 (0x04D2162F)]
+          // Response: single byte 'N' (no SSL support)
+          if (firstInt === 8 && secondInt === 80877103) {
+            this.messageBuffer = this.messageBuffer.slice(8)
+            if (this.socket && this.socket.writable) {
+              this.socket.write(Buffer.from('N'))
             }
+            this.log(
+              'handleData: SSLRequest received, responded with N (no ssl)',
+            )
+            continue
           }
 
-          // Regular message (type byte + length)
-          if (!isComplete && this.messageBuffer.length >= 5) {
-            const msgLength = this.messageBuffer.readInt32BE(1)
-            messageLength = 1 + msgLength
-            isComplete = this.messageBuffer.length >= messageLength
+          // CancelRequest: client asks to cancel a running query
+          // Format: [length=16][code=80877102 (0x04D2162E)][processID][secretKey]
+          // Response: none — server silently ignores
+          if (firstInt === 16 && secondInt === 80877102) {
+            this.messageBuffer = this.messageBuffer.slice(16)
+            this.log(
+              'handleData: CancelRequest received, ignoring (not supported)',
+            )
+            continue
           }
+
+          // StartupMessage: [length][version=196608 (3.0)]
+          if (secondInt === 196608 || secondInt === 0x00030000) {
+            messageLength = firstInt
+            isComplete = this.messageBuffer.length >= messageLength
+            isStartupMessage = true
+          }
+        }
+
+        // Regular typed message (type byte + 4-byte length)
+        if (!isComplete && this.messageBuffer.length >= 5) {
+          const msgLength = this.messageBuffer.readInt32BE(1)
+          messageLength = 1 + msgLength
+          isComplete = this.messageBuffer.length >= messageLength
         }
 
         if (!isComplete || messageLength === 0) {
@@ -365,6 +393,14 @@ export class PGLiteSocketHandler extends EventTarget {
         // Extract and process complete message
         const message = this.messageBuffer.slice(0, messageLength)
         this.messageBuffer = this.messageBuffer.slice(messageLength)
+
+        // Mark startup phase as complete after processing the startup message
+        if (isStartupMessage) {
+          this.startupComplete = true
+          this.log(
+            'handleData: startup complete, switching to typed message mode',
+          )
+        }
 
         this.log(`handleData: processing message of ${message.length} bytes`)
 
