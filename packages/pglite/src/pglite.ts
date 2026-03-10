@@ -470,7 +470,7 @@ export class PGlite
         this.#log('pglite: loading data from tarball')
         await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
       } else {
-        // Check and log if the database exists
+        // Check if the database exists in the file system, if not we run initdb
         if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
           this.#log('pglite: found DB, resuming')
         } else {
