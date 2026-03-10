@@ -810,8 +810,8 @@ export class PGlite
           }
           // even if there is an exception caused by one of the batched queries,
           // we need to continue processing the rest without throwing.
-
-          // TODO: should we accumulate the errors, then throw in finally?
+          // the first error will be saved in this.#currentDatabaseError
+          // and returned to the caller for handling
         }
       }
     } finally {
