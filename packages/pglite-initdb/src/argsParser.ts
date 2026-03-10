@@ -1,8 +1,6 @@
-'use strict'
-
 // '<(' is process substitution operator and
 // can be parsed the same as control operator
-var CONTROL =
+const CONTROL =
   '(?:' +
   [
     '\\|\\|',
@@ -17,28 +15,45 @@ var CONTROL =
     '[&;()|<>]',
   ].join('|') +
   ')'
-var controlRE = new RegExp('^' + CONTROL + '$')
-var META = '|&;()<> \\t'
-var SINGLE_QUOTE = '"((\\\\"|[^"])*?)"'
-var DOUBLE_QUOTE = "'((\\\\'|[^'])*?)'"
-var hash = /^#$/
+const controlRE = new RegExp('^' + CONTROL + '$')
+const META = '|&;()<> \\t'
+const SINGLE_QUOTE = '"((\\\\"|[^"])*?)"'
+const DOUBLE_QUOTE = "'((\\\\'|[^'])*?)'"
+const hash = /^#$/
 
-var SQ = "'"
-var DQ = '"'
-var DS = '$'
+const SQ = "'"
+const DQ = '"'
+const DS = '$'
 
-var TOKEN = ''
-var mult = 0x100000000 // Math.pow(16, 8);
-for (var i = 0; i < 4; i++) {
+let TOKEN = ''
+const mult = 0x100000000
+for (let i = 0; i < 4; i++) {
   TOKEN += (mult * Math.random()).toString(16)
 }
-var startsWithToken = new RegExp('^' + TOKEN)
+const startsWithToken = new RegExp('^' + TOKEN)
 
-function matchAll(s, r) {
-  var origIndex = r.lastIndex
+type Env = Record<string, string | undefined> | ((key: string) => unknown)
 
-  var matches = []
-  var matchObj
+interface OpToken {
+  op: string
+  pattern?: string
+}
+
+interface CommentToken {
+  comment: string
+}
+
+type ParsedToken = string | OpToken | CommentToken
+
+interface ParseOpts {
+  escape?: string
+}
+
+function matchAll(s: string, r: RegExp): RegExpExecArray[] {
+  const origIndex = r.lastIndex
+
+  const matches: RegExpExecArray[] = []
+  let matchObj: RegExpExecArray | null
 
   while ((matchObj = r.exec(s))) {
     matches.push(matchObj)
@@ -52,8 +67,12 @@ function matchAll(s, r) {
   return matches
 }
 
-function getVar(env, pre, key) {
-  var r = typeof env === 'function' ? env(key) : env[key]
+function getVar(
+  env: Env,
+  pre: string,
+  key: string,
+): string {
+  let r: unknown = typeof env === 'function' ? env(key) : env[key]
   if (typeof r === 'undefined' && key != '') {
     r = ''
   } else if (typeof r === 'undefined') {
@@ -63,25 +82,29 @@ function getVar(env, pre, key) {
   if (typeof r === 'object') {
     return pre + TOKEN + JSON.stringify(r) + TOKEN
   }
-  return pre + r
+  return pre + (r as string)
 }
 
-function parseInternal(string, env, opts) {
+function parseInternal(
+  string: string,
+  env?: Env,
+  opts?: ParseOpts,
+): ParsedToken[] {
   if (!opts) {
     opts = {}
   }
-  var BS = opts.escape || '\\'
-  var BAREWORD = '(\\' + BS + '[\'"' + META + ']|[^\\s\'"' + META + '])+'
+  const BS = opts.escape || '\\'
+  const BAREWORD = '(\\' + BS + '[\'"' + META + ']|[^\\s\'"' + META + '])+'
 
-  var chunker = new RegExp(
+  const chunker = new RegExp(
     [
-      '(' + CONTROL + ')', // control chars
+      '(' + CONTROL + ')',
       '(' + BAREWORD + '|' + SINGLE_QUOTE + '|' + DOUBLE_QUOTE + ')+',
     ].join('|'),
     'g',
   )
 
-  var matches = matchAll(string, chunker)
+  const matches = matchAll(string, chunker)
 
   if (matches.length === 0) {
     return []
@@ -90,11 +113,11 @@ function parseInternal(string, env, opts) {
     env = {}
   }
 
-  var commented = false
+  let commented = false
 
   return matches
-    .map(function (match) {
-      var s = match[0]
+    .map(function (match): ParsedToken | ParsedToken[] | undefined {
+      const s = match[0]
       if (!s || commented) {
         return void undefined
       }
@@ -113,17 +136,17 @@ function parseInternal(string, env, opts) {
       // 4. quote context can switch mid-token if there is no whitespace
       //     between the two quote contexts (e.g. all'one'"token" parses as
       //     "allonetoken")
-      var quote = false
-      var esc = false
-      var out = ''
-      var isGlob = false
-      var i
+      let quote: string | false = false
+      let esc = false
+      let out = ''
+      let isGlob = false
+      let i: number
 
-      function parseEnvVar() {
+      function parseEnvVar(): string {
         i += 1
-        var varend
-        var varname
-        var char = s.charAt(i)
+        let varend: number
+        let varname: string
+        const char = s.charAt(i)
 
         if (char === '{') {
           i += 1
@@ -140,21 +163,21 @@ function parseInternal(string, env, opts) {
           varname = char
           i += 1
         } else {
-          var slicedFromI = s.slice(i)
-          varend = slicedFromI.match(/[^\w\d_]/)
-          if (!varend) {
+          const slicedFromI = s.slice(i)
+          const varendMatch = slicedFromI.match(/[^\w\d_]/)
+          if (!varendMatch) {
             varname = slicedFromI
             i = s.length
           } else {
-            varname = slicedFromI.slice(0, varend.index)
-            i += varend.index - 1
+            varname = slicedFromI.slice(0, varendMatch.index)
+            i += varendMatch.index! - 1
           }
         }
-        return getVar(env, '', varname)
+        return getVar(env!, '', varname)
       }
 
       for (i = 0; i < s.length; i++) {
-        var c = s.charAt(i)
+        let c = s.charAt(i)
         isGlob = isGlob || (!quote && (c === '*' || c === '?'))
         if (esc) {
           out += c
@@ -165,7 +188,6 @@ function parseInternal(string, env, opts) {
           } else if (quote == SQ) {
             out += c
           } else {
-            // Double quote
             if (c === BS) {
               i += 1
               c = s.charAt(i)
@@ -186,7 +208,9 @@ function parseInternal(string, env, opts) {
           return { op: s }
         } else if (hash.test(c)) {
           commented = true
-          var commentObj = { comment: string.slice(match.index + i + 1) }
+          const commentObj: CommentToken = {
+            comment: string.slice(match.index + i + 1),
+          }
           if (out.length) {
             return [out, commentObj]
           }
@@ -206,30 +230,32 @@ function parseInternal(string, env, opts) {
 
       return out
     })
-    .reduce(function (prev, arg) {
-      // finalize parsed arguments
-      // TODO: replace this whole reduce with a concat
+    .reduce(function (prev: ParsedToken[], arg) {
       return typeof arg === 'undefined' ? prev : prev.concat(arg)
     }, [])
 }
 
-export default function parse(s, env, opts) {
-  var mapped = parseInternal(s, env, opts)
+export default function parse(
+  s: string,
+  env?: Env,
+  opts?: ParseOpts,
+): ParsedToken[] {
+  const mapped = parseInternal(s, env, opts)
   if (typeof env !== 'function') {
     return mapped
   }
-  return mapped.reduce(function (acc, s) {
+  return mapped.reduce(function (acc: ParsedToken[], s) {
     if (typeof s === 'object') {
       return acc.concat(s)
     }
-    var xs = s.split(RegExp('(' + TOKEN + '.*?' + TOKEN + ')', 'g'))
+    const xs = s.split(RegExp('(' + TOKEN + '.*?' + TOKEN + ')', 'g'))
     if (xs.length === 1) {
       return acc.concat(xs[0])
     }
     return acc.concat(
-      xs.filter(Boolean).map(function (x) {
+      xs.filter(Boolean).map(function (x): ParsedToken {
         if (startsWithToken.test(x)) {
-          return JSON.parse(x.split(TOKEN)[1])
+          return JSON.parse(x.split(TOKEN)[1]) as ParsedToken
         }
         return x
       }),

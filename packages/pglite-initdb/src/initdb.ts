@@ -212,10 +212,10 @@ interface InitdbOptions {
 function getArgs(cmd: string) {
   const a: string[] = []
   const parsed = parse(cmd)
-  // console.log("parsed args", parsed)
   for (let i = 0; i < parsed.length; i++) {
-    if (parsed[i].op) break
-    a.push(parsed[i])
+    const token = parsed[i]
+    if (typeof token === 'object' && 'op' in token) break
+    if (typeof token === 'string') a.push(token)
   }
   return a
 }
