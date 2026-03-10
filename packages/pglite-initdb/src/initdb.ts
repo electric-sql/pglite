@@ -6,7 +6,6 @@ function assert(condition: unknown, message?: string): asserts condition {
     throw new Error(message ?? 'Assertion failed')
   }
 }
-// import fs from 'node:fs'
 
 export const PGDATA = '/pglite/data'
 
@@ -57,11 +56,8 @@ async function execInitdb({
 
   let pgMainResult = 0
 
-  // let pglite_stdin_fd = -1
   let initdb_stdin_fd = -1
-  // let pglite_stdout_fd = -1
   let initdb_stdout_fd = -1
-  // let i_pgstdin = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
 
@@ -99,9 +95,6 @@ async function execInitdb({
       log(debug, 'initdberr', text)
     },
     preRun: [
-      // (mod: InitdbMod) => {
-      //   mod.FS.init(initdb_stdin, initdb_stdout, null)
-      // },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           // default $HOME in emscripten is /home/web_user
@@ -138,8 +131,6 @@ async function execInitdb({
                 needToCallPGmain = false
                 pgMainResult = callPgMain(postgresArgs)
               }
-              // const closeResult = mod._fclose(stream)
-              // console.log(closeResult)
               return pgMainResult
             } else {
               return mod._pclose(stream)
@@ -167,8 +158,6 @@ async function execInitdb({
             const wmode = mod.stringToUTF8OnStack('w')
             initdb_stdout_fd = mod._fopen(path, wmode)
           }
-
-          // pg.Module.FS.chdir(PGDATA)
         }
       },
       (mod: InitdbMod) => {
@@ -192,8 +181,6 @@ async function execInitdb({
 
   log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
-
-  // pg.Module.HEAPU8.set(origHEAPU8)
 
   return {
     exitCode: result,
