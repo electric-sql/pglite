@@ -165,6 +165,7 @@ class PGLiteServerRunner {
       'pg_ivm',
       'pg_uuidv7',
       'pgtap',
+      'age',
     ]
 
     for (const name of this.config.extensionNames) {
