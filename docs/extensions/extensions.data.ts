@@ -608,7 +608,7 @@ const baseExtensions: Extension[] = [
     tags: ['postgres extension', 'experimental'],
     importPath: '@electric-sql/pglite/pg_textsearch',
     importName: 'pg_textsearch',
-    size: 0,
+    size: 55062,
   },  
 ]
 
