@@ -609,7 +609,7 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite/pg_textsearch',
     importName: 'pg_textsearch',
     size: 55062,
-  },  
+  },
 ]
 
 const tags = [
