@@ -148,6 +148,18 @@ export class PGliteWorker
     // Wait for the worker let us know it's ready
     await this.#workerReadyPromise
 
+    // Register leader-now listener early to avoid race condition (#850)
+    // The worker may send 'leader-now' immediately after becoming leader,
+    // before we've finished setting up broadcast channels. By registering
+    // this listener before any async operations, we ensure we don't miss
+    // the message.
+    this.#workerProcess.addEventListener('message', async (event) => {
+      if (event.data.type === 'leader-now') {
+        this.#isLeader = true
+        this.#eventTarget.dispatchEvent(new Event('leader-change'))
+      }
+    })
+
     // Acquire the tab close lock, this is released then the tab, or this
     // PGliteWorker instance, is closed
     const tabCloseLockId = `pglite-tab-close:${this.#tabId}`
@@ -177,13 +189,6 @@ export class PGliteWorker
         this.#eventTarget.dispatchEvent(new Event('connected'))
         this.#debug = await this.#rpc('getDebugLevel')
         this.#ready = true
-      }
-    })
-
-    this.#workerProcess.addEventListener('message', async (event) => {
-      if (event.data.type === 'leader-now') {
-        this.#isLeader = true
-        this.#eventTarget.dispatchEvent(new Event('leader-change'))
       }
     })
 
