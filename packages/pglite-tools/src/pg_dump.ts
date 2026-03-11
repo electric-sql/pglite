@@ -129,7 +129,7 @@ export async function pgDump({
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
-  const search_path = getSearchPath.rows[0].search_path
+  const searchPath = getSearchPath.rows[0].search_path
 
   const baseArgs = [
     '-U',
@@ -146,16 +146,18 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
-  console.log(deallocateResult)
-
-  const setSearchPathResult = await pg.exec(`SET SEARCH_PATH = ${search_path}`)
-  console.log(setSearchPathResult)
-
+  await pg.exec(`DEALLOCATE ALL`)
+  await pg.exec(`SET SEARCH_PATH = ${searchPath}`)
   const newSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
-  console.log(newSearchPath)
+  if (newSearchPath.rows[0].search_path !== searchPath) {
+    console.warn(
+      `Warning: search_path has been changed from ${searchPath} to ${newSearchPath}`,
+      searchPath,
+      newSearchPath,
+    )
+  }
 
   if (execResult.exitCode !== 0) {
     throw new Error(
