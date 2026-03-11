@@ -30,7 +30,6 @@ import {
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
 import {
   BackendMessage,
-  CommandCompleteMessage,
   DatabaseError,
   NoticeMessage,
   NotificationResponseMessage,
@@ -40,18 +39,7 @@ import { initdb, PGDATA } from './initdb'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
-const defaultStartParams = [
-  '--single',
-  '-F',
-  '-O',
-  '-j',
-  '-c',
-  'search_path=pg_catalog',
-  '-c',
-  'exit_on_error=false',
-  '-c',
-  'log_checkpoints=false',
-]
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -72,7 +60,6 @@ export class PGlite
   #ready = false
   #closing = false
   #closed = false
-  #inTransaction = false
   #relaxedDurability = false
 
   readonly waitReady: Promise<void>
@@ -126,6 +113,19 @@ export class PGlite
   #pclose_fn: number = -1
   externalCommandStreamFd: number | null = null
   #running: boolean = false
+
+  static readonly defaultStartParams = [
+    '--single', // selects single-user mode (must be first argument)
+    '-F', // turn fsync off
+    '-O', // allow system table structure changes
+    '-j', // do not use newline as interactive query delimiter
+    '-c',
+    'search_path=public',
+    '-c',
+    'exit_on_error=false',
+    '-c',
+    'log_checkpoints=false',
+  ]
 
   /**
    * Create a new PGlite instance
@@ -513,16 +513,13 @@ export class PGlite
       this.#startInSingleMode({
         pgDataFolder: PGDATA,
         startParams: [
-          ...defaultStartParams,
+          ...(options.startParams || PGlite.defaultStartParams),
           ...(this.debug ? ['-d', this.debug.toString()] : []),
         ],
       })
       this.#setPGliteActive()
 
       this.#ready = true
-
-      // Set the search path to public for this connection
-      await this.exec('SET search_path TO public;')
 
       if (options.username) {
         await this.exec(`SET ROLE ${options.username};`)
@@ -939,17 +936,6 @@ export class PGlite
         if (this.#currentOnNotice) {
           this.#currentOnNotice(msg)
         }
-      } else if (msg instanceof CommandCompleteMessage) {
-        // Keep track of the transaction state
-        switch (msg.text) {
-          case 'BEGIN':
-            this.#inTransaction = true
-            break
-          case 'COMMIT':
-          case 'ROLLBACK':
-            this.#inTransaction = false
-            break
-        }
       } else if (msg instanceof NotificationResponseMessage) {
         // We've received a notification, call the listeners
         const listeners = this.#notifyListeners.get(msg.channel)
@@ -973,7 +959,8 @@ export class PGlite
    * @returns True if the database is in a transaction, false otherwise
    */
   isInTransaction() {
-    return this.#inTransaction
+    const result = this.mod!._IsTransactionBlock()
+    return result !== 0
   }
 
   /**

@@ -92,6 +92,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions
+  startParams?: string[]
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
