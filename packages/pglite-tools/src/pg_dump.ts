@@ -118,15 +118,12 @@ interface PgDumpOptions {
  * Execute pg_dump
  * @param pg - The PGlite instance
  * @param args - The arguments to pass to pg_dump
- * @param database - The database to dump (postgres by default)
  * @param fileName - The name of the file to write the dump to (dump.sql by default)
- * @param verbose - Whether to print verbose output (false by default)
  * @returns The file containing the dump
  */
 export async function pgDump({
   pg,
   args,
-  database = 'postgres',
   fileName = 'dump.sql',
 }: PgDumpOptions) {
   const getSearchPath = await pg.query<{ search_path: string }>(
@@ -142,7 +139,6 @@ export async function pgDump({
     '1',
     '-f',
     dumpFilePath,
-    database,
   ]
 
   const execResult = await execPgDump({
