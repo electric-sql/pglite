@@ -392,9 +392,7 @@ export class PGlite
           mod.FS.chmod(postgresExePath, 0o0555)
         },
         (mod: PostgresMod) => {
-          mod.ENV.MODE = 'REACT'
           mod.ENV.PGDATA = PGDATA
-          mod.ENV.PREFIX = WASM_PREFIX
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'template1'
           mod.ENV.LC_CTYPE = 'en_US.UTF-8'
