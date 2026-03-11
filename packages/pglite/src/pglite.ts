@@ -394,7 +394,7 @@ export class PGlite
         (mod: PostgresMod) => {
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
-          mod.ENV.PGDATABASE = options.database ?? 'template1'
+          mod.ENV.PGDATABASE = options.database ?? 'postgres'
           mod.ENV.LC_CTYPE = 'en_US.UTF-8'
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
