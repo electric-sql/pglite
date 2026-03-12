@@ -399,6 +399,13 @@ export class PGlite
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
+
+          // some extensions might need their own ENV variables
+          for (const [extName] of Object.entries(this.#extensions)) {
+            if (extName === 'postgis') {
+              mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
+            }
+          }
         },
       ],
     }
