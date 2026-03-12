@@ -95,7 +95,7 @@ jobs:
 
       - name: Test pglite-postgis
         working-directory: ${{ github.workspace }}/packages/pglite-postgis
-        run: pnpm test          
+        run: pnpm test
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
@@ -229,7 +229,7 @@ jobs:
         with:
           name: pglite-postgis-release-files-node-v20.x
           path: ./packages/pglite-postgis/release/
-
+      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -286,17 +286,23 @@ jobs:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release
 
+      - name: Download pglite-postgis build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-postgis-release-files-node-v20.x
+          path: ./packages/pglite-postgis/release/  
+
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-dist-node-v20.x
           path: ./packages/pglite/dist/
 
-      - name: Download pglite-postgis build artifacts
+      - name: Download pglite-postgis dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-postgis-release-files-node-v20.x
-          path: ./packages/pglite-postgis/release/  
+          name: pglite-postgis-dist-node-v20.x
+          path: ./packages/pglite-postgis/dist/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -410,7 +416,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-postgis-release-files-node-v20.x
-          path: ./packages/pglite-postgis/release/          
+          path: ./packages/pglite-postgis/release/
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
