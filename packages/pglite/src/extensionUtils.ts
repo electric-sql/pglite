@@ -12,14 +12,14 @@ export async function loadExtensionBundle(
     const zlib = await import('zlib')
     const { Writable } = await import('stream')
     const { pipeline } = await import('stream/promises')
-    
+
     if (!fs.existsSync(bundlePath)) {
       throw new Error(`Extension bundle not found: ${bundlePath}`)
     }
-    
+
     const gunzip = zlib.createGunzip()
     const chunks: Uint8Array[] = []
-    
+
     await pipeline(
       fs.createReadStream(bundlePath),
       gunzip,
@@ -84,38 +84,37 @@ function loadExtension(
       if (mod.FS.analyzePath(dirPath).exists === false) {
         mod.FS.mkdirTree(dirPath)
       }
-    } else
-      if (!entry.name.startsWith('.')) {
-        const filePath = mod.WASM_PREFIX + '/' + entry.name
-        if (entry.name.endsWith('.so')) {
-          const extOk = (...args: any[]) => {
-            log('pgfs:ext OK', filePath, args)
+    } else if (!entry.name.startsWith('.')) {
+      const filePath = mod.WASM_PREFIX + '/' + entry.name
+      if (entry.name.endsWith('.so')) {
+        const extOk = (...args: any[]) => {
+          log('pgfs:ext OK', filePath, args)
+        }
+        const extFail = (...args: any[]) => {
+          log('pgfs:ext FAIL', filePath, args)
+        }
+        mod.FS.createPreloadedFile(
+          dirname(filePath),
+          entry.name.split('/').pop()!.slice(0, -3),
+          entry.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
+          true,
+          true,
+          extOk,
+          extFail,
+          false,
+        )
+      } else {
+        try {
+          const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
+          if (mod.FS.analyzePath(dirPath).exists === false) {
+            mod.FS.mkdirTree(dirPath)
           }
-          const extFail = (...args: any[]) => {
-            log('pgfs:ext FAIL', filePath, args)
-          }
-          mod.FS.createPreloadedFile(
-            dirname(filePath),
-            entry.name.split('/').pop()!.slice(0, -3),
-            entry.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
-            true,
-            true,
-            extOk,
-            extFail,
-            false,
-          )
-        } else {
-          try {
-            const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
-            if (mod.FS.analyzePath(dirPath).exists === false) {
-              mod.FS.mkdirTree(dirPath)
-            }
-            mod.FS.writeFile(filePath, entry.data)
-          } catch (e) {
-            console.error(`Error writing file ${filePath}`, e)
-          }
+          mod.FS.writeFile(filePath, entry.data)
+        } catch (e) {
+          console.error(`Error writing file ${filePath}`, e)
         }
       }
+    }
   })
 }
 

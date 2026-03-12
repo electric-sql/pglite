@@ -617,7 +617,7 @@ const tags = [
   'postgres extension',
   'pglite plugin',
   'postgres/contrib',
-  'experimental'
+  'experimental',
 ] as const
 
 export type Tag = (typeof tags)[number]
