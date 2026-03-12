@@ -1,6 +1,8 @@
 # @electric-sql/pglite-postgis
 
-PostGIS extension for [PGlite](https://pglite.dev).
+*** EXPERIMENTAL ***
+
+PostGIS extension for [PGlite](https://pglite.dev). This is an experimental release, use at your own risk.
 
 ## Installation
 

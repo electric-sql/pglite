@@ -601,7 +601,9 @@ const baseExtensions: Extension[] = [
       *** EXPERIMENTAL ***
       PostGIS extends the capabilities of the PostgreSQL relational database by adding 
       support for storing, indexing, and querying geospatial data.
-      Follow this issue for the status: TODO
+
+      *Follow this issue for the status: TODOP
+
       *No GDAL support atm.
     `,
     shortDescription: 'Storing, indexing, and querying geospatial data.',
