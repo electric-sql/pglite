@@ -96,14 +96,17 @@ function loadExtension(
         // async WASM compilation done by Emscripten's wasm preload plugin.
         // The plugin calls extOk only after preloadedWasm[path] is set, so
         // awaiting this ensures dlopen finds the pre-compiled module.
-        const soPreload = new Promise<void>((resolve, reject) => {
+        const soPreload = new Promise<void>((resolve, _reject) => {
           const extOk = (...args: any[]) => {
             log('pgfs:ext OK', filePath, args)
             resolve()
           }
           const extFail = (...args: any[]) => {
             log('pgfs:ext FAIL', filePath, args)
-            reject(new Error(`Failed to preload ${filePath}`))
+            // hope for the best: it's not the end even if we were unable to preload a file
+            // emscripten will try again if/when needed and do a wasm.compile on the main thread
+            resolve()
+            // _reject(new Error(`Failed to preload ${filePath}`))
           }
           // Keep the .so suffix so Emscripten's wasm preload plugin canHandle() matches,
           // triggering async WebAssembly.instantiate. The compiled module is stored in
