@@ -296,12 +296,12 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        results.push(
-          ...(await this.#execProtocolNoSync(
-            serializeProtocol.flush(),
-            options,
-          )),
-        )
+        // results.push(
+        //   ...(await this.#execProtocolNoSync(
+        //     serializeProtocol.flush(),
+        //     options,
+        //   )),
+        // )
         results.push(
           ...(await this.#execProtocolNoSync(
             serializeProtocol.sync(),
