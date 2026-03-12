@@ -166,6 +166,7 @@ class PGLiteServerRunner {
       'pg_uuidv7',
       'pgtap',
       'age',
+      'pg_textsearch',
     ]
 
     for (const name of this.config.extensionNames) {

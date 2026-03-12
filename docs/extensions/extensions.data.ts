@@ -595,12 +595,28 @@ const baseExtensions: Extension[] = [
     importName: 'age',
     size: 141551,
   },
+  {
+    name: 'pg_textsearch',
+    description: `
+      *** EXPERIMENTAL ***
+      PostgreSQL extension for BM25 relevance-ranked full-text search.
+      Provides a bm25 index access method for efficient full-text search with
+      BM25 ranking, supporting multiple languages and custom parameters.
+      `,
+    shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
+    docs: 'https://github.com/timescale/pg_textsearch',
+    tags: ['postgres extension', 'experimental'],
+    importPath: '@electric-sql/pglite/pg_textsearch',
+    importName: 'pg_textsearch',
+    size: 55062,
+  },
 ]
 
 const tags = [
   'postgres extension',
   'pglite plugin',
   'postgres/contrib',
+  'experimental',
 ] as const
 
 export type Tag = (typeof tags)[number]
