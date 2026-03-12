@@ -576,7 +576,10 @@ export class PGlite
         throw e
       }
       this.#protocolParser.parse(bytes, (msg) => {
-        this.#parse(msg)
+        const parsedMsg = this.#parse(msg)
+        if (parsedMsg) {
+          this.#currentResults.push(parsedMsg)
+        }
       })
       if (this.#keepRawResponse) {
         const copied = bytes.slice()
@@ -948,8 +951,9 @@ export class PGlite
           queueMicrotask(() => cb(msg.channel, msg.payload))
         })
       }
-      this.#currentResults.push(msg)
+      return msg
     }
+    return null
   }
 
   /**
