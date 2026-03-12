@@ -1,8 +1,9 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { EmscriptenBuiltinFilesystem, PGDATA } from './base.js'
+import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
+import { PGDATA } from '../initdb.js'
 
 export class NodeFS extends EmscriptenBuiltinFilesystem {
   protected rootDir: string

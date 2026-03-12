@@ -165,7 +165,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: '- PGlite:'
+          body-includes: '- PGlite with node'
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4
@@ -175,7 +175,7 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            - PGlite: ${{ steps.upload-pglite-package.outputs.artifact-url }}
+            - PGlite with node v${{ matrix.node }}: ${{ steps.upload-pglite-package.outputs.artifact-url }}
           edit-mode: append
 
   build-and-test-pglite-dependents:
@@ -204,7 +204,7 @@ jobs:
         with:
           name: pglite-tools-release-files-node-v20.x
           path: ./packages/pglite-tools/release/
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -252,7 +252,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-tools-release-files-node-v20.x
-          path: ./packages/pglite-tools/release          
+          path: ./packages/pglite-tools/release       
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v4
@@ -313,7 +313,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: Built bundles
+          body-includes: "- Demos:"
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v4

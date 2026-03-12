@@ -78,6 +78,7 @@ export interface DumpDataDirResult {
 }
 
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
+  noInitDb?: boolean
   dataDir?: string
   username?: string
   database?: string
@@ -91,6 +92,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions
+  startParams?: string[]
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

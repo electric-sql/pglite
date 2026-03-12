@@ -36,11 +36,10 @@ async function execPgDump({
   args: string[]
 }): Promise<ExecResult> {
   let pgdump_write, pgdump_read
-  let exitStatus = 0
+  let exitCode = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
   const emscriptenOpts: Partial<PgDumpMod> = {
-    arguments: args,
     noExitRuntime: false,
     print: (text) => {
       stdoutOutput += text
@@ -49,7 +48,7 @@ async function execPgDump({
       stderrOutput += text
     },
     onExit: (status: number) => {
-      exitStatus = status
+      exitCode = status
     },
     preRun: [
       (mod: PgDumpMod) => {
@@ -83,7 +82,8 @@ async function execPgDump({
             return length
           }, 'iii')
 
-          mod._set_read_write_cbs(pgdump_read, pgdump_write)
+          mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
+
           // default $HOME in emscripten is /home/web_user
           mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
@@ -92,13 +92,14 @@ async function execPgDump({
   }
 
   const mod = await PgDumpModFactory(emscriptenOpts)
+  mod.callMain(args)
   let fileContents = ''
-  if (!exitStatus) {
+  if (!exitCode) {
     fileContents = mod.FS.readFile(dumpFilePath, { encoding: 'utf8' })
   }
 
   return {
-    exitCode: exitStatus,
+    exitCode,
     fileContents,
     stderr: stderrOutput,
     stdout: stdoutOutput,
@@ -108,12 +109,17 @@ async function execPgDump({
 interface PgDumpOptions {
   pg: PGlite
   args?: string[]
+  database?: string
   fileName?: string
   verbose?: boolean
 }
 
 /**
  * Execute pg_dump
+ * @param pg - The PGlite instance
+ * @param args - The arguments to pass to pg_dump
+ * @param fileName - The name of the file to write the dump to (dump.sql by default)
+ * @returns The file containing the dump
  */
 export async function pgDump({
   pg,
@@ -123,17 +129,16 @@ export async function pgDump({
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
-  const search_path = getSearchPath.rows[0].search_path
+  const searchPath = getSearchPath.rows[0].search_path
 
   const baseArgs = [
     '-U',
-    'postgres',
+    'web_user',
     '--inserts',
     '-j',
     '1',
     '-f',
     dumpFilePath,
-    'postgres',
   ]
 
   const execResult = await execPgDump({
@@ -141,7 +146,18 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  pg.exec(`DEALLOCATE ALL; SET SEARCH_PATH = ${search_path}`)
+  await pg.exec(`DEALLOCATE ALL`)
+  await pg.exec(`SET SEARCH_PATH = ${searchPath}`)
+  const newSearchPath = await pg.query<{ search_path: string }>(
+    'SHOW SEARCH_PATH;',
+  )
+  if (newSearchPath.rows[0].search_path !== searchPath) {
+    console.warn(
+      `Warning: search_path has been changed from ${searchPath} to ${newSearchPath}`,
+      searchPath,
+      newSearchPath,
+    )
+  }
 
   if (execResult.exitCode !== 0) {
     throw new Error(
