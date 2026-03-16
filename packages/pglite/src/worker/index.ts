@@ -354,8 +354,7 @@ export class PGliteWorker
     return await this.#rpc('execProtocolStream', message)
   }
 
-
-   /**
+  /**
    * Execute a postgres wire protocol message directly without wrapping the response.
    * Only use if `execProtocol()` doesn't suite your needs.
    *
@@ -366,9 +365,12 @@ export class PGliteWorker
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  async execProtocolRawStream(message: Uint8Array, options: { onRawData: (data: Uint8Array) => void }): Promise<void> {
+  async execProtocolRawStream(
+    message: Uint8Array,
+    options: { onRawData: (data: Uint8Array) => void },
+  ): Promise<void> {
     await this.#rpc('execProtocolRawStream', message, options)
-  }  
+  }
 
   /**
    * Sync the database to the filesystem
