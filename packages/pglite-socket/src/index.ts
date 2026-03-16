@@ -10,9 +10,10 @@ export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
 interface QueuedQuery {
   handlerId: number
   message: Uint8Array
-  resolve: (result: Uint8Array) => void
+  resolve: (resultSize: number) => void
   reject: (error: Error) => void
   timestamp: number
+  onData: (data: Uint8Array) => void
 }
 
 /**
@@ -37,7 +38,11 @@ class QueryQueueManager {
     }
   }
 
-  async enqueue(handlerId: number, message: Uint8Array): Promise<Uint8Array> {
+  async enqueue(
+    handlerId: number,
+    message: Uint8Array,
+    onData: (data: Uint8Array) => void,
+  ): Promise<number> {
     return new Promise((resolve, reject) => {
       const query: QueuedQuery = {
         handlerId,
@@ -45,6 +50,7 @@ class QueryQueueManager {
         resolve,
         reject,
         timestamp: Date.now(),
+        onData,
       }
 
       this.queue.push(query)
@@ -93,11 +99,16 @@ class QueryQueueManager {
         `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
       )
 
-      let result
+      let result = 0
       try {
         // Execute the query with exclusive access to PGlite
-        result = await this.db.runExclusive(async () => {
-          return await this.db.execProtocolRaw(query.message)
+        await this.db.runExclusive(async () => {
+          return await this.db.execProtocolRawStream(query.message, {
+            onRawData: (data) => {
+              result += data.length
+              query.onData(data)
+            },
+          })
         })
       } catch (error) {
         this.log(`query from handler #${query.handlerId} failed:`, error)
@@ -106,7 +117,7 @@ class QueryQueueManager {
       }
 
       this.log(
-        `query from handler #${query.handlerId} completed, ${result.length} bytes`,
+        `query from handler #${query.handlerId} completed, ${result} bytes`,
       )
       this.lastHandlerId = query.handlerId
       query.resolve(result)
@@ -376,49 +387,46 @@ export class PGLiteSocketHandler extends EventTarget {
           break
         }
 
+        let socketWriteError: any = undefined
         // Queue the query for execution
         // This allows multiple connections to queue queries simultaneously
-        const result = await this.queryQueue.enqueue(
+        await this.queryQueue.enqueue(
           this.id,
           new Uint8Array(message),
-        )
+          (data) => {
+            this.log(`handleData: received ${data.length} bytes from PGlite`)
 
-        this.log(`handleData: received ${result.length} bytes from PGlite`)
+            // Print the outgoing data to the console
+            this.inspectData('outgoing', data)
 
-        // Print the outgoing data to the console
-        this.inspectData('outgoing', result)
-
-        // Send response if available
-        if (
-          result.length > 0 &&
-          this.socket &&
-          this.socket.writable &&
-          this.active
-        ) {
-          await new Promise<number>((resolve, reject) => {
-            this.log(`handleData: writing response to socket`)
-            if (this.socket?.writable) {
-              this.socket.write(Buffer.from(result), (err?: any) => {
-                if (err) {
-                  this.log(`handleData: error writing to socket:`, err)
-                  reject(err)
-                } else {
-                  this.log(`handleData: socket sent: ${result.length} bytes`)
-                  resolve(result.length)
-                }
-              })
-            } else {
-              this.log(`handleData: socket no longer writable`)
-              resolve(0)
+            // Send response if available
+            if (
+              data.length > 0 &&
+              this.socket &&
+              this.socket.writable &&
+              this.active
+            ) {
+              // await new Promise<number>((resolve, reject) => {
+              this.log(`handleData: writing response to socket`)
+              if (this.socket?.writable) {
+                this.socket.write(Buffer.from(data), (err?: any) => {
+                  if (err) {
+                    this.log(`handleData: error writing to socket:`, err)
+                    socketWriteError = err
+                  } else {
+                    this.log(`handleData: socket sent: ${data.length} bytes`)
+                  }
+                })
+              } else {
+                this.log(`handleData: socket no longer writable`)
+              }
             }
-          }).catch((writeErr) => {
-            this.log(`handleData: failed to write to socket:`, writeErr)
-            throw writeErr
-          })
-        }
-
-        totalProcessed += result.length
+            totalProcessed += data.length
+          },
+        )
+        if (socketWriteError) throw socketWriteError
       }
+
 
       // Emit data event with byte sizes
       this.dispatchEvent(

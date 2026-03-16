@@ -35,6 +35,11 @@ export interface ExecProtocolOptions {
   onNotice?: (notice: NoticeMessage) => void
 }
 
+export interface ExecProtocolOptionsStream {
+  syncToFs?: boolean
+  onRawData: (data: Uint8Array) => void
+}
+
 export interface ExtensionSetupResult<TNamespace = any> {
   emscriptenOpts?: any
   namespaceObj?: TNamespace
@@ -119,6 +124,10 @@ export type PGliteInterface<T extends Extensions = Extensions> =
       message: Uint8Array,
       options?: ExecProtocolOptions,
     ): Promise<Uint8Array>
+    execProtocolRawStream(
+      message: Uint8Array,
+      options?: ExecProtocolOptionsStream,
+    ): Promise<void>
     execProtocol(
       message: Uint8Array,
       options?: ExecProtocolOptions,
