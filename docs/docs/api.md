@@ -331,6 +331,9 @@ transactions, and notification listeners. Only use if you need to bypass these w
 
 :::
 
+`execProtocolRawStream(message: Uint8Array, options: ExecProtocolOptionsStream): void`
+Same as `execProtocolRaw` but returns raw messages in the `options.onRawData` callback as they arrive from the backend. This is particularly useful when expecting large sets of data.
+
 ### describeQuery
 
 `.describeQuery(query: string, options?: QueryOptions): Promise<DescribeQueryResult>`

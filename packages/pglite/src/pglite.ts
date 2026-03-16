@@ -11,6 +11,7 @@ import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
   ExecProtocolOptions,
+  ExecProtocolOptionsStream,
   ExecProtocolResult,
   Extensions,
   PGliteInterface,
@@ -91,6 +92,7 @@ export class PGlite
   #currentResults: BackendMessage[] = []
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
+  #currentOnRawData: ((data: Uint8Array) => void) | undefined
 
   // send data to wasm
   #pglite_socket_read: number = -1
@@ -583,21 +585,30 @@ export class PGlite
       })
       if (this.#keepRawResponse) {
         const copied = bytes.slice()
-        let requiredSize = this.#writeOffset + copied.length
-        if (requiredSize > this.#inputData.length) {
-          const newSize =
-            this.#inputData.length +
-            (this.#inputData.length >> 1) +
-            requiredSize
-          if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-            requiredSize = PGlite.MAX_BUFFER_SIZE
+        if (this.#currentOnRawData) {
+          try {
+            this.#currentOnRawData(copied)
+          } catch (e) {
+            // swallow
+            this.#log('Error in onRawData() callback', e)
           }
-          const newBuffer = new Uint8Array(newSize)
-          newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-          this.#inputData = newBuffer
+        } else {
+          let requiredSize = this.#writeOffset + copied.length
+          if (requiredSize > this.#inputData.length) {
+            const newSize =
+              this.#inputData.length +
+              (this.#inputData.length >> 1) +
+              requiredSize
+            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+              requiredSize = PGlite.MAX_BUFFER_SIZE
+            }
+            const newBuffer = new Uint8Array(newSize)
+            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+            this.#inputData = newBuffer
+          }
+          this.#inputData.set(copied, this.#writeOffset)
+          this.#writeOffset += copied.length
         }
-        this.#inputData.set(copied, this.#writeOffset)
-        this.#writeOffset += copied.length
       }
       return length
     }, 'iii')
@@ -846,6 +857,28 @@ export class PGlite
       await this.syncToFs()
     }
     return data
+  }
+
+  /**
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
+   * @param message The postgres wire protocol message to execute
+   * @param options.onRawData Callback to receive results as streaming data
+   */
+  async execProtocolRawStream(
+    message: Uint8Array,
+    { syncToFs = true, onRawData }: ExecProtocolOptionsStream,
+  ) {
+    this.#currentOnRawData = onRawData
+    this.execProtocolRawSync(message)
+    if (syncToFs) {
+      await this.syncToFs()
+    }
   }
 
   /**
