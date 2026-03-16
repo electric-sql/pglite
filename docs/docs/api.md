@@ -333,6 +333,7 @@ transactions, and notification listeners. Only use if you need to bypass these w
 
 `execProtocolRawStream(message: Uint8Array, options: ExecProtocolOptionsStream): void`
 Same as `execProtocolRaw` but returns raw messages in the `options.onRawData` callback as they arrive from the backend. This is particularly useful when expecting large sets of data.
+See a usage example in the `pglite-socket` project, where the server uses this method to pass the results to the client socket as they arrive.
 
 ### describeQuery
 
