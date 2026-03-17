@@ -282,3 +282,19 @@ it('complex1', async () => {
 
   `)
 })
+
+it('The coordinates in GeoJSON are not sufficiently nested', async () => {
+  const pg = new PGlite({
+    extensions: {
+      postgis,
+    },
+    debug: 1
+  })
+  await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+
+  await expect(
+      pg.exec(`SELECT '#3583', ST_AsText(ST_GeomFromGeoJSON('{"type":"MultiPolygon", "coordinates":[[[139.10030364990232,35.16777444430609],5842.4224490305424]]}'));`)
+  ).rejects.toThrow(`The 'coordinates' in GeoJSON are not sufficiently nested`)
+
+})
+
