@@ -3,14 +3,19 @@ import { PGlite } from '../dist/index.js'
 import * as fs from 'fs/promises'
 
 describe('drop database', () => {
-  it('should drop database', async () => {
+  it('should create and drop database', async () => {
     const pg = await PGlite.create()
+
     await pg.exec(`
-      DROP DATABASE postgres;
+      CREATE DATABASE mypostgres TEMPLATE template1;
+    `)
+
+    await pg.exec(`
+      DROP DATABASE mypostgres;
     `)
   })
 
-  it('should drop postgres db and create from template1', async () => {
+  it('should drop postgres db and create from postgres', async () => {
     await fs.rm('./pgdata-test-drop-db', { force: true, recursive: true })
     const pg = await PGlite.create('./pgdata-test-drop-db')
     await pg.exec(`
@@ -22,17 +27,17 @@ describe('drop database', () => {
     await pg.exec("INSERT INTO test (name) VALUES ('test');")
 
     await pg.exec(`
-      DROP DATABASE postgres;
+      DROP DATABASE IF EXISTS mypostgres;
     `)
 
     await pg.exec(`
-      CREATE DATABASE postgres TEMPLATE template1;
+      CREATE DATABASE mypostgres TEMPLATE postgres;
     `)
 
     await pg.close()
 
     const pg2 = await PGlite.create('./pgdata-test-drop-db', {
-      database: 'postgres',
+      database: 'mypostgres',
     })
 
     const ret = await pg2.query(`
@@ -55,11 +60,11 @@ describe('drop database', () => {
       await pg.exec("INSERT INTO test (name) VALUES ('test');")
 
       await pg.exec(`
-        DROP DATABASE postgres;
+        DROP DATABASE IF EXISTS mypostgres;
       `)
 
       await pg.exec(`
-        CREATE DATABASE postgres TEMPLATE template1;
+        CREATE DATABASE mypostgres TEMPLATE template1;
       `)
 
       // we don't close pg here on purpose
