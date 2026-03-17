@@ -598,11 +598,15 @@ const baseExtensions: Extension[] = [
   {
     name: 'PostGIS',
     description: `
-      *** EXPERIMENTAL ***
+      *** EXPERIMENTAL *** *** EXTERNAL ***
       PostGIS extends the capabilities of the PostgreSQL relational database by adding 
       support for storing, indexing, and querying geospatial data.
 
-      *Follow this issue for the status: TODOP
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-postgis
+
+      You need to install it to use it: '$ npm i @electric-sql/pglite-postgis'
+
+      *Follow this issue for the status: https://github.com/electric-sql/pglite/issues/916
 
       *No GDAL support atm.
     `,
