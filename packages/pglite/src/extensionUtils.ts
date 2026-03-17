@@ -91,7 +91,7 @@ function loadExtension(
     } else if (!entry.name.startsWith('.')) {
       const filePath = mod.WASM_PREFIX + '/' + entry.name
       if (entry.name.endsWith('.so')) {
-        log(`pgfs:ext loading ${filePath}`)
+        log(`pgfs:ext preloading ${filePath}`)
         const soName = entry.name.split('/').pop()! // e.g. 'postgis-3.so'
         const dirPath = dirname(filePath)
         // Wrap createPreloadedFile in a Promise so loadExtensions can await the
