@@ -427,7 +427,6 @@ export class PGLiteSocketHandler extends EventTarget {
         if (socketWriteError) throw socketWriteError
       }
 
-
       // Emit data event with byte sizes
       this.dispatchEvent(
         new CustomEvent('data', {

@@ -87,14 +87,14 @@ export abstract class BasePGlite
    * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
    * transactions, and notification listeners. Only use if you need to bypass these wrappers and
    * don't intend to use the above features.
-   * 
+   *
    * @param message The postgres wire protocol message to execute
    * @param options.onRawData Callback to receive streaming data
    */
   abstract execProtocolRawStream(
     message: Uint8Array,
     { syncToFs, onRawData }: ExecProtocolOptionsStream,
-  ): Promise<void>  
+  ): Promise<void>
 
   /**
    * Sync the database to the filesystem
@@ -313,12 +313,6 @@ export abstract class BasePGlite
         }
         throw e
       } finally {
-        // results.push(
-        //   ...(await this.#execProtocolNoSync(
-        //     serializeProtocol.flush(),
-        //     options,
-        //   )),
-        // )
         results.push(
           ...(await this.#execProtocolNoSync(
             serializeProtocol.sync(),
