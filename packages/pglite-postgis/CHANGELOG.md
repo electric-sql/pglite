@@ -1,5 +1,11 @@
 # @electric-sql/pglite-postgis
 
+## 0.0.2
+
+### Patch Changes
+
+- d6f9910: Fix deployed package on npmjs
+
 ## 0.0.1
 
 ### Patch Changes
