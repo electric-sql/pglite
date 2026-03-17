@@ -1,13 +1,6 @@
 # @electric-sql/pglite-sync
 
-## 1.0.0
-
-### Minor Changes
-
-- d848955: New simplified PGlite with separate initdb.
-  New included extension: pg_textsearch (experimental).
-  New package for postgis (experimental) as extension.
-  Breaking changes: 'postgis' is the default database instead of 'template1'.
+## 0.5.0
 
 ### Patch Changes
 

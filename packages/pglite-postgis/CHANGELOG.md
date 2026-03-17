@@ -1,13 +1,10 @@
 # @electric-sql/pglite-postgis
 
-## 1.0.0
+## 0.0.1
 
 ### Minor Changes
 
-- d848955: New simplified PGlite with separate initdb.
-  New included extension: pg_textsearch (experimental).
-  New package for postgis (experimental) as extension.
-  Breaking changes: 'postgis' is the default database instead of 'template1'.
+- New package for postgis (experimental) as extension.
 
 ### Patch Changes
 
