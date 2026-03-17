@@ -5,6 +5,9 @@ import pluginReactHooks from 'eslint-plugin-react-hooks'
 import pluginReactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
+  {
+    ignores: ['dist-webcomponent/**'],
+  },
   ...rootConfig,
   {
     files: ['**/*.{ts,tsx}'],
