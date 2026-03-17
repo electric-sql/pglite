@@ -82,7 +82,7 @@ function loadExtension(
   const soPreloadPromises: Promise<void>[] = []
   const data = tinyTar.untar(bytes)
   // sort is a hack to make PostGIS work. we need to preload postgis-3.so BEFORE postgis_topology-3.so
-  data.sort().forEach((entry: any) => {
+  data.sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0)).forEach((entry: any) => {
     if (entry.name.endsWith('/')) {
       const dirPath = `${mod.WASM_PREFIX}/${entry.name}`
       if (mod.FS.analyzePath(dirPath).exists === false) {
