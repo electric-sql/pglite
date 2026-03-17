@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.3.16",
+  "version": "0.4.0",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -163,7 +163,7 @@
       "require": {
         "types": "./dist/pg_textsearch/index.d.cts",
         "default": "./dist/pg_textsearch/index.cjs"
-      }    
+      }
     }
   },
   "type": "module",

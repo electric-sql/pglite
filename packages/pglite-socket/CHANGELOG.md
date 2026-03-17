@@ -1,5 +1,13 @@
 # @electric-sql/pglite-socket
 
+## 0.1.0
+
+### Minor Changes
+
+- Updated dependencies [d848955]
+  - @electric-sql/pglite-postgis@0.0.1
+  - @electric-sql/pglite@0.4.0
+
 ## 0.0.22
 
 ### Patch Changes
