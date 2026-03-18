@@ -60,7 +60,7 @@ async function loadPg() {
     try {
       console.log('Deleting IndexedDB for', dbName)
       await new Promise((resolve, reject) => {
-        const req = window.indexedDB.deleteDatabase(dbName)
+        const req = window.indexedDB.deleteDatabase(`/pglite/${dbName}`)
         req.onsuccess = resolve
         req.onerror = reject
         req.onblocked = resolve // In case user blocks the deletion
