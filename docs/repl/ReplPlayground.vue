@@ -47,44 +47,45 @@ async function loadPg() {
   loadedExtensions.value = [...enabledExtensions.value]
   const dbName = 'pglite-playground'
   try {
-    pg.value = await PGlite.create({
+    return await PGlite.create({
       dataDir: `idb://${dbName}`,
       extensions,
     })
   } catch {
-    console.error('Failed to create PGlite instance')
-    // Delete the IndexedDB for '/pglite-playground' before creating PGlite instance again
-    if (window.indexedDB) {
-      try {
-        console.log('Deleting IndexedDB for', dbName)
-        await new Promise((resolve, reject) => {
-          const req = window.indexedDB.deleteDatabase(dbName)
-          req.onsuccess = resolve
-          req.onerror = reject
-          req.onblocked = resolve // In case user blocks the deletion
-        })
-      } catch (err) {
-        console.error(`Failed to delete ${dbName} IndexedDB:`, err)
-      }
-    } else {
-      console.error('IndexedDB is not supported, using in-memory filesystem')
-      pg.value = await PGlite.create({
-        extensions,
+    console.error(`Failed to create PGlite instance on idb at ${dbName}`)
+  }
+  // Delete the IndexedDB for '/pglite-playground' before creating PGlite instance again
+  if (window.indexedDB) {
+    try {
+      console.log('Deleting IndexedDB for', dbName)
+      await new Promise((resolve, reject) => {
+        const req = window.indexedDB.deleteDatabase(dbName)
+        req.onsuccess = resolve
+        req.onerror = reject
+        req.onblocked = resolve // In case user blocks the deletion
       })
+    } catch (err) {
+      console.error(`Failed to delete ${dbName} IndexedDB:`, err)
     }
     try {
-      pg.value = await PGlite.create({
+      return await PGlite.create({
         dataDir: `idb://${dbName}`,
         extensions,
       })
     } catch {
-      console.error('Failed to create PGlite instance again after deletion')
-    }
+      console.error(`Failed to create PGlite with idb://${dbName} instance again after trying to delete it`)
+    }      
+  } else {
+    console.error('IndexedDB is not supported')
   }
+  console.log('Creating an in-memory db')
+  return await PGlite.create({
+    extensions,
+  })
 }
 
-onMounted(() => {
-  loadPg()
+onMounted(async () => {
+  pg.value = await loadPg()
 })
 
 const rootStyle = window.getComputedStyle(document.body)
@@ -170,7 +171,7 @@ async function clearDb() {
     if (closed) break
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
-  await loadPg()
+  pg.value = await loadPg()
 }
 </script>
 
