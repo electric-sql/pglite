@@ -56,18 +56,18 @@ async function loadPg() {
     // Delete the IndexedDB for '/pglite-playground' before creating PGlite instance again
     if (window.indexedDB) {
       try {
-        console.log('Deleting IndexedDB for', dbName);
+        console.log('Deleting IndexedDB for', dbName)
         await new Promise((resolve, reject) => {
-          const req = window.indexedDB.deleteDatabase(dbName);
-          req.onsuccess = resolve;
-          req.onerror = reject;
-          req.onblocked = resolve; // In case user blocks the deletion
-        });
+          const req = window.indexedDB.deleteDatabase(dbName)
+          req.onsuccess = resolve
+          req.onerror = reject
+          req.onblocked = resolve // In case user blocks the deletion
+        })
       } catch (err) {
-        console.error(`Failed to delete ${dbName} IndexedDB:`, err);
+        console.error(`Failed to delete ${dbName} IndexedDB:`, err)
       }
     } else {
-      console.error('IndexedDB is not supported, using in-memory filesystem');
+      console.error('IndexedDB is not supported, using in-memory filesystem')
       pg.value = await PGlite.create({
         extensions,
       })
@@ -78,7 +78,7 @@ async function loadPg() {
         extensions,
       })
     } catch {
-      console.error('Failed to create PGlite instance again after deletion');
+      console.error('Failed to create PGlite instance again after deletion')
     }
   }
 }
