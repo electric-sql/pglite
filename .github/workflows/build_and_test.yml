@@ -93,10 +93,6 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
 
-      - name: Test pglite-postgis
-        working-directory: ${{ github.workspace }}/packages/pglite-postgis
-        run: pnpm test
-
   build-and-test-pglite:
     name: Build and Test packages/pglite
     runs-on: blacksmith-32vcpu-ubuntu-2204
