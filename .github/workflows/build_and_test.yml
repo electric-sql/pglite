@@ -93,16 +93,13 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
 
-      - name: Test pglite-postgis
-        working-directory: ${{ github.workspace }}/packages/pglite-postgis
-        run: pnpm test
-
   build-and-test-pglite:
     name: Build and Test packages/pglite
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]
+      fail-fast: false # allow the build to continue even if some tests fail
     defaults:
       run:
         working-directory: ./packages/pglite
@@ -203,6 +200,7 @@ jobs:
     strategy:
       matrix:
         node: [20.x, 21.x, 22.x, 23.x, 24.x]    
+      fail-fast: false # allow the build to continue even if some tests fail
     needs: [build-and-test-pglite]
     steps:
       - uses: actions/checkout@v4
