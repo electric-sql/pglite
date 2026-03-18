@@ -46,7 +46,6 @@ async function loadPg() {
 
   loadedExtensions.value = [...enabledExtensions.value]
   pg.value = await PGlite.create({
-    dataDir: 'idb://pglite-playground',
     extensions,
   })
 }
