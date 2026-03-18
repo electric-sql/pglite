@@ -47,6 +47,7 @@ async function loadPg() {
   loadedExtensions.value = [...enabledExtensions.value]
   const dbName = 'pglite-playground'
   try {
+    console.log(`Creating PGlite instance with idb://${dbName}`)
     return await PGlite.create({
       dataDir: `idb://${dbName}`,
       extensions,
@@ -73,8 +74,10 @@ async function loadPg() {
         extensions,
       })
     } catch {
-      console.error(`Failed to create PGlite with idb://${dbName} instance again after trying to delete it`)
-    }      
+      console.error(
+        `Failed to create PGlite with idb://${dbName} instance again after trying to delete it`,
+      )
+    }
   } else {
     console.error('IndexedDB is not supported')
   }
