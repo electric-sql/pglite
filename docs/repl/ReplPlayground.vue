@@ -73,9 +73,10 @@ async function loadPg() {
         dataDir: `idb://${dbName}`,
         extensions,
       })
-    } catch {
+    } catch (err) {
       console.error(
         `Failed to create PGlite with idb://${dbName} instance again after trying to delete it`,
+        err,
       )
     }
   } else {
