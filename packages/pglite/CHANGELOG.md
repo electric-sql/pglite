@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.4.1
+
+### Patch Changes
+
+- 37fb39e: clear timers on exit; remove pglite-socket dependency on pglite-postgis
+
 ## 0.4.0
 
 ### Minor Changes
