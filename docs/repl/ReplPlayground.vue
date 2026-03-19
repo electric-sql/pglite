@@ -34,6 +34,10 @@ const showReloadMsg = computed(() => {
   )
 })
 
+async function doLoadPg() {
+  pg.value = await loadPg()
+}
+
 async function loadPg() {
   const extensions = Object.fromEntries(
     enabledExtensions.value.map((extension) => {
@@ -221,7 +225,7 @@ async function clearDb() {
     </div>
     <div class="main" @click="showOptions = false">
       <div class="info-msg" v-if="showReloadMsg">
-        Please <button @click="loadPg()">Restart</button> PGlite to enable the
+        Please <button @click="doLoadPg()">Restart</button> PGlite to enable the
         selected extensions.
       </div>
       <pglite-repl
