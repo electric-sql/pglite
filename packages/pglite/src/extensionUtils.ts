@@ -109,6 +109,8 @@ function loadExtension(
             log('pgfs:ext FAIL', filePath, args)
             // hope for the best: it's not the end even if we were unable to preload a file
             // emscripten will try again if/when needed and do a wasm.compile on the main thread
+            // but we still need to copy it to our filesystem
+            copyToFS(filePath, mod, entry)
             resolve()
             // _reject(new Error(`Failed to preload ${filePath}`))
           }
@@ -128,19 +130,23 @@ function loadExtension(
         })
         soPreloadPromises.push(soPreload)
       } else {
-        try {
-          const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
-          if (mod.FS.analyzePath(dirPath).exists === false) {
-            mod.FS.mkdirTree(dirPath)
-          }
-          mod.FS.writeFile(filePath, entry.data)
-        } catch (e) {
-          console.error(`Error writing file ${filePath}`, e)
-        }
+        copyToFS(filePath, mod, entry)
       }
     }
   })
   return soPreloadPromises
+}
+
+function copyToFS(filePath: string, mod: PostgresMod, entry: any) {
+  try {
+    const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
+    if (mod.FS.analyzePath(dirPath).exists === false) {
+      mod.FS.mkdirTree(dirPath)
+    }
+    mod.FS.writeFile(filePath, entry.data)
+  } catch (e) {
+    console.error(`Error writing file ${filePath}`, e)
+  }
 }
 
 function dirname(path: string) {
