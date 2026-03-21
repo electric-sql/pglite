@@ -1,5 +1,26 @@
 # @electric-sql/pglite
 
+## 0.4.1
+
+### Patch Changes
+
+- 37fb39e: clear timers on exit; remove pglite-socket dependency on pglite-postgis
+
+## 0.4.0
+
+### Minor Changes
+
+- d848955: New simplified PGlite with separate initdb.
+  New included extension: pg_textsearch (experimental).
+  New package for postgis (experimental) as extension.
+  Breaking changes: 'postgres' is the default database instead of 'template1'.
+
+## 0.3.16
+
+### Patch Changes
+
+- 3dfa40f: Add Apache AGE graph database extension support
+
 ## 0.3.15
 
 ### Patch Changes

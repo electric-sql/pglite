@@ -355,6 +355,24 @@ export class PGliteWorker
   }
 
   /**
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
+   * @param message The postgres wire protocol message to execute
+   * @returns The direct message data response produced by Postgres
+   */
+  async execProtocolRawStream(
+    message: Uint8Array,
+    options: { onRawData: (data: Uint8Array) => void },
+  ): Promise<void> {
+    await this.#rpc('execProtocolRawStream', message, options)
+  }
+
+  /**
    * Sync the database to the filesystem
    * @returns Promise that resolves when the database is synced to the filesystem
    */
@@ -650,6 +668,10 @@ function makeWorkerApi(tabId: string, db: PGlite) {
     },
     async execProtocolStream(message: Uint8Array) {
       const messages = await db.execProtocolStream(message)
+      return messages
+    },
+    async execProtocolRawStream(message: Uint8Array, options: any) {
+      const messages = await db.execProtocolRawStream(message, options)
       return messages
     },
     async execProtocolRaw(message: Uint8Array) {

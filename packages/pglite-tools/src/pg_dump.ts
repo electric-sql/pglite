@@ -109,12 +109,17 @@ async function execPgDump({
 interface PgDumpOptions {
   pg: PGlite
   args?: string[]
+  database?: string
   fileName?: string
   verbose?: boolean
 }
 
 /**
  * Execute pg_dump
+ * @param pg - The PGlite instance
+ * @param args - The arguments to pass to pg_dump
+ * @param fileName - The name of the file to write the dump to (dump.sql by default)
+ * @returns The file containing the dump
  */
 export async function pgDump({
   pg,
@@ -124,7 +129,7 @@ export async function pgDump({
   const getSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
-  const search_path = getSearchPath.rows[0].search_path
+  const searchPath = getSearchPath.rows[0].search_path
 
   const baseArgs = [
     '-U',
@@ -134,7 +139,6 @@ export async function pgDump({
     '1',
     '-f',
     dumpFilePath,
-    'template1',
   ]
 
   const execResult = await execPgDump({
@@ -142,16 +146,18 @@ export async function pgDump({
     args: [...(args ?? []), ...baseArgs],
   })
 
-  const deallocateResult = await pg.exec(`DEALLOCATE ALL`)
-  console.log(deallocateResult)
-
-  const setSearchPathResult = await pg.exec(`SET SEARCH_PATH = ${search_path}`)
-  console.log(setSearchPathResult)
-
+  await pg.exec(`DEALLOCATE ALL`)
+  await pg.exec(`SET SEARCH_PATH = ${searchPath}`)
   const newSearchPath = await pg.query<{ search_path: string }>(
     'SHOW SEARCH_PATH;',
   )
-  console.log(newSearchPath)
+  if (newSearchPath.rows[0].search_path !== searchPath) {
+    console.warn(
+      `Warning: search_path has been changed from ${searchPath} to ${newSearchPath}`,
+      searchPath,
+      newSearchPath,
+    )
+  }
 
   if (execResult.exitCode !== 0) {
     throw new Error(

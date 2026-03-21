@@ -27,7 +27,6 @@ export interface PostgresMod
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
   stringToUTF8OnStack: (s: string) => number
-  _pgl_shutdown: () => void
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
@@ -53,6 +52,8 @@ export interface PostgresMod
     ssl_done: boolean,
     gss_done: boolean,
   ) => number
+  // althought the C function returns bool, we receive in JS a number
+  _IsTransactionBlock: () => number
   _pgl_setPGliteActive: (newValue: number) => number
   _pgl_startPGlite: () => void
   _pgl_getMyProcPort: () => number

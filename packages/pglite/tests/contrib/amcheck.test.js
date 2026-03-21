@@ -80,5 +80,10 @@ it('amcheck', async () => {
       relname: 'pg_operator_oprname_l_r_n_index',
       relpages: 6,
     },
+    {
+      bt_index_check: '',
+      relname: 'pg_amop_opr_fam_index',
+      relpages: 6,
+    },
   ])
 })

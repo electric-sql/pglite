@@ -43,7 +43,7 @@ const args = parseArgs({
       type: 'string',
       short: 'e',
       default: undefined,
-      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto)',
+      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis etc.)',
     },
     run: {
       type: 'string',
@@ -165,6 +165,8 @@ class PGLiteServerRunner {
       'pg_ivm',
       'pg_uuidv7',
       'pgtap',
+      'age',
+      'pg_textsearch',
     ]
 
     for (const name of this.config.extensionNames) {

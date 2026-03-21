@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.3.15",
+  "version": "0.4.1",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -100,6 +100,16 @@
         "default": "./dist/pg_uuidv7/index.cjs"
       }
     },
+    "./age": {
+      "import": {
+        "types": "./dist/age/index.d.ts",
+        "default": "./dist/age/index.js"
+      },
+      "require": {
+        "types": "./dist/age/index.d.cts",
+        "default": "./dist/age/index.cjs"
+      }
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
@@ -143,6 +153,16 @@
       "require": {
         "types": "./dist/pg_hashids/index.d.cts",
         "default": "./dist/pg_hashids/index.cjs"
+      }
+    },
+    "./pg_textsearch": {
+      "import": {
+        "types": "./dist/pg_textsearch/index.d.ts",
+        "default": "./dist/pg_textsearch/index.js"
+      },
+      "require": {
+        "types": "./dist/pg_textsearch/index.d.cts",
+        "default": "./dist/pg_textsearch/index.cjs"
       }
     }
   },

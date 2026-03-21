@@ -27,8 +27,10 @@ const entryPoints = [
   'src/pg_ivm/index.ts',
   'src/pgtap/index.ts',
   'src/pg_uuidv7/index.ts',
+  'src/age/index.ts',
   'src/worker/index.ts',
   'src/pg_hashids/index.ts',
+  'src/pg_textsearch/index.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

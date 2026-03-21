@@ -53,7 +53,8 @@ export async function loadExtensionBundle(
 export async function loadExtensions(
   mod: PostgresMod,
   log: (...args: any[]) => void,
-) {
+): Promise<void[]> {
+  const promises = new Array<Promise<void>>()
   for (const ext in mod.pg_extensions) {
     let blob
     try {
@@ -64,11 +65,12 @@ export async function loadExtensions(
     }
     if (blob) {
       const bytes = new Uint8Array(await blob.arrayBuffer())
-      loadExtension(mod, ext, bytes, log)
+      promises.push(...loadExtension(mod, ext, bytes, log))
     } else {
       console.error('Could not get binary data for extension:', ext)
     }
   }
+  return Promise.all(promises)
 }
 
 function loadExtension(
@@ -76,14 +78,75 @@ function loadExtension(
   _ext: string,
   bytes: Uint8Array,
   log: (...args: any[]) => void,
-) {
-  const data = tinyTar.untar(bytes)
-  data.forEach((file: any) => {
-    if (!file.name.startsWith('.')) {
-      const fullPath = mod.WASM_PREFIX + '/' + file.name
-      return loadFile(mod, fullPath, file.data, log)
+): Promise<void>[] {
+  const soPreloadPromises: Promise<void>[] = []
+  // sort is a hack to make PostGIS work. we need to preload postgis-3.so BEFORE postgis_topology-3.so
+  const data = tinyTar
+    .untar(bytes)
+    .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+  data.forEach((entry: any) => {
+    if (entry.name.endsWith('/')) {
+      const dirPath = `${mod.WASM_PREFIX}/${entry.name}`
+      if (mod.FS.analyzePath(dirPath).exists === false) {
+        mod.FS.mkdirTree(dirPath)
+      }
+    } else if (!entry.name.startsWith('.')) {
+      const filePath = mod.WASM_PREFIX + '/' + entry.name
+      if (entry.name.endsWith('.so')) {
+        log(`pgfs:ext preloading ${filePath}`)
+        const soName = entry.name.split('/').pop()! // e.g. 'postgis-3.so'
+        const dirPath = dirname(filePath)
+        // Wrap createPreloadedFile in a Promise so loadExtensions can await the
+        // async WASM compilation done by Emscripten's wasm preload plugin.
+        // The plugin calls extOk only after preloadedWasm[path] is set, so
+        // awaiting this ensures dlopen finds the pre-compiled module.
+        const soPreload = new Promise<void>((resolve, _reject) => {
+          const extOk = (...args: any[]) => {
+            log('pgfs:ext OK', filePath, args)
+            resolve()
+          }
+          const extFail = (...args: any[]) => {
+            log('pgfs:ext FAIL', filePath, args)
+            // hope for the best: it's not the end even if we were unable to preload a file
+            // emscripten will try again if/when needed and do a wasm.compile on the main thread
+            // but we still need to copy it to our filesystem
+            copyToFS(filePath, mod, entry)
+            resolve()
+            // _reject(new Error(`Failed to preload ${filePath}`))
+          }
+          // Keep the .so suffix so Emscripten's wasm preload plugin canHandle() matches,
+          // triggering async WebAssembly.instantiate. The compiled module is stored in
+          // preloadedWasm under the path with .so.
+          mod.FS.createPreloadedFile(
+            dirPath,
+            soName,
+            entry.data as any, // There is a type error in Emscripten's FS.createPreloadedFile, this excepts a Uint8Array, but the type is defined as any
+            true,
+            true,
+            extOk,
+            extFail,
+            false,
+          )
+        })
+        soPreloadPromises.push(soPreload)
+      } else {
+        copyToFS(filePath, mod, entry)
+      }
     }
   })
+  return soPreloadPromises
+}
+
+function copyToFS(filePath: string, mod: PostgresMod, entry: any) {
+  try {
+    const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
+    if (mod.FS.analyzePath(dirPath).exists === false) {
+      mod.FS.mkdirTree(dirPath)
+    }
+    mod.FS.writeFile(filePath, entry.data)
+  } catch (e) {
+    console.error(`Error writing file ${filePath}`, e)
+  }
 }
 
 const preloadedExtensions = [

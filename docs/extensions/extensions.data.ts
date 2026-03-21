@@ -575,12 +575,70 @@ const baseExtensions: Extension[] = [
     importName: 'pg_hashids',
     size: 4212,
   },
+  {
+    name: 'Apache AGE',
+    description: `
+      An extension for PostgreSQL that enables users to leverage a graph database on top of 
+      the existing relational databases. AGE is an acronym for A Graph Extension and is 
+      inspired by Bitnine's AgensGraph, a multi-model database fork of PostgreSQL. The basic 
+      principle of the project is to create a single storage that handles both the relational 
+      and graph data model so that the users can use the standard ANSI SQL along with openCypher, 
+      one of the most popular graph query languages today. There is a strong need for cohesive, 
+      easy-to-implement multi-model databases. As an extension of PostgreSQL, AGE supports all 
+      the functionalities and features of PostgreSQL while also offering a graph model to boot.
+      `,
+    shortDescription:
+      'Leverage a graph database on top of the existing relational databases.',
+    docs: 'https://github.com/apache/age',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite/age',
+    importName: 'age',
+    size: 141551,
+  },
+  {
+    name: 'PostGIS',
+    description: `
+      *** EXPERIMENTAL *** *** EXTERNAL ***
+      PostGIS extends the capabilities of the PostgreSQL relational database by adding 
+      support for storing, indexing, and querying geospatial data.
+
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-postgis
+
+      You need to install it to use it: '$ npm i @electric-sql/pglite-postgis'
+
+      *Follow this issue for the status: https://github.com/electric-sql/pglite/issues/916
+
+      *No GDAL support atm.
+    `,
+    shortDescription: 'Storing, indexing, and querying geospatial data.',
+    docs: 'postgis.net',
+    tags: ['postgres extension', 'experimental'],
+    importPath: '@electric-sql/pglite-postgis',
+    importName: 'postgis',
+    size: 8551161,
+  },
+  {
+    name: 'pg_textsearch',
+    description: `
+      *** EXPERIMENTAL ***
+      PostgreSQL extension for BM25 relevance-ranked full-text search.
+      Provides a bm25 index access method for efficient full-text search with
+      BM25 ranking, supporting multiple languages and custom parameters.
+      `,
+    shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
+    docs: 'https://github.com/timescale/pg_textsearch',
+    tags: ['postgres extension', 'experimental'],
+    importPath: '@electric-sql/pglite/pg_textsearch',
+    importName: 'pg_textsearch',
+    size: 55062,
+  },
 ]
 
 const tags = [
   'postgres extension',
   'pglite plugin',
   'postgres/contrib',
+  'experimental',
 ] as const
 
 export type Tag = (typeof tags)[number]
@@ -638,6 +696,8 @@ export default {
           const pg = new PGlite({
             extensions: { ${extension.importName} }
           });
+          
+          await pg.exec('CREATE EXTENSION IF NOT EXISTS ${extension.importName};')
           ${'```'}
           `
         }

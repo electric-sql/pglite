@@ -1,7 +1,7 @@
 import type { PostgresMod } from '../postgresMod.js'
 import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
-import { PGDATA } from '@electric-sql/pglite-initdb'
+import { PGDATA } from '../initdb.js'
 
 export const WASM_PREFIX = '/pglite'
 

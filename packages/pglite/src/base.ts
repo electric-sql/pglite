@@ -17,6 +17,7 @@ import type {
   ExecProtocolOptions,
   ExecProtocolResult,
   DescribeQueryResult,
+  ExecProtocolOptionsStream,
 } from './interface.js'
 
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
@@ -78,6 +79,22 @@ export abstract class BasePGlite
     message: Uint8Array,
     { syncToFs }: ExecProtocolOptions,
   ): Promise<Uint8Array>
+
+  /**
+   * Execute a postgres wire protocol message directly without wrapping the response.
+   * Only use if `execProtocol()` doesn't suite your needs.
+   *
+   * **Warning:** This bypasses PGlite's protocol wrappers that manage error/notice messages,
+   * transactions, and notification listeners. Only use if you need to bypass these wrappers and
+   * don't intend to use the above features.
+   *
+   * @param message The postgres wire protocol message to execute
+   * @param options.onRawData Callback to receive streaming data
+   */
+  abstract execProtocolRawStream(
+    message: Uint8Array,
+    { syncToFs, onRawData }: ExecProtocolOptionsStream,
+  ): Promise<void>
 
   /**
    * Sync the database to the filesystem
