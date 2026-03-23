@@ -3,7 +3,7 @@ import { resolve } from 'path'
 
 export async function dataDir(): Promise<Blob> {
   const data = await readFile(
-    resolve(__dirname, './pglite-prepopulatedfs.tar.gz'),
+    resolve(__dirname, './prepopulatedfs.tgz'),
   )
   return new Blob([new Uint8Array(data)])
 }

@@ -25,7 +25,7 @@ describe('initdb vs prepopulated FS', () => {
     for (let i = 0; i < 10; i++) {
       const start = performance.now()
       const prepopulatedData = await fs.readFile(
-        resolve(import.meta.dirname, '../release/pglite-prepopulatedfs.tar.gz'),
+        resolve(import.meta.dirname, '../release/prepopulatedfs.tgz'),
       )
       const _db = await PGlite.create({
         loadDataDir: new Blob([new Uint8Array(prepopulatedData)]),

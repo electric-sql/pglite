@@ -11,7 +11,7 @@ try {
     console.info('Creating release')
     fs.mkdirSync(resolve('release'))
     console.info('Writing file to disk')
-    fs.writeFileSync(resolve('release/pglite-prepopulatedfs.tar.gz'), Buffer.from(await dataDirArchive.arrayBuffer()))
+    fs.writeFileSync(resolve('release/prepopulatedfs.tgz'), Buffer.from(await dataDirArchive.arrayBuffer()))
     console.info('Success writing file to disk')
 } catch (e) {
     console.error(e)

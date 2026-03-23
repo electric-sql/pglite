@@ -12,7 +12,7 @@ export default defineConfig([
     clean: true,
     shims: true,
     onSuccess: async () => {
-      cpSync(resolve('release/pglite-prepopulatedfs.tar.gz'), resolve('dist/pglite-prepopulatedfs.tar.gz'))
+      cpSync(resolve('release/prepopulatedfs.tgz'), resolve('dist/prepopulatedfs.tgz'))
     }    
   }
 ])
