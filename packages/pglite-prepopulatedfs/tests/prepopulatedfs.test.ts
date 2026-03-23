@@ -20,10 +20,9 @@ describe('initdb vs prepopulated FS', () => {
       const _db = await PGlite.create()
       const end = performance.now()
       elapsedInitDb = end - start
-      console.log(`initdb: PGlite.create() took ${elapsedInitDb} ms`)
     }
-    let elapsedPrepopulated = 0
-    {
+    const prepopulatedTimes: number[] = []
+    for (let i = 0; i < 10; i++) {
       const start = performance.now()
       const prepopulatedData = await fs.readFile(
         resolve(import.meta.dirname, '../release/pglite-prepopulatedfs.tar.gz'),
@@ -31,12 +30,17 @@ describe('initdb vs prepopulated FS', () => {
       const _db = await PGlite.create({
         loadDataDir: new Blob([new Uint8Array(prepopulatedData)]),
       })
-      const end = performance.now()
-      elapsedPrepopulated = end - start
-      console.log(
-        `prepopulated: PGlite.create() took ${elapsedPrepopulated} ms`,
-      )
+      const elapsed = performance.now() - start
+      prepopulatedTimes.push(elapsed)
     }
+    prepopulatedTimes.sort((a, b) => a - b)
+    const trimmed = prepopulatedTimes.slice(1, -1)
+    const elapsedPrepopulated =
+      trimmed.reduce((s, v) => s + v, 0) / trimmed.length
+
+    console.log(
+      `InitDb speed: prepopulated avg (trimmed) ${elapsedPrepopulated.toFixed(2)} ms vs. classic initdb ${elapsedInitDb.toFixed(2)} ms`,
+    )
 
     expect(elapsedPrepopulated).toBeLessThan(elapsedInitDb)
   })
