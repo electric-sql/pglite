@@ -5,13 +5,13 @@ const fs = await import('fs')
 
 const pglite = await PGlite.create()
 const dataDirArchive = await pglite.dumpDataDir('gzip')
-console.info('Removing dist')
-fs.rmSync(resolve('dist'), { recursive: true, force: true })
+console.info('Removing release')
+fs.rmSync(resolve('release'), { recursive: true, force: true })
 try {
-    console.info('Creating dist')
-    fs.mkdirSync(resolve('dist'))
+    console.info('Creating release')
+    fs.mkdirSync(resolve('release'))
     console.info('Writing file to disk')
-    fs.writeFileSync(resolve('dist/pglite-prepopulatedfs.tar.gz'), Buffer.from(await dataDirArchive.arrayBuffer()))
+    fs.writeFileSync(resolve('release/pglite-prepopulatedfs.tar.gz'), Buffer.from(await dataDirArchive.arrayBuffer()))
     console.info('Success writing file to disk')
 } catch (e) {
     console.error(e)

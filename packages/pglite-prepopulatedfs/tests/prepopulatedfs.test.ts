@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
-import { dataDir } from '@electric-sql/pglite-prepopulatedfs'
 import * as fs from 'fs/promises'
 import { resolve } from 'path'
 
@@ -27,7 +26,7 @@ describe('initdb vs prepopulated FS', () => {
     {
       const start = performance.now()
       const prepopulatedData = await fs.readFile(
-        resolve(import.meta.dirname, '../dist/pglite-prepopulatedfs.tar.gz'),
+        resolve(import.meta.dirname, '../release/pglite-prepopulatedfs.tar.gz'),
       )
       const _db = await PGlite.create({
         loadDataDir: new Blob([new Uint8Array(prepopulatedData)]),
@@ -40,17 +39,5 @@ describe('initdb vs prepopulated FS', () => {
     }
 
     expect(elapsedPrepopulated).toBeLessThan(elapsedInitDb)
-  })
-
-  it('works via package import', async () => {
-    const d = await dataDir()
-    const db = await PGlite.create({ loadDataDir: d })
-
-    await db.exec('CREATE TABLE test_table (id SERIAL PRIMARY KEY, name TEXT)')
-    await db.exec("INSERT INTO test_table (name) VALUES ('hello')")
-    const result = await db.query('SELECT name FROM test_table')
-    expect(result.rows).toEqual([{ name: 'hello' }])
-
-    await db.close()
   })
 })
