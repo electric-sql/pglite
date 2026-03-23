@@ -28,6 +28,7 @@
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
     "globals": "^15.11.0",
+    "husky": "^9.1.7",
     "prettier": "3.3.3",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",
