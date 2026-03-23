@@ -1,6 +1,5 @@
-import { cpSync } from 'fs'
-import { resolve } from 'path'
 import { defineConfig } from 'tsup'
+import  { doBundle } from './scripts/bundle-static-assets'
 
 export default defineConfig([
   {
@@ -12,7 +11,7 @@ export default defineConfig([
     clean: true,
     shims: true,
     onSuccess: async () => {
-      cpSync(resolve('release/prepopulatedfs.tgz'), resolve('dist/prepopulatedfs.tgz'))
+      doBundle()
     }    
   }
 ])
