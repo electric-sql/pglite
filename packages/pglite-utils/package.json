@@ -37,16 +37,7 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./messages": {
-      "import": {
-        "types": "./dist/messages.d.ts",
-        "default": "./dist/messages.js"
-      },
-      "require": {
-        "types": "./dist/messages.d.cts",
-        "default": "./dist/messages.cjs"
-      }
-    }
+    "./scripts/fileUtils": "./scripts/fileUtils.ts"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
