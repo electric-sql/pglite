@@ -20,12 +20,6 @@ import type {
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
-import {
-  getFsBundle,
-  instantiateWasm,
-  startWasmDownload,
-  toPostgresName,
-} from './utils.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -37,6 +31,8 @@ import {
 } from '@electric-sql/pg-protocol/messages'
 
 import { initdb, PGDATA } from './initdb'
+
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -269,9 +265,14 @@ export class PGlite
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
 
-    if (!options.wasmModule) {
+    if (!options.pgliteWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      startWasmDownload()
+      pglUtils.startWasmDownload('../release/pglite.wasm')
+    }
+
+    if (!options.initdbWasmModule) {
+      // Start the wasm download in the background so it's ready when we need it
+      pglUtils.startWasmDownload('../release/initdb.wasm')
     }
 
     // Get the fs bundle
@@ -282,7 +283,7 @@ export class PGlite
     // `fsBundleBufferPromise` below.
     const fsBundleBufferPromise = options.fsBundle
       ? options.fsBundle.arrayBuffer()
-      : getFsBundle()
+      : pglUtils.getFsBundle('../release/pglite.data')
     let fsBundleBuffer: ArrayBuffer
     fsBundleBufferPromise.then((buffer) => {
       fsBundleBuffer = buffer
@@ -302,7 +303,7 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        instantiateWasm(imports, options.wasmModule).then(
+        pglUtils.instantiateWasm(imports, '../release/pglite.wasm', options.pgliteWasmModule).then(
           ({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
@@ -493,6 +494,7 @@ export class PGlite
           const initdbResult = await initdb({
             pg: pg_initDb,
             debug: options.debug,
+            wasmModule: options.initdbWasmModule
           })
 
           if (initdbResult.exitCode !== 0) {
@@ -1056,7 +1058,7 @@ export class PGlite
     callback: (payload: string) => void,
     tx?: Transaction,
   ) {
-    const pgChannel = toPostgresName(channel)
+    const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
@@ -1094,7 +1096,7 @@ export class PGlite
     callback?: (payload: string) => void,
     tx?: Transaction,
   ) {
-    const pgChannel = toPostgresName(channel)
+    const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     const cleanUp = async () => {
       await pg.exec(`UNLISTEN ${channel}`)

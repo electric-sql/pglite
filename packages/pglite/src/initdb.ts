@@ -1,5 +1,6 @@
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 function assert(condition: unknown, message?: string): asserts condition {
   if (!condition) {
@@ -45,10 +46,12 @@ async function execInitdb({
   pg,
   debug,
   args,
+  wasmModule
 }: {
   pg: PGliteForInitdb
   debug?: number
   args: string[]
+  wasmModule?: WebAssembly.Module
 }): Promise<ExecResult> {
   let system_fn, popen_fn, pclose_fn
 
@@ -94,6 +97,15 @@ async function execInitdb({
     printErr: (text) => {
       stderrOutput += text
       log(debug, 'initdberr', text)
+    },
+    instantiateWasm: (imports, successCallback) => {
+      pglUtils.instantiateWasm(imports, '../release/initdb.wasm', wasmModule).then(
+        ({ instance, module }) => {
+          // @ts-ignore wrong type in Emscripten typings
+          successCallback(instance, module)
+        },
+      )
+      return {}
     },
     preRun: [
       (mod: InitdbMod) => {
@@ -195,6 +207,7 @@ interface InitdbOptions {
   pg: PGliteForInitdb
   debug?: number
   args?: string[]
+  wasmModule?: WebAssembly.Module
 }
 
 function getArgs(cmd: string) {
@@ -215,6 +228,7 @@ export async function initdb({
   pg,
   debug,
   args,
+  wasmModule
 }: InitdbOptions): Promise<ExecResult> {
   const execResult = await execInitdb({
     pg,
@@ -228,6 +242,7 @@ export async function initdb({
       '--auth=trust',
       ...(args ?? []),
     ],
+    wasmModule
   })
 
   return execResult
