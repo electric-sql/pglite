@@ -3,19 +3,19 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
-let wasmDownloadPromise = new Map<string, Promise<Response>>()
+let wasmDownloadPromises = new Map<string, Promise<Response>>()
 
 export async function startWasmDownload(path: string) {
-  if (IN_NODE || wasmDownloadPromise.has(path)) {
+  if (IN_NODE || wasmDownloadPromises.has(path)) {
     return
   }
   const moduleUrl = new URL(path, import.meta.url)
-  wasmDownloadPromise.set(path, fetch(moduleUrl))
+  wasmDownloadPromises.set(path, fetch(moduleUrl))
 }
 
-// This is a global cache of the PGlite Wasm module to avoid having to re-download or
-// compile it on subsequent calls.
-let cachedWasmModule: WebAssembly.Module | undefined
+// This is a global cache of the Wasm modules to avoid having to re-download or
+// compile them on subsequent calls.
+let cachedWasmModules = new Map<string, WebAssembly.Module>()
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
@@ -25,13 +25,14 @@ export async function instantiateWasm(
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModule) {
+  if (module || cachedWasmModules.has(modulePath)) {
+    const mod = module || cachedWasmModules.get(modulePath)!
     return {
       instance: await WebAssembly.instantiate(
-        module || cachedWasmModule!,
+        mod,
         imports,
       ),
-      module: module || cachedWasmModule!,
+      module: mod,
     }
   }
   const moduleUrl = new URL(modulePath, import.meta.url)
@@ -42,19 +43,19 @@ export async function instantiateWasm(
       buffer,
       imports,
     )
-    cachedWasmModule = newModule
+    cachedWasmModules.set(modulePath, newModule)
     return {
       instance,
       module: newModule,
     }
   } else {
-    if (!wasmDownloadPromise.has(moduleUrl.toString())) {
-      wasmDownloadPromise.set(moduleUrl.toString(), fetch(moduleUrl))
+    if (!wasmDownloadPromises.has(moduleUrl.toString())) {
+      wasmDownloadPromises.set(moduleUrl.toString(), fetch(moduleUrl))
     }
-    const response = await wasmDownloadPromise.get(moduleUrl.toString())
+    const response = await wasmDownloadPromises.get(moduleUrl.toString())
     const { module: newModule, instance } =
       await WebAssembly.instantiateStreaming(response!, imports)
-    cachedWasmModule = newModule
+    cachedWasmModules.set(modulePath, newModule)
     return {
       instance,
       module: newModule,
@@ -62,7 +63,7 @@ export async function instantiateWasm(
   }
 }
 
-export async function getFsBundle(path: '../release/pglite.data'): Promise<ArrayBuffer> {
+export async function getFsBundle(path: string): Promise<ArrayBuffer> {
   const fsBundleUrl = new URL(path, import.meta.url)
   if (IN_NODE) {
     const fs = await import('fs/promises')
