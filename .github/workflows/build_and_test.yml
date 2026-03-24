@@ -21,7 +21,7 @@ on:
 jobs:
   stylecheck:
     name: Stylecheck
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
