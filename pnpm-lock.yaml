@@ -136,7 +136,7 @@ importers:
         version: link:../pglite
       wa-sqlite:
         specifier: github:rhashimoto/wa-sqlite#v0.9.14
-        version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
+        version: git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.11
@@ -446,6 +446,9 @@ importers:
       '@electric-sql/pg-protocol':
         specifier: workspace:*
         version: link:../pg-protocol
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
 
   packages/pglite-vue:
     dependencies:
@@ -2110,6 +2113,7 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
+    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -4492,8 +4496,8 @@ packages:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
     engines: {node: '>=18'}
 
-  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b:
-    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b}
+  wa-sqlite@git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b:
+    resolution: {commit: 6dbe4f044502a7a285e815896f56304a808fe25b, repo: git@github.com:rhashimoto/wa-sqlite.git, type: git}
     version: 0.9.14
 
   webidl-conversions@4.0.2:
@@ -4506,6 +4510,7 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
@@ -9128,7 +9133,7 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b: {}
+  wa-sqlite@git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b: {}
 
   webidl-conversions@4.0.2: {}
 
