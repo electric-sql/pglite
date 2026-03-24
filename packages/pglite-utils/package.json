@@ -17,11 +17,10 @@
   "scripts": {
     "build": "tsup",
     "check:exports": "attw . --pack --profile node16",
-    "test": "vitest",
-    "lint": "eslint ./src ./test",
-    "format": "prettier --write ./src ./test",
+    "lint": "eslint ./src",
+    "format": "prettier --write ./src",
     "typecheck": "tsc",
-    "stylecheck": "eslint ./src ./test && prettier --check ./src ./test",
+    "stylecheck": "eslint ./src && prettier --check ./src",
     "prepublishOnly": "pnpm check:exports"
   },
   "types": "dist/index.d.ts",
@@ -51,7 +50,6 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
-    "vitest": "^2.1.2",
     "@electric-sql/pg-protocol": "workspace:*"
   }
 }

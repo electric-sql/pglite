@@ -303,12 +303,16 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        pglUtils.instantiateWasm(imports, '../release/pglite.wasm', options.pgliteWasmModule).then(
-          ({ instance, module }) => {
+        pglUtils
+          .instantiateWasm(
+            imports,
+            '../release/pglite.wasm',
+            options.pgliteWasmModule,
+          )
+          .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
-          },
-        )
+          })
         return {}
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
@@ -494,7 +498,7 @@ export class PGlite
           const initdbResult = await initdb({
             pg: pg_initDb,
             debug: options.debug,
-            wasmModule: options.initdbWasmModule
+            wasmModule: options.initdbWasmModule,
           })
 
           if (initdbResult.exitCode !== 0) {

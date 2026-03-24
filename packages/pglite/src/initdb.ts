@@ -46,7 +46,7 @@ async function execInitdb({
   pg,
   debug,
   args,
-  wasmModule
+  wasmModule,
 }: {
   pg: PGliteForInitdb
   debug?: number
@@ -99,12 +99,12 @@ async function execInitdb({
       log(debug, 'initdberr', text)
     },
     instantiateWasm: (imports, successCallback) => {
-      pglUtils.instantiateWasm(imports, '../release/initdb.wasm', wasmModule).then(
-        ({ instance, module }) => {
+      pglUtils
+        .instantiateWasm(imports, '../release/initdb.wasm', wasmModule)
+        .then(({ instance, module }) => {
           // @ts-ignore wrong type in Emscripten typings
           successCallback(instance, module)
-        },
-      )
+        })
       return {}
     },
     preRun: [
@@ -228,7 +228,7 @@ export async function initdb({
   pg,
   debug,
   args,
-  wasmModule
+  wasmModule,
 }: InitdbOptions): Promise<ExecResult> {
   const execResult = await execInitdb({
     pg,
@@ -242,7 +242,7 @@ export async function initdb({
       '--auth=trust',
       ...(args ?? []),
     ],
-    wasmModule
+    wasmModule,
   })
 
   return execResult

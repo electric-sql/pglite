@@ -3,7 +3,7 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
-let wasmDownloadPromises = new Map<string, Promise<Response>>()
+const wasmDownloadPromises = new Map<string, Promise<Response>>()
 
 export async function startWasmDownload(path: string) {
   if (IN_NODE || wasmDownloadPromises.has(path)) {
@@ -15,7 +15,7 @@ export async function startWasmDownload(path: string) {
 
 // This is a global cache of the Wasm modules to avoid having to re-download or
 // compile them on subsequent calls.
-let cachedWasmModules = new Map<string, WebAssembly.Module>()
+const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
@@ -28,10 +28,7 @@ export async function instantiateWasm(
   if (module || cachedWasmModules.has(modulePath)) {
     const mod = module || cachedWasmModules.get(modulePath)!
     return {
-      instance: await WebAssembly.instantiate(
-        mod,
-        imports,
-      ),
+      instance: await WebAssembly.instantiate(mod, imports),
       module: mod,
     }
   }
@@ -130,4 +127,3 @@ export function toPostgresName(input: string): string {
   }
   return output
 }
-
