@@ -135,8 +135,8 @@ importers:
         specifier: workspace:*
         version: link:../pglite
       wa-sqlite:
-        specifier: github:rhashimoto/wa-sqlite#v0.9.14
-        version: git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b
+        specifier: https://github.com/rhashimoto/wa-sqlite.git#v0.9.14
+        version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.11
@@ -2113,7 +2113,6 @@ packages:
 
   bun@1.1.30:
     resolution: {integrity: sha512-ysRL1pq10Xba0jqVLPrKU3YIv0ohfp3cTajCPtpjCyppbn3lfiAVNpGoHfyaxS17OlPmWmR67UZRPw/EueQuug==}
-    cpu: [arm64, x64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -4496,8 +4495,8 @@ packages:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
     engines: {node: '>=18'}
 
-  wa-sqlite@git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b:
-    resolution: {commit: 6dbe4f044502a7a285e815896f56304a808fe25b, repo: git@github.com:rhashimoto/wa-sqlite.git, type: git}
+  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b}
     version: 0.9.14
 
   webidl-conversions@4.0.2:
@@ -9133,7 +9132,7 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wa-sqlite@git+https://git@github.com:rhashimoto/wa-sqlite.git#6dbe4f044502a7a285e815896f56304a808fe25b: {}
+  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b: {}
 
   webidl-conversions@4.0.2: {}
 
