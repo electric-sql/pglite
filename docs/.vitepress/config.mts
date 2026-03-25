@@ -128,6 +128,7 @@ export default defineConfig({
             ],
           },
           { text: 'Upgrade path', link: '/docs/upgrade' },
+          { text: 'Prepopulated FS', link: '/docs/prepopulatedfs' },
         ],
       },
       {
