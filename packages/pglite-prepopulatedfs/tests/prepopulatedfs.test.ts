@@ -39,7 +39,7 @@ describe('initdb vs prepopulated FS', () => {
       trimmed.reduce((s, v) => s + v, 0) / trimmed.length
 
     console.log(
-      `InitDb speed: prepopulated avg (trimmed) ${elapsedPrepopulated.toFixed(2)} ms vs. classic initdb ${elapsedInitDb.toFixed(2)} ms.\nSpeedup: ${(elapsedInitDb / elapsedPrepopulated).toFixed(2)}x`,
+      `initdb duration: prepopulated avg (trimmed) ${elapsedPrepopulated.toFixed(2)} ms vs. classic initdb ${elapsedInitDb.toFixed(2)} ms.\nSpeedup: ${(elapsedInitDb / elapsedPrepopulated).toFixed(2)}x`,
     )
 
     expect(elapsedPrepopulated).toBeLessThan(elapsedInitDb)

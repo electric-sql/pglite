@@ -34,9 +34,9 @@ const _db = await PGlite.create({
 
 A simple benchmarking is done as part of our automated testing in `packages/pglite-prepopulatedfs/tests/prepopulatedfs.test.ts`.
 
-Here is the output for an average x86_64 CPU:
+Here is a sample output on an Apple M1:
 
 ```
-InitDb speed: prepopulated avg (trimmed) 273.05 ms vs. classic initdb 775.43 ms.
-Speedup: 2.84x
+initdb duration: prepopulated avg (trimmed) 263.38 ms vs. classic initdb 886.29 ms.
+Speedup: 3.37x
 ```
