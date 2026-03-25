@@ -267,12 +267,16 @@ export class PGlite
 
     if (!options.pgliteWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      pglUtils.startWasmDownload('../release/pglite.wasm')
+      pglUtils.startWasmDownload(
+        new URL('../release/pglite.wasm', import.meta.url),
+      )
     }
 
     if (!options.initdbWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      pglUtils.startWasmDownload('../release/initdb.wasm')
+      pglUtils.startWasmDownload(
+        new URL('../release/initdb.wasm', import.meta.url),
+      )
     }
 
     // Get the fs bundle
@@ -307,11 +311,7 @@ export class PGlite
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
 
         pglUtils
-          .instantiateWasm(
-            imports,
-            moduleUrl,
-            options.pgliteWasmModule,
-          )
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
           .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)

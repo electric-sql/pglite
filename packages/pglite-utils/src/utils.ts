@@ -3,14 +3,13 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
-const wasmDownloadPromises = new Map<string, Promise<Response>>()
+const wasmDownloadPromises = new Map<URL, Promise<Response>>()
 
-export async function startWasmDownload(path: string) {
-  if (IN_NODE || wasmDownloadPromises.has(path)) {
+export async function startWasmDownload(url: URL) {
+  if (IN_NODE || wasmDownloadPromises.has(url)) {
     return
   }
-  const moduleUrl = new URL(path, import.meta.url)
-  wasmDownloadPromises.set(path, fetch(moduleUrl))
+  wasmDownloadPromises.set(url, fetch(url))
 }
 
 // This is a global cache of the Wasm modules to avoid having to re-download or
@@ -45,10 +44,10 @@ export async function instantiateWasm(
       module: newModule,
     }
   } else {
-    if (!wasmDownloadPromises.has(moduleUrl.toString())) {
-      wasmDownloadPromises.set(moduleUrl.toString(), fetch(moduleUrl))
+    if (!wasmDownloadPromises.has(moduleUrl)) {
+      wasmDownloadPromises.set(moduleUrl, fetch(moduleUrl))
     }
-    const response = await wasmDownloadPromises.get(moduleUrl.toString())
+    const response = await wasmDownloadPromises.get(moduleUrl)
     const { module: newModule, instance } =
       await WebAssembly.instantiateStreaming(response!, imports)
     cachedWasmModules.set(moduleUrl, newModule)
