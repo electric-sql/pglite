@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.4.2
+
+### Patch Changes
+
+- 41632c4: Allow passing initdb.wasm asset for bundlers that need it.
+
 ## 0.4.1
 
 ### Patch Changes

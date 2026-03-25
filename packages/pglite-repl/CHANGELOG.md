@@ -1,5 +1,13 @@
 # @electric-sql/pglite-repl
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [41632c4]
+  - @electric-sql/pglite@0.4.2
+  - @electric-sql/pglite-react@0.3.2
+
 ## 0.3.1
 
 ### Patch Changes
