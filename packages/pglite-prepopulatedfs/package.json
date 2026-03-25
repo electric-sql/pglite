@@ -40,7 +40,7 @@
     }
   },
   "scripts": {
-    "build": "./scripts/generateFS.mjs && tsup",
+    "build": "tsx ./scripts/generateFS.ts && tsup",
     "check:exports": "attw . --pack --profile node16",
     "lint": "eslint ./tests --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./tests",

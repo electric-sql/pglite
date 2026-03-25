@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsup'
-import  { doBundle } from './scripts/bundle-static-assets'
 
 export default defineConfig([
   {
@@ -10,8 +9,5 @@ export default defineConfig([
     sourcemap: true,
     clean: true,
     shims: true,
-    onSuccess: async () => {
-      doBundle()
-    }    
   }
 ])

@@ -1,11 +1,8 @@
-export const IN_NODE =
-  typeof process === 'object' &&
-  typeof process.versions === 'object' &&
-  typeof process.versions.node === 'string'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export async function dataDir(): Promise<Blob> {
   const moduleUrl = new URL('../release/prepopulatedfs.tgz', import.meta.url)
-  if (IN_NODE) {
+  if (pglUtils.IN_NODE) {
     const fs = await import('fs/promises')
     const buffer = await fs.readFile(moduleUrl)
     return new Blob([new Uint8Array(buffer)])
