@@ -1,13 +1,13 @@
 import tinyTar from 'tinytar'
-import { IN_NODE } from './utils.js'
 import type { PostgresMod } from './postgresMod.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export async function loadExtensionBundle(
   bundlePath: URL,
 ): Promise<Blob | null> {
   // Async load the extension bundle tar file
   // could be from a URL or a file
-  if (IN_NODE) {
+  if (pglUtils.IN_NODE) {
     const fs = await import('fs')
     const zlib = await import('zlib')
     const { Writable } = await import('stream')

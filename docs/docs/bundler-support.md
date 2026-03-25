@@ -60,22 +60,24 @@ export const pglite = new PGliteWorker(
 
 [esbuild](https://esbuild.github.io/) does not support `new URL('./file', import.meta.url)` pattern that PGlite uses to locate its WebAssembly and data files. This means the automatic file resolution won't work out of the box.
 
-### Workaround: manually provide `wasmModule` and `fsBundle`
+### Workaround: manually provide `pgliteWasmModule`, `initdbWasmModule` and `fsBundle`
 
-1. Copy `pglite.wasm` and `pglite.data` from `node_modules/@electric-sql/pglite/dist/` to your public/build directory so your web server can serve them.
+1. Copy `pglite.wasm`, `initdb.wasm` and `pglite.data` from `node_modules/@electric-sql/pglite/dist/` to your public/build directory so your web server can serve them.
 
 2. Pass them manually when creating a PGlite instance:
 
 ```ts
 import { PGlite } from '@electric-sql/pglite'
 
-const [wasmModule, fsBundle] = await Promise.all([
+const [pgliteWasmModule, initdbWasmModule, fsBundle] = await Promise.all([
   WebAssembly.compileStreaming(fetch('/pglite.wasm')),
+  WebAssembly.compileStreaming(fetch('/initdb.wasm')),
   fetch('/pglite.data').then((response) => response.blob()),
 ])
 
 const db = await PGlite.create({
-  wasmModule,
+  pgliteWasmModule,
+  initdbWasmModule,
   fsBundle,
 })
 ```

@@ -138,7 +138,7 @@ importers:
         specifier: workspace:*
         version: link:../pglite
       wa-sqlite:
-        specifier: github:rhashimoto/wa-sqlite#v0.9.14
+        specifier: https://github.com/rhashimoto/wa-sqlite.git#v0.9.14
         version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
@@ -171,6 +171,9 @@ importers:
       '@electric-sql/pg-protocol':
         specifier: workspace:*
         version: link:../pg-protocol
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../pglite-utils
       '@types/emscripten':
         specifier: ^1.41.1
         version: 1.41.1
@@ -216,6 +219,9 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../pglite-utils
       '@types/node':
         specifier: ^20.16.11
         version: 20.16.11
@@ -434,6 +440,18 @@ importers:
       vitest:
         specifier: ^1.3.1
         version: 1.6.0(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-utils:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pg-protocol':
+        specifier: workspace:*
+        version: link:../pg-protocol
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
 
   packages/pglite-vue:
     dependencies:

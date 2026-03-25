@@ -22,7 +22,7 @@
     "embedded-postgres": "15.5.1-beta.9"
   },
   "dependencies": {
-    "wa-sqlite": "github:rhashimoto/wa-sqlite#v0.9.14"
+    "wa-sqlite": "https://github.com/rhashimoto/wa-sqlite.git#v0.9.14"
   },
   "peerDependencies": {
     "@electric-sql/pglite": "workspace:*"
