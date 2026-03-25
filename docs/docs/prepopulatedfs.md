@@ -1,8 +1,12 @@
 # Pre-populated FS
 
-A pre-populated FS that you can use instead of using the default initdb run. This can lead to faster startup times because initdb doesn't need to run.
+A pre-populated FS that you can use instead of letting initdb run (which is the default). This can lead to faster startup times because initdb doesn't need to run.
 
 This package contains an archive as a static asset that you can access through the `dataDir()` function.
+
+:::info
+The prepopulated FS is created during build and therefore guaranteed to work only for the corresponding version of PGlite from which it was created. If you encounter issues, make sure this package is up to date with your PGlite version.
+:::
 
 ## Installation
 
@@ -24,4 +28,15 @@ import { dataDir } from '@electric-sql/pglite-prepopulatedfs'
 const _db = await PGlite.create({
   loadDataDir: await dataDir(),
 })
+```
+
+## Simple benchmarking
+
+A simple benchmarking is done as part of our automated testing in `packages/pglite-prepopulatedfs/tests/prepopulatedfs.test.ts`.
+
+Here is the output for an average x86_64 CPU:
+
+```
+InitDb speed: prepopulated avg (trimmed) 273.05 ms vs. classic initdb 775.43 ms.
+Speedup: 2.84x
 ```
