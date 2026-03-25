@@ -1,0 +1,47 @@
+{
+  "name": "@electric-sql/pglite-utils",
+  "version": "0.0.1",
+  "description": "PGlite utilities",
+  "type": "module",
+  "private": true,
+  "keywords": [
+    "pglite-utils"
+  ],
+  "author": "Electric DB Limited",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite.git",
+    "directory": "packages/pglite-utils"
+  },
+  "scripts": {
+    "build": "tsup",
+    "check:exports": "attw . --pack --profile node16",
+    "lint": "eslint ./src",
+    "format": "prettier --write ./src",
+    "typecheck": "tsc",
+    "stylecheck": "eslint ./src && prettier --check ./src",
+    "prepublishOnly": "pnpm check:exports"
+  },
+  "types": "dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./scripts/fileUtils": "./scripts/fileUtils.ts"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
+    "@electric-sql/pg-protocol": "workspace:*",
+    "@types/node": "^20.16.11"
+  }
+}
