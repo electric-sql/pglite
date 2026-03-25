@@ -15,24 +15,23 @@ export async function startWasmDownload(path: string) {
 
 // This is a global cache of the Wasm modules to avoid having to re-download or
 // compile them on subsequent calls.
-const cachedWasmModules = new Map<string, WebAssembly.Module>()
+const cachedWasmModules = new Map<URL, WebAssembly.Module>()
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
-  modulePath: string,
+  moduleUrl: URL,
   module?: WebAssembly.Module,
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModules.has(modulePath)) {
-    const mod = module || cachedWasmModules.get(modulePath)!
+  if (module || cachedWasmModules.has(moduleUrl)) {
+    const mod = module || cachedWasmModules.get(moduleUrl)!
     return {
       instance: await WebAssembly.instantiate(mod, imports),
       module: mod,
     }
   }
-  const moduleUrl = new URL(modulePath, import.meta.url)
   if (IN_NODE) {
     const fs = await import('fs/promises')
     const buffer = await fs.readFile(moduleUrl)
@@ -40,7 +39,7 @@ export async function instantiateWasm(
       buffer,
       imports,
     )
-    cachedWasmModules.set(modulePath, newModule)
+    cachedWasmModules.set(moduleUrl, newModule)
     return {
       instance,
       module: newModule,
@@ -52,7 +51,7 @@ export async function instantiateWasm(
     const response = await wasmDownloadPromises.get(moduleUrl.toString())
     const { module: newModule, instance } =
       await WebAssembly.instantiateStreaming(response!, imports)
-    cachedWasmModules.set(modulePath, newModule)
+    cachedWasmModules.set(moduleUrl, newModule)
     return {
       instance,
       module: newModule,
@@ -60,8 +59,7 @@ export async function instantiateWasm(
   }
 }
 
-export async function getFsBundle(path: string): Promise<ArrayBuffer> {
-  const fsBundleUrl = new URL(path, import.meta.url)
+export async function getFsBundle(fsBundleUrl: URL): Promise<ArrayBuffer> {
   if (IN_NODE) {
     const fs = await import('fs/promises')
     const fileData = await fs.readFile(fsBundleUrl)

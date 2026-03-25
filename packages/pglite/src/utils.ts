@@ -2,6 +2,7 @@ import type { PGliteInterface, Transaction } from './interface.js'
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
 import { parseDescribeStatementResults } from './parse.js'
 import { TEXT } from './types.js'
+// import { pglUtils } from '@electric-sql/pglite-utils'
 
 /**
  * Formats a query with parameters
@@ -116,3 +117,15 @@ export function debounceMutex<A extends any[], R>(
     return promise
   }
 }
+
+// export async function getFsBundle(): Promise<ArrayBuffer> {
+//   const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
+//   if (pglUtils.IN_NODE) {
+//     const fs = await import('fs/promises')
+//     const fileData = await fs.readFile(fsBundleUrl)
+//     return fileData.buffer
+//   } else {
+//     const response = await fetch(fsBundleUrl)
+//     return response.arrayBuffer()
+//   }
+// }

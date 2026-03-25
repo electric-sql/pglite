@@ -99,8 +99,9 @@ async function execInitdb({
       log(debug, 'initdberr', text)
     },
     instantiateWasm: (imports, successCallback) => {
+      const moduleUrl = new URL('../release/initdb.wasm', import.meta.url)
       pglUtils
-        .instantiateWasm(imports, '../release/initdb.wasm', wasmModule)
+        .instantiateWasm(imports, moduleUrl, wasmModule)
         .then(({ instance, module }) => {
           // @ts-ignore wrong type in Emscripten typings
           successCallback(instance, module)
