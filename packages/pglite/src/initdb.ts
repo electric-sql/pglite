@@ -114,7 +114,7 @@ async function execInitdb({
         mod.ENV.HOME = '/home/postgres'
         mod.ENV.USER = 'postgres'
         mod.ENV.LOGNAME = 'postgres'
-      },      
+      },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           system_fn = mod.addFunction((cmd_ptr: number) => {
