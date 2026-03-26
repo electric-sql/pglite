@@ -127,7 +127,8 @@ export default defineConfig({
               { text: 'pgdump', link: '/pglite-tools#pgDump' },
             ],
           },
-          { text: 'Upgrade between minor versions', link: '/docs/upgrade' },
+          { text: 'Upgrade path', link: '/docs/upgrade' },
+          { text: 'Prepopulated FS', link: '/docs/prepopulatedfs' },
         ],
       },
       {
