@@ -59,7 +59,7 @@ describe('user', () => {
     // }, 'permission denied to set role "postgres"')
 
     await expectToThrowAsync(async () => {
-      await db2.query('SET ROLE postgres;')
+      await db2.query('SET ROLE no_such_user;')
     })
   })
 
@@ -116,7 +116,7 @@ describe('user', () => {
     // }, 'permission denied to set role "postgres"')
 
     await expectToThrowAsync(async () => {
-      await db2.query('SET ROLE postgres;')
+      await db2.query('SET ROLE no_such_user;')
     })
   })
 

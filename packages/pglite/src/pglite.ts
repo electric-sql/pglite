@@ -397,11 +397,9 @@ export class PGlite
           mod.FS.mkdev('/dev/blob', devId)
         },
         (mod: PostgresMod) => {
-          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-          mod.FS.chmod(initdbExePath, 0o0555)
-          mod.FS.chmod(postgresExePath, 0o0555)
-        },
-        (mod: PostgresMod) => {
+          mod.ENV.HOME = '/home/postgres'
+          mod.ENV.USER = 'postgres'
+          mod.ENV.LOGNAME = 'postgres'
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'postgres'
@@ -411,11 +409,17 @@ export class PGlite
           mod.ENV.PGCLIENTENCODING = 'UTF8'
 
           // some extensions might need their own ENV variables
+          // TODO: move this to the extension init function
           for (const [extName] of Object.entries(this.#extensions)) {
             if (extName === 'postgis') {
               mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
             }
           }
+        },
+        (mod: PostgresMod) => {
+          mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+          mod.FS.chmod(initdbExePath, 0o0555)
+          mod.FS.chmod(postgresExePath, 0o0555)
         },
       ],
     }
@@ -552,7 +556,6 @@ export class PGlite
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
-    // default $HOME in emscripten is /home/web_user
     // we override system() to intercept any calls that might generate unexpected output
     this.#system_fn = mod.addFunction((cmd_ptr: number) => {
       this.#log(
