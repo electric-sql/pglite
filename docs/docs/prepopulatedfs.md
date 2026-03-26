@@ -30,7 +30,7 @@ const pg = await PGlite.create({
 })
 ```
 
-This is particularly useful when you have multiple test, each with its own PGlite instance. For example, consider the following usage with vitest:
+As an example, this is useful when you have multiple test, each with its own PGlite instance. Consider the following usage with vitest:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest'
