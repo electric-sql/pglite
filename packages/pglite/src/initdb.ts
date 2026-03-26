@@ -110,8 +110,13 @@ async function execInitdb({
     },
     preRun: [
       (mod: InitdbMod) => {
+        mod.ENV.PGDATA = PGDATA
+        mod.ENV.HOME = '/home/postgres'
+        mod.ENV.USER = 'postgres'
+        mod.ENV.LOGNAME = 'postgres'
+      },
+      (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
-          // default $HOME in emscripten is /home/web_user
           system_fn = mod.addFunction((cmd_ptr: number) => {
             postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
             return callPgMain(postgresArgs)
@@ -173,9 +178,6 @@ async function execInitdb({
             initdb_stdout_fd = mod._fopen(path, wmode)
           }
         }
-      },
-      (mod: InitdbMod) => {
-        mod.ENV.PGDATA = PGDATA
       },
       (mod: InitdbMod) => {
         mod.FS.mkdir(PG_ROOT)
