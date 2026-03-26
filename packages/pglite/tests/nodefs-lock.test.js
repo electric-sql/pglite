@@ -32,7 +32,7 @@ describe('NodeFS data directory locking', () => {
     }
 
     expect(lockError).not.toBeNull()
-    expect(lockError.message).toContain('already in use')
+    expect(lockError.message).toContain('may be in use')
     expect(lockError.message).toContain(String(process.pid))
 
     // First instance should still work fine
@@ -55,13 +55,28 @@ describe('NodeFS data directory locking', () => {
     await db.close()
   }, 30000)
 
-  it('should override a stale lock from a dead process', async () => {
+  it('should throw for a stale lock and allow reopening after manual deletion', async () => {
     const { PGlite } = await import('../dist/index.js')
 
     // Write a fake lock file with a PID that doesn't exist
     writeFileSync(dataDir + '.lock', '999999\n0\n')
 
-    // Should succeed — stale lock gets overridden
+    // Should throw - user must decide whether to delete the lock
+    let lockError = null
+    try {
+      const db = new PGlite(dataDir)
+      await db.waitReady
+      await db.close()
+    } catch (err) {
+      lockError = err
+    }
+
+    expect(lockError).not.toBeNull()
+    expect(lockError.message).toContain('may be in use')
+    expect(lockError.message).toContain('999999')
+
+    // After manually removing the stale lock, reopening should work
+    rmSync(dataDir + '.lock', { force: true })
     const db = new PGlite(dataDir)
     await db.waitReady
     const result = await db.query('SELECT 1 as ok')

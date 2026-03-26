@@ -47,17 +47,16 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
         const lines = content.split('\n')
         const pid = parseInt(lines[0], 10)
 
-        if (pid && !isNaN(pid) && this.#isProcessAlive(pid)) {
+        if (pid && !isNaN(pid)) {
           throw new Error(
-            `PGlite data directory "${this.rootDir}" is already in use by another instance (PID ${pid}). ` +
+            `PGlite data directory "${this.rootDir}" may be in use by another process (PID ${pid}). ` +
               `Close the other instance or use a different data directory. ` +
-              `Delete "${lockPath}" if PID ${pid} is no longer running.`,
+              `If PID ${pid} is no longer running or no longer needs pglite, remove or move the stale lock: mv ${lockPath} ${lockPath}.stale.${Date.now()}`,
           )
         }
-        // Stale lock from a dead process — safe to take over
       } catch (e) {
         // Re-throw lock errors, ignore parse errors (corrupt lock file = stale)
-        if (e instanceof Error && e.message.includes('already in use')) {
+        if (e instanceof Error && e.message.includes('may be in use')) {
           throw e
         }
       }
@@ -83,15 +82,6 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
       } catch {
         // Ignore errors on unlink (dir may already be cleaned up)
       }
-    }
-  }
-
-  #isProcessAlive(pid: number): boolean {
-    try {
-      process.kill(pid, 0) // signal 0 = check if process exists
-      return true
-    } catch {
-      return false // ESRCH = process doesn't exist
     }
   }
 
