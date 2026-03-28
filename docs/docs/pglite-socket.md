@@ -216,7 +216,7 @@ For better performance in local development, you can use Unix sockets instead of
 
 ```bash
 # Start server on a Unix socket
-pglite-server --path=/tmp/pglite.sock --run "npm run dev" --include-database-url
+pglite-server --path=/tmp --run "npm run dev" --include-database-url
 
 # The DATABASE_URL will be: postgresql://postgres:postgres@/postgres?host=/tmp
 ```
@@ -229,10 +229,10 @@ Once the server is running, you can connect to it using any PostgreSQL client:
 
 ```bash
 # TCP connection
-PGSSLMODE=disable psql -h localhost -p 5432 -d template1
+PGSSLMODE=disable psql -h localhost -p 5432 -d postgres
 
 # Unix socket connection (if using --path)
-PGSSLMODE=disable psql -h /tmp -d template1
+PGSSLMODE=disable psql -h /tmp -d postgres
 ```
 
 #### Using Node.js clients
@@ -243,7 +243,7 @@ import pg from 'pg'
 const client = new pg.Client({
   host: 'localhost',
   port: 5432,
-  database: 'template1',
+  database: 'postgres',
 })
 await client.connect()
 
@@ -252,7 +252,7 @@ import postgres from 'postgres'
 const sql = postgres({
   host: 'localhost',
   port: 5432,
-  database: 'template1',
+  database: 'postgres',
 })
 
 // Using environment variable (when using --include-database-url)
