@@ -216,7 +216,7 @@ For better performance in local development, you can use Unix sockets instead of
 
 ```bash
 # Start server on a Unix socket
-pglite-server --path=/tmp --run "npm run dev" --include-database-url
+pglite-server --path=/tmp/.s.PGSQL.5432 --run "npm run dev" --include-database-url
 
 # The DATABASE_URL will be: postgresql://postgres:postgres@/postgres?host=/tmp
 ```
