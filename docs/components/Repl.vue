@@ -7,9 +7,9 @@ import { vector } from '@electric-sql/pglite/vector'
 
 const pg = new PGlite({
   startParams: [
-    ...PGlite.defaultStartParams, 
-    '-c', 
-    'application_name=PGlite REPL'
+    ...PGlite.defaultStartParams,
+    '-c',
+    'application_name=PGlite REPL',
   ],
   extensions: {
     vector,

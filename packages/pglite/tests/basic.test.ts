@@ -655,22 +655,24 @@ await testEsmCjsAndDTC(async (importType) => {
     it('it shouldnt use parallel workers on gather', async () => {
       const db = await PGlite.create()
 
-      const ROWS = 400_000;
-      
+      const ROWS = 400_000
+
       await db.exec(`
         CREATE TABLE t (id SERIAL PRIMARY KEY, val TEXT);
         INSERT INTO t (val)
           SELECT md5(i::text) FROM generate_series(1, ${ROWS}) AS i;
-      `);      
+      `)
 
       // when using workers for GATHER, the query plans contains Gather
-      const plan = await db.query("EXPLAIN SELECT COUNT(*) FROM t");
+      const plan = await db.query('EXPLAIN SELECT COUNT(*) FROM t')
 
-      const hasGather = plan.rows.some((r: any) => r["QUERY PLAN"].includes("Gather"));
+      const hasGather = plan.rows.some((r: any) =>
+        r['QUERY PLAN'].includes('Gather'),
+      )
       expect(hasGather).toBeFalsy()
 
-      const result = await db.query<any>("SELECT COUNT(*) FROM t");
+      const result = await db.query<any>('SELECT COUNT(*) FROM t')
       expect(result.rows[0].count).toEqual(ROWS)
-    })    
+    })
   })
 })
