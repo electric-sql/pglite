@@ -637,5 +637,18 @@ await testEsmCjsAndDTC(async (importType) => {
       )
       expect(res.rows.length).toEqual(1)
     })
+
+    it('default database, user and role should be "postgres"', async () => {
+      const db = await PGlite.create()
+
+      const databaseAndRole = await db.exec(
+        `SELECT current_database(), current_user, current_role;`,
+      )
+      expect(databaseAndRole[0].rows[0]).toEqual({
+        current_database: 'postgres',
+        current_user: 'postgres',
+        current_role: 'postgres',
+      })
+    })
   })
 })
