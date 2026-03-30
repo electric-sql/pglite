@@ -231,6 +231,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build pglite-utils
+        run: pnpm --filter "@electric-sql/pglite-utils" build
+
       - name: Build pg-protocol
         run: pnpm --filter "@electric-sql/pg-protocol" build
 
