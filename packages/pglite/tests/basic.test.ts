@@ -674,5 +674,21 @@ await testEsmCjsAndDTC(async (importType) => {
       const result = await db.query<any>('SELECT COUNT(*) FROM t')
       expect(result.rows[0].count).toEqual(ROWS)
     })
+
+    it('altering startParams should work"', async () => {
+      const dateTime = Date.now().toString()
+      const db = await PGlite.create({
+        startParams: [
+          ...PGlite.defaultStartParams,
+          '-c',
+          `application_name=${dateTime}`
+        ]
+      })
+
+      const databaseAndRole = await db.exec(
+        `SELECT setting FROM pg_settings WHERE name='application_name'`,
+      )
+      expect(databaseAndRole[0].rows[0].setting).toEqual(dateTime)
+    })    
   })
 })
