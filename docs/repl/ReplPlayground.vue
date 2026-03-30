@@ -53,6 +53,11 @@ async function loadPg() {
   try {
     console.log(`Creating PGlite instance with idb://${dbName}`)
     return await PGlite.create({
+      startParams: [
+        ...PGlite.defaultStartParams, 
+        '-c', 
+        'application_name=PGlite REPL Playground'
+      ],
       dataDir: `idb://${dbName}`,
       extensions,
     })
@@ -93,7 +98,7 @@ async function loadPg() {
 }
 
 onMounted(async () => {
-  pg.value = await loadPg()
+  doLoadPg()
 })
 
 const rootStyle = window.getComputedStyle(document.body)
@@ -179,7 +184,7 @@ async function clearDb() {
     if (closed) break
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
-  pg.value = await loadPg()
+  doLoadPg()
 }
 </script>
 

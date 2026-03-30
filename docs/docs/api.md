@@ -90,6 +90,21 @@ Path to the directory for storing the Postgres database. You can provide a URI s
   })
   ```
 
+- `startParams?: string[]` <br />
+  An array of strings that will be passed to the Postgres process. This is the set of parameters one would pass to a native PostgreSQL instance.
+
+  ```ts
+  import { PGlite } from '@electric-sql/pglite'
+
+  const pg = await PGlite.create({
+    startParams: [
+      ...PGlite.defaultStartParams,
+      "-c", 
+      "application_name=My awesome backend"
+    ]
+  })
+  ```
+
 #### `options.extensions`
 
 PGlite and Postgres extensions are loaded into a PGLite instance on start, and can include both a WASM build of a Postgres extension and/or a PGlite client plugin.
