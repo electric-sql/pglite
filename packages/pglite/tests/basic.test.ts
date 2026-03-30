@@ -681,14 +681,14 @@ await testEsmCjsAndDTC(async (importType) => {
         startParams: [
           ...PGlite.defaultStartParams,
           '-c',
-          `application_name=${dateTime}`
-        ]
+          `application_name=${dateTime}`,
+        ],
       })
 
       const databaseAndRole = await db.exec(
         `SELECT setting FROM pg_settings WHERE name='application_name'`,
       )
       expect(databaseAndRole[0].rows[0].setting).toEqual(dateTime)
-    })    
+    })
   })
 })
