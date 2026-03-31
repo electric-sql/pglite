@@ -54,7 +54,9 @@ export async function downloadCount(currentDownloadCount) {
 }
 
 export async function fetchNpmJsDownloadCount(currentCount) {
-  const resp = await fetch('https://api.npmjs.org/downloads/point/last-week/@electric-sql/pglite')
+  const resp = await fetch(
+    'https://api.npmjs.org/downloads/point/last-week/@electric-sql/pglite',
+  )
 
   if (resp.ok) {
     const data = await resp.json()

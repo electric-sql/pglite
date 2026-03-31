@@ -88,7 +88,7 @@ export default defineConfig({
       {
         text: 'Get from NPM',
         link: 'https://www.npmjs.com/package/@electric-sql/pglite',
-      },      
+      },
     ],
     sidebar: [
       {
