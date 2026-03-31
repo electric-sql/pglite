@@ -61,6 +61,15 @@ async function renderGitHub() {
     const icon = document.createElement('span')
     icon.classList.add('vpi-social-github')
     linkEl.prepend(icon)
+
+    Array.from(linkEl.childNodes)
+      .filter(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())
+      .forEach(n => {
+        const span = document.createElement('span')
+        span.classList.add('action-text')
+        span.textContent = n.textContent
+        n.replaceWith(span)
+      })
   }
     
   linkEl.append(countEl)
@@ -92,6 +101,15 @@ async function renderNpmJs() {
     const icon = document.createElement('span')
     icon.classList.add('vpi-social-npm')
     linkEl.prepend(icon)
+
+    Array.from(linkEl.childNodes)
+      .filter(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())
+      .forEach(n => {
+        const span = document.createElement('span')
+        span.classList.add('action-text')
+        span.textContent = n.textContent
+        n.replaceWith(span)
+      })
   }
     
   linkEl.append(countEl)
@@ -150,7 +168,26 @@ onMounted(async () => {
   .actions a[href="https://www.npmjs.com/package/@electric-sql/pglite"] .count {
     margin-left: 0.25rem;
     min-width: 45px;
-  }  
+  }
+
+  @media (max-width: 575px) {
+    .actions .action-text {
+      display: none;
+    }
+    .actions {
+      flex-wrap: nowrap !important;
+      gap: 6px !important;
+    }
+    .actions .action .VPButton {
+      padding: 0 12px !important;
+      font-size: 13px !important;
+    }
+    .actions a[href="https://github.com/electric-sql/pglite"] .count,
+    .actions a[href="https://www.npmjs.com/package/@electric-sql/pglite"] .count {
+      margin-left: 0.15rem;
+      min-width: auto;
+    }
+  }
 </style>
 
 <style scoped>
