@@ -13,6 +13,9 @@ hero:
     - theme: alt
       text: Star on GitHub
       link: https://github.com/electric-sql/pglite
+    - theme: alt
+      text: Get from NPM
+      link: https://www.npmjs.com/package/@electric-sql/pglite
 
 features:
   - title: Lightweight
@@ -28,41 +31,90 @@ import { onMounted } from 'vue'
 import { defineClientComponent } from 'vitepress'
 import { VPHomeHero } from 'vitepress/theme'
 import { data as initialStarCount } from './count.data.ts'
-import { starCount } from './components/starCount.ts'
+import { data as initialDownloadCount } from './downloadCount.data.ts'
+import { starCount, downloadCount } from './components/starCount.ts'
 
 const Repl = defineClientComponent(() => {
   return import('./components/Repl.vue')
 })
 
+function toShortDecimal(x) {
+  return x.toLocaleString('en-US', {
+      // add suffixes for thousands, millions, and billions
+      // the maximum number of decimal places to use
+      maximumFractionDigits: 1,
+      // specify the abbreviations to use for the suffixes
+      notation: 'compact',
+      compactDisplay: 'short'
+    });
+}
+
+async function renderGitHub() {
+  const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
+  let countEl = linkEl.querySelector('.count')
+    
+  if (!countEl) {
+    countEl = document.createElement('span')
+    countEl.classList.add('count')
+    countEl.innerText = `(${toShortDecimal(initialStarCount)})`;
+
+    const icon = document.createElement('span')
+    icon.classList.add('vpi-social-github')
+    linkEl.prepend(icon)
+  }
+    
+  linkEl.append(countEl)
+
+  const count = await starCount(initialStarCount)
+
+  let currentCount = Math.max(count - 15, initialStarCount)
+  const animateCount = () => {
+    currentCount += 1;
+    if (currentCount >= count) {
+      currentCount = count;
+      clearInterval(intervalId);
+    }
+
+    countEl.innerText = `(${toShortDecimal(currentCount)})`;
+  };
+  const intervalId = setInterval(animateCount, 64);
+}
+
+async function renderNpmJs() {
+  const linkEl = document.querySelector('.action a[href="https://www.npmjs.com/package/@electric-sql/pglite"]')
+  let countEl = linkEl.querySelector('.count')
+    
+  if (!countEl) {
+    countEl = document.createElement('span')
+    countEl.classList.add('count')
+    countEl.innerText = `(${toShortDecimal(initialDownloadCount)})`;
+
+    const icon = document.createElement('span')
+    icon.classList.add('vpi-social-npm')
+    linkEl.prepend(icon)
+  }
+    
+  linkEl.append(countEl)
+
+  const count = await downloadCount(initialDownloadCount)
+
+  let currentCount = Math.max(count - 15, initialDownloadCount)
+  const animateCount = () => {
+    currentCount += 1;
+    if (currentCount >= count) {
+      currentCount = count;
+      clearInterval(intervalId);
+    }
+
+    countEl.innerText = `(${toShortDecimal(currentCount)})`;
+  };
+  const intervalId = setInterval(animateCount, 64);
+}
+
 onMounted(async () => {
   if (typeof window !== 'undefined' && document.querySelector) {
-    const linkEl = document.querySelector('.action a[href="https://github.com/electric-sql/pglite"]')
-    let countEl = linkEl.querySelector('.count')
-    
-    if (!countEl) {
-      countEl = document.createElement('span')
-      countEl.classList.add('count')
-      countEl.innerText = `( ${initialStarCount.toLocaleString()} )`;
-
-      const icon = document.createElement('span')
-      icon.classList.add('vpi-social-github')
-      linkEl.prepend(icon)
-    }
-    
-    linkEl.append(countEl)
-
-    const count = await starCount(initialStarCount)
-
-    let currentCount = Math.max(count - 15, initialStarCount)
-    const animateCount = () => {
-      currentCount += 1;
-      if (currentCount >= count) {
-        currentCount = count;
-        clearInterval(intervalId);
-      }
-      countEl.innerText = `( ${currentCount.toLocaleString()} )`;
-    };
-    const intervalId = setInterval(animateCount, 64);
+    renderGitHub()
+    renderNpmJs()
   }
 });
 
@@ -73,17 +125,32 @@ onMounted(async () => {
     display: flex;
     align-items: center;
   }
+  .actions a[href="https://www.npmjs.com/package/@electric-sql/pglite"] {
+    display: flex;
+    align-items: center;
+  }
   .actions a[href="https://github.com/electric-sql/pglite"] .vpi-social-github {
     display: block;
-    width: 1.42rem;
-    height: 1.42rem;
-    margin: 0 0.5rem 0 0;
+    width: 1.22rem;
+    height: 1.22rem;
+    margin: 0 0.3rem 0 0;
     position: relative;
   }
+  .actions a[href="https://www.npmjs.com/package/@electric-sql/pglite"] .vpi-social-npm {
+    display: block;
+    width: 1.22rem;
+    height: 1.22rem;
+    margin: 0 0.3rem 0 0;
+    position: relative;
+  }  
   .actions a[href="https://github.com/electric-sql/pglite"] .count {
     margin-left: 0.25rem;
-    min-width: 55px;
+    min-width: 45px;
   }
+  .actions a[href="https://www.npmjs.com/package/@electric-sql/pglite"] .count {
+    margin-left: 0.25rem;
+    min-width: 45px;
+  }  
 </style>
 
 <style scoped>
