@@ -661,5 +661,45 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(instanceMemSize).toEqual(wantedMemSize)
     })
+    
+    // this tests the parameter 'max_parallel_workers_per_gather=0',
+    it('it shouldnt use parallel workers on gather', async () => {
+      const db = await PGlite.create()
+
+      const ROWS = 400_000
+
+      await db.exec(`
+        CREATE TABLE t (id SERIAL PRIMARY KEY, val TEXT);
+        INSERT INTO t (val)
+          SELECT md5(i::text) FROM generate_series(1, ${ROWS}) AS i;
+      `)
+
+      // when using workers for GATHER, the query plans contains Gather
+      const plan = await db.query('EXPLAIN SELECT COUNT(*) FROM t')
+
+      const hasGather = plan.rows.some((r: any) =>
+        r['QUERY PLAN'].includes('Gather'),
+      )
+      expect(hasGather).toBeFalsy()
+
+      const result = await db.query<any>('SELECT COUNT(*) FROM t')
+      expect(result.rows[0].count).toEqual(ROWS)
+    })
+
+    it('altering startParams should work"', async () => {
+      const dateTime = Date.now().toString()
+      const db = await PGlite.create({
+        startParams: [
+          ...PGlite.defaultStartParams,
+          '-c',
+          `application_name=${dateTime}`,
+        ],
+      })
+
+      const databaseAndRole = await db.exec(
+        `SELECT setting FROM pg_settings WHERE name='application_name'`,
+      )
+      expect(databaseAndRole[0].rows[0].setting).toEqual(dateTime)
+    })
   })
 })
