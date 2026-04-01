@@ -661,7 +661,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(instanceMemSize).toEqual(wantedMemSize)
     })
-    
+
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
       const db = await PGlite.create()
