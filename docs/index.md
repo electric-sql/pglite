@@ -11,10 +11,10 @@ hero:
       text: Get Started
       link: /docs/
     - theme: alt
-      text: Star on GitHub
+      text: GitHub
       link: https://github.com/electric-sql/pglite
     - theme: alt
-      text: Get from NPM
+      text: NPM
       link: https://www.npmjs.com/package/@electric-sql/pglite
 
 features:
@@ -124,7 +124,7 @@ async function renderNpmJs() {
       clearInterval(intervalId);
     }
 
-    countEl.innerText = `(${toShortDecimal(currentCount)})`;
+    countEl.innerText = `(${toShortDecimal(currentCount)}/wk)`;
   };
   const intervalId = setInterval(animateCount, 64);
 }
