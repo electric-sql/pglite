@@ -300,11 +300,19 @@ export class PGlite
       fsBundleBuffer = buffer
     })
 
+    const wasmMemory = new WebAssembly.Memory({
+      initial: options.initialMemory
+        ? options.initialMemory / (64 * 1024)
+        : 2048,
+      maximum: 32768,
+    })
+
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: postgresExePath,
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
+      wasmMemory: wasmMemory,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {

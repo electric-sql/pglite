@@ -651,6 +651,17 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
 
+    it('initialMemory works', async () => {
+      const wantedMemSize = 512 * 1024 * 1024
+      const db = await PGlite.create({
+        initialMemory: wantedMemSize,
+      })
+
+      const instanceMemSize = db.Module.HEAPU8.buffer.byteLength
+
+      expect(instanceMemSize).toEqual(wantedMemSize)
+    })
+
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
       const db = await PGlite.create()
