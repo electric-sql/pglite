@@ -123,6 +123,12 @@ export class PGlite
     'exit_on_error=false',
     '-c',
     'log_checkpoints=false',
+    '-c',
+    'max_worker_processes=0',
+    '-c',
+    'max_parallel_workers=0',
+    '-c',
+    'max_parallel_workers_per_gather=0',
   ]
 
   /**
