@@ -653,12 +653,10 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('initialMemory works', async () => {
       const db = await PGlite.create({
-        initialMemory: 512*1024*1024
+        initialMemory: 512 * 1024 * 1024,
       })
 
-      const databaseAndRole = await db.exec(
-        `SELECT 1;`,
-      )
+      await db.exec(`SELECT 1;`)
     })
   })
 })

@@ -295,9 +295,11 @@ export class PGlite
     })
 
     const wasmMemory = new WebAssembly.Memory({
-      initial: options.initialMemory ? options.initialMemory / (64 * 1024) : 2048,
+      initial: options.initialMemory
+        ? options.initialMemory / (64 * 1024)
+        : 2048,
       maximum: 32768,
-    });
+    })
 
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: postgresExePath,
