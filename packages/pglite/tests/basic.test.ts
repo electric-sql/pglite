@@ -652,11 +652,14 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('initialMemory works', async () => {
+      const wantedMemSize = 512 * 1024 * 1024
       const db = await PGlite.create({
-        initialMemory: 512 * 1024 * 1024,
+        initialMemory: wantedMemSize,
       })
 
-      await db.exec(`SELECT 1;`)
+      const instanceMemSize = db.Module.HEAPU8.buffer.byteLength
+
+      expect(instanceMemSize).toEqual(wantedMemSize)
     })
   })
 })
