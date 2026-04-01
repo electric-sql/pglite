@@ -22,6 +22,7 @@ export interface PostgresMod
   thisProgram: string
   stdin: (() => number | null) | null
   FS: FS
+  wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>
