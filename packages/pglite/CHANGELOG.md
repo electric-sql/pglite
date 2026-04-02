@@ -1,5 +1,13 @@
 # @electric-sql/pglite
 
+## 0.4.3
+
+### Patch Changes
+
+- 2ae666f: Default database, user and role are now all "postgres"
+- fb95e66: Allow setting initial memory size.
+- 65fc101: Disable background workers.
+
 ## 0.4.2
 
 ### Patch Changes
