@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-prepopulatedfs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Prepopulated filesystem for faster PGlite startups",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
@@ -22,7 +22,9 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": ["./dist"],
+  "files": [
+    "./dist"
+  ],
   "type": "module",
   "types": "dist/index.d.ts",
   "main": "dist/index.cjs",
