@@ -82,8 +82,12 @@ export default defineConfig({
       { text: 'REPL', link: '/repl/' },
       { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
       {
-        text: 'Star on GitHub',
+        text: 'GitHub',
         link: 'https://github.com/electric-sql/pglite',
+      },
+      {
+        text: 'NPM',
+        link: 'https://www.npmjs.com/package/@electric-sql/pglite',
       },
     ],
     sidebar: [
