@@ -33,6 +33,7 @@ import {
 import { initdb, PGDATA } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
+import { OS } from './processUtils'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -43,6 +44,8 @@ export class PGlite
 {
   fs?: Filesystem
   protected mod?: PostgresMod
+
+  readonly #pgOS = new OS()
 
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
@@ -106,14 +109,9 @@ export class PGlite
   #inputData = new Uint8Array(0)
   // write index in the buffer
   #writeOffset: number = 0
-  #system_fn: number = -1
-  #popen_fn: number = -1
-  #pclose_fn: number = -1
-  externalCommandStreamFd: number | null = null
   #running: boolean = false
 
-  static readonly defaultStartParams = [
-    '--single', // selects single-user mode (must be first argument)
+  static readonly defParamsSingleMode = [
     '-F', // turn fsync off
     '-O', // allow system table structure changes
     '-j', // do not use newline as interactive query delimiter
@@ -129,6 +127,22 @@ export class PGlite
     'max_parallel_workers=0',
     '-c',
     'max_parallel_workers_per_gather=0',
+  ]
+
+  static readonly defParams = [
+    '-F', // turn fsync off
+    '-O', // allow system table structure changes
+    '-j', // do not use newline as interactive query delimiter
+    '-c',
+    'search_path=public',
+    '-c',
+    'exit_on_error=false',
+    '-c',
+    'log_checkpoints=false',
+    '-c',
+    'listen_addresses=', // disable listening on TCP
+    '-c',
+    `unix_socket_directories=@pglite_abstract_socket`, // enable Unix-domain abstract socket
   ]
 
   /**
@@ -150,7 +164,7 @@ export class PGlite
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
-    super()
+    super(0)
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
         dataDir: dataDirOrPGliteOptions,
@@ -170,20 +184,23 @@ export class PGlite
     }
 
     // Enable debug logging if requested
-    if (options?.debug !== undefined) {
+    if (options.debug !== undefined) {
       this.debug = options.debug
     }
 
     // Enable relaxed durability if requested
-    if (options?.relaxedDurability !== undefined) {
+    if (options.relaxedDurability !== undefined) {
       this.#relaxedDurability = options.relaxedDurability
     }
 
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {}
 
+    // default to single mode
+    options.singleMode = options.singleMode ?? true
+
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options ?? {})
+    this.waitReady = this.#init(options)
   }
 
   /**
@@ -240,15 +257,6 @@ export class PGlite
     if (this.debug) {
       console.error(text)
     }
-  }
-
-  handleExternalCmd(cmd: string, mode: string) {
-    if (cmd.startsWith('locale -a') && mode === 'r') {
-      const filePath = this.mod!.stringToUTF8OnStack('/pglite/locale-a')
-      const smode = this.mod!.stringToUTF8OnStack(mode)
-      return this.mod!._fopen(filePath, smode)
-    }
-    throw new Error('Unhandled cmd')
   }
 
   /**
@@ -344,6 +352,9 @@ export class PGlite
         throw new Error(`Unknown package: ${remotePackageName}`)
       },
       preRun: [
+        (mod: PostgresMod) => {
+          this.mod = mod
+        },
         (mod: PostgresMod) => {
           mod.onRuntimeInitialized = () => {
             this.#onRuntimeInitialized(mod)
@@ -544,13 +555,26 @@ export class PGlite
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
       this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({
-        pgDataFolder: PGDATA,
-        startParams: [
-          ...(options.startParams || PGlite.defaultStartParams),
+
+      let startParams
+      if (options.singleMode) {
+        startParams = [
+          '--single', // selects single-user mode (must be first argument)
+          ...(options.startParams || PGlite.defParamsSingleMode),
           ...(this.debug ? ['-d', this.debug.toString()] : []),
-        ],
+        ]
+      } else {
+        startParams = [
+          ...(options.startParams || PGlite.defParams),
+          ...(this.debug ? ['-d', this.debug.toString()] : []),
+        ]
+      }
+
+      this.#start({
+        pgDataFolder: PGDATA,
+        startParams,
       })
+
       this.#setPGliteActive()
 
       this.#ready = true
@@ -570,36 +594,7 @@ export class PGlite
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
-    // we override system() to intercept any calls that might generate unexpected output
-    this.#system_fn = mod.addFunction((cmd_ptr: number) => {
-      this.#log(
-        `Postgres tried to execute ${mod.UTF8ToString(cmd_ptr)}, returning 1.`,
-      )
-      return 1
-    }, 'pi')
-
-    mod._pgl_set_system_fn(this.#system_fn)
-
-    this.#popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
-      const smode = mod.UTF8ToString(mode)
-      const args = mod.UTF8ToString(cmd_ptr)
-      this.externalCommandStreamFd = this.handleExternalCmd(args, smode)
-      return this.externalCommandStreamFd!
-    }, 'ppp')
-
-    mod._pgl_set_popen_fn(this.#popen_fn)
-
-    this.#pclose_fn = mod.addFunction((stream: number) => {
-      if (stream === this.externalCommandStreamFd) {
-        this.mod!._fclose(this.externalCommandStreamFd!)
-        this.externalCommandStreamFd = null
-      } else {
-        throw `Unhandled pclose ${stream}`
-      }
-      this.#log('pclose_fn', stream)
-    }, 'pi')
-
-    mod._pgl_set_pclose_fn(this.#pclose_fn)
+    this.addOsFunctions(this.#pgOS)
 
     // set the write callback
     this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
@@ -1215,17 +1210,9 @@ export class PGlite
     this.#running = true
   }
 
-  #startInSingleMode(opts: {
-    pgDataFolder: string
-    startParams: string[]
-  }): void {
-    const singleModeArgs = [
-      ...opts.startParams,
-      '-D',
-      opts.pgDataFolder,
-      this.mod!.ENV.PGDATABASE,
-    ]
-    const result = this.mod!.callMain(singleModeArgs)
+  #start(opts: { pgDataFolder: string; startParams: string[] }): void {
+    const args = [...opts.startParams, '-D', opts.pgDataFolder]
+    const result = this.mod!.callMain(args)
     if (result !== 99) {
       throw new Error('PGlite failed to initialize properly')
     }

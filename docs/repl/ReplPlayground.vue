@@ -54,7 +54,7 @@ async function loadPg() {
     console.log(`Creating PGlite instance with idb://${dbName}`)
     return await PGlite.create({
       startParams: [
-        ...PGlite.defaultStartParams,
+        ...PGlite.defParamsSingleMode,
         '-c',
         'application_name=PGlite REPL Playground',
       ],

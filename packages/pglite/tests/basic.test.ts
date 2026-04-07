@@ -12,7 +12,9 @@ await testEsmCjsAndDTC(async (importType) => {
 
   describe(`basic`, () => {
     it('exec', async () => {
-      const db = await PGlite.create()
+      const db = await PGlite.create({
+        debug: 5,
+      })
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -690,7 +692,7 @@ await testEsmCjsAndDTC(async (importType) => {
       const dateTime = Date.now().toString()
       const db = await PGlite.create({
         startParams: [
-          ...PGlite.defaultStartParams,
+          ...PGlite.defParamsSingleMode,
           '-c',
           `application_name=${dateTime}`,
         ],

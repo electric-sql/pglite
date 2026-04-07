@@ -12,6 +12,7 @@ import { BasePGlite } from '../base.js'
 import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
 import { BackendMessage } from '@electric-sql/pg-protocol/messages'
 import { pglUtils } from '@electric-sql/pglite-utils'
+import { PostgresMod } from '../postgresMod.js'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -52,7 +53,7 @@ export class PGliteWorker
   #extensionsClose: Array<() => Promise<void>> = []
 
   constructor(worker: Worker, options?: PGliteWorkerOptions) {
-    super()
+    super(0)
     this.#workerProcess = worker
     this.#tabId = pglUtils.uuid()
     this.#extensions = options?.extensions ?? {}
@@ -505,6 +506,14 @@ export class PGliteWorker
     } finally {
       await this.#rpc('_releaseTransactionLock')
     }
+  }
+
+  /**
+   * The Postgres Emscripten Module
+   */
+  get Module() {
+    // throw new Error('Not implemented')
+    return {} as PostgresMod
   }
 }
 

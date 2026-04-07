@@ -16,6 +16,7 @@ export type FS = typeof FS & {
 
 export interface PostgresMod
   extends Omit<EmscriptenModule, 'preInit' | 'preRun' | 'postRun'> {
+  singleMode?: boolean
   preInit: Array<{ (mod: PostgresMod): void }>
   preRun: Array<{ (mod: PostgresMod): void }>
   postRun: Array<{ (mod: PostgresMod): void }>
@@ -33,6 +34,9 @@ export interface PostgresMod
   _pgl_set_pclose_fn: (pclose_fn: number) => void
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
   _pgl_set_pipe_fn: (pipe_fn: number) => number
+  _pgl_set_fork_fn: (fork_fn: number) => number
+  _pgl_set_kill_fn: (kill_fn: number) => number
+  _pgl_set_getpid_fn: (getpid_fn: number) => number
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number
   _pgl_pq_flush: () => void
   _fopen: (path: number, mode: number) => number
@@ -53,6 +57,7 @@ export interface PostgresMod
     ssl_done: boolean,
     gss_done: boolean,
   ) => number
+  _PostmasterServerLoopOnce(): () => void
   // althought the C function returns bool, we receive in JS a number
   _IsTransactionBlock: () => number
   _pgl_setPGliteActive: (newValue: number) => number

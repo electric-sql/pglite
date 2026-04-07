@@ -98,7 +98,7 @@ Path to the directory for storing the Postgres database. You can provide a URI s
 
   const pg = await PGlite.create({
     startParams: [
-      ...PGlite.defaultStartParams,
+      ...PGlite.defParamsSingleMode,
       '-c',
       'application_name=My awesome backend',
     ],
