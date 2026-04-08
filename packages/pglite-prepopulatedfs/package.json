@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-prepopulatedfs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Prepopulated filesystem for faster PGlite startups",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
