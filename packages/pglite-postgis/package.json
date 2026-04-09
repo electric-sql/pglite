@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-postgis",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "PostGIS extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
