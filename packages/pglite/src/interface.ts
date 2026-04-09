@@ -89,6 +89,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   username?: string
   database?: string
   fs?: Filesystem
+  proxyFS?: any // todo: should be of type FS
   debug?: DebugLevel
   relaxedDurability?: boolean
   extensions?: TExtensions

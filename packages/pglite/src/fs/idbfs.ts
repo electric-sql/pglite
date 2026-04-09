@@ -1,7 +1,7 @@
 import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
-import { PGDATA, PG_ROOT } from '../initdb.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export class IdbFs extends EmscriptenBuiltinFilesystem {
   async init(pg: PGlite, opts: Partial<PostgresMod>) {
@@ -17,14 +17,16 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
           // We specifically use /pglite as the root directory for the idbfs
           // as the fs will ber persisted in the indexeddb as a database with
           // the path as the name.
-          if (!mod.FS.analyzePath(PG_ROOT).exists) {
-            mod.FS.mkdir(PG_ROOT)
+          if (!mod.FS.analyzePath(pglUtils.PG_ROOT).exists) {
+            mod.FS.mkdir(pglUtils.PG_ROOT)
           }
-          if (!mod.FS.analyzePath(`${PG_ROOT}/${this.dataDir}`).exists) {
-            mod.FS.mkdir(`${PG_ROOT}/${this.dataDir}`)
+          if (
+            !mod.FS.analyzePath(`${pglUtils.PG_ROOT}/${this.dataDir}`).exists
+          ) {
+            mod.FS.mkdir(`${pglUtils.PG_ROOT}/${this.dataDir}`)
           }
-          mod.FS.mount(idbfs, {}, `${PG_ROOT}/${this.dataDir}`)
-          mod.FS.symlink(`${PG_ROOT}/${this.dataDir}`, PGDATA)
+          mod.FS.mount(idbfs, {}, `${pglUtils.PG_ROOT}/${this.dataDir}`)
+          mod.FS.symlink(`${pglUtils.PG_ROOT}/${this.dataDir}`, pglUtils.PGDATA)
         },
       ],
     }

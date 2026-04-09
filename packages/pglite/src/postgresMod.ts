@@ -37,16 +37,20 @@ export interface PostgresMod
   _pgl_set_fork_fn: (fork_fn: number) => number
   _pgl_set_kill_fn: (kill_fn: number) => number
   _pgl_set_getpid_fn: (getpid_fn: number) => number
+  _pgl_set_socket_fn: (socket_fn: number) => number
+  _pgl_set_bind_fn: (bind_fn: number) => number
+  _pgl_set_listen_fn: (listen_fn: number) => number
+  _pgl_set_accept_fn: (accept_fn: number) => number
+  _pgl_set_close_fn: (close_fn: number) => number
+  _pgl_set_poll_fn: (poll_fn: number) => number
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number
   _pgl_pq_flush: () => void
   _fopen: (path: number, mode: number) => number
   _fclose: (stream: number) => number
   _fflush: (stream: number) => void
+  _exit: (status: number) => void
   _pgl_proc_exit: (code: number) => number
-  addFunction: (
-    cb: (ptr: any, length: number) => void,
-    signature: string,
-  ) => number
+  addFunction: (fn: CallableFunction, signature: string) => number
   removeFunction: (f: number) => void
   callMain: (args?: string[]) => number
   _PostgresMainLoopOnce: () => void

@@ -30,7 +30,7 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-import { initdb, PGDATA } from './initdb'
+import { initdb } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
 import { OS } from './processUtils'
@@ -50,6 +50,7 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
+  #singleMode: boolean = true
 
   get ENV(): any {
     return this.mod?.ENV
@@ -164,7 +165,7 @@ export class PGlite
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
-    super(0)
+    super(1)
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
         dataDir: dataDirOrPGliteOptions,
@@ -198,6 +199,7 @@ export class PGlite
 
     // default to single mode
     options.singleMode = options.singleMode ?? true
+    this.#singleMode = options.singleMode
 
     // Initialize the database, and store the promise so we can wait for it to be ready
     this.waitReady = this.#init(options)
@@ -342,12 +344,16 @@ export class PGlite
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
         if (remotePackageName === 'pglite.data') {
-          if (fsBundleBuffer.byteLength !== remotePackageSize) {
-            throw new Error(
-              `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
-            )
+          if (!options.proxyFS) {
+            if (fsBundleBuffer.byteLength !== remotePackageSize) {
+              throw new Error(
+                `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
+              )
+            }
+            return fsBundleBuffer
+          } else {
+            return new ArrayBuffer(0)
           }
-          return fsBundleBuffer
         }
         throw new Error(`Unknown package: ${remotePackageName}`)
       },
@@ -425,7 +431,7 @@ export class PGlite
           mod.ENV.HOME = '/home/postgres'
           mod.ENV.USER = 'postgres'
           mod.ENV.LOGNAME = 'postgres'
-          mod.ENV.PGDATA = PGDATA
+          mod.ENV.PGDATA = pglUtils.PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'postgres'
           mod.ENV.LC_CTYPE = 'en_US.UTF-8'
@@ -445,6 +451,19 @@ export class PGlite
           mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
           mod.FS.chmod(initdbExePath, 0o0555)
           mod.FS.chmod(postgresExePath, 0o0555)
+        },
+        (mod: PostgresMod) => {
+          if (options.proxyFS) {
+            mod.FS.mkdir(pglUtils.PG_ROOT)
+            mod.FS.mount(
+              mod.PROXYFS,
+              {
+                root: pglUtils.PG_ROOT,
+                fs: options.proxyFS,
+              },
+              pglUtils.PG_ROOT,
+            )
+          }
         },
       ],
     }
@@ -507,14 +526,14 @@ export class PGlite
       // We do this after the initial sync so that we can throw if the database
       // already exists.
       if (options.loadDataDir) {
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        if (this.mod.FS.analyzePath(pglUtils.PGDATA + '/PG_VERSION').exists) {
           throw new Error('Database already exists, cannot load from tarball')
         }
         this.#log('pglite: loading data from tarball')
-        await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+        await loadTar(this.mod.FS, options.loadDataDir, pglUtils.PGDATA)
       } else {
         // Check if the database exists in the file system, if not we run initdb
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        if (this.mod.FS.analyzePath(pglUtils.PGDATA + '/PG_VERSION').exists) {
           this.#log('pglite: found DB, resuming')
         } else {
           this.#log('pglite: no db in filesystem, running initdb')
@@ -543,7 +562,7 @@ export class PGlite
 
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
-          await loadTar(this.mod.FS, pgdatatar, PGDATA)
+          await loadTar(this.mod.FS, pgdatatar, pglUtils.PGDATA)
 
           // Sync any changes back to the persisted store (if there is one)
           // TODO: only sync here if initdb did init db.
@@ -571,7 +590,7 @@ export class PGlite
       }
 
       this.#start({
-        pgDataFolder: PGDATA,
+        pgDataFolder: pglUtils.PGDATA,
         startParams,
       })
 
@@ -1213,8 +1232,18 @@ export class PGlite
   #start(opts: { pgDataFolder: string; startParams: string[] }): void {
     const args = [...opts.startParams, '-D', opts.pgDataFolder]
     const result = this.mod!.callMain(args)
-    if (result !== 99) {
-      throw new Error('PGlite failed to initialize properly')
+    if (this.#singleMode === true) {
+      if (result !== 99)
+        throw new Error('PGlite (single mode) failed to initialize properly')
+    } else {
+      // not single mode
+      if (result === 101) {
+        // postmaster is listening for new connections on the socket
+        this.triggerNewConnection()
+        this.mod!._PostmasterServerLoopOnce()
+      } else {
+        throw new Error('PGlite (normal mode) failed to initialize properly')
+      }
     }
   }
 

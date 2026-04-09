@@ -8,13 +8,6 @@ function assert(condition: unknown, message?: string): asserts condition {
   }
 }
 
-export const PG_ROOT = '/pglite'
-export const PGDATA = PG_ROOT + '/data'
-
-const initdbExePath = PG_ROOT + '/bin/initdb'
-const pgstdoutPath = PG_ROOT + '/pgstdout'
-const pgstdinPath = PG_ROOT + '/pgstdin'
-
 /**
  * Interface defining what initdb needs from a PGlite instance.
  * This avoids a circular dependency between pglite and pglite-initdb.
@@ -87,7 +80,7 @@ async function execInitdb({
   const emscriptenOpts: Partial<InitdbMod> = {
     arguments: args,
     noExitRuntime: false,
-    thisProgram: initdbExePath,
+    thisProgram: pglUtils.initdbExePath,
     // Provide a stdin that returns EOF to avoid browser prompt
     stdin: () => null,
     print: (text) => {
@@ -110,7 +103,7 @@ async function execInitdb({
     },
     preRun: [
       (mod: InitdbMod) => {
-        mod.ENV.PGDATA = PGDATA
+        mod.ENV.PGDATA = pglUtils.PGDATA
         mod.ENV.HOME = '/home/postgres'
         mod.ENV.USER = 'postgres'
         mod.ENV.LOGNAME = 'postgres'
@@ -159,35 +152,38 @@ async function execInitdb({
           mod._pgl_set_pclose_fn(pclose_fn)
 
           {
-            const pglite_stdin_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
+            const pglite_stdin_path = pg.Module.stringToUTF8OnStack(
+              pglUtils.pgstdinPath,
+            )
             const rmode = pg.Module.stringToUTF8OnStack('r')
             pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
-            const pglite_stdout_path =
-              pg.Module.stringToUTF8OnStack(pgstdoutPath)
+            const pglite_stdout_path = pg.Module.stringToUTF8OnStack(
+              pglUtils.pgstdoutPath,
+            )
             const wmode = pg.Module.stringToUTF8OnStack('w')
             pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
           }
 
           {
-            const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
+            const initdb_path = mod.stringToUTF8OnStack(pglUtils.pgstdoutPath)
             const rmode = mod.stringToUTF8OnStack('r')
             initdb_stdin_fd = mod._fopen(initdb_path, rmode)
 
-            const path = mod.stringToUTF8OnStack(pgstdinPath)
+            const path = mod.stringToUTF8OnStack(pglUtils.pgstdinPath)
             const wmode = mod.stringToUTF8OnStack('w')
             initdb_stdout_fd = mod._fopen(path, wmode)
           }
         }
       },
       (mod: InitdbMod) => {
-        mod.FS.mkdir(PG_ROOT)
+        mod.FS.mkdir(pglUtils.PG_ROOT)
         mod.FS.mount(
           mod.PROXYFS,
           {
-            root: PG_ROOT,
+            root: pglUtils.PG_ROOT,
             fs: pg.Module.FS,
           },
-          PG_ROOT,
+          pglUtils.PG_ROOT,
         )
       },
     ],
@@ -202,7 +198,7 @@ async function execInitdb({
     exitCode: result,
     stderr: stderrOutput,
     stdout: stdoutOutput,
-    dataFolder: PGDATA,
+    dataFolder: pglUtils.PGDATA,
   }
 }
 

@@ -1,7 +1,7 @@
 import type { PostgresMod } from '../postgresMod.js'
 import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
-import { PGDATA } from '../initdb.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export const WASM_PREFIX = '/pglite'
 
@@ -68,7 +68,7 @@ export class EmscriptenBuiltinFilesystem implements Filesystem {
   async closeFs() {}
 
   async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
-    return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
+    return dumpTar(this.pg!.Module.FS, pglUtils.PGDATA, dbname, compression)
   }
 }
 
@@ -93,7 +93,7 @@ export abstract class BaseFilesystem implements Filesystem {
   async closeFs() {}
 
   async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
-    return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
+    return dumpTar(this.pg!.Module.FS, pglUtils.PGDATA, dbname, compression)
   }
 
   async init(pg: PGlite, emscriptenOptions: Partial<PostgresMod>) {
@@ -104,8 +104,8 @@ export abstract class BaseFilesystem implements Filesystem {
         ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
           const EMFS = createEmscriptenFS(mod, this)
-          mod.FS.mkdir(PGDATA)
-          mod.FS.mount(EMFS, {}, PGDATA)
+          mod.FS.mkdir(pglUtils.PGDATA)
+          mod.FS.mount(EMFS, {}, pglUtils.PGDATA)
         },
       ],
     }

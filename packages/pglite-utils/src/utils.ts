@@ -3,6 +3,13 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
+export const PG_ROOT = '/pglite'
+export const PGDATA = PG_ROOT + '/data'
+
+export const initdbExePath = PG_ROOT + '/bin/initdb'
+export const pgstdoutPath = PG_ROOT + '/pgstdout'
+export const pgstdinPath = PG_ROOT + '/pgstdin'
+
 const wasmDownloadPromises = new Map<URL, Promise<Response>>()
 
 export async function startWasmDownload(url: URL) {
