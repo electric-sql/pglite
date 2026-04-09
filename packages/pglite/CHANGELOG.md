@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.4.4
+
+### Patch Changes
+
+- b88c5c3: Disable checkpointer
+
 ## 0.4.3
 
 ### Patch Changes

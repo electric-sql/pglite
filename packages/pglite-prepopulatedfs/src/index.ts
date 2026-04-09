@@ -1,7 +1,7 @@
 import { pglUtils } from '@electric-sql/pglite-utils'
 
 export async function dataDir(): Promise<Blob> {
-  const moduleUrl = new URL('../release/prepopulatedfs.tgz', import.meta.url)
+  const moduleUrl = new URL('../dist/prepopulatedfs.tgz', import.meta.url)
   if (pglUtils.IN_NODE) {
     const fs = await import('fs/promises')
     const buffer = await fs.readFile(moduleUrl)

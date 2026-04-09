@@ -1,5 +1,11 @@
 # @electric-sql/pglite-prepopulatedfs
 
+## 0.0.3
+
+### Patch Changes
+
+- c2be068: refer to dist folder instead of release for prepopulatedfs.tgz
+
 ## 0.0.2
 
 ### Patch Changes
