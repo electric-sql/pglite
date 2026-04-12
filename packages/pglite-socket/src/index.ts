@@ -607,16 +607,19 @@ export class PGLiteSocketServer extends EventTarget {
     return new Promise<void>((resolve, reject) => {
       if (!this.server) return reject(new Error('Server not initialized'))
 
+      let listening = false
+
       this.server.on('error', (err) => {
         this.log(`start: server error:`, err)
         this.dispatchEvent(new CustomEvent('error', { detail: err }))
-        if (!this.active) {
+        if (!listening) {
           reject(err)
         }
       })
 
       if (this.path) {
         this.server.listen(this.path, () => {
+          listening = true
           this.log(`start: server listening on ${this.getServerConn()}`)
           this.dispatchEvent(
             new CustomEvent('listening', {
@@ -628,6 +631,7 @@ export class PGLiteSocketServer extends EventTarget {
       } else {
         const server = this.server
         server.listen(this.port, this.host, () => {
+          listening = true
           const address = server.address()
           // We are not using pipes, so return type should be AddressInfo
           if (address === null || typeof address !== 'object') {
