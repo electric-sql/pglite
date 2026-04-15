@@ -34,12 +34,13 @@ export abstract class Process {
   }
 
   triggerNewConnection() {
-    const POLLIN = 0x0001
-    if (this.#listeningSocketFd < 0)
-      throw new Error(`Process ${this.#pid} has no listening socket`)
+    this.Module._pgl_trigger_new_connection()
+    // const POLLIN = 0x0001
+    // if (this.#listeningSocketFd < 0)
+    //   throw new Error(`Process ${this.#pid} has no listening socket`)
 
-    // Set revents to POLLIN to indicate the socket is ready
-    this.Module.HEAP16[(this.#listeningSocketFd + 6) >> 1] = POLLIN
+    // // Set revents to POLLIN to indicate the socket is ready
+    // this.Module.HEAP16[(this.#listeningSocketFd + 6) >> 1] = POLLIN
   }
   /**
    * Internal log function
@@ -154,55 +155,55 @@ export abstract class Process {
 
     this.Module._pgl_set_getpid_fn(this.#getpid_fn)
 
-    this.#poll_fn = this.Module.addFunction(
-      (fds: number, nfds: number, timeout: number) => {
-        this.#log('poll_fn', fds, nfds, timeout)
-        return os.poll(this, fds, nfds, timeout)
-      },
-      'ipii',
-    )
+    // this.#poll_fn = this.Module.addFunction(
+    //   (fds: number, nfds: number, timeout: number) => {
+    //     this.#log('poll_fn', fds, nfds, timeout)
+    //     return os.poll(this, fds, nfds, timeout)
+    //   },
+    //   'ipii',
+    // )
 
-    this.Module._pgl_set_poll_fn(this.#poll_fn)
+    // this.Module._pgl_set_poll_fn(this.#poll_fn)
 
-    this.#socket_fn = this.Module.addFunction(
-      (domain: number, type: number, protocol: number) => {
-        this.#log('socket_fn', domain, type, protocol)
-        return os.socket(this, domain, type, protocol)
-      },
-      'iiii',
-    )
+    // this.#socket_fn = this.Module.addFunction(
+    //   (domain: number, type: number, protocol: number) => {
+    //     this.#log('socket_fn', domain, type, protocol)
+    //     return os.socket(this, domain, type, protocol)
+    //   },
+    //   'iiii',
+    // )
 
-    this.Module._pgl_set_socket_fn(this.#socket_fn)
+    // this.Module._pgl_set_socket_fn(this.#socket_fn)
 
-    this.#bind_fn = this.Module.addFunction(
-      (socket: number, address: number, address_len: number) => {
-        this.#log('bind_fn', socket, address, address_len)
-        return os.bind(this, socket, address, address_len)
-      },
-      'iipi',
-    )
+    // this.#bind_fn = this.Module.addFunction(
+    //   (socket: number, address: number, address_len: number) => {
+    //     this.#log('bind_fn', socket, address, address_len)
+    //     return os.bind(this, socket, address, address_len)
+    //   },
+    //   'iipi',
+    // )
 
-    this.Module._pgl_set_bind_fn(this.#bind_fn)
+    // this.Module._pgl_set_bind_fn(this.#bind_fn)
 
-    this.#listen_fn = this.Module.addFunction(
-      (socket: number, backlog: number) => {
-        this.#log('listen_fn', socket, backlog)
-        return os.listen(this, socket, backlog)
-      },
-      'iii',
-    )
+    // this.#listen_fn = this.Module.addFunction(
+    //   (socket: number, backlog: number) => {
+    //     this.#log('listen_fn', socket, backlog)
+    //     return os.listen(this, socket, backlog)
+    //   },
+    //   'iii',
+    // )
 
-    this.Module._pgl_set_listen_fn(this.#listen_fn)
+    // this.Module._pgl_set_listen_fn(this.#listen_fn)
 
-    this.#accept_fn = this.Module.addFunction(
-      (socket: number, address: number, address_len: number) => {
-        this.#log('accept_fn', socket, address, address_len)
-        return os.accept(this, socket, address, address_len)
-      },
-      'iiii',
-    )
+    // this.#accept_fn = this.Module.addFunction(
+    //   (socket: number, address: number, address_len: number) => {
+    //     this.#log('accept_fn', socket, address, address_len)
+    //     return os.accept(this, socket, address, address_len)
+    //   },
+    //   'iiii',
+    // )
 
-    this.Module._pgl_set_accept_fn(this.#accept_fn)
+    // this.Module._pgl_set_accept_fn(this.#accept_fn)
 
     this.#close_fn = this.Module.addFunction((fd: number) => {
       this.#log('close_fn', fd)
@@ -418,28 +419,28 @@ export class OS {
     return -1
   }
 
-  poll(process: Process, fds: number, nfds: number, _timeout: number) {
-    const POLLFD_SIZE = 8 // sizeof(struct pollfd)
+  // poll(process: Process, fds: number, nfds: number, _timeout: number) {
+  //   const POLLFD_SIZE = 8 // sizeof(struct pollfd)
 
-    for (let i = 0; i < nfds; i++) {
-      const base = fds + i * POLLFD_SIZE
-      const fd = process.Module.HEAP32[base >> 2]
-      if (fd === this.postmasterListenSocket) {
-        if (process.listeningSocketFd > 0) {
-          return nfds
-        }
+  //   for (let i = 0; i < nfds; i++) {
+  //     const base = fds + i * POLLFD_SIZE
+  //     const fd = process.Module.HEAP32[base >> 2]
+  //     if (fd === this.postmasterListenSocket) {
+  //       if (process.listeningSocketFd > 0) {
+  //         return nfds
+  //       }
 
-        this.#log('poll: postmaster listen socket found in fds array, index', i)
-        process.listeningSocketFd = base
-        process.Module._exit(101)
+  //       this.#log('poll: postmaster listen socket found in fds array, index', i)
+  //       process.listeningSocketFd = base
+  //       process.Module._exit(101)
 
-        // unreachable
-        return 666
-      }
-    }
+  //       // unreachable
+  //       return 666
+  //     }
+  //   }
 
-    return nfds
-  }
+  //   return nfds
+  // }
 
   // pipe(process: Process, pointer: number) {
   //   this.#log('pipe', process.pid, pointer)

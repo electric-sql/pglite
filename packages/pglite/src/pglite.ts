@@ -738,7 +738,7 @@ export class PGlite
       : pglUtils.getFsBundle(fsBundleUrl)
 
     const fsBundleBuffer = await fsBundleBufferPromise
-    const emscriptenOpts: Partial<PostgresMod> = this.getPostgresMod(
+    let emscriptenOpts: Partial<PostgresMod> = this.getPostgresMod(
       options,
       args,
       fsBundleBuffer,
@@ -1676,7 +1676,7 @@ export class PGlite
         throw new Error('PGlite (single mode) failed to initialize properly')
     } else {
       // not single mode
-      if (result === 101) {
+      if (result === 102) {
         // postmaster is waiting (listening) for new connections on the socket
         this.triggerNewConnection()
         this.mod!._PostmasterServerLoopOnce()

@@ -83,6 +83,7 @@ export interface PostgresMod
     client_sock: number,
   ) => void
   _pgl_pipe_replace: (prevFd: number, newFd: number) => number
+  _pgl_trigger_new_connection: () => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
