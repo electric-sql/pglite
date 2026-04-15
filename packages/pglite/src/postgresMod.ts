@@ -23,8 +23,10 @@ export interface PostgresMod
   thisProgram: string
   stdin: (() => number | null) | null
   FS: FS
+  setFS: (newFS: FS) => void
   wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
+  PIPEFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
@@ -32,7 +34,8 @@ export interface PostgresMod
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
-  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_send_fn: (send_fn: number) => number
+  _pgl_set_recv_fn: (recv_fn: number) => number
   _pgl_set_pipe_fn: (pipe_fn: number) => number
   _pgl_set_fork_fn: (fork_fn: number) => number
   _pgl_set_kill_fn: (kill_fn: number) => number
@@ -72,6 +75,14 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
+  _after_fork_inchild: () => void
+  _after_fork_process_inchild: (
+    child_type: number,
+    startup_data: number,
+    startup_data_len: number,
+    client_sock: number,
+  ) => void
+  _pgl_pipe_replace: (prevFd: number, newFd: number) => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

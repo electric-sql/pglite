@@ -33,7 +33,7 @@ import {
 import { initdb } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import { OS } from './processUtils'
+import { OS, Process, ProcessInfo } from './processUtils'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -51,6 +51,17 @@ export class PGlite
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
   #singleMode: boolean = true
+  #pendingChildProcesses = new Array<ProcessInfo>()
+  #processInfo: ProcessInfo | undefined
+  #childProcesses = new Array<Process>()
+
+  get isBackend(): boolean {
+    return this.#processInfo?.childType === 1
+  }
+
+  get isPostmaster(): boolean {
+    return this.#processInfo?.childType === -1
+  }
 
   get ENV(): any {
     return this.mod?.ENV
@@ -87,7 +98,7 @@ export class PGlite
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
 
   // receive data from wasm
-  #pglite_socket_write: number = -1
+  #pglite_socket_send: number = -1
 
   #currentResults: BackendMessage[] = []
   #currentThrowOnError: boolean = false
@@ -95,7 +106,7 @@ export class PGlite
   #currentOnRawData: ((data: Uint8Array) => void) | undefined
 
   // send data to wasm
-  #pglite_socket_read: number = -1
+  #pglite_socket_recv: number = -1
   // buffer that holds the data to be sent to wasm
   #outputData: any = []
   // read index in the buffer
@@ -165,7 +176,11 @@ export class PGlite
     dataDirOrPGliteOptions: string | PGliteOptions = {},
     options: PGliteOptions = {},
   ) {
-    super(1)
+    super(
+      options?.processInfo?.pid ??
+        (dataDirOrPGliteOptions as any).processInfo?.pid ??
+        OS.postmasterPid,
+    )
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
         dataDir: dataDirOrPGliteOptions,
@@ -201,8 +216,21 @@ export class PGlite
     options.singleMode = options.singleMode ?? true
     this.#singleMode = options.singleMode
 
+    this.#processInfo = options.processInfo ?? {
+      childType: -1,
+      clientSock: 0,
+      parent: {} as Process,
+      pid: this.#pgOS.nextPid++,
+      startupData: 0,
+      startupDataLen: 0,
+    }
+
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options)
+    if (options.singleMode) {
+      this.waitReady = this.#initSingle(options)
+    } else {
+      this.waitReady = this.#initNormal(options)
+    }
   }
 
   /**
@@ -261,11 +289,7 @@ export class PGlite
     }
   }
 
-  /**
-   * Initialize the database
-   * @returns A promise that resolves when the database is ready
-   */
-  async #init(options: PGliteOptions) {
+  async #initSingle(options: PGliteOptions) {
     if (options.fs) {
       this.fs = options.fs
     } else {
@@ -452,19 +476,6 @@ export class PGlite
           mod.FS.chmod(initdbExePath, 0o0555)
           mod.FS.chmod(postgresExePath, 0o0555)
         },
-        (mod: PostgresMod) => {
-          if (options.proxyFS) {
-            mod.FS.mkdir(pglUtils.PG_ROOT)
-            mod.FS.mount(
-              mod.PROXYFS,
-              {
-                root: pglUtils.PG_ROOT,
-                fs: options.proxyFS,
-              },
-              pglUtils.PG_ROOT,
-            )
-          }
-        },
       ],
     }
 
@@ -612,57 +623,481 @@ export class PGlite
     }
   }
 
+  /**
+   * Initialize the database in normal mode
+   * @returns A promise that resolves when the database is ready
+   */
+  async #initNormal(options: PGliteOptions) {
+    if (this.isPostmaster) {
+      return this.#createPostmaster(options)
+    } else {
+      return this.#createSubprocess(options)
+    }
+  }
+
+  async #createSubprocess(options: PGliteOptions<Extensions>) {
+    // Get the fs bundle
+    const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
+    const fsBundleBufferPromise = options.fsBundle
+      ? options.fsBundle.arrayBuffer()
+      : pglUtils.getFsBundle(fsBundleUrl)
+
+    const fsBundleBuffer = await fsBundleBufferPromise
+
+    const emscriptenOpts: Partial<PostgresMod> = this.getPostgresMod(
+      options,
+      [],
+      fsBundleBuffer,
+    )
+
+    // Load the database engine
+    this.mod = await PostgresModFactory(emscriptenOpts)
+
+    if (options.processInfo?.heap) {
+      this.mod.HEAPU8.set(options.processInfo.heap)
+      options.processInfo.heap = undefined
+
+      // now patch the pipedes
+      let i = 0
+      let firstNewFd = 0
+      while (i < options.proxyFS.streams.length) {
+        const stream = options.proxyFS.streams[i++]
+        if (!stream || !stream.path) break
+        if (stream.path.startsWith('pipe')) {
+          if (firstNewFd === stream.fd) break
+          const newStream = options.proxyFS.dupStream(stream)
+          if (!firstNewFd) firstNewFd = newStream.fd
+          this.Module._pgl_pipe_replace(stream.fd, newStream.fd)
+        }
+      }
+
+      this.mod.setFS(options.proxyFS)
+      // (mod.FS as any).streams = options.proxyFS.streams.slice()
+      // mod.PIPEFS = options.proxyFS.Module.PIPEFS;
+    }
+
+    this.mod._pgl_setPGliteActive(1)
+
+    {
+      this.mod._after_fork_inchild()
+      this.mod._after_fork_process_inchild(
+        options.processInfo!.childType,
+        options.processInfo!.startupData,
+        options.processInfo!.startupDataLen,
+        options.processInfo!.clientSock,
+      )
+    }
+    this.#setPGliteActive()
+
+    this.#ready = true
+
+    if (this.isBackend) {
+      if (options.username) {
+        await this.exec(`SET ROLE ${options.username};`)
+      }
+
+      // Init array types
+      await this._initArrayTypes()
+    }
+  }
+
+  async #createPostmaster(options: PGliteOptions<Extensions>) {
+    if (options.fs) {
+      this.fs = options.fs
+    } else {
+      const { dataDir, fsType } = parseDataDir(options.dataDir)
+      this.fs = await loadFs(dataDir, fsType)
+    }
+
+    const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
+    const extensionInitFns: Array<() => Promise<void>> = []
+
+    const args = [
+      // "-F", // Disable fsync (TODO: Only for in-memory mode?)
+      ...(this.debug ? ['-d', this.debug.toString()] : []),
+    ]
+
+    if (!options.pgliteWasmModule) {
+      // Start the wasm download in the background so it's ready when we need it
+      pglUtils.startWasmDownload(
+        new URL('../release/pglite.wasm', import.meta.url),
+      )
+    }
+
+    if (!options.initdbWasmModule) {
+      // Start the wasm download in the background so it's ready when we need it
+      pglUtils.startWasmDownload(
+        new URL('../release/initdb.wasm', import.meta.url),
+      )
+    }
+
+    // Get the fs bundle
+    const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
+    const fsBundleBufferPromise = options.fsBundle
+      ? options.fsBundle.arrayBuffer()
+      : pglUtils.getFsBundle(fsBundleUrl)
+
+    const fsBundleBuffer = await fsBundleBufferPromise
+    const emscriptenOpts: Partial<PostgresMod> = this.getPostgresMod(
+      options,
+      args,
+      fsBundleBuffer,
+    )
+
+    const { emscriptenOpts: amendedEmscriptenOpts } = await this.fs!.init(
+      this,
+      emscriptenOpts,
+    )
+    emscriptenOpts = amendedEmscriptenOpts
+
+    // # Setup extensions
+    // This is the first step of loading PGlite extensions
+    // We loop through each extension and call the setup function
+    // This amends the emscriptenOpts and can return:
+    // - emscriptenOpts: The updated emscripten options
+    // - namespaceObj: The namespace object to attach to the PGlite instance
+    // - init: A function to initialize the extension/plugin after the database is ready
+    // - close: A function to close/tidy-up the extension/plugin when the database is closed
+    for (const [extName, ext] of Object.entries(this.#extensions)) {
+      if (ext instanceof URL) {
+        // Extension with only a URL to a bundle
+        extensionBundlePromises[extName] = loadExtensionBundle(ext)
+      } else {
+        // Extension with JS setup function
+        const extRet = await ext.setup(this, emscriptenOpts)
+        if (extRet.emscriptenOpts) {
+          emscriptenOpts = extRet.emscriptenOpts
+        }
+        if (extRet.namespaceObj) {
+          const instance = this as any
+          instance[extName] = extRet.namespaceObj
+        }
+        if (extRet.bundlePath) {
+          extensionBundlePromises[extName] = loadExtensionBundle(
+            extRet.bundlePath,
+          ) // Don't await here, this is parallel
+        }
+        if (extRet.init) {
+          extensionInitFns.push(extRet.init)
+        }
+        if (extRet.close) {
+          this.#extensionsClose.push(extRet.close)
+        }
+      }
+    }
+    emscriptenOpts['pg_extensions'] = extensionBundlePromises
+
+    // Await the fs bundle - we do this just before calling PostgresModFactory
+    // as it needs the fs bundle to be ready.
+    await fsBundleBufferPromise
+
+    // Load the database engine
+    this.mod = await PostgresModFactory(emscriptenOpts)
+
+    // Sync the filesystem from any previous store
+    await this.fs!.initialSyncFs()
+
+    if (!options.noInitDb) {
+      // If the user has provided a tarball to load the database from, do that now.
+      // We do this after the initial sync so that we can throw if the database
+      // already exists.
+      if (options.loadDataDir) {
+        if (this.mod.FS.analyzePath(pglUtils.PGDATA + '/PG_VERSION').exists) {
+          throw new Error('Database already exists, cannot load from tarball')
+        }
+        this.#log('pglite: loading data from tarball')
+        await loadTar(this.mod.FS, options.loadDataDir, pglUtils.PGDATA)
+      } else {
+        // Check if the database exists in the file system, if not we run initdb
+        if (this.mod.FS.analyzePath(pglUtils.PGDATA + '/PG_VERSION').exists) {
+          this.#log('pglite: found DB, resuming')
+        } else {
+          this.#log('pglite: no db in filesystem, running initdb')
+
+          const pgInitDbOpts = { ...options }
+          pgInitDbOpts.noInitDb = true
+          pgInitDbOpts.dataDir = undefined
+          pgInitDbOpts.extensions = undefined
+          pgInitDbOpts.loadDataDir = undefined
+          const pg_initDb = await PGlite.create(pgInitDbOpts)
+
+          // Initialize the database
+          const initdbResult = await initdb({
+            pg: pg_initDb,
+            debug: options.debug,
+            wasmModule: options.initdbWasmModule,
+          })
+
+          if (initdbResult.exitCode !== 0) {
+            if (!initdbResult.stderr.includes('exists but is not empty')) {
+              throw new Error(
+                'INITDB failed to initialize: ' + initdbResult.stderr,
+              )
+            }
+          }
+
+          const pgdatatar = await pg_initDb.dumpDataDir('none')
+          pg_initDb.close()
+          await loadTar(this.mod.FS, pgdatatar, pglUtils.PGDATA)
+
+          // Sync any changes back to the persisted store (if there is one)
+          // TODO: only sync here if initdb did init db.
+          await this.syncToFs()
+        }
+      }
+
+      // Start compiling dynamic extensions present in FS.
+      await loadExtensions(this.mod, (...args) => this.#log(...args))
+
+      this.mod!._pgl_setPGliteActive(1)
+
+      const startParams = [
+        ...(options.startParams || PGlite.defParams),
+        ...(this.debug ? ['-d', this.debug.toString()] : []),
+      ]
+
+      await this.#start({
+        pgDataFolder: pglUtils.PGDATA,
+        startParams,
+      })
+
+      this.#setPGliteActive()
+
+      this.#ready = true
+    }
+  }
+
+  private getPostgresMod(
+    options: PGliteOptions<Extensions>,
+    args: string[] | undefined,
+    fsBundleBuffer?: ArrayBuffer,
+  ) {
+    let initialMemSize
+    if (options.processInfo?.heap) {
+      initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
+    } else {
+      initialMemSize = options.initialMemory
+        ? options.initialMemory / (64 * 1024)
+        : 2048
+    }
+    const wasmMemory = new WebAssembly.Memory({
+      initial: initialMemSize,
+      maximum: 32768,
+    })
+
+    const emscriptenOpts: Partial<PostgresMod> = {
+      thisProgram: postgresExePath,
+      WASM_PREFIX,
+      arguments: args,
+      noExitRuntime: true,
+      wasmMemory: wasmMemory,
+      // Provide a stdin that returns EOF to avoid browser prompt
+      stdin: () => null,
+      print: (text: string) => {
+        this.#print(text)
+      },
+      printErr: (text: string) => {
+        this.#printErr(text)
+      },
+      instantiateWasm: (imports, successCallback) => {
+        const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
+
+        pglUtils
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .then(({ instance, module }) => {
+            // @ts-ignore wrong type in Emscripten typings
+            successCallback(instance, module)
+          })
+        return {}
+      },
+      getPreloadedPackage: (remotePackageName, remotePackageSize) => {
+        if (remotePackageName === 'pglite.data') {
+          if (!options.proxyFS) {
+            if (fsBundleBuffer!.byteLength !== remotePackageSize) {
+              throw new Error(
+                `Invalid FS bundle size: ${fsBundleBuffer!.byteLength} !== ${remotePackageSize}`,
+              )
+            }
+            return fsBundleBuffer!
+          } else {
+            return new ArrayBuffer(0)
+          }
+        }
+        throw new Error(`Unknown package: ${remotePackageName}`)
+      },
+      preRun: [
+        (mod: PostgresMod) => {
+          this.mod = mod
+        },
+        (mod: PostgresMod) => {
+          mod.onRuntimeInitialized = () => {
+            this.#onRuntimeInitialized(mod)
+          }
+        },
+        (mod: PostgresMod) => {
+          // Register /dev/blob device
+          // This is used to read and write blobs when used in COPY TO/FROM
+          // e.g. COPY mytable TO '/dev/blob' WITH (FORMAT binary)
+          // The data is returned by the query as a `blob` property in the results
+          const devId = mod.FS.makedev(64, 0)
+          const devOpt = {
+            open: (_stream: any) => {},
+            close: (_stream: any) => {},
+            read: (
+              _stream: any,
+              buffer: Uint8Array,
+              offset: number,
+              length: number,
+              position: number,
+            ) => {
+              const buf = this.#queryReadBuffer
+              if (!buf) {
+                throw new Error(
+                  'No /dev/blob File or Blob provided to read from',
+                )
+              }
+              const contents = new Uint8Array(buf)
+              if (position >= contents.length) return 0
+              const size = Math.min(contents.length - position, length)
+              for (let i = 0; i < size; i++) {
+                buffer[offset + i] = contents[position + i]
+              }
+              return size
+            },
+            write: (
+              _stream: any,
+              buffer: Uint8Array,
+              offset: number,
+              length: number,
+              _position: number,
+            ) => {
+              this.#queryWriteChunks ??= []
+              this.#queryWriteChunks.push(buffer.slice(offset, offset + length))
+              return length
+            },
+            llseek: (stream: any, offset: number, whence: number) => {
+              const buf = this.#queryReadBuffer
+              if (!buf) {
+                throw new Error('No /dev/blob File or Blob provided to llseek')
+              }
+              let position = offset
+              if (whence === 1) {
+                position += stream.position
+              } else if (whence === 2) {
+                position = new Uint8Array(buf).length
+              }
+              if (position < 0) {
+                throw new mod.FS.ErrnoError(28)
+              }
+              return position
+            },
+          }
+          mod.FS.registerDevice(devId, devOpt)
+          mod.FS.mkdev('/dev/blob', devId)
+        },
+        (mod: PostgresMod) => {
+          mod.ENV.HOME = '/home/postgres'
+          mod.ENV.USER = 'postgres'
+          mod.ENV.LOGNAME = 'postgres'
+          mod.ENV.PGDATA = pglUtils.PGDATA
+          mod.ENV.PGUSER = options.username ?? 'postgres'
+          mod.ENV.PGDATABASE = options.database ?? 'postgres'
+          mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+          mod.ENV.TZ = 'UTC'
+          mod.ENV.PGTZ = 'UTC'
+          mod.ENV.PGCLIENTENCODING = 'UTF8'
+
+          // some extensions might need their own ENV variables
+          // TODO: move this to the extension init function
+          for (const [extName] of Object.entries(this.#extensions)) {
+            if (extName === 'postgis') {
+              mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
+            }
+          }
+        },
+        (mod: PostgresMod) => {
+          mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+          mod.FS.chmod(initdbExePath, 0o0555)
+          mod.FS.chmod(postgresExePath, 0o0555)
+        },
+        // (mod: PostgresMod) => {
+        //   if (options.proxyFS) {
+        //     mod.FS = options.proxyFS
+        //     // try {
+        //     //   mod.FS.mkdir(pglUtils.PG_ROOT)
+        //     // } catch (e: any) {
+        //     //   console.error(e.toString())
+        //     // }
+        //     // mod.FS.mount(
+        //     //   mod.PROXYFS,
+        //     //   {
+        //     //     root: pglUtils.PG_ROOT,
+        //     //     fs: options.proxyFS,
+        //     //   },
+        //     //   pglUtils.PG_ROOT
+        //     // )
+        //     // mod.PIPEFS = options.processInfo!.parent.Module.PIPEFS
+        //   }
+        // },
+      ],
+    }
+    return emscriptenOpts
+  }
+
   #onRuntimeInitialized(mod: PostgresMod) {
     this.addOsFunctions(this.#pgOS)
 
-    // set the write callback
-    this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      this.#protocolParser.parse(bytes, (msg) => {
-        const parsedMsg = this.#parse(msg)
-        if (parsedMsg) {
-          this.#currentResults.push(parsedMsg)
+    // set the socket send callback
+    this.#pglite_socket_send = mod.addFunction(
+      (_fd: number, ptr: number, length: number, _flags: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
         }
-      })
-      if (this.#keepRawResponse) {
-        const copied = bytes.slice()
-        if (this.#currentOnRawData) {
-          try {
-            this.#currentOnRawData(copied)
-          } catch (e) {
-            // swallow
-            this.#log('Error in onRawData() callback', e)
+        this.#protocolParser.parse(bytes, (msg) => {
+          const parsedMsg = this.#parse(msg)
+          if (parsedMsg) {
+            this.#currentResults.push(parsedMsg)
           }
-        } else {
-          let requiredSize = this.#writeOffset + copied.length
-          if (requiredSize > this.#inputData.length) {
-            const newSize =
-              this.#inputData.length +
-              (this.#inputData.length >> 1) +
-              requiredSize
-            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-              requiredSize = PGlite.MAX_BUFFER_SIZE
+        })
+        if (this.#keepRawResponse) {
+          const copied = bytes.slice()
+          if (this.#currentOnRawData) {
+            try {
+              this.#currentOnRawData(copied)
+            } catch (e) {
+              // swallow
+              this.#log('Error in onRawData() callback', e)
             }
-            const newBuffer = new Uint8Array(newSize)
-            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-            this.#inputData = newBuffer
+          } else {
+            let requiredSize = this.#writeOffset + copied.length
+            if (requiredSize > this.#inputData.length) {
+              const newSize =
+                this.#inputData.length +
+                (this.#inputData.length >> 1) +
+                requiredSize
+              if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+                requiredSize = PGlite.MAX_BUFFER_SIZE
+              }
+              const newBuffer = new Uint8Array(newSize)
+              newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+              this.#inputData = newBuffer
+            }
+            this.#inputData.set(copied, this.#writeOffset)
+            this.#writeOffset += copied.length
           }
-          this.#inputData.set(copied, this.#writeOffset)
-          this.#writeOffset += copied.length
         }
-      }
-      return length
-    }, 'iii')
+        return length
+      },
+      'iipii',
+    )
 
-    // set the read callback
-    this.#pglite_socket_read = mod.addFunction(
-      (ptr: any, max_length: number) => {
+    // set the socket recv callback
+    this.#pglite_socket_recv = mod.addFunction(
+      (_fd: number, ptr: number, max_length: number, _flags: number) => {
         // copy current data to wasm buffer
         let length = this.#outputData.length - this.#readOffset
         if (length > max_length) {
@@ -679,10 +1114,11 @@ export class PGlite
 
         return length
       },
-      'iii',
+      'iipii',
     )
 
-    mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
+    mod._pgl_set_send_fn(this.#pglite_socket_send)
+    mod._pgl_set_recv_fn(this.#pglite_socket_recv)
   }
   /**
    * The Postgres Emscripten Module
@@ -733,8 +1169,8 @@ export class PGlite
         this.#log(`An error occured while closing the db`, e.toString())
       }
     } finally {
-      this.mod!.removeFunction(this.#pglite_socket_read)
-      this.mod!.removeFunction(this.#pglite_socket_write)
+      this.mod!.removeFunction(this.#pglite_socket_recv)
+      this.mod!.removeFunction(this.#pglite_socket_send)
     }
 
     // Close the filesystem
@@ -1229,7 +1665,10 @@ export class PGlite
     this.#running = true
   }
 
-  #start(opts: { pgDataFolder: string; startParams: string[] }): void {
+  async #start(opts: {
+    pgDataFolder: string
+    startParams: string[]
+  }): Promise<void> {
     const args = [...opts.startParams, '-D', opts.pgDataFolder]
     const result = this.mod!.callMain(args)
     if (this.#singleMode === true) {
@@ -1238,9 +1677,10 @@ export class PGlite
     } else {
       // not single mode
       if (result === 101) {
-        // postmaster is listening for new connections on the socket
+        // postmaster is waiting (listening) for new connections on the socket
         this.triggerNewConnection()
         this.mod!._PostmasterServerLoopOnce()
+        await this.#startPendingSubprocesses()
       } else {
         throw new Error('PGlite (normal mode) failed to initialize properly')
       }
@@ -1264,5 +1704,43 @@ export class PGlite
 
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
+  }
+
+  protected pglite_fork(
+    childType: number,
+    startupData: number,
+    startupDataLen: number,
+    clientSock: number,
+  ): number {
+    const pid = this.#pgOS.nextPid++
+    this.#pendingChildProcesses.push({
+      pid,
+      childType,
+      startupData,
+      startupDataLen,
+      heap: this.Module.HEAPU8.slice(),
+      parent: this,
+      clientSock,
+    })
+    return pid
+  }
+
+  async #startPendingSubprocesses() {
+    let proc = this.#pendingChildProcesses.shift()
+    while (proc) {
+      this.#childProcesses.push(await this.#startSubProcess(proc))
+      proc = this.#pendingChildProcesses.shift()
+    }
+  }
+
+  async #startSubProcess(processInfo: ProcessInfo): Promise<PGlite> {
+    console.log('starting process', processInfo)
+    const newProcess = await PGlite.create({
+      singleMode: false,
+      processInfo,
+      proxyFS: this.Module.FS,
+      noInitDb: true,
+    })
+    return newProcess
   }
 }

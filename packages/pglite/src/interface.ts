@@ -5,6 +5,7 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import { ProcessInfo } from './processUtils.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -101,6 +102,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   parsers?: ParserOptions
   serializers?: SerializerOptions
   startParams?: string[]
+  processInfo?: ProcessInfo
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

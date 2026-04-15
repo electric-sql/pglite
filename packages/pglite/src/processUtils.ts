@@ -1,16 +1,27 @@
 import { PostgresMod } from './postgresMod'
 
+export interface ProcessInfo {
+  parent: Process
+  pid: number
+  childType: number
+  startupData: number
+  startupDataLen: number
+  heap?: Uint8Array
+  clientSock: number
+}
+
 export abstract class Process {
   debug: number = 0
   #listeningSocketFd: number = -1
   #postmasterListenSocket: number = -1
-
-  get isPostmaster(): boolean {
-    return this.#postmasterListenSocket > -1
-  }
+  // #pipe_fn: number = -1
 
   set postmasterListenSocket(value: number) {
     this.#postmasterListenSocket = value
+  }
+
+  get postmasterListenSocket(): number {
+    return this.#postmasterListenSocket
   }
 
   set listeningSocketFd(value: number) {
@@ -75,15 +86,33 @@ export abstract class Process {
 
   abstract get Module(): PostgresMod
 
-  abstract fork(): number
+  protected abstract pglite_fork(
+    childType: number,
+    startupData: number,
+    startupDataLen: number,
+    clientSock: number,
+  ): number
 
   protected addOsFunctions(os: OS) {
-    this.#fork_fn = this.Module.addFunction(() => {
-      // throw new Error('Fork not supported atm.')
-      // todo: schedule starting a backend - need to get the parameters set in postmaster_child_launch
-      // return os.fork(this)
-      return this.fork()
-    }, 'p')
+    this.#fork_fn = this.Module.addFunction(
+      (
+        child_type: number,
+        startup_data: number,
+        startup_data_len: number,
+        clientSock: number,
+      ) => {
+        // throw new Error('Fork not supported atm.')
+        // todo: schedule starting a backend - need to get the parameters set in postmaster_child_launch
+        // return os.fork(this)
+        return this.pglite_fork(
+          child_type,
+          startup_data,
+          startup_data_len,
+          clientSock,
+        )
+      },
+      'piiii',
+    )
 
     this.Module._pgl_set_fork_fn(this.#fork_fn)
 
@@ -181,6 +210,13 @@ export abstract class Process {
     }, 'ii')
 
     this.Module._pgl_set_close_fn(this.#close_fn)
+
+    // this.#pipe_fn = this.Module.addFunction((pointer: number) => {
+    //   this.#log('pipe_fn', pointer)
+    //   return os.pipe(this, pointer)
+    // }, 'ip')
+
+    // this.Module._pgl_set_pipe_fn(this.#pipe_fn)
   }
 
   protected removeOsFunctions() {
@@ -253,7 +289,8 @@ export abstract class Process {
 
 export class OS {
   debug: number
-  nextPid: number = 2
+  static readonly postmasterPid = 1
+  nextPid: number = 2 // 1 is reserved for postmaster
   nextSocketFd: number = 1
   postmasterListenSocket: number = -1
   // postmasterProcess: Process | null = null
@@ -373,7 +410,7 @@ export class OS {
   }
 
   close(process: Process, fd: number): number {
-    if (process.isPostmaster && fd === this.postmasterListenSocket) {
+    if (fd === this.postmasterListenSocket) {
       this.#log('Closing postmaster listen socket')
       this.postmasterListenSocket = -1
       process.listeningSocketFd = -1
@@ -387,7 +424,7 @@ export class OS {
     for (let i = 0; i < nfds; i++) {
       const base = fds + i * POLLFD_SIZE
       const fd = process.Module.HEAP32[base >> 2]
-      if (fd === this.postmasterListenSocket && process.isPostmaster) {
+      if (fd === this.postmasterListenSocket) {
         if (process.listeningSocketFd > 0) {
           return nfds
         }
@@ -403,4 +440,8 @@ export class OS {
 
     return nfds
   }
+
+  // pipe(process: Process, pointer: number) {
+  //   this.#log('pipe', process.pid, pointer)
+  // }
 }

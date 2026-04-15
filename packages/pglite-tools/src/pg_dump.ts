@@ -35,7 +35,7 @@ async function execPgDump({
   pg: PGlite
   args: string[]
 }): Promise<ExecResult> {
-  let pgdump_write, pgdump_read
+  let send_fn, recv_fn
   let exitCode = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
@@ -60,36 +60,45 @@ async function execPgDump({
         mod.onRuntimeInitialized = () => {
           let bufferedBytes: Uint8Array = new Uint8Array()
 
-          pgdump_write = mod.addFunction((ptr: any, length: number) => {
-            let bytes
-            try {
-              bytes = mod.HEAPU8.subarray(ptr, ptr + length)
-            } catch (e: any) {
-              console.error('error', e)
-              throw e
-            }
-            const currentResponse = pg.execProtocolRawSync(bytes)
-            bufferedBytes = concat(bufferedBytes, currentResponse)
-            return length
-          }, 'iii')
+          send_fn = mod.addFunction(
+            (_fd: number, ptr: number, length: number, _flags: number) => {
+              let bytes
+              try {
+                bytes = mod.HEAPU8.subarray(ptr, ptr + length)
+              } catch (e: any) {
+                console.error('error', e)
+                throw e
+              }
+              const currentResponse = pg.execProtocolRawSync(bytes)
+              bufferedBytes = concat(bufferedBytes, currentResponse)
+              return length
+            },
+            'iipii',
+          )
 
-          pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
-            let length = bufferedBytes.length
-            if (length > max_length) {
-              length = max_length
-            }
-            try {
-              mod.HEAP8.set(bufferedBytes.subarray(0, length), ptr)
-            } catch (e) {
-              console.error(e)
-            }
-            bufferedBytes = bufferedBytes.subarray(length, bufferedBytes.length)
-            return length
-          }, 'iii')
+          recv_fn = mod.addFunction(
+            (_fd: number, ptr: number, max_length: number, _flags: number) => {
+              let length = bufferedBytes.length
+              if (length > max_length) {
+                length = max_length
+              }
+              try {
+                mod.HEAP8.set(bufferedBytes.subarray(0, length), ptr)
+              } catch (e) {
+                console.error(e)
+              }
+              bufferedBytes = bufferedBytes.subarray(
+                length,
+                bufferedBytes.length,
+              )
+              return length
+            },
+            'iipii',
+          )
 
-          mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
+          mod._pgl_set_send_fn(send_fn)
+          mod._pgl_set_recv_fn(recv_fn)
 
-          // default $HOME in emscripten is /home/postgres
           mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
       },

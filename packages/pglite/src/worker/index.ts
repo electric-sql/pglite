@@ -515,6 +515,10 @@ export class PGliteWorker
     // throw new Error('Not implemented')
     return {} as PostgresMod
   }
+
+  protected pglite_fork(): number {
+    throw new Error('Method not implemented.')
+  }
 }
 
 export interface WorkerOptions {

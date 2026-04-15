@@ -30,7 +30,8 @@ export interface InitdbMod
   stringToUTF8OnStack: (s: string) => number
   ___errno_location: () => number
   _strerror: (errno: number) => number
-  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_send_fn: (send_fn: number) => number
+  _pgl_set_recv_fn: (recv_fn: number) => number
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void

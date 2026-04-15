@@ -23,11 +23,9 @@ export interface PgDumpMod
   WASM_PREFIX: string
   INITIAL_MEMORY: number
   ENV: Record<string, string>
-  _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
-  addFunction: (
-    cb: (ptr: any, length: number) => void,
-    signature: string,
-  ) => number
+  _pgl_set_send_fn: (send_fn: number) => number
+  _pgl_set_recv_fn: (recv_fn: number) => number
+  addFunction: (fn: CallableFunction, signature: string) => number
   removeFunction: (f: number) => void
   onExit: (status: number) => void
   print: (test: string) => void
