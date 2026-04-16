@@ -667,7 +667,7 @@ export class PGlite
           if (firstNewFd === stream.fd) break
           const newStream = options.proxyFS.dupStream(stream)
           if (!firstNewFd) firstNewFd = newStream.fd
-          this.Module._pgl_pipe_replace(stream.fd, newStream.fd)
+          this.Module._hlp_pipe_replace(stream.fd, newStream.fd)
         }
       }
 
@@ -680,12 +680,19 @@ export class PGlite
 
     {
       this.mod._after_fork_inchild()
-      this.mod._after_fork_process_inchild(
-        options.processInfo!.childType,
-        options.processInfo!.startupData,
-        options.processInfo!.startupDataLen,
-        options.processInfo!.clientSock,
-      )
+      try {
+        const res = this.mod._after_fork_process_inchild(
+          options.processInfo!.childType,
+          options.processInfo!.startupData,
+          options.processInfo!.startupDataLen,
+          options.processInfo!.clientSock,
+        )
+        if (res === 102) {
+          console.log('here hare here', 102)
+        }
+      } catch (e: any) {
+        console.log(e.toString())
+      }
     }
     this.#setPGliteActive()
 

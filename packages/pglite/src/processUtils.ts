@@ -34,7 +34,8 @@ export abstract class Process {
   }
 
   triggerNewConnection() {
-    this.Module._pgl_trigger_new_connection()
+    const result = this.Module._hlp_trigger_new_connection()
+    console.log(result)
     // const POLLIN = 0x0001
     // if (this.#listeningSocketFd < 0)
     //   throw new Error(`Process ${this.#pid} has no listening socket`)
