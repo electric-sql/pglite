@@ -681,17 +681,30 @@ export class PGlite
     {
       this.mod._after_fork_inchild()
       try {
-        const res = this.mod._after_fork_process_inchild(
+        this.mod._after_fork_process_inchild(
           options.processInfo!.childType,
           options.processInfo!.startupData,
           options.processInfo!.startupDataLen,
           options.processInfo!.clientSock,
         )
-        if (res === 102) {
-          console.log('here hare here', 102)
-        }
       } catch (e: any) {
-        console.log(e.toString())
+        this.#log('after_fork_process_inchild', e.toString())
+        const SIGCHLD = 17
+        if (e.status != null) {
+          if (e.status === 102) {
+            // exit on poll - good
+            this.#log('exit on empty poll', this.pid)
+          } else if (e.status === 0) {
+            this.#log('child exited normally', this.pid)
+          } else {
+            console.error('unhandled exit status', e.toString())
+          }
+          this.#pgOS.reportChildExit(this.pid, e.status)
+          options.processInfo!.parent.deliverSignal(SIGCHLD)
+          this.#pgOS.unregisterProcess(this)
+        } else {
+          console.error('unknown error occured', e.toString())
+        }
       }
     }
     this.#setPGliteActive()
@@ -1053,6 +1066,7 @@ export class PGlite
 
   #onRuntimeInitialized(mod: PostgresMod) {
     this.addOsFunctions(this.#pgOS)
+    this.#pgOS.registerProcess(this)
 
     // set the socket send callback
     this.#pglite_socket_send = mod.addFunction(

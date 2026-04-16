@@ -39,6 +39,9 @@ export interface PostgresMod
   _pgl_set_pipe_fn: (pipe_fn: number) => number
   _pgl_set_fork_fn: (fork_fn: number) => number
   _pgl_set_kill_fn: (kill_fn: number) => number
+  _pgl_set_waitpid_fn: (waitpid_fn: number) => number
+  _pgl_set_sigaction_fn: (sigaction_fn: number) => number
+  _pgl_set_signal_fn: (signal_fn: number) => number
   _pgl_set_getpid_fn: (getpid_fn: number) => number
   _pgl_set_socket_fn: (socket_fn: number) => number
   _pgl_set_bind_fn: (bind_fn: number) => number
@@ -81,7 +84,7 @@ export interface PostgresMod
     startup_data: number,
     startup_data_len: number,
     client_sock: number,
-  ) => number
+  ) => void
   _hlp_pipe_replace: (prevFd: number, newFd: number) => number
   _hlp_trigger_new_connection: () => number
 }

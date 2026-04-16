@@ -53,8 +53,10 @@ export abstract class Process {
   }
 
   #fds = new Array<number>()
+  #signalHandlers = new Map<number, number>()
   #fork_fn: number = -1
   #kill_fn: number = -1
+  #sigaction_fn: number = -1
   #system_fn: number = -1
   #popen_fn: number = -1
   #pclose_fn: number = -1
@@ -65,6 +67,7 @@ export abstract class Process {
   #listen_fn: number = -1
   #accept_fn: number = -1
   #close_fn: number = -1
+  #waitpid_fn: number = -1
 
   readonly #pid: number
   get pid() {
@@ -84,6 +87,21 @@ export abstract class Process {
 
   getFds() {
     return this.#fds
+  }
+
+  setSignalHandler(signum: number, handler: number): number {
+    const prev = this.#signalHandlers.get(signum) ?? 0
+    this.#signalHandlers.set(signum, handler)
+    return prev
+  }
+
+  deliverSignal(signum: number): void {
+    const SIG_DFL = 0
+    const SIG_IGN = 1
+    const handler = this.#signalHandlers.get(signum) ?? SIG_DFL
+    if (handler === SIG_IGN || handler === SIG_DFL) return
+    const table = (this.Module as any).wasmTable as WebAssembly.Table
+    table.get(handler)(signum)
   }
 
   abstract get Module(): PostgresMod
@@ -124,6 +142,24 @@ export abstract class Process {
     }, 'iii')
 
     this.Module._pgl_set_kill_fn(this.#kill_fn)
+
+    this.#waitpid_fn = this.Module.addFunction(
+      (pid: number, statusPtr: number, options: number) => {
+        return os.waitpid(this, pid, statusPtr, options)
+      },
+      'iiii',
+    )
+
+    this.Module._pgl_set_waitpid_fn(this.#waitpid_fn)
+
+    this.#sigaction_fn = this.Module.addFunction(
+      (signum: number, handler: number) => {
+        return os.sigaction(this, signum, handler)
+      },
+      'iii',
+    )
+
+    this.Module._pgl_set_sigaction_fn(this.#sigaction_fn)
 
     // we override system() to intercept any calls that might generate unexpected output
     this.#system_fn = this.Module.addFunction((cmd_ptr: number) => {
@@ -230,6 +266,14 @@ export abstract class Process {
       this.Module.removeFunction(this.#kill_fn)
       this.#kill_fn = -1
     }
+    if (this.#waitpid_fn !== -1) {
+      this.Module.removeFunction(this.#waitpid_fn)
+      this.#waitpid_fn = -1
+    }
+    if (this.#sigaction_fn !== -1) {
+      this.Module.removeFunction(this.#sigaction_fn)
+      this.#sigaction_fn = -1
+    }
     if (this.#system_fn !== -1) {
       this.Module.removeFunction(this.#system_fn)
       this.#system_fn = -1
@@ -295,7 +339,9 @@ export class OS {
   nextPid: number = 2 // 1 is reserved for postmaster
   nextSocketFd: number = 1
   postmasterListenSocket: number = -1
-  // postmasterProcess: Process | null = null
+  #processes = new Map<number, Process>()
+  #exitedChildren: Array<{ pid: number; exitStatus: number }> = []
+
   /**
    * Internal log function
    */
@@ -305,7 +351,44 @@ export class OS {
     }
   }
 
-  // #processTable = new ProcessTable()
+  registerProcess(proc: Process) {
+    this.#processes.set(proc.pid, proc)
+  }
+
+  unregisterProcess(proc: Process) {
+    this.#processes.delete(proc.pid)
+  }
+
+  reportChildExit(pid: number, exitCode: number) {
+    const exitStatus = exitCode << 8
+    this.#exitedChildren.push({ pid, exitStatus })
+    this.#log(`reportChildExit pid=${pid} exitCode=${exitCode} status=0x${exitStatus.toString(16)}`)
+  }
+
+  waitpid(
+    proc: Process,
+    pid: number,
+    statusPtr: number,
+    _options: number,
+  ): number {
+    let idx = -1
+    if (pid === -1) {
+      idx = this.#exitedChildren.length > 0 ? 0 : -1
+    } else {
+      idx = this.#exitedChildren.findIndex((e) => e.pid === pid)
+    }
+
+    if (idx === -1) {
+      return 0
+    }
+
+    const entry = this.#exitedChildren.splice(idx, 1)[0]
+    if (statusPtr !== 0) {
+      proc.Module.HEAP32[statusPtr >> 2] = entry.exitStatus
+    }
+    this.#log(`waitpid returning pid=${entry.pid} status=0x${entry.exitStatus.toString(16)}`)
+    return entry.pid
+  }
 
   #handleExternalCmd(proc: Process, cmd: string, mode: string): number {
     if (cmd.startsWith('locale -a') && mode === 'r') {
@@ -327,9 +410,21 @@ export class OS {
     // TODO
   }
 
+  sigaction(proc: Process, signum: number, handler: number): number {
+    this.#log(`Sigaction called`, proc.pid, signum, handler)
+    return proc.setSignalHandler(signum, handler)
+  }
+
   kill(proc: Process, pid: number, signal: number): number {
     this.#log(`Kill called`, proc.pid, pid, signal)
-    return 0 //TODO
+    const target = this.#processes.get(pid)
+    if (!target) {
+      this.#log(`Kill: no process with pid ${pid}`)
+      return -1
+    }
+    if (signal === 0) return 0
+    target.deliverSignal(signal)
+    return 0
   }
 
   system(proc: Process, command: string): number {
