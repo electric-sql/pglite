@@ -362,7 +362,9 @@ export class OS {
   reportChildExit(pid: number, exitCode: number) {
     const exitStatus = exitCode << 8
     this.#exitedChildren.push({ pid, exitStatus })
-    this.#log(`reportChildExit pid=${pid} exitCode=${exitCode} status=0x${exitStatus.toString(16)}`)
+    this.#log(
+      `reportChildExit pid=${pid} exitCode=${exitCode} status=0x${exitStatus.toString(16)}`,
+    )
   }
 
   waitpid(
@@ -386,7 +388,9 @@ export class OS {
     if (statusPtr !== 0) {
       proc.Module.HEAP32[statusPtr >> 2] = entry.exitStatus
     }
-    this.#log(`waitpid returning pid=${entry.pid} status=0x${entry.exitStatus.toString(16)}`)
+    this.#log(
+      `waitpid returning pid=${entry.pid} status=0x${entry.exitStatus.toString(16)}`,
+    )
     return entry.pid
   }
 

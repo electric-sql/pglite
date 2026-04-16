@@ -690,7 +690,7 @@ export class PGlite
       } catch (e: any) {
         this.#log('after_fork_process_inchild', e.toString())
         const SIGCHLD = 17
-        if (e.status != null) {
+        if (e.status !== null) {
           if (e.status === 102) {
             // exit on poll - good
             this.#log('exit on empty poll', this.pid)
