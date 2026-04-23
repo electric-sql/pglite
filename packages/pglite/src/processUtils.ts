@@ -21,13 +21,12 @@ export interface ProcessInfo {
 }
 
 export abstract class PostgresProcess {
-
   static readonly PostmasterChildType: number = -1
 
   debug: number = 0
   #listeningSocketFd: number = -1
   #postmasterListenSocket: number = -1
-  
+
   exitedChildren: Array<{ pid: number; exitStatus: number }> = []
 
   set postmasterListenSocket(value: number) {
@@ -147,7 +146,10 @@ export abstract class PostgresProcess {
         const clientSocketData: ClientSocket = {
           sock: view.getInt32(0, true),
           raddr: {
-            addr: heap.slice(clientSock + 4, clientSock + 4 + SOCKADDR_STORAGE_SIZE),
+            addr: heap.slice(
+              clientSock + 4,
+              clientSock + 4 + SOCKADDR_STORAGE_SIZE,
+            ),
             salen: view.getUint32(4 + SOCKADDR_STORAGE_SIZE, true),
           },
         }

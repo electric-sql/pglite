@@ -33,7 +33,12 @@ import {
 import { initdb } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import { ClientSocket, PGliteOS, PostgresProcess, ProcessInfo } from './processUtils'
+import {
+  ClientSocket,
+  PGliteOS,
+  PostgresProcess,
+  ProcessInfo,
+} from './processUtils'
 
 // import fs from 'fs';
 
@@ -184,7 +189,7 @@ export class PGlite
         PGliteOS.nextPid++,
       options?.processInfo?.childType ??
         (dataDirOrPGliteOptions as any).processInfo?.childType ??
-        PostgresProcess.PostmasterChildType
+        PostgresProcess.PostmasterChildType,
     )
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
@@ -223,7 +228,10 @@ export class PGlite
 
     this.#processInfo = options.processInfo ?? {
       childType: -1,
-      clientSocket: { sock: -1, raddr: { addr: new Uint8Array(128), salen: 0 } },
+      clientSocket: {
+        sock: -1,
+        raddr: { addr: new Uint8Array(128), salen: 0 },
+      },
       parent: {} as PostgresProcess,
       pid: this.pid,
       startupData: 0,
@@ -705,12 +713,12 @@ export class PGlite
         const len = 4 + 4 + params.length // length field + version + params
         const buf = new Uint8Array(len)
         const view = new DataView(buf.buffer)
-        view.setInt32(0, len)       // length (big-endian)
+        view.setInt32(0, len) // length (big-endian)
         view.setInt32(4, 0x00030000) // protocol 3.0
         buf.set(params, 8)
         this.#outputData = buf
       }
-      
+
       // const x = this.mod.FS.readFile('/pglite/data/global/1262')
 
       // await fs.writeFileSync(`/tmp/pglite.${options.processInfo!.childType}.bin`, new Uint8Array(x))
@@ -733,7 +741,11 @@ export class PGlite
             } else {
               console.error('unhandled exit status', JSON.stringify(e))
             }
-            PGliteOS.reportChildExit(this.#processInfo!.parent.pid, this.pid, e.status)
+            PGliteOS.reportChildExit(
+              this.#processInfo!.parent.pid,
+              this.pid,
+              e.status,
+            )
             options.processInfo!.parent.Module._PostmasterServerLoopOnce()
           }
         } else {
@@ -897,11 +909,11 @@ export class PGlite
 
           // await fs.writeFileSync(`/tmp/pglite.main.bin`, x)
 
-              // Sync any changes back to the persisted store (if there is one)
-              // TODO: only sync here if initdb did init db.
-              await this.syncToFs()
-            }
-          }
+          // Sync any changes back to the persisted store (if there is one)
+          // TODO: only sync here if initdb did init db.
+          await this.syncToFs()
+        }
+      }
 
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
@@ -1740,7 +1752,7 @@ export class PGlite
       if (result === 102) {
         await this.#startPendingSubprocesses()
         // postmaster is waiting (listening) for new connections on the socket
-        this.triggerNewConnection() 
+        this.triggerNewConnection()
         this.postmasterLoopOnce()
         await this.#startPendingSubprocesses()
       } else {
@@ -1762,7 +1774,6 @@ export class PGlite
         }
       }
     }
-
   }
 
   #processStartupPacket(message: Uint8Array): Uint8Array {
