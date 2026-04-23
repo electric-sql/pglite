@@ -55,6 +55,7 @@ export interface PostgresMod
   _fclose: (stream: number) => number
   _fflush: (stream: number) => void
   _exit: (status: number) => void
+  _open: (pathname: number, flags: number, mode: number) => number
   _pgl_proc_exit: (code: number) => number
   addFunction: (fn: CallableFunction, signature: string) => number
   removeFunction: (f: number) => void
@@ -87,6 +88,10 @@ export interface PostgresMod
   ) => void
   _hlp_pipe_replace: (prevFd: number, newFd: number) => number
   _hlp_trigger_new_connection: () => number
+  _hlp_get_dummy_client_socket_ptr: () => number
+  _malloc: (size: number) => number
+  _free: (ptr: number) => void
+  _hlp_pipe_init_pipes: () => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

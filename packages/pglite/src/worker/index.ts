@@ -53,7 +53,7 @@ export class PGliteWorker
   #extensionsClose: Array<() => Promise<void>> = []
 
   constructor(worker: Worker, options?: PGliteWorkerOptions) {
-    super(0)
+    super(0,0)
     this.#workerProcess = worker
     this.#tabId = pglUtils.uuid()
     this.#extensions = options?.extensions ?? {}

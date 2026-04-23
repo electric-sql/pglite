@@ -1,20 +1,34 @@
 import { PostgresMod } from './postgresMod'
 
+export interface SockAddr {
+  addr: Uint8Array // sockaddr_storage (128 bytes)
+  salen: number // socklen_t
+}
+
+export interface ClientSocket {
+  sock: number // pgsocket (file descriptor)
+  raddr: SockAddr
+}
+
 export interface ProcessInfo {
-  parent: Process
+  parent: PostgresProcess
   pid: number
   childType: number
   startupData: number
   startupDataLen: number
   heap?: Uint8Array
-  clientSock: number
+  clientSocket: ClientSocket
 }
 
-export abstract class Process {
+export abstract class PostgresProcess {
+
+  static readonly PostmasterChildType: number = -1
+
   debug: number = 0
   #listeningSocketFd: number = -1
   #postmasterListenSocket: number = -1
-  // #pipe_fn: number = -1
+  
+  exitedChildren: Array<{ pid: number; exitStatus: number }> = []
 
   set postmasterListenSocket(value: number) {
     this.#postmasterListenSocket = value
@@ -35,7 +49,9 @@ export abstract class Process {
 
   triggerNewConnection() {
     const result = this.Module._hlp_trigger_new_connection()
-    console.log(result)
+    if (result !== 1) {
+      throw new Error(`Could not trigger a new connection. ${result}`)
+    }
     // const POLLIN = 0x0001
     // if (this.#listeningSocketFd < 0)
     //   throw new Error(`Process ${this.#pid} has no listening socket`)
@@ -69,12 +85,12 @@ export abstract class Process {
   #close_fn: number = -1
   #waitpid_fn: number = -1
 
-  readonly #pid: number
-  get pid() {
-    return this.#pid
-  }
-  public constructor(pid: number) {
-    this.#pid = pid
+  readonly pid: number
+  readonly childType: number // -1 Postmaster, the rest are defined in postgres-pglite/src/include/miscadmin.h
+
+  constructor(pid: number, childType: number) {
+    this.pid = pid
+    this.childType = childType
   }
 
   addFd(fd: number) {
@@ -110,7 +126,7 @@ export abstract class Process {
     childType: number,
     startupData: number,
     startupDataLen: number,
-    clientSock: number,
+    clientSocket: ClientSocket,
   ): number
 
   protected addOsFunctions(os: OS) {
@@ -124,11 +140,23 @@ export abstract class Process {
         // throw new Error('Fork not supported atm.')
         // todo: schedule starting a backend - need to get the parameters set in postmaster_child_launch
         // return os.fork(this)
+
+        const SOCKADDR_STORAGE_SIZE = 128
+        const heap = this.Module.HEAPU8
+        const view = new DataView(heap.buffer, clientSock)
+        const clientSocketData: ClientSocket = {
+          sock: view.getInt32(0, true),
+          raddr: {
+            addr: heap.slice(clientSock + 4, clientSock + 4 + SOCKADDR_STORAGE_SIZE),
+            salen: view.getUint32(4 + SOCKADDR_STORAGE_SIZE, true),
+          },
+        }
+
         return this.pglite_fork(
           child_type,
           startup_data,
           startup_data_len,
-          clientSock,
+          clientSocketData,
         )
       },
       'piiii',
@@ -187,7 +215,7 @@ export abstract class Process {
     this.Module._pgl_set_pclose_fn(this.#pclose_fn)
 
     this.#getpid_fn = this.Module.addFunction(() => {
-      return this.#pid
+      return this.pid
     }, 'i')
 
     this.Module._pgl_set_getpid_fn(this.#getpid_fn)
@@ -243,7 +271,7 @@ export abstract class Process {
     // this.Module._pgl_set_accept_fn(this.#accept_fn)
 
     this.#close_fn = this.Module.addFunction((fd: number) => {
-      this.#log('close_fn', fd)
+      this.#log('close_fn', this.pid, this.childType, fd)
       return os.close(this, fd)
     }, 'ii')
 
@@ -335,12 +363,12 @@ export abstract class Process {
 
 export class OS {
   debug: number
-  static readonly postmasterPid = 1
-  nextPid: number = 2 // 1 is reserved for postmaster
+  // static readonly postmasterPid = 1
+  nextPid: number = 1
   nextSocketFd: number = 1
   postmasterListenSocket: number = -1
-  #processes = new Map<number, Process>()
-  #exitedChildren: Array<{ pid: number; exitStatus: number }> = []
+
+  #pid2Process = new Map<number, PostgresProcess>()
 
   /**
    * Internal log function
@@ -351,40 +379,49 @@ export class OS {
     }
   }
 
-  registerProcess(proc: Process) {
-    this.#processes.set(proc.pid, proc)
+  registerProcess(proc: PostgresProcess) {
+    this.#pid2Process.set(proc.pid, proc)
   }
 
-  unregisterProcess(proc: Process) {
-    this.#processes.delete(proc.pid)
+  unregisterProcess(proc: PostgresProcess) {
+    this.#pid2Process.delete(proc.pid)
   }
 
-  reportChildExit(pid: number, exitCode: number) {
+  reportChildExit(parentPid: number, childPid: number, exitCode: number) {
     const exitStatus = exitCode << 8
-    this.#exitedChildren.push({ pid, exitStatus })
     this.#log(
-      `reportChildExit pid=${pid} exitCode=${exitCode} status=0x${exitStatus.toString(16)}`,
+      `reportChildExit parentPid=${parentPid} childPid=${childPid} exitCode=${exitCode} status=0x${exitStatus.toString(16)}`,
     )
+    const parentProc = this.#pid2Process.get(parentPid)
+    const childProc = this.#pid2Process.get(childPid)
+    if (!parentProc || !childProc) {
+      throw new Error(`No such process ${parentPid} or ${childProc}`)
+    }
+    parentProc.exitedChildren.push({ pid: childPid, exitStatus })
+    const SIGCHLD = 17
+    parentProc.deliverSignal(SIGCHLD)
+    // options.processInfo!.parent.deliverSignal(SIGCHLD)
+    PGliteOS.unregisterProcess(childProc)
   }
 
   waitpid(
-    proc: Process,
+    proc: PostgresProcess,
     pid: number,
     statusPtr: number,
     _options: number,
   ): number {
     let idx = -1
     if (pid === -1) {
-      idx = this.#exitedChildren.length > 0 ? 0 : -1
+      idx = proc.exitedChildren.length > 0 ? 0 : -1
     } else {
-      idx = this.#exitedChildren.findIndex((e) => e.pid === pid)
+      idx = proc.exitedChildren.findIndex((e) => e.pid === pid)
     }
 
     if (idx === -1) {
       return 0
     }
 
-    const entry = this.#exitedChildren.splice(idx, 1)[0]
+    const entry = proc.exitedChildren.splice(idx, 1)[0]
     if (statusPtr !== 0) {
       proc.Module.HEAP32[statusPtr >> 2] = entry.exitStatus
     }
@@ -394,7 +431,7 @@ export class OS {
     return entry.pid
   }
 
-  #handleExternalCmd(proc: Process, cmd: string, mode: string): number {
+  #handleExternalCmd(proc: PostgresProcess, cmd: string, mode: string): number {
     if (cmd.startsWith('locale -a') && mode === 'r') {
       const filePath = proc.Module.stringToUTF8OnStack('/pglite/locale-a')
       const smode = proc.Module.stringToUTF8OnStack(mode)
@@ -407,21 +444,21 @@ export class OS {
     this.debug = debug ?? 0
   }
 
-  fork(proc: Process): number {
+  fork(proc: PostgresProcess): number {
     this.#log(`Fork called`, proc.pid)
     // TODO create new process
     return this.nextPid++ // todo: create process, return its pid
     // TODO
   }
 
-  sigaction(proc: Process, signum: number, handler: number): number {
+  sigaction(proc: PostgresProcess, signum: number, handler: number): number {
     this.#log(`Sigaction called`, proc.pid, signum, handler)
     return proc.setSignalHandler(signum, handler)
   }
 
-  kill(proc: Process, pid: number, signal: number): number {
+  kill(proc: PostgresProcess, pid: number, signal: number): number {
     this.#log(`Kill called`, proc.pid, pid, signal)
-    const target = this.#processes.get(pid)
+    const target = this.#pid2Process.get(pid)
     if (!target) {
       this.#log(`Kill: no process with pid ${pid}`)
       return -1
@@ -431,20 +468,20 @@ export class OS {
     return 0
   }
 
-  system(proc: Process, command: string): number {
+  system(proc: PostgresProcess, command: string): number {
     this.#log(
       `Process with pid ${proc.pid} tried to execute ${command}, returning 1.`,
     )
     return 1
   }
 
-  popen(proc: Process, command: string, type: string): number {
+  popen(proc: PostgresProcess, command: string, type: string): number {
     const externalCommandStreamFd = this.#handleExternalCmd(proc, command, type)
     proc.addFd(externalCommandStreamFd)
     return externalCommandStreamFd
   }
 
-  pclose(proc: Process, stream: number): number {
+  pclose(proc: PostgresProcess, stream: number): number {
     this.#log('pclose_fn', stream)
     if (proc.getFds().includes(stream)) {
       proc.Module._fclose(stream)
@@ -456,32 +493,32 @@ export class OS {
   }
 
   socket(
-    process: Process,
+    proc: PostgresProcess,
     _domain: number,
     _type: number,
     _protocol: number,
   ): number {
-    const path = process.Module.stringToUTF8OnStack(
+    const path = proc.Module.stringToUTF8OnStack(
       `/tmp/socket_${this.nextSocketFd++}`,
     )
-    const wplusmode = process.Module.stringToUTF8OnStack('w+')
-    const socket_fd = process.Module._fopen(path, wplusmode)
+    // const wplusmode = proc.Module.stringToUTF8OnStack('w+')
+    const socket_fd = proc.Module._open(path, 0o2 | 0o100, 0o600)
     return socket_fd
   }
 
   bind(
-    process: Process,
+    proc: PostgresProcess,
     socket: number,
     address: number,
     _address_len: number,
   ): number {
     const SA_DATA_OFFSET = 3
-    const address_str = process.Module.UTF8ToString(address + SA_DATA_OFFSET)
+    const address_str = proc.Module.UTF8ToString(address + SA_DATA_OFFSET)
     if (address_str === 'pglite_abstract_socket/.s.PGSQL.5432') {
       if (this.postmasterListenSocket !== -1) {
         throw new Error('Postmaster listen socket already bound')
       }
-      process.postmasterListenSocket = socket
+      proc.postmasterListenSocket = socket
       this.postmasterListenSocket = socket
       return 0
     } else {
@@ -489,7 +526,7 @@ export class OS {
     }
   }
 
-  listen(_process: Process, socket: number, _backlog: number): number {
+  listen(_proc: PostgresProcess, socket: number, _backlog: number): number {
     if (this.postmasterListenSocket !== socket) {
       throw new Error('Socket not bound to postmaster')
     }
@@ -497,24 +534,25 @@ export class OS {
   }
 
   accept(
-    process: Process,
+    proc: PostgresProcess,
     _socket: number,
     _address: number,
     _address_len: number,
   ): number {
-    const path = process.Module.stringToUTF8OnStack(
+    const path = proc.Module.stringToUTF8OnStack(
       `/tmp/socket_${this.nextSocketFd++}`,
     )
-    const wplusmode = process.Module.stringToUTF8OnStack('w+')
-    const socket_fd = process.Module._fopen(path, wplusmode)
+    // const wplusmode = proc.Module.stringToUTF8OnStack('w+')
+
+    const socket_fd = proc.Module._open(path, 0o2 | 0o100, 0o600)
     return socket_fd
   }
 
-  close(process: Process, fd: number): number {
+  close(proc: PostgresProcess, fd: number): number {
     if (fd === this.postmasterListenSocket) {
       this.#log('Closing postmaster listen socket')
       this.postmasterListenSocket = -1
-      process.listeningSocketFd = -1
+      proc.listeningSocketFd = -1
     }
     return -1
   }
@@ -546,3 +584,5 @@ export class OS {
   //   this.#log('pipe', process.pid, pointer)
   // }
 }
+
+export const PGliteOS = new OS()

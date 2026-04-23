@@ -28,10 +28,10 @@ import {
   BackendMessage,
 } from '@electric-sql/pg-protocol/messages'
 import { makePGliteError } from './errors.js'
-import { Process } from './processUtils.js'
+import { PostgresProcess } from './processUtils.js'
 
 export abstract class BasePGlite
-  extends Process
+  extends PostgresProcess
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
 {
   serializers: Record<number | string, Serializer> = { ...serializers }

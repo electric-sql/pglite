@@ -33,7 +33,9 @@ import {
 import { initdb } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import { OS, Process, ProcessInfo } from './processUtils'
+import { ClientSocket, PGliteOS, PostgresProcess, ProcessInfo } from './processUtils'
+
+// import fs from 'fs';
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -45,22 +47,20 @@ export class PGlite
   fs?: Filesystem
   protected mod?: PostgresMod
 
-  readonly #pgOS = new OS()
-
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
   #singleMode: boolean = true
   #pendingChildProcesses = new Array<ProcessInfo>()
   #processInfo: ProcessInfo | undefined
-  #childProcesses = new Array<Process>()
+  #childProcesses = new Array<PostgresProcess>()
 
   get isBackend(): boolean {
-    return this.#processInfo?.childType === 1
+    return this.childType === 1
   }
 
   get isPostmaster(): boolean {
-    return this.#processInfo?.childType === -1
+    return this.childType === PostgresProcess.PostmasterChildType
   }
 
   get ENV(): any {
@@ -155,6 +155,8 @@ export class PGlite
     'listen_addresses=', // disable listening on TCP
     '-c',
     `unix_socket_directories=@pglite_abstract_socket`, // enable Unix-domain abstract socket
+    '-c',
+    `dynamic_shared_memory_type=posix`, // shared memory in emscripten giving me a hard time
   ]
 
   /**
@@ -179,7 +181,10 @@ export class PGlite
     super(
       options?.processInfo?.pid ??
         (dataDirOrPGliteOptions as any).processInfo?.pid ??
-        OS.postmasterPid,
+        PGliteOS.nextPid++,
+      options?.processInfo?.childType ??
+        (dataDirOrPGliteOptions as any).processInfo?.childType ??
+        PostgresProcess.PostmasterChildType
     )
     if (typeof dataDirOrPGliteOptions === 'string') {
       options = {
@@ -218,9 +223,9 @@ export class PGlite
 
     this.#processInfo = options.processInfo ?? {
       childType: -1,
-      clientSock: 0,
-      parent: {} as Process,
-      pid: this.#pgOS.nextPid++,
+      clientSocket: { sock: -1, raddr: { addr: new Uint8Array(128), salen: 0 } },
+      parent: {} as PostgresProcess,
+      pid: this.pid,
       startupData: 0,
       startupDataLen: 0,
     }
@@ -368,7 +373,7 @@ export class PGlite
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
         if (remotePackageName === 'pglite.data') {
-          if (!options.proxyFS) {
+          if (!options.masterFS) {
             if (fsBundleBuffer.byteLength !== remotePackageSize) {
               throw new Error(
                 `Invalid FS bundle size: ${fsBundleBuffer.byteLength} !== ${remotePackageSize}`,
@@ -657,21 +662,27 @@ export class PGlite
       this.mod.HEAPU8.set(options.processInfo.heap)
       options.processInfo.heap = undefined
 
-      // now patch the pipedes
-      let i = 0
-      let firstNewFd = 0
-      while (i < options.proxyFS.streams.length) {
-        const stream = options.proxyFS.streams[i++]
-        if (!stream || !stream.path) break
-        if (stream.path.startsWith('pipe')) {
-          if (firstNewFd === stream.fd) break
-          const newStream = options.proxyFS.dupStream(stream)
-          if (!firstNewFd) firstNewFd = newStream.fd
-          this.Module._hlp_pipe_replace(stream.fd, newStream.fd)
-        }
-      }
+      // // now patch the pipedes
+      // let i = 0
+      // let firstNewFd = 0
+      // while (i < options.masterFS.streams.length) {
+      //   const stream = options.masterFS.streams[i++]
+      //   if (!stream || !stream.path) break
+      //   if (stream.path.startsWith('pipe')) {
+      //     if (firstNewFd === stream.fd) break
+      //     // ideally, we would duplicate the stream, but dupStream doesn't work as expected
+      //     // when the returned fd is passed to poll
+      //     // so just create a new fd
+      //     const newStream = options.masterFS.dupStream(stream)
+      //     if (!firstNewFd) firstNewFd = newStream.fd
+      //     this.Module._hlp_pipe_replace(stream.fd, newStream.fd)
+      //   }
+      // }
 
-      this.mod.setFS(options.proxyFS)
+      this.mod.setFS(options.masterFS)
+      // a couple of pipes are inherited from the parent
+      // but this doesn't work properly atm; just create new pipes instead
+      this.Module._hlp_pipe_init_pipes()
       // (mod.FS as any).streams = options.proxyFS.streams.slice()
       // mod.PIPEFS = options.proxyFS.Module.PIPEFS;
     }
@@ -680,34 +691,57 @@ export class PGlite
 
     {
       this.mod._after_fork_inchild()
+
+      let clientSocketPtr: number = 0
+
+      if (options.processInfo?.childType === 1) {
+        clientSocketPtr = this.mod._hlp_get_dummy_client_socket_ptr()
+        const enc = new TextEncoder()
+        const params = [
+          ...enc.encode('user\0postgres\0'),
+          // ...enc.encode('database\0postgres\0'),
+          0x00, // terminator
+        ]
+        const len = 4 + 4 + params.length // length field + version + params
+        const buf = new Uint8Array(len)
+        const view = new DataView(buf.buffer)
+        view.setInt32(0, len)       // length (big-endian)
+        view.setInt32(4, 0x00030000) // protocol 3.0
+        buf.set(params, 8)
+        this.#outputData = buf
+      }
+      
+      // const x = this.mod.FS.readFile('/pglite/data/global/1262')
+
+      // await fs.writeFileSync(`/tmp/pglite.${options.processInfo!.childType}.bin`, new Uint8Array(x))
       try {
         this.mod._after_fork_process_inchild(
           options.processInfo!.childType,
           options.processInfo!.startupData,
           options.processInfo!.startupDataLen,
-          options.processInfo!.clientSock,
+          clientSocketPtr,
         )
       } catch (e: any) {
         this.#log('after_fork_process_inchild', e.toString())
-        const SIGCHLD = 17
-        if (e.status !== null) {
+        if (e.status !== null && e.status !== undefined) {
           if (e.status === 102) {
-            // exit on poll - good
-            this.#log('exit on empty poll', this.pid)
-          } else if (e.status === 0) {
-            this.#log('child exited normally', this.pid)
+            // PGlite intentional exit on poll and no self latch set - good
+            this.#log('exit on empty poll + no self latch set', this.pid)
           } else {
-            console.error('unhandled exit status', e.toString())
+            if (e.status === 0) {
+              this.#log('child exited normally', this.pid)
+            } else {
+              console.error('unhandled exit status', JSON.stringify(e))
+            }
+            PGliteOS.reportChildExit(this.#processInfo!.parent.pid, this.pid, e.status)
+            options.processInfo!.parent.Module._PostmasterServerLoopOnce()
           }
-          this.#pgOS.reportChildExit(this.pid, e.status)
-          options.processInfo!.parent.deliverSignal(SIGCHLD)
-          this.#pgOS.unregisterProcess(this)
         } else {
           console.error('unknown error occured', e.toString())
         }
       }
     }
-    this.#setPGliteActive()
+    this.#running = true
 
     this.#ready = true
 
@@ -859,12 +893,15 @@ export class PGlite
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
           await loadTar(this.mod.FS, pgdatatar, pglUtils.PGDATA)
+          // const x = this.mod.FS.readFile('/pglite/data/global/1262')
 
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
-        }
-      }
+          // await fs.writeFileSync(`/tmp/pglite.main.bin`, x)
+
+              // Sync any changes back to the persisted store (if there is one)
+              // TODO: only sync here if initdb did init db.
+              await this.syncToFs()
+            }
+          }
 
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
@@ -881,7 +918,7 @@ export class PGlite
         startParams,
       })
 
-      this.#setPGliteActive()
+      this.#running = true
 
       this.#ready = true
     }
@@ -932,7 +969,7 @@ export class PGlite
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
         if (remotePackageName === 'pglite.data') {
-          if (!options.proxyFS) {
+          if (!options.masterFS) {
             if (fsBundleBuffer!.byteLength !== remotePackageSize) {
               throw new Error(
                 `Invalid FS bundle size: ${fsBundleBuffer!.byteLength} !== ${remotePackageSize}`,
@@ -1065,8 +1102,8 @@ export class PGlite
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
-    this.addOsFunctions(this.#pgOS)
-    this.#pgOS.registerProcess(this)
+    this.addOsFunctions(PGliteOS)
+    PGliteOS.registerProcess(this)
 
     // set the socket send callback
     this.#pglite_socket_send = mod.addFunction(
@@ -1678,6 +1715,9 @@ export class PGlite
   }
 
   #setPGliteActive(): void {
+    if (!this.#singleMode) {
+      throw new Error('not in single mode')
+    }
     if (this.#running) {
       throw new Error('PGlite single mode already running')
     }
@@ -1698,14 +1738,31 @@ export class PGlite
     } else {
       // not single mode
       if (result === 102) {
+        await this.#startPendingSubprocesses()
         // postmaster is waiting (listening) for new connections on the socket
-        this.triggerNewConnection()
-        this.mod!._PostmasterServerLoopOnce()
+        this.triggerNewConnection() 
+        this.postmasterLoopOnce()
         await this.#startPendingSubprocesses()
       } else {
         throw new Error('PGlite (normal mode) failed to initialize properly')
       }
     }
+  }
+
+  private postmasterLoopOnce() {
+    try {
+      this.mod!._PostmasterServerLoopOnce()
+    } catch (e: any) {
+      this.#log('Postmaster exited', JSON.stringify(e))
+      if (e.status !== null && e.status !== undefined) {
+        if (e.status === 102) {
+          this.#log('Postmaster exit was expected')
+        } else {
+          throw new Error(`Unexpected Postmaster exit code ${e.status}`)
+        }
+      }
+    }
+
   }
 
   #processStartupPacket(message: Uint8Array): Uint8Array {
@@ -1731,9 +1788,9 @@ export class PGlite
     childType: number,
     startupData: number,
     startupDataLen: number,
-    clientSock: number,
+    clientSocket: ClientSocket,
   ): number {
-    const pid = this.#pgOS.nextPid++
+    const pid = PGliteOS.nextPid++
     this.#pendingChildProcesses.push({
       pid,
       childType,
@@ -1741,7 +1798,7 @@ export class PGlite
       startupDataLen,
       heap: this.Module.HEAPU8.slice(),
       parent: this,
-      clientSock,
+      clientSocket,
     })
     return pid
   }
@@ -1755,11 +1812,11 @@ export class PGlite
   }
 
   async #startSubProcess(processInfo: ProcessInfo): Promise<PGlite> {
-    console.log('starting process', processInfo)
+    this.#log('starting process', processInfo.pid, processInfo.childType)
     const newProcess = await PGlite.create({
       singleMode: false,
       processInfo,
-      proxyFS: this.Module.FS,
+      masterFS: this.Module.FS,
       noInitDb: true,
     })
     return newProcess
