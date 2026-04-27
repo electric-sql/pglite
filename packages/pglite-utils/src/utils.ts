@@ -3,18 +3,18 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
-const wasmDownloadPromises = new Map<URL, Promise<Response>>()
+const artifactDownloadPromises = new Map<string, Promise<Response>>()
 
-export async function startWasmDownload(url: URL) {
-  if (IN_NODE || wasmDownloadPromises.has(url)) {
+export async function startArtifactDownload(url: URL) {
+  if (IN_NODE || artifactDownloadPromises.has(url.toString())) {
     return
   }
-  wasmDownloadPromises.set(url, fetch(url))
+  artifactDownloadPromises.set(url.toString(), fetch(url))
 }
 
 // This is a global cache of the Wasm modules to avoid having to re-download or
 // compile them on subsequent calls.
-const cachedWasmModules = new Map<URL, WebAssembly.Module>()
+const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
@@ -24,8 +24,8 @@ export async function instantiateWasm(
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModules.has(moduleUrl)) {
-    const mod = module || cachedWasmModules.get(moduleUrl)!
+  if (module || cachedWasmModules.has(moduleUrl.toString())) {
+    const mod = module || cachedWasmModules.get(moduleUrl.toString())!
     return {
       instance: await WebAssembly.instantiate(mod, imports),
       module: mod,
@@ -38,19 +38,20 @@ export async function instantiateWasm(
       buffer,
       imports,
     )
-    cachedWasmModules.set(moduleUrl, newModule)
+    cachedWasmModules.set(moduleUrl.toString(), newModule)
     return {
       instance,
       module: newModule,
     }
   } else {
-    if (!wasmDownloadPromises.has(moduleUrl)) {
-      wasmDownloadPromises.set(moduleUrl, fetch(moduleUrl))
+    if (!artifactDownloadPromises.has(moduleUrl.toString())) {
+      startArtifactDownload(moduleUrl)
+      // wasmDownloadPromises.set(moduleUrl, fetch(moduleUrl))
     }
-    const response = await wasmDownloadPromises.get(moduleUrl)
+    const response = await artifactDownloadPromises.get(moduleUrl.toString())
     const { module: newModule, instance } =
-      await WebAssembly.instantiateStreaming(response!, imports)
-    cachedWasmModules.set(moduleUrl, newModule)
+      await WebAssembly.instantiateStreaming(response!.clone(), imports)
+    cachedWasmModules.set(moduleUrl.toString(), newModule)
     return {
       instance,
       module: newModule,
@@ -64,8 +65,9 @@ export async function getFsBundle(fsBundleUrl: URL): Promise<ArrayBuffer> {
     const fileData = await fs.readFile(fsBundleUrl)
     return fileData.buffer
   } else {
-    const response = await fetch(fsBundleUrl)
-    return response.arrayBuffer()
+    startArtifactDownload(fsBundleUrl)
+    const response = await artifactDownloadPromises.get(fsBundleUrl.toString())
+    return response!.clone().arrayBuffer()
   }
 }
 
