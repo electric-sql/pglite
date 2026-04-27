@@ -35,7 +35,9 @@ const showReloadMsg = computed(() => {
 })
 
 async function doLoadPg() {
-  pg.value = await loadPg()
+  if (!pg.value) {
+    pg.value = await loadPg()
+  }
 }
 
 async function loadPg() {
@@ -162,6 +164,7 @@ watch(
 async function clearDb() {
   if (pg.value) {
     await pg.value.close()
+    pg.value = null
   }
   while (true) {
     const closed = await new Promise((resolve, reject) => {
