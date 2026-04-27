@@ -273,14 +273,14 @@ export class PGlite
 
     if (!options.pgliteWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      pglUtils.startWasmDownload(
+      pglUtils.startArtifactDownload(
         new URL('../release/pglite.wasm', import.meta.url),
       )
     }
 
     if (!options.initdbWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      pglUtils.startWasmDownload(
+      pglUtils.startArtifactDownload(
         new URL('../release/initdb.wasm', import.meta.url),
       )
     }
