@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.4.5
+
+### Patch Changes
+
+- c6bddde: Fix caching of artifacts such that they are not downloaded multiple times
+
 ## 0.4.4
 
 ### Patch Changes
