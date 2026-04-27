@@ -66,7 +66,7 @@ export async function getFsBundle(fsBundleUrl: URL): Promise<ArrayBuffer> {
     return fileData.buffer
   } else {
     startArtifactDownload(fsBundleUrl)
-    const response = await (artifactDownloadPromises.get(fsBundleUrl.toString()))
+    const response = await artifactDownloadPromises.get(fsBundleUrl.toString())
     return response!.clone().arrayBuffer()
   }
 }
