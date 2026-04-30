@@ -745,11 +745,14 @@ export class PGlite
       } catch (e: any) {
         this.#log('after_fork_process_inchild', e.toString())
         if (e.status !== null && e.status !== undefined) {
-
           if (this.#shmemAddr && this.#shmemLength) {
             this.#processInfo?.parent.Module.HEAPU8.set(
-              this.mod.HEAPU8.subarray(this.#shmemAddr, this.#shmemAddr + this.#shmemLength),
-            this.#shmemAddr)
+              this.mod.HEAPU8.subarray(
+                this.#shmemAddr,
+                this.#shmemAddr + this.#shmemLength,
+              ),
+              this.#shmemAddr,
+            )
           }
 
           this.mod._pgl_shm_flush()
@@ -766,7 +769,7 @@ export class PGlite
                 e.status,
               )
               options.processInfo!.parent.Module._pgl_shm_load()
-              options.processInfo!.parent.Module._PostmasterServerLoopOnce()              
+              options.processInfo!.parent.Module._PostmasterServerLoopOnce()
             } else {
               if (e.status === 99) {
                 // B_BACKEND exit on no more data
@@ -775,7 +778,6 @@ export class PGlite
                 console.error('unhandled exit status', JSON.stringify(e))
               }
             }
-
           }
         } else {
           console.error('unknown error occured', e.toString())
@@ -787,7 +789,6 @@ export class PGlite
     this.#ready = true
 
     if (this.isBackend) {
-
       const result = await this.exec('SELECT version()')
       console.log(JSON.stringify(result))
 
@@ -1237,7 +1238,7 @@ export class PGlite
       this.#shmemLength = length
       // console.log(addr, length)
     }, 'vii')
-    
+
     mod._pgl_set_send_fn(this.#pglite_socket_send)
     mod._pgl_set_recv_fn(this.#pglite_socket_recv)
     mod._set_hlp_shmem(this.#pglite_hlp_shmem)
@@ -1863,7 +1864,7 @@ export class PGlite
       parent: this,
       clientSocket,
       shmemAddr: this.#shmemAddr,
-      shmemLength: this.#shmemLength
+      shmemLength: this.#shmemLength,
     })
     return pid
   }
@@ -1883,7 +1884,7 @@ export class PGlite
       processInfo,
       masterFS: this.Module.FS,
       noInitDb: true,
-      fs: this.fs
+      fs: this.fs,
     })
     return newProcess
   }
