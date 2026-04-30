@@ -92,6 +92,10 @@ export interface PostgresMod
   _malloc: (size: number) => number
   _free: (ptr: number) => void
   _hlp_pipe_init_pipes: () => number
+  _set_hlp_shmem: (hlp_shmem: number) => number
+  _pgl_shm_flush: () => void
+  _pgl_shm_load: () => void
+  _pq_endmsgread: () => void
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

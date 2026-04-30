@@ -59,6 +59,9 @@ export class PGlite
   #pendingChildProcesses = new Array<ProcessInfo>()
   #processInfo: ProcessInfo | undefined
   #childProcesses = new Array<PostgresProcess>()
+  #pglite_hlp_shmem: number = -1
+  #shmemAddr: number | undefined = undefined
+  #shmemLength: number | undefined = undefined
 
   get isBackend(): boolean {
     return this.childType === 1
@@ -113,7 +116,7 @@ export class PGlite
   // send data to wasm
   #pglite_socket_recv: number = -1
   // buffer that holds the data to be sent to wasm
-  #outputData: any = []
+  #outputData = new Uint8Array()
   // read index in the buffer
   #readOffset: number = 0
   #currentDatabaseError: DatabaseError | null = null
@@ -161,7 +164,9 @@ export class PGlite
     '-c',
     `unix_socket_directories=@pglite_abstract_socket`, // enable Unix-domain abstract socket
     '-c',
-    `dynamic_shared_memory_type=posix`, // shared memory in emscripten giving me a hard time
+    `shared_memory_type=mmap`, // shared memory in emscripten giving me a hard time
+    '-c',
+    `dynamic_shared_memory_type=mmap`, // shared memory in emscripten giving me a hard time
   ]
 
   /**
@@ -237,6 +242,9 @@ export class PGlite
       startupData: 0,
       startupDataLen: 0,
     }
+
+    this.#shmemAddr = options.processInfo?.shmemAddr
+    this.#shmemLength = options.processInfo?.shmemLength
 
     // Initialize the database, and store the promise so we can wait for it to be ready
     if (options.singleMode) {
@@ -691,6 +699,8 @@ export class PGlite
       // a couple of pipes are inherited from the parent
       // but this doesn't work properly atm; just create new pipes instead
       this.Module._hlp_pipe_init_pipes()
+
+      this.fs = options.fs
       // (mod.FS as any).streams = options.proxyFS.streams.slice()
       // mod.PIPEFS = options.proxyFS.Module.PIPEFS;
     }
@@ -708,6 +718,9 @@ export class PGlite
         const params = [
           ...enc.encode('user\0postgres\0'),
           // ...enc.encode('database\0postgres\0'),
+          // ...enc.encode('application_name\0pglite\0'),
+          // ...enc.encode('client_encoding\0UTF8\0'),
+          // ...enc.encode('DateStyle\0ISO, MDY\0'),
           0x00, // terminator
         ]
         const len = 4 + 4 + params.length // length field + version + params
@@ -732,21 +745,37 @@ export class PGlite
       } catch (e: any) {
         this.#log('after_fork_process_inchild', e.toString())
         if (e.status !== null && e.status !== undefined) {
+
+          if (this.#shmemAddr && this.#shmemLength) {
+            this.#processInfo?.parent.Module.HEAPU8.set(
+              this.mod.HEAPU8.subarray(this.#shmemAddr, this.#shmemAddr + this.#shmemLength),
+            this.#shmemAddr)
+          }
+
+          this.mod._pgl_shm_flush()
+
           if (e.status === 102) {
             // PGlite intentional exit on poll and no self latch set - good
             this.#log('exit on empty poll + no self latch set', this.pid)
           } else {
             if (e.status === 0) {
               this.#log('child exited normally', this.pid)
+              PGliteOS.reportChildExit(
+                this.#processInfo!.parent.pid,
+                this.pid,
+                e.status,
+              )
+              options.processInfo!.parent.Module._pgl_shm_load()
+              options.processInfo!.parent.Module._PostmasterServerLoopOnce()              
             } else {
-              console.error('unhandled exit status', JSON.stringify(e))
+              if (e.status === 99) {
+                // B_BACKEND exit on no more data
+                console.log('B_BACKEND: no more data to process')
+              } else {
+                console.error('unhandled exit status', JSON.stringify(e))
+              }
             }
-            PGliteOS.reportChildExit(
-              this.#processInfo!.parent.pid,
-              this.pid,
-              e.status,
-            )
-            options.processInfo!.parent.Module._PostmasterServerLoopOnce()
+
           }
         } else {
           console.error('unknown error occured', e.toString())
@@ -758,6 +787,10 @@ export class PGlite
     this.#ready = true
 
     if (this.isBackend) {
+
+      const result = await this.exec('SELECT version()')
+      console.log(JSON.stringify(result))
+
       if (options.username) {
         await this.exec(`SET ROLE ${options.username};`)
       }
@@ -1173,6 +1206,15 @@ export class PGlite
         if (length > max_length) {
           length = max_length
         }
+
+        if (length === 0) {
+          // no more data to read, exit!
+          // first, reset message reading
+          this.mod!._pq_endmsgread()
+          // now exit with specific code so we can intercept it
+          this.mod!._exit(103)
+        }
+
         this.mod!.HEAP8.set(
           (this.#outputData as Uint8Array).subarray(
             this.#readOffset,
@@ -1187,8 +1229,18 @@ export class PGlite
       'iipii',
     )
 
+    this.#pglite_hlp_shmem = mod.addFunction((addr: number, length: number) => {
+      // if (this.#shmemAddr) {
+      //   throw new Error('Unhandled case')
+      // }
+      this.#shmemAddr = addr
+      this.#shmemLength = length
+      // console.log(addr, length)
+    }, 'vii')
+    
     mod._pgl_set_send_fn(this.#pglite_socket_send)
     mod._pgl_set_recv_fn(this.#pglite_socket_recv)
+    mod._set_hlp_shmem(this.#pglite_hlp_shmem)
   }
   /**
    * The Postgres Emscripten Module
@@ -1327,7 +1379,7 @@ export class PGlite
 
     this.#readOffset = 0
     this.#writeOffset = 0
-    this.#outputData = message
+    this.#outputData = message.slice() // make a copy of the message
 
     if (
       this.#keepRawResponse &&
@@ -1380,7 +1432,7 @@ export class PGlite
       mod._pgl_pq_flush()
     }
 
-    this.#outputData = []
+    this.#outputData = new Uint8Array()
 
     if (this.#keepRawResponse && this.#writeOffset) {
       // reusing the buffer might lead to unexpected behavior if a previous query has a view into the buffer
@@ -1779,7 +1831,7 @@ export class PGlite
   #processStartupPacket(message: Uint8Array): Uint8Array {
     this.#readOffset = 0
     this.#writeOffset = 0
-    this.#outputData = message
+    this.#outputData = message.slice()
     const myProcPort = this.mod!._pgl_getMyProcPort()
     const result = this.mod!._ProcessStartupPacket(myProcPort, true, true)
     if (result !== 0) {
@@ -1789,7 +1841,7 @@ export class PGlite
     this.mod!._pgl_sendConnData()
 
     this.mod!._pgl_pq_flush()
-    this.#outputData = []
+    this.#outputData = new Uint8Array()
 
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
@@ -1810,6 +1862,8 @@ export class PGlite
       heap: this.Module.HEAPU8.slice(),
       parent: this,
       clientSocket,
+      shmemAddr: this.#shmemAddr,
+      shmemLength: this.#shmemLength
     })
     return pid
   }
@@ -1829,6 +1883,7 @@ export class PGlite
       processInfo,
       masterFS: this.Module.FS,
       noInitDb: true,
+      fs: this.fs
     })
     return newProcess
   }

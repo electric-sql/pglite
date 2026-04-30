@@ -17,6 +17,8 @@ export interface ProcessInfo {
   startupData: number
   startupDataLen: number
   heap?: Uint8Array
+  shmemAddr?: number
+  shmemLength?: number
   clientSocket: ClientSocket
 }
 
