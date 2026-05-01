@@ -120,9 +120,11 @@ export const types = {
   boolean: {
     to: BOOL,
     from: [BOOL],
-    serialize: (x: boolean) => {
-      if (typeof x !== 'boolean') {
-        throw new Error('Invalid input for boolean type')
+    serialize: (x: boolean | number | string) => {
+      if (typeof x === 'string') {
+        return ['true', 't', '1', 'yes', 'on'].includes(x.toLowerCase())
+          ? 't'
+          : 'f'
       }
       return x ? 't' : 'f'
     },
