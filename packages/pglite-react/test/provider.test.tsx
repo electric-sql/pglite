@@ -41,3 +41,20 @@ describe('provider', () => {
     await waitFor(() => expect(result.current).toBe(db))
   })
 })
+
+describe('usePGlite outside provider', () => {
+  it('returns null when no PGliteProvider is mounted', () => {
+    const { result } = renderHook(() => usePGlite())
+    expect(result.current).toBeNull()
+  })
+
+  it('does not throw when no PGliteProvider is mounted', () => {
+    expect(() => renderHook(() => usePGlite())).not.toThrow()
+  })
+
+  it('returns the db when provided directly as argument', async () => {
+    const db = await PGlite.create({ extensions: { live } })
+    const { result } = renderHook(() => usePGlite(db as PGliteWithLive))
+    expect(result.current).toBe(db)
+  })
+})
