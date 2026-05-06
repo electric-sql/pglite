@@ -1,6 +1,6 @@
-# Sync using ElectricSQL
+# Sync using Electric
 
-At [ElectricSQL](https://electric-sql.com/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
+At [Electric](https://electric.ax/) we are building a sync engine to enable realtime partial replication from Postgres to any other datastore, be it a JavaScript framework state store in a webapp, a database at the edge, or an embedded database in the mobile application.
 
 To accompany Electric, we are developing a sync extension for PGlite that will enable you to synchronise a remote Postgres with PGlite.
 
@@ -113,12 +113,12 @@ The `electricSync` plugin can be given some configuration options to allow custo
 
 ## syncShapeToTable API
 
-The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeStream API](https://next.electric-sql.com/api/clients/typescript#shapestream) designed to do the minimal required to sync a shape _into_ a table.
+The `syncShapeToTable` is a relatively thin wrapper around the Electric [ShapeStream API](https://electric.ax/docs/api/clients/typescript#shapestream) designed to do the minimal required to sync a shape _into_ a table.
 
 It takes the following options as an object:
 
 - `shape: ShapeStreamOptions`<br>
-  The shape stream specification to sync, described by the Electric [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#shapestream) options, see the [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#options) for more details.
+  The shape stream specification to sync, described by the Electric [ShapeStream API](https://electric.ax/docs/api/clients/typescript#shapestream) options, see the [ShapeStream API](https://electric.ax/docs/api/clients/typescript#options) for more details.
 
 - `table: string`<br>
   The name of the table to sync into.
@@ -169,7 +169,7 @@ The returned `shape` object from the `syncShapeToTable` call has the following m
   Unsubscribe from the shape. Note that this does not clear the state that has been synced into the table.
 
 - `stream: ShapeStream`<br>
-  The underlying `ShapeStream` instance, see the [ShapeStream API](https://electric-sql.com/docs/api/clients/typescript#shapestream) for more details.
+  The underlying `ShapeStream` instance, see the [ShapeStream API](https://electric.ax/docs/api/clients/typescript#shapestream) for more details.
 
 ## syncShapesToTables API
 
