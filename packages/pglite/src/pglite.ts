@@ -256,6 +256,14 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
+
+    // PGlite modifies process.exitCode when it does exit(XX)
+    // we need to restore the previous value
+    let prevExitCode = undefined
+    if (typeof globalThis.process !== 'undefined') {
+      prevExitCode = process.exitCode
+    }
+
     if (options.fs) {
       this.fs = options.fs
     } else {
@@ -567,6 +575,10 @@ export class PGlite
         await initFn()
       }
     }
+
+    if (typeof globalThis.process !== 'undefined' ) {
+      process.exitCode = prevExitCode
+    }
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
@@ -828,6 +840,9 @@ export class PGlite
       return result
     }
 
+    // store current process exit code
+    const prevExitCode = process.exitCode
+
     // execute the message
     try {
       // a single message might contain multiple batched queries
@@ -858,6 +873,7 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
+      process.exitCode = prevExitCode
     }
 
     this.#outputData = []
