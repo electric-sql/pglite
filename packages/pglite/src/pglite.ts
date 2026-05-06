@@ -256,7 +256,6 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
-
     // PGlite modifies process.exitCode when it does exit(XX)
     // we need to restore the previous value
     let prevExitCode = undefined
@@ -576,7 +575,7 @@ export class PGlite
       }
     }
 
-    if (typeof globalThis.process !== 'undefined' ) {
+    if (typeof globalThis.process !== 'undefined') {
       process.exitCode = prevExitCode
     }
   }
