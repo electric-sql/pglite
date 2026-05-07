@@ -872,7 +872,9 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
-      process.exitCode = prevExitCode
+      if (pglUtils.IN_NODE) {
+        process.exitCode = prevExitCode
+      }
     }
 
     this.#outputData = []
