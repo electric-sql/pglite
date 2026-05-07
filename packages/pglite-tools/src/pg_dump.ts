@@ -171,7 +171,10 @@ export async function pgDump({
   }
 
   // remove \\restrict and \\unrestrict commands https://www.postgresql.org/docs/17/app-psql.html#APP-PSQL-META-COMMAND-RESTRICT
-  const contentsPruned = execResult.fileContents.replace(/^(?:\\(?:un)?restrict\b.*\r?\n?)/gim, '');
+  const contentsPruned = execResult.fileContents.replace(
+    /^(?:\\(?:un)?restrict\b.*\r?\n?)/gim,
+    '',
+  )
 
   const file = new File([contentsPruned], fileName, {
     type: 'text/plain',
