@@ -130,7 +130,7 @@ export class PGlite
     '-c',
     'max_parallel_workers_per_gather=0',
     '-c',
-    'io_method=sync'
+    'io_method=sync',
   ]
 
   /**
