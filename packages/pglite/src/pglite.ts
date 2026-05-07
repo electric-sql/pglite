@@ -259,7 +259,7 @@ export class PGlite
     // PGlite modifies process.exitCode when it does exit(XX)
     // we need to restore the previous value
     let prevExitCode = undefined
-    if (globalThis.process?.env)  {
+    if (pglUtils.IN_NODE) {
       prevExitCode = process.exitCode
     }
 
@@ -575,7 +575,7 @@ export class PGlite
       }
     }
 
-    if (globalThis.process?.env)  {
+    if (pglUtils.IN_NODE) {
       process.exitCode = prevExitCode
     }
   }
