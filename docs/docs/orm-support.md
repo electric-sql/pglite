@@ -80,6 +80,57 @@ await db.select().from(...);
 See the [Drizzle documentation](https://orm.drizzle.team/docs/connect-pglite)
 for more details.
 
+## Kysely
+
+[Kysely](https://kysely.dev) is a **type-safe** TypeScript SQL query builder 
+with support for many databases, including PGlite. Features include:
+
+- End-to-end type-safety and autocompletion
+- Composable query builder for `SELECT` / `INSERT` / `UPDATE` / `DELETE` / `MERGE`
+- Schema builder and migrator
+- Pluggable dialect and plugin APIs
+- Built-in PGlite dialect (since Kysely `0.29.0`)
+
+To use Kysely with PGlite, install `kysely` (>= 0.29) alongside `@electric-sql/pglite`:
+
+```bash
+npm i @electric-sql/pglite kysely
+```
+
+Then create a Kysely instance using the built-in `PGliteDialect`:
+
+```ts
+import { PGlite } from '@electric-sql/pglite'
+import { Kysely, PGliteDialect } from 'kysely'
+
+// See https://kysely.dev/docs/generating-types
+interface Database {
+  person: {
+    id: string
+  }
+}
+
+const db = new Kysely<any>({
+  dialect: new PGliteDialect({
+    pglite: new PGlite(),
+  }),
+})
+
+const people = await db.selectFrom('person').selectAll().execute()
+```
+
+`pglite` can also be a function (sync or async), in which case the PGlite
+instance is created lazily the first time a query runs:
+
+```ts
+new PGliteDialect({
+  pglite: () => new PGlite('./path/to/pgdata'),
+})
+```
+
+See the [Kysely documentation](https://kysely.dev/docs/getting-started?dialect=pglite) 
+for more details.
+
 ## Knex.js
 
 [Knex](https://knexjs.org/) is a stable, reliable Query Builder for various
