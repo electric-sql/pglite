@@ -82,13 +82,13 @@ for more details.
 
 ## Kysely
 
-[Kysely](https://kysely.dev) is a **type-safe** TypeScript SQL query builder 
+[Kysely](https://kysely.dev) is a **type-safe** TypeScript SQL query builder
 with support for many databases, including PGlite. Features include:
 
 - End-to-end type-safety and autocompletion
-- Composable query builder for `SELECT` / `INSERT` / `UPDATE` / `DELETE` / `MERGE`
-- Schema builder and migrator
-- Pluggable dialect and plugin APIs
+- Composable, predictable, escape-rich, fluent API.
+- Cancellable, pluggable, hookable.
+- Migrations and DDL builders too.
 - Built-in PGlite dialect (since Kysely `0.29.0`)
 
 To use Kysely with PGlite, install `kysely` (>= 0.29) alongside `@electric-sql/pglite`:
@@ -110,7 +110,7 @@ interface Database {
   }
 }
 
-const db = new Kysely<any>({
+const db = new Kysely<Database>({
   dialect: new PGliteDialect({
     pglite: new PGlite(),
   }),
@@ -128,7 +128,7 @@ new PGliteDialect({
 })
 ```
 
-See the [Kysely documentation](https://kysely.dev/docs/getting-started?dialect=pglite) 
+See the [Kysely documentation](https://kysely.dev/docs/getting-started?dialect=pglite)
 for more details.
 
 ## Knex.js
