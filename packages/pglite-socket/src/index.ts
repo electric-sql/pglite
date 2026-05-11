@@ -347,9 +347,12 @@ export class PGLiteSocketHandler extends EventTarget {
         // other protocol message layouts in PostgreSQL docs (see
         // https://www.postgresql.org/docs/current/protocol-message-formats.html ).
         // The backend must send 'S' or 'N' before the client sends StartupMessage;
-        // pglite-socket has no TLS, so we reply 'N'. Without this branch the
-        // eight bytes are mis-parsed as a typed frontend message and the reader
-        // waits indefinitely for a complete packet.
+        // pglite-socket has no TLS, so we reply 'N'. JDBC stacks used by tools
+        // such as DBeaver typically send SSLRequest first; answering 'N' completes
+        // that negotiation so StartupMessage follows over cleartext without asking
+        // users to manually disable SSL mode. Without this branch the eight bytes
+        // are mis-parsed as a typed frontend message and the reader waits
+        // indefinitely for a complete packet.
         if (this.messageBuffer.length >= 8) {
           const len = this.messageBuffer.readInt32BE(0)
           const code = this.messageBuffer.readInt32BE(4)
