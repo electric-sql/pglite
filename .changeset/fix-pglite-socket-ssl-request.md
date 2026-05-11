@@ -2,4 +2,4 @@
 '@electric-sql/pglite-socket': patch
 ---
 
-Reply `N` to the PostgreSQL `SSLRequest` packet when SSL is not supported, preventing mis-parsing and hung connections from clients that probe TLS before `StartupMessage` (e.g. Navicat, libpq defaults).
+Handle the `SSLRequest` startup packet per the PostgreSQL wire protocol: when SSL is not available, respond with `N` so the client may continue with a cleartext `StartupMessage`. See https://www.postgresql.org/docs/current/protocol-message-formats.html .

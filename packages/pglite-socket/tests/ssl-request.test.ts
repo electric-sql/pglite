@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { PGLiteSocketHandler } from '../src'
 
-/** Second int32 in PostgreSQL SSLRequest packet */
+/** Second Int32 of SSLRequest — https://www.postgresql.org/docs/current/protocol-message-formats.html */
 const PG_PROTOCOL_SSL_REQUEST_CODE = 80877103
 
 function createNetSocketStub() {
@@ -41,7 +41,7 @@ async function flushEventLoop(): Promise<void> {
   await new Promise<void>((r) => setImmediate(r))
 }
 
-describe('PGLiteSocketHandler SSL negotiation', () => {
+describe('PGLiteSocketHandler PostgreSQL SSLRequest (protocol-message-formats)', () => {
   let handler: PGLiteSocketHandler
   let socketStub: ReturnType<typeof createNetSocketStub>
   let queryQueueStub: ReturnType<typeof createQueryQueueStub>
