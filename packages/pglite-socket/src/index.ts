@@ -343,6 +343,24 @@ export class PGLiteSocketHandler extends EventTarget {
       let totalProcessed = 0
 
       while (this.messageBuffer.length > 0) {
+        // SSLRequest: length 8, second int 80877103 (PostgreSQL protocol). Many
+        // clients send this before StartupMessage. Server must reply 'N' when SSL
+        // is not supported (pglite-socket has no TLS). Without handling it here,
+        // the packet is mis-parsed as a typed frontend message and the connection
+        // stalls (e.g. Navicat “test connection” never completing).
+        if (this.messageBuffer.length >= 8) {
+          const len = this.messageBuffer.readInt32BE(0)
+          const code = this.messageBuffer.readInt32BE(4)
+          if (len === 8 && code === 80877103) {
+            this.log('handleData: SSLRequest, replying N (SSL not supported)')
+            if (this.socket?.writable) {
+              this.socket.write(Buffer.from('N'))
+            }
+            this.messageBuffer = this.messageBuffer.slice(8)
+            continue
+          }
+        }
+
         // Determine message length
         let messageLength = 0
         let isComplete = false
