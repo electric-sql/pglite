@@ -12,11 +12,12 @@ import { parseType, type Parser } from './types.js'
  * This function is used to parse the results of either a simple or extended query.
  * https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-SIMPLE-QUERY
  */
-export function parseResults(
+export function parseResults<T>(
   messages: Array<BackendMessage>,
   defaultParsers: Record<number | string, Parser>,
   options?: QueryOptions,
   blob?: Blob,
+  onResult?: (result: Results<T>) => void,
 ): Array<Results> {
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
@@ -44,18 +45,21 @@ export function parseResults(
           )
         } else {
           // rowMode === "object"
-          currentResultSet.rows.push(
-            Object.fromEntries(
-              msg.fields.map((field, i) => [
-                currentResultSet!.fields[i].name,
-                parseType(
-                  field,
-                  currentResultSet!.fields[i].dataTypeID,
-                  parsers,
-                ),
-              ]),
-            ),
+          const result = Object.fromEntries(
+            msg.fields.map((field, i) => [
+              currentResultSet!.fields[i].name,
+              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
+            ]),
           )
+          if (onResult) {
+            const res: Results = {
+              rows: result.rows,
+              fields: currentResultSet.fields,
+            }
+            onResult(res as Results<T>)
+          } else {
+            currentResultSet.rows.push(result)
+          }
         }
         break
       }
@@ -79,11 +83,77 @@ export function parseResults(
     resultSets.push({
       affectedRows: 0,
       rows: [],
-      fields: [],
+      fields: currentResultSet.fields ?? [],
     })
   }
 
   return resultSets
+}
+
+export function parseResult(
+  message: BackendMessage,
+  defaultParsers: Record<number | string, Parser>,
+  options?: QueryOptions,
+  blob?: Blob,
+  fields?: { name: string; dataTypeID: number }[],
+): Results {
+  // const resultSets: Results[] = []
+  let resultSet: Results = { rows: [], fields: fields ?? [] }
+  const parsers = { ...defaultParsers, ...options?.parsers }
+
+  switch (message.name) {
+    case 'rowDescription': {
+      const msg = message as RowDescriptionMessage
+      resultSet.fields = msg.fields.map((field) => ({
+        name: field.name,
+        dataTypeID: field.dataTypeID,
+      }))
+      break
+    }
+    case 'dataRow': {
+      if (!resultSet) break
+      const msg = message as DataRowMessage
+      if (options?.rowMode === 'array') {
+        resultSet.rows.push(
+          msg.fields.map((field, i) =>
+            parseType(field, resultSet!.fields[i].dataTypeID, parsers),
+          ),
+        )
+      } else {
+        // rowMode === "object"
+        const result = Object.fromEntries(
+          msg.fields.map((field, i) => [
+            resultSet!.fields[i].name,
+            parseType(field, resultSet!.fields[i].dataTypeID, parsers),
+          ]),
+        )
+        resultSet.rows.push(result)
+      }
+      break
+    }
+    case 'commandComplete': {
+      const msg = message as CommandCompleteMessage
+      const affectedRows = retrieveRowCount(msg)
+
+      resultSet = {
+        ...resultSet,
+        affectedRows,
+        ...(blob ? { blob } : {}),
+      }
+    }
+  }
+
+  return resultSet
+
+  // if (resultSets.length === 0) {
+  //   resultSets.push({
+  //     affectedRows: 0,
+  //     rows: [],
+  //     fields: currentResultSet.fields ?? [],
+  //   })
+  // }
+
+  // return resultSets
 }
 
 function retrieveRowCount(msg: CommandCompleteMessage): number {
