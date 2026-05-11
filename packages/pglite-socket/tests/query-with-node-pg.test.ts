@@ -11,6 +11,7 @@ import { Client } from 'pg'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '../src'
 import { spawn, ChildProcess } from 'node:child_process'
+import { createConnection } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import fs from 'fs'
@@ -792,6 +793,79 @@ describe(`PGLite Socket Server`, () => {
         // swallow
       }
     }, 30000)
+
+    it('should handle SSLRequest by responding with N', async () => {
+      // Test raw SSLRequest wire protocol handling
+      const socket = createConnection({ host: '127.0.0.1', port: TEST_PORT })
+
+      await new Promise<void>((resolve, reject) => {
+        socket.on('connect', resolve)
+        socket.on('error', reject)
+      })
+
+      // Send SSLRequest: [length=8][code=80877103 (0x04D2162F)]
+      const sslRequest = Buffer.alloc(8)
+      sslRequest.writeInt32BE(8, 0)
+      sslRequest.writeInt32BE(80877103, 4)
+      socket.write(sslRequest)
+
+      // Read response — should be exactly 'N' (1 byte)
+      const response = await new Promise<Buffer>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Timeout waiting for SSLRequest response')),
+          5000,
+        )
+        socket.once('data', (data) => {
+          clearTimeout(timeout)
+          resolve(data)
+        })
+      })
+
+      expect(response.length).toBe(1)
+      expect(response.toString()).toBe('N')
+
+      socket.destroy()
+    })
+
+    it('should handle SSLRequest then accept normal connection', async () => {
+      // Verify the server still accepts connections after handling SSLRequest
+      // (i.e., one connection's SSLRequest doesn't break the server)
+      const testClient = new Client(connectionConfig)
+      await testClient.connect()
+      const result = await testClient.query('SELECT 42 as answer')
+      expect(result.rows[0].answer).toBe(42)
+      await testClient.end()
+    })
+
+    it('should handle CancelRequest without crashing', async () => {
+      // Test raw CancelRequest wire protocol handling
+      const socket = createConnection({ host: '127.0.0.1', port: TEST_PORT })
+
+      await new Promise<void>((resolve, reject) => {
+        socket.on('connect', resolve)
+        socket.on('error', reject)
+      })
+
+      // Send CancelRequest: [length=16][code=80877102 (0x04D2162E)][processID=0][secretKey=0]
+      const cancelRequest = Buffer.alloc(16)
+      cancelRequest.writeInt32BE(16, 0)
+      cancelRequest.writeInt32BE(80877102, 4)
+      cancelRequest.writeInt32BE(0, 8) // processID
+      cancelRequest.writeInt32BE(0, 12) // secretKey
+      socket.write(cancelRequest)
+
+      // Wait briefly for server to process (no response expected)
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      socket.destroy()
+
+      // Verify server still works after receiving CancelRequest
+      const testClient = new Client(connectionConfig)
+      await testClient.connect()
+      const result = await testClient.query('SELECT 1 as one')
+      expect(result.rows[0].one).toBe(1)
+      await testClient.end()
+    })
   })
 
   describe('with extensions via CLI', () => {
