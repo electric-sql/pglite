@@ -144,7 +144,31 @@ describe('serialize', () => {
     )
   })
 
-  it('not blob', () => {
-    expect(() => types.serializers[17](1)).toThrow()
+
+  it('json with bigint value', () => {
+    // BigInt values nested inside JSON objects must serialize to their string
+    // representation rather than throwing "Do not know how to serialize a BigInt"
+    // See https://github.com/electric-sql/pglite/issues/899
+    expect(types.serializers[114]({ id: 1n })).toEqual('{"id":"1"}')
+  })
+
+  it('json with nested bigint in array', () => {
+    expect(
+      types.serializers[114]([{ id: 1n, name: 'a' }, { id: 2n, name: 'b' }]),
+    ).toEqual('[{"id":"1","name":"a"},{"id":"2","name":"b"}]')
+  })
+
+  it('jsonb with bigint value', () => {
+    expect(types.serializers[3802]({ id: 1n })).toEqual('{"id":"1"}')
+  })
+
+  it('json number values are unchanged', () => {
+    // Regular numbers must still serialize as numbers, not strings
+    expect(types.serializers[114]({ id: 1 })).toEqual('{"id":1}')
+  })
+
+  it('json string passthrough unchanged', () => {
+    // Pre-serialized JSON strings must pass through as-is
+    expect(types.serializers[114]('{"id":1}')).toEqual('{"id":1}')
   })
 })
