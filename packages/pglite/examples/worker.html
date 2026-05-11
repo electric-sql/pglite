@@ -45,7 +45,6 @@
         <script type="module">
           import { PGliteWorker } from '@electric-sql/pglite/worker'
           import { live } from '@electric-sql/pglite/live'
-
           console.log('Creating worker...')
           const pg = new PGliteWorker(
             new Worker(new URL('./worker-process.js', import.meta.url), {
@@ -64,18 +63,18 @@
               const leader = document.getElementById('leader')
               leader.textContent = 'true'
               leader.style.color = 'green'
+
             }
+            console.log('Leader has changed, clearing output ...')
+            output.textContent = ''
+            setTimeout(async () => {
+              console.log('requesting incrementalQuery')
+              let incResult = await pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
+                const output = document.getElementById('output')
+                output.textContent = JSON.stringify(data.rows, null, 2)
+              })
+          }, 200)
           })
-
-          console.log('Creating table...')
-
-          await pg.exec(`
-  CREATE EXTENSION IF NOT EXISTS vector;
-  CREATE TABLE IF NOT EXISTS test (
-    id SERIAL PRIMARY KEY,
-    data vector(3)
-  );
-`)
 
           console.log('Ready!')
 
@@ -96,11 +95,13 @@
           const btnClear = document.querySelector('#clear')
           btnClear.addEventListener('click', clearData)
 
-          // pg.live.query(
-          pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
-            const output = document.getElementById('output')
-            output.textContent = JSON.stringify(data.rows, null, 2)
-          })
+          setTimeout(async () => {
+            let incResult = await pg.live.incrementalQuery(`SELECT * FROM test`, [], 'id', (data) => {
+              console.log('requesting incrementalQuery')
+              const output = document.getElementById('output')
+              output.textContent = JSON.stringify(data.rows, null, 2)
+            })
+          }, 200)
         </script>
       </div>
       <div id="log"></div>
