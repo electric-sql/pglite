@@ -1,7 +1,8 @@
 export const IN_NODE =
   typeof process === 'object' &&
   typeof process.versions === 'object' &&
-  typeof process.versions.node === 'string'
+  typeof process.versions.node === 'string' &&
+  !process.versions.electron
 
 const artifactDownloadPromises = new Map<string, Promise<Response>>()
 
