@@ -98,12 +98,44 @@ describe('serialize', () => {
     expect(types.serializers[20](1n)).toEqual('1')
   })
 
-  it('bool', () => {
+  it('bool true', () => {
     expect(types.serializers[16](true)).toEqual('t')
   })
 
-  it('not bool', () => {
-    expect(() => types.serializers[16]('test')).toThrow()
+  it('bool false', () => {
+    expect(types.serializers[16](false)).toEqual('f')
+  })
+
+  it('bool from number 1', () => {
+    expect(types.serializers[16](1)).toEqual('t')
+  })
+
+  it('bool from number 0', () => {
+    expect(types.serializers[16](0)).toEqual('f')
+  })
+
+  it('bool from string "true"', () => {
+    expect(types.serializers[16]('true')).toEqual('t')
+  })
+
+  it('bool from string "false"', () => {
+    expect(types.serializers[16]('false')).toEqual('f')
+  })
+
+  it('bool from string "1"', () => {
+    expect(types.serializers[16]('1')).toEqual('t')
+  })
+
+  it('bool from string "yes"', () => {
+    expect(types.serializers[16]('yes')).toEqual('t')
+  })
+
+  it('bool from string "on"', () => {
+    expect(types.serializers[16]('on')).toEqual('t')
+  })
+
+  it('bool from string "t"', () => {
+    expect(types.serializers[16]('t')).toEqual('t')
   })
 
   it('date', () => {
