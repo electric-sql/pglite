@@ -9,7 +9,7 @@ interface Props<T extends PGliteWithLive> {
 type PGliteProvider<T extends PGliteWithLive> = (
   props: Props<T>,
 ) => React.JSX.Element
-type UsePGlite<T extends PGliteWithLive> = (db?: T) => T
+type UsePGlite<T extends PGliteWithLive> = (db?: T) => T | null
 
 interface PGliteProviderSet<T extends PGliteWithLive> {
   PGliteProvider: PGliteProvider<T>
@@ -28,12 +28,9 @@ function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
       // allow providing a db explicitly
       if (db !== undefined) return db
 
-      if (!dbProvided)
-        throw new Error(
-          'No PGlite instance found, use PGliteProvider to provide one',
-        )
-
-      return dbProvided
+      // Return null instead of throwing when no provider is mounted.
+      // Callers can guard with `if (!db) return` for lazy / conditional rendering.
+      return dbProvided ?? null
     }) as UsePGlite<T>,
     PGliteProvider: ({ children, db }: Props<T>) => {
       return <ctx.Provider value={db}>{children}</ctx.Provider>

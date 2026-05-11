@@ -44,6 +44,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 
   /* eslint-disable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
   useEffect(() => {
+    if (!db) return // no PGliteProvider mounted — skip subscription
     let cancelled = false
     const cb = (results: LiveQueryResults<T>) => {
       if (cancelled) return
