@@ -1,5 +1,35 @@
 # @electric-sql/pglite-tools
 
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [c6bddde]
+  - @electric-sql/pglite@0.4.5
+
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [b88c5c3]
+  - @electric-sql/pglite@0.4.4
+
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [2ae666f]
+- Updated dependencies [fb95e66]
+- Updated dependencies [65fc101]
+  - @electric-sql/pglite@0.4.3
+
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [41632c4]
+  - @electric-sql/pglite@0.4.2
+
 ## 0.3.1
 
 ### Patch Changes

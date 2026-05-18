@@ -52,6 +52,11 @@ async function execPgDump({
     },
     preRun: [
       (mod: PgDumpMod) => {
+        mod.ENV.HOME = '/home/postgres'
+        mod.ENV.USER = 'postgres'
+        mod.ENV.LOGNAME = 'postgres'
+      },
+      (mod: PgDumpMod) => {
         mod.onRuntimeInitialized = () => {
           let bufferedBytes: Uint8Array = new Uint8Array()
 
@@ -84,8 +89,8 @@ async function execPgDump({
 
           mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
 
-          // default $HOME in emscripten is /home/web_user
-          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+          // default $HOME in emscripten is /home/postgres
+          mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
       },
     ],
@@ -133,7 +138,7 @@ export async function pgDump({
 
   const baseArgs = [
     '-U',
-    'web_user',
+    'postgres',
     '--inserts',
     '-j',
     '1',

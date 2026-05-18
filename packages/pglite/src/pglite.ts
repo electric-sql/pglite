@@ -20,12 +20,6 @@ import type {
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
-import {
-  getFsBundle,
-  instantiateWasm,
-  startWasmDownload,
-  toPostgresName,
-} from './utils.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -37,6 +31,8 @@ import {
 } from '@electric-sql/pg-protocol/messages'
 
 import { initdb, PGDATA } from './initdb'
+
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
@@ -127,6 +123,12 @@ export class PGlite
     'exit_on_error=false',
     '-c',
     'log_checkpoints=false',
+    '-c',
+    'max_worker_processes=0',
+    '-c',
+    'max_parallel_workers=0',
+    '-c',
+    'max_parallel_workers_per_gather=0',
   ]
 
   /**
@@ -269,9 +271,18 @@ export class PGlite
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
 
-    if (!options.wasmModule) {
+    if (!options.pgliteWasmModule) {
       // Start the wasm download in the background so it's ready when we need it
-      startWasmDownload()
+      pglUtils.startArtifactDownload(
+        new URL('../release/pglite.wasm', import.meta.url),
+      )
+    }
+
+    if (!options.initdbWasmModule) {
+      // Start the wasm download in the background so it's ready when we need it
+      pglUtils.startArtifactDownload(
+        new URL('../release/initdb.wasm', import.meta.url),
+      )
     }
 
     // Get the fs bundle
@@ -280,12 +291,20 @@ export class PGlite
     // It's resolved value `fsBundleBuffer` is set and used in `getPreloadedPackage`
     // which is called via `PostgresModFactory` after we have awaited
     // `fsBundleBufferPromise` below.
+    const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
     const fsBundleBufferPromise = options.fsBundle
       ? options.fsBundle.arrayBuffer()
-      : getFsBundle()
+      : pglUtils.getFsBundle(fsBundleUrl)
     let fsBundleBuffer: ArrayBuffer
     fsBundleBufferPromise.then((buffer) => {
       fsBundleBuffer = buffer
+    })
+
+    const wasmMemory = new WebAssembly.Memory({
+      initial: options.initialMemory
+        ? options.initialMemory / (64 * 1024)
+        : 2048,
+      maximum: 32768,
     })
 
     let emscriptenOpts: Partial<PostgresMod> = {
@@ -293,6 +312,7 @@ export class PGlite
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
+      wasmMemory: wasmMemory,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
@@ -302,12 +322,14 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        instantiateWasm(imports, options.wasmModule).then(
-          ({ instance, module }) => {
+        const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
+
+        pglUtils
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
-          },
-        )
+          })
         return {}
       },
       getPreloadedPackage: (remotePackageName, remotePackageSize) => {
@@ -389,11 +411,9 @@ export class PGlite
           mod.FS.mkdev('/dev/blob', devId)
         },
         (mod: PostgresMod) => {
-          mod.FS.chmod('/home/web_user/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-          mod.FS.chmod(initdbExePath, 0o0555)
-          mod.FS.chmod(postgresExePath, 0o0555)
-        },
-        (mod: PostgresMod) => {
+          mod.ENV.HOME = '/home/postgres'
+          mod.ENV.USER = 'postgres'
+          mod.ENV.LOGNAME = 'postgres'
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'postgres'
@@ -403,11 +423,17 @@ export class PGlite
           mod.ENV.PGCLIENTENCODING = 'UTF8'
 
           // some extensions might need their own ENV variables
+          // TODO: move this to the extension init function
           for (const [extName] of Object.entries(this.#extensions)) {
             if (extName === 'postgis') {
               mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
             }
           }
+        },
+        (mod: PostgresMod) => {
+          mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+          mod.FS.chmod(initdbExePath, 0o0555)
+          mod.FS.chmod(postgresExePath, 0o0555)
         },
       ],
     }
@@ -493,6 +519,7 @@ export class PGlite
           const initdbResult = await initdb({
             pg: pg_initDb,
             debug: options.debug,
+            wasmModule: options.initdbWasmModule,
           })
 
           if (initdbResult.exitCode !== 0) {
@@ -543,7 +570,6 @@ export class PGlite
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
-    // default $HOME in emscripten is /home/web_user
     // we override system() to intercept any calls that might generate unexpected output
     this.#system_fn = mod.addFunction((cmd_ptr: number) => {
       this.#log(
@@ -1056,7 +1082,7 @@ export class PGlite
     callback: (payload: string) => void,
     tx?: Transaction,
   ) {
-    const pgChannel = toPostgresName(channel)
+    const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())
@@ -1094,7 +1120,7 @@ export class PGlite
     callback?: (payload: string) => void,
     tx?: Transaction,
   ) {
-    const pgChannel = toPostgresName(channel)
+    const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     const cleanUp = async () => {
       await pg.exec(`UNLISTEN ${channel}`)

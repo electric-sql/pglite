@@ -530,7 +530,7 @@ export interface PGLiteSocketServerOptions {
   debug?: boolean
   /** Idle timeout in ms (0 to disable, default: 0) */
   idleTimeout?: number
-  /** Maximum concurrent connections (default: 100) */
+  /** Maximum concurrent connections (default: 1) */
   maxConnections?: number
 }
 

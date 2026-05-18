@@ -82,8 +82,12 @@ export default defineConfig({
       { text: 'REPL', link: '/repl/' },
       { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
       {
-        text: 'Star on GitHub',
+        text: 'GitHub',
         link: 'https://github.com/electric-sql/pglite',
+      },
+      {
+        text: 'NPM',
+        link: 'https://www.npmjs.com/package/@electric-sql/pglite',
       },
     ],
     sidebar: [
@@ -127,7 +131,8 @@ export default defineConfig({
               { text: 'pgdump', link: '/pglite-tools#pgDump' },
             ],
           },
-          { text: 'Upgrade between minor versions', link: '/docs/upgrade' },
+          { text: 'Upgrade path', link: '/docs/upgrade' },
+          { text: 'Prepopulated FS', link: '/docs/prepopulatedfs' },
         ],
       },
       {

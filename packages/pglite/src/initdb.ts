@@ -1,5 +1,6 @@
 import InitdbModFactory, { InitdbMod } from './initdbModFactory'
 import parse from './argsParser'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 function assert(condition: unknown, message?: string): asserts condition {
   if (!condition) {
@@ -45,10 +46,12 @@ async function execInitdb({
   pg,
   debug,
   args,
+  wasmModule,
 }: {
   pg: PGliteForInitdb
   debug?: number
   args: string[]
+  wasmModule?: WebAssembly.Module
 }): Promise<ExecResult> {
   let system_fn, popen_fn, pclose_fn
 
@@ -95,10 +98,25 @@ async function execInitdb({
       stderrOutput += text
       log(debug, 'initdberr', text)
     },
+    instantiateWasm: (imports, successCallback) => {
+      const moduleUrl = new URL('../release/initdb.wasm', import.meta.url)
+      pglUtils
+        .instantiateWasm(imports, moduleUrl, wasmModule)
+        .then(({ instance, module }) => {
+          // @ts-ignore wrong type in Emscripten typings
+          successCallback(instance, module)
+        })
+      return {}
+    },
     preRun: [
       (mod: InitdbMod) => {
+        mod.ENV.PGDATA = PGDATA
+        mod.ENV.HOME = '/home/postgres'
+        mod.ENV.USER = 'postgres'
+        mod.ENV.LOGNAME = 'postgres'
+      },
+      (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
-          // default $HOME in emscripten is /home/web_user
           system_fn = mod.addFunction((cmd_ptr: number) => {
             postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
             return callPgMain(postgresArgs)
@@ -162,9 +180,6 @@ async function execInitdb({
         }
       },
       (mod: InitdbMod) => {
-        mod.ENV.PGDATA = PGDATA
-      },
-      (mod: InitdbMod) => {
         mod.FS.mkdir(PG_ROOT)
         mod.FS.mount(
           mod.PROXYFS,
@@ -195,6 +210,7 @@ interface InitdbOptions {
   pg: PGliteForInitdb
   debug?: number
   args?: string[]
+  wasmModule?: WebAssembly.Module
 }
 
 function getArgs(cmd: string) {
@@ -215,6 +231,7 @@ export async function initdb({
   pg,
   debug,
   args,
+  wasmModule,
 }: InitdbOptions): Promise<ExecResult> {
   const execResult = await execInitdb({
     pg,
@@ -228,6 +245,7 @@ export async function initdb({
       '--auth=trust',
       ...(args ?? []),
     ],
+    wasmModule,
   })
 
   return execResult

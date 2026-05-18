@@ -35,7 +35,9 @@ const showReloadMsg = computed(() => {
 })
 
 async function doLoadPg() {
-  pg.value = await loadPg()
+  if (!pg.value) {
+    pg.value = await loadPg()
+  }
 }
 
 async function loadPg() {
@@ -53,6 +55,11 @@ async function loadPg() {
   try {
     console.log(`Creating PGlite instance with idb://${dbName}`)
     return await PGlite.create({
+      startParams: [
+        ...PGlite.defaultStartParams,
+        '-c',
+        'application_name=PGlite REPL Playground',
+      ],
       dataDir: `idb://${dbName}`,
       extensions,
     })
@@ -93,7 +100,7 @@ async function loadPg() {
 }
 
 onMounted(async () => {
-  pg.value = await loadPg()
+  doLoadPg()
 })
 
 const rootStyle = window.getComputedStyle(document.body)
@@ -157,6 +164,7 @@ watch(
 async function clearDb() {
   if (pg.value) {
     await pg.value.close()
+    pg.value = null
   }
   while (true) {
     const closed = await new Promise((resolve, reject) => {
@@ -179,7 +187,7 @@ async function clearDb() {
     if (closed) break
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
-  pg.value = await loadPg()
+  doLoadPg()
 }
 </script>
 

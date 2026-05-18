@@ -9,9 +9,9 @@ import type {
 } from '../interface.js'
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
-import { toPostgresName, uuid } from '../utils.js'
 import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
 import { BackendMessage } from '@electric-sql/pg-protocol/messages'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
   PGliteOptions<E> & {
@@ -54,7 +54,7 @@ export class PGliteWorker
   constructor(worker: Worker, options?: PGliteWorkerOptions) {
     super()
     this.#workerProcess = worker
-    this.#tabId = uuid()
+    this.#tabId = pglUtils.uuid()
     this.#extensions = options?.extensions ?? {}
 
     this.#workerHerePromise = new Promise<void>((resolve) => {
@@ -209,7 +209,7 @@ export class PGliteWorker
     method: Method,
     ...args: Parameters<WorkerApi[Method]>
   ): Promise<ReturnType<WorkerApi[Method]>> {
-    const callId = uuid()
+    const callId = pglUtils.uuid()
     const message: WorkerRpcCall<Method> = {
       type: 'rpc-call',
       callId,
@@ -390,7 +390,7 @@ export class PGliteWorker
     callback: (payload: string) => void,
     tx?: Transaction,
   ): Promise<() => Promise<void>> {
-    const pgChannel = toPostgresName(channel)
+    const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     if (!this.#notifyListeners.has(pgChannel)) {
       this.#notifyListeners.set(pgChannel, new Set())

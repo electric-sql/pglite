@@ -93,7 +93,8 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   extensions?: TExtensions
   loadDataDir?: Blob | File
   initialMemory?: number
-  wasmModule?: WebAssembly.Module
+  pgliteWasmModule?: WebAssembly.Module
+  initdbWasmModule?: WebAssembly.Module
   fsBundle?: Blob | File
   parsers?: ParserOptions
   serializers?: SerializerOptions

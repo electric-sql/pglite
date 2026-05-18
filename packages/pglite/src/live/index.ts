@@ -14,7 +14,8 @@ import type {
   Change,
   LiveQueryResults,
 } from './interface'
-import { uuid, formatQuery, debounceMutex } from '../utils.js'
+import { formatQuery, debounceMutex } from '../utils.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type {
   LiveNamespace,
@@ -70,7 +71,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let callbacks: Array<(results: Results<T>) => void> = callback
         ? [callback]
         : []
-      const id = uuid().replace(/-/g, '')
+      const id = pglUtils.uuid().replace(/-/g, '')
       let dead = false
 
       let results: LiveQueryResults<T>
@@ -301,7 +302,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       let callbacks: Array<(changes: Array<Change<T>>) => void> = callback
         ? [callback]
         : []
-      const id = uuid().replace(/-/g, '')
+      const id = pglUtils.uuid().replace(/-/g, '')
       let dead = false
 
       let stateSwitch: 1 | 2 = 1

@@ -19,7 +19,8 @@
     "wasm:build": "cd postgres-pglite && ./build-with-docker.sh && cd .. && pnpm wasm:copy-pglite && pnpm wasm:copy-pgdump && pnpm wasm:copy-initdb && pnpm wasm:copy-postgis",
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
     "build:all": "pnpm wasm:build && pnpm ts:build",
-    "build:all:debug": "DEBUG=true pnpm build:all"
+    "build:all:debug": "DEBUG=true pnpm build:all",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
@@ -28,6 +29,7 @@
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
     "globals": "^15.11.0",
+    "husky": "^9.1.7",
     "prettier": "3.3.3",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",

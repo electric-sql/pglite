@@ -43,3 +43,25 @@ export async function fetchStarCount(currentCount) {
 
   return currentCount || FALLBACK_INITIAL_COUNT
 }
+
+const FALLBACK_NPMJS_DWN_INITIAL_COUNT = 6842562
+
+export async function downloadCount(currentDownloadCount) {
+  const ttl = 3600 // 1 hour
+  return localStorageCache('downloadCount', ttl, async () => {
+    return await fetchNpmJsDownloadCount(currentDownloadCount)
+  })
+}
+
+export async function fetchNpmJsDownloadCount(currentCount) {
+  const resp = await fetch(
+    'https://api.npmjs.org/downloads/point/last-week/@electric-sql/pglite',
+  )
+
+  if (resp.ok) {
+    const data = await resp.json()
+    return data.downloads
+  }
+
+  return currentCount || FALLBACK_NPMJS_DWN_INITIAL_COUNT
+}

@@ -6,6 +6,11 @@ import { PGlite } from '@electric-sql/pglite'
 import { vector } from '@electric-sql/pglite/vector'
 
 const pg = new PGlite({
+  startParams: [
+    ...PGlite.defaultStartParams,
+    '-c',
+    'application_name=PGlite REPL',
+  ],
   extensions: {
     vector,
   },

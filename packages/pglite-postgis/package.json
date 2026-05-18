@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-postgis",
-  "version": "0.0.3",
+  "version": "0.0.7",
   "description": "PostGIS extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
@@ -56,6 +56,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pglite-utils": "workspace:*",
     "@types/node": "^20.16.11",
     "vitest": "^2.1.2"
   },

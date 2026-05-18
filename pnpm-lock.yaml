@@ -26,6 +26,9 @@ importers:
       globals:
         specifier: ^15.11.0
         version: 15.11.0
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       prettier:
         specifier: 3.3.3
         version: 3.3.3
@@ -135,7 +138,7 @@ importers:
         specifier: workspace:*
         version: link:../pglite
       wa-sqlite:
-        specifier: github:rhashimoto/wa-sqlite#v0.9.14
+        specifier: https://github.com/rhashimoto/wa-sqlite.git#v0.9.14
         version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
     devDependencies:
       '@types/better-sqlite3':
@@ -168,6 +171,9 @@ importers:
       '@electric-sql/pg-protocol':
         specifier: workspace:*
         version: link:../pg-protocol
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../pglite-utils
       '@types/emscripten':
         specifier: ^1.41.1
         version: 1.41.1
@@ -213,12 +219,39 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../pglite-utils
       '@types/node':
         specifier: ^20.16.11
         version: 20.16.11
       vitest:
         specifier: ^2.1.2
         version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-prepopulatedfs:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../pglite-utils
+      '@types/emscripten':
+        specifier: ^1.41.1
+        version: 1.41.1
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
+      vitest:
+        specifier: ^1.3.1
+        version: 1.6.0(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
 
   packages/pglite-react:
     devDependencies:
@@ -431,6 +464,18 @@ importers:
       vitest:
         specifier: ^1.3.1
         version: 1.6.0(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-utils:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pg-protocol':
+        specifier: workspace:*
+        version: link:../pg-protocol
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
 
   packages/pglite-vue:
     dependencies:
@@ -2887,6 +2932,11 @@ packages:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
@@ -4491,6 +4541,7 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
@@ -7545,6 +7596,8 @@ snapshots:
   human-signals@2.1.0: {}
 
   human-signals@5.0.0: {}
+
+  husky@9.1.7: {}
 
   iconv-lite@0.4.24:
     dependencies:

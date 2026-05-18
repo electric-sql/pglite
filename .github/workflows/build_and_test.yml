@@ -21,7 +21,7 @@ on:
 jobs:
   stylecheck:
     name: Stylecheck
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -230,6 +230,9 @@ jobs:
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build pglite-utils
+        run: pnpm --filter "@electric-sql/pglite-utils" build
 
       - name: Build pg-protocol
         run: pnpm --filter "@electric-sql/pg-protocol" build
