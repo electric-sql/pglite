@@ -33,17 +33,17 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_proc_proname_args_nsp_index',
-      relpages: 32,
+      relpages: 33,
     },
     {
       bt_index_check: '',
       relname: 'pg_description_o_c_o_index',
-      relpages: 23,
+      relpages: 24,
     },
     {
       bt_index_check: '',
       relname: 'pg_attribute_relid_attnam_index',
-      relpages: 15,
+      relpages: 16,
     },
     {
       bt_index_check: '',
@@ -67,17 +67,17 @@ it('amcheck', async () => {
     },
     {
       bt_index_check: '',
-      relname: 'pg_amop_fam_strat_index',
-      relpages: 6,
-    },
-    {
-      bt_index_check: '',
       relname: 'pg_operator_oprname_l_r_n_index',
       relpages: 6,
     },
     {
       bt_index_check: '',
-      relname: 'pg_amop_opr_fam_index',
+      relname: 'pg_amop_fam_strat_index',
+      relpages: 6,
+    },
+    {
+      bt_index_check: '',
+      relname: 'pg_class_relname_nsp_index',
       relpages: 6,
     },
   ])
