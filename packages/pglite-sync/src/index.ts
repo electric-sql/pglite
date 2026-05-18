@@ -514,7 +514,7 @@ export type PGliteWithSync = PGliteInterface & {
 
 export function electricSync(options?: ElectricSyncOptions) {
   return {
-    name: 'ElectricSQL Sync',
+    name: 'Postgres Sync',
     setup: async (pg: PGliteInterface) => {
       const { namespaceObj, close } = await createPlugin(pg, options)
       return {

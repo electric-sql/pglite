@@ -80,7 +80,7 @@ export default defineConfig({
       { text: 'About', link: '/docs/about' },
       { text: 'Docs', link: '/docs/' },
       { text: 'REPL', link: '/repl/' },
-      { text: 'ElectricSQL', link: 'https://www.electric-sql.com' },
+      { text: 'Electric', link: 'https://www.electric.ax' },
       {
         text: 'GitHub',
         link: 'https://github.com/electric-sql/pglite',
@@ -119,7 +119,7 @@ export default defineConfig({
           { text: 'Multi-tab Worker', link: '/docs/multi-tab-worker' },
           { text: 'REPL Component', link: '/docs/repl' },
           { text: 'ORMs & Query Builders', link: '/docs/orm-support' },
-          { text: 'Sync using ElectricSQL', link: '/docs/sync' },
+          { text: 'Sync using Postgres Sync', link: '/docs/sync' },
           { text: 'PGlite Socket', link: '/docs/pglite-socket' },
           {
             text: 'PGlite tools',
@@ -159,7 +159,7 @@ export default defineConfig({
     footer: {
       message:
         'Dual-licensed under <a href="https://github.com/electric-sql/pglite/blob/main/LICENSE">Apache 2.0</a> and the <a href="https://github.com/electric-sql/pglite/blob/main/POSTGRES-LICENSE">PostgreSQL License</a>',
-      copyright: '© <a href="https://electric-sql.com/">ElectricSQL</a>',
+      copyright: '© <a href="https://electric.ax/">Electric</a>',
     },
     search: {
       provider: 'local',

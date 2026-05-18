@@ -56,7 +56,7 @@ async function renderGitHub() {
   if (!countEl) {
     countEl = document.createElement('span')
     countEl.classList.add('count')
-    countEl.innerText = `(${toShortDecimal(initialStarCount)})`;
+    countEl.innerText = `( ☆ ${toShortDecimal(initialStarCount)})`;
 
     const icon = document.createElement('span')
     icon.classList.add('vpi-social-github')
