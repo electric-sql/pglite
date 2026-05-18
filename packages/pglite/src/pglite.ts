@@ -417,11 +417,11 @@ export class PGlite
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'postgres'
-          mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+          mod.ENV.LANG = mod.ENV.LC_COLLATE = mod.ENV.LC_CTYPE = 'en_US.UTF-8'
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
-
+          mod.ENV.ICU_DATA = '/pglite/icu'
           // some extensions might need their own ENV variables
           // TODO: move this to the extension init function
           for (const [extName] of Object.entries(this.#extensions)) {
