@@ -1,6 +1,6 @@
 import { pglUtils } from '@electric-sql/pglite-utils'
 
-export async function icuDir(): Promise<Blob> {
+export async function icuDataDir(): Promise<Blob> {
   const moduleUrl = new URL('../dist/icu.76.tgz', import.meta.url)
   if (pglUtils.IN_NODE) {
     const fs = await import('fs/promises')

@@ -22,7 +22,7 @@ import { icuDataDir } from '@electric-sql/pglite-icu-full'
 
 // Create a PGlite instance with the icu resources
 const pg = await PGlite.create({
-  icuDataDir: new Blob([new Uint8Array(icuDataDir)]),
+  icuDataDir: await icuDataDir(),
 })
 
 // just an example, query the available collations

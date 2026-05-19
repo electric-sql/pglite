@@ -39,7 +39,6 @@ import {
 } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import type { FS } from './postgresMod.js'
 
 export class PGlite
   extends BasePGlite
@@ -496,7 +495,7 @@ export class PGlite
     await this.fs!.initialSyncFs()
 
     if (options.icuDataDir) {
-      await this.#fillIcuDataDir(this.mod.FS, options.icuDataDir)
+      await this.#fillIcuDataDir(options.icuDataDir)
     }
 
     if (!options.noInitDb) {
@@ -577,14 +576,14 @@ export class PGlite
     }
   }
 
-  async #fillIcuDataDir(fs: FS, icuDataDir: Blob | File) {
+  async #fillIcuDataDir(icuDataDir: Blob | File) {
     this.#log(
       `pglite: icuDataDir specified, removing default icu data dir at ${ICU_DATA_PATH}`,
     )
-    pglUtils.rmdirRecursive(fs, ICU_DATA_PATH)
+    pglUtils.rmdirRecursive(this.mod!.FS, ICU_DATA_PATH)
     this.#log(`pglite: loading icu data from tarball ${icuDataDir}`)
-    fs.mkdirTree(ICU_DATA_PATH)
-    await loadTar(fs, icuDataDir, ICU_DATA_PATH)
+    this.mod!.FS.mkdirTree(ICU_DATA_PATH)
+    await loadTar(this.mod!.FS, icuDataDir, ICU_DATA_PATH)
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
