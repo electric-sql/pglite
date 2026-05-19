@@ -258,7 +258,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pglite-postgis-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-postgis/dist/*                  
+          path: ./packages/pglite-postgis/dist/*
+
+      - name: Upload pglite-icu-full distribution artifact
+        id: upload-pglite-icu-full
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-icu-full-node-v${{ matrix.node }}
+          path: ./packages/pglite-icu-full/dist/*           
 
   publish-website-with-demos:
     name: Publish website with demos

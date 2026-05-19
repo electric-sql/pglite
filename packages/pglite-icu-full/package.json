@@ -42,7 +42,7 @@
     }
   },
   "scripts": {
-    "build": "mkdir -p ./dist && cp static/* ./dist/",
+    "build": "tsup && cp static/* ./dist/",
     "check:exports": "attw . --pack --profile node16",
     "lint": "eslint ./tests --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write ./tests",
