@@ -35,4 +35,14 @@ ORDER BY schema, name;
     expect(allLocales[0].rows.length).toBeGreaterThanOrEqual(879)
     expect(defLocales[0].rows.length).toBeLessThan(allLocales[0].rows.length)
   })
+
+  it.skip('use locale-provider icu with german locale', async () => {
+    const icuDataDir = await fs.readFile(
+      resolve(import.meta.dirname, '../dist/icu.76.tgz'),
+    )
+    const _pg = await PGlite.create({
+      icuDataDir: new Blob([new Uint8Array(icuDataDir)]),
+      initDbStartParams: ['--locale-provider=icu', '--icu-locale=de'],
+    })
+  })
 })

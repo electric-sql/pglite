@@ -100,6 +100,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   parsers?: ParserOptions
   serializers?: SerializerOptions
   startParams?: string[]
+  initDbStartParams?: string[]
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

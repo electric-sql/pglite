@@ -528,6 +528,7 @@ export class PGlite
             pg: pg_initDb,
             debug: options.debug,
             wasmModule: options.initdbWasmModule,
+            args: options.initDbStartParams,
           })
 
           if (initdbResult.exitCode !== 0) {
