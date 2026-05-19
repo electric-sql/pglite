@@ -36,6 +36,54 @@ import { pglUtils } from '@electric-sql/pglite-utils'
 
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
+const maxCapturedStartupMessages = 100
+
+function captureStartupMessage(messages: string[], text: string) {
+  for (const line of text.split(/\r?\n/)) {
+    if (!line) continue
+    messages.push(line)
+    if (messages.length > maxCapturedStartupMessages) {
+      messages.shift()
+    }
+  }
+}
+
+function createStartupError(error: unknown, messages: string[]) {
+  const details = messages.length
+    ? `\nPostgres startup logs:\n${messages.join('\n')}`
+    : ''
+  const startupError = new Error(
+    `PGlite failed to start Postgres.${details}`,
+  ) as Error & { cause?: unknown }
+  startupError.name = 'PGliteStartupError'
+  startupError.cause = error
+  return startupError
+}
+
+function shouldRepairWal(options: PGliteOptions, messages: string[]) {
+  if (options.dataDirRepair === 'none') {
+    return false
+  }
+  const message = messages.join('\n')
+  return (
+    message.includes('invalid checkpoint record') ||
+    message.includes('could not locate a valid checkpoint record') ||
+    message.includes('could not read from WAL segment')
+  )
+}
+
+function getProcessExitCode(): typeof process.exitCode | undefined {
+  if (typeof process === 'undefined') {
+    return undefined
+  }
+  return process.exitCode
+}
+
+function restoreProcessExitCode(exitCode: typeof process.exitCode | undefined) {
+  if (typeof process !== 'undefined') {
+    process.exitCode = exitCode ?? 0
+  }
+}
 
 export class PGlite
   extends BasePGlite
@@ -53,6 +101,7 @@ export class PGlite
   }
 
   readonly dataDir?: string
+  repairedDataDir?: string
 
   #ready = false
   #closing = false
@@ -183,7 +232,7 @@ export class PGlite
     this.#extensions = options.extensions ?? {}
 
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options ?? {})
+    this.waitReady = this.#init(options ?? {}, true)
   }
 
   /**
@@ -255,12 +304,19 @@ export class PGlite
    * Initialize the database
    * @returns A promise that resolves when the database is ready
    */
-  async #init(options: PGliteOptions) {
+  async #init(options: PGliteOptions, allowWalRepair: boolean) {
     if (options.fs) {
       this.fs = options.fs
     } else {
       const { dataDir, fsType } = parseDataDir(options.dataDir)
       this.fs = await loadFs(dataDir, fsType)
+    }
+    const startupMessages: string[] = []
+    let captureStartupMessages = true
+    const recordStartupMessage = (text: string) => {
+      if (captureStartupMessages) {
+        captureStartupMessage(startupMessages, text)
+      }
     }
 
     const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
@@ -316,9 +372,11 @@ export class PGlite
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
+        recordStartupMessage(text)
         this.#print(text)
       },
       printErr: (text: string) => {
+        recordStartupMessage(text)
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
@@ -543,15 +601,35 @@ export class PGlite
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
-      this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({
-        pgDataFolder: PGDATA,
-        startParams: [
-          ...(options.startParams || PGlite.defaultStartParams),
-          ...(this.debug ? ['-d', this.debug.toString()] : []),
-        ],
-      })
-      this.#setPGliteActive()
+      const exitCodeBeforeStart = getProcessExitCode()
+      try {
+        this.mod!._pgl_setPGliteActive(1)
+        this.#startInSingleMode({
+          pgDataFolder: PGDATA,
+          startParams: [
+            ...(options.startParams || PGlite.defaultStartParams),
+            ...(this.debug ? ['-d', this.debug.toString()] : []),
+          ],
+        })
+        this.#setPGliteActive()
+      } catch (e) {
+        restoreProcessExitCode(exitCodeBeforeStart)
+        const startupError = createStartupError(e, startupMessages)
+        if (allowWalRepair && shouldRepairWal(options, startupMessages)) {
+          const repaired = await this.#repairWal()
+          if (repaired) {
+            this.repairedDataDir = repaired.dataDir
+            console.warn(
+              `PGlite reset corrupted WAL in ${repaired.dataDir} and restarted. Data files were preserved, but uncheckpointed transactions may be lost.`,
+            )
+            await this.#init(options, false)
+            return
+          }
+        }
+        throw startupError
+      } finally {
+        captureStartupMessages = false
+      }
 
       this.#ready = true
 
@@ -567,6 +645,31 @@ export class PGlite
         await initFn()
       }
     }
+  }
+
+  async #repairWal() {
+    if (!this.fs?.repairWal) {
+      return
+    }
+
+    try {
+      await this.fs.closeFs()
+    } catch {
+      // The runtime may already be aborting; WAL repair only needs the
+      // persistent data directory.
+    }
+
+    try {
+      this.mod?._emscripten_force_exit(0)
+    } catch {
+      // Ignore abort-state cleanup failures; the current module is discarded.
+    }
+
+    this.mod = undefined
+    this.#ready = false
+    this.#running = false
+
+    return this.fs.repairWal()
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {

@@ -43,6 +43,13 @@ export interface Filesystem {
    * Close the filesystem.
    */
   closeFs(): Promise<void>
+
+  /**
+   * Repair a data directory whose WAL is corrupt but whose data files should be
+   * preserved. Filesystems without direct persistent storage may leave this
+   * unsupported.
+   */
+  repairWal?(): Promise<{ dataDir: string }>
 }
 
 /**

@@ -4,6 +4,7 @@ import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 import { PGDATA } from '../initdb.js'
+import { resetWal } from './pgResetWal.js'
 
 export class NodeFS extends EmscriptenBuiltinFilesystem {
   protected rootDir: string
@@ -34,5 +35,10 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
 
   async closeFs(): Promise<void> {
     this.pg!.Module.FS.quit()
+  }
+
+  async repairWal(): Promise<{ dataDir: string }> {
+    await resetWal(this.rootDir)
+    return { dataDir: this.rootDir }
   }
 }

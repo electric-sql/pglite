@@ -85,6 +85,7 @@ export interface DumpDataDirResult {
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   noInitDb?: boolean
   dataDir?: string
+  dataDirRepair?: 'auto' | 'none'
   username?: string
   database?: string
   fs?: Filesystem
@@ -107,6 +108,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     readonly debug: DebugLevel
     readonly ready: boolean
     readonly closed: boolean
+    readonly repairedDataDir?: string
 
     close(): Promise<void>
     query<T>(
