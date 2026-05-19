@@ -61,7 +61,7 @@ export async function loadTar(
   }
 
   for (const file of files) {
-    const filePath = pgDataDir + file.name
+    const filePath = `${pgDataDir}/${file.name}`
 
     // Ensure the directory structure exists
     const dirPath = filePath.split('/').slice(0, -1)
@@ -81,7 +81,9 @@ export async function loadTar(
         dateToUnixTimestamp(file.modifyTime),
       )
     } else if (file.type === DIRTYPE) {
-      FS.mkdir(filePath)
+      if (!FS.analyzePath(filePath).exists) {
+        FS.mkdir(filePath)
+      }
     }
   }
 }

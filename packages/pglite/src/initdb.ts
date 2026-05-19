@@ -10,8 +10,10 @@ function assert(condition: unknown, message?: string): asserts condition {
 
 export const PG_ROOT = '/pglite'
 export const PGDATA = PG_ROOT + '/data'
+export const ICU_DATA_PATH = PG_ROOT + '/icu'
+export const INITDB_EXE_PATH = PG_ROOT + '/bin/initdb'
+export const POSTGRES_EXE_PATH = PG_ROOT + '/bin/postgres'
 
-const initdbExePath = PG_ROOT + '/bin/initdb'
 const pgstdoutPath = PG_ROOT + '/pgstdout'
 const pgstdinPath = PG_ROOT + '/pgstdin'
 
@@ -87,7 +89,7 @@ async function execInitdb({
   const emscriptenOpts: Partial<InitdbMod> = {
     arguments: args,
     noExitRuntime: false,
-    thisProgram: initdbExePath,
+    thisProgram: INITDB_EXE_PATH,
     // Provide a stdin that returns EOF to avoid browser prompt
     stdin: () => null,
     print: (text) => {
@@ -114,6 +116,7 @@ async function execInitdb({
         mod.ENV.HOME = '/home/postgres'
         mod.ENV.USER = 'postgres'
         mod.ENV.LOGNAME = 'postgres'
+        mod.ENV.ICU_DATA = ICU_DATA_PATH
       },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
