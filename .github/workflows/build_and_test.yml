@@ -54,12 +54,31 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm install
 
-      - name: Build all
+      - name: Get postgres-pglite submodule hash
+        id: postgres-pglite-commit-id
+        run: echo "hash=$(git rev-parse HEAD:postgres-pglite)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache WASM build artifacts
+        id: postgres-pglite-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/pglite/release
+            packages/pglite-tools/release
+            packages/pglite-postgis/release
+          key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}
+
+      - name: Build all if necessary
+        if: steps.postgres-pglite-cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
-        run: |
-          pnpm build:all
+        run: pnpm build:all
+
+      - name: Build only typeScript packages if postgres-pglite artifacts already available
+        if: steps.postgres-pglite-cache.outputs.cache-hit == 'true'
+        working-directory: ${{ github.workspace }}
+        run: pnpm ts:build
 
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
