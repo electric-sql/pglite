@@ -156,7 +156,7 @@ jobs:
       - name: Test Deno
         run: pnpm test:deno
 
-      - name: Pack for distribution
+      - name: Pack pglite for distribution
         run: pnpm pack
 
       - name: Upload PGlite distribution artifact
@@ -173,13 +173,6 @@ jobs:
           name: pglite-package-node-v${{ matrix.node }}
           path: ./packages/pglite/electric-sql-pglite-*.tgz
           retention-days: 60
-
-      - name: Upload pglite-icu-full distribution artifact
-        id: upload-pglite-icu-full
-        uses: actions/upload-artifact@v4
-        with:
-          name: pglite-icu-full-node-v${{ matrix.node }}
-          path: ./packages/pglite-icu-full/dist/*          
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
@@ -200,6 +193,17 @@ jobs:
           body: |
             - PGlite with node v${{ matrix.node }}: ${{ steps.upload-pglite-package.outputs.artifact-url }}
           edit-mode: append
+
+      - name: Pack pglite-icu-full for distribution
+        directory: ./packages/pglite-icu-full
+        run: pnpm pack
+
+      - name: Upload pglite-icu-full distribution artifact
+        id: upload-pglite-icu-full
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-icu-full-node-v${{ matrix.node }}
+          path: electric-sql-pglite-icu-full-*.tgz          
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
@@ -310,7 +314,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-postgis-dist-node-v20.x
-          path: ./packages/pglite-postgis/dist/
+          path: ./packages/pglite-postgis/dist/ 
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
