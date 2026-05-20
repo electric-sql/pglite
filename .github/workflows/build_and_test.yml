@@ -201,6 +201,7 @@ jobs:
       - name: Upload pglite-icu-full distribution artifact
         id: upload-pglite-icu-full
         uses: actions/upload-artifact@v4
+        working-directory: ./packages/pglite-icu-full
         with:
           name: pglite-icu-full-node-v${{ matrix.node }}
           path: electric-sql-pglite-icu-full-*.tgz          
