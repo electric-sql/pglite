@@ -196,7 +196,7 @@ jobs:
 
       - name: Pack pglite-icu-full for distribution
         working-directory: ./packages/pglite-icu-full
-        run: pnpm pack
+        run: pnpm build && pnpm pack
 
       - name: Upload pglite-icu-full distribution artifact
         id: upload-pglite-icu-full
