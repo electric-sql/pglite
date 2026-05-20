@@ -195,7 +195,7 @@ jobs:
           edit-mode: append
 
       - name: Pack pglite-icu-full for distribution
-        directory: ./packages/pglite-icu-full
+        working-directory: ./packages/pglite-icu-full
         run: pnpm pack
 
       - name: Upload pglite-icu-full distribution artifact
