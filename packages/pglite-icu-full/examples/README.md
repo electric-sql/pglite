@@ -36,7 +36,7 @@ $ ICU_DATA_FILTER_FILE=<full_path_to_your_filters.json> ./icu/source/configure -
 $ make -j && make install
 
 
-## Create a tgz with the icu data
+## Create an archive with the icu data
 
 The previous steps have installed everything related to ICU in <your_install_dir>. You only need the data files:
 
