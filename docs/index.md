@@ -84,7 +84,7 @@ async function renderGitHub() {
       clearInterval(intervalId);
     }
 
-    countEl.innerText = `(${toShortDecimal(currentCount)})`;
+    countEl.innerText = `( ☆ ${toShortDecimal(currentCount)})`;
   };
   const intervalId = setInterval(animateCount, 64);
 }
