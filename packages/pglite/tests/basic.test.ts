@@ -701,5 +701,19 @@ await testEsmCjsAndDTC(async (importType) => {
       )
       expect(databaseAndRole[0].rows[0].setting).toEqual(dateTime)
     })
+
+    it('restores process.exitCode', async () => {
+      const origExitCode = process.exitCode
+      const db = await PGlite.create()
+      expect(process.exitCode).toEqual(origExitCode)
+
+      await db.exec(`
+      CREATE TABLE IF NOT EXISTS test (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );`)
+
+      expect(process.exitCode).toEqual(origExitCode)
+    })
   })
 })
