@@ -412,11 +412,11 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
       )
       // Trigger an update
       await db.exec(
-        `INSERT INTO pattern_matching (statement) VALUES ('ElectricSQL + pglite = <3');`,
+        `INSERT INTO pattern_matching (statement) VALUES ('Electric + pglite = <3');`,
       )
       await waitFor(() =>
         expect(result.current?.rows[0].statement).toBe(
-          'ElectricSQL + pglite = <3',
+          'Electric + pglite = <3',
         ),
       )
     })
