@@ -169,7 +169,6 @@ ORDER BY schema, name;
       expect(res.rows[0].eq).toBe(true)
     })
   })
-
 })
 
 describe('icu functionality', () => {
