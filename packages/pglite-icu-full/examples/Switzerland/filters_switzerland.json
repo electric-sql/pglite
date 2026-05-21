@@ -1,0 +1,29 @@
+{
+  "localeFilter": {
+    "filterType": "locale",
+    "includelist": ["root", "de_CH", "fr_CH", "it_CH", "rm"],
+    "includeChildren": false
+  },
+  "featureFilters": {
+    "brkitr_rules": "exclude",
+    "brkitr_dictionaries": "exclude",
+    "brkitr_tree": "exclude",
+    "conversion_mappings": "exclude",
+    "confusables": "exclude",
+    "curr_supplemental": "exclude",
+    "curr_tree": "exclude",
+    "lang_tree": "exclude",
+    "normalization": "exclude",
+    "region_tree": "exclude",
+    "rbnf_tree": "exclude",
+    "stringprep": "exclude",
+    "zone_tree": "exclude",
+    "translit": "exclude",
+    "unames": "exclude",
+    "ulayout": "exclude",
+    "uemoji": "exclude",
+    "unit_tree": "exclude",
+    "cnvalias": "exclude"
+  },
+  "collationUCAData": "implicithan"
+}

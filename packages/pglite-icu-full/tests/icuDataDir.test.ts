@@ -45,6 +45,131 @@ ORDER BY schema, name;
       initDbStartParams: ['--locale-provider=icu', '--icu-locale=de'],
     })
   })
+
+  describe('Switzerland custom ICU file', () => {
+    let pg: PGlite
+
+    beforeAll(async () => {
+      const icuDataDir = await fs.readFile(
+        resolve(import.meta.dirname, '../examples/Switzerland/icu_76_ch.tgz'),
+      )
+      pg = await PGlite.create({
+        icuDataDir: new Blob([new Uint8Array(icuDataDir)]),
+      })
+    })
+
+    afterAll(async () => {
+      await pg?.close()
+    })
+
+    it('includes Swiss locale collations', async () => {
+      const locales = await pg.exec(`
+        SELECT collname FROM pg_collation
+        WHERE collprovider = 'i'
+        ORDER BY collname;
+      `)
+      const names = locales[0].rows.map((r: any) => r.collname)
+      expect(names).toContain('de-CH-x-icu')
+      expect(names).toContain('fr-CH-x-icu')
+      expect(names).toContain('it-CH-x-icu')
+    })
+
+    it('German (CH) collation: ä sorts near a', async () => {
+      const res = await pg.query<{ b: string }>(`
+        SELECT val AS b FROM (VALUES ('Birne'), ('Apfel'), ('Ärger'), ('Banane'))
+        AS t(val) ORDER BY val COLLATE "de-CH-x-icu"
+      `)
+      const values = res.rows.map((r) => r.b)
+      expect(values.indexOf('Ärger')).toBeLessThan(values.indexOf('Banane'))
+    })
+
+    it('French (CH) collation: accented characters sort correctly', async () => {
+      const res = await pg.query<{ b: string }>(`
+        SELECT val AS b FROM (VALUES ('côte'), ('coté'), ('cote'), ('côté'))
+        AS t(val) ORDER BY val COLLATE "fr-CH-x-icu"
+      `)
+      const values = res.rows.map((r) => r.b)
+      expect(values[0]).toBe('cote')
+    })
+
+    it('Italian (CH) collation: handles accented vowels', async () => {
+      const res = await pg.query<{ b: string }>(`
+        SELECT val AS b FROM (VALUES ('perché'), ('pera'), ('perciò'), ('percorso'))
+        AS t(val) ORDER BY val COLLATE "it-CH-x-icu"
+      `)
+      const values = res.rows.map((r) => r.b)
+      expect(values.indexOf('pera')).toBeLessThan(values.indexOf('perché'))
+    })
+
+    it('German phonebook collation for Swiss German: ö expands to oe', async () => {
+      await pg.exec(`
+        CREATE COLLATION IF NOT EXISTS ch_de_phonebook
+          (provider = icu, locale = 'de-CH@collation=phonebook');
+      `)
+      const res = await pg.query<{ std: boolean; phone: boolean }>(`
+        SELECT
+          'Goldmann' < 'Götz' COLLATE "de-CH-x-icu" AS std,
+          'Goldmann' > 'Götz' COLLATE ch_de_phonebook AS phone
+      `)
+      expect(res.rows[0].std).toBe(true)
+      expect(res.rows[0].phone).toBe(true)
+    })
+
+    it('case conversion with Swiss French', async () => {
+      const res = await pg.query<{ lo: string; up: string }>(`
+        SELECT
+          lower('GÉNÈVE' COLLATE "fr-CH-x-icu") AS lo,
+          upper('génève' COLLATE "fr-CH-x-icu") AS up
+      `)
+      expect(res.rows[0].lo).toBe('génève')
+      expect(res.rows[0].up).toBe('GÉNÈVE')
+    })
+
+    it('case conversion with Swiss German', async () => {
+      const res = await pg.query<{ lo: string; up: string }>(`
+        SELECT
+          lower('ZÜRICH' COLLATE "de-CH-x-icu") AS lo,
+          upper('zürich' COLLATE "de-CH-x-icu") AS up
+      `)
+      expect(res.rows[0].lo).toBe('zürich')
+      expect(res.rows[0].up).toBe('ZÜRICH')
+    })
+
+    it('case conversion with Swiss Italian', async () => {
+      const res = await pg.query<{ lo: string; up: string }>(`
+        SELECT
+          lower('LUGANO' COLLATE "it-CH-x-icu") AS lo,
+          upper('bellinzona' COLLATE "it-CH-x-icu") AS up
+      `)
+      expect(res.rows[0].lo).toBe('lugano')
+      expect(res.rows[0].up).toBe('BELLINZONA')
+    })
+
+    it('numeric collation works with Swiss locales', async () => {
+      await pg.exec(`
+        CREATE COLLATION IF NOT EXISTS ch_numeric
+          (provider = icu, locale = 'de-CH@colNumeric=yes');
+      `)
+      const res = await pg.query<{ b: string }>(`
+        SELECT val AS b FROM (VALUES ('Haus-9'), ('Haus-10'), ('Haus-2'), ('Haus-1'))
+        AS t(val) ORDER BY val COLLATE ch_numeric
+      `)
+      const values = res.rows.map((r) => r.b)
+      expect(values).toEqual(['Haus-1', 'Haus-2', 'Haus-9', 'Haus-10'])
+    })
+
+    it('case-insensitive collation with Swiss locale', async () => {
+      await pg.exec(`
+        CREATE COLLATION IF NOT EXISTS ch_ci
+          (provider = icu, locale = 'de-CH@colStrength=secondary', deterministic = false);
+      `)
+      const res = await pg.query<{ eq: boolean }>(`
+        SELECT 'Grüezi' COLLATE ch_ci = 'grüezi' COLLATE ch_ci AS eq
+      `)
+      expect(res.rows[0].eq).toBe(true)
+    })
+  })
+
 })
 
 describe('icu functionality', () => {
