@@ -717,21 +717,33 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it("text[] with NULL elements returns null, not string 'NULL'", async () => {
-      const pg = await PGlite.create();
+      const pg = await PGlite.create()
 
-      await pg.exec("CREATE TEMP TABLE t (str_val text, arr_val text[])");
+      await pg.exec('CREATE TEMP TABLE t (str_val text, arr_val text[])')
 
-      await pg.query("INSERT INTO t (str_val, arr_val) VALUES ($1, $2)", [null, [null, "hello", 'NULL']]);
-      await pg.query("INSERT INTO t (str_val, arr_val) VALUES ($1, $2)", [null, ['NULL', null, 'NULL']]);
-      await pg.query("INSERT INTO t (str_val, arr_val) VALUES ($1, $2)", [null, ['NULL', "hello", null]]);
-      await pg.query("INSERT INTO t (str_val, arr_val) VALUES ($1, $2)", [null, [null, null, null]]);
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        [null, 'hello', 'NULL'],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        ['NULL', null, 'NULL'],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        ['NULL', 'hello', null],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        [null, null, null],
+      ])
 
-      const res = await pg.query("SELECT str_val, arr_val FROM t");
-      expect(res.rows[0].str_val).toEqual(null);
-      expect(res.rows[0].arr_val).toEqual([null, "hello", 'NULL']);
-      expect(res.rows[1].arr_val).toEqual(['NULL', null, 'NULL']);
-      expect(res.rows[2].arr_val).toEqual(['NULL', "hello", null]);
-      expect(res.rows[3].arr_val).toEqual([null, null, null]);
+      const res = await pg.query('SELECT str_val, arr_val FROM t')
+      expect(res.rows[0].str_val).toEqual(null)
+      expect(res.rows[0].arr_val).toEqual([null, 'hello', 'NULL'])
+      expect(res.rows[1].arr_val).toEqual(['NULL', null, 'NULL'])
+      expect(res.rows[2].arr_val).toEqual(['NULL', 'hello', null])
+      expect(res.rows[3].arr_val).toEqual([null, null, null])
     })
   })
 })
