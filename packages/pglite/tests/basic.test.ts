@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
+import { PGlite } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -11,8 +12,28 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/index.js'))
 
   describe(`basic`, () => {
+
+    let db: PGlite
+    let dataDirArchive: File | Blob
+
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        db = await PGlite.create()
+        dataDirArchive = await db.dumpDataDir('gzip')
+      } else {
+        db = await PGlite.create({
+          loadDataDir: dataDirArchive
+        })
+      }
+    })
+
+    afterEach(async () => {
+      if (!db.closed) {
+        await db.close()
+      }
+    })
+
     it('exec', async () => {
-      const db = await PGlite.create()
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -46,12 +67,9 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
-
-      await db.close()
     })
 
     it('query', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -92,7 +110,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('query templated', async () => {
-      const db = new PGlite()
       const tableName = identifier`test`
       await db.sql`
     CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -133,7 +150,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('types', async () => {
-      const db = await PGlite.create()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -295,6 +311,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('custom parser and serializer', async () => {
       const db = new PGlite({
+        loadDataDir: dataDirArchive,
         serializers: { 1700: (x) => x.toString() },
         parsers: { 1700: (x) => BigInt(x) },
       })
@@ -331,7 +348,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('params', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -365,7 +381,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('array params', async () => {
-      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -418,14 +433,12 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('error', async () => {
-      const db = await PGlite.create()
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
     })
 
     it('transaction', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -487,7 +500,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('merge delete', async () => {
-      const db = new PGlite()
       await db.exec(`
       CREATE TABLE employees (
       id SERIAL PRIMARY KEY,
@@ -520,7 +532,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('copy to/from blob', async () => {
-      const db = new PGlite()
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -588,7 +599,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('close', async () => {
-      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -603,7 +613,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('use same param multiple times', async () => {
-      const db = new PGlite()
 
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
@@ -630,7 +639,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('timezone', async () => {
-      const db = new PGlite()
 
       const res = await db.query(
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
@@ -639,7 +647,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('default database, user and role should be "postgres"', async () => {
-      const db = await PGlite.create()
 
       const databaseAndRole = await db.exec(
         `SELECT current_database(), current_user, current_role;`,
@@ -664,7 +671,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
-      const db = await PGlite.create()
 
       const ROWS = 400_000
 
@@ -704,7 +710,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('restores process.exitCode', async () => {
       const origExitCode = process.exitCode
-      const db = await PGlite.create()
+      
       expect(process.exitCode).toEqual(origExitCode)
 
       await db.exec(`
