@@ -12,7 +12,6 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/index.js'))
 
   describe(`basic`, () => {
-
     let db: PGlite
     let dataDirArchive: File | Blob
 
@@ -22,7 +21,7 @@ await testEsmCjsAndDTC(async (importType) => {
         dataDirArchive = await db.dumpDataDir('gzip')
       } else {
         db = await PGlite.create({
-          loadDataDir: dataDirArchive
+          loadDataDir: dataDirArchive,
         })
       }
     })
@@ -613,7 +612,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('use same param multiple times', async () => {
-
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -639,7 +637,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('timezone', async () => {
-
       const res = await db.query(
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
       )
@@ -647,7 +644,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('default database, user and role should be "postgres"', async () => {
-
       const databaseAndRole = await db.exec(
         `SELECT current_database(), current_user, current_role;`,
       )
@@ -671,7 +667,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
-
       const ROWS = 400_000
 
       await db.exec(`
@@ -710,7 +705,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('restores process.exitCode', async () => {
       const origExitCode = process.exitCode
-      
+
       expect(process.exitCode).toEqual(origExitCode)
 
       await db.exec(`
