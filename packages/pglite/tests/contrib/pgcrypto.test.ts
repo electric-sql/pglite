@@ -4,7 +4,6 @@ import { pgcrypto } from '../../dist/contrib/pgcrypto.js'
 import * as openpgp from 'openpgp'
 
 describe('pg_pgcryptotrgm', () => {
-
   let pg: PGlite
   let dataDirArchive: File | Blob
 
@@ -30,7 +29,6 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('digest', async () => {
-    
     const res = await pg.query(
       "SELECT encode(digest(convert_to('test', 'UTF8'), 'sha1'), 'hex') as value;",
     )
@@ -38,7 +36,6 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('hmac', async () => {
-    
     const res = await pg.query(
       "SELECT encode(hmac(convert_to('test', 'UTF8'), convert_to('key', 'UTF8'), 'sha1'), 'hex') as value;",
     )
@@ -48,26 +45,22 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('crypt', async () => {
-    
     const res = await pg.query("SELECT crypt('test', gen_salt('bf')) as value;")
     expect(res.rows[0].value.length).toEqual(60)
   })
 
   it('gen_salt', async () => {
-    
     const res = await pg.query("SELECT gen_salt('bf') as value;")
     expect(res.rows[0].value.length).toEqual(29)
   })
 
   it('armor', async () => {
-    
     const res = await pg.query("SELECT armor(digest('test', 'sha1')) as value;")
     expect(res.rows[0].value).toContain('-----BEGIN PGP MESSAGE-----')
     expect(res.rows[0].value).toContain('-----END PGP MESSAGE-----')
   })
 
   it('pgp_sym_encrypt and pgp_sym_decrypt', async () => {
-    
     const res = await pg.query(
       "SELECT pgp_sym_encrypt('test', 'key') as value;",
     )
@@ -80,7 +73,6 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('pgp_pub_encrypt and pgp_pub_decrypt', async () => {
-    
     const { privateKey, publicKey } = await openpgp.generateKey({
       type: 'rsa',
       rsaBits: 2048,
@@ -104,7 +96,6 @@ FROM encrypted;
   })
 
   it('pgp_key_id', async () => {
-    
     const { publicKey } = await openpgp.generateKey({
       type: 'rsa',
       rsaBits: 2048,
@@ -121,7 +112,6 @@ FROM encrypted;
   })
 
   it('pgp_armor_headers', async () => {
-    
     // Create armored data with headers
     const res = await pg.query(
       `SELECT armor(digest('test', 'sha1'), ARRAY['key1'], ARRAY['value1']) as armored;`,
@@ -135,7 +125,6 @@ FROM encrypted;
   })
 
   it('encrypt and decrypt', async () => {
-
     const res = await pg.query(
       `SELECT encrypt('test data'::bytea, 'secret key'::bytea, 'aes') as encrypted;`,
     )
@@ -149,7 +138,6 @@ FROM encrypted;
   })
 
   it('encrypt_iv and decrypt_iv', async () => {
-
     // AES block size is 16 bytes, so IV must be 16 bytes
     const iv = '1234567890123456'
 
@@ -166,7 +154,6 @@ FROM encrypted;
   })
 
   it('gen_random_bytes', async () => {
-
     const res = await pg.query(
       `SELECT length(gen_random_bytes(32)) as len, encode(gen_random_bytes(16), 'hex') as bytes;`,
     )
@@ -176,7 +163,6 @@ FROM encrypted;
   })
 
   it('gen_random_uuid', async () => {
-
     const res = await pg.query(`SELECT gen_random_uuid() as uuid;`)
     // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     expect(res.rows[0].uuid).toMatch(
