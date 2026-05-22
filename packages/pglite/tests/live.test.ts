@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
+import { PGliteWithLive } from '../dist/live/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } = (
@@ -14,11 +15,29 @@ await testEsmCjsAndDTC(async (importType) => {
       : await import('../dist/live/index.cjs')
 
   describe(`live`, () => {
-    it('basic live query', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
+    let db: PGliteWithLive
+    let dataDirArchive: File | Blob
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        db = await PGlite.create({
+          extensions: { live },
+        })
+        dataDirArchive = await db.dumpDataDir('gzip')
+      } else {
+        db = await PGlite.create({
+          extensions: { live },
+          loadDataDir: dataDirArchive,
+        })
+      }
+    })
 
+    afterEach(async () => {
+      if (!db.closed) {
+        await db.close()
+      }
+    })
+
+    it('basic live query', async () => {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -110,10 +129,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live query on view', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -220,10 +235,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live query with params', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -305,10 +316,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('incremental query unordered', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -354,10 +361,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('incremental query with non-integer key', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id TEXT PRIMARY KEY,
@@ -403,9 +406,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live incremental query', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -499,9 +499,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live incremental query with limit 1', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -541,9 +538,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live incremental query on view', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -652,9 +646,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live incremental query with params', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -738,9 +729,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live changes', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -913,9 +901,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('subscribe to live query after creation', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -969,9 +954,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live changes limit 1', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -1035,9 +1017,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('subscribe to live changes after creation', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -1094,9 +1073,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live query with windowing', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -1185,9 +1161,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('throws error when only one of offset/limit is provided', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await expect(
         db.live.query({
@@ -1205,9 +1178,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('throws error when offset/limit are not numbers', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await expect(
         db.live.query({
@@ -1227,9 +1197,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it("doesn't have a race condition when unsubscribing from a live query", async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
@@ -1274,9 +1241,6 @@ await testEsmCjsAndDTC(async (importType) => {
     }, 3000)
 
     it('works with pattern matching', async () => {
-      const db = await PGlite.create({
-        extensions: { live },
-      })
 
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
