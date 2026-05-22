@@ -406,7 +406,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live incremental query', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -499,7 +498,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live incremental query with limit 1', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -538,7 +536,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live incremental query on view', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -646,7 +643,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live incremental query with params', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -729,7 +725,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('basic live changes', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -901,7 +896,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('subscribe to live query after creation', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -954,7 +948,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live changes limit 1', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -1017,7 +1010,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('subscribe to live changes after creation', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -1073,7 +1065,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('live query with windowing', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -1161,7 +1152,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('throws error when only one of offset/limit is provided', async () => {
-
       await expect(
         db.live.query({
           query: 'SELECT * FROM (VALUES (1)) t',
@@ -1178,7 +1168,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('throws error when offset/limit are not numbers', async () => {
-
       await expect(
         db.live.query({
           query: 'SELECT * FROM (VALUES (1)) t',
@@ -1197,7 +1186,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it("doesn't have a race condition when unsubscribing from a live query", async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
@@ -1241,7 +1229,6 @@ await testEsmCjsAndDTC(async (importType) => {
     }, 3000)
 
     it('works with pattern matching', async () => {
-
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
           id SERIAL PRIMARY KEY,
