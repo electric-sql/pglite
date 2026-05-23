@@ -94,16 +94,14 @@ describe('pgDump', () => {
   })
 
   it('should be able to restore dumped database', async () => {
-    const pg1 = await PGlite.create()
-
     // Create original database
-    await pg1.exec(`
+    await pg.exec(`
       CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT);
       INSERT INTO test (name) VALUES ('row1'), ('row2');
     `)
 
     const initialSearchPath = (
-      await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')
+      await pg.query<{ search_path: string }>('SHOW SEARCH_PATH;')
     ).rows[0].search_path
 
     // Dump database
