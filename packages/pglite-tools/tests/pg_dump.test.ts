@@ -1,11 +1,26 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { pgDump } from '../dist/pg_dump.js'
 import * as fs from 'fs/promises'
 
 describe('pgDump', () => {
+  let pg: PGlite
+  let dataDirArchive: File | Blob
+  beforeEach(async () => {
+    if (!dataDirArchive) {
+      pg = await PGlite.create()
+      dataDirArchive = await pg.dumpDataDir('gzip')
+    } else {
+      pg = await PGlite.create()
+    }
+  })
+  afterEach(async () => {
+    if (!pg.closed) {
+      await pg.close()
+    }
+  })
+
   it('should dump an empty database', async () => {
-    const pg = await PGlite.create()
     const dump = await pgDump({ pg })
 
     expect(dump).toBeInstanceOf(File)
@@ -16,8 +31,6 @@ describe('pgDump', () => {
   })
 
   it('should dump an empty database multiple times', async () => {
-    const pg = await PGlite.create()
-
     for (let i = 0; i < 5; i++) {
       const fileName = `dump_${i}.sql`
       const dump = await pgDump({ pg, fileName })
@@ -31,8 +44,6 @@ describe('pgDump', () => {
   })
 
   it('should dump a database with tables and data', async () => {
-    const pg = await PGlite.create()
-
     // Create test tables and insert data
     await pg.exec(`
       CREATE TABLE test1 (
@@ -63,14 +74,12 @@ describe('pgDump', () => {
   })
 
   it('should respect custom filename', async () => {
-    const pg = await PGlite.create()
     const dump = await pgDump({ pg, fileName: 'custom.sql' })
 
     expect(dump.name).toBe('custom.sql')
   })
 
   it('should handle custom pg_dump arguments', async () => {
-    const pg = await PGlite.create()
     await pg.exec(`
       CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT);
       INSERT INTO test (name) VALUES ('row1');
@@ -118,8 +127,6 @@ describe('pgDump', () => {
   })
 
   it('pg_dump should not change SEARCH_PATH', async () => {
-    const pg = await PGlite.create()
-
     await pg.exec(`SET SEARCH_PATH = amigo;`)
     const initialSearchPath = await pg.query('SHOW SEARCH_PATH;')
 
@@ -168,8 +175,6 @@ describe('pgDump', () => {
   })
 
   it('param --quote-all-identifiers should work', async () => {
-    const pg = await PGlite.create()
-
     // Create test tables and insert data
     await pg.exec(`
       CREATE TABLE test1 (
