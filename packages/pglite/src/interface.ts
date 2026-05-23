@@ -101,6 +101,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   serializers?: SerializerOptions
   startParams?: string[]
   initDbStartParams?: string[]
+  postgresqlconf?: string[] | string
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

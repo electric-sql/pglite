@@ -570,6 +570,18 @@ export class PGlite
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
+      if (options.postgresqlconf) {
+        const conf =
+          typeof options.postgresqlconf === 'string'
+            ? options.postgresqlconf
+            : options.postgresqlconf.join('\n')
+        copyToFS(
+          this.mod.FS,
+          `${PGDATA}/postgresql.conf`,
+          new TextEncoder().encode(conf),
+        )
+      }
+
       this.mod!._pgl_setPGliteActive(1)
       this.#startInSingleMode({
         pgDataFolder: PGDATA,

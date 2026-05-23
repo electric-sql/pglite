@@ -91,7 +91,7 @@ Path to the directory for storing the Postgres database. You can provide a URI s
   ```
 
 - `startParams?: string[]` <br />
-  An array of strings that will be passed to the Postgres process. This is the set of parameters one would pass to a native PostgreSQL instance.
+  An array of strings that will be passed to the Postgres process as start parameters. This is the set of parameters one would pass to a native PostgreSQL instance.
 
   ```ts
   import { PGlite } from '@electric-sql/pglite'
@@ -104,6 +104,20 @@ Path to the directory for storing the Postgres database. You can provide a URI s
     ],
   })
   ```
+
+- `initDbStartParams?: string[]` <br />
+  An array of strings that will be passed to the initdb process as start parameters. This is the set of parameters one would pass to a native initdb exe.
+
+  ```ts
+  import { PGlite } from '@electric-sql/pglite'
+
+  const pg = await PGlite.create({
+    initDbStartParams: ['--locale-provider=icu', '--icu-locale=de'],
+  })
+  ```
+
+- `postgresqlconf?: string[] | string` <br />
+  A `postgresql.conf` file as an array of strings or a single string. You can use it to pass parameters to the PostgreSQL process. See [official documentation](https://www.postgresql.org/docs/current/config-setting.html#CONFIG-SETTING-CONFIGURATION-FILE) for details.
 
 #### `options.extensions`
 
