@@ -1,51 +1,59 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { PGlite } from '../dist/index.js'
 import { expectToThrowAsync } from './test-utils.js'
 
 describe('notify API', () => {
-  it('notify', async () => {
-    const db = new PGlite()
+  let pg: PGlite
+  let dataDirArchive: File | Blob
+  beforeEach(async () => {
+    if (!dataDirArchive) {
+      pg = await PGlite.create()
+      dataDirArchive = await pg.dumpDataDir('gzip')
+    } else {
+      pg = await PGlite.create()
+    }
+  })
+  afterEach(async () => {
+    if (!pg.closed) {
+      await pg.close()
+    }
+  })
 
-    await db.listen('test', (payload) => {
+  it('notify', async () => {
+    await pg.listen('test', (payload) => {
       expect(payload).toBe('321')
     })
 
-    await db.exec("NOTIFY test, '321'")
+    await pg.exec("NOTIFY test, '321'")
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
   it('unlisten', async () => {
-    const db = new PGlite()
-
-    const unsub = await db.listen('test', () => {
+    const unsub = await pg.listen('test', () => {
       throw new Error('Notification received after unsubscribed')
     })
 
     await unsub()
 
-    await db.exec('NOTIFY test')
+    await pg.exec('NOTIFY test')
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
   it('onNotification', async () => {
-    const db = new PGlite()
-
-    db.onNotification((chan, payload) => {
+    pg.onNotification((chan, payload) => {
       expect(chan).toBe('test')
       expect(payload).toBe('123')
     })
 
-    await db.exec('LISTEN test')
-    await db.exec("NOTIFY test, '123'")
+    await pg.exec('LISTEN test')
+    await pg.exec("NOTIFY test, '123'")
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
   })
 
   it('check notify case sensitivity + special chars as Postgresql', async () => {
-    const pg = new PGlite()
-
     const allLower1 = vi.fn()
     await pg.listen('postgresdefaultlower', allLower1)
     await pg.exec(`NOTIFY postgresdefaultlower, 'payload1'`)
@@ -111,8 +119,6 @@ describe('notify API', () => {
   })
 
   it('check unlisten case sensitivity + special chars as Postgresql', async () => {
-    const pg = new PGlite()
-
     const allLower1 = vi.fn()
     {
       const unsub1 = await pg.listen('postgresdefaultlower', allLower1)

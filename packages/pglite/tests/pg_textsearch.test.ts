@@ -2,8 +2,9 @@
  * Tests for pg_textsearch extension.
  * Based on tests from https://github.com/timescale/pg_textsearch/tree/main/test/sql
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
+import { PGlite } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -21,16 +22,30 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/pg_textsearch/index.js'))
 
   describe(`pg_textsearch`, () => {
+    let pg: PGlite
+    let dataDirArchive: File | Blob
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        pg = await PGlite.create({
+          extensions: { pg_textsearch },
+        })
+        dataDirArchive = await pg.dumpDataDir('gzip')
+      } else {
+        pg = await PGlite.create({
+          extensions: { pg_textsearch },
+          loadDataDir: dataDirArchive,
+        })
+      }
+      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
+    })
+    afterEach(async () => {
+      if (!pg.closed) {
+        await pg.close()
+      }
+    })
+
     // From test/sql/basic.sql
     it('extension creation and bm25 access method', async () => {
-      const pg = await PGlite.create({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
-
       // Test bm25 access method exists
       const res = await pg.query<{ amname: string }>(
         "SELECT amname FROM pg_am WHERE amname = 'bm25';",
@@ -41,14 +56,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/basic.sql - bm25vector type
     it('bm25vector type exists and works', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
-
       // Test bm25vector type exists
       const res = await pg.query<{ pg_typeof: string }>(
         "SELECT pg_typeof('my_index:{database:2,system:1}'::bm25vector);",
@@ -64,14 +71,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/basic.sql - bm25query type
     it('bm25query type exists and works', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
-
       // Test bm25query type exists
       const res = await pg.query<{ pg_typeof: string }>(
         "SELECT pg_typeof('search terms'::bm25query);",
@@ -87,13 +86,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/basic.sql - index creation and basic search
     it('bm25 index creation and basic search', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
       await pg.exec(`
         CREATE TABLE test_docs (id SERIAL PRIMARY KEY, content TEXT);
       `)
@@ -135,13 +127,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/queries.sql - realistic search queries
     it('top-k query patterns', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
       await pg.exec(`
         CREATE TABLE articles (
           id SERIAL PRIMARY KEY,
@@ -199,13 +184,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/scoring1.sql - bulk vs incremental index build
     it('bulk build mode (insert then create index)', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
       await pg.exec(`
         CREATE TABLE scoring_bulk (
           id SERIAL PRIMARY KEY,
@@ -246,13 +224,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/strings.sql - various text patterns
     it('handles various text patterns', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
       await pg.exec(`
         CREATE TABLE text_patterns (
           id SERIAL PRIMARY KEY,
@@ -289,13 +260,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // From test/sql/updates.sql - update and delete operations
     it('handles updates and deletes', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_textsearch,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
       await pg.exec(`
         CREATE TABLE update_test (
           id SERIAL PRIMARY KEY,

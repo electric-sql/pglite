@@ -1,9 +1,24 @@
-import { test, expect } from 'vitest'
+import { test, expect, afterEach, beforeEach } from 'vitest'
 import { PGlite } from '../dist/index.js'
 
+let pg: PGlite
+let dataDirArchive: File | Blob
+beforeEach(async () => {
+  if (!dataDirArchive) {
+    pg = await PGlite.create()
+    dataDirArchive = await pg.dumpDataDir('gzip')
+  } else {
+    pg = await PGlite.create()
+  }
+})
+afterEach(async () => {
+  if (!pg.closed) {
+    await pg.close()
+  }
+})
+
 test('describeQuery returns parameter and result types', async () => {
-  const db = await PGlite.create()
-  await db.query(`
+  await pg.query(`
     CREATE TABLE users (
       id INTEGER PRIMARY KEY,
       name TEXT,
@@ -12,7 +27,7 @@ test('describeQuery returns parameter and result types', async () => {
     )
   `)
 
-  const description = await db.describeQuery(
+  const description = await pg.describeQuery(
     'SELECT name, age FROM users WHERE id = $1 AND active = $2',
   )
 
@@ -34,9 +49,7 @@ test('describeQuery returns parameter and result types', async () => {
 })
 
 test('describeQuery handles queries with no parameters or results', async () => {
-  const db = await PGlite.create()
-
-  const description = await db.describeQuery('SELECT 1')
+  const description = await pg.describeQuery('SELECT 1')
 
   expect(description.queryParams).toHaveLength(0)
   expect(description.resultFields).toHaveLength(1)
@@ -44,15 +57,14 @@ test('describeQuery handles queries with no parameters or results', async () => 
 })
 
 test('describeQuery handles INSERT queries', async () => {
-  const db = await PGlite.create()
-  await db.query(`
+  await pg.query(`
     CREATE TABLE test (
       id INTEGER PRIMARY KEY,
       value TEXT
     )
   `)
 
-  const description = await db.describeQuery(
+  const description = await pg.describeQuery(
     'INSERT INTO test (id, value) VALUES ($1, $2)',
   )
 
@@ -63,9 +75,7 @@ test('describeQuery handles INSERT queries', async () => {
 })
 
 test('describeQuery handles invalid queries', async () => {
-  const db = await PGlite.create()
-
   await expect(
-    db.describeQuery('SELECT * FROM nonexistent_table'),
+    pg.describeQuery('SELECT * FROM nonexistent_table'),
   ).rejects.toThrow(/relation "nonexistent_table" does not exist/)
 })
