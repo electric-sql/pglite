@@ -1,5 +1,5 @@
 import tinyTar from 'tinytar'
-import type { PostgresMod } from './postgresMod.js'
+import type { PostgresMod, FS } from './postgresMod.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
 
 export async function loadExtensionBundle(
@@ -84,7 +84,7 @@ function loadExtension(
   const data = tinyTar
     .untar(bytes)
     .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-  data.forEach((entry: any) => {
+  data.forEach((entry: tinyTar.TarFile) => {
     if (entry.name.endsWith('/')) {
       const dirPath = `${mod.WASM_PREFIX}/${entry.name}`
       if (mod.FS.analyzePath(dirPath).exists === false) {
@@ -110,7 +110,7 @@ function loadExtension(
             // hope for the best: it's not the end even if we were unable to preload a file
             // emscripten will try again if/when needed and do a wasm.compile on the main thread
             // but we still need to copy it to our filesystem
-            copyToFS(filePath, mod, entry)
+            copyToFS(mod.FS, filePath, entry.data)
             resolve()
             // _reject(new Error(`Failed to preload ${filePath}`))
           }
@@ -130,22 +130,24 @@ function loadExtension(
         })
         soPreloadPromises.push(soPreload)
       } else {
-        copyToFS(filePath, mod, entry)
+        copyToFS(mod.FS, filePath, entry.data)
       }
     }
   })
   return soPreloadPromises
 }
 
-function copyToFS(filePath: string, mod: PostgresMod, entry: any) {
+export function copyToFS(fs: FS, filePath: string, data: Uint8Array, mode: number = 0o0555) {
   try {
     const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
-    if (mod.FS.analyzePath(dirPath).exists === false) {
-      mod.FS.mkdirTree(dirPath)
+    if (fs.analyzePath(dirPath).exists === false) {
+      fs.mkdirTree(dirPath)
     }
-    mod.FS.writeFile(filePath, entry.data)
+    fs.writeFile(filePath, data)
+    fs.chmod(filePath, mode)
   } catch (e) {
     console.error(`Error writing file ${filePath}`, e)
+    throw e
   }
 }
 
