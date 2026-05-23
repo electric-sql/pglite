@@ -405,6 +405,7 @@ await pg.describeQuery('SELECT * FROM test WHERE name = $1', ['test'])
 Clones the current instance. This is useful when a series of operations, like unit or integration test, need to be run on the same database without having to recreate the database each time, or for each test.
 
 ### copyToFS
+
 `.copyToFS(filePath: string, data: Uint8Array, mode?: number)`
 
 Copies the `data` to a file at `filePath` in the virtual filesystem and sets the optional `mode` of the file.
@@ -412,11 +413,11 @@ Copies the `data` to a file at `filePath` in the virtual filesystem and sets the
 ##### Example
 
 ```ts
-  await pg.copyToFS(
-    '/tmp/test.txt',
-    new TextEncoder().encode('PGlite says hi!'),
-    0o0644,
-  )
+await pg.copyToFS(
+  '/tmp/test.txt',
+  new TextEncoder().encode('PGlite says hi!'),
+  0o0644,
+)
 ```
 
 ## Properties
