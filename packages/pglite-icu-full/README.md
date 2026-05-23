@@ -1,6 +1,6 @@
 # pglite-icu-full
 
-A package containing all the resources from [libicu](https://github.com/unicode-org/icu) that can be used with PGlite to build localized applications.
+A package containing all the data resources from [libicu](https://github.com/unicode-org/icu) that can be used with PGlite to build localized applications.
 
 ## Installation
 
@@ -30,6 +30,9 @@ const collations = await pg.exec('select * from pg_collation')
 
 ```
 
+To generate a new locale set, see packages/pglite-icu-full/examples/README.md as well as libicu's documentation (https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html).
+
 # Documentation
 
 https://www.postgresql.org/docs/current/locale.html
+https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html
