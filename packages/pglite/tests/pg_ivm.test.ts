@@ -40,7 +40,7 @@ await testEsmCjsAndDTC(async (importType) => {
         await pg.close()
       }
     })
-    
+
     it('can load extension', async () => {
       // Verify the extension is loaded
       const res = await pg.query<{ extname: string }>(`
@@ -91,7 +91,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('automatically updates view when base table changes', async () => {
-
       // Create base table
       await pg.exec(`
         CREATE TABLE products (
@@ -209,7 +208,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('supports simple views without aggregates', async () => {
-
       // Create base tables
       await pg.exec(`
         CREATE TABLE users (
@@ -295,7 +293,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('supports DISTINCT in views', async () => {
-
       // Create base table with potential duplicates
       await pg.exec(`
         CREATE TABLE events (
@@ -364,7 +361,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('can use refresh_immv function', async () => {
-
       // Create base table
       await pg.exec(`
         CREATE TABLE items (
