@@ -33,7 +33,11 @@ it('copyToFS', async () => {
     },
   })
 
-  await pg.copyToFS('/tmp/test.txt', new TextEncoder().encode('PGlite says hi!'), 0o0644)
+  await pg.copyToFS(
+    '/tmp/test.txt',
+    new TextEncoder().encode('PGlite says hi!'),
+    0o0644,
+  )
 
   await pg.exec('CREATE EXTENSION IF NOT EXISTS file_fdw;')
   await pg.exec('CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;')
@@ -42,7 +46,7 @@ it('copyToFS', async () => {
     OPTIONS (
         filename '/tmp/test.txt',
         format 'text'
-    );`)  
+    );`)
 
   const contents = await pg.query(`SELECT * FROM temp_test_file_contents;`)
   expect(contents.rows).toEqual([

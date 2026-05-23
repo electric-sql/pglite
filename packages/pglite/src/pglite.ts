@@ -1,6 +1,10 @@
 import { Mutex } from 'async-mutex'
 import { BasePGlite } from './base.js'
-import { copyToFS, loadExtensionBundle, loadExtensions } from './extensionUtils.js'
+import {
+  copyToFS,
+  loadExtensionBundle,
+  loadExtensions,
+} from './extensionUtils.js'
 import {
   type Filesystem,
   loadFs,

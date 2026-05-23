@@ -137,7 +137,12 @@ function loadExtension(
   return soPreloadPromises
 }
 
-export function copyToFS(fs: FS, filePath: string, data: Uint8Array, mode: number = 0o0555) {
+export function copyToFS(
+  fs: FS,
+  filePath: string,
+  data: Uint8Array,
+  mode: number = 0o0555,
+) {
   try {
     const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
     if (fs.analyzePath(dirPath).exists === false) {
