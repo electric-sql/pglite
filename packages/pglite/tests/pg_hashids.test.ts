@@ -18,7 +18,6 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/pg_hashids/index.js'))
 
   describe(`pg_hashids`, () => {
-
     let pg: PGlite
     let dataDirArchive: File | Blob
     beforeEach(async () => {
@@ -43,7 +42,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('can load extension', async () => {
-
       const res = await pg.query<{ extname: string }>(`
         SELECT extname
         FROM pg_extension
@@ -55,21 +53,18 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should return a hash using the default alphabet and empty salt', async () => {
-
       const res = await pg.exec(`SELECT id_encode(1001);`)
 
       expect(res[0].rows[0].id_encode).toEqual('jNl')
     })
 
     it('should return a hash using the default alphabet and supplied salt', async () => {
-
       const res = await pg.exec(`SELECT id_encode(1234567, 'This is my salt');`)
 
       expect(res[0].rows[0].id_encode).toEqual('Pdzxp')
     })
 
     it('should return a hash using the default alphabet, salt and minimum hash length', async () => {
-
       const res = await pg.exec(
         `SELECT id_encode(1234567, 'This is my salt', 10);`,
       )
@@ -78,7 +73,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should return a hash using the supplied alphabet, salt and minimum hash length', async () => {
-
       const res = await pg.exec(
         `SELECT id_encode(1234567, 'This is my salt', 10, 'abcdefghijABCDxFGHIJ1234567890');`,
       )
@@ -87,7 +81,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should decode previously generated hash', async () => {
-
       const res = await pg.exec(
         `SELECT id_decode('PlRPdzxpR7', 'This is my salt', 10);`,
       )
@@ -96,7 +89,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should decode previously generated hash using the supplied alphabet', async () => {
-
       const res = await pg.exec(
         `SELECT id_decode('3GJ956J9B9', 'This is my salt', 10, 'abcdefghijABCDxFGHIJ1234567890');`,
       )
@@ -105,14 +97,12 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should decode previously generated hash into a single integer', async () => {
-
       const res = await pg.exec(`SELECT id_decode_once('jNl');`)
 
       expect(res[0].rows[0].id_decode_once).toEqual(1001)
     })
 
     it('should decode previously generated hash into a single integer using the supplied salt', async () => {
-
       const res = await pg.exec(
         `SELECT id_decode_once('Pdzxp', 'This is my salt');`,
       )
@@ -121,7 +111,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should decode previously generated hash into a single integer using the supplied salt and minimum hash length', async () => {
-
       const res = await pg.exec(
         `SELECT id_decode_once('PlRPdzxpR7', 'This is my salt', 10);`,
       )
@@ -130,7 +119,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should decode previously generated hash into a single integer using the supplied alphabet', async () => {
-
       const res = await pg.exec(
         `SELECT id_decode_once('3GJ956J9B9', 'This is my salt', 10, 'abcdefghijABCDxFGHIJ1234567890');`,
       )
