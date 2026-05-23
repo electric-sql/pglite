@@ -1,18 +1,34 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { PGlite } from '../../dist/index.js'
 import { pgcrypto } from '../../dist/contrib/pgcrypto.js'
 import * as openpgp from 'openpgp'
 
 describe('pg_pgcryptotrgm', () => {
-  it('digest', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
+  let pg: PGlite
+  let dataDirArchive: File | Blob
 
+  beforeEach(async () => {
+    if (!dataDirArchive) {
+      pg = await PGlite.create({
+        extensions: { pgcrypto },
+      })
+      dataDirArchive = await pg.dumpDataDir('gzip')
+    } else {
+      pg = await PGlite.create({
+        extensions: { pgcrypto },
+        loadDataDir: dataDirArchive,
+      })
+    }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
+  })
 
+  afterEach(async () => {
+    if (!pg.closed) {
+      await pg.close()
+    }
+  })
+
+  it('digest', async () => {
     const res = await pg.query(
       "SELECT encode(digest(convert_to('test', 'UTF8'), 'sha1'), 'hex') as value;",
     )
@@ -20,14 +36,6 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('hmac', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query(
       "SELECT encode(hmac(convert_to('test', 'UTF8'), convert_to('key', 'UTF8'), 'sha1'), 'hex') as value;",
     )
@@ -37,54 +45,22 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('crypt', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query("SELECT crypt('test', gen_salt('bf')) as value;")
     expect(res.rows[0].value.length).toEqual(60)
   })
 
   it('gen_salt', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query("SELECT gen_salt('bf') as value;")
     expect(res.rows[0].value.length).toEqual(29)
   })
 
   it('armor', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query("SELECT armor(digest('test', 'sha1')) as value;")
     expect(res.rows[0].value).toContain('-----BEGIN PGP MESSAGE-----')
     expect(res.rows[0].value).toContain('-----END PGP MESSAGE-----')
   })
 
   it('pgp_sym_encrypt and pgp_sym_decrypt', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query(
       "SELECT pgp_sym_encrypt('test', 'key') as value;",
     )
@@ -97,14 +73,6 @@ describe('pg_pgcryptotrgm', () => {
   })
 
   it('pgp_pub_encrypt and pgp_pub_decrypt', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const { privateKey, publicKey } = await openpgp.generateKey({
       type: 'rsa',
       rsaBits: 2048,
@@ -128,14 +96,6 @@ FROM encrypted;
   })
 
   it('pgp_key_id', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const { publicKey } = await openpgp.generateKey({
       type: 'rsa',
       rsaBits: 2048,
@@ -152,14 +112,6 @@ FROM encrypted;
   })
 
   it('pgp_armor_headers', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     // Create armored data with headers
     const res = await pg.query(
       `SELECT armor(digest('test', 'sha1'), ARRAY['key1'], ARRAY['value1']) as armored;`,
@@ -173,14 +125,6 @@ FROM encrypted;
   })
 
   it('encrypt and decrypt', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query(
       `SELECT encrypt('test data'::bytea, 'secret key'::bytea, 'aes') as encrypted;`,
     )
@@ -194,14 +138,6 @@ FROM encrypted;
   })
 
   it('encrypt_iv and decrypt_iv', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     // AES block size is 16 bytes, so IV must be 16 bytes
     const iv = '1234567890123456'
 
@@ -218,14 +154,6 @@ FROM encrypted;
   })
 
   it('gen_random_bytes', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query(
       `SELECT length(gen_random_bytes(32)) as len, encode(gen_random_bytes(16), 'hex') as bytes;`,
     )
@@ -235,14 +163,6 @@ FROM encrypted;
   })
 
   it('gen_random_uuid', async () => {
-    const pg = new PGlite({
-      extensions: {
-        pgcrypto,
-      },
-    })
-
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgcrypto;')
-
     const res = await pg.query(`SELECT gen_random_uuid() as uuid;`)
     // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     expect(res.rows[0].uuid).toMatch(

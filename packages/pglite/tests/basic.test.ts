@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
+import { PGlite } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -11,8 +12,27 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/index.js'))
 
   describe(`basic`, () => {
+    let db: PGlite
+    let dataDirArchive: File | Blob
+
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        db = await PGlite.create()
+        dataDirArchive = await db.dumpDataDir('gzip')
+      } else {
+        db = await PGlite.create({
+          loadDataDir: dataDirArchive,
+        })
+      }
+    })
+
+    afterEach(async () => {
+      if (!db.closed) {
+        await db.close()
+      }
+    })
+
     it('exec', async () => {
-      const db = await PGlite.create()
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -46,12 +66,9 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
-
-      await db.close()
     })
 
     it('query', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -92,7 +109,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('query templated', async () => {
-      const db = new PGlite()
       const tableName = identifier`test`
       await db.sql`
     CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -133,7 +149,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('types', async () => {
-      const db = await PGlite.create()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -295,6 +310,7 @@ await testEsmCjsAndDTC(async (importType) => {
 
     it('custom parser and serializer', async () => {
       const db = new PGlite({
+        loadDataDir: dataDirArchive,
         serializers: { 1700: (x) => x.toString() },
         parsers: { 1700: (x) => BigInt(x) },
       })
@@ -331,7 +347,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('params', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -365,7 +380,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('array params', async () => {
-      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -418,14 +432,12 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('error', async () => {
-      const db = await PGlite.create()
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
     })
 
     it('transaction', async () => {
-      const db = new PGlite()
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -487,7 +499,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('merge delete', async () => {
-      const db = new PGlite()
       await db.exec(`
       CREATE TABLE employees (
       id SERIAL PRIMARY KEY,
@@ -520,7 +531,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('copy to/from blob', async () => {
-      const db = new PGlite()
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -588,7 +598,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('close', async () => {
-      const db = new PGlite()
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -603,8 +612,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('use same param multiple times', async () => {
-      const db = new PGlite()
-
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -630,8 +637,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('timezone', async () => {
-      const db = new PGlite()
-
       const res = await db.query(
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
       )
@@ -639,8 +644,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('default database, user and role should be "postgres"', async () => {
-      const db = await PGlite.create()
-
       const databaseAndRole = await db.exec(
         `SELECT current_database(), current_user, current_role;`,
       )
@@ -664,8 +667,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
-      const db = await PGlite.create()
-
       const ROWS = 400_000
 
       await db.exec(`
@@ -700,6 +701,55 @@ await testEsmCjsAndDTC(async (importType) => {
         `SELECT setting FROM pg_settings WHERE name='application_name'`,
       )
       expect(databaseAndRole[0].rows[0].setting).toEqual(dateTime)
+    })
+
+    it('restores process.exitCode', async () => {
+      const origExitCode = process.exitCode
+
+      expect(process.exitCode).toEqual(origExitCode)
+
+      await db.exec(`
+      CREATE TABLE IF NOT EXISTS test (
+        id SERIAL PRIMARY KEY,
+        name TEXT
+      );`)
+
+      expect(process.exitCode).toEqual(origExitCode)
+    })
+
+    it("arrays with NULL elements should return null, not string 'NULL'", async () => {
+      const pg = await PGlite.create()
+
+      await pg.exec('CREATE TEMP TABLE t (str_val text, arr_val text[])')
+
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        [null, 'hello', 'NULL'],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        ['NULL', null, 'NULL'],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        ['NULL', 'hello', null],
+      ])
+      await pg.query('INSERT INTO t (str_val, arr_val) VALUES ($1, $2)', [
+        null,
+        [null, null, null],
+      ])
+
+      const res = await pg.query('SELECT str_val, arr_val FROM t')
+      expect(res.rows[0].str_val).toEqual(null)
+      expect(res.rows[0].arr_val).toEqual([null, 'hello', 'NULL'])
+      expect(res.rows[1].arr_val).toEqual(['NULL', null, 'NULL'])
+      expect(res.rows[2].arr_val).toEqual(['NULL', 'hello', null])
+      expect(res.rows[3].arr_val).toEqual([null, null, null])
+
+      await pg.exec('CREATE TEMP TABLE v (arr_int int[])')
+      await pg.query('INSERT INTO v (arr_int) VALUES ($1)', [[null, 123, 0]])
+      const resInt = await pg.query('SELECT arr_int FROM v')
+      expect(resInt.rows[0].arr_int).toEqual([null, 123, 0])
     })
   })
 })

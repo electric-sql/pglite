@@ -1,7 +1,7 @@
 {
   "name": "@electric-sql/pglite-sync",
   "version": "0.5.5",
-  "description": "ElectricSQL Sync for PGlite",
+  "description": "Postgres Sync for PGlite",
   "type": "module",
   "private": false,
   "publishConfig": {

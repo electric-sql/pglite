@@ -1,16 +1,31 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { postgis } from '../src/index.js'
 
 describe(`postgis`, () => {
-  it('basic', async () => {
-    const pg = new PGlite({
-      extensions: {
-        postgis,
-      },
-    })
-
+  let pg: PGlite
+  let dataDirArchive: File | Blob
+  beforeEach(async () => {
+    if (!dataDirArchive) {
+      pg = await PGlite.create({
+        extensions: { postgis },
+      })
+      dataDirArchive = await pg.dumpDataDir('gzip')
+    } else {
+      pg = await PGlite.create({
+        extensions: { postgis },
+        loadDataDir: dataDirArchive,
+      })
+    }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+  })
+  afterEach(async () => {
+    if (!pg.closed) {
+      await pg.close()
+    }
+  })
+
+  it('basic', async () => {
     await pg.exec(`
     CREATE TABLE vehicle_location (
     time TIMESTAMPTZ NOT NULL,
@@ -26,13 +41,6 @@ describe(`postgis`, () => {
     expect(inserted.affectedRows).toEqual(3)
   }),
     it('cities', async () => {
-      const pg = new PGlite({
-        extensions: {
-          postgis,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
       await pg.exec(`
     CREATE TABLE cities (
     id SERIAL PRIMARY KEY,
@@ -62,17 +70,8 @@ WHERE ST_Within(c.location, s.geom);`)
         name: 'Chicago',
       })
     })
-})
-
-it('areas', async () => {
-  const pg = new PGlite({
-    extensions: {
-      postgis,
-    },
-  })
-  await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-
-  const area1 = await pg.exec(`
+  it('areas', async () => {
+    const area1 = await pg.exec(`
       select ST_Area(geom) sqft,
         ST_Area(geom) * 0.3048 ^ 2 sqm
       from (
@@ -80,29 +79,29 @@ it('areas', async () => {
             743265 2967450,743265.625 2967416,743238 2967416))' :: geometry geom
       ) subquery;`)
 
-  expect(area1).toEqual([
-    {
-      rows: [
-        {
-          sqft: 928.625,
-          sqm: 86.27208552,
-        },
-      ],
-      fields: [
-        {
-          name: 'sqft',
-          dataTypeID: 701,
-        },
-        {
-          name: 'sqm',
-          dataTypeID: 701,
-        },
-      ],
-      affectedRows: 0,
-    },
-  ])
+    expect(area1).toEqual([
+      {
+        rows: [
+          {
+            sqft: 928.625,
+            sqm: 86.27208552,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
 
-  const area2 = await pg.exec(`
+    const area2 = await pg.exec(`
         select ST_Area(geom) sqft,
         ST_Area(ST_Transform(geom, 26986)) As sqm
     from (
@@ -115,29 +114,29 @@ it('areas', async () => {
     -- DROP SCHEMA postgis_test CASCADE;
     `)
 
-  expect(area2).toEqual([
-    {
-      rows: [
-        {
-          sqft: 928.625,
-          sqm: 86.27243061926092,
-        },
-      ],
-      fields: [
-        {
-          name: 'sqft',
-          dataTypeID: 701,
-        },
-        {
-          name: 'sqm',
-          dataTypeID: 701,
-        },
-      ],
-      affectedRows: 0,
-    },
-  ])
+    expect(area2).toEqual([
+      {
+        rows: [
+          {
+            sqft: 928.625,
+            sqm: 86.27243061926092,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
 
-  const area3 = await pg.exec(`
+    const area3 = await pg.exec(`
       select ST_Area(geog) / 0.3048 ^ 2 sqft_spheroid,
       ST_Area(geog, false) / 0.3048 ^ 2 sqft_sphere,
       ST_Area(geog) sqm_spheroid
@@ -149,42 +148,36 @@ it('areas', async () => {
        ) as subquery;
       `)
 
-  expect(area3).toEqual([
-    {
-      rows: [
-        {
-          sqft_spheroid: 928.6844047556697,
-          sqft_sphere: 926.609762750544,
-          sqm_spheroid: 86.27760440239217,
-        },
-      ],
-      fields: [
-        {
-          name: 'sqft_spheroid',
-          dataTypeID: 701,
-        },
-        {
-          name: 'sqft_sphere',
-          dataTypeID: 701,
-        },
-        {
-          name: 'sqm_spheroid',
-          dataTypeID: 701,
-        },
-      ],
-      affectedRows: 0,
-    },
-  ])
-})
-
-it('ST_Polygonize', async () => {
-  const pg = new PGlite({
-    extensions: {
-      postgis,
-    },
+    expect(area3).toEqual([
+      {
+        rows: [
+          {
+            sqft_spheroid: 928.6844047556697,
+            sqft_sphere: 926.609762750544,
+            sqm_spheroid: 86.27760440239217,
+          },
+        ],
+        fields: [
+          {
+            name: 'sqft_spheroid',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqft_sphere',
+            dataTypeID: 701,
+          },
+          {
+            name: 'sqm_spheroid',
+            dataTypeID: 701,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
   })
-  await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-  const res = await pg.exec(`
+
+  it('ST_Polygonize', async () => {
+    const res = await pg.exec(`
       WITH data(geom) AS (VALUES
     ('LINESTRING (180 40, 30 20, 20 90)'::geometry)
     ,('LINESTRING (180 40, 160 160)'::geometry)
@@ -200,34 +193,27 @@ it('ST_Polygonize', async () => {
         FROM data;
     `)
 
-  expect(res).toEqual([
-    {
-      rows: [
-        {
-          st_astext:
-            'GEOMETRYCOLLECTION(POLYGON((180 40,30 20,20 90,70 70,80 130,160 160,180 40),(150 80,120 130,80 60,150 80)),POLYGON((80 60,120 130,150 80,80 60)),POLYGON((80 130,70 70,20 90,20 160,70 190,80 130)),POLYGON((160 160,80 130,70 190,160 160)))',
-        },
-      ],
-      fields: [
-        {
-          name: 'st_astext',
-          dataTypeID: 25,
-        },
-      ],
-      affectedRows: 0,
-    },
-  ])
-})
-
-it('complex1', async () => {
-  const pg = new PGlite({
-    extensions: {
-      postgis,
-    },
+    expect(res).toEqual([
+      {
+        rows: [
+          {
+            st_astext:
+              'GEOMETRYCOLLECTION(POLYGON((180 40,30 20,20 90,70 70,80 130,160 160,180 40),(150 80,120 130,80 60,150 80)),POLYGON((80 60,120 130,150 80,80 60)),POLYGON((80 130,70 70,20 90,20 160,70 190,80 130)),POLYGON((160 160,80 130,70 190,160 160)))',
+          },
+        ],
+        fields: [
+          {
+            name: 'st_astext',
+            dataTypeID: 25,
+          },
+        ],
+        affectedRows: 0,
+      },
+    ])
   })
-  await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
 
-  await pg.exec(`
+  it('complex1', async () => {
+    await pg.exec(`
     -- Create test schema
   -- CREATE SCHEMA IF NOT EXISTS postgis_test;
   -- SET search_path TO postgis_test;
@@ -240,7 +226,7 @@ it('complex1', async () => {
       geom GEOMETRY(Point, 4326)
   );`)
 
-  await pg.exec(`
+    await pg.exec(`
   CREATE TABLE rivers (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
@@ -281,20 +267,15 @@ it('complex1', async () => {
   ORDER BY distance_km;
 
   `)
-})
-
-it('The coordinates in GeoJSON are not sufficiently nested', async () => {
-  const pg = new PGlite({
-    extensions: {
-      postgis,
-    },
-    debug: 1,
   })
-  await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
 
-  await expect(
-    pg.exec(
-      `SELECT '#3583', ST_AsText(ST_GeomFromGeoJSON('{"type":"MultiPolygon", "coordinates":[[[139.10030364990232,35.16777444430609],5842.4224490305424]]}'));`,
-    ),
-  ).rejects.toThrow(`The 'coordinates' in GeoJSON are not sufficiently nested`)
+  it('The coordinates in GeoJSON are not sufficiently nested', async () => {
+    await expect(
+      pg.exec(
+        `SELECT '#3583', ST_AsText(ST_GeomFromGeoJSON('{"type":"MultiPolygon", "coordinates":[[[139.10030364990232,35.16777444430609],5842.4224490305424]]}'));`,
+      ),
+    ).rejects.toThrow(
+      `The 'coordinates' in GeoJSON are not sufficiently nested`,
+    )
+  })
 })

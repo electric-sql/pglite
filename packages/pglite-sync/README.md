@@ -1,6 +1,6 @@
-# PGlite ElectricSQL Sync Plugin
+# PGlite Postgres Sync Plugin
 
-A [sync plugin](https://pglite.dev/docs/sync) for [PGlite](https://pglite.dev/) using [ElectricSQL](https://electric-sql.com/). Full documentation is available at [pglite.dev/docs/sync](https://pglite.dev/docs/sync).
+A [sync plugin](https://pglite.dev/docs/sync) for [PGlite](https://pglite.dev/) using [Electric](https://electric.ax/). Full documentation is available at [pglite.dev/docs/sync](https://pglite.dev/docs/sync).
 
 To install:
 
