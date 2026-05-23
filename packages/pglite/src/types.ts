@@ -310,13 +310,24 @@ function arrayParserLoop(
       s.last = ++s.i
       xs.push(arrayParserLoop(s, x, parser, typarray))
     } else if (s.char === '}') {
+      if (s.last < s.i) {
+        const el = x.slice(s.last, s.i)
+        if (el === 'NULL' && !s.quoted) {
+          xs.push(null)
+        } else {
+          xs.push(parser ? parser(el) : el)
+        }
+      }
       s.quoted = false
-      s.last < s.i &&
-        xs.push(parser ? parser(x.slice(s.last, s.i)) : x.slice(s.last, s.i))
       s.last = s.i + 1
       break
     } else if (s.char === delimiter && s.p !== '}' && s.p !== '"') {
-      xs.push(parser ? parser(x.slice(s.last, s.i)) : x.slice(s.last, s.i))
+      const el = x.slice(s.last, s.i)
+      if (el === 'NULL' && !s.quoted) {
+        xs.push(null)
+      } else {
+        xs.push(parser ? parser(el) : el)
+      }
       s.last = s.i + 1
     }
     s.p = s.char
