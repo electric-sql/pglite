@@ -1312,7 +1312,7 @@ export class PGlite
     return new Uint8Array(0)
   }
 
-  copyToFS(filePath: string, data: Uint8Array, mode: number = 0o0555) {
+  copyToFS(filePath: string, data: Uint8Array, mode?: number) {
     copyToFS(this.mod!.FS, filePath, data, mode)
   }
 }
