@@ -105,7 +105,7 @@ describe('pgDump', () => {
     ).rows[0].search_path
 
     // Dump database
-    const dump = await pgDump({ pg: pg1 })
+    const dump = await pgDump({ pg })
     const dumpContent = await dump.text()
 
     // Create new database and restore
