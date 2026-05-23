@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
+import { PGlite } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -17,15 +18,30 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/pg_ivm/index.js'))
 
   describe(`pg_ivm`, () => {
-    it('can load extension', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
+    let pg: PGlite
+    let dataDirArchive: File | Blob
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        pg = await PGlite.create({
+          extensions: { pg_ivm },
+        })
+        dataDirArchive = await pg.dumpDataDir('gzip')
+      } else {
+        pg = await PGlite.create({
+          extensions: { pg_ivm },
+          loadDataDir: dataDirArchive,
+        })
+      }
       await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
+    })
 
+    afterEach(async () => {
+      if (!pg.closed) {
+        await pg.close()
+      }
+    })
+    
+    it('can load extension', async () => {
       // Verify the extension is loaded
       const res = await pg.query<{ extname: string }>(`
         SELECT extname 
@@ -38,14 +54,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('can create incremental materialized view', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
-
       // Create base table
       await pg.exec(`
         CREATE TABLE orders (
@@ -83,13 +91,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('automatically updates view when base table changes', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
 
       // Create base table
       await pg.exec(`
@@ -208,13 +209,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('supports simple views without aggregates', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
 
       // Create base tables
       await pg.exec(`
@@ -301,13 +295,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('supports DISTINCT in views', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
 
       // Create base table with potential duplicates
       await pg.exec(`
@@ -377,13 +364,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('can use refresh_immv function', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pg_ivm,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_ivm;')
 
       // Create base table
       await pg.exec(`
