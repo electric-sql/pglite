@@ -141,7 +141,7 @@ export function copyToFS(
   fs: FS,
   filePath: string,
   data: Uint8Array,
-  mode: number = 0o0555,
+  mode?: number,
 ) {
   try {
     const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
@@ -149,7 +149,9 @@ export function copyToFS(
       fs.mkdirTree(dirPath)
     }
     fs.writeFile(filePath, data)
-    fs.chmod(filePath, mode)
+    if (mode) {
+      fs.chmod(filePath, mode)
+    }
   } catch (e) {
     console.error(`Error writing file ${filePath}`, e)
     throw e
