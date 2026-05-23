@@ -716,7 +716,7 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(process.exitCode).toEqual(origExitCode)
     })
 
-    it("text[] with NULL elements returns null, not string 'NULL'", async () => {
+    it("arrays with NULL elements should return null, not string 'NULL'", async () => {
       const pg = await PGlite.create()
 
       await pg.exec('CREATE TEMP TABLE t (str_val text, arr_val text[])')
@@ -744,6 +744,11 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(res.rows[1].arr_val).toEqual(['NULL', null, 'NULL'])
       expect(res.rows[2].arr_val).toEqual(['NULL', 'hello', null])
       expect(res.rows[3].arr_val).toEqual([null, null, null])
+
+      await pg.exec('CREATE TEMP TABLE v (arr_int int[])')
+      await pg.query('INSERT INTO v (arr_int) VALUES ($1)', [[null, 123, 0]])
+      const resInt = await pg.query('SELECT arr_int FROM v')
+      expect(resInt.rows[0].arr_int).toEqual([null, 123, 0])
     })
   })
 })
