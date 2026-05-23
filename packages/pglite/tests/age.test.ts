@@ -16,7 +16,15 @@
  * ```
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
 import { PGlite } from '../dist/index.js'
 
@@ -36,7 +44,6 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/age/index.js'))
 
   describe(`age (${importType})`, () => {
-
     let pg: PGlite
     let dataDirArchive: File | Blob
     beforeEach(async () => {
@@ -65,13 +72,11 @@ await testEsmCjsAndDTC(async (importType) => {
       }
     })
 
-
     // =========================================================================
     // BASIC EXTENSION LOADING
     // =========================================================================
 
     it('can load extension', async () => {
-
       const res = await pg.query<{ extname: string }>(`
         SELECT extname FROM pg_extension WHERE extname = 'age'
       `)
@@ -86,7 +91,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can create a graph', async () => {
-
       // Create a new graph using ag_catalog.create_graph()
       // This creates the graph metadata and necessary internal tables
       await pg.exec("SELECT ag_catalog.create_graph('test_graph');")
@@ -102,7 +106,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('can drop graph', async () => {
-
       // Create and then drop a graph
       await pg.exec("SELECT ag_catalog.create_graph('temp_graph');")
       await pg.exec("SELECT ag_catalog.drop_graph('temp_graph', true);")
@@ -121,7 +124,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can execute cypher CREATE and MATCH', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('cypher_test');")
 
       // CREATE a node with a label and properties
@@ -154,7 +156,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can create edges between nodes', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('edge_test');")
 
       // Create a full path: two nodes connected by an edge
@@ -187,7 +188,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('hooks are active - cypher syntax parses correctly', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('hook_test');")
 
       // This query uses Cypher-specific syntax that PostgreSQL
@@ -209,7 +209,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can use WHERE clause in MATCH', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('where_test');")
 
       // Create multiple nodes
@@ -243,7 +242,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('EXPLAIN works on cypher queries', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('explain_test');")
 
       // EXPLAIN shows the query execution plan
@@ -264,7 +262,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('handles unicode in properties', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('unicode_test');")
 
       // Create node with unicode properties
@@ -296,7 +293,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('handles invalid cypher syntax gracefully', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('error_test');")
 
       // Invalid Cypher syntax should throw an error
@@ -316,7 +312,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can update node properties', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('update_test');")
 
       // Create a node
@@ -354,7 +349,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can delete nodes', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('delete_test');")
 
       // Create nodes
@@ -391,7 +385,6 @@ await testEsmCjsAndDTC(async (importType) => {
     // =========================================================================
 
     it('can use ORDER BY and LIMIT', async () => {
-
       await pg.exec("SELECT ag_catalog.create_graph('order_test');")
 
       // Create multiple nodes with different ages
