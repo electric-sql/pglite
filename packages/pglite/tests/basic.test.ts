@@ -717,13 +717,6 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(process.exitCode).toEqual(origExitCode)
     })
 
-    it('PGlite version', async () => {
-      const db = await PGlite.create()
-      const version = await db.query<{ version: string }>(`select version();`)
-      const re = /\PGlite \d+\.\d+\.\d+\b/
-      expect(re.test(version.rows[0].version)).toBeTruthy()
-    })
-
     it("arrays with NULL elements should return null, not string 'NULL'", async () => {
       const pg = await PGlite.create()
 
@@ -770,6 +763,12 @@ await testEsmCjsAndDTC(async (importType) => {
           application_name: 'my awesome app',
         },
       ])
+    })
+
+    it('PGlite version', async () => {
+      const version = await db.query<{ version: string }>(`select version();`)
+      const re = /\PGlite \d+\.\d+\.\d+\b/
+      expect(re.test(version.rows[0].version)).toBeTruthy()
     })
   })
 })
