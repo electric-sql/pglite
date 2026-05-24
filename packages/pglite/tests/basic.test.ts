@@ -715,5 +715,12 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(process.exitCode).toEqual(origExitCode)
     })
+
+    it('PGlite version', async () => {
+      const db = await PGlite.create()
+      const version = await db.query<{version: string}>(`select version();`)
+      const re = /\PGlite \d+\.\d+\.\d+\b/;
+      expect(re.test(version.rows[0].version)).toBeTruthy()
+    })    
   })
 })
