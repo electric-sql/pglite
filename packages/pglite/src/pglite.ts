@@ -1,6 +1,10 @@
 import { Mutex } from 'async-mutex'
 import { BasePGlite } from './base.js'
-import { loadExtensionBundle, loadExtensions } from './extensionUtils.js'
+import {
+  copyToFS,
+  loadExtensionBundle,
+  loadExtensions,
+} from './extensionUtils.js'
 import {
   type Filesystem,
   loadFs,
@@ -34,6 +38,7 @@ import {
   ICU_DATA_PATH,
   initdb,
   INITDB_EXE_PATH,
+  PG_ROOT,
   PGDATA,
   POSTGRES_EXE_PATH,
 } from './initdb'
@@ -103,6 +108,14 @@ export class PGlite
 
   #keepRawResponse: boolean = true
   // these are needed for point 2 above
+  static readonly paths = {
+    PG_ROOT,
+    PGDATA,
+    ICU_DATA_PATH,
+    INITDB_EXE_PATH,
+    POSTGRES_EXE_PATH,
+  } as const
+
   static readonly DEFAULT_RECV_BUF_SIZE: number = 1 * 1024 * 1024 // 1MB default
   static readonly MAX_BUFFER_SIZE: number = Math.pow(2, 30)
   // buffer that holds data received from wasm
@@ -556,6 +569,18 @@ export class PGlite
       }
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
+
+      if (options.postgresqlconf) {
+        const conf =
+          typeof options.postgresqlconf === 'string'
+            ? options.postgresqlconf
+            : options.postgresqlconf.join('\n')
+        copyToFS(
+          this.mod.FS,
+          `${PGDATA}/postgresql.conf`,
+          new TextEncoder().encode(conf),
+        )
+      }
 
       this.mod!._pgl_setPGliteActive(1)
       this.#startInSingleMode({
@@ -1285,5 +1310,9 @@ export class PGlite
 
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
     return new Uint8Array(0)
+  }
+
+  copyToFS(filePath: string, data: Uint8Array, mode?: number) {
+    copyToFS(this.mod!.FS, filePath, data, mode)
   }
 }

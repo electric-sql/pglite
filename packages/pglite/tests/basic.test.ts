@@ -751,5 +751,18 @@ await testEsmCjsAndDTC(async (importType) => {
       const resInt = await pg.query('SELECT arr_int FROM v')
       expect(resInt.rows[0].arr_int).toEqual([null, 123, 0])
     })
+
+    it('postgresqlconf', async () => {
+      const pg = await PGlite.create({
+        postgresqlconf: [`application_name = 'my awesome app'`],
+      })
+
+      const conf = await pg.query(`SHOW application_name;`)
+      expect(conf.rows).toEqual([
+        {
+          application_name: 'my awesome app',
+        },
+      ])
+    })
   })
 })
