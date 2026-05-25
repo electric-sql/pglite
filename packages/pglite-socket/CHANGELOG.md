@@ -1,5 +1,17 @@
 # @electric-sql/pglite-socket
 
+## 0.1.6
+
+### Patch Changes
+
+- 791fbc7: Fix `PGLiteSocketServer` `maxConnections` JSDoc default — the constructor defaults to `1` (matching the CLI default and help text); only the JSDoc claimed `100`.
+- Updated dependencies [2aa4d1a]
+- Updated dependencies [2095d4e]
+- Updated dependencies [e937669]
+- Updated dependencies [54ed6dc]
+- Updated dependencies [817d073]
+  - @electric-sql/pglite@0.4.6
+
 ## 0.1.5
 
 ### Patch Changes

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { testEsmCjsAndDTC } from './test-utils.ts'
+import { PGlite } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -17,15 +18,29 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/pgtap/index.js'))
 
   describe(`pgtap`, () => {
-    it('can load extension', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
+    let pg: PGlite
+    let dataDirArchive: File | Blob
+    beforeEach(async () => {
+      if (!dataDirArchive) {
+        pg = await PGlite.create({
+          extensions: { pgtap },
+        })
+        dataDirArchive = await pg.dumpDataDir('gzip')
+      } else {
+        pg = await PGlite.create({
+          extensions: { pgtap },
+          loadDataDir: dataDirArchive,
+        })
+      }
       await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
+    })
+    afterEach(async () => {
+      if (!pg.closed) {
+        await pg.close()
+      }
+    })
 
+    it('can load extension', async () => {
       // Verify the extension is loaded
       const res = await pg.query<{ extname: string }>(`
         SELECT extname 
@@ -38,14 +53,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should run individual pgTAP assertions', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-
       const res = await pg.exec(`
         -- Start transaction and plan the tests.
         BEGIN;
@@ -69,14 +76,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should check for correct amounts of tests', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-
       const res = await pg.exec(`
         BEGIN;
         SELECT plan(1); -- wrong amount of tests
@@ -98,14 +97,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should run multiple tests', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-
       const res = await pg.exec(`
           -- Start transaction and plan the tests.
           BEGIN;
@@ -148,14 +139,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should run pgTAP test suite', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-
       const res = await pg.exec(`
           BEGIN;
           CREATE TABLE users (
@@ -193,14 +176,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('should run in-depth assertion tests', async () => {
-      const pg = new PGlite({
-        extensions: {
-          pgtap,
-        },
-      })
-
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-
       const res = await pg.exec(`
           BEGIN;
 
