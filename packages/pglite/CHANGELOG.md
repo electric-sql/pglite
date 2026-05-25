@@ -1,5 +1,15 @@
 # @electric-sql/pglite
 
+## 0.4.6
+
+### Patch Changes
+
+- 2aa4d1a: Allow parsing of nulls in arrays #997
+- 2095d4e: Add ICU support.
+- e937669: Restore process.exitCode
+- 54ed6dc: new API method copyToFs() and new param postgresqlconf
+- 817d073: restore exit code
+
 ## 0.4.5
 
 ### Patch Changes
