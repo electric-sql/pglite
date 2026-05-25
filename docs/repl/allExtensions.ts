@@ -1,6 +1,7 @@
 export { amcheck } from '@electric-sql/pglite/contrib/amcheck'
 export { auto_explain } from '@electric-sql/pglite/contrib/auto_explain'
 export { bloom } from '@electric-sql/pglite/contrib/bloom'
+export { pg_stat_statements } from '@electric-sql/pglite/contrib/pg_stat_statements'
 export { btree_gin } from '@electric-sql/pglite/contrib/btree_gin'
 export { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'
 export { citext } from '@electric-sql/pglite/contrib/citext'

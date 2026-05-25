@@ -8,6 +8,7 @@ const setup = async (_pg: PGliteInterface, emscriptenOpts: any) => {
   return {
     emscriptenOpts,
     bundlePath: new URL('../../release/pg_textsearch.tar.gz', import.meta.url),
+    sharedPreloadLibraries: ['pg_textsearch'],
   } satisfies ExtensionSetupResult
 }
 

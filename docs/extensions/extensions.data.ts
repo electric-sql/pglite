@@ -632,6 +632,20 @@ const baseExtensions: Extension[] = [
     importName: 'pg_textsearch',
     size: 55062,
   },
+  {
+    name: 'pg_stat_statements',
+    description: `
+      The pg_stat_statements module provides a means for tracking planning and 
+      execution statistics of all SQL statements executed by a server.
+    `,
+    shortDescription: 'Track planning and execution statistics of statements',
+    repo: 'https://www.postgresql.org/docs/current/pgstatstatements.html',
+    tags: ['postgres extension', 'postgres/contrib'],
+    importPath: '@electric-sql/pglite/contrib/pg_stat_statements',
+    importName: 'pg_stat_statements',
+    core: true,
+    size: 11554,
+  },
 ]
 
 const tags = [

@@ -44,6 +44,7 @@ export interface ExtensionSetupResult<TNamespace = any> {
   emscriptenOpts?: any
   namespaceObj?: TNamespace
   bundlePath?: URL
+  sharedPreloadLibraries?: string[]
   init?: () => Promise<void>
   close?: () => Promise<void>
 }

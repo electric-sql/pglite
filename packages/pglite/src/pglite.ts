@@ -147,6 +147,8 @@ export class PGlite
     'max_parallel_workers_per_gather=0',
     '-c',
     'io_method=sync',
+    '-c',
+    'max_parallel_maintenance_workers=0',
   ]
 
   /**
@@ -477,6 +479,7 @@ export class PGlite
     // - namespaceObj: The namespace object to attach to the PGlite instance
     // - init: A function to initialize the extension/plugin after the database is ready
     // - close: A function to close/tidy-up the extension/plugin when the database is closed
+    const extSharedPreloadLibraries: string[] = []
     for (const [extName, ext] of Object.entries(this.#extensions)) {
       if (ext instanceof URL) {
         // Extension with only a URL to a bundle
@@ -502,6 +505,7 @@ export class PGlite
         if (extRet.close) {
           this.#extensionsClose.push(extRet.close)
         }
+        extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
       }
     }
     emscriptenOpts['pg_extensions'] = extensionBundlePromises
@@ -572,17 +576,7 @@ export class PGlite
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
-      if (options.postgresqlconf) {
-        const conf =
-          typeof options.postgresqlconf === 'string'
-            ? options.postgresqlconf
-            : options.postgresqlconf.join('\n')
-        copyToFS(
-          this.mod.FS,
-          `${PGDATA}/postgresql.conf`,
-          new TextEncoder().encode(conf),
-        )
-      }
+      this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
       this.mod!._pgl_setPGliteActive(1)
       this.#startInSingleMode({
@@ -611,6 +605,40 @@ export class PGlite
 
     if (globalThis.process?.env) {
       process.exitCode = prevExitCode
+    }
+  }
+
+  #handlePostgresqlConf(
+    extSharedPreloadLibraries: string[],
+    options: PGliteOptions<Extensions>,
+  ) {
+    if (extSharedPreloadLibraries.length && !options.postgresqlconf) {
+      options.postgresqlconf = new Array<string>()
+    }
+
+    if (options.postgresqlconf) {
+      let conf =
+        typeof options.postgresqlconf === 'string'
+          ? options.postgresqlconf
+          : options.postgresqlconf.join('\n')
+
+      if (extSharedPreloadLibraries.length) {
+        const splMatch = conf.match(/^(shared_preload_libraries\s*=\s*)(.*)$/m)
+        if (splMatch) {
+          const existing = splMatch[2].split(',').map((s) => s.trim())
+          const merged = [
+            ...new Set([...existing, ...extSharedPreloadLibraries]),
+          ]
+          conf = conf.replace(splMatch[0], `${splMatch[1]}${merged.join(',')}`)
+        } else {
+          conf += `\nshared_preload_libraries=${extSharedPreloadLibraries.join(',')}`
+        }
+      }
+      copyToFS(
+        this.mod!.FS,
+        `${PGDATA}/postgresql.conf`,
+        new TextEncoder().encode(conf),
+      )
     }
   }
 
