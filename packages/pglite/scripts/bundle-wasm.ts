@@ -27,6 +27,8 @@ async function main() {
     '.js',
     '.cjs',
   ])
+  await findAndReplaceInDir('./dist/pg_textsearch', /\.\.\/release\//g, 
+    '', ['.js', '.cjs'])  
   await findAndReplaceInDir(
     './dist',
     `require("./postgres.js")`,
