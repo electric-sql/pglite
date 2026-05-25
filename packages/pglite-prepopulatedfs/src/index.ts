@@ -7,7 +7,7 @@ export async function dataDir(): Promise<Blob> {
     const buffer = await fs.readFile(moduleUrl)
     return new Blob([new Uint8Array(buffer)])
   } else {
-    const wasmDownloadPromise = await fetch(moduleUrl)
-    return wasmDownloadPromise.blob()
+    const downloadPromise = await fetch(moduleUrl)
+    return downloadPromise.blob()
   }
 }

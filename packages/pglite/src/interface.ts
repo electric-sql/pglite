@@ -92,6 +92,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   relaxedDurability?: boolean
   extensions?: TExtensions
   loadDataDir?: Blob | File
+  icuDataDir?: Blob | File
   initialMemory?: number
   pgliteWasmModule?: WebAssembly.Module
   initdbWasmModule?: WebAssembly.Module
@@ -99,6 +100,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   parsers?: ParserOptions
   serializers?: SerializerOptions
   startParams?: string[]
+  initDbStartParams?: string[]
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =

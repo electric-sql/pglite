@@ -126,3 +126,35 @@ export function toPostgresName(input: string): string {
   }
   return output
 }
+
+interface MinimalFS {
+  readdir(path: string): string[]
+  unlink(path: string): void
+  rmdir(path: string): void
+}
+
+export function rmdirRecursive(fs: MinimalFS, path: string) {
+  try {
+    // If readdir succeeds it's a directory
+    const entries = fs.readdir(path).filter((n: any) => n !== '.' && n !== '..')
+    for (const name of entries) {
+      const child = path + '/' + name
+      // Recurse or unlink depending on whether child is a directory
+      try {
+        fs.readdir(child)
+        rmdirRecursive(fs, child)
+      } catch (e) {
+        // readdir failed => not a directory
+        fs.unlink(child)
+      }
+    }
+    fs.rmdir(path)
+  } catch (e) {
+    // not a directory: try unlink
+    try {
+      fs.unlink(path)
+    } catch (_) {
+      /* ignore if already gone */
+    }
+  }
+}

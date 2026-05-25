@@ -30,12 +30,15 @@ import {
   NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
 
-import { initdb, PGDATA } from './initdb'
+import {
+  ICU_DATA_PATH,
+  initdb,
+  INITDB_EXE_PATH,
+  PGDATA,
+  POSTGRES_EXE_PATH,
+} from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-
-const postgresExePath = '/pglite/bin/postgres'
-const initdbExePath = '/pglite/bin/initdb'
 
 export class PGlite
   extends BasePGlite
@@ -315,7 +318,7 @@ export class PGlite
     })
 
     let emscriptenOpts: Partial<PostgresMod> = {
-      thisProgram: postgresExePath,
+      thisProgram: POSTGRES_EXE_PATH,
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
@@ -424,11 +427,11 @@ export class PGlite
           mod.ENV.PGDATA = PGDATA
           mod.ENV.PGUSER = options.username ?? 'postgres'
           mod.ENV.PGDATABASE = options.database ?? 'postgres'
-          mod.ENV.LC_CTYPE = 'en_US.UTF-8'
+          mod.ENV.LANG = mod.ENV.LC_COLLATE = mod.ENV.LC_CTYPE = 'en_US.UTF-8'
           mod.ENV.TZ = 'UTC'
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
-
+          mod.ENV.ICU_DATA = ICU_DATA_PATH
           // some extensions might need their own ENV variables
           // TODO: move this to the extension init function
           for (const [extName] of Object.entries(this.#extensions)) {
@@ -439,8 +442,8 @@ export class PGlite
         },
         (mod: PostgresMod) => {
           mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-          mod.FS.chmod(initdbExePath, 0o0555)
-          mod.FS.chmod(postgresExePath, 0o0555)
+          mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
+          mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
         },
       ],
     }
@@ -498,6 +501,10 @@ export class PGlite
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
+    if (options.icuDataDir) {
+      await this.#fillIcuDataDir(options.icuDataDir)
+    }
+
     if (!options.noInitDb) {
       // If the user has provided a tarball to load the database from, do that now.
       // We do this after the initial sync so that we can throw if the database
@@ -527,6 +534,7 @@ export class PGlite
             pg: pg_initDb,
             debug: options.debug,
             wasmModule: options.initdbWasmModule,
+            args: options.initDbStartParams,
           })
 
           if (initdbResult.exitCode !== 0) {
@@ -546,7 +554,6 @@ export class PGlite
           await this.syncToFs()
         }
       }
-
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
@@ -578,6 +585,16 @@ export class PGlite
     if (globalThis.process?.env) {
       process.exitCode = prevExitCode
     }
+  }
+
+  async #fillIcuDataDir(icuDataDir: Blob | File) {
+    this.#log(
+      `pglite: icuDataDir specified, removing default icu data dir at ${ICU_DATA_PATH}`,
+    )
+    pglUtils.rmdirRecursive(this.mod!.FS, ICU_DATA_PATH)
+    this.#log(`pglite: loading icu data from tarball ${icuDataDir}`)
+    this.mod!.FS.mkdirTree(ICU_DATA_PATH)
+    await loadTar(this.mod!.FS, icuDataDir, ICU_DATA_PATH)
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
