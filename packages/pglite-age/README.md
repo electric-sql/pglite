@@ -1,8 +1,6 @@
 # @electric-sql/pglite-age
 
-*** EXPERIMENTAL ***
-
-age extension for [PGlite](https://pglite.dev). This is an experimental release, use at your own risk.
+[AGE](https://age.apache.org) extension for [PGlite](https://pglite.dev).
 
 ## Installation
 
@@ -24,26 +22,10 @@ const pg = new PGlite({
 
 await pg.exec('CREATE EXTENSION IF NOT EXISTS age;')
 
-// Create a table with geometry columns
-await pg.exec(`
-  CREATE TABLE cities (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    location GEOMETRY(Point, 4326)
-  );
-`)
+// Create a new graph using ag_catalog.create_graph()
+// This creates the graph metadata and necessary internal tables
+await pg.exec("SELECT ag_catalog.create_graph('test_graph');")
 
-// Insert data
-await pg.query(`
-  INSERT INTO cities (name, location)
-  VALUES ('New York', ST_GeomFromText('POINT(-74.0060 40.7128)', 4326))
-`)
-
-// Query with spatial functions
-const result = await pg.query(`
-  SELECT name, ST_AsText(location) as location
-  FROM cities
-`)
 ```
 
 ## License
