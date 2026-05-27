@@ -25,25 +25,10 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest'
-import { testEsmCjsAndDTC } from './test-utils.ts'
-import { PGlite } from '../dist/index.js'
+import { PGlite } from '@electric-sql/pglite'
+import { age } from '../src/index.js'
 
-await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
-    importType === 'esm'
-      ? await import('../dist/index.js')
-      : ((await import(
-          '../dist/index.cjs'
-        )) as unknown as typeof import('../dist/index.js'))
-
-  const { age } =
-    importType === 'esm'
-      ? await import('../dist/age/index.js')
-      : ((await import(
-          '../dist/age/index.cjs'
-        )) as unknown as typeof import('../dist/age/index.js'))
-
-  describe(`age (${importType})`, () => {
+describe(`age`, () => {
     let pg: PGlite
     let dataDirArchive: File | Blob
     beforeEach(async () => {
@@ -542,4 +527,3 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
   })
-})
