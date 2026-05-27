@@ -541,7 +541,7 @@ const baseExtensions: Extension[] = [
       'Incremental View Maintenance (IVM) feature for PostgreSQL.',
     docs: 'https://github.com/sraoss/pg_ivm',
     tags: ['postgres extension'],
-    importPath: '@electric-sql/pglite/pg_ivm',
+    importPath: '@electric-sql/pglite-pg_ivm',
     importName: 'pg_ivm',
     size: 24865,
   },
@@ -591,7 +591,7 @@ const baseExtensions: Extension[] = [
       'Leverage a graph database on top of the existing relational databases.',
     docs: 'https://github.com/apache/age',
     tags: ['postgres extension'],
-    importPath: '@electric-sql/pglite/age',
+    importPath: '@electric-sql/pglite-age',
     importName: 'age',
     size: 141551,
   },
@@ -620,15 +620,14 @@ const baseExtensions: Extension[] = [
   {
     name: 'pg_textsearch',
     description: `
-      *** EXPERIMENTAL ***
       PostgreSQL extension for BM25 relevance-ranked full-text search.
       Provides a bm25 index access method for efficient full-text search with
       BM25 ranking, supporting multiple languages and custom parameters.
       `,
     shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
     docs: 'https://github.com/timescale/pg_textsearch',
-    tags: ['postgres extension', 'experimental'],
-    importPath: '@electric-sql/pglite/pg_textsearch',
+    tags: ['postgres extension'],
+    importPath: '@electric-sql/pglite-pg_textsearch',
     importName: 'pg_textsearch',
     size: 55062,
   },
