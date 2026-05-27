@@ -65,7 +65,14 @@ jobs:
           path: |
             packages/pglite/release
             packages/pglite-tools/release
+            packages/pglite-age/release
+            packages/pglite-pg_hashids/release
+            packages/pglite-pg_ivm/release
+            packages/pglite-pgtap/release
+            packages/pglite-pg_textsearch/release
+            packages/pglite-pg_uuidv7/release
             packages/pglite-postgis/release
+            packages/pglite-pgvector/release
           key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}
 
       - name: Build all if necessary
@@ -75,7 +82,7 @@ jobs:
           PGSRC: ${{ github.workspace }}/postgres-pglite
         run: pnpm build:all
 
-      - name: Build only typeScript packages if postgres-pglite artifacts already available
+      - name: Build TS only packages if postgres-pglite artifacts already available
         if: steps.postgres-pglite-cache.outputs.cache-hit == 'true'
         working-directory: ${{ github.workspace }}
         run: pnpm ts:build
