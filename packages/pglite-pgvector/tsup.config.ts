@@ -19,7 +19,7 @@ export default defineConfig([
     shims: true,
     format: ['esm', 'cjs'],
     onSuccess: async () => {
-      cpSync(resolve('release/pgvector.tar.gz'), resolve('dist/pgvector.tar.gz'))
+      cpSync(resolve('release/vector.tar.gz'), resolve('dist/vector.tar.gz'))
     },
   },
 ])
