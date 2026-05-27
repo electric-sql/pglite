@@ -12,6 +12,7 @@
     "ci:publish": "pnpm changeset publish",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
+    "wasm:copy-pgtap": "mkdir -p ./packages/pglite-pgtap/release && cp ./postgres-pglite/dist/extensions/other/pgtap.tar.gz ./packages/pglite-pgtap/release",
     "wasm:copy-pg_ivm": "mkdir -p ./packages/pglite-pg_ivm/release && cp ./postgres-pglite/dist/extensions/other/pg_ivm.tar.gz ./packages/pglite-pg_ivm/release",
     "wasm:copy-pg_hashids": "mkdir -p ./packages/pglite-pg_hashids/release && cp ./postgres-pglite/dist/extensions/other/pg_hashids.tar.gz ./packages/pglite-pg_hashids/release",
     "wasm:copy-age": "mkdir -p ./packages/pglite-age/release && cp ./postgres-pglite/dist/extensions/other/age.tar.gz ./packages/pglite-age/release",

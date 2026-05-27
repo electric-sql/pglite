@@ -1,59 +1,44 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { testEsmCjsAndDTC } from './test-utils.ts'
-import { PGlite } from '../dist/index.js'
+import { PGlite } from '@electric-sql/pglite'
+import { pgtap } from '../src/index.js'
 
-await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
-    importType === 'esm'
-      ? await import('../dist/index.js')
-      : ((await import(
-          '../dist/index.cjs'
-        )) as unknown as typeof import('../dist/index.js'))
+describe(`pgtap`, () => {
+  let pg: PGlite
+  let dataDirArchive: File | Blob
+  beforeEach(async () => {
+    if (!dataDirArchive) {
+      pg = await PGlite.create({
+        extensions: { pgtap },
+      })
+      dataDirArchive = await pg.dumpDataDir('gzip')
+    } else {
+      pg = await PGlite.create({
+        extensions: { pgtap },
+        loadDataDir: dataDirArchive,
+      })
+    }
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
+  })
+  afterEach(async () => {
+    if (!pg.closed) {
+      await pg.close()
+    }
+  })
 
-  const { pgtap } =
-    importType === 'esm'
-      ? await import('../dist/pgtap/index.js')
-      : ((await import(
-          '../dist/pgtap/index.cjs'
-        )) as unknown as typeof import('../dist/pgtap/index.js'))
-
-  describe(`pgtap`, () => {
-    let pg: PGlite
-    let dataDirArchive: File | Blob
-    beforeEach(async () => {
-      if (!dataDirArchive) {
-        pg = await PGlite.create({
-          extensions: { pgtap },
-        })
-        dataDirArchive = await pg.dumpDataDir('gzip')
-      } else {
-        pg = await PGlite.create({
-          extensions: { pgtap },
-          loadDataDir: dataDirArchive,
-        })
-      }
-      await pg.exec('CREATE EXTENSION IF NOT EXISTS pgtap;')
-    })
-    afterEach(async () => {
-      if (!pg.closed) {
-        await pg.close()
-      }
-    })
-
-    it('can load extension', async () => {
-      // Verify the extension is loaded
-      const res = await pg.query<{ extname: string }>(`
+  it('can load extension', async () => {
+    // Verify the extension is loaded
+    const res = await pg.query<{ extname: string }>(`
         SELECT extname 
         FROM pg_extension 
         WHERE extname = 'pgtap'
       `)
 
-      expect(res.rows).toHaveLength(1)
-      expect(res.rows[0].extname).toBe('pgtap')
-    })
+    expect(res.rows).toHaveLength(1)
+    expect(res.rows[0].extname).toBe('pgtap')
+  })
 
-    it('should run individual pgTAP assertions', async () => {
-      const res = await pg.exec(`
+  it('should run individual pgTAP assertions', async () => {
+    const res = await pg.exec(`
         -- Start transaction and plan the tests.
         BEGIN;
         SELECT plan(1);
@@ -66,17 +51,17 @@ await testEsmCjsAndDTC(async (importType) => {
         ROLLBACK;
       `)
 
-      // we get 5 outputs, one for each SQL statement
-      expect(res.length).toBe(5)
-      expect(res[1].rows).toEqual([{ plan: '1..1' }])
-      expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
+    // we get 5 outputs, one for each SQL statement
+    expect(res.length).toBe(5)
+    expect(res[1].rows).toEqual([{ plan: '1..1' }])
+    expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
 
-      // no issues reported in finish step
-      expect(res[3].rows.length).toBe(0)
-    })
+    // no issues reported in finish step
+    expect(res[3].rows.length).toBe(0)
+  })
 
-    it('should check for correct amounts of tests', async () => {
-      const res = await pg.exec(`
+  it('should check for correct amounts of tests', async () => {
+    const res = await pg.exec(`
         BEGIN;
         SELECT plan(1); -- wrong amount of tests
         SELECT pass('This test passes');
@@ -85,19 +70,19 @@ await testEsmCjsAndDTC(async (importType) => {
         ROLLBACK;
       `)
 
-      expect(res.length).toBe(6)
-      expect(res[1].rows).toEqual([{ plan: '1..1' }])
-      expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
-      expect(res[3].rows).toEqual([{ pass: 'ok 2 - This test passes too' }])
-      expect(res[4].rows).toEqual([
-        {
-          finish: '# Looks like you planned 1 test but ran 2',
-        },
-      ])
-    })
+    expect(res.length).toBe(6)
+    expect(res[1].rows).toEqual([{ plan: '1..1' }])
+    expect(res[2].rows).toEqual([{ pass: 'ok 1 - This test passes' }])
+    expect(res[3].rows).toEqual([{ pass: 'ok 2 - This test passes too' }])
+    expect(res[4].rows).toEqual([
+      {
+        finish: '# Looks like you planned 1 test but ran 2',
+      },
+    ])
+  })
 
-    it('should run multiple tests', async () => {
-      const res = await pg.exec(`
+  it('should run multiple tests', async () => {
+    const res = await pg.exec(`
           -- Start transaction and plan the tests.
           BEGIN;
           CREATE TABLE test_table (
@@ -119,27 +104,27 @@ await testEsmCjsAndDTC(async (importType) => {
           ROLLBACK;
         `)
 
-      expect(res.length).toBe(8)
-      expect(res[2].rows).toEqual([{ plan: '1..4' }])
-      expect(res[3].rows).toEqual([
-        { has_schema: 'ok 1 - public schema should exist' },
-      ])
-      expect(res[4].rows).toEqual([
-        { has_table: 'ok 2 - test_table should exist in public' },
-      ])
-      expect(res[5].rows).toEqual([
-        {
-          has_table:
-            'not ok 3 - this table should exist\n# Failed test 3: "this table should exist"',
-        },
-      ])
-      expect(res[6].rows).toEqual([
-        { finish: '# Looks like you planned 4 tests but ran 3' },
-      ])
-    })
+    expect(res.length).toBe(8)
+    expect(res[2].rows).toEqual([{ plan: '1..4' }])
+    expect(res[3].rows).toEqual([
+      { has_schema: 'ok 1 - public schema should exist' },
+    ])
+    expect(res[4].rows).toEqual([
+      { has_table: 'ok 2 - test_table should exist in public' },
+    ])
+    expect(res[5].rows).toEqual([
+      {
+        has_table:
+          'not ok 3 - this table should exist\n# Failed test 3: "this table should exist"',
+      },
+    ])
+    expect(res[6].rows).toEqual([
+      { finish: '# Looks like you planned 4 tests but ran 3' },
+    ])
+  })
 
-    it('should run pgTAP test suite', async () => {
-      const res = await pg.exec(`
+  it('should run pgTAP test suite', async () => {
+    const res = await pg.exec(`
           BEGIN;
           CREATE TABLE users (
             id    SERIAL NOT NULL PRIMARY KEY,
@@ -163,20 +148,20 @@ await testEsmCjsAndDTC(async (importType) => {
           ROLLBACK;
         `)
 
-      expect(res.length).toBe(6)
-      // we don't care about the outputs of the other SQL statements before
-      expect(res[4].rows).toEqual([
-        { runtests: '# Subtest: public.test_user()' },
-        { runtests: '    ok 1 - Should have no users' },
-        { runtests: '    ok 2 - Should have name' },
-        { runtests: '    1..2' },
-        { runtests: 'ok 1 - public.test_user' },
-        { runtests: '1..1' },
-      ])
-    })
+    expect(res.length).toBe(6)
+    // we don't care about the outputs of the other SQL statements before
+    expect(res[4].rows).toEqual([
+      { runtests: '# Subtest: public.test_user()' },
+      { runtests: '    ok 1 - Should have no users' },
+      { runtests: '    ok 2 - Should have name' },
+      { runtests: '    1..2' },
+      { runtests: 'ok 1 - public.test_user' },
+      { runtests: '1..1' },
+    ])
+  })
 
-    it('should run in-depth assertion tests', async () => {
-      const res = await pg.exec(`
+  it('should run in-depth assertion tests', async () => {
+    const res = await pg.exec(`
           BEGIN;
 
           -- Create test user and grant privileges
@@ -295,43 +280,42 @@ await testEsmCjsAndDTC(async (importType) => {
           ROLLBACK;
         `)
 
-      expect(res.length).toBe(24)
-      // we don't care about the outputs of the other SQL statements before
-      expect(res[12].rows).toEqual([{ plan: '1..9' }])
-      expect(res[13].rows).toEqual([
-        { results_eq: 'ok 1 - Users table should match expected results' },
-      ])
-      expect(res[14].rows).toEqual([
-        { set_eq: 'ok 2 - Should have exactly these users (any order)' },
-      ])
-      expect(res[15].rows).toEqual([
-        { bag_eq: 'ok 3 - Should have these users with age > 20' },
-      ])
-      expect(res[16].rows).toEqual([
-        { throws_ok: 'ok 4 - Should enforce NOT NULL constraint on id' },
-      ])
-      expect(res[17].rows).toEqual([
-        { throws_ok: 'ok 5 - Should enforce CHECK constraint on age' },
-      ])
-      expect(res[18].rows).toEqual([
-        {
-          performs_ok: 'ok 6 - Indexed query should complete within 1 second',
-        },
-      ])
-      expect(res[19].rows).toEqual([
-        { has_table: 'ok 7 - Should have users table' },
-      ])
-      expect(res[20].rows).toEqual([
-        { col_type_is: 'ok 8 - email column should be TEXT type' },
-      ])
-      expect(res[21].rows).toEqual([
-        {
-          database_privs_are:
-            'ok 9 - testuser should have specific database privileges',
-        },
-      ])
-      // no issues reported in finish step
-      expect(res[22].rows.length).toBe(0)
-    })
+    expect(res.length).toBe(24)
+    // we don't care about the outputs of the other SQL statements before
+    expect(res[12].rows).toEqual([{ plan: '1..9' }])
+    expect(res[13].rows).toEqual([
+      { results_eq: 'ok 1 - Users table should match expected results' },
+    ])
+    expect(res[14].rows).toEqual([
+      { set_eq: 'ok 2 - Should have exactly these users (any order)' },
+    ])
+    expect(res[15].rows).toEqual([
+      { bag_eq: 'ok 3 - Should have these users with age > 20' },
+    ])
+    expect(res[16].rows).toEqual([
+      { throws_ok: 'ok 4 - Should enforce NOT NULL constraint on id' },
+    ])
+    expect(res[17].rows).toEqual([
+      { throws_ok: 'ok 5 - Should enforce CHECK constraint on age' },
+    ])
+    expect(res[18].rows).toEqual([
+      {
+        performs_ok: 'ok 6 - Indexed query should complete within 1 second',
+      },
+    ])
+    expect(res[19].rows).toEqual([
+      { has_table: 'ok 7 - Should have users table' },
+    ])
+    expect(res[20].rows).toEqual([
+      { col_type_is: 'ok 8 - email column should be TEXT type' },
+    ])
+    expect(res[21].rows).toEqual([
+      {
+        database_privs_are:
+          'ok 9 - testuser should have specific database privileges',
+      },
+    ])
+    // no issues reported in finish step
+    expect(res[22].rows.length).toBe(0)
   })
 })
