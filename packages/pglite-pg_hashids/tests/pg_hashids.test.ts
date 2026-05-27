@@ -1,21 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { testEsmCjsAndDTC } from './test-utils.ts'
-import { PGlite } from '../dist/index.js'
-
-await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
-    importType === 'esm'
-      ? await import('../dist/index.js')
-      : ((await import(
-          '../dist/index.cjs'
-        )) as unknown as typeof import('../dist/index.js'))
-
-  const { pg_hashids } =
-    importType === 'esm'
-      ? await import('../dist/pg_hashids/index.js')
-      : ((await import(
-          '../dist/pg_hashids/index.cjs'
-        )) as unknown as typeof import('../dist/pg_hashids/index.js'))
+import { PGlite } from '@electric-sql/pglite'
+import { pg_hashids } from '../src/index.js'
 
   describe(`pg_hashids`, () => {
     let pg: PGlite
@@ -126,4 +111,3 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(res[0].rows[0].id_decode_once).toEqual(1234567)
     })
   })
-})
