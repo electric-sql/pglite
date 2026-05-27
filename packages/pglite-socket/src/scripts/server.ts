@@ -191,7 +191,7 @@ class PGLiteServerRunner {
             )
           }
         } else if (builtInExtensions.includes(name)) {
-          // Built-in extension (e.g., @electric-sql/pglite/vector)
+          // Built-in extension (e.g., @electric-sql/pglite-pgvector)
           const mod = await import(`@electric-sql/pglite/${name}`)
           ext = mod[name] as Extension
           if (ext) {

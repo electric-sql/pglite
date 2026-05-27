@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.202.0/testing/asserts.ts'
 import { PGlite } from '@electric-sql/pglite'
-import { vector } from '@electric-sql/pglite/vector'
+import { vector } from '@electric-sql/pglite-pgvector'
 import denoTestBaseConfig from './denoUtils.js'
 
 Deno.test({

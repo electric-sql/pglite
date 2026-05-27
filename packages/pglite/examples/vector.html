@@ -8,7 +8,7 @@
       {
         "imports": {
           "@electric-sql/pglite": "../dist/index.js",
-          "@electric-sql/pglite/vector": "../dist/vector/index.js"
+          "@electric-sql/pglite-pgvector": "../dist/vector/index.js"
         }
       }
     </script>
@@ -18,7 +18,7 @@
     <div class="script-plus-log">
       <script type="module">
         import { PGlite } from '@electric-sql/pglite'
-        import { vector } from '@electric-sql/pglite/vector'
+        import { vector } from '@electric-sql/pglite-pgvector'
 
         const pg = new PGlite({
           extensions: {

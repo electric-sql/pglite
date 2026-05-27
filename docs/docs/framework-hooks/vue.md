@@ -53,7 +53,7 @@ The `makePGliteDependencyInjector` function returns typed versions of `providePG
 ```ts
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { live } from '@electric-sql/pglite/live'
-import { vector } from '@electric-sql/pglite/vector'
+import { vector } from '@electric-sql/pglite-pgvector'
 import { makePGliteDependencyInjector } from '@electric-sql/pglite-vue'
 
 const { providePGlite, injectPGlite } = makePGliteDependencyInjector<

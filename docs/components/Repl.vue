@@ -3,7 +3,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import '@electric-sql/pglite-repl/webcomponent'
 import { defaultDarkThemeInit } from '@electric-sql/pglite-repl/webcomponent'
 import { PGlite } from '@electric-sql/pglite'
-import { vector } from '@electric-sql/pglite/vector'
+import { vector } from '@electric-sql/pglite-pgvector'
 
 const pg = new PGlite({
   startParams: [

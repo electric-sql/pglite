@@ -812,7 +812,7 @@ describe(`PGLite Socket Server`, () => {
           '--path',
           UNIX_SOCKET_PATH,
           '--extensions',
-          'vector,pg_uuidv7,@electric-sql/pglite/pg_hashids:pg_hashids',
+          'vector,pg_uuidv7,@electric-sql/pglite-pg_hashids:pg_hashids',
         ],
         {
           stdio: ['ignore', 'pipe', 'pipe'],

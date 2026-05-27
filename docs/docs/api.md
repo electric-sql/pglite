@@ -128,7 +128,7 @@ The `options.extensions` parameter is an object of `namespace: extension` paring
 ```ts
 import { PGlite } from '@electric-sql/pglite'
 import { live } from '@electric-sql/pglite/live'
-import { vector } from '@electric-sql/pglite/vector'
+import { vector } from '@electric-sql/pglite-pgvector'
 
 const pg = await PGlite.create({
   extensions: {

@@ -10,7 +10,7 @@
  * Usage:
  * ```typescript
  * import { PGlite } from '@electric-sql/pglite'
- * import { age } from '@electric-sql/pglite/age'
+ * import { age } from '@electric-sql/pglite-age'
  *
  * const pg = new PGlite({ extensions: { age } })
  * ```
