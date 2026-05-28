@@ -885,7 +885,9 @@ describe(`PGLite Socket Server`, () => {
       `)
       expect(extCheck.rows).toHaveLength(1)
       expect(extCheck.rows[0].extname).toBe('unaccent')
-      const res = await client.query(`select ts_lexize('unaccent','Hôtel') as value;`)
+      const res = await client.query(
+        `select ts_lexize('unaccent','Hôtel') as value;`,
+      )
 
       expect(res.rows[0].value).toEqual(['Hotel'])
     })

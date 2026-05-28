@@ -158,9 +158,7 @@ class PGLiteServerRunner {
     const extensions: Extensions = {}
 
     // Built-in extensions that are not in contrib
-    const builtInExtensions = [
-      'live',
-    ]
+    const builtInExtensions = ['live']
 
     for (const name of this.config.extensionNames) {
       let ext: Extension | null = null
