@@ -151,7 +151,7 @@ jobs:
           path: ./packages/pglite-pg_uuidv7/release/**
           retention-days: 60
 
-      - name: Upload pglite-pgvector release artifacts to Github artifacts
+      - name: Upload pglite-pgvector build artifacts to Github artifacts
         id: upload-pglite-pgvector-release-files
         uses: actions/upload-artifact@v4
         with:
