@@ -432,6 +432,9 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../pglite
+      '@electric-sql/pglite-pgvector':
+        specifier: workspace:*
+        version: link:../pglite-pgvector
       '@eslint-react/eslint-plugin':
         specifier: ^1.14.3
         version: 1.14.3(eslint@8.57.1)(typescript@5.6.3)
