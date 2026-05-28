@@ -47,6 +47,24 @@ importers:
       '@electric-sql/pglite':
         specifier: workspace:*
         version: link:../packages/pglite
+      '@electric-sql/pglite-age':
+        specifier: workspace:*
+        version: link:../packages/pglite-age
+      '@electric-sql/pglite-pg_hashids':
+        specifier: workspace:*
+        version: link:../packages/pglite-pg_hashids
+      '@electric-sql/pglite-pg_ivm':
+        specifier: workspace:*
+        version: link:../packages/pglite-pg_ivm
+      '@electric-sql/pglite-pg_textsearch':
+        specifier: workspace:*
+        version: link:../packages/pglite-pg_textsearch
+      '@electric-sql/pglite-pg_uuidv7':
+        specifier: workspace:*
+        version: link:../packages/pglite-pg_uuidv7
+      '@electric-sql/pglite-pgvector':
+        specifier: workspace:*
+        version: link:../packages/pglite-pgvector
       '@electric-sql/pglite-postgis':
         specifier: workspace:*
         version: link:../packages/pglite-postgis
