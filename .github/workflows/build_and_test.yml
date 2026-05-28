@@ -407,7 +407,56 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pglite-postgis-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-postgis/dist/*         
+          path: ./packages/pglite-postgis/dist/*
+
+      - name: Upload pglite-age distribution artifact
+        id: upload-pglite-age-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-age-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-age/dist/*
+
+      - name: Upload pglite-pg_hashids distribution artifact
+        id: upload-pglite-pg-hashids-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-hashids-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pg_hashids/dist/*
+
+      - name: Upload pglite-pg_ivm distribution artifact
+        id: upload-pglite-pg-ivm-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-ivm-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pg_ivm/dist/*
+
+      - name: Upload pglite-pgtap distribution artifact
+        id: upload-pglite-pgtap-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pgtap-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pgtap/dist/*
+
+      - name: Upload pglite-pg_textsearch distribution artifact
+        id: upload-pglite-pg-textsearch-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-textsearch-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pg_textsearch/dist/*
+
+      - name: Upload pglite-pg_uuidv7 distribution artifact
+        id: upload-pglite-pg-uuidv7-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-uuidv7-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pg_uuidv7/dist/*
+
+      - name: Upload pglite-pgvector distribution artifact
+        id: upload-pglite-pgvector-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pgvector-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pgvector/dist/*
 
   publish-website-with-demos:
     name: Publish website with demos
@@ -452,7 +501,49 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-postgis-dist-node-v20.x
-          path: ./packages/pglite-postgis/dist/ 
+          path: ./packages/pglite-postgis/dist/
+
+      - name: Download pglite-age dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-age-dist-node-v20.x
+          path: ./packages/pglite-age/dist/
+
+      - name: Download pglite-pg_hashids dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-hashids-dist-node-v20.x
+          path: ./packages/pglite-pg_hashids/dist/
+
+      - name: Download pglite-pg_ivm dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-ivm-dist-node-v20.x
+          path: ./packages/pglite-pg_ivm/dist/
+
+      - name: Download pglite-pgtap dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pgtap-dist-node-v20.x
+          path: ./packages/pglite-pgtap/dist/
+
+      - name: Download pglite-pg_textsearch dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-textsearch-dist-node-v20.x
+          path: ./packages/pglite-pg_textsearch/dist/
+
+      - name: Download pglite-pg_uuidv7 dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-uuidv7-dist-node-v20.x
+          path: ./packages/pglite-pg_uuidv7/dist/
+
+      - name: Download pglite-pgvector dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pgvector-dist-node-v20.x
+          path: ./packages/pglite-pgvector/dist/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
