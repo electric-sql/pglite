@@ -115,8 +115,8 @@ jobs:
         id: upload-pglite-pgvector-release-files
         uses: actions/upload-artifact@v4
         with:
-          name: pglite-pgvector-release-files-node-v20.x
-          path: ./packages/pglite-pgvector/release/**
+          name: pglite-pgvector-dist-files-node-v20.x
+          path: ./packages/pglite-pgvector/dist/**
           retention-days: 60          
 
       - name: Typecheck pglite
@@ -172,8 +172,8 @@ jobs:
       - name: Download pglite-pgvector build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pglite-pgvector-release-files-node-v20.x
-          path: ../pglite-pgvector/release
+          name: pglite-pgvector-dist-files-node-v20.x
+          path: ../pglite-pgvector/dist
 
       - name: Install dependencies
         run: |
