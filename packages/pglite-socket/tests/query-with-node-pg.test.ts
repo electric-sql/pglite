@@ -812,7 +812,7 @@ describe(`PGLite Socket Server`, () => {
           '--path',
           UNIX_SOCKET_PATH,
           '--extensions',
-          'vector,pg_uuidv7,@electric-sql/pglite-pg_hashids:pg_hashids',
+          'unaccent,@electric-sql/pglite-pgvector:vector,@electric-sql/pglite-pg_hashids:pg_hashids',
         ],
         {
           stdio: ['ignore', 'pipe', 'pipe'],
@@ -877,6 +877,19 @@ describe(`PGLite Socket Server`, () => {
       }
     })
 
+    it('should load and use unaccent extension', async () => {
+      await client.query(`CREATE EXTENSION IF NOT EXISTS "unaccent";`)
+      // Verify extension is loaded
+      const extCheck = await client.query(`
+        SELECT extname FROM pg_extension WHERE extname = 'unaccent'
+      `)
+      expect(extCheck.rows).toHaveLength(1)
+      expect(extCheck.rows[0].extname).toBe('unaccent')
+      const res = await client.query(`select ts_lexize('unaccent','Hôtel') as value;`)
+
+      expect(res.rows[0].value).toEqual(['Hotel'])
+    })
+
     it('should load and use vector extension', async () => {
       // Create the extension
       await client.query('CREATE EXTENSION IF NOT EXISTS vector')
@@ -916,29 +929,6 @@ describe(`PGLite Socket Server`, () => {
       expect(result.rows[0].name).toBe('test1')
       expect(result.rows[0].vec).toBe('[1,2,3]')
       expect(parseFloat(result.rows[0].distance)).toBeCloseTo(2.449, 2)
-    })
-
-    it('should load and use pg_uuidv7 extension', async () => {
-      // Create the extension
-      await client.query('CREATE EXTENSION IF NOT EXISTS pg_uuidv7')
-
-      // Verify extension is loaded
-      const extCheck = await client.query(`
-        SELECT extname FROM pg_extension WHERE extname = 'pg_uuidv7'
-      `)
-      expect(extCheck.rows).toHaveLength(1)
-      expect(extCheck.rows[0].extname).toBe('pg_uuidv7')
-
-      // Generate a UUIDv7
-      const result = await client.query('SELECT uuid_generate_v7() as uuid')
-      expect(result.rows[0].uuid).toHaveLength(36)
-
-      // Test uuid_v7_to_timestamptz function
-      const tsResult = await client.query(`
-        SELECT uuid_v7_to_timestamptz('018570bb-4a7d-7c7e-8df4-6d47afd8c8fc') as ts
-      `)
-      const timestamp = new Date(tsResult.rows[0].ts)
-      expect(timestamp.toISOString()).toBe('2023-01-02T04:26:40.637Z')
     })
 
     it('should load and use pg_hashids extension from npm package path', async () => {
