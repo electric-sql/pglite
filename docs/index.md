@@ -96,7 +96,7 @@ async function renderNpmJs() {
   if (!countEl) {
     countEl = document.createElement('span')
     countEl.classList.add('count')
-    countEl.innerText = `(${toShortDecimal(initialDownloadCount)})`;
+    countEl.innerText = `( ⤓ ${toShortDecimal(initialDownloadCount)} )`;
 
     const icon = document.createElement('span')
     icon.classList.add('vpi-social-npm')
@@ -124,7 +124,7 @@ async function renderNpmJs() {
       clearInterval(intervalId);
     }
 
-    countEl.innerText = `(${toShortDecimal(currentCount)}/wk)`;
+    countEl.innerText = `( ⤓ ${toShortDecimal(currentCount)}/wk )`;
   };
   const intervalId = setInterval(animateCount, 64);
 }
