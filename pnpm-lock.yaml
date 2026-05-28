@@ -62,6 +62,9 @@ importers:
       '@electric-sql/pglite-pg_uuidv7':
         specifier: workspace:*
         version: link:../packages/pglite-pg_uuidv7
+      '@electric-sql/pglite-pgtap':
+        specifier: workspace:*
+        version: link:../packages/pglite-pgtap
       '@electric-sql/pglite-pgvector':
         specifier: workspace:*
         version: link:../packages/pglite-pgvector
