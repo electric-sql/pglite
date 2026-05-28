@@ -167,13 +167,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pglite-postgis-release-files-node-v20.x
-          path: ../pglite-postgis/release
+          path: ./packages/pglite-postgis/release
 
       - name: Download pglite-pgvector build artifacts
         uses: actions/download-artifact@v4
         with:
           name: pglite-pgvector-dist-files-node-v20.x
-          path: ../pglite-pgvector/dist
+          path: ./packages/pglite-pgvector/dist
 
       - name: Install dependencies
         run: |
