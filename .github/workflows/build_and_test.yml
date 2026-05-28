@@ -111,13 +111,69 @@ jobs:
           path: ./packages/pglite-postgis/release/**
           retention-days: 60
 
-      - name: Upload pglite-pgvector build artifacts to Github artifacts
+      - name: Upload pglite-pg_hashids build artifacts to Github artifacts
+        id: upload-pglite-pg-hashids-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-hashids-release-files-node-v20.x
+          path: ./packages/pglite-pg_hashids/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pg_ivm build artifacts to Github artifacts
+        id: upload-pglite-pg-ivm-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-ivm-release-files-node-v20.x
+          path: ./packages/pglite-pg_ivm/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pgtap build artifacts to Github artifacts
+        id: upload-pglite-pgtap-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pgtap-release-files-node-v20.x
+          path: ./packages/pglite-pgtap/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pg_textsearch build artifacts to Github artifacts
+        id: upload-pglite-pg-textsearch-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-textsearch-release-files-node-v20.x
+          path: ./packages/pglite-pg_textsearch/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pg_uuidv7 build artifacts to Github artifacts
+        id: upload-pglite-pg-uuidv7-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pg-uuidv7-release-files-node-v20.x
+          path: ./packages/pglite-pg_uuidv7/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pgvector release artifacts to Github artifacts
         id: upload-pglite-pgvector-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pgvector-release-files-node-v20.x
+          path: ./packages/pglite-pgvector/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pgvector dist artifacts to Github artifacts
+        id: upload-pglite-pgvector-dist-files
         uses: actions/upload-artifact@v4
         with:
           name: pglite-pgvector-dist-files-node-v20.x
           path: ./packages/pglite-pgvector/dist/**
-          retention-days: 60          
+          retention-days: 60
+
+      - name: Upload pglite-age build artifacts to Github artifacts
+        id: upload-pglite-age-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-age-release-files-node-v20.x
+          path: ./packages/pglite-age/release/**
+          retention-days: 60
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
@@ -278,6 +334,48 @@ jobs:
         with:
           name: pglite-postgis-release-files-node-v20.x
           path: ./packages/pglite-postgis/release/
+
+      - name: Download pglite-pg_hashids build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-hashids-release-files-node-v20.x
+          path: ./packages/pglite-pg_hashids/release/
+
+      - name: Download pglite-pg_ivm build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-ivm-release-files-node-v20.x
+          path: ./packages/pglite-pg_ivm/release/
+
+      - name: Download pglite-pgtap build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pgtap-release-files-node-v20.x
+          path: ./packages/pglite-pgtap/release/
+
+      - name: Download pglite-pg_textsearch build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-textsearch-release-files-node-v20.x
+          path: ./packages/pglite-pg_textsearch/release/
+
+      - name: Download pglite-pg_uuidv7 build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pg-uuidv7-release-files-node-v20.x
+          path: ./packages/pglite-pg_uuidv7/release/
+
+      - name: Download pglite-pgvector build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pgvector-release-files-node-v20.x
+          path: ./packages/pglite-pgvector/release/
+
+      - name: Download pglite-age build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-age-release-files-node-v20.x
+          path: ./packages/pglite-age/release/
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
