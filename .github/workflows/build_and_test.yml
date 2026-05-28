@@ -111,6 +111,14 @@ jobs:
           path: ./packages/pglite-postgis/release/**
           retention-days: 60
 
+      - name: Upload pglite-pgvector build artifacts to Github artifacts
+        id: upload-pglite-pgvector-release-files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pglite-pgvector-release-files-node-v20.x
+          path: ./packages/pglite-pgvector/release/**
+          retention-days: 60          
+
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm typecheck
@@ -160,6 +168,12 @@ jobs:
         with:
           name: pglite-postgis-release-files-node-v20.x
           path: ./packages/pglite-postgis/release
+
+      - name: Download pglite-pgvector build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pglite-pgvector-release-files-node-v20.x
+          path: ./packages/pglite-pgvector/release
 
       - name: Install dependencies
         run: |
