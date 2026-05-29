@@ -13,14 +13,12 @@ describe(`pg_textsearch`, () => {
     if (!dataDirArchive) {
       pg = await PGlite.create({
         extensions: { pg_textsearch },
-        postgresqlconf: 'shared_preload_libraries=pg_textsearch',
       })
       dataDirArchive = await pg.dumpDataDir('gzip')
     } else {
       pg = await PGlite.create({
         extensions: { pg_textsearch },
         loadDataDir: dataDirArchive,
-        postgresqlconf: 'shared_preload_libraries=pg_textsearch',
       })
     }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS pg_textsearch;')
