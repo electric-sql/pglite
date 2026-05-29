@@ -7,28 +7,6 @@ async function main() {
     '.js',
     '.cjs',
   ])
-  await findAndReplaceInDir('./dist/vector', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-  await findAndReplaceInDir('./dist/pg_ivm', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-  await findAndReplaceInDir('./dist/pgtap', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-  await findAndReplaceInDir('./dist/pg_uuidv7', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-  await findAndReplaceInDir('./dist/age', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-  await findAndReplaceInDir('./dist/pg_textsearch', /\.\.\/release\//g, 
-    '', ['.js', '.cjs'])  
   await findAndReplaceInDir(
     './dist',
     `require("./postgres.js")`,
