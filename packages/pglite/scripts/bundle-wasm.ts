@@ -13,7 +13,6 @@ async function main() {
     `require("./postgres.cjs").default`,
     ['.cjs'],
   )
-  await findAndReplaceInDir('./dist/pg_hashids', /\.\.\/release\//g, '', ['.js', '.cjs'])
 }
 
 await main()
