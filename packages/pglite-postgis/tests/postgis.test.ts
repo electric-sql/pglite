@@ -18,8 +18,6 @@ describe(`postgis`, () => {
       })
     }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-    // await pg.exec('CREATE EXTENSION postgis_raster;')
-    await pg.exec('CREATE EXTENSION postgis_topology;')
   })
   afterEach(async () => {
     if (!pg.closed) {
@@ -279,64 +277,5 @@ WHERE ST_Within(c.location, s.geom);`)
     ).rejects.toThrow(
       `The 'coordinates' in GeoJSON are not sufficiently nested`,
     )
-  })
-
-  it('GDAL simple', async () => {
-    await pg.exec(`
-  -- enable GDAL drivers (session or DB-level)
-SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';
-
--- 1) create a temp table with a tiny 2x2 raster (3 bands)
-CREATE TEMP TABLE gdal_test AS
-SELECT 1 AS rid,
-       ST_AddBand(
-         ST_AddBand(
-           ST_AddBand(
-             ST_MakeEmptyRaster(2,2,0.0,0.0,1.0, -1.0, 0.0,0.0,4326),
-             1, '8BUI', 10, 0
-           ),
-           2, '8BUI', 20, 0
-         ),
-         3, '8BUI', 30, 0
-       ) AS rast;
-
--- 2) export raster to a GDAL-supported format (PNG) as bytea
-WITH exported AS (
-  SELECT ST_AsGDALRaster(rast, 'PNG') AS png
-  FROM gdal_test
-)
-SELECT octet_length(png) AS png_bytes FROM exported;
-
--- 3) import that PNG back into a raster and inspect metadata & stats
-WITH exported AS (
-  SELECT ST_AsGDALRaster(rast, 'PNG') AS png
-  FROM gdal_test
-),
-imported AS (
-  SELECT ST_FromGDALRaster(png) AS rast2 FROM exported
-)
-SELECT
-  ST_Metadata(rast2)       AS meta,
-  (ST_SummaryStats(rast2,1)).* AS band1_stats,
-  (ST_SummaryStats(rast2,2)).* AS band2_stats,
-  (ST_SummaryStats(rast2,3)).* AS band3_stats
-FROM imported;
-
--- 4) simple equality check: compare band means (allowing small differences)
-WITH src AS (
-  SELECT ST_SummaryStats(rast,1) AS s1, ST_SummaryStats(rast,2) AS s2, ST_SummaryStats(rast,3) AS s3 FROM gdal_test
-),
-roundtrip AS (
-  SELECT (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),1)).* AS r1,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),2)).* AS r2,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),3)).* AS r3
-  FROM gdal_test
-)
-SELECT
-  abs(src.s1.mean - roundtrip.r1.mean) < 1e-6 AS band1_mean_equal,
-  abs(src.s2.mean - roundtrip.r2.mean) < 1e-6 AS band2_mean_equal,
-  abs(src.s3.mean - roundtrip.r3.mean) < 1e-6 AS band3_mean_equal
-FROM src, roundtrip;
-`)
   })
 })

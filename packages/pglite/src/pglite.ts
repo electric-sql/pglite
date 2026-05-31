@@ -449,10 +449,6 @@ export class PGlite
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
           mod.ENV.ICU_DATA = ICU_DATA_PATH
-
-          mod.ENV.POSTGIS_GDAL_ENABLED_DRIVERS = 'ENABLE_ALL'
-          mod.ENV.POSTGIS_ENABLE_OUTDB_RASTERS = 1
-
           // some extensions might need their own ENV variables
           // TODO: move this to the extension init function
           for (const [extName] of Object.entries(this.#extensions)) {
