@@ -29,7 +29,7 @@ const pg = await PGlite.create({
 const collations = await pg.exec('select * from pg_collation')
 ```
 
-# Generating an ICU package for PGlite
+## Generating an ICU package for PGlite
 
 Following is a brief description on how to generate your own icu file that contains only the locales that you want in your PGlite enabled application.
 
@@ -88,7 +88,7 @@ pg = await PGlite.create({
 
 The folder `examples/Switzerland` contains the `filter.json` and the generated data file that can be used with PGlite.
 
-# Documentation
+## Documentation
 
 https://www.postgresql.org/docs/current/locale.html
 https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html
