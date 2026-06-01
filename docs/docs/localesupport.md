@@ -27,7 +27,6 @@ const pg = await PGlite.create({
 
 // just an example, query the available collations
 const collations = await pg.exec('select * from pg_collation')
-
 ```
 
 # Generating an ICU package for PGlite
@@ -41,20 +40,19 @@ Currently PGlite is tested to work with libicu v76.1. Get the source and data fo
 wget https://github.com/unicode-org/icu/releases/download/release-76-1/icu4c-76_1-src.tgz
 wget https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-data.zip
 
-Important: You must have the data sources in order to use the ICU Data Build Tool. Check for the file icu4c/source/data/locales/root.txt. If that file is missing, you need to download “icu4c-*-data.zip”, delete the old icu4c/source/data directory, and replace it with the data directory from the zip file. If there is a *.dat file in icu4c/source/data/in, that file will be used even if you gave ICU custom filter rules.
+Important: You must have the data sources in order to use the ICU Data Build Tool. Check for the file icu4c/source/data/locales/root.txt. If that file is missing, you need to download “icu4c-_-data.zip”, delete the old icu4c/source/data directory, and replace it with the data directory from the zip file. If there is a _.dat file in icu4c/source/data/in, that file will be used even if you gave ICU custom filter rules.
 
 ## Create a filters.json file
 
 This will allow you to only generate the data that you need.
 
 Here's a simple example:
+
 ```json
 {
   "localeFilter": {
     "filterType": "locale",
-    "includelist": [
-      "en_US"
-    ]
+    "includelist": ["en_US"]
   }
 }
 ```
@@ -66,7 +64,6 @@ For more info, see https://unicode-org.github.io/icu/userguide/icu_data/buildtoo
 $ ICU_DATA_FILTER_FILE=<full_path_to_your_filters.json> ./icu/source/configure --with-data-packaging=files --disable-shared --enable-static --disable-tests --disable-samples --disable-extras --disable-icuio --disable-layoutex --prefix=<your_install_dir>
 
 $ make -j && make install
-
 
 ## Create an archive with the icu data
 
@@ -80,9 +77,7 @@ Now `icu_76.tgz` contains the localisation data that you can use with PGlite.
 
 ```typescript
 // load your newly generate icu archive
-const icuDataDir = await fs.readFile(
-  resolve(import.meta.dirname, 'icu_76.tgz'),
-)
+const icuDataDir = await fs.readFile(resolve(import.meta.dirname, 'icu_76.tgz'))
 // now pass it to PGlite
 pg = await PGlite.create({
   icuDataDir: new Blob([new Uint8Array(icuDataDir)]),
