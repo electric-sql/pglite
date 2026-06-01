@@ -19,7 +19,7 @@ describe(`postgis`, () => {
     }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
     // await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_raster;')
-    // await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')
   })
   afterEach(async () => {
     if (!pg.closed) {

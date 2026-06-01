@@ -9,7 +9,6 @@ import {
   type Filesystem,
   loadFs,
   parseDataDir,
-  WASM_PREFIX,
 } from './fs/index.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
@@ -336,7 +335,8 @@ export class PGlite
 
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: POSTGRES_EXE_PATH,
-      WASM_PREFIX,
+      PGLITE_ENV: {},
+      WASM_PREFIX: pglUtils.WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
       wasmMemory: wasmMemory,
@@ -450,16 +450,10 @@ export class PGlite
           mod.ENV.PGCLIENTENCODING = 'UTF8'
           mod.ENV.ICU_DATA = ICU_DATA_PATH
 
-          mod.ENV.POSTGIS_GDAL_ENABLED_DRIVERS = 'ENABLE_ALL'
-          mod.ENV.POSTGIS_ENABLE_OUTDB_RASTERS = 1
-
-          // some extensions might need their own ENV variables
-          // TODO: move this to the extension init function
-          for (const [extName] of Object.entries(this.#extensions)) {
-            if (extName === 'postgis') {
-              mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
-            }
+          if (mod.PGLITE_ENV) {
+            Object.assign(mod.ENV, mod.PGLITE_ENV)
           }
+
         },
         (mod: PostgresMod) => {
           mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html

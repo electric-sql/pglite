@@ -3,6 +3,8 @@ export const IN_NODE =
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string'
 
+export const WASM_PREFIX = '/pglite'
+
 const artifactDownloadPromises = new Map<string, Promise<Response>>()
 
 export async function startArtifactDownload(url: URL) {
