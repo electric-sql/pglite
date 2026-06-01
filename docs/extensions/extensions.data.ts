@@ -8,6 +8,8 @@ const baseExtensions: Extension[] = [
       - exact and approximate nearest neighbor search
       - single-precision, half-precision, binary, and sparse vectors
       - L2 distance, inner product, cosine distance, L1 distance, Hamming distance, and Jaccard distance
+
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pgvector
     `,
     shortDescription: 'Open-source vector similarity search for Postgres.',
     featured: true,
@@ -284,6 +286,8 @@ const baseExtensions: Extension[] = [
     tests in psql scripts or xUnit-style test functions. The TAP output is suitable for 
     harvesting, analysis, and reporting by a TAP harness, such as those used in Perl 
     applications.
+
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pgtap
     `,
     shortDescription: 'pgTAP',
     docs: 'https://pgtap.org',
@@ -295,7 +299,9 @@ const baseExtensions: Extension[] = [
   {
     name: 'pg_uuidv7',
     description: `
-    A tiny Postgres extension to create valid version 7 UUIDs in Postgres.`,
+    A tiny Postgres extension to create valid version 7 UUIDs in Postgres.
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_uuidv7
+    `,
     shortDescription: 'Use the new v7 UUIDs in Postgres',
     docs: 'https://github.com/fboulnois/pg_uuidv7/',
     tags: ['postgres extension'],
@@ -536,6 +542,9 @@ const baseExtensions: Extension[] = [
     recomputing the contents from scratch as REFRESH MATERIALIZED VIEW does. 
     IVM can update materialized views more efficiently than recomputation 
     when only small parts of the view are changed.
+    
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_ivm
+
     `,
     shortDescription:
       'Incremental View Maintenance (IVM) feature for PostgreSQL.',
@@ -566,6 +575,8 @@ const baseExtensions: Extension[] = [
       ids from numbers. It converts numbers like 347 into strings like “yr8”. You can also
       decode those ids back. This is useful in bundling several parameters into one or simply
       using them as short UIDs.
+
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_hashids
       `,
     shortDescription:
       'Short unique id generator for PostgreSQL, using hashids.',
@@ -586,6 +597,8 @@ const baseExtensions: Extension[] = [
       one of the most popular graph query languages today. There is a strong need for cohesive, 
       easy-to-implement multi-model databases. As an extension of PostgreSQL, AGE supports all 
       the functionalities and features of PostgreSQL while also offering a graph model to boot.
+
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-age
       `,
     shortDescription:
       'Leverage a graph database on top of the existing relational databases.',
@@ -598,7 +611,7 @@ const baseExtensions: Extension[] = [
   {
     name: 'PostGIS',
     description: `
-      *** EXPERIMENTAL *** *** EXTERNAL ***
+      *** EXPERIMENTAL ***
       PostGIS extends the capabilities of the PostgreSQL relational database by adding 
       support for storing, indexing, and querying geospatial data.
 
@@ -607,15 +620,13 @@ const baseExtensions: Extension[] = [
       You need to install it to use it: '$ npm i @electric-sql/pglite-postgis'
 
       *Follow this issue for the status: https://github.com/electric-sql/pglite/issues/916
-
-      *No GDAL support atm.
     `,
     shortDescription: 'Storing, indexing, and querying geospatial data.',
     docs: 'postgis.net',
     tags: ['postgres extension', 'experimental'],
     importPath: '@electric-sql/pglite-postgis',
     importName: 'postgis',
-    size: 8551161,
+    size: 19757024,
   },
   {
     name: 'pg_textsearch',
@@ -623,13 +634,15 @@ const baseExtensions: Extension[] = [
       PostgreSQL extension for BM25 relevance-ranked full-text search.
       Provides a bm25 index access method for efficient full-text search with
       BM25 ranking, supporting multiple languages and custom parameters.
+
+      This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_textsearch
       `,
     shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
     docs: 'https://github.com/timescale/pg_textsearch',
     tags: ['postgres extension'],
     importPath: '@electric-sql/pglite-pg_textsearch',
     importName: 'pg_textsearch',
-    size: 55062,
+    size: 555509,
   },
   {
     name: 'pg_stat_statements',
