@@ -659,6 +659,48 @@ jobs:
           name: pglite-postgis-release-files-node-v20.x
           path: ./packages/pglite-postgis/release/
 
+      - name: Download pglite-pg_hashids build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg-hashids-release-files-node-v20.x
+          path: ./packages/pglite-pg_hashids/release/
+
+      - name: Download pglite-pg_ivm build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg-ivm-release-files-node-v20.x
+          path: ./packages/pglite-pg_ivm/release/
+
+      - name: Download pglite-pgtap build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pgtap-release-files-node-v20.x
+          path: ./packages/pglite-pgtap/release/
+
+      - name: Download pglite-pg_textsearch build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg-textsearch-release-files-node-v20.x
+          path: ./packages/pglite-pg_textsearch/release/
+
+      - name: Download pglite-pg_uuidv7 build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg-uuidv7-release-files-node-v20.x
+          path: ./packages/pglite-pg_uuidv7/release/
+
+      - name: Download pglite-pgvector build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pgvector-release-files-node-v20.x
+          path: ./packages/pglite-pgvector/release/
+
+      - name: Download pglite-age build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-age-release-files-node-v20.x
+          path: ./packages/pglite-age/release/
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build
       - name: Create Release Pull Request or Publish
