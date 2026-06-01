@@ -5,7 +5,6 @@ import { MemoryFS } from './memoryfs.js'
 export {
   BaseFilesystem,
   ERRNO_CODES,
-  WASM_PREFIX,
   type Filesystem,
   type FsType,
   type FsStats,

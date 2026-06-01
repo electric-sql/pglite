@@ -210,7 +210,8 @@
     "format": "prettier --write ./src ./tests",
     "typecheck": "tsc --noEmit",
     "stylecheck": "pnpm lint && prettier --check ./src ./tests",
-    "prepublishOnly": "pnpm check:exports"
+    "prepublishOnly": "pnpm check:exports",
+    "version": "echo $npm_package_version"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",

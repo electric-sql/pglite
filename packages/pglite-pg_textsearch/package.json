@@ -1,0 +1,64 @@
+{
+  "name": "@electric-sql/pglite-pg_textsearch",
+  "version": "0.0.1",
+  "description": "pg_textsearch extension for PGlite",
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "pglite",
+    "pg_textsearch"
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite.git",
+    "directory": "packages/pglite-pg_textsearch"
+  },
+  "scripts": {
+    "build": "tsup && tsx scripts/bundle-wasm.ts",
+    "check:exports": "attw . --pack --profile node16",
+    "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src ./tests",
+    "typecheck": "tsc",
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests",
+    "test": "vitest",
+    "prepublishOnly": "pnpm check:exports"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
+    "@electric-sql/pglite": "workspace:*",
+    "@electric-sql/pglite-utils": "workspace:*",
+    "@types/node": "^20.16.11",
+    "vitest": "^2.1.2"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": "workspace:*"
+  }
+}

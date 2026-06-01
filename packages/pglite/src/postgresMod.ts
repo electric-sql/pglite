@@ -60,6 +60,7 @@ export interface PostgresMod
   _pgl_getMyProcPort: () => number
   _pgl_sendConnData: () => void
   ENV: any
+  PGLITE_ENV: any
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number

@@ -100,7 +100,7 @@ Any extension can be used by the PGlite instance inside the worker, however the 
 // my-pglite-worker.js
 import { PGlite } from '@electric-sql/pglite'
 import { worker } from '@electric-sql/pglite/worker'
-import { vector } from '@electric-sql/pglite/vector'
+import { vector } from '@electric-sql/pglite-pgvector'
 
 worker({
   async init() {

@@ -158,16 +158,7 @@ class PGLiteServerRunner {
     const extensions: Extensions = {}
 
     // Built-in extensions that are not in contrib
-    const builtInExtensions = [
-      'vector',
-      'live',
-      'pg_hashids',
-      'pg_ivm',
-      'pg_uuidv7',
-      'pgtap',
-      'age',
-      'pg_textsearch',
-    ]
+    const builtInExtensions = ['live']
 
     for (const name of this.config.extensionNames) {
       let ext: Extension | null = null
@@ -191,7 +182,7 @@ class PGLiteServerRunner {
             )
           }
         } else if (builtInExtensions.includes(name)) {
-          // Built-in extension (e.g., @electric-sql/pglite/vector)
+          // Built-in extension (e.g., @electric-sql/pglite/live)
           const mod = await import(`@electric-sql/pglite/${name}`)
           ext = mod[name] as Extension
           if (ext) {
@@ -203,7 +194,7 @@ class PGLiteServerRunner {
           try {
             const mod = await import(`@electric-sql/pglite/contrib/${name}`)
             ext = mod[name] as Extension
-          } catch {
+          } catch (e) {
             // Fall back to external package (e.g., @electric-sql/pglite-<extension>)
             const mod = await import(`@electric-sql/pglite-${name}`)
             ext = mod[name] as Extension

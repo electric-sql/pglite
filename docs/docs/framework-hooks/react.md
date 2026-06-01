@@ -61,7 +61,7 @@ The `makePGliteProvider` function returns a `PGliteProvider` component and a `us
 ```ts
 import { PGlite, PGliteInterfaceExtensions } from '@electric-sql/pglite'
 import { LiveNamespace } from '@electric-sql/pglite/live'
-import { VectorNamespace } from '@electric-sql/pglite/vector'
+import { VectorNamespace } from '@electric-sql/pglite-pgvector'
 import { makePGliteProvider } from '@electric-sql/pglite-react'
 
 const { PGliteProvider, usePGlite } = makePGliteProvider<
