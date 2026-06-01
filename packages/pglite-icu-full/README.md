@@ -30,7 +30,7 @@ const collations = await pg.exec('select * from pg_collation')
 
 ```
 
-# Generating an ICU package for PGlite
+## Generating an ICU package for PGlite
 
 Following is a brief description on how to generate your own icu file that contains only the locales that you want in your PGlite enabled application.
 
