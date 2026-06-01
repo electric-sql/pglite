@@ -1,6 +1,6 @@
 # @electric-sql/pglite-socket
 
-## 1.0.0
+## 0.2.0
 
 ### Minor Changes
 
