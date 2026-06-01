@@ -3,8 +3,6 @@ import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 import { PGDATA } from '../initdb.js'
 
-export const WASM_PREFIX = '/pglite'
-
 export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
 
 /**

@@ -5,12 +5,7 @@ import {
   loadExtensionBundle,
   loadExtensions,
 } from './extensionUtils.js'
-import {
-  type Filesystem,
-  loadFs,
-  parseDataDir,
-  WASM_PREFIX,
-} from './fs/index.js'
+import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -336,7 +331,8 @@ export class PGlite
 
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: POSTGRES_EXE_PATH,
-      WASM_PREFIX,
+      PGLITE_ENV: {},
+      WASM_PREFIX: pglUtils.WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
       wasmMemory: wasmMemory,
@@ -449,12 +445,9 @@ export class PGlite
           mod.ENV.PGTZ = 'UTC'
           mod.ENV.PGCLIENTENCODING = 'UTF8'
           mod.ENV.ICU_DATA = ICU_DATA_PATH
-          // some extensions might need their own ENV variables
-          // TODO: move this to the extension init function
-          for (const [extName] of Object.entries(this.#extensions)) {
-            if (extName === 'postgis') {
-              mod.ENV.PROJ_DATA = `${WASM_PREFIX}/share/proj`
-            }
+
+          if (mod.PGLITE_ENV) {
+            Object.assign(mod.ENV, mod.PGLITE_ENV)
           }
         },
         (mod: PostgresMod) => {
