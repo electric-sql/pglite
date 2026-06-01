@@ -91,4 +91,5 @@ The folder `examples/Switzerland` contains the `filter.json` and the generated d
 ## Documentation
 
 https://www.postgresql.org/docs/current/locale.html
+
 https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html
