@@ -40,7 +40,9 @@ $ make -j && make install
 
 The previous steps have installed everything related to ICU in <your_install_dir>. You only need the data files:
 
+```
 $ cd <your_install_dir>/share/icu/76.1/ && tar cvfz icu_76.tgz icudt76l/
+```
 
 Now `icu_76.tgz` contains the localisation data that you can use with PGlite.
 

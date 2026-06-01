@@ -1,6 +1,6 @@
-# pglite-icu-full
+# Locale support
 
-A package containing all the data resources from [libicu](https://github.com/unicode-org/icu) that can be used with PGlite to build localized applications.
+Locale support refers to an application respecting cultural preferences regarding alphabets, sorting, number formatting, etc. PGlite uses the standard ISO C and POSIX locale facilities through `libicu`, distributed separately at https://www.npmjs.com/package/@electric-sql/pglite-icu-full. The package contains all the data resources from [libicu](https://github.com/unicode-org/icu) that can be used with PGlite to build localized applications.
 
 ## Installation
 
