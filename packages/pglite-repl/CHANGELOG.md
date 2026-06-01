@@ -6,7 +6,7 @@
 
 - Updated dependencies [93d50aa]
 - Updated dependencies [93d50aa]
-  - @electric-sql/pglite-react@1.0.0
+  - @electric-sql/pglite-react@0.4.0
   - @electric-sql/pglite@0.5.0
 
 ## 0.3.6
