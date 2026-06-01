@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-pgvector",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "pgvector extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",

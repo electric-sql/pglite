@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 1.0.0
+
+### Minor Changes
+
+- 93d50aa: Upgrade to Postgres 18.3; move other extensions to their own npm packages;
+- 93d50aa: Upgraded to PostgreSQL 18.3
+
 ## 0.4.6
 
 ### Patch Changes
