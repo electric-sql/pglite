@@ -5,11 +5,7 @@ import {
   loadExtensionBundle,
   loadExtensions,
 } from './extensionUtils.js'
-import {
-  type Filesystem,
-  loadFs,
-  parseDataDir,
-} from './fs/index.js'
+import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -453,7 +449,6 @@ export class PGlite
           if (mod.PGLITE_ENV) {
             Object.assign(mod.ENV, mod.PGLITE_ENV)
           }
-
         },
         (mod: PostgresMod) => {
           mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
