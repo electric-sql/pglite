@@ -18,8 +18,8 @@ describe(`postgis`, () => {
       })
     }
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
-    // await pg.exec('CREATE EXTENSION postgis_raster;')
-    await pg.exec('CREATE EXTENSION postgis_topology;')
+    // await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_raster;')
+    // await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')
   })
   afterEach(async () => {
     if (!pg.closed) {
@@ -282,6 +282,10 @@ WHERE ST_Within(c.location, s.geom);`)
   })
 
   it('GDAL simple', async () => {
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_raster;')
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')      
+
     await pg.exec(`
   -- enable GDAL drivers (session or DB-level)
 SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';
