@@ -284,7 +284,7 @@ WHERE ST_Within(c.location, s.geom);`)
   it('GDAL simple', async () => {
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis;')
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_raster;')
-    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')      
+    await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')
 
     await pg.exec(`
   -- enable GDAL drivers (session or DB-level)
