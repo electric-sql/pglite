@@ -1,5 +1,13 @@
 # @electric-sql/pglite-vue
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [930e2d0]
+  - @electric-sql/pglite@0.5.1
+  - @electric-sql/pglite-pgvector@0.0.2
+
 ## 0.4.0
 
 ### Minor Changes
