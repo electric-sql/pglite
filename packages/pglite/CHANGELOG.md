@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.5.1
+
+### Patch Changes
+
+- 930e2d0: fix PGlite version; redeploy external extensions
+
 ## 0.5.0
 
 ### Minor Changes
