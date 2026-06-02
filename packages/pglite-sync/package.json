@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-sync",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "description": "Postgres Sync for PGlite",
   "type": "module",
   "private": false,
@@ -73,6 +73,6 @@
     "vitest": "^2.1.2"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:0.4.6"
+    "@electric-sql/pglite": "workspace:0.5.0"
   }
 }

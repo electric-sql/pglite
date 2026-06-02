@@ -1,5 +1,13 @@
 # @electric-sql/pglite-prepopulatedfs
 
+## 0.5.0
+
+### Minor Changes
+
+- 93d50aa: Align version with `@electric-sql/pglite` via Changesets fixed group and declare a peer dependency on the matching pglite release.
+- Updated dependencies [93d50aa]
+  - @electric-sql/pglite@0.5.0
+
 ## 0.4.6
 
 ### Patch Changes

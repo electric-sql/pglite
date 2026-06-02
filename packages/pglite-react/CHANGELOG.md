@@ -1,5 +1,13 @@
 # @electric-sql/pglite-react
 
+## 0.4.0
+
+### Minor Changes
+
+- 93d50aa: Upgrade to Postgres 18.3; move other extensions to their own npm packages;
+- Updated dependencies [93d50aa]
+  - @electric-sql/pglite@0.5.0
+
 ## 0.3.6
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @electric-sql/pglite-socket
 
+## 0.2.0
+
+### Minor Changes
+
+- 93d50aa: Upgrade to Postgres 18.3; move other extensions to their own npm packages;
+- Updated dependencies [93d50aa]
+- Updated dependencies [93d50aa]
+  - @electric-sql/pglite@0.5.0
+  - @electric-sql/pglite-age@0.0.1
+  - @electric-sql/pglite-pg_hashids@0.0.1
+  - @electric-sql/pglite-pg_ivm@0.0.1
+  - @electric-sql/pglite-pg_textsearch@0.0.1
+  - @electric-sql/pglite-pg_uuidv7@0.0.1
+  - @electric-sql/pglite-pgtap@0.0.1
+  - @electric-sql/pglite-pgvector@0.0.1
+
 ## 0.1.6
 
 ### Patch Changes
