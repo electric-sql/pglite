@@ -60,7 +60,7 @@ jobs:
 
       - name: Get PGlite version
         id: pglite-version
-        run: echo "version=$(pnpm -s pglite:version)" >> $GITHUB_OUTPUT"
+        run: echo "version=$(pnpm -s pglite:version)" >> "$GITHUB_OUTPUT"
 
       - name: Cache WASM build artifacts
         id: postgres-pglite-cache
