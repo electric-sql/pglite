@@ -60,56 +60,6 @@
         "default": "./dist/worker/index.cjs"
       }
     },
-    "./vector": {
-      "import": {
-        "types": "./dist/vector/index.d.ts",
-        "default": "./dist/vector/index.js"
-      },
-      "require": {
-        "types": "./dist/vector/index.d.cts",
-        "default": "./dist/vector/index.cjs"
-      }
-    },
-    "./pg_ivm": {
-      "import": {
-        "types": "./dist/pg_ivm/index.d.ts",
-        "default": "./dist/pg_ivm/index.js"
-      },
-      "require": {
-        "types": "./dist/pg_ivm/index.d.cts",
-        "default": "./dist/pg_ivm/index.cjs"
-      }
-    },
-    "./pgtap": {
-      "import": {
-        "types": "./dist/pgtap/index.d.ts",
-        "default": "./dist/pgtap/index.js"
-      },
-      "require": {
-        "types": "./dist/pgtap/index.d.cts",
-        "default": "./dist/pgtap/index.cjs"
-      }
-    },
-    "./pg_uuidv7": {
-      "import": {
-        "types": "./dist/pg_uuidv7/index.d.ts",
-        "default": "./dist/pg_uuidv7/index.js"
-      },
-      "require": {
-        "types": "./dist/pg_uuidv7/index.d.cts",
-        "default": "./dist/pg_uuidv7/index.cjs"
-      }
-    },
-    "./age": {
-      "import": {
-        "types": "./dist/age/index.d.ts",
-        "default": "./dist/age/index.js"
-      },
-      "require": {
-        "types": "./dist/age/index.d.cts",
-        "default": "./dist/age/index.cjs"
-      }
-    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
@@ -144,26 +94,6 @@
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
-    },
-    "./pg_hashids": {
-      "import": {
-        "types": "./dist/pg_hashids/index.d.ts",
-        "default": "./dist/pg_hashids/index.js"
-      },
-      "require": {
-        "types": "./dist/pg_hashids/index.d.cts",
-        "default": "./dist/pg_hashids/index.cjs"
-      }
-    },
-    "./pg_textsearch": {
-      "import": {
-        "types": "./dist/pg_textsearch/index.d.ts",
-        "default": "./dist/pg_textsearch/index.js"
-      },
-      "require": {
-        "types": "./dist/pg_textsearch/index.d.cts",
-        "default": "./dist/pg_textsearch/index.cjs"
-      }
     }
   },
   "type": "module",
