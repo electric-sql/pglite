@@ -58,6 +58,10 @@ jobs:
         id: postgres-pglite-commit-id
         run: echo "hash=$(git rev-parse HEAD:postgres-pglite)" >> "$GITHUB_OUTPUT"
 
+      - name: Get PGlite version
+        id: pglite-version
+        run: echo "version=$(pnpm -s pglite:version)" >> "$GITHUB_OUTPUT"
+
       - name: Cache WASM build artifacts
         id: postgres-pglite-cache
         uses: actions/cache@v5
@@ -73,7 +77,7 @@ jobs:
             packages/pglite-pg_uuidv7/release
             packages/pglite-postgis/release
             packages/pglite-pgvector/release
-          key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}
+          key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}-pglite-${{ steps.pglite-version.outputs.version }}
 
       - name: Build all if necessary
         if: steps.postgres-pglite-cache.outputs.cache-hit != 'true'
