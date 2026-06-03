@@ -113,9 +113,7 @@ export const types = {
         return x
       } else {
         return JSON_stringify(x, (_, value) =>
-          typeof value === 'bigint'
-            ? value.toString()
-            : value,
+          typeof value === 'bigint' ? value.toString() : value,
         )
       }
     },
