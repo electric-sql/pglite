@@ -770,5 +770,24 @@ await testEsmCjsAndDTC(async (importType) => {
       const re = /\PGlite \d+\.\d+\.\d+\b/
       expect(re.test(version.rows[0].version)).toBeTruthy()
     })
+
+    it('serialize and parse Array<int> and Array<bigint>', async () => {
+      const myint = [{ id: 1 }, { id: 2 }]
+      const mybigint = [{ id: 9007199254740992n }, { id: 9007199254740993n }]
+      await db.exec(`CREATE TABLE IF NOT EXISTS "myint" ("id" int NOT NULL);`)
+      await db.exec(
+        `CREATE TABLE IF NOT EXISTS "mybigint" ("id" bigint NOT NULL);`,
+      )
+      await db.query(
+        `INSERT INTO myint (id) SELECT x.* from json_to_recordset($1) as x(id int); `,
+        [myint],
+      )
+      await db.query(
+        `INSERT INTO mybigint (id) SELECT x.* from json_to_recordset($1) as x(id bigint); `,
+        [mybigint],
+      )
+      const result2 = await db.query('SELECT * FROM mybigint')
+      expect(result2.rows).toEqual(mybigint)
+    })
   })
 })

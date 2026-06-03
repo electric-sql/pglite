@@ -112,7 +112,11 @@ export const types = {
       if (typeof x === 'string') {
         return x
       } else {
-        return JSON_stringify(x)
+        return JSON_stringify(x, (_, value) =>
+          typeof value === 'bigint'
+            ? (globalThis.JSON as any).rawJSON(value.toString())
+            : value,
+        )
       }
     },
     parse: (x: string) => JSON_parse(x),
