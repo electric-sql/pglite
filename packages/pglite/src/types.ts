@@ -114,7 +114,7 @@ export const types = {
       } else {
         return JSON_stringify(x, (_, value) =>
           typeof value === 'bigint'
-            ? (globalThis.JSON as any).rawJSON(value.toString())
+            ? value.toString()
             : value,
         )
       }
