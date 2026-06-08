@@ -75,11 +75,13 @@ export const types = {
   string: {
     to: TEXT,
     from: [TEXT, VARCHAR, BPCHAR],
-    serialize: (x: string | number) => {
+    serialize: (x: string | number | Date) => {
       if (typeof x === 'string') {
         return x
       } else if (typeof x === 'number') {
         return x.toString()
+      } else if (x instanceof Date) {
+        return x.toISOString()
       } else {
         throw new Error('Invalid input for string type')
       }

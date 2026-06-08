@@ -85,6 +85,12 @@ describe('serialize', () => {
     expect(types.serializers[25](1)).toEqual('1')
   })
 
+  it('string from date', () => {
+    expect(types.serializers[25](new Date('2021-01-01T00:00:00.000Z'))).toEqual(
+      '2021-01-01T00:00:00.000Z',
+    )
+  })
+
   it('not string', () => {
     expect(() => types.serializers[25](true)).toThrow()
   })
