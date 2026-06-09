@@ -25,8 +25,9 @@ export interface PGliteForInitdb {
   Module: {
     HEAPU8: Uint8Array
     stringToUTF8OnStack(str: string): number
-    _pgl_freopen(path: number, mode: number, fd: number): void
+    _pgl_freopen(path: number, mode: number, fd: number): number
     FS: any
+    _fclose: (stream: number) => number
   }
   callMain(args: string[]): number
 }
@@ -66,6 +67,9 @@ async function execInitdb({
   let initdb_stdout_fd = -1
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
+
+  let stdinF: number | undefined
+  let stdoutF: number | undefined
 
   const callPgMain = (args: string[]) => {
     const firstArg = args.shift()
@@ -118,18 +122,18 @@ async function execInitdb({
         mod.ENV.LOGNAME = 'postgres'
         mod.ENV.ICU_DATA = ICU_DATA_PATH
       },
-      (mod: InitdbMod) => {
-        mod.onRuntimeInitialized = () => {
-          system_fn = mod.addFunction((cmd_ptr: number) => {
-            postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
+      (initdbMod: InitdbMod) => {
+        initdbMod.onRuntimeInitialized = () => {
+          system_fn = initdbMod.addFunction((cmd_ptr: number) => {
+            postgresArgs = getArgs(initdbMod.UTF8ToString(cmd_ptr))
             return callPgMain(postgresArgs)
           }, 'pi')
 
-          mod._pgl_set_system_fn(system_fn)
+          initdbMod._pgl_set_system_fn(system_fn)
 
-          popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
-            const smode = mod.UTF8ToString(mode)
-            postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
+          popen_fn = initdbMod.addFunction((cmd_ptr: number, mode: number) => {
+            const smode = initdbMod.UTF8ToString(mode)
+            postgresArgs = getArgs(initdbMod.UTF8ToString(cmd_ptr))
 
             if (smode === 'r') {
               pgMainResult = callPgMain(postgresArgs)
@@ -144,9 +148,9 @@ async function execInitdb({
             }
           }, 'ppi')
 
-          mod._pgl_set_popen_fn(popen_fn)
+          initdbMod._pgl_set_popen_fn(popen_fn)
 
-          pclose_fn = mod.addFunction((stream: number) => {
+          pclose_fn = initdbMod.addFunction((stream: number) => {
             if (stream === initdb_stdin_fd || stream === initdb_stdout_fd) {
               // if the last popen had mode w, execute now postgres' main()
               if (needToCallPGmain) {
@@ -155,30 +159,30 @@ async function execInitdb({
               }
               return pgMainResult
             } else {
-              return mod._pclose(stream)
+              return initdbMod._pclose(stream)
             }
           }, 'pi')
 
-          mod._pgl_set_pclose_fn(pclose_fn)
+          initdbMod._pgl_set_pclose_fn(pclose_fn)
 
           {
             const pglite_stdin_path = pg.Module.stringToUTF8OnStack(pgstdinPath)
             const rmode = pg.Module.stringToUTF8OnStack('r')
-            pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
+            stdinF = pg.Module._pgl_freopen(pglite_stdin_path, rmode, 0)
             const pglite_stdout_path =
               pg.Module.stringToUTF8OnStack(pgstdoutPath)
             const wmode = pg.Module.stringToUTF8OnStack('w')
-            pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
+            stdoutF = pg.Module._pgl_freopen(pglite_stdout_path, wmode, 1)
           }
 
           {
-            const initdb_path = mod.stringToUTF8OnStack(pgstdoutPath)
-            const rmode = mod.stringToUTF8OnStack('r')
-            initdb_stdin_fd = mod._fopen(initdb_path, rmode)
+            const initdb_path = initdbMod.stringToUTF8OnStack(pgstdoutPath)
+            const rmode = initdbMod.stringToUTF8OnStack('r')
+            initdb_stdin_fd = initdbMod._fopen(initdb_path, rmode)
 
-            const path = mod.stringToUTF8OnStack(pgstdinPath)
-            const wmode = mod.stringToUTF8OnStack('w')
-            initdb_stdout_fd = mod._fopen(path, wmode)
+            const path = initdbMod.stringToUTF8OnStack(pgstdinPath)
+            const wmode = initdbMod.stringToUTF8OnStack('w')
+            initdb_stdout_fd = initdbMod._fopen(path, wmode)
           }
         }
       },
@@ -200,6 +204,17 @@ async function execInitdb({
 
   log(debug, 'calling initdb.main with', args)
   const result = initDbMod.callMain(args)
+
+  if (stdinF) {
+    pg.Module._fclose(stdinF)
+  }
+
+  if (stdoutF) {
+    pg.Module._fclose(stdoutF)
+  }
+
+  pg.Module.FS.unlink(pgstdinPath)
+  pg.Module.FS.unlink(pgstdoutPath)
 
   return {
     exitCode: result,

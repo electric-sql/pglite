@@ -517,7 +517,7 @@ export class PGlite
       await this.#fillIcuDataDir(options.icuDataDir)
     }
 
-    if (!options.noInitDb) {
+    // if (!options.noInitDb) {
       // If the user has provided a tarball to load the database from, do that now.
       // We do this after the initial sync so that we can throw if the database
       // already exists.
@@ -533,17 +533,18 @@ export class PGlite
           this.#log('pglite: found DB, resuming')
         } else {
           this.#log('pglite: no db in filesystem, running initdb')
-
-          const pgInitDbOpts = { ...options }
-          pgInitDbOpts.noInitDb = true
-          pgInitDbOpts.dataDir = undefined
-          pgInitDbOpts.extensions = undefined
-          pgInitDbOpts.loadDataDir = undefined
-          const pg_initDb = await PGlite.create(pgInitDbOpts)
+          const heapU8 = this.mod.HEAPU8.slice()
+          // const pgInitDbOpts = { ...options }
+          // pgInitDbOpts.noInitDb = true
+          // pgInitDbOpts.dataDir = undefined
+          // pgInitDbOpts.extensions = undefined
+          // pgInitDbOpts.loadDataDir = undefined
+          // const pg_initDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
           const initdbResult = await initdb({
-            pg: pg_initDb,
+            // pg: pg_initDb,
+            pg: this,
             debug: options.debug,
             wasmModule: options.initdbWasmModule,
             args: options.initDbStartParams,
@@ -557,15 +558,18 @@ export class PGlite
             }
           }
 
-          const pgdatatar = await pg_initDb.dumpDataDir('none')
-          pg_initDb.close()
-          await loadTar(this.mod.FS, pgdatatar, PGDATA)
+          // const pgdatatar = await pg_initDb.dumpDataDir('none')
+          // pg_initDb.close()
+          // await loadTar(this.mod.FS, pgdatatar, PGDATA)
 
           // Sync any changes back to the persisted store (if there is one)
           // TODO: only sync here if initdb did init db.
           await this.syncToFs()
+
+          this.mod.HEAPU8.set(heapU8)
         }
       }
+
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
@@ -594,7 +598,7 @@ export class PGlite
       for (const initFn of extensionInitFns) {
         await initFn()
       }
-    }
+    // }
 
     if (globalThis.process?.env) {
       process.exitCode = prevExitCode
