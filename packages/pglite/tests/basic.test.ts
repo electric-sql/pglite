@@ -789,5 +789,39 @@ await testEsmCjsAndDTC(async (importType) => {
       const result2 = await db.query('SELECT * FROM mybigint')
       expect(result2.rows).toEqual(mybigint)
     })
+
+    it('serialize with no concrete type', async () => {
+      const theDate = '2024-01-15T12:34:56.000Z'
+      const date = new Date(theDate)
+      const res1 = await db.query(
+        'select $1 as number, $2 as date, $3 as bool',
+        [42, date, true],
+      )
+
+      expect(res1).toEqual({
+        rows: [
+          {
+            number: '42',
+            date: theDate,
+            bool: 'true',
+          },
+        ],
+        fields: [
+          {
+            name: 'number',
+            dataTypeID: 25,
+          },
+          {
+            name: 'date',
+            dataTypeID: 25,
+          },
+          {
+            name: 'bool',
+            dataTypeID: 25,
+          },
+        ],
+        affectedRows: 0,
+      })
+    })
   })
 })

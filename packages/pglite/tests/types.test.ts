@@ -85,10 +85,6 @@ describe('serialize', () => {
     expect(types.serializers[25](1)).toEqual('1')
   })
 
-  it('not string', () => {
-    expect(() => types.serializers[25](true)).toThrow()
-  })
-
   it('number', () => {
     expect(types.serializers[0](1)).toEqual('1')
     expect(types.serializers[0](1.1)).toEqual('1.1')
