@@ -518,86 +518,86 @@ export class PGlite
     }
 
     // if (!options.noInitDb) {
-      // If the user has provided a tarball to load the database from, do that now.
-      // We do this after the initial sync so that we can throw if the database
-      // already exists.
-      if (options.loadDataDir) {
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          throw new Error('Database already exists, cannot load from tarball')
-        }
-        this.#log('pglite: loading data from tarball')
-        await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    // If the user has provided a tarball to load the database from, do that now.
+    // We do this after the initial sync so that we can throw if the database
+    // already exists.
+    if (options.loadDataDir) {
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        throw new Error('Database already exists, cannot load from tarball')
+      }
+      this.#log('pglite: loading data from tarball')
+      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    } else {
+      // Check if the database exists in the file system, if not we run initdb
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        this.#log('pglite: found DB, resuming')
       } else {
-        // Check if the database exists in the file system, if not we run initdb
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          this.#log('pglite: found DB, resuming')
-        } else {
-          this.#log('pglite: no db in filesystem, running initdb')
-          const heapU8 = this.mod.HEAPU8.slice()
-          // const pgInitDbOpts = { ...options }
-          // pgInitDbOpts.noInitDb = true
-          // pgInitDbOpts.dataDir = undefined
-          // pgInitDbOpts.extensions = undefined
-          // pgInitDbOpts.loadDataDir = undefined
-          // const pg_initDb = await PGlite.create(pgInitDbOpts)
+        this.#log('pglite: no db in filesystem, running initdb')
+        const heapU8 = this.mod.HEAPU8.slice()
+        // const pgInitDbOpts = { ...options }
+        // pgInitDbOpts.noInitDb = true
+        // pgInitDbOpts.dataDir = undefined
+        // pgInitDbOpts.extensions = undefined
+        // pgInitDbOpts.loadDataDir = undefined
+        // const pg_initDb = await PGlite.create(pgInitDbOpts)
 
-          // Initialize the database
-          const initdbResult = await initdb({
-            // pg: pg_initDb,
-            pg: this,
-            debug: options.debug,
-            wasmModule: options.initdbWasmModule,
-            args: options.initDbStartParams,
-          })
+        // Initialize the database
+        const initdbResult = await initdb({
+          // pg: pg_initDb,
+          pg: this,
+          debug: options.debug,
+          wasmModule: options.initdbWasmModule,
+          args: options.initDbStartParams,
+        })
 
-          if (initdbResult.exitCode !== 0) {
-            if (!initdbResult.stderr.includes('exists but is not empty')) {
-              throw new Error(
-                'INITDB failed to initialize: ' + initdbResult.stderr,
-              )
-            }
+        if (initdbResult.exitCode !== 0) {
+          if (!initdbResult.stderr.includes('exists but is not empty')) {
+            throw new Error(
+              'INITDB failed to initialize: ' + initdbResult.stderr,
+            )
           }
-
-          // const pgdatatar = await pg_initDb.dumpDataDir('none')
-          // pg_initDb.close()
-          // await loadTar(this.mod.FS, pgdatatar, PGDATA)
-
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
-
-          this.mod.HEAPU8.set(heapU8)
         }
+
+        // const pgdatatar = await pg_initDb.dumpDataDir('none')
+        // pg_initDb.close()
+        // await loadTar(this.mod.FS, pgdatatar, PGDATA)
+
+        // Sync any changes back to the persisted store (if there is one)
+        // TODO: only sync here if initdb did init db.
+        await this.syncToFs()
+
+        this.mod.HEAPU8.set(heapU8)
       }
+    }
 
-      // Start compiling dynamic extensions present in FS.
-      await loadExtensions(this.mod, (...args) => this.#log(...args))
+    // Start compiling dynamic extensions present in FS.
+    await loadExtensions(this.mod, (...args) => this.#log(...args))
 
-      this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
+    this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
-      this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({
-        pgDataFolder: PGDATA,
-        startParams: [
-          ...(options.startParams || PGlite.defaultStartParams),
-          ...(this.debug ? ['-d', this.debug.toString()] : []),
-        ],
-      })
-      this.#setPGliteActive()
+    this.mod!._pgl_setPGliteActive(1)
+    this.#startInSingleMode({
+      pgDataFolder: PGDATA,
+      startParams: [
+        ...(options.startParams || PGlite.defaultStartParams),
+        ...(this.debug ? ['-d', this.debug.toString()] : []),
+      ],
+    })
+    this.#setPGliteActive()
 
-      this.#ready = true
+    this.#ready = true
 
-      if (options.username) {
-        await this.exec(`SET ROLE ${options.username};`)
-      }
+    if (options.username) {
+      await this.exec(`SET ROLE ${options.username};`)
+    }
 
-      // Init array types
-      await this._initArrayTypes()
+    // Init array types
+    await this._initArrayTypes()
 
-      // Init extensions
-      for (const initFn of extensionInitFns) {
-        await initFn()
-      }
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn()
+    }
     // }
 
     if (globalThis.process?.env) {
