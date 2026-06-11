@@ -689,14 +689,7 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      this.#protocolParser.parse(bytes, (msg) => {
-        const parsedMsg = this.#parse(msg)
-        // raw-stream callers never read #currentResults; accumulating here
-        // would grow unbounded until the next execProtocol* call resets it
-        if (parsedMsg && !this.#rawStreamMode) {
-          this.#currentResults.push(parsedMsg)
-        }
-      })
+      this.#handleProtocolWrite(bytes)
       if (this.#keepRawResponse) {
         const copied = bytes.slice()
         if (this.#currentOnRawData) {
@@ -1077,6 +1070,37 @@ export class PGlite
     }
 
     return result
+  }
+
+  // Parse outbound protocol bytes from the WASM write callback.
+  //
+  // On the parsed paths (query/exec/execProtocol*) every message is parsed and
+  // accumulated into #currentResults for the caller to read.
+  //
+  // On the raw-stream path the caller consumes raw bytes via onRawData and
+  // never reads #currentResults, so we never accumulate. The parse is then
+  // load-bearing only for LISTEN/NOTIFY dispatch — errors and notices are not
+  // surfaced on the raw path — so we skip it entirely when no listeners are
+  // registered. It eagerly decodes every DataRow field and can account for
+  // half the latency of a raw-stream query. The gate cannot change mid-query
+  // (execProtocolRawSync is synchronous), so the parser always sees a query's
+  // chunks all-or-nothing.
+  #handleProtocolWrite(bytes: Uint8Array) {
+    if (this.#rawStreamMode) {
+      if (
+        this.#notifyListeners.size !== 0 ||
+        this.#globalNotifyListeners.size !== 0
+      ) {
+        this.#protocolParser.parse(bytes, (msg) => this.#parse(msg))
+      }
+    } else {
+      this.#protocolParser.parse(bytes, (msg) => {
+        const parsedMsg = this.#parse(msg)
+        if (parsedMsg) {
+          this.#currentResults.push(parsedMsg)
+        }
+      })
+    }
   }
 
   #parse(msg: BackendMessage) {
