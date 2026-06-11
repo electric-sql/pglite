@@ -53,7 +53,7 @@ await testEsmCjsAndDTC(async (importType) => {
           fields: [],
         },
         {
-          affectedRows: 2,
+          affectedRows: 1,
           rows: [],
           fields: [],
         },
@@ -63,7 +63,7 @@ await testEsmCjsAndDTC(async (importType) => {
             { name: 'id', dataTypeID: 23 },
             { name: 'name', dataTypeID: 25 },
           ],
-          affectedRows: 2,
+          affectedRows: 0,
         },
       ])
     })

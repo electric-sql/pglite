@@ -50,6 +50,7 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
+  #currentOnBackendMessage: ((result: any) => void) | undefined
 
   get ENV(): any {
     return this.mod?.ENV
@@ -684,7 +685,11 @@ export class PGlite
       this.#protocolParser.parse(bytes, (msg) => {
         const parsedMsg = this.#parse(msg)
         if (parsedMsg) {
-          this.#currentResults.push(parsedMsg)
+          if (this.#currentOnBackendMessage) {
+            this.#currentOnBackendMessage(parsedMsg)
+          } else {
+            this.#currentResults.push(parsedMsg)
+          }
         }
       })
       if (this.#keepRawResponse) {
@@ -843,6 +848,14 @@ export class PGlite
    * @returns The written blob
    */
   async _getWrittenBlob(): Promise<Blob | undefined> {
+    return this._getWrittenBlobSync()
+  }
+
+  /**
+   * Get the written blob from the current query
+   * @returns The written blob
+   */
+  _getWrittenBlobSync(): Blob | undefined {
     if (!this.#queryWriteChunks) {
       return undefined
     }
@@ -1031,9 +1044,11 @@ export class PGlite
   async execProtocolStream(
     message: Uint8Array,
     { syncToFs, throwOnError = true, onNotice }: ExecProtocolOptions = {},
+    onBackendMessage?: (msg: BackendMessage) => void,
   ): Promise<BackendMessage[]> {
     this.#currentThrowOnError = throwOnError
     this.#currentOnNotice = onNotice
+    this.#currentOnBackendMessage = onBackendMessage
     this.#currentResults = []
     this.#currentDatabaseError = null
 
@@ -1046,6 +1061,7 @@ export class PGlite
     const databaseError = this.#currentDatabaseError
     this.#currentThrowOnError = false
     this.#currentOnNotice = undefined
+    this.#currentOnBackendMessage = undefined
     this.#currentDatabaseError = null
     const result = this.#currentResults
     this.#currentResults = []
