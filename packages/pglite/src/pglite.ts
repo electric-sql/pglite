@@ -273,7 +273,7 @@ export class PGlite
   async #init(options: PGliteOptions) {
     // PGlite modifies process.exitCode when it does exit(XX)
     // we need to restore the previous value
-    const prevExitCode = pglUtils.proc.exitCode
+    const prevExitCode = pglUtils.pgliteProc.exitCode
 
     if (options.fs) {
       this.fs = options.fs
@@ -593,7 +593,7 @@ export class PGlite
       }
     }
 
-    pglUtils.proc.exitCode = prevExitCode
+    pglUtils.pgliteProc.exitCode = prevExitCode
   }
 
   #handlePostgresqlConf(
@@ -899,7 +899,7 @@ export class PGlite
       return result
     }
 
-    const prevExitCode = pglUtils.proc.exitCode
+    const prevExitCode = pglUtils.pgliteProc.exitCode
 
     // execute the message
     try {
@@ -931,7 +931,7 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
-      pglUtils.proc.exitCode = prevExitCode
+      pglUtils.pgliteProc.exitCode = prevExitCode
     }
 
     this.#outputData = []
