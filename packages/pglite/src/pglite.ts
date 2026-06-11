@@ -92,6 +92,9 @@ export class PGlite
   #currentThrowOnError: boolean = false
   #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
   #currentOnRawData: ((data: Uint8Array) => void) | undefined
+  // true while execProtocolRawStream() is executing; raw-stream callers
+  // consume raw bytes via onRawData and never read #currentResults
+  #rawStreamMode: boolean = false
 
   // send data to wasm
   #pglite_socket_read: number = -1
@@ -688,7 +691,9 @@ export class PGlite
       }
       this.#protocolParser.parse(bytes, (msg) => {
         const parsedMsg = this.#parse(msg)
-        if (parsedMsg) {
+        // raw-stream callers never read #currentResults; accumulating here
+        // would grow unbounded until the next execProtocol* call resets it
+        if (parsedMsg && !this.#rawStreamMode) {
           this.#currentResults.push(parsedMsg)
         }
       })
@@ -993,7 +998,12 @@ export class PGlite
     { syncToFs = true, onRawData }: ExecProtocolOptionsStream,
   ) {
     this.#currentOnRawData = onRawData
-    this.execProtocolRawSync(message)
+    this.#rawStreamMode = true
+    try {
+      this.execProtocolRawSync(message)
+    } finally {
+      this.#rawStreamMode = false
+    }
     if (syncToFs) {
       await this.syncToFs()
     }
