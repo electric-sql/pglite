@@ -19,7 +19,7 @@ export async function startArtifactDownload(url: URL) {
 const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
 export const pgliteProc =
-  (globalThis && typeof globalThis.process) !== 'undefined'
+  (globalThis && typeof globalThis.process !== 'undefined')
     ? globalThis.process
     : { exitCode: undefined }
 
