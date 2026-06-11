@@ -18,7 +18,10 @@ export async function startArtifactDownload(url: URL) {
 // compile them on subsequent calls.
 const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
-export const proc = typeof globalThis.process !== 'undefined' ? globalThis.process : { exitCode: undefined };
+export const proc =
+  typeof globalThis.process !== 'undefined'
+    ? globalThis.process
+    : { exitCode: undefined }
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
