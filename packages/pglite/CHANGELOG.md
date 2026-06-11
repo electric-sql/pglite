@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.5.2
+
+### Patch Changes
+
+- 21fc995: fix serializing arrays of BigInts
+- 0720cb6: Alow serializing untyped parameters
+- e09535f: add pg_stat_statements.tar.gz to main package
+- a4e163a: fix process exit code set/restore
+
 ## 0.5.1
 
 ### Patch Changes

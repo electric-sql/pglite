@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-pg_ivm",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "pg_ivm extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
