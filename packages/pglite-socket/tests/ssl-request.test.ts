@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { PGLiteSocketHandler } from '../src'
+import {
+  PGLiteSocketHandler,
+  SSL_REQUEST_CODE,
+  SSL_REQUEST_LENGTH,
+} from '../src'
 
 /** Second Int32 of SSLRequest — https://www.postgresql.org/docs/current/protocol-message-formats.html */
-const PG_PROTOCOL_SSL_REQUEST_CODE = 80877103
 
 function createNetSocketStub() {
   const eventHandlers: Record<string, Array<(data?: unknown) => void>> = {}
@@ -63,9 +66,9 @@ describe('PGLiteSocketHandler PostgreSQL SSLRequest (protocol-message-formats)',
   it("consumes SSLRequest (8 bytes) and writes 'N' without queueing PGlite protocol", async () => {
     await handler.attach(socketStub)
 
-    const sslRequest = Buffer.alloc(8)
-    sslRequest.writeInt32BE(8, 0)
-    sslRequest.writeInt32BE(PG_PROTOCOL_SSL_REQUEST_CODE, 4)
+    const sslRequest = Buffer.alloc(SSL_REQUEST_LENGTH)
+    sslRequest.writeInt32BE(SSL_REQUEST_LENGTH, 0)
+    sslRequest.writeInt32BE(SSL_REQUEST_CODE, 4)
     socketStub.emit('data', sslRequest)
 
     await flushEventLoop()

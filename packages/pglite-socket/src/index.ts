@@ -3,6 +3,8 @@ import { type Server, type Socket, createServer } from 'net'
 
 // Connection queue timeout in milliseconds
 export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
+export const SSL_REQUEST_CODE = 80877103
+export const SSL_REQUEST_LENGTH = 8
 
 /**
  * Represents a queued query waiting for PGlite access
@@ -325,6 +327,25 @@ export class PGLiteSocketHandler extends EventTarget {
     return this.socket !== null
   }
 
+  private handleSslRequest(): boolean {
+    if (this.messageBuffer.length < SSL_REQUEST_LENGTH) {
+      return false
+    }
+
+    const len = this.messageBuffer.readInt32BE(0)
+    const code = this.messageBuffer.readInt32BE(4)
+
+    if (len === SSL_REQUEST_LENGTH && code === SSL_REQUEST_CODE) {
+      if (this.socket?.writable) {
+        this.socket.write(Buffer.from('N'))
+      }
+      this.messageBuffer = this.messageBuffer.slice(SSL_REQUEST_LENGTH)
+      return true
+    }
+
+    return false
+  }
+
   private async handleData(data: Buffer): Promise<number> {
     if (!this.socket || !this.active) {
       this.log(`handleData: no active socket, ignoring data`)
@@ -343,21 +364,8 @@ export class PGLiteSocketHandler extends EventTarget {
       let totalProcessed = 0
 
       while (this.messageBuffer.length > 0) {
-        // SSLRequest: first Int32 is length (8); second Int32 is fixed 80877103.
-        // This and other frontend/backend message layouts are specified in PostgreSQL docs:
-        // https://www.postgresql.org/docs/current/protocol-message-formats.html
-        // Rules: server must reply 'S' or 'N' before the client sends StartupMessage.
-        // pglite-socket has no TLS/SSL, so always 'N' (decline SSL).
-        if (this.messageBuffer.length >= 8) {
-          const len = this.messageBuffer.readInt32BE(0)
-          const code = this.messageBuffer.readInt32BE(4)
-          if (len === 8 && code === 80877103) {
-            if (this.socket?.writable) {
-              this.socket.write(Buffer.from('N'))
-            }
-            this.messageBuffer = this.messageBuffer.slice(8)
-            continue
-          }
+        if (this.handleSslRequest()) {
+          continue
         }
 
         // Determine message length
