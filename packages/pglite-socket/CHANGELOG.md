@@ -1,5 +1,11 @@
 # @electric-sql/pglite-socket
 
+## 0.2.3
+
+### Patch Changes
+
+- 7f6ee05: Handle the `SSLRequest` startup packet per the PostgreSQL wire protocol: when SSL is not available, respond with `N` so the client may continue with a cleartext `StartupMessage`. Improves interoperability with JDBC clients such as DBeaver that probe TLS first without requiring manual SSL mode tweaks. See https://www.postgresql.org/docs/current/protocol-message-formats.html .
+
 ## 0.2.2
 
 ### Patch Changes
