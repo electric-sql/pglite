@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.5.3
+
+### Patch Changes
+
+- 2ccbb4c: Improve parsing/raw results handling
+
 ## 0.5.2
 
 ### Patch Changes
