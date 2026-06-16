@@ -703,7 +703,7 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      return this.#onData!(bytes.slice())
+      return this.#onData!(bytes)
     }, 'iii')
 
     // set the read callback
@@ -732,7 +732,8 @@ export class PGlite
   }
 
   #defaultOnData(bytes: Uint8Array): number {
-    let requiredSize = this.#writeOffset + bytes.length
+    const copied = bytes.slice()
+    let requiredSize = this.#writeOffset + copied.length
     if (requiredSize > this.#inputData.length) {
       const newSize =
         this.#inputData.length + (this.#inputData.length >> 1) + requiredSize
@@ -743,9 +744,9 @@ export class PGlite
       newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
       this.#inputData = newBuffer
     }
-    this.#inputData.set(bytes, this.#writeOffset)
-    this.#writeOffset += bytes.length
-    return this.#parseData(bytes)
+    this.#inputData.set(copied, this.#writeOffset)
+    this.#writeOffset += copied.length
+    return this.#parseData(copied)
   }
 
   #parseData(bytes: Uint8Array): number {
