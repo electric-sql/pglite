@@ -1670,4 +1670,97 @@ describe('pglite-sync', () => {
 
     shape.unsubscribe()
   })
+
+  it('handles camelCase column names with json_to_recordset', async () => {
+    await pg.exec(`
+      CREATE TABLE IF NOT EXISTS camel_test (
+        id SERIAL PRIMARY KEY,
+        "firstName" TEXT,
+        "lastName" TEXT
+      );
+    `)
+    await pg.exec(`TRUNCATE camel_test;`)
+
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void> = async (
+      _,
+    ) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessages = (messages) =>
+            cb([
+              ...messages,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: '0',
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'camel_test' },
+      },
+      table: 'camel_test',
+      primaryKey: ['id'],
+      initialInsertMethod: 'json',
+      shapeKey: null,
+    })
+
+    const messages: MultiShapeMessage[] = [
+      {
+        headers: { operation: 'insert' as const },
+        key: 'id1',
+        value: {
+          id: 1,
+          firstName: 'Alice',
+          lastName: 'Smith',
+        },
+        shape: 'shape',
+      },
+      {
+        headers: { operation: 'insert' as const },
+        key: 'id2',
+        value: {
+          id: 2,
+          firstName: 'Bob',
+          lastName: 'Jones',
+        },
+        shape: 'shape',
+      },
+    ]
+
+    await feedMessages(messages)
+
+    await vi.waitUntil(async () => {
+      const result = await pg.sql<{ count: number }>`
+        SELECT COUNT(*) as count FROM camel_test;
+      `
+      return result.rows[0].count === 2
+    })
+
+    const result = await pg.sql`
+      SELECT * FROM camel_test ORDER BY id;
+    `
+    expect(result.rows).toEqual([
+      { id: 1, firstName: 'Alice', lastName: 'Smith' },
+      { id: 2, firstName: 'Bob', lastName: 'Jones' },
+    ])
+
+    shape.unsubscribe()
+  })
 })

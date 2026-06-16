@@ -271,7 +271,7 @@ export async function applyMessagesToTableWithJson({
         SELECT x.* from json_to_recordset($1) as x(${columns
           .map(
             (x) =>
-              `${x.column_name} ${x.udt_name.replace(/^_/, '')}` +
+              `"${x.column_name}" ${x.udt_name.replace(/^_/, '')}` +
               (x.data_type === 'ARRAY' ? `[]` : ''),
           )
           .join(', ')})
