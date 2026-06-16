@@ -71,7 +71,7 @@ async function execPgDump({
             pg.execProtocolRawStream(bytes, {
               onRawData: (bytes) => {
                 bufferedBytes = concat(bufferedBytes, bytes)
-              }
+              },
             })
 
             return length

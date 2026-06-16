@@ -51,7 +51,6 @@ class CurrentQuery {
       results?: BackendMessage[]
       throwOnError?: boolean
       onNotice?: (notice: NoticeMessage) => void
-      // onRawData?: (data: Uint8Array) => void
       databaseError?: DatabaseError | null
     } = {
       results: [],
