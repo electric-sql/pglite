@@ -1,5 +1,13 @@
 # @electric-sql/pglite-tools
 
+## 0.4.3
+
+### Patch Changes
+
+- 2ccbb4c: Improve parsing/raw results handling
+- Updated dependencies [2ccbb4c]
+  - @electric-sql/pglite@0.5.3
+
 ## 0.4.2
 
 ### Patch Changes
