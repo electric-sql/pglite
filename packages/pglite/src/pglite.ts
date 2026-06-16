@@ -1003,7 +1003,7 @@ export class PGlite
     this.#onData = (bytes: Uint8Array) => {
       onRawData(bytes)
       return bytes.length
-    } 
+    }
     this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
