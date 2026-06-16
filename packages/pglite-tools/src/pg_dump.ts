@@ -68,8 +68,12 @@ async function execPgDump({
               console.error('error', e)
               throw e
             }
-            const currentResponse = pg.execProtocolRawSync(bytes)
-            bufferedBytes = concat(bufferedBytes, currentResponse)
+            pg.execProtocolRawStream(bytes, {
+              onRawData: (bytes) => {
+                bufferedBytes = concat(bufferedBytes, bytes)
+              }
+            })
+
             return length
           }, 'iii')
 
