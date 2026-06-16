@@ -732,7 +732,7 @@ export class PGlite
     mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
   }
 
-  #parseData(bytes: Uint8Array): number {
+  #defaultOnData(bytes: Uint8Array): number {
     let requiredSize = this.#writeOffset + bytes.length
     if (requiredSize > this.#inputData.length) {
       const newSize =
@@ -746,10 +746,10 @@ export class PGlite
     }
     this.#inputData.set(bytes, this.#writeOffset)
     this.#writeOffset += bytes.length
-    return this.#onDataParse(bytes)
+    return this.#parseData(bytes)
   }
 
-  #onDataParse(bytes: Uint8Array): number {
+  #parseData(bytes: Uint8Array): number {
     this.#protocolParser.parse(bytes, (msg) => {
       const parsedMsg = this.#parse(msg)
       if (parsedMsg) {
@@ -898,6 +898,10 @@ export class PGlite
     this.#writeOffset = 0
     this.#outputData = message
 
+    if (!this.#onData) {
+      this.#onData = this.#defaultOnData
+    }
+
     if (this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE) {
       // the previous call might have increased the size of the buffer so reset it to its default
       this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
@@ -974,10 +978,6 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
-    if (!this.#onData) {
-      // if there isn't a data cb set, set the default one
-      this.#onData = this.#parseData
-    }
     const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
@@ -1060,7 +1060,7 @@ export class PGlite
 
     // we are only interested in BackendMessage, so it's safe to
     // parse them directly
-    this.#onData = this.#onDataParse
+    this.#onData = this.#parseData
 
     await this.execProtocolRaw(message, { syncToFs })
 
