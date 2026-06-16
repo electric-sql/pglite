@@ -113,7 +113,8 @@
     "!dist/spi.tar.gz",
     "!dist/test_decoding.tar.gz",
     "!dist/vacuumlo.tar.gz",
-    "!dist/xml2.tar.gz"
+    "!dist/xml2.tar.gz",
+    "!dist/postgres_fdw.tar.gz"
   ],
   "repository": {
     "type": "git",

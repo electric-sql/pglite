@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { PGlite } from '../dist/index.js'
 import * as fs from 'fs/promises'
 
 describe('drop database', () => {
+  afterAll(async () => {
+    await fs.rm('./pgdata-test-drop-db', { force: true, recursive: true })
+    await fs.rm('./pgdata-test-drop-db2', { force: true, recursive: true })
+  })
+
   it('should create and drop database', async () => {
     const pg = await PGlite.create()
 
