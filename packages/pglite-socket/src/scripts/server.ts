@@ -21,6 +21,12 @@ const args = parseArgs({
       default: '5432',
       help: 'Port to listen on',
     },
+    wsPort: {
+      type: 'string',
+      short: 'w',
+      default: 'none',
+      help: 'Port to listen on',
+    },
     host: {
       type: 'string',
       short: 'h',
@@ -105,6 +111,7 @@ interface ServerConfig {
   includeDatabaseUrl: boolean
   shutdownTimeout: number
   maxConnections: number
+  wsPort?: number
 }
 
 class PGLiteServerRunner {
@@ -132,6 +139,10 @@ class PGLiteServerRunner {
       includeDatabaseUrl: args.values['include-database-url'] as boolean,
       shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
       maxConnections: parseInt(args.values['max-connections'] as string, 10),
+      wsPort:
+        args.values.wsPort !== 'none'
+          ? parseInt(args.values.wsPort as string)
+          : undefined,
     }
   }
 
@@ -284,6 +295,7 @@ class PGLiteServerRunner {
         path: this.config.path,
         inspect: this.config.debugLevel > 0,
         maxConnections: this.config.maxConnections,
+        wsPort: this.config.wsPort,
       })
 
       // Create subprocess manager

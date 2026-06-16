@@ -1,5 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite'
 import { type Server, type Socket, createServer } from 'net'
+import { WebSocketServer, WebSocket } from 'ws'
 
 // Connection queue timeout in milliseconds
 export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
@@ -177,7 +178,7 @@ export interface PGLiteSocketHandlerOptions {
  */
 export class PGLiteSocketHandler extends EventTarget {
   private queryQueue: QueryQueueManager
-  private socket: Socket | null = null
+  private socket: Socket | WebSocket | null = null
   private active = false
   private closeOnDetach: boolean
   private inspect: boolean
@@ -263,6 +264,58 @@ export class PGLiteSocketHandler extends EventTarget {
     return this
   }
 
+  public async attachWebsocket(
+    webSocket: WebSocket,
+  ): Promise<PGLiteSocketHandler> {
+    this.log(`attach: attaching socket from ${webSocket}`)
+
+    if (this.socket) {
+      throw new Error('webSocket already attached')
+    }
+
+    this.socket = webSocket
+    this.active = true
+    this.lastActivityTime = Date.now()
+
+    // Set up idle timeout if configured
+    if (this.idleTimeout > 0) {
+      this.resetIdleTimer()
+    }
+
+    // Setup event handlers
+    this.log(`attach: setting up socket event handlers`)
+
+    webSocket.on('message', (data) => {
+      this.lastActivityTime = Date.now()
+      this.resetIdleTimer()
+
+      setImmediate(async () => {
+        try {
+          const bufferData = Buffer.isBuffer(data)
+            ? data
+            : Array.isArray(data)
+              ? Buffer.concat(data)
+              : Buffer.from(data)
+          await this.handleData(bufferData)
+        } catch (err) {
+          this.log('socket on data error: ', err)
+          this.handleError(err as Error)
+        }
+      })
+    })
+
+    webSocket.on('error', (err) => {
+      setImmediate(() => this.handleError(err))
+    })
+
+    webSocket.on('close', () => {
+      setImmediate(() => this.handleClose())
+    })
+
+    this.log(`attach: socket handler ready`)
+    return this
+  }
+
   private resetIdleTimer(): void {
     if (this.idleTimeout <= 0) return
 
@@ -302,11 +355,10 @@ export class PGLiteSocketHandler extends EventTarget {
 
     // Close the socket if requested
     if (close ?? this.closeOnDetach) {
-      if (this.socket.writable) {
+      if (PGLiteSocketHandler.socketIsWritable(this.socket)) {
         this.log(`detach: closing socket`)
         try {
-          this.socket.end()
-          this.socket.destroy()
+          PGLiteSocketHandler.#closeSocket(this.socket)
         } catch (err) {
           this.log(`detach: error closing socket:`, err)
         }
@@ -319,6 +371,41 @@ export class PGLiteSocketHandler extends EventTarget {
 
     this.log(`detach: handler cleaned up`)
     return this
+  }
+
+  static #closeSocket(socket: Socket | WebSocket) {
+    if (socket instanceof WebSocket) {
+      socket.close()
+    } else {
+      socket.end()
+      socket.destroy()
+    }
+  }
+
+  static socketIsWritable(socket: Socket | WebSocket) {
+    if (socket instanceof WebSocket) {
+      return socket.readyState === socket.OPEN
+    } else {
+      return socket.writable
+    }
+  }
+
+  write(socket: Socket | WebSocket, data: Uint8Array) {
+    const bufData = Buffer.from(data)
+    if (socket instanceof WebSocket) {
+      socket.send(bufData, (err) => {
+        return err
+      })
+    } else {
+      socket.write(bufData, (err?: any) => {
+        if (err) {
+          this.log(`handleData: error writing to socket:`, err)
+          return err
+        } else {
+          this.log(`handleData: socket sent: ${data.length} bytes`)
+        }
+      })
+    }
   }
 
   public get isAttached(): boolean {
@@ -403,20 +490,13 @@ export class PGLiteSocketHandler extends EventTarget {
             if (
               data.length > 0 &&
               this.socket &&
-              this.socket.writable &&
+              PGLiteSocketHandler.socketIsWritable(this.socket) &&
               this.active
             ) {
               // await new Promise<number>((resolve, reject) => {
               this.log(`handleData: writing response to socket`)
-              if (this.socket?.writable) {
-                this.socket.write(Buffer.from(data), (err?: any) => {
-                  if (err) {
-                    this.log(`handleData: error writing to socket:`, err)
-                    socketWriteError = err
-                  } else {
-                    this.log(`handleData: socket sent: ${data.length} bytes`)
-                  }
-                })
+              if (PGLiteSocketHandler.socketIsWritable(this.socket)) {
+                socketWriteError = this.write(this.socket, data)
               } else {
                 this.log(`handleData: socket no longer writable`)
               }
@@ -532,6 +612,8 @@ export interface PGLiteSocketServerOptions {
   idleTimeout?: number
   /** Maximum concurrent connections (default: 1) */
   maxConnections?: number
+  /** Web socket port to listen on */
+  wsPort?: number
 }
 
 /**
@@ -551,6 +633,8 @@ export class PGLiteSocketServer extends EventTarget {
   private maxConnections: number
   private handlers: Set<PGLiteSocketHandler> = new Set()
   private queryQueue: QueryQueueManager
+  private webSocketServer?: WebSocketServer
+  private wsPort?: number
 
   constructor(options: PGLiteSocketServerOptions) {
     super()
@@ -565,6 +649,9 @@ export class PGLiteSocketServer extends EventTarget {
         this.port = 5432
       }
       this.host = options.host || '127.0.0.1'
+    }
+    if (options.wsPort) {
+      this.wsPort = options.wsPort
     }
     this.inspect = options.inspect ?? false
     this.debug = options.debug ?? false
@@ -601,6 +688,21 @@ export class PGLiteSocketServer extends EventTarget {
     this.server = createServer((socket) => {
       setImmediate(() => this.handleConnection(socket))
     })
+
+    if (this.wsPort) {
+      this.webSocketServer = new WebSocketServer({ port: this.wsPort }) // the webSocket server
+      this.webSocketServer.on('connection', (ws: WebSocket, _req: any) => {
+        this.log(
+          'Received new websocket connection',
+          _req.socket.remoteAddress,
+          _req.socket.remotePort,
+        )
+        this.handleConnection(ws)
+      })
+      this.webSocketServer.on('error', (e) => {
+        this.log('WebSocket server error:', e.toString())
+      })
+    }
 
     this.server.maxConnections = this.maxConnections
 
@@ -681,15 +783,34 @@ export class PGLiteSocketServer extends EventTarget {
     })
   }
 
-  private async handleConnection(socket: Socket): Promise<void> {
-    const clientInfo = {
-      clientAddress: socket.remoteAddress || 'unknown',
-      clientPort: socket.remotePort || 0,
+  private async handleConnection(socket: Socket | WebSocket): Promise<void> {
+    const closeConnection = (message?: string) => {
+      if (socket instanceof WebSocket) {
+        if (message && socket.readyState === WebSocket.OPEN) {
+          socket.send(message)
+        }
+        socket.close()
+        return
+      }
+
+      if (message) {
+        socket.write(Buffer.from(`${message}\n`))
+      }
+      socket.end()
     }
 
-    this.log(
-      `handleConnection: new connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}`,
-    )
+    const clientInfo = {
+      clientAddress: 'unknown',
+      clientPort: 0,
+    }
+
+    if (socket instanceof WebSocket) {
+      this.log(`handleConnection: new websocket connection`)
+    } else {
+      this.log(
+        `handleConnection: new connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}`,
+      )
+    }
     this.log(
       `handleConnection: active connections: ${this.handlers.size}, queued queries: ${this.queryQueue.getQueueLength()}`,
     )
@@ -697,7 +818,7 @@ export class PGLiteSocketServer extends EventTarget {
     if (!this.active) {
       this.log(`handleConnection: server not active, closing connection`)
       try {
-        socket.end()
+        closeConnection()
       } catch (err) {
         this.log(`handleConnection: error closing socket:`, err)
       }
@@ -707,8 +828,7 @@ export class PGLiteSocketServer extends EventTarget {
     // Check connection limit
     if (this.handlers.size >= this.maxConnections) {
       this.log(`handleConnection: max connections reached, rejecting`)
-      socket.write(Buffer.from('Too many connections\n'))
-      socket.end()
+      closeConnection('Too many connections')
       return
     }
 
@@ -747,14 +867,19 @@ export class PGLiteSocketServer extends EventTarget {
     })
 
     try {
-      await handler.attach(socket)
+      if (socket instanceof WebSocket) {
+        await handler.attachWebsocket(socket)
+        socket
+      } else {
+        await handler.attach(socket)
+      }
       this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
     } catch (err) {
       this.log(`handleConnection: error attaching socket:`, err)
       this.handlers.delete(handler)
       this.dispatchEvent(new CustomEvent('error', { detail: err }))
       try {
-        socket.end()
+        closeConnection()
       } catch (closeErr) {
         this.log(`handleConnection: error closing socket:`, closeErr)
       }
