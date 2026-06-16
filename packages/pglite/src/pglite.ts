@@ -40,6 +40,34 @@ import {
 
 import { pglUtils } from '@electric-sql/pglite-utils'
 
+class CurrentQuery {
+  results: BackendMessage[] = []
+  throwOnError: boolean = false
+  onNotice: ((notice: NoticeMessage) => void) | undefined
+  databaseError: DatabaseError | null = null
+
+  constructor(
+    opts: {
+      results?: BackendMessage[]
+      throwOnError?: boolean
+      onNotice?: (notice: NoticeMessage) => void
+      // onRawData?: (data: Uint8Array) => void
+      databaseError?: DatabaseError | null
+    } = {
+      results: [],
+      throwOnError: false,
+      onNotice: undefined,
+      databaseError: null,
+    },
+  ) {
+    this.results = opts.results || []
+    this.throwOnError = opts.throwOnError || false
+    this.onNotice = opts.onNotice
+    this.databaseError =
+      opts.databaseError === undefined ? null : opts.databaseError
+  }
+}
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -50,6 +78,7 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
+  #onData: ((bytes: Uint8Array) => number) | undefined
 
   get ENV(): any {
     return this.mod?.ENV
@@ -88,10 +117,7 @@ export class PGlite
   // receive data from wasm
   #pglite_socket_write: number = -1
 
-  #currentResults: BackendMessage[] = []
-  #currentThrowOnError: boolean = false
-  #currentOnNotice: ((notice: NoticeMessage) => void) | undefined
-  #currentOnRawData: ((data: Uint8Array) => void) | undefined
+  #currentQuery = new CurrentQuery()
 
   // send data to wasm
   #pglite_socket_read: number = -1
@@ -99,10 +125,7 @@ export class PGlite
   #outputData: any = []
   // read index in the buffer
   #readOffset: number = 0
-  #currentDatabaseError: DatabaseError | null = null
 
-  #keepRawResponse: boolean = true
-  // these are needed for point 2 above
   static readonly paths = {
     PG_ROOT,
     PGDATA,
@@ -681,40 +704,7 @@ export class PGlite
         console.error('error', e)
         throw e
       }
-      this.#protocolParser.parse(bytes, (msg) => {
-        const parsedMsg = this.#parse(msg)
-        if (parsedMsg) {
-          this.#currentResults.push(parsedMsg)
-        }
-      })
-      if (this.#keepRawResponse) {
-        const copied = bytes.slice()
-        if (this.#currentOnRawData) {
-          try {
-            this.#currentOnRawData(copied)
-          } catch (e) {
-            // swallow
-            this.#log('Error in onRawData() callback', e)
-          }
-        } else {
-          let requiredSize = this.#writeOffset + copied.length
-          if (requiredSize > this.#inputData.length) {
-            const newSize =
-              this.#inputData.length +
-              (this.#inputData.length >> 1) +
-              requiredSize
-            if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
-              requiredSize = PGlite.MAX_BUFFER_SIZE
-            }
-            const newBuffer = new Uint8Array(newSize)
-            newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
-            this.#inputData = newBuffer
-          }
-          this.#inputData.set(copied, this.#writeOffset)
-          this.#writeOffset += copied.length
-        }
-      }
-      return length
+      return this.#onData!(bytes.slice())
     }, 'iii')
 
     // set the read callback
@@ -741,6 +731,34 @@ export class PGlite
 
     mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
   }
+
+  #parseData(bytes: Uint8Array): number {
+    let requiredSize = this.#writeOffset + bytes.length
+    if (requiredSize > this.#inputData.length) {
+      const newSize =
+        this.#inputData.length + (this.#inputData.length >> 1) + requiredSize
+      if (requiredSize > PGlite.MAX_BUFFER_SIZE) {
+        requiredSize = PGlite.MAX_BUFFER_SIZE
+      }
+      const newBuffer = new Uint8Array(newSize)
+      newBuffer.set(this.#inputData.subarray(0, this.#writeOffset))
+      this.#inputData = newBuffer
+    }
+    this.#inputData.set(bytes, this.#writeOffset)
+    this.#writeOffset += bytes.length
+    return this.#onDataParse(bytes)
+  }
+
+  #onDataParse(bytes: Uint8Array): number {
+    this.#protocolParser.parse(bytes, (msg) => {
+      const parsedMsg = this.#parse(msg)
+      if (parsedMsg) {
+        this.#currentQuery.results.push(parsedMsg)
+      }
+    })
+    return bytes.length
+  }
+
   /**
    * The Postgres Emscripten Module
    */
@@ -880,10 +898,7 @@ export class PGlite
     this.#writeOffset = 0
     this.#outputData = message
 
-    if (
-      this.#keepRawResponse &&
-      this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE
-    ) {
+    if (this.#inputData.length !== PGlite.DEFAULT_RECV_BUF_SIZE) {
       // the previous call might have increased the size of the buffer so reset it to its default
       this.#inputData = new Uint8Array(PGlite.DEFAULT_RECV_BUF_SIZE)
     }
@@ -936,7 +951,7 @@ export class PGlite
 
     this.#outputData = []
 
-    if (this.#keepRawResponse && this.#writeOffset) {
+    if (this.#writeOffset) {
       // reusing the buffer might lead to unexpected behavior if a previous query has a view into the buffer
       // therefore, better return a copy of the response
       return new Uint8Array(this.#inputData.subarray(0, this.#writeOffset))
@@ -959,6 +974,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true }: ExecProtocolOptions = {},
   ) {
+    if (!this.#onData) {
+      // if there isn't a data cb set, set the default one
+      this.#onData = this.#parseData
+    }
     const data = this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
@@ -981,7 +1000,10 @@ export class PGlite
     message: Uint8Array,
     { syncToFs = true, onRawData }: ExecProtocolOptionsStream,
   ) {
-    this.#currentOnRawData = onRawData
+    this.#onData = (bytes: Uint8Array) => {
+      onRawData(bytes)
+      return bytes.length
+    } 
     this.execProtocolRawSync(message)
     if (syncToFs) {
       await this.syncToFs()
@@ -1001,19 +1023,18 @@ export class PGlite
       onNotice,
     }: ExecProtocolOptions = {},
   ): Promise<ExecProtocolResult> {
-    this.#currentThrowOnError = throwOnError
-    this.#currentOnNotice = onNotice
-    this.#currentResults = []
-    this.#currentDatabaseError = null
+    this.#currentQuery = new CurrentQuery({
+      throwOnError,
+      onNotice,
+    })
 
     const data = await this.execProtocolRaw(message, { syncToFs })
 
-    const databaseError = this.#currentDatabaseError
-    this.#currentThrowOnError = false
-    this.#currentOnNotice = undefined
-    this.#currentDatabaseError = null
-    const result = { messages: this.#currentResults, data }
-    this.#currentResults = []
+    const databaseError = this.#currentQuery.databaseError
+    const result = { messages: this.#currentQuery.results, data }
+
+    this.#currentQuery = new CurrentQuery()
+    this.#onData = undefined
 
     if (throwOnError && databaseError) {
       this.#protocolParser = new ProtocolParser() // Reset the parser
@@ -1032,23 +1053,22 @@ export class PGlite
     message: Uint8Array,
     { syncToFs, throwOnError = true, onNotice }: ExecProtocolOptions = {},
   ): Promise<BackendMessage[]> {
-    this.#currentThrowOnError = throwOnError
-    this.#currentOnNotice = onNotice
-    this.#currentResults = []
-    this.#currentDatabaseError = null
+    this.#currentQuery = new CurrentQuery({
+      throwOnError,
+      onNotice,
+    })
 
-    this.#keepRawResponse = false
+    // we are only interested in BackendMessage, so it's safe to
+    // parse them directly
+    this.#onData = this.#onDataParse
 
     await this.execProtocolRaw(message, { syncToFs })
 
-    this.#keepRawResponse = true
+    const databaseError = this.#currentQuery.databaseError
+    const result = this.#currentQuery.results
 
-    const databaseError = this.#currentDatabaseError
-    this.#currentThrowOnError = false
-    this.#currentOnNotice = undefined
-    this.#currentDatabaseError = null
-    const result = this.#currentResults
-    this.#currentResults = []
+    this.#currentQuery = new CurrentQuery()
+    this.#onData = undefined
 
     if (throwOnError && databaseError) {
       this.#protocolParser = new ProtocolParser() // Reset the parser
@@ -1063,10 +1083,10 @@ export class PGlite
     // as soon as there is a db error, we're not interested in the remaining data
     // but since the parser is plugged into the pglite_socket_write callback, we can't just throw
     // and need to ack the messages received from the db
-    if (!this.#currentDatabaseError) {
+    if (!this.#currentQuery.databaseError) {
       if (msg instanceof DatabaseError) {
-        if (this.#currentThrowOnError) {
-          this.#currentDatabaseError = msg
+        if (this.#currentQuery.throwOnError) {
+          this.#currentQuery.databaseError = msg
         }
         // TODO: Do we want to wrap the error in a custom error?
       } else if (msg instanceof NoticeMessage) {
@@ -1074,8 +1094,8 @@ export class PGlite
           // Notice messages are warnings, we should log them
           console.warn(msg)
         }
-        if (this.#currentOnNotice) {
-          this.#currentOnNotice(msg)
+        if (this.#currentQuery.onNotice) {
+          this.#currentQuery.onNotice(msg)
         }
       } else if (msg instanceof NotificationResponseMessage) {
         // We've received a notification, call the listeners
