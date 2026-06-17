@@ -648,7 +648,8 @@ const baseExtensions: Extension[] = [
     importPath: '@electric-sql/pglite-pg_textsearch',
     importName: 'pg_textsearch',
     size: 555509,
-    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_textsearch',
+    npmjsUrl:
+      'https://www.npmjs.com/package/@electric-sql/pglite-pg_textsearch',
   },
   {
     name: 'pg_stat_statements',
@@ -670,7 +671,7 @@ const tags = [
   'postgres extension',
   'pglite plugin',
   'postgres/contrib',
-  'external'
+  'external',
 ] as const
 
 export type Tag = (typeof tags)[number]
