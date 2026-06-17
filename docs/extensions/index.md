@@ -46,6 +46,42 @@ function formatSize(bytes) {
 }
 
 const selectedTag = ref(null)
+const npmCounts = ref({})
+
+function toShortDecimal(x) {
+  return x.toLocaleString('en-US', {
+      // add suffixes for thousands, millions, and billions
+      // the maximum number of decimal places to use
+      maximumFractionDigits: 1,
+      // specify the abbreviations to use for the suffixes
+      notation: 'compact',
+      compactDisplay: 'short'
+    });
+}
+
+function getNpmCount(url) {
+  if (!url) return "n/a"
+  if (npmCounts.value[url] !== undefined) return npmCounts.value[url]
+
+  npmCounts.value[url] = "..."
+  const pkg = url.split("/package/")[1]
+  if (!pkg) {
+    npmCounts.value[url] = "n/a"
+    return npmCounts.value[url]
+  }
+
+  fetch(`https://api.npmjs.org/downloads/point/last-week/${encodeURIComponent(pkg)}`)
+    .then((response) => response.json())
+    .then(({ downloads }) => {
+      npmCounts.value[url] = toShortDecimal(downloads) ?? "n/a"
+    })
+    .catch(() => {
+      npmCounts.value[url] = "n/a"
+    })
+
+  return npmCounts.value[url]
+}
+
 </script>
 
 <style scoped>
@@ -167,6 +203,7 @@ Below is a list of available extensions.
   <a v-else-if="ext.repo" :href="ext.repo" target="_blank">Repo</a>
   <a v-if="ext.docs" :href="ext.docs" target="_blank">Documentation</a>
   <a v-if="ext.homepage" :href="ext.homepage" target="_blank">Homepage</a>
+  <a v-if="ext.npmjsUrl" :href="ext.npmjsUrl" target="_blank">NPM (⤓{{ getNpmCount(ext.npmjsUrl) }})</a>
   <span class="bundle-size" v-if="ext.size">
     Bundle Size: {{ formatSize(ext.size) }}
   </span>
@@ -174,5 +211,4 @@ Below is a list of available extensions.
 <div class="tags">
   <span v-for="tag in ext.tags" :key="tag" class="tag">{{ tag }}</span>
 </div>
-
 </div>
