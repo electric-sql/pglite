@@ -14,11 +14,11 @@ const baseExtensions: Extension[] = [
     shortDescription: 'Open-source vector similarity search for Postgres.',
     featured: true,
     repo: 'https://github.com/pgvector/pgvector',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pgvector',
     importName: 'vector',
-    core: true,
     size: 43953,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgvector',
   },
   {
     name: 'live',
@@ -291,10 +291,11 @@ const baseExtensions: Extension[] = [
     `,
     shortDescription: 'pgTAP',
     docs: 'https://pgtap.org',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pgtap',
     importName: 'pgtap',
     size: 239428,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgtap',
   },
   {
     name: 'pg_uuidv7',
@@ -304,10 +305,11 @@ const baseExtensions: Extension[] = [
     `,
     shortDescription: 'Use the new v7 UUIDs in Postgres',
     docs: 'https://github.com/fboulnois/pg_uuidv7/',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pg_uuidv7',
     importName: 'pg_uuidv7',
     size: 1522,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_uuidv7',
   },
   {
     name: 'pg_walinspect',
@@ -549,10 +551,11 @@ const baseExtensions: Extension[] = [
     shortDescription:
       'Incremental View Maintenance (IVM) feature for PostgreSQL.',
     docs: 'https://github.com/sraoss/pg_ivm',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pg_ivm',
     importName: 'pg_ivm',
     size: 24865,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_ivm',
   },
   {
     name: 'pgcrypto',
@@ -581,10 +584,11 @@ const baseExtensions: Extension[] = [
     shortDescription:
       'Short unique id generator for PostgreSQL, using hashids.',
     docs: 'https://github.com/iCyberon/pg_hashids',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pg_hashids',
     importName: 'pg_hashids',
     size: 4212,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_hashids',
   },
   {
     name: 'Apache AGE',
@@ -603,15 +607,15 @@ const baseExtensions: Extension[] = [
     shortDescription:
       'Leverage a graph database on top of the existing relational databases.',
     docs: 'https://github.com/apache/age',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-age',
     importName: 'age',
     size: 141551,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-age',
   },
   {
     name: 'PostGIS',
     description: `
-      *** EXPERIMENTAL ***
       PostGIS extends the capabilities of the PostgreSQL relational database by adding 
       support for storing, indexing, and querying geospatial data.
 
@@ -623,10 +627,11 @@ const baseExtensions: Extension[] = [
     `,
     shortDescription: 'Storing, indexing, and querying geospatial data.',
     docs: 'postgis.net',
-    tags: ['postgres extension', 'experimental'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-postgis',
     importName: 'postgis',
     size: 19757024,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-postgis',
   },
   {
     name: 'pg_textsearch',
@@ -639,10 +644,12 @@ const baseExtensions: Extension[] = [
       `,
     shortDescription: 'BM25 relevance-ranked full-text search for PostgreSQL.',
     docs: 'https://github.com/timescale/pg_textsearch',
-    tags: ['postgres extension'],
+    tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-pg_textsearch',
     importName: 'pg_textsearch',
     size: 555509,
+    npmjsUrl:
+      'https://www.npmjs.com/package/@electric-sql/pglite-pg_textsearch',
   },
   {
     name: 'pg_stat_statements',
@@ -664,7 +671,7 @@ const tags = [
   'postgres extension',
   'pglite plugin',
   'postgres/contrib',
-  'experimental',
+  'external',
 ] as const
 
 export type Tag = (typeof tags)[number]
@@ -684,6 +691,7 @@ export interface Extension {
   core?: boolean
   npmPackage?: string
   size?: number
+  npmjsUrl?: string
 }
 
 export default {
