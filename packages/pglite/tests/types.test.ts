@@ -94,12 +94,54 @@ describe('serialize', () => {
     expect(types.serializers[20](1n)).toEqual('1')
   })
 
-  it('bool', () => {
+  it('bool true', () => {
     expect(types.serializers[16](true)).toEqual('t')
   })
 
-  it('not bool', () => {
-    expect(() => types.serializers[16]('test')).toThrow()
+  it('bool false', () => {
+    expect(types.serializers[16](false)).toEqual('f')
+  })
+
+  // number 1/0 is what TypeORM's Postgres driver sends for a boolean column (#791)
+  it('bool from number 1', () => {
+    expect(types.serializers[16](1)).toEqual('t')
+  })
+
+  it('bool from number 0', () => {
+    expect(types.serializers[16](0)).toEqual('f')
+  })
+
+  it('bool from number other than 0/1 throws', () => {
+    // Postgres rejects 2::boolean; only the 0/1 literals are valid.
+    expect(() => types.serializers[16](2)).toThrow()
+    expect(() => types.serializers[16](-1)).toThrow()
+    expect(() => types.serializers[16](NaN)).toThrow()
+  })
+
+  // string true literals (case-insensitive, surrounding whitespace trimmed)
+  it('bool from string true literals', () => {
+    for (const s of ['true', 't', 'yes', 'y', 'on', '1', 'TRUE', ' t ']) {
+      expect(types.serializers[16](s)).toEqual('t')
+    }
+  })
+
+  // string false literals — symmetric with the true set
+  it('bool from string false literals', () => {
+    for (const s of ['false', 'f', 'no', 'n', 'off', '0', 'FALSE', ' f ']) {
+      expect(types.serializers[16](s)).toEqual('f')
+    }
+  })
+
+  it('bool from unrecognized string throws', () => {
+    // Matches Postgres' "invalid input syntax for type boolean" rather than
+    // silently coercing an unknown value (e.g. a typo) to false.
+    expect(() => types.serializers[16]('ture')).toThrow()
+    expect(() => types.serializers[16]('maybe')).toThrow()
+    expect(() => types.serializers[16]('')).toThrow()
+  })
+
+  it('bool from non-coercible type throws', () => {
+    expect(() => types.serializers[16]({})).toThrow()
   })
 
   it('date', () => {

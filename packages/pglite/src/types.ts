@@ -117,11 +117,25 @@ export const types = {
   boolean: {
     to: BOOL,
     from: [BOOL],
-    serialize: (x: boolean) => {
-      if (typeof x !== 'boolean') {
-        throw new Error('Invalid input for boolean type')
+    // Mirror PostgreSQL's own boolean input (`boolin`): accept the same true/false
+    // literals Postgres accepts, plus the JS shapes drivers actually send for a
+    // boolean column. TypeORM's Postgres driver serializes booleans to the numbers
+    // 1/0 (see #791), and node-postgres-style params arrive as the strings
+    // 'true'/'false'. Anything Postgres itself would reject (e.g. the number 2, or
+    // 'ture') throws rather than silently coercing to 'f', matching Postgres'
+    // `invalid input syntax for type boolean` instead of corrupting the value.
+    serialize: (x: boolean | number | string) => {
+      if (typeof x === 'boolean') {
+        return x ? 't' : 'f'
+      } else if (typeof x === 'number') {
+        if (x === 1) return 't'
+        if (x === 0) return 'f'
+      } else if (typeof x === 'string') {
+        const s = x.trim().toLowerCase()
+        if (['true', 't', 'yes', 'y', 'on', '1'].includes(s)) return 't'
+        if (['false', 'f', 'no', 'n', 'off', '0'].includes(s)) return 'f'
       }
-      return x ? 't' : 'f'
+      throw new Error('Invalid input for boolean type')
     },
     parse: (x: string) => x === 't',
   },
