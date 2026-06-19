@@ -1,8 +1,19 @@
+// Electron exposes a Node-like `process` (with `process.versions.node`) in its
+// renderer/worker/service-worker contexts, which made `IN_NODE` true there and
+// crashed PGlite on the Node.js fs path (#813). The earlier `!process.versions
+// .electron` guard fixed the renderer but also disabled the Node path in the
+// Electron *main* and *utility* processes, which ARE real Node environments that
+// need it (`process.versions.electron` is set in every Electron process). Key
+// off `process.type` instead: it is 'renderer'/'worker'/'service-worker' only in
+// Electron's web contexts, and 'browser' (main) / 'utility' / undefined (plain
+// Node) wherever a Node fs is actually available.
 export const IN_NODE =
   typeof process === 'object' &&
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string' &&
-  !process.versions.electron
+  !['renderer', 'worker', 'service-worker'].includes(
+    (process as { type?: string }).type ?? '',
+  )
 
 export const WASM_PREFIX = '/pglite'
 
