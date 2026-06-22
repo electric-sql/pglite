@@ -1,6 +1,7 @@
 import { ChangeMessage } from '@electric-sql/client'
 import type { PGliteInterface, Transaction } from '@electric-sql/pglite'
 import type { MapColumns, InsertChangeMessage } from './types'
+import { generateCopyData } from './copy'
 
 export interface ApplyMessageToTableOptions {
   pg: PGliteInterface | Transaction
@@ -294,6 +295,8 @@ export async function applyMessagesToTableWithCopy({
 }: BulkApplyMessagesToTableOptions) {
   if (debug) console.log('applying messages with COPY')
 
+  if (messages.length === 0) return
+
   // Map the messages to the data to be inserted
   const data: Record<string, any>[] = messages.map((message) =>
     mapColumns ? doMapColumns(mapColumns, message) : message.value,
@@ -302,36 +305,41 @@ export async function applyMessagesToTableWithCopy({
   // Get column names from the first message
   const columns = Object.keys(data[0])
 
-  // Create CSV data
-  const csvData = data
-    .map((message) => {
-      return columns
-        .map((column) => {
-          const value = message[column]
-          // Escape double quotes and wrap in quotes if necessary
-          if (
-            typeof value === 'string' &&
-            (value.includes(',') || value.includes('"') || value.includes('\n'))
-          ) {
-            return `"${value.replace(/"/g, '""')}"`
-          }
-          return value === null ? '\\N' : value
-        })
-        .join(',')
-    })
-    .join('\n')
-  const csvBlob = new Blob([csvData], { type: 'text/csv' })
+  // Look up the target column types. This is only needed to disambiguate
+  // json/jsonb columns (whose parsed values can be plain JS arrays/objects,
+  // indistinguishable from SQL arrays by runtime type alone).
+  const columnTypes = Object.fromEntries(
+    (
+      await pg.query<{ column_name: string; udt_name: string }>(
+        `
+          SELECT column_name, udt_name
+          FROM information_schema.columns
+          WHERE table_name = $1 AND table_schema = $2
+        `,
+        [table, schema],
+      )
+    ).rows.map((c) => [c.column_name, c.udt_name]),
+  )
 
-  // Perform COPY FROM
+  // Serialize the rows using Postgres' own COPY TEXT format. This faithfully
+  // reproduces the backend's CopyAttributeOutText / array_out algorithms, so
+  // every built-in type — booleans, numbers, arrays, json/jsonb, timestamps,
+  // bytea, strings with embedded delimiters/newlines, etc. — round-trips
+  // correctly (the previous ad-hoc CSV encoding did not).
+  const copyData = generateCopyData(data, columns, columnTypes)
+  const copyBlob = new Blob([copyData], { type: 'text/plain' })
+
+  // Perform COPY FROM. TEXT is the default format; its default delimiter is a
+  // tab and its default NULL marker is \N, both of which generateCopyData uses.
   await pg.query(
     `
       COPY "${schema}"."${table}" (${columns.map((c) => `"${c}"`).join(', ')})
       FROM '/dev/blob'
-      WITH (FORMAT csv, NULL '\\N')
+      WITH (FORMAT text)
     `,
     [],
     {
-      blob: csvBlob,
+      blob: copyBlob,
     },
   )
 
