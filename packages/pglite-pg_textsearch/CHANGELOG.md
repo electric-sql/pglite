@@ -1,5 +1,11 @@
 # @electric-sql/pglite-pg_textsearch
 
+## 0.0.5
+
+### Patch Changes
+
+- 14ba7bf: Upgrade to 1.3.1
+
 ## 0.0.4
 
 ### Patch Changes
