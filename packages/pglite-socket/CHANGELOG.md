@@ -1,5 +1,12 @@
 # @electric-sql/pglite-socket
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [14ba7bf]
+  - @electric-sql/pglite-pg_textsearch@0.0.5
+
 ## 0.2.4
 
 ### Patch Changes
