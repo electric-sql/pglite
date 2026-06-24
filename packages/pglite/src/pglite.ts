@@ -17,6 +17,8 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
+  QueryOptions,
+  Results,
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
@@ -62,6 +64,7 @@ export class PGlite
   #pglite_hlp_shmem: number = -1
   #shmemAddr: number | undefined = undefined
   #shmemLength: number | undefined = undefined
+  #backendMod: PostgresMod | undefined
 
   get isBackend(): boolean {
     return this.childType === 1
@@ -801,6 +804,16 @@ export class PGlite
     }
   }
 
+  async backendExec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+    if (this.isPostmaster) {
+      const db = this.#childProcesses.find(cp => (cp as PGlite).isBackend)
+      if (db) {
+        return (db as PGlite).exec(query, options)
+      }
+    }
+    throw new Error('Crap')
+  }
+
   async #createPostmaster(options: PGliteOptions<Extensions>) {
     if (options.fs) {
       this.fs = options.fs
@@ -967,6 +980,8 @@ export class PGlite
       this.#running = true
 
       this.#ready = true
+
+      this.#backendMod = this.#childProcesses.find(cp => cp.childType === 1)!.Module
     }
   }
 
@@ -1376,7 +1391,7 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const mod = this.mod!
+    const mod = this.#backendMod ?? this.mod!
 
     this.#readOffset = 0
     this.#writeOffset = 0
