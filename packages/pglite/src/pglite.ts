@@ -804,9 +804,12 @@ export class PGlite
     }
   }
 
-  async backendExec(query: string, options?: QueryOptions): Promise<Array<Results>> {
+  async backendExec(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<Array<Results>> {
     if (this.isPostmaster) {
-      const db = this.#childProcesses.find(cp => (cp as PGlite).isBackend)
+      const db = this.#childProcesses.find((cp) => (cp as PGlite).isBackend)
       if (db) {
         return (db as PGlite).exec(query, options)
       }
@@ -981,7 +984,9 @@ export class PGlite
 
       this.#ready = true
 
-      this.#backendMod = this.#childProcesses.find(cp => cp.childType === 1)!.Module
+      this.#backendMod = this.#childProcesses.find(
+        (cp) => cp.childType === 1,
+      )!.Module
     }
   }
 
