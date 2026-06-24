@@ -7,12 +7,15 @@ it('exec', async () => {
     singleMode: false,
     debug: 5,
   })
-  await db.backendExec(`
+  const result = await db.backendExec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     name TEXT
   );
+  INSERT INTO test (name) VALUES ('test');
+  SELECT * FROM test;  
 `)
+  console.log(result)
 })
 
 await testEsmCjsAndDTC(async (importType) => {

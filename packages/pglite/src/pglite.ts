@@ -64,7 +64,7 @@ export class PGlite
   #pglite_hlp_shmem: number = -1
   #shmemAddr: number | undefined = undefined
   #shmemLength: number | undefined = undefined
-  #backendMod: PostgresMod | undefined
+  #backend: PGlite | undefined = undefined
 
   get isBackend(): boolean {
     return this.childType === 1
@@ -809,9 +809,8 @@ export class PGlite
     options?: QueryOptions,
   ): Promise<Array<Results>> {
     if (this.isPostmaster) {
-      const db = this.#childProcesses.find((cp) => (cp as PGlite).isBackend)
-      if (db) {
-        return (db as PGlite).exec(query, options)
+      if (this.#backend) {
+        return this.#backend.exec(query, options)
       }
     }
     throw new Error('Crap')
@@ -981,12 +980,7 @@ export class PGlite
       })
 
       this.#running = true
-
       this.#ready = true
-
-      this.#backendMod = this.#childProcesses.find(
-        (cp) => cp.childType === 1,
-      )!.Module
     }
   }
 
@@ -1396,7 +1390,7 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const mod = this.#backendMod ?? this.mod!
+    const mod = this.mod!
 
     this.#readOffset = 0
     this.#writeOffset = 0
@@ -1890,10 +1884,15 @@ export class PGlite
   }
 
   async #startPendingSubprocesses() {
-    let proc = this.#pendingChildProcesses.shift()
-    while (proc) {
-      this.#childProcesses.push(await this.#startSubProcess(proc))
-      proc = this.#pendingChildProcesses.shift()
+    let pendingProc = this.#pendingChildProcesses.shift()
+    while (pendingProc) {
+      const proc = await this.#startSubProcess(pendingProc)
+      if (proc.isBackend && this.isPostmaster && !this.#backend) {
+        this.#backend = proc as PGlite
+      }
+      this.#childProcesses.push(proc)
+
+      pendingProc = this.#pendingChildProcesses.shift()
     }
   }
 
