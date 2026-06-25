@@ -54,6 +54,33 @@ const MyComponent = () => {
 }
 ```
 
+### usePGliteOptional
+
+`usePGlite` throws if it is called without a `PGliteProvider` ancestor. When the
+database is loaded lazily or asynchronously, components can render before the
+provider mounts. Use `usePGliteOptional` in that case: it returns `null` instead
+of throwing, so the UI can render a loading state until the database is ready.
+
+```ts
+import { usePGliteOptional } from "@electric-sql/pglite-react"
+
+const MyComponent = () => {
+  const db = usePGliteOptional()
+
+  if (!db) {
+    return <p>Loading database...</p>
+  }
+
+  return <button onClick={() => db.query("SELECT 1;")}>Run</button>
+}
+```
+
+The string-query form of the live query hooks (`useLiveQuery('SELECT ...')`,
+`useLiveIncrementalQuery`) is also safe to call before the provider mounts: it
+returns `undefined` until a `PGliteProvider` is available, then resolves to
+results automatically. (Passing a `LiveQuery` instance or promise directly does
+not depend on the provider and is unaffected.)
+
 ### makePGliteProvider
 
 The `makePGliteProvider` function returns a `PGliteProvider` component and a `usePGlite` hook with the specified type, which enables you to provide a PGlite instance with all added extensions and retain then namespaces and types added to it.

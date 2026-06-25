@@ -12,6 +12,7 @@ The hooks this package provides are:
 
 - [PGliteProvider](https://pglite.dev/docs/framework-hooks/react#pgliteprovider): A Provider component to pass a PGlite instance to all child components for use with the other hooks.
 - [usePGlite](https://pglite.dev/docs/framework-hooks/react#usepglite): Retrieve the provided PGlite instance.
+- [usePGliteOptional](https://pglite.dev/docs/framework-hooks/react#usepgliteoptional): Retrieve the provided PGlite instance, or `null` when no provider is mounted yet.
 - [makePGliteProvider](https://pglite.dev/docs/framework-hooks/react#makepgliteprovider): Create typed instances of `PGliteProvider` and `usePGlite`.
 - [useLiveQuery](https://pglite.dev/docs/framework-hooks/react#uselivequery): Reactively re-render your component whenever the results of a live query change
 - [useLiveIncrementalQuery](https://pglite.dev/docs/framework-hooks/react#useliveincrementalquery): Reactively re-render your component whenever the results of a live query change by offloading the diff to PGlite
