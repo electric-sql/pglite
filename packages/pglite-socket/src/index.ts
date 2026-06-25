@@ -8,6 +8,12 @@ export const SSL_REQUEST_LENGTH = 8
 export const CANCEL_REQUEST_CODE = 80877102
 export const CANCEL_REQUEST_LENGTH = 16
 
+// Postgres wire-protocol message tags (the first byte of each message)
+const MSG_QUERY = 0x51 // 'Q' — simple-protocol Query (frontend)
+const MSG_COPY_DONE = 0x63 // 'c' — CopyDone (frontend)
+const MSG_COPY_FAIL = 0x66 // 'f' — CopyFail (frontend)
+const MSG_COPY_IN_RESPONSE = 0x47 // 'G' — CopyInResponse (backend)
+
 /**
  * Represents a queued query waiting for PGlite access
  */
@@ -188,6 +194,7 @@ export class PGLiteSocketHandler extends EventTarget {
   private debug: boolean
   private readonly id: number
   private messageBuffer: Buffer = Buffer.alloc(0)
+  private copyState: { messages: Buffer[] } | null = null
   private idleTimer?: NodeJS.Timeout
   private idleTimeout: number
   private lastActivityTime: number = Date.now()
@@ -320,6 +327,7 @@ export class PGLiteSocketHandler extends EventTarget {
     this.socket = null
     this.active = false
     this.messageBuffer = Buffer.alloc(0)
+    this.copyState = null
 
     this.log(`detach: handler cleaned up`)
     return this
@@ -427,7 +435,7 @@ export class PGLiteSocketHandler extends EventTarget {
         }
 
         // Extract and process complete message
-        const message = this.messageBuffer.slice(0, messageLength)
+        let message = this.messageBuffer.slice(0, messageLength)
         this.messageBuffer = this.messageBuffer.slice(messageLength)
 
         this.log(`handleData: processing message of ${message.length} bytes`)
@@ -438,6 +446,43 @@ export class PGLiteSocketHandler extends EventTarget {
           break
         }
 
+        // COPY ... FROM STDIN is a stateful sub-protocol: the CopyData
+        // ('d') / CopyDone ('c') / CopyFail ('f') messages that follow the
+        // query must reach PGlite in the same execProtocolRawStream call
+        // as the query itself — PGlite cannot resume a copy started in a
+        // previous call. Buffer the whole sequence and submit it as one
+        // message, then drop the leading CopyInResponse from the response
+        // since a synthesized one was already sent when the copy started.
+        let stripCopyInResponse = false
+        if (this.copyState) {
+          this.copyState.messages.push(message)
+          const tag = message[0]
+          if (tag !== MSG_COPY_DONE && tag !== MSG_COPY_FAIL) {
+            continue
+          }
+          message = Buffer.concat(this.copyState.messages)
+          this.copyState = null
+          stripCopyInResponse = true
+          this.log(
+            `handleData: submitting buffered COPY sequence of ${message.length} bytes`,
+          )
+        } else {
+          const copyFormat = this.sniffCopyFromStdin(message)
+          if (copyFormat !== null) {
+            // The client waits for a CopyInResponse before sending
+            // CopyData, but the query can only run once the full sequence
+            // has been buffered — synthesize the CopyInResponse here.
+            this.log(`handleData: COPY FROM STDIN detected, buffering sequence`)
+            this.copyState = { messages: [message] }
+            this.socket.write(this.makeCopyInResponse(copyFormat))
+            continue
+          }
+        }
+        // Response bytes held back until the CopyInResponse is dropped
+        let pendingResponse: Buffer | null = stripCopyInResponse
+          ? Buffer.alloc(0)
+          : null
+
         let socketWriteError: any = undefined
         // Queue the query for execution
         // This allows multiple connections to queue queries simultaneously
@@ -445,6 +490,22 @@ export class PGLiteSocketHandler extends EventTarget {
           this.id,
           new Uint8Array(message),
           (data) => {
+            if (pendingResponse !== null) {
+              pendingResponse = Buffer.concat([
+                pendingResponse,
+                Buffer.from(data),
+              ])
+              if (pendingResponse.length < 5) return
+              const firstLength = 1 + pendingResponse.readInt32BE(1)
+              if (pendingResponse.length < firstLength) return
+              data =
+                pendingResponse[0] === MSG_COPY_IN_RESPONSE
+                  ? pendingResponse.subarray(firstLength)
+                  : pendingResponse
+              pendingResponse = null
+              if (data.length === 0) return
+            }
+
             this.log(`handleData: received ${data.length} bytes from PGlite`)
 
             // Print the outgoing data to the console
@@ -490,6 +551,40 @@ export class PGLiteSocketHandler extends EventTarget {
       this.log(`handleData: error processing data:`, err)
       throw err
     }
+  }
+
+  // Matches a simple-protocol query whose first statement is COPY ... FROM
+  // STDIN, allowing leading whitespace and comments. Anchored to the start
+  // of the query so that COPY mentioned inside a string literal or comment
+  // of another statement cannot match.
+  private static COPY_FROM_STDIN_RE =
+    /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/)*COPY\b[\s\S]+\bFROM\b\s+STDIN\b/i
+  private static COPY_BINARY_RE = /\bBINARY\b|\bFORMAT\s+'?binary'?/i
+
+  /**
+   * Detect a simple-protocol query ('Q') that starts a COPY FROM STDIN.
+   * Returns the copy format (0 = text/csv, 1 = binary), or null when the
+   * message does not start a copy-in sequence.
+   */
+  private sniffCopyFromStdin(message: Buffer): number | null {
+    if (message.length < 6 || message[0] !== MSG_QUERY) return null
+    const sql = message.toString('utf8', 5, message.length - 1)
+    if (!PGLiteSocketHandler.COPY_FROM_STDIN_RE.test(sql)) return null
+    return PGLiteSocketHandler.COPY_BINARY_RE.test(sql) ? 1 : 0
+  }
+
+  /**
+   * Build a CopyInResponse ('G') message: overall format byte plus a zero
+   * column count. Clients use it as the signal to start streaming CopyData
+   * and do not need the per-column details for copy-in.
+   */
+  private makeCopyInResponse(format: number): Buffer {
+    const buf = Buffer.alloc(8)
+    buf.writeUInt8(MSG_COPY_IN_RESPONSE, 0)
+    buf.writeInt32BE(7, 1)
+    buf.writeUInt8(format, 5)
+    buf.writeInt16BE(0, 6)
+    return buf
   }
 
   private handleError(err: Error): void {
