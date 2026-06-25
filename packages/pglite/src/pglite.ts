@@ -677,6 +677,15 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+    if (this.mod.exports) {
+      this.mod.exports
+      this.mod.exports!.__wasm_apply_data_relocs()
+      this.mod.exports!.emscripten_stack_init?.()
+      this.mod.exports!.__wasm_call_ctors()
+    } else {
+      throw new Error('No exports')
+    }
+
     if (options.processInfo?.heap) {
       this.mod.HEAPU8.set(options.processInfo.heap)
       options.processInfo.heap = undefined
@@ -989,18 +998,23 @@ export class PGlite
     args: string[] | undefined,
     fsBundleBuffer?: ArrayBuffer,
   ) {
-    let initialMemSize
-    if (options.processInfo?.heap) {
-      initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
-    } else {
-      initialMemSize = options.initialMemory
-        ? options.initialMemory / (64 * 1024)
-        : 2048
-    }
-    const wasmMemory = new WebAssembly.Memory({
-      initial: initialMemSize,
-      maximum: 32768,
-    })
+    let wasmMemory = options.processInfo?.wasmMemory
+    if (!wasmMemory) {
+      let initialMemSize
+      if (options.processInfo?.heap) {
+        initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
+      } else {
+        initialMemSize = options.initialMemory
+          ? options.initialMemory / (64 * 1024)
+          : 2048
+      }
+      wasmMemory = new WebAssembly.Memory({
+        initial: initialMemSize,
+        maximum: 32768,
+      })
+    } 
+
+    let theExports
 
     const emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: postgresExePath,
@@ -1021,9 +1035,10 @@ export class PGlite
 
         pglUtils
           .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
-          .then(({ instance, module }) => {
+          .then(({ instance, module, exports }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
+            theExports = exports
           })
         return {}
       },
@@ -1158,6 +1173,7 @@ export class PGlite
         // },
       ],
     }
+    emscriptenOpts.exports = theExports
     return emscriptenOpts
   }
 
@@ -1879,6 +1895,7 @@ export class PGlite
       clientSocket,
       shmemAddr: this.#shmemAddr,
       shmemLength: this.#shmemLength,
+      wasmMemory: this.mod!.wasmMemory
     })
     return pid
   }

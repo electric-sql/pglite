@@ -20,6 +20,7 @@ export interface ProcessInfo {
   shmemAddr?: number
   shmemLength?: number
   clientSocket: ClientSocket
+  wasmMemory?: WebAssembly.Memory
 }
 
 export abstract class PostgresProcess {

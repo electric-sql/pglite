@@ -23,19 +23,61 @@ export async function startWasmDownload(url: URL) {
 // compile them on subsequent calls.
 const cachedWasmModules = new Map<URL, WebAssembly.Module>()
 
+function G(value: number, mutable: boolean): WebAssembly.Global {
+  return new WebAssembly.Global({ value: 'i32', mutable }, value)
+}
+
+function getExImports(capturedImports: any, delta: number) {
+  const env0 = capturedImports.env
+  const gotMem0 = capturedImports['GOT.mem']
+
+  const env = {
+    ...env0,
+    __memory_base: G(env0.__memory_base.value + delta, false), // .data lands here
+    __stack_pointer: G(env0.__stack_pointer.value + delta, true), // shifted SP top
+    // __table_base is kept the same on purpose (see notes at the bottom):
+    // instance 2's element segment re-populates the shared table slots with its
+    // own funcrefs, which is self-consistent for instance 2.
+  }
+
+  // Only the three resolved layout anchors are real data addresses that must
+  // move with the instance. Every other GOT.mem entry is either an unresolved
+  // extern (value 0) or a base-independent handle, so we reuse them unchanged.
+  const gotMem = { ...gotMem0 }
+  for (const name of ['__heap_base', '__stack_high', '__stack_low']) {
+    gotMem[name] = G(gotMem0[name].value + delta, true)
+  }
+
+  const eximports = { ...capturedImports, env, 'GOT.mem': gotMem }
+
+  return eximports
+}
+
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
   moduleUrl: URL,
   module?: WebAssembly.Module,
+  capturedImports?: any,
+  memoryDelta?: number
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
+  exports: any
 }> {
+
+  let eximports = imports
+  if (capturedImports) {
+    const DELTA = memoryDelta ?? 64 * 1024 * 1024
+    eximports = getExImports(capturedImports, DELTA)
+  }
+
   if (module || cachedWasmModules.has(moduleUrl)) {
     const mod = module || cachedWasmModules.get(moduleUrl)!
+    const instance = await WebAssembly.instantiate(mod, eximports)
     return {
-      instance: await WebAssembly.instantiate(mod, imports),
+      instance,
       module: mod,
+      exports: instance.exports
     }
   }
   if (IN_NODE) {
@@ -43,12 +85,13 @@ export async function instantiateWasm(
     const buffer = await fs.readFile(moduleUrl)
     const { module: newModule, instance } = await WebAssembly.instantiate(
       buffer,
-      imports,
+      eximports,
     )
     cachedWasmModules.set(moduleUrl, newModule)
     return {
       instance,
       module: newModule,
+      exports: instance.exports
     }
   } else {
     if (!wasmDownloadPromises.has(moduleUrl)) {
@@ -56,11 +99,12 @@ export async function instantiateWasm(
     }
     const response = await wasmDownloadPromises.get(moduleUrl)
     const { module: newModule, instance } =
-      await WebAssembly.instantiateStreaming(response!, imports)
+      await WebAssembly.instantiateStreaming(response!, eximports)
     cachedWasmModules.set(moduleUrl, newModule)
     return {
       instance,
       module: newModule,
+      exports: instance.exports
     }
   }
 }
