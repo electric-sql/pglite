@@ -1006,7 +1006,7 @@ export class PGlite
       let initialMemSize
       if (options.processInfo?.heap) {
         // initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
-        throw new Error ('unexpected')
+        throw new Error('unexpected')
       } else {
         initialMemSize = options.initialMemory
           ? options.initialMemory / (64 * 1024)
@@ -1039,7 +1039,7 @@ export class PGlite
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
         capturedImports = imports
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule, )
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
           .then(({ instance, module, exports }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
@@ -1903,9 +1903,9 @@ export class PGlite
       shmemAddr: this.#shmemAddr,
       shmemLength: this.#shmemLength,
       wasmMemory: this.mod!.wasmMemory,
-      memoryDelta: this.#memoryDelta
+      memoryDelta: this.#memoryDelta,
     })
-    
+
     this.#memoryDelta += defaultMemoryDelta
     return pid
   }
