@@ -1012,7 +1012,7 @@ export class PGlite
         initial: initialMemSize,
         maximum: 32768,
       })
-    } 
+    }
 
     let theExports
 
@@ -1895,7 +1895,7 @@ export class PGlite
       clientSocket,
       shmemAddr: this.#shmemAddr,
       shmemLength: this.#shmemLength,
-      wasmMemory: this.mod!.wasmMemory
+      wasmMemory: this.mod!.wasmMemory,
     })
     return pid
   }

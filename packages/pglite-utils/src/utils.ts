@@ -58,13 +58,12 @@ export async function instantiateWasm(
   moduleUrl: URL,
   module?: WebAssembly.Module,
   capturedImports?: any,
-  memoryDelta?: number
+  memoryDelta?: number,
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
   exports: any
 }> {
-
   let eximports = imports
   if (capturedImports) {
     const DELTA = memoryDelta ?? 64 * 1024 * 1024
@@ -77,7 +76,7 @@ export async function instantiateWasm(
     return {
       instance,
       module: mod,
-      exports: instance.exports
+      exports: instance.exports,
     }
   }
   if (IN_NODE) {
@@ -91,7 +90,7 @@ export async function instantiateWasm(
     return {
       instance,
       module: newModule,
-      exports: instance.exports
+      exports: instance.exports,
     }
   } else {
     if (!wasmDownloadPromises.has(moduleUrl)) {
@@ -104,7 +103,7 @@ export async function instantiateWasm(
     return {
       instance,
       module: newModule,
-      exports: instance.exports
+      exports: instance.exports,
     }
   }
 }
