@@ -21,6 +21,7 @@ export interface ProcessInfo {
   shmemLength?: number
   clientSocket: ClientSocket
   wasmMemory?: WebAssembly.Memory
+  memoryDelta?: number
 }
 
 export abstract class PostgresProcess {
@@ -48,6 +49,8 @@ export abstract class PostgresProcess {
   get listeningSocketFd(): number {
     return this.#listeningSocketFd
   }
+
+  readonly defaultMemoryDelta = 128 * 1024 * 1024
 
   triggerNewConnection() {
     const result = this.Module._hlp_trigger_new_connection()

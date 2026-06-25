@@ -47,6 +47,8 @@ import {
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 
+const defaultMemoryDelta = 128 * 1024 * 1024
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -65,6 +67,7 @@ export class PGlite
   #shmemAddr: number | undefined = undefined
   #shmemLength: number | undefined = undefined
   #backend: PGlite | undefined = undefined
+  #memoryDelta: number = defaultMemoryDelta
 
   get isBackend(): boolean {
     return this.childType === 1
@@ -1002,11 +1005,12 @@ export class PGlite
     if (!wasmMemory) {
       let initialMemSize
       if (options.processInfo?.heap) {
-        initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
+        // initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
+        throw new Error ('unexpected')
       } else {
         initialMemSize = options.initialMemory
           ? options.initialMemory / (64 * 1024)
-          : 2048
+          : 32768
       }
       wasmMemory = new WebAssembly.Memory({
         initial: initialMemSize,
@@ -1014,6 +1018,7 @@ export class PGlite
       })
     }
 
+    let capturedImports
     let theExports
 
     const emscriptenOpts: Partial<PostgresMod> = {
@@ -1032,9 +1037,9 @@ export class PGlite
       },
       instantiateWasm: (imports, successCallback) => {
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
-
+        capturedImports = imports
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule, )
           .then(({ instance, module, exports }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
@@ -1174,6 +1179,7 @@ export class PGlite
       ],
     }
     emscriptenOpts.exports = theExports
+    emscriptenOpts.capturedImports = capturedImports
     return emscriptenOpts
   }
 
@@ -1885,6 +1891,7 @@ export class PGlite
     clientSocket: ClientSocket,
   ): number {
     const pid = PGliteOS.nextPid++
+
     this.#pendingChildProcesses.push({
       pid,
       childType,
@@ -1896,7 +1903,10 @@ export class PGlite
       shmemAddr: this.#shmemAddr,
       shmemLength: this.#shmemLength,
       wasmMemory: this.mod!.wasmMemory,
+      memoryDelta: this.#memoryDelta
     })
+    
+    this.#memoryDelta += defaultMemoryDelta
     return pid
   }
 
