@@ -164,6 +164,13 @@ jobs:
           path: ./packages/pglite-pgvector/release/**
           retention-days: 60
 
+      - name: Upload pglite-pgvector dist artifacts to Github artifacts
+        id: upload-pglite-pgvector-dist-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pgvector-dist-files-node-v20.x
+          path: ./packages/pglite-pgvector/dist/**
+
       - name: Upload pglite-pgmq dist artifacts to Github artifacts
         id: upload-pglite-pgmq-dist-files
         uses: actions/upload-artifact@v7
