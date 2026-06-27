@@ -665,6 +665,22 @@ const baseExtensions: Extension[] = [
     core: true,
     size: 11554,
   },
+  {
+    name: 'pgmq',
+    description: `
+    A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.
+
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pgmq
+    `,
+    shortDescription:
+      'A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.',
+    docs: 'https://github.com/pgmq/pgmq',
+    tags: ['postgres extension', 'external'],
+    importPath: '@electric-sql/pglite-pgmq',
+    importName: 'pgmq',
+    size: 41908,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgmq',
+  },
 ]
 
 const tags = [
