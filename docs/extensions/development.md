@@ -112,12 +112,12 @@ PGlite's frontend code is in the main [PGlite repo](https://github.com/electric-
 
 You will need to create a new package for your extension. The easiest way is to just copy the files from an existing extension package such as `packages/pglite-pgvector`. Obviously, you will need to adapt all the references to the previous extension.
 
-
 ```
 
 To make it available in our online [REPL](https://pglite.dev/repl/), add the extension to `docs/repl/allExtensions.ts`:
 
 ```
+
 export { myawesomeextension } from '@electric-sql/pglite-myawesomeextension
 
 ```
@@ -125,22 +125,23 @@ export { myawesomeextension } from '@electric-sql/pglite-myawesomeextension
 Finally, add the extension description to `docs/extensions/extensions.data.ts`, inside `baseExtensions`:
 
 ```
+
 const baseExtensions: Extension[] = [
 ...
 {
-    name: 'My awesome Postgres extension',
-    description: `
-    My awesome Postgres extension is something that the world has never seen before.
+name: 'My awesome Postgres extension',
+description: `     My awesome Postgres extension is something that the world has never seen before.
     `,
-    shortDescription:
-      'My awesome PostgreSQL extension',
-    docs: 'https://github.com/myawesomeextension/extension',
-    tags: ['postgres extension'],
-    importPath: '@electric-sql/pglite-myawesomeextension',
-    importName: 'my_awesome_extension',
-    size: 123456,
+shortDescription:
+'My awesome PostgreSQL extension',
+docs: 'https://github.com/myawesomeextension/extension',
+tags: ['postgres extension'],
+importPath: '@electric-sql/pglite-myawesomeextension',
+importName: 'my_awesome_extension',
+size: 123456,
 },
 ]
+
 ```
 
 #### Tests
@@ -152,14 +153,18 @@ To make sure that your extension works, you need to add some tests for it. We us
 From PGlite's base folder:
 
 ```
+
 $ pnpm build:all
+
 ```
 
 This will build **everything**, including your new extension. If there are no errors, you are ready to run the tests!
 
 ```
+
 $ cd packages/pglite-myawesomextension
 $ pnpm test
+
 ```
 
 Fix any errors that occur, re-run the tests! Iterate until everything works as expected.
@@ -181,3 +186,4 @@ As mentioned before, some extensions require more effort to integrate with PGlit
 Another source of pain for building an extension is the need to export symbols from the dependencies or from PGlite itself. Sometimes these are obvious only at runtime.
 
 We are still working on documentation and examples showing how to build more complex Postgres extensions for use with PGlite. Please check back soon, or reach out on [Discord](https://discord.com/channels/933657521581858818/1212676471588520006) if you would like to try building a particular extension for PGlite.
+```
