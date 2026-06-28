@@ -108,75 +108,17 @@ These steps allow our build environment to pick up the extension's code, then bu
 
 #### Frontend
 
-PGlite's frontend code is in the main [PGLite repo](https://github.com/electric-sql/pglite)
+PGlite's frontend code is in the main [PGlite repo](https://github.com/electric-sql/pglite).
 
-Create a new folder `packages/pglite/src/myawesomeextension` and a new file inside it `index.ts`. This is how PGlite will know how to load your new extension:
+You will need to create a new package for your extension. The easiest way is to just copy the files from an existing extension package such as `packages/pglite-pgvector`. Obviously, you will need to adapt all the references to the previous extension.
 
-```
-import type {
-  Extension,
-  ExtensionSetupResult,
-  PGliteInterface,
-} from '../interface'
-
-const setup = async (_pg: PGliteInterface, emscriptenOpts: any) => {
-  return {
-    emscriptenOpts,
-    bundlePath: new URL('../../release/myawesomeextension.tar.gz', import.meta.url),
-  } satisfies ExtensionSetupResult
-}
-
-export const myawesomeextension = {
-  name: 'myawesomeextension',
-  setup,
-} satisfies Extension
-
-```
-
-Now add the extension to `packages/pglite/package.json` exports:
-
-```
- "exports": {
-  ...
-    "./myawesomeextension": {
-      "import": {
-        "types": "./dist/myawesomeextension/index.d.ts",
-        "default": "./dist/myawesomeextension/index.js"
-      },
-      "require": {
-        "types": "./dist/myawesomeextension/index.d.cts",
-        "default": "./dist/myawesomeextension/index.cjs"
-      }
-    },
-}
-```
-
-Open `packages/pglite/tsup.config.ts` and add your extension inside `entryPoints`:
-
-```
-const entryPoints = [
-  ...
-  'src/myawesomeextension/index.ts'
-]
-```
-
-You also need to add the extension to `packages/pglite/scripts/bundle-wasm.ts`, inside `main()`:
-
-```
-async function main() {
- ...
- await findAndReplaceInDir('./dist/myawesomeextension', /\.\.\/release\//g, '', [
-    '.js',
-    '.cjs',
-  ])
-}
 
 ```
 
 To make it available in our online [REPL](https://pglite.dev/repl/), add the extension to `docs/repl/allExtensions.ts`:
 
 ```
-export { myawesomeextension } from '@electric-sql/pglite/myawesomeextension
+export { myawesomeextension } from '@electric-sql/pglite-myawesomeextension
 
 ```
 
@@ -194,7 +136,7 @@ const baseExtensions: Extension[] = [
       'My awesome PostgreSQL extension',
     docs: 'https://github.com/myawesomeextension/extension',
     tags: ['postgres extension'],
-    importPath: '@electric-sql/pglite/myawesomeextension',
+    importPath: '@electric-sql/pglite-myawesomeextension',
     importName: 'my_awesome_extension',
     size: 123456,
 },
@@ -204,7 +146,6 @@ const baseExtensions: Extension[] = [
 #### Tests
 
 To make sure that your extension works, you need to add some tests for it. We use [vitest](https://vitest.dev/). They will be run as part of our CI/CD pipeline.
-Add a file `packages/pglite/tests/myawesomeextension.test.ts` and write there your tests. Have a look inside that folder `packages/pglite/tests` at other tests to get an idea how they work.
 
 #### Build and run tests
 
@@ -217,7 +158,7 @@ $ pnpm build:all
 This will build **everything**, including your new extension. If there are no errors, you are ready to run the tests!
 
 ```
-$ cd packages/pglite
+$ cd packages/pglite-myawesomextension
 $ pnpm test
 ```
 
