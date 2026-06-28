@@ -616,7 +616,7 @@ jobs:
           edit-mode: append
 
       - name: Deploy website to Netlify
-        uses: nwtgck/actions-netlify@v3.0
+        uses: nwtgck/actions-netlify@v4.0
         with:
           publish-dir: '/tmp/web'
           production-branch: master
