@@ -171,20 +171,20 @@ jobs:
           name: pglite-pgvector-dist-files-node-v20.x
           path: ./packages/pglite-pgvector/dist/**
 
-      - name: Upload pglite-pgmq dist artifacts to Github artifacts
-        id: upload-pglite-pgmq-dist-files
-        uses: actions/upload-artifact@v7
-        with:
-          name: pglite-pgmq-dist-files-node-v20.x
-          path: ./packages/pglite-pgmq/dist/**
-          retention-days: 60
-
       - name: Upload pglite-age build artifacts to Github artifacts
         id: upload-pglite-age-release-files
         uses: actions/upload-artifact@v7
         with:
           name: pglite-age-release-files-node-v20.x
           path: ./packages/pglite-age/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pgmq build artifacts to Github artifacts
+        id: upload-pglite-pgmq-release-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pgmq-release-files-node-v20.x
+          path: ./packages/pglite-pgmq/release/**
           retention-days: 60
 
       - name: Typecheck pglite
