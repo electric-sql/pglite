@@ -1043,9 +1043,13 @@ export class PGlite
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
         capturedImports = imports
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule, 
-            this.#processInfo?.parent.Module.capturedImports, 
-            this.#memoryDelta)
+          .instantiateWasm(
+            imports,
+            moduleUrl,
+            options.pgliteWasmModule,
+            this.#processInfo?.parent.Module.capturedImports,
+            this.#memoryDelta,
+          )
           .then(({ instance, module, exports }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
