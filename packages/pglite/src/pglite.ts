@@ -1003,19 +1003,23 @@ export class PGlite
   ) {
     let wasmMemory = options.processInfo?.wasmMemory
     if (!wasmMemory) {
-      let initialMemSize
-      if (options.processInfo?.heap) {
-        // initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
-        throw new Error('unexpected')
-      } else {
-        initialMemSize = options.initialMemory
-          ? options.initialMemory / (64 * 1024)
-          : 32768
-      }
       wasmMemory = new WebAssembly.Memory({
-        initial: initialMemSize,
-        maximum: 32768,
+        initial: 32768, // max out initial memory
+        // maximum: 32768,
       })
+      // let initialMemSize
+      // if (options.processInfo?.heap) {
+      //   // initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
+      //   throw new Error('unexpected')
+      // } else {
+      //   initialMemSize = options.initialMemory
+      //     ? options.initialMemory / (64 * 1024)
+      //     : 32768
+      // }
+      // wasmMemory = new WebAssembly.Memory({
+      //   initial: initialMemSize,
+      //   maximum: 32768,
+      // })
     }
 
     let capturedImports
@@ -1039,7 +1043,9 @@ export class PGlite
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
         capturedImports = imports
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule, 
+            this.#processInfo?.parent.Module.capturedImports, 
+            this.#memoryDelta)
           .then(({ instance, module, exports }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)

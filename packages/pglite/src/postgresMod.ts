@@ -97,6 +97,7 @@ export interface PostgresMod
   _pgl_shm_load: () => void
   _pq_endmsgread: () => void
   exports?: any
+  capturedImports?: any
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (
