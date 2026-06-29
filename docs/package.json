@@ -28,6 +28,7 @@
     "@electric-sql/pglite-pg_textsearch": "workspace:*",
     "@electric-sql/pglite-pg_uuidv7": "workspace:*",
     "@electric-sql/pglite-pgtap": "workspace:*",
+    "@electric-sql/pglite-pgmq": "workspace:*",
     "@uiw/codemirror-theme-github": "^4.23.0",
     "dedent": "^1.5.3"
   }
