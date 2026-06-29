@@ -1,7 +1,7 @@
 import type { LiveQuery, LiveQueryResults } from '@electric-sql/pglite/live'
 import { query as buildQuery } from '@electric-sql/pglite/template'
 import { useEffect, useRef, useState } from 'react'
-import { usePGlite } from './provider'
+import { usePGliteOptional } from './provider'
 
 function paramsEqual(
   a1: unknown[] | undefined | null,
@@ -22,7 +22,9 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   params: unknown[] | undefined | null,
   key?: string,
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
-  const db = usePGlite()
+  // Optional lookup: db is null when no PGliteProvider is mounted yet (e.g. the
+  // database is still loading). The string-query branch below guards on it.
+  const db = usePGliteOptional()
   const paramsRef = useRef(params)
   const liveQueryRef = useRef<LiveQuery<T> | undefined>(undefined)
   let liveQuery: LiveQuery<T> | undefined
@@ -50,6 +52,15 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       setResults(results)
     }
     if (typeof query === 'string') {
+      // No PGliteProvider mounted (db is null): clear any prior results and
+      // skip subscription, so the hook reports undefined rather than stale
+      // rows. The effect re-runs once a provider appears because db is in the
+      // dependency array.
+      if (!db) {
+        setResults(undefined)
+        return
+      }
+
       const ret =
         key !== undefined
           ? db.live.incrementalQuery<T>(query, currentParams, key, cb)

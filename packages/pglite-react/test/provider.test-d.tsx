@@ -18,7 +18,7 @@ describe('provider', () => {
       },
     })
 
-    const { PGliteProvider, usePGlite } = makePGliteProvider<
+    const { PGliteProvider, usePGlite, usePGliteOptional } = makePGliteProvider<
       PGlite &
         PGliteInterfaceExtensions<{
           live: typeof live
@@ -33,6 +33,12 @@ describe('provider', () => {
     // @ts-expect-error cannot pass wrong type db to typed hook
     usePGlite(dbLive)
 
+    // @ts-expect-error cannot pass wrong type db to typed optional hook
+    usePGliteOptional(dbLive)
+
     expectTypeOf(usePGlite()).toEqualTypeOf<typeof dbLiveVector>()
+    expectTypeOf(usePGliteOptional()).toEqualTypeOf<
+      typeof dbLiveVector | null
+    >()
   })
 })
