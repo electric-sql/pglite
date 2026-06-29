@@ -47,8 +47,6 @@ import {
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 
-const defaultMemoryDelta = 128 * 1024 * 1024
-
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -67,7 +65,6 @@ export class PGlite
   #shmemAddr: number | undefined = undefined
   #shmemLength: number | undefined = undefined
   #backend: PGlite | undefined = undefined
-  #memoryDelta: number = defaultMemoryDelta
 
   get isBackend(): boolean {
     return this.childType === 1
@@ -1001,23 +998,6 @@ export class PGlite
     args: string[] | undefined,
     fsBundleBuffer?: ArrayBuffer,
   ) {
-    let wasmMemory = options.processInfo?.wasmMemory
-    if (!wasmMemory) {
-      let initialMemSize
-      if (options.processInfo?.heap) {
-        // initialMemSize = options.processInfo.heap.byteLength / (64 * 1024)
-        throw new Error('unexpected')
-      } else {
-        initialMemSize = options.initialMemory
-          ? options.initialMemory / (64 * 1024)
-          : 32768
-      }
-      wasmMemory = new WebAssembly.Memory({
-        initial: initialMemSize,
-        maximum: 32768,
-      })
-    }
-
     let capturedImports
     let theExports
 
@@ -1026,7 +1006,7 @@ export class PGlite
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
-      wasmMemory: wasmMemory,
+      wasmMemory: PGliteOS.wasmMemory,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
@@ -1902,11 +1882,10 @@ export class PGlite
       clientSocket,
       shmemAddr: this.#shmemAddr,
       shmemLength: this.#shmemLength,
-      wasmMemory: this.mod!.wasmMemory,
-      memoryDelta: this.#memoryDelta,
+      wasmMemory: PGliteOS.wasmMemory,
+      memoryDelta: PGliteOS.nextMemoryDelta,
     })
 
-    this.#memoryDelta += defaultMemoryDelta
     return pid
   }
 

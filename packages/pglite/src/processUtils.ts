@@ -370,6 +370,32 @@ export abstract class PostgresProcess {
 // }
 
 export class OS {
+
+  static readonly defaultMemoryDelta = 128 * 1024 * 1024
+  #wasmMemory: WebAssembly.Memory | null = null
+  
+  #memoryDelta: number = 0
+
+  get nextMemoryDelta(): number {
+    const currentMemoryDelta = this.#memoryDelta
+    this.#memoryDelta += OS.defaultMemoryDelta
+    return currentMemoryDelta
+  }
+
+  private getWasmMemory(initialMemorySize: number = 32768) {
+    return new WebAssembly.Memory({
+      initial: initialMemorySize,
+      maximum: 32768,
+    })
+  }
+
+  get wasmMemory(): WebAssembly.Memory {
+    if (!this.#wasmMemory) {
+      this.#wasmMemory = this.getWasmMemory()
+    }
+    return this.#wasmMemory
+  }
+
   debug: number
   // static readonly postmasterPid = 1
   nextPid: number = 1
