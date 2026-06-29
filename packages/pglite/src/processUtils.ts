@@ -370,10 +370,9 @@ export abstract class PostgresProcess {
 // }
 
 export class OS {
-
   static readonly defaultMemoryDelta = 128 * 1024 * 1024
   #wasmMemory: WebAssembly.Memory | null = null
-  
+
   #memoryDelta: number = 0
 
   get nextMemoryDelta(): number {
