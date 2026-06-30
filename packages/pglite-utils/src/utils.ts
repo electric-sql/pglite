@@ -1,8 +1,16 @@
+// Electron exposes a Node-like `process` in its renderer/worker/service-worker
+// contexts, which must use the browser fs path. Its main and utility processes
+// are real Node environments (#813).
+function isElectronWebContext(): boolean {
+  const type = (process as { type?: string }).type
+  return type === 'renderer' || type === 'worker' || type === 'service-worker'
+}
+
 export const IN_NODE =
   typeof process === 'object' &&
   typeof process.versions === 'object' &&
   typeof process.versions.node === 'string' &&
-  !process.versions.electron
+  !isElectronWebContext()
 
 export const WASM_PREFIX = '/pglite'
 
