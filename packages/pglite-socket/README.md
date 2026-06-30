@@ -218,15 +218,17 @@ pglite-server --path=/tmp/.s.PGSQL.5432 --run "npm run dev" --include-database-u
 
 ### Connecting to the server
 
-Once the server is running, you can connect to it using any PostgreSQL client:
+Once the server is running, you can connect to it using any PostgreSQL client. The connection options depend on whether you started the server with the default TCP listener or with a Unix socket.
 
-#### Using psql
+#### Connecting over TCP
+
+By default, `pglite-server` listens on `127.0.0.1:5432`. You can connect to the default TCP server with `psql`:
 
 ```bash
 PGSSLMODE=disable psql -h localhost -p 5432 -d postgres
 ```
 
-#### Using Node.js clients
+Or with Node.js clients:
 
 ```javascript
 // Using node-postgres
@@ -234,7 +236,7 @@ import pg from 'pg'
 const client = new pg.Client({
   host: 'localhost',
   port: 5432,
-  database: 'postgres'
+  database: 'postgres',
 })
 await client.connect()
 
@@ -243,12 +245,43 @@ import postgres from 'postgres'
 const sql = postgres({
   host: 'localhost',
   port: 5432,
-  database: 'postgres'
+  database: 'postgres',
 })
-
-// Using environment variable (when using --include-database-url)
-const sql = postgres(process.env.DATABASE_URL)
 ```
+
+#### Connecting over Unix sockets
+
+If you started the server with `--path`, connect using the socket directory instead of `localhost` and `port`:
+
+```bash
+PGSSLMODE=disable psql "postgresql://postgres:postgres@/postgres?host=/tmp"
+```
+
+For Node.js clients, use the socket path configuration for your client:
+
+```javascript
+// Using node-postgres
+import pg from 'pg'
+const client = new pg.Client({
+  host: '/tmp',
+  database: 'postgres',
+  user: 'postgres',
+  password: 'postgres',
+})
+await client.connect()
+
+// Using postgres.js
+import postgres from 'postgres'
+const sql = postgres({
+  path: '/tmp/.s.PGSQL.5432',
+  database: 'postgres',
+})
+```
+
+When using `--run` with `--include-database-url`, the generated `DATABASE_URL`
+uses the libpq-style `?host=/tmp` Unix socket form. This works with clients that
+understand that connection string format, such as `psql`. For `postgres.js`, use
+the `path` option shown above instead of passing the generated URL directly.
 
 ### Limitations and Tips
 
