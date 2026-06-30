@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "types": ["@types/emscripten", "node"],
     "paths": {
       "@electric-sql/pg-protocol": [

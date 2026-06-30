@@ -4,7 +4,8 @@
     "types": [
       "@types/emscripten",
       "node"
-    ]
+    ],
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src", "tsup.config.ts", "vitest.config.ts"]
 }

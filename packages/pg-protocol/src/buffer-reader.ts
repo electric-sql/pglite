@@ -13,7 +13,7 @@ export class BufferReader {
     this.#offset = offset
   }
 
-  public setBuffer(offset: number, buffer: ArrayBuffer): void {
+  public setBuffer(offset: number, buffer: ArrayBufferLike): void {
     this.#offset = offset
     this.#bufferView = new DataView(buffer)
   }

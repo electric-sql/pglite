@@ -12,7 +12,7 @@
     "ci:publish": "pnpm changeset publish",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
-    "wasm:copy-pgvector": "mkdir -p ./packages/pglite-pgvector/release && cp ./postgres-pglite/dist/extensions/other/vector.tar.gz ./packages/pglite-pgvector/release",    
+    "wasm:copy-pgvector": "mkdir -p ./packages/pglite-pgvector/release && cp ./postgres-pglite/dist/extensions/other/vector.tar.gz ./packages/pglite-pgvector/release",
     "wasm:copy-pg_uuidv7": "mkdir -p ./packages/pglite-pg_uuidv7/release && cp ./postgres-pglite/dist/extensions/other/pg_uuidv7.tar.gz ./packages/pglite-pg_uuidv7/release",
     "wasm:copy-pgtap": "mkdir -p ./packages/pglite-pgtap/release && cp ./postgres-pglite/dist/extensions/other/pgtap.tar.gz ./packages/pglite-pgtap/release",
     "wasm:copy-pg_ivm": "mkdir -p ./packages/pglite-pg_ivm/release && cp ./postgres-pglite/dist/extensions/other/pg_ivm.tar.gz ./packages/pglite-pg_ivm/release",
@@ -42,6 +42,6 @@
     "prettier": "3.3.3",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
+    "typescript": "^6.0.3"
   }
 }

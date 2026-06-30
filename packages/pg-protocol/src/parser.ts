@@ -43,7 +43,7 @@ const HEADER_LENGTH = CODE_LENGTH + LEN_LENGTH
 
 export type Packet = {
   code: number
-  packet: ArrayBuffer
+  packet: ArrayBufferLike
 }
 
 const emptyBuffer = new ArrayBuffer(0)
@@ -123,13 +123,13 @@ export class Parser {
     }
   }
 
-  #mergeBuffer(buffer: ArrayBuffer): void {
+  #mergeBuffer(buffer: ArrayBufferLike): void {
     if (this.#bufferRemainingLength > 0) {
       const newLength = this.#bufferRemainingLength + buffer.byteLength
       const newFullLength = newLength + this.#bufferOffset
       if (newFullLength > this.#bufferView.byteLength) {
         // We can't concat the new buffer with the remaining one
-        let newBuffer: ArrayBuffer
+        let newBuffer: ArrayBufferLike
         if (
           newLength <= this.#bufferView.byteLength &&
           this.#bufferOffset >= this.#bufferRemainingLength
@@ -173,7 +173,7 @@ export class Parser {
     offset: number,
     code: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ): BackendMessage {
     switch (code) {
       case MessageCodes.BindComplete:
@@ -232,7 +232,7 @@ export class Parser {
   #parseReadyForQueryMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const status = this.#reader.string(1)
@@ -242,30 +242,30 @@ export class Parser {
   #parseCommandCompleteMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const text = this.#reader.cstring()
     return new CommandCompleteMessage(length, text)
   }
 
-  #parseCopyData(offset: number, length: number, bytes: ArrayBuffer) {
+  #parseCopyData(offset: number, length: number, bytes: ArrayBufferLike) {
     const chunk = bytes.slice(offset, offset + (length - 4))
     return new CopyDataMessage(length, new Uint8Array(chunk))
   }
 
-  #parseCopyInMessage(offset: number, length: number, bytes: ArrayBuffer) {
+  #parseCopyInMessage(offset: number, length: number, bytes: ArrayBufferLike) {
     return this.#parseCopyMessage(offset, length, bytes, 'copyInResponse')
   }
 
-  #parseCopyOutMessage(offset: number, length: number, bytes: ArrayBuffer) {
+  #parseCopyOutMessage(offset: number, length: number, bytes: ArrayBufferLike) {
     return this.#parseCopyMessage(offset, length, bytes, 'copyOutResponse')
   }
 
   #parseCopyMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
     messageName: MessageName,
   ) {
     this.#reader.setBuffer(offset, bytes)
@@ -281,7 +281,7 @@ export class Parser {
   #parseNotificationMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const processId = this.#reader.int32()
@@ -293,7 +293,7 @@ export class Parser {
   #parseRowDescriptionMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const fieldCount = this.#reader.int16()
@@ -326,7 +326,7 @@ export class Parser {
   #parseParameterDescriptionMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const parameterCount = this.#reader.int16()
@@ -337,7 +337,7 @@ export class Parser {
     return message
   }
 
-  #parseDataRowMessage(offset: number, length: number, bytes: ArrayBuffer) {
+  #parseDataRowMessage(offset: number, length: number, bytes: ArrayBufferLike) {
     this.#reader.setBuffer(offset, bytes)
     const fieldCount = this.#reader.int16()
     const fields: (string | null)[] = new Array(fieldCount)
@@ -352,7 +352,7 @@ export class Parser {
   #parseParameterStatusMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ) {
     this.#reader.setBuffer(offset, bytes)
     const name = this.#reader.cstring()
@@ -360,7 +360,7 @@ export class Parser {
     return new ParameterStatusMessage(length, name, value)
   }
 
-  #parseBackendKeyData(offset: number, length: number, bytes: ArrayBuffer) {
+  #parseBackendKeyData(offset: number, length: number, bytes: ArrayBufferLike) {
     this.#reader.setBuffer(offset, bytes)
     const processID = this.#reader.int32()
     const secretKey = this.#reader.int32()
@@ -370,7 +370,7 @@ export class Parser {
   #parseAuthenticationResponse(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
   ): AuthenticationMessage {
     this.#reader.setBuffer(offset, bytes)
     const code = this.#reader.int32()
@@ -413,7 +413,7 @@ export class Parser {
   #parseErrorMessage(
     offset: number,
     length: number,
-    bytes: ArrayBuffer,
+    bytes: ArrayBufferLike,
     name: MessageName,
   ) {
     this.#reader.setBuffer(offset, bytes)

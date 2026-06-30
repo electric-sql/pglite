@@ -13,14 +13,13 @@ export async function dumpTar(
   const [compressed, zipped] = await maybeZip(tarball, compression)
   const filename = dbname + (zipped ? '.tar.gz' : '.tar')
   const type = zipped ? 'application/x-gzip' : 'application/x-tar'
+  const normalizedCompressed = new Uint8Array(compressed)
+  const parts: BlobPart[] = [normalizedCompressed]
+
   if (typeof File !== 'undefined') {
-    return new File([compressed], filename, {
-      type,
-    })
+    return new File(parts, filename, { type })
   } else {
-    return new Blob([compressed], {
-      type,
-    })
+    return new Blob(parts, { type })
   }
 }
 
@@ -44,7 +43,7 @@ export async function loadTar(
     filename?.endsWith('.tgz') ||
     filename?.endsWith('.tar.gz')
   if (compressed) {
-    tarball = await unzip(tarball)
+    tarball = new Uint8Array(await unzip(tarball))
   }
 
   let files
@@ -53,7 +52,7 @@ export async function loadTar(
   } catch (e) {
     if (e instanceof Error && e.message.includes('File is corrupted')) {
       // The file may be compressed, but had the wrong mime type, try unzipping it
-      tarball = await unzip(tarball)
+      tarball = new Uint8Array(await unzip(tarball))
       files = untar(tarball)
     } else {
       throw e
@@ -152,7 +151,7 @@ export async function zipBrowser(file: Uint8Array): Promise<Uint8Array> {
   const writer = cs.writable.getWriter()
   const reader = cs.readable.getReader()
 
-  writer.write(file)
+  writer.write(new Uint8Array(file))
   writer.close()
 
   const chunks: Uint8Array[] = []
@@ -201,7 +200,7 @@ export async function unzipBrowser(file: Uint8Array): Promise<Uint8Array> {
   const writer = ds.writable.getWriter()
   const reader = ds.readable.getReader()
 
-  writer.write(file)
+  writer.write(new Uint8Array(file))
   writer.close()
 
   const chunks: Uint8Array[] = []

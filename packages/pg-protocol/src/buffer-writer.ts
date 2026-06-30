@@ -66,14 +66,18 @@ export class Writer {
     return this
   }
 
-  public add(otherBuffer: ArrayBuffer): Writer {
-    this.#ensure(otherBuffer.byteLength)
-    new Uint8Array(this.#bufferView.buffer).set(
-      new Uint8Array(otherBuffer),
-      this.#offset,
-    )
+  public add(otherBuffer: ArrayBufferLike | ArrayBufferView): Writer {
+    const source = ArrayBuffer.isView(otherBuffer)
+      ? new Uint8Array(
+          otherBuffer.buffer,
+          otherBuffer.byteOffset,
+          otherBuffer.byteLength,
+        )
+      : new Uint8Array(otherBuffer)
+    this.#ensure(source.byteLength)
+    new Uint8Array(this.#bufferView.buffer).set(source, this.#offset)
 
-    this.#offset += otherBuffer.byteLength
+    this.#offset += source.byteLength
     return this
   }
 

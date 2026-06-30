@@ -6,5 +6,9 @@
     "eslint.config.js",
     "tsup.config.js",
     "vitest.config.ts"
-  ]
+  ],
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "types": ["node"]
+  }
 }

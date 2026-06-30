@@ -11,7 +11,7 @@ const dumpFilePath = '/tmp/out.sql'
  * @param {ArrayBuffers} buffer2 The second buffer.
  * @return {ArrayBuffers} The new ArrayBuffer created out of the two.
  */
-function concat(buffer1: ArrayBuffer, buffer2: ArrayBuffer) {
+function concat(buffer1: Uint8Array, buffer2: Uint8Array): Uint8Array {
   const tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength)
   tmp.set(new Uint8Array(buffer1), 0)
   tmp.set(new Uint8Array(buffer2), buffer1.byteLength)

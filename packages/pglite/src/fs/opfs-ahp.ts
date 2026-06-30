@@ -13,9 +13,12 @@ export interface FileSystemSyncAccessHandle {
   close(): void
   flush(): void
   getSize(): number
-  read(buffer: ArrayBuffer, options: { at: number }): number
+  read(buffer: ArrayBufferView | ArrayBufferLike, options: { at: number }): number
   truncate(newSize: number): void
-  write(buffer: ArrayBuffer, options: { at: number }): number
+  write(
+    buffer: ArrayBufferView | ArrayBufferLike,
+    options: { at: number },
+  ): number
 }
 
 // State
@@ -639,7 +642,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     if (!sh) {
       throw new FsError('EBADF', 'Bad file descriptor')
     }
-    const ret = sh.write(new Uint8Array(buffer, offset, length), {
+    const ret = sh.write(buffer.subarray(offset, offset + length), {
       at: position,
     })
     if (path.startsWith('/pg_wal')) {

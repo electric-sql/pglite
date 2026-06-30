@@ -342,6 +342,7 @@ export class PGlite
     })
 
     const wasmMemory = new WebAssembly.Memory({
+      address: "i64",
       initial: options.initialMemory
         ? options.initialMemory / (64 * 1024)
         : 2048,
@@ -864,7 +865,11 @@ export class PGlite
     if (!this.#queryWriteChunks) {
       return undefined
     }
-    const blob = new Blob(this.#queryWriteChunks)
+    // Re-wrap chunks to force ArrayBuffer-backed views (not ArrayBufferLike)
+    const blobParts: BlobPart[] = this.#queryWriteChunks.map(
+      (chunk) => new Uint8Array(chunk),
+    )
+    const blob = new Blob(blobParts)
     this.#queryWriteChunks = undefined
     return blob
   }

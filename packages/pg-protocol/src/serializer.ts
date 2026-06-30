@@ -17,7 +17,7 @@ const enum code {
   copyFail = 0x66,
 }
 
-type LegalValue = string | ArrayBuffer | ArrayBufferView | null
+type LegalValue = string | ArrayBufferLike | ArrayBufferView | null
 
 const writer = new Writer()
 
@@ -137,6 +137,8 @@ const writeValues = (values: LegalValue[], valueMapper?: ValueMapper): void => {
       paramWriter.addInt32(-1)
     } else if (
       mappedVal instanceof ArrayBuffer ||
+      (typeof SharedArrayBuffer !== 'undefined' &&
+        mappedVal instanceof SharedArrayBuffer) ||
       ArrayBuffer.isView(mappedVal)
     ) {
       const buffer = ArrayBuffer.isView(mappedVal)
@@ -153,8 +155,9 @@ const writeValues = (values: LegalValue[], valueMapper?: ValueMapper): void => {
     } else {
       // add the param type (string) to the writer
       writer.addInt16(ParamType.STRING)
-      paramWriter.addInt32(byteLengthUtf8(mappedVal))
-      paramWriter.addString(mappedVal)
+      const textValue = mappedVal as string
+      paramWriter.addInt32(byteLengthUtf8(textValue))
+      paramWriter.addString(textValue)
     }
   }
 }
@@ -256,7 +259,7 @@ const close = (msg: PortalOpts): Uint8Array => {
   return cstringMessage(code.close, text)
 }
 
-const copyData = (chunk: ArrayBuffer): Uint8Array => {
+const copyData = (chunk: ArrayBufferLike | ArrayBufferView): Uint8Array => {
   return writer.add(chunk).flush(code.copyFromChunk)
 }
 
