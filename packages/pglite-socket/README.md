@@ -278,11 +278,10 @@ const sql = postgres({
 })
 ```
 
-When using `--run` with `--include-database-url`, you can use the generated `DATABASE_URL`:
-
-```javascript
-const sql = postgres(process.env.DATABASE_URL)
-```
+When using `--run` with `--include-database-url`, the generated `DATABASE_URL`
+uses the libpq-style `?host=/tmp` Unix socket form. This works with clients that
+understand that connection string format, such as `psql`. For `postgres.js`, use
+the `path` option shown above instead of passing the generated URL directly.
 
 ### Limitations and Tips
 
