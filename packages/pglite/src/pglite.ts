@@ -341,13 +341,29 @@ export class PGlite
       fsBundleBuffer = buffer
     })
 
-    const wasmMemory = new WebAssembly.Memory({
-      address: "i64",
-      initial: options.initialMemory
-        ? options.initialMemory / (64 * 1024)
-        : 2048,
-      maximum: 32768,
-    })
+
+    type Memory64Descriptor = {
+      address: 'i64'
+      initial: bigint
+      maximum?: bigint
+      shared?: boolean
+    }
+    const memory64: Memory64Descriptor = {
+      address: 'i64',
+      initial: 2048n,
+      maximum: 32768n,
+    }
+    const wasmMemory = new WebAssembly.Memory(
+      memory64 as unknown as WebAssembly.MemoryDescriptor,
+    )
+
+    // const wasmMemory = new WebAssembly.Memory({
+    //   address: 'i64',
+    //   initial: options.initialMemory
+    //     ? options.initialMemory / (64 * 1024)
+    //     : 2048,
+    //   maximum: 32768,
+    // })
 
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: POSTGRES_EXE_PATH,

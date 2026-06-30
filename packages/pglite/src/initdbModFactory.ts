@@ -31,10 +31,10 @@ export interface InitdbMod
   ___errno_location: () => number
   _strerror: (errno: number) => number
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
-  _pgl_set_system_fn: (system_fn: number) => void
-  _pgl_set_popen_fn: (popen_fn: number) => void
-  _pgl_set_pclose_fn: (pclose_fn: number) => void
-  _pgl_set_pipe_fn: (pipe_fn: number) => void
+  _pgl_set_system_fn: (system_fn: number | bigint) => void
+  _pgl_set_popen_fn: (popen_fn: number | bigint) => void
+  _pgl_set_pclose_fn: (pclose_fn: number | bigint) => void
+  _pgl_set_pipe_fn: (pipe_fn: number | bigint) => void
   _pclose: (stream: number) => number
   _pipe: (fd: number) => number
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number

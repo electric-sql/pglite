@@ -125,7 +125,7 @@ async function execInitdb({
             return callPgMain(postgresArgs)
           }, 'pi')
 
-          mod._pgl_set_system_fn(system_fn)
+          mod._pgl_set_system_fn(BigInt(system_fn))
 
           popen_fn = mod.addFunction((cmd_ptr: number, mode: number) => {
             const smode = mod.UTF8ToString(mode)
@@ -144,7 +144,7 @@ async function execInitdb({
             }
           }, 'ppi')
 
-          mod._pgl_set_popen_fn(popen_fn)
+          mod._pgl_set_popen_fn(BigInt(popen_fn))
 
           pclose_fn = mod.addFunction((stream: number) => {
             if (stream === initdb_stdin_fd || stream === initdb_stdout_fd) {
@@ -159,7 +159,7 @@ async function execInitdb({
             }
           }, 'pi')
 
-          mod._pgl_set_pclose_fn(pclose_fn)
+          mod._pgl_set_pclose_fn(BigInt(pclose_fn))
 
           {
             const pglite_stdin_path = pg.Module.stringToUTF8OnStack(pgstdinPath)

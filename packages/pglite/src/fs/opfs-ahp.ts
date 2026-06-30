@@ -13,7 +13,10 @@ export interface FileSystemSyncAccessHandle {
   close(): void
   flush(): void
   getSize(): number
-  read(buffer: ArrayBufferView | ArrayBufferLike, options: { at: number }): number
+  read(
+    buffer: ArrayBufferView | ArrayBufferLike,
+    options: { at: number },
+  ): number
   truncate(newSize: number): void
   write(
     buffer: ArrayBufferView | ArrayBufferLike,
