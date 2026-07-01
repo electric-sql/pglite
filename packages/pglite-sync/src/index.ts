@@ -357,8 +357,8 @@ async function createPlugin(
           // Move-in messages from subquery-based shapes don't have an LSN
           // because they come from direct DB queries, not from replication.
           // We should never skip these based on LSN filtering.
-          const isMoveIn = (message.headers as Record<string, unknown>)
-            .is_move_in === true
+          const isMoveIn =
+            (message.headers as Record<string, unknown>).is_move_in === true
 
           if (!isMoveIn && lsn <= lastCommittedLsnForShape) {
             // We are replaying changes / have already seen this lsn

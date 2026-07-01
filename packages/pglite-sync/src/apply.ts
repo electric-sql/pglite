@@ -24,7 +24,8 @@ export async function applyMessageToTable({
   const data = mapColumns ? doMapColumns(mapColumns, message) : message.value
 
   // Check if this is a move-in message (from subquery-based shapes)
-  const isMoveIn = (message.headers as Record<string, unknown>).is_move_in === true
+  const isMoveIn =
+    (message.headers as Record<string, unknown>).is_move_in === true
 
   switch (message.headers.operation) {
     case 'insert': {
