@@ -172,6 +172,133 @@ describe('pglite-sync', () => {
     shape.unsubscribe()
   })
 
+  it('syncs move-in messages that have no lsn', async () => {
+    let feedMessage: (
+      lsn: number,
+      message: MultiShapeMessage,
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (lsn, message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: null,
+    })
+
+    // initial sync, commits past lsn 0
+    await feedMessage(5, {
+      headers: { operation: 'insert', lsn: '5' },
+      key: 'id1',
+      value: { id: 1, task: 'task1', done: false },
+      shape: 'shape',
+    })
+
+    // move-in has no lsn (defaults to 0), must not be skipped as already seen
+    await feedMessage(6, {
+      headers: { operation: 'insert', is_move_in: true },
+      key: 'id2',
+      value: { id: 2, task: 'task2', done: false },
+      shape: 'shape',
+    })
+    expect((await pg.sql`SELECT * FROM todo ORDER BY id;`).rows).toEqual([
+      { id: 1, task: 'task1', done: false },
+      { id: 2, task: 'task2', done: false },
+    ])
+
+    shape.unsubscribe()
+  })
+
+  it('upserts move-in messages that overlap with existing rows', async () => {
+    let feedMessage: (
+      lsn: number,
+      message: MultiShapeMessage,
+    ) => Promise<void> = async (_) => {}
+    MockMultiShapeStream.mockImplementation(() => ({
+      subscribe: vi.fn(
+        (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+          feedMessage = (lsn, message) =>
+            cb([
+              message,
+              {
+                shape: 'shape',
+                headers: {
+                  control: 'up-to-date',
+                  global_last_seen_lsn: lsn.toString(),
+                },
+              },
+            ])
+        },
+      ),
+      unsubscribeAll: vi.fn(),
+      isUpToDate: true,
+      shapes: {
+        shape: {
+          subscribe: vi.fn(),
+          unsubscribeAll: vi.fn(),
+        },
+      },
+    }))
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: null,
+    })
+
+    // initial sync
+    await feedMessage(5, {
+      headers: { operation: 'insert', lsn: '5' },
+      key: 'id1',
+      value: { id: 1, task: 'task1', done: false },
+      shape: 'shape',
+    })
+
+    // move-in with an existing key must upsert, not error on duplicate key
+    await feedMessage(6, {
+      headers: { operation: 'insert', is_move_in: true },
+      key: 'id1',
+      value: { id: 1, task: 'task1-updated', done: true },
+      shape: 'shape',
+    })
+    expect((await pg.sql`SELECT * FROM todo;`).rows).toEqual([
+      { id: 1, task: 'task1-updated', done: true },
+    ])
+
+    shape.unsubscribe()
+  })
+
   it('performs operations within a transaction', async () => {
     let feedMessages: (
       lsn: number,
