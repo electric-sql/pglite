@@ -131,7 +131,7 @@
     "test:node": "pnpm test:clean && pnpm vitest tests/targets/runtimes/node-*.test.js",
     "test:runtimes": "pnpm test:bun && pnpm test:node",
     "test:integration": "pnpm test:runtimes && pnpm test:web",
-    "test:clean": "rm -rf ./pgdata-test",
+    "test:clean": "rm -rf ./pgdata-test ./pgdata-test.lock",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "pnpm build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
