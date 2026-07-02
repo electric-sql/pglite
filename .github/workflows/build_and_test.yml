@@ -574,7 +574,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: pglite-pgmq-dist-node-v20.x
-          path: ./packages/pglite-mq/dist/
+          path: ./packages/pglite-pgmq/dist/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
