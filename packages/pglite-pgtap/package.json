@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-pgtap",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "pgtap extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",

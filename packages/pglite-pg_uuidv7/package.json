@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite-pg_uuidv7",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "pg_uuidv7 extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
