@@ -4,7 +4,12 @@ import { waitFor } from '@testing-library/dom'
 import React from 'react'
 import { PGlite } from '@electric-sql/pglite'
 import { live, PGliteWithLive } from '@electric-sql/pglite/live'
-import { makePGliteProvider, PGliteProvider, usePGlite } from '../src'
+import {
+  makePGliteProvider,
+  PGliteProvider,
+  usePGlite,
+  usePGliteOptional,
+} from '../src'
 
 describe('provider', () => {
   it('can receive PGlite', async () => {
@@ -39,5 +44,28 @@ describe('provider', () => {
     const { result } = renderHook(() => usePGliteTyped(), { wrapper })
 
     await waitFor(() => expect(result.current).toBe(db))
+  })
+})
+
+describe('usePGlite / usePGliteOptional outside a provider', () => {
+  it('usePGlite() throws when no PGliteProvider is mounted', () => {
+    expect(() => renderHook(() => usePGlite())).toThrow(
+      'No PGlite instance found',
+    )
+  })
+
+  it('usePGliteOptional() returns null when no PGliteProvider is mounted', () => {
+    const { result } = renderHook(() => usePGliteOptional())
+    expect(result.current).toBeNull()
+  })
+
+  it('usePGliteOptional() does not throw when no PGliteProvider is mounted', () => {
+    expect(() => renderHook(() => usePGliteOptional())).not.toThrow()
+  })
+
+  it('usePGliteOptional(db) returns the db when one is passed directly', async () => {
+    const db = await PGlite.create({ extensions: { live } })
+    const { result } = renderHook(() => usePGliteOptional(db as PGliteWithLive))
+    expect(result.current).toBe(db)
   })
 })
