@@ -166,6 +166,8 @@ export class PGlite
     'io_method=sync',
     '-c',
     'max_parallel_maintenance_workers=0',
+    '-c',
+    'wal_level=logical', // enable logical decoding / replication slots
   ]
 
   /**
@@ -940,6 +942,12 @@ export class PGlite
             // that we call whenever the exception longjmp is executed
             // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
+          } else if (typeof e?.status !== 'number') {
+            // not an emscripten ExitStatus: the wasm instance crashed
+            // (e.g. a trap or a call to a missing symbol) and its internal
+            // state can no longer be trusted. Swallowing it here would leave
+            // the session silently corrupted, so surface it to the caller.
+            throw e
           }
           // even if there is an exception caused by one of the batched queries,
           // we need to continue processing the rest without throwing.
