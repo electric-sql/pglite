@@ -27,6 +27,7 @@
     "wasm:copy-pglite": "mkdir -p ./packages/pglite/release/ && cp ./postgres-pglite/dist/bin/pglite.* ./packages/pglite/release/ && cp ./postgres-pglite/dist/extensions/*.tar.gz ./packages/pglite/release/",
     "wasm:build": "cd postgres-pglite && PGLITE_VERSION=$(pnpm -s pglite:version) ./build-with-docker.sh && cd .. && pnpm wasm:copy-pglite && pnpm wasm:copy-pgdump && pnpm wasm:copy-initdb && pnpm wasm:copy-other_extensions",
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
+    "wasm:multi-memory:phase0": "./postgres-pglite/pglite/multi-memory/run-phase0.sh",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all",
     "prepare": "husky",

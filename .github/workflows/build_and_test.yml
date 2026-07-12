@@ -19,6 +19,17 @@ on:
   pull_request:
 
 jobs:
+  multi-memory-phase0:
+    name: Multi-memory transformer Phase 0
+    runs-on: blacksmith-32vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@v5
+      - name: Build the pinned tools image and run Phase 0
+        run: pnpm wasm:multi-memory:phase0
+
   stylecheck:
     name: Stylecheck
     runs-on: ubuntu-latest
