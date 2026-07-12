@@ -729,7 +729,7 @@ The postmaster artifact is therefore linked first as a conventional memory-0 mod
 7. validates limits, sharedness, data-segment targets, and exported ABI metadata;
 8. emits provenance and dispatch statistics for review.
 
-The generic-everything transform is the correctness baseline and the first deliverable. It is validated against the existing single-user PGlite artifact before postmaster integration begins. Provenance is not a prerequisite for semantic correctness; it is the optimization programme that reduces an empirically bounded overhead.
+The generic-everything transform is the correctness baseline and the first deliverable. It is validated against the existing single-user PGlite artifact before postmaster integration begins. Provenance is not a prerequisite for semantic correctness. Phase 1 subsequently showed that it is a performance dependency for this design: generic dispatch at every site is correct but too expensive.
 
 ### 11.2 Required instruction coverage
 
@@ -932,12 +932,13 @@ The hot private paths must not pay a three-way branch on every dereference. The 
 - bulk-memory domain combinations;
 - operations specialized by source annotation versus inferred provenance.
 
-Measured dispatch microbenchmarks project a generic-everything whole-workload cost of roughly 15–35%, with a 1.26x latency-bound pointer-chase as the observed worst case. The staged optimization expectation is:
+Before Phase 1, dispatch microbenchmarks projected a generic-everything whole-workload cost of roughly 15–35%, with a 1.26x latency-bound pointer-chase as the observed worst case. Phase 1 falsified that whole-workload projection for the release artifact. The original staged expectation and the now-applicable targets are:
 
-- generic-everything: correct and no worse than about 1.35x on representative workloads;
+- generic-everything: correct, but measured at up to 2.16x and retained only as the correctness oracle;
+- private-only oracle: no worse than 1.15x on every agreed steady-state workload before provenance work continues;
 - basic allocator/static/interprocedural provenance: approximately 50–70% of sites and 70–85% of dynamic accesses direct;
 - fixed-root store sets, annotations, and hot cloning: 90% or more of dynamic accesses direct where profiles justify it;
-- final target: single-digit overhead on representative PGlite workloads, with remaining generic sites concentrated in genuinely mixed-domain code.
+- Phase 2 exit target: no worse than 1.35x on every agreed workload, with a stretch target of single-digit overhead and remaining generic sites concentrated in genuinely mixed-domain code.
 
 These are measurement targets, not soundness assumptions. Release readiness requires workload profiles demonstrating that executor, tuple, buffer, lock, allocator, and expression-evaluation paths meet them.
 
@@ -2272,9 +2273,9 @@ The review's Node 24 arm64 dispatch microbenchmark produced the following ratios
 | Outlined generic helper                |          0.93 |
 | Additional pointer chase               |          1.26 |
 
-These are lower bounds: they do not include register pressure, code-size growth, or PostgreSQL's workload mix. They do, however, bound the mechanism much more usefully than the old asm.js `SPLIT_MEMORY` result. `SPLIT_MEMORY` used chunk-table translation and per-access masking and reported roughly 2.5x in Firefox and 5x in Chrome; this design uses a predictable two-way tag branch in v1. The measured range supports a provisional whole-workload expectation of roughly 1.15–1.35x for a generic-everything build. Phase 1 must test that expectation directly. Provenance is an optimizer, not a prerequisite for semantic viability.
+These are lower bounds: they do not include register pressure, code-size growth, or PostgreSQL's workload mix. They do, however, bound the mechanism much more usefully than the old asm.js `SPLIT_MEMORY` result. `SPLIT_MEMORY` used chunk-table translation and per-access masking and reported roughly 2.5x in Firefox and 5x in Chrome; this design uses a predictable two-way tag branch in v1. They originally supported a provisional whole-workload expectation of roughly 1.15–1.35x for a generic-everything build. Phase 1 tested and rejected that expectation for the release artifact. Provenance remains unnecessary for semantic viability but is now a prerequisite for performance viability.
 
-Benchmarks must distinguish startup cost, steady-state SQL throughput, lock-heavy workloads, extension calls, and long-lived memory behavior. Deferred-tier benchmarks add parallel queries and scoped allocation. A microbenchmark showing fast known private loads is insufficient by itself; the release gate is generic-everything PostgreSQL at no worse than 1.35x the current artifact on the agreed workload suite, followed by evidence that specialization improves the important regressions.
+Benchmarks must distinguish startup cost, steady-state SQL throughput, lock-heavy workloads, extension calls, and long-lived memory behavior. Deferred-tier benchmarks add parallel queries and scoped allocation. A microbenchmark showing fast known private loads is insufficient by itself. After the recorded generic-everything failure, the continuation gate is a private-only oracle no worse than 1.15x, followed by a sound specialized artifact no worse than 1.35x on every agreed workload.
 
 ## 25. Proof-of-concept implementation phases
 
@@ -2290,7 +2291,7 @@ Turn the experiments in `experiments/multi-memory-tests/` into CI capability ass
 
 Run today's single-user artifact through the generic transformer, with memory 0 as the real heap and the compatible non-shared imports at indices 1 and 2 aliased to that same object. Keep the existing build, VFS, and single-user execution model unchanged without paying for unused guard reservations.
 
-- pass `pg_regress` and the existing PGlite suite;
+- pass the existing PGlite suite and applicable single-user regression corpus; reserve canonical unmodified `pg_regress` execution for the socket-backed provider phase;
 - differentially compare SQL results with the untransformed artifact;
 - measure regression and pgbench-style workloads, code size, compile time, and startup;
 - emit an inventory of all rewritten sites and assert that none remain outside explicit allowlists;
@@ -2298,15 +2299,74 @@ Run today's single-user artifact through the generic transformer, with memory 0 
 
 This is the earliest decisive Gates B/C result and has no postmaster dependency.
 
-### Phase 2: provenance, outlining, and host ABI
+#### Phase 1 result and decision
 
-- implement conservative value-flow summaries using Binaryen's local and whole-module analysis infrastructure;
-- add fixed global-root store sets, allocator provenance seeds, optional source metadata, and debug tag assertions;
-- outline helpers per operation shape by default, then inline or clone only demonstrated hot paths;
-- report direct/generic counts and ranked hot generic sites;
-- build tagged JavaScript view sets and pointer-bearing import manifests;
-- wrap Emscripten helpers that assume memory 0;
-- re-run the Phase 1 differential and performance suites.
+Phase 1 completed on 12 July 2026. Transform soundness passed: the release artifact transformed deterministically, the fail-closed inventory accounted for 395,210 rewritten sites and 4,425 helper shapes, differential SQL passed, and the unchanged PGlite basic and Node/VFS suites passed. The canonical `make check` driver remains part of the socket-backed regression-provider phase because today's single-user API cannot host unmodified `pg_regress` clients.
+
+Gate C did not pass. On the stabilized Node 22 arm64 Docker suite, the inline generic-private-fast-path artifact was 2.16x on the worst workload, with the other measured workloads at 1.83x and 1.61x. The artifact was 1.71x the original size. The result invalidates the assumption that a branch at every dereference is an acceptable implementation baseline, even though generic dispatch remains a sound correctness fallback.
+
+Do not start Phase 3, PostgreSQL process integration, or production host-ABI work from this result. Phase 2 is now a bounded performance-rescue phase. It may justify continuing only by producing a sound specialized artifact that passes revised Gate C. Failure of the Phase 2 exit gate rejects this multi-memory lowering strategy before expensive postmaster work.
+
+### Phase 2: bounded provenance and specialization rescue
+
+Phase 2 is ordered to answer viability as cheaply as possible. Later steps do not proceed merely because an earlier implementation exists.
+
+#### Phase 2A: establish the performance ceiling and dynamic profile
+
+Build and compare four artifacts from the same input and pinned toolchain:
+
+1. the unmodified classic artifact;
+2. a private-only oracle that adds the multi-memory ABI but leaves every current single-user dereference as a direct memory-0 operation;
+3. the correctness-first outlined generic artifact;
+4. the inline generic-private-fast-path artifact from Phase 1.
+
+The private-only oracle is an experiment, not a postmaster-compatible artifact. It determines whether direct specialization can recover the lost performance and separates transformation overhead from dispatch, helper-call, compilation, and code-size costs. Run each artifact in alternating isolated processes using the Phase 1 suite. Report code size, Wasm compile time, startup, steady-state workloads, and variance. The provisional continuation criterion is a private-only oracle no worse than 1.15x on every agreed steady-state workload, leaving engineering margin beneath the final 1.35x gate. If it misses that bound, or the remaining cost cannot be attributed, stop and reject the approach.
+
+The oracle experiment completed on 13 July 2026 and passed. Three independent runs each used five alternating isolated-process pairs. Taking the most conservative result across all three runs, the worst workload ratio was 1.073x; the recursive, indexed-aggregate, and pgbench-style maxima were 1.008x, 1.000x, and 1.073x. The artifact grew by only 1,617 bytes, a 1.00014x ratio. In the same comparison suite, outlined generic dispatch was 3.86x worst case and inline generic dispatch was 1.52x. The result shows that the multi-memory imports and transformed module do not impose a material inherent throughput penalty: repeated dynamic dispatch is the measured problem, and sound direct specialization has sufficient ceiling to continue. This passes only the Phase 2A oracle checkpoint; it authorizes dynamic profiling and provenance work, not Phase 3.
+
+Create a profiling-only build that ranks functions and dereference sites by dynamic access count and observed tag. Prefer low-distortion engine sampling and per-function counters first; add targeted site counters only within the ranked hot functions. Report cumulative coverage so optimization is driven by dynamic accesses rather than the 395,210-site static total. The profile must also attribute generated code size and generic-helper calls by function.
+
+#### Phase 2B: conservative direct-access provenance
+
+Implement the lattice `Private | Global | Scoped | Null | Unknown`. Start with Binaryen local def-use analysis and progress to conservative whole-module summaries:
+
+- constants, stack addresses, data addresses, and private GOT roots;
+- private allocator results and explicitly global/scoped allocator results;
+- local copies, selects, phis, checked pointer arithmetic, and direct calls;
+- parameter, return, and memory-effect summaries to a fixed point;
+- conservative invalidation at unknown imports, indirect calls, varargs, ambiguous integer operations, and escaping addresses.
+
+A proven value lowers to an original-sized direct indexed-memory operation with no tag branch. `Unknown` remains on the sound generic path. Emit the proof source and direct/generic classification for every site. A debug build asserts the expected tag immediately before annotation- or inference-derived direct operations. Compare generic and specialized builds differentially.
+
+The first target is 70–85% of dynamic accesses direct, not a percentage of static sites. Measure before adding more analysis machinery.
+
+#### Phase 2C: fixed roots and minimal metadata
+
+For dynamically important unresolved loads, add the fixed-address root-cell store-set analysis described above. Infer a domain only when the root address does not escape and every store is accounted for. Rank remaining unknown sites again.
+
+Only then add metadata. Prefer allocator/function summaries and annotations in PGlite libc or generated build manifests. Keep PostgreSQL-fork changes minimal and fenced; add a PostgreSQL annotation only when a ranked hot site cannot be expressed through the PGlite abstraction layer. Every annotation must have debug tag assertions and a generic/direct differential test. Introduce an LLVM pass only if Wasm-level information loss is measured as the blocker.
+
+#### Phase 2D: hoist or clone genuinely bimodal hot paths
+
+Do not inline both dispatch arms at every unknown dereference. Use this lowering policy:
+
+```text
+proven private/global/scoped -> direct indexed operation
+cold unknown                 -> outlined shape-deduplicated helper
+hot bimodal function         -> one hoisted test or profile-justified clones
+```
+
+Tuple deformation and expression evaluation are the leading cloning candidates. Produce private and global clones only for profile-proven hot functions, dispatch once at a caller or function boundary, and retain the generic original for indirect or unclassified calls. The objective is one tag test per tuple or operation, not per field dereference. Selective inlining is allowed only when measurement shows that the code-size and compilation tradeoff is positive.
+
+#### Phase 2E: host ABI hardening
+
+After the specialized single-user candidate has demonstrated adequate margin, build the tagged JavaScript view sets and complete pointer-bearing import manifests. Wrap Emscripten helpers that assume memory 0, add typed-array refresh rules, and make unknown pointer-bearing imports fail closed. This work must not be used to hide or defer the Phase 2 performance decision.
+
+#### Phase 2F: exit gate
+
+Re-run Phase 0, the complete Phase 1 differential and package suites, debug tag assertions, and the alternating-process performance suite. Report static and dynamic direct/generic counts, ranked residual generic sites, artifact size, compile time, startup, and each workload ratio.
+
+Phase 2 passes only if the specialized artifact is sound and no worse than 1.35x on every agreed steady-state workload. Generic dispatch remains the correctness oracle and fallback for unknown values; it is no longer expected to satisfy the release throughput bound when exercised at every site. If the specialized artifact misses the bound after fixed-root analysis and profile-justified hoisting/cloning, stop. Do not advance to Phase 3 by relaxing the threshold, selecting only favorable workloads, or treating annotations as unchecked assumptions.
 
 The result should improve a sound generic baseline. A lack of precision is a performance issue, not a correctness escape hatch.
 
@@ -2800,10 +2860,15 @@ The review's Node 22.13 and 24.15 experiments pass this gate on macOS arm64; the
 
 ### Gate C: transform performance
 
-- the generic-everything transformed single-user artifact is no worse than 1.35x the current artifact on the agreed regression and pgbench-style suite;
-- specialization improves demonstrated hot sites without becoming necessary for correctness;
-- generic dispatch does not cause unacceptable code-size, compile-time, or branch overhead;
+- Phase 1's generic-everything result is retained as the correctness baseline and recorded performance failure, not silently reclassified as a pass;
+- the Phase 2 private-only oracle is no worse than 1.15x on every agreed steady-state workload, or the rescue stops before further analysis work;
+- the sound specialized artifact is no worse than 1.35x on every agreed regression and pgbench-style workload;
+- direct operations are admitted only by reported conservative proofs or checked annotations, and generic/direct differential builds plus debug tag assertions pass;
+- cold unknown sites use outlined helpers, while hoisting or cloning is limited to demonstrated hot bimodal paths;
+- residual generic dispatch, code size, compile time, startup, and branch overhead are measured and acceptable;
 - build and source-map tooling remains maintainable.
+
+Gate C blocks Phase 3. The specialized artifact may depend on provenance for performance, but generic dispatch remains sufficient for correctness. Failure after the bounded Phase 2 rescue rejects the multi-memory lowering strategy; it does not authorize proceeding to postmaster integration with an acknowledged performance deficit.
 
 ### Gate D: multi-session PostgreSQL correctness
 
@@ -2893,8 +2958,8 @@ The following are settled design decisions for the POC and v1 unless explicitly 
 - Make only two pointer domains active in v1: private memory 0 and cluster-global memory 1. If the binary retains a third import, bind it to memory 0 and keep it semantically inaccessible.
 - Use tagged 32-bit pointers with a 2 GiB private and 1 GiB global aperture in v1; reserve tag `11` for the deferred scoped domain.
 - Use a sound Binaryen post-link transformation with generic fallback.
-- Build generic-everything first and require no worse than 1.35x workload time before postmaster integration.
-- Treat provenance, LLVM/source metadata, outlining, hoisting, and cloning as optimizations, not correctness dependencies.
+- Retain the completed generic-everything build as the sound correctness oracle. Its measured Phase 1 performance failed Gate C, so permit one bounded Phase 2 specialization rescue and prohibit postmaster integration until the specialized artifact is no worse than 1.35x on every agreed workload.
+- Treat provenance, LLVM/source metadata, outlining, hoisting, and cloning as performance dependencies only after measurement justifies each layer; they never replace the generic correctness fallback.
 - Give every process a private function table.
 - Put primary PostgreSQL shared memory in memory 1.
 - Put every v1 DSM and DSA allocation, including PG18 cumulative statistics, in memory 1.

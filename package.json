@@ -29,6 +29,7 @@
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
     "wasm:multi-memory:phase0": "./postgres-pglite/pglite/multi-memory/run-phase0.sh",
     "wasm:multi-memory:phase1": "./postgres-pglite/pglite/multi-memory/run-phase1.sh",
+    "wasm:multi-memory:phase2a": "./postgres-pglite/pglite/multi-memory/run-phase2a.sh",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all",
     "prepare": "husky",
