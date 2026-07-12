@@ -240,7 +240,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
       // If there are no callbacks, unsubscribe from the notify triggers
       const unsubscribe = async (callback?: (results: Results<T>) => void) => {
         if (callback) {
-          callbacks = callbacks.filter((callback) => callback !== callback)
+          callbacks = callbacks.filter((cb) => cb !== callback)
         } else {
           callbacks = []
         }
@@ -503,7 +503,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         callback?: (changes: Array<Change<T>>) => void,
       ) => {
         if (callback) {
-          callbacks = callbacks.filter((callback) => callback !== callback)
+          callbacks = callbacks.filter((cb) => cb !== callback)
         } else {
           callbacks = []
         }
@@ -663,7 +663,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
 
       const unsubscribe = async (callback?: (results: Results<T>) => void) => {
         if (callback) {
-          callbacks = callbacks.filter((callback) => callback !== callback)
+          callbacks = callbacks.filter((cb) => cb !== callback)
         } else {
           callbacks = []
         }
