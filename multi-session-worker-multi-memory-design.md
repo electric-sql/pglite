@@ -1194,6 +1194,23 @@ Avoid duplicating whole upstream functions inside `#ifdef`/`#else` blocks, broad
 
 Every PostgreSQL-fork patch should document why the libc/portability layer alone was insufficient, identify the smallest fenced surface, and include a focused test. Review should treat growth in the fork diff and merge-conflict surface as an architectural cost, not routine implementation detail.
 
+### 12.14 Containerized tooling policy
+
+All tooling used to build, transform, stamp, inspect, or package the Wasm artifacts must live inside the same Docker builder used for the PGlite Wasm build. A developer machine or CI runner should not need a separately installed Emscripten, LLVM, Binaryen, WABT, PostgreSQL build tool, or custom transformer.
+
+The pinned builder image must contain and version:
+
+- Emscripten/LLVM, `wasm-ld`, Binaryen, and any WABT utilities;
+- the PGlite Binaryen multi-memory transformer and optional LLVM analysis pass;
+- fixture generators, ABI validators, opcode inventories, artifact stampers, reducers, and debug/source-map tools;
+- dependency and statically linked extension build tooling;
+- scripts that build the exact-revision host regression drivers or their distributable test artifacts;
+- manifest generation recording every relevant input and tool version.
+
+Repository commands may use thin host wrappers to invoke Docker, mount source/cache/output directories, and run the resulting artifacts. Runtime and platform tests may execute Node, browsers, or native clients on the target host when that environment is the subject of the test, but they must consume container-produced artifacts and must not relink, rewrite, restamp, or otherwise create a second implicit Wasm build path.
+
+The container build must be reproducible from a documented image definition, work in CI without developer-global tools, and emit enough version/hash metadata to reconstruct an artifact. Tooling changes are changes to the builder image and manifest, not undocumented workstation setup instructions.
+
 ## 13. PostgreSQL shared-memory integration
 
 ### 13.1 Current PGlite baseline
