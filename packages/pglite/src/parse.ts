@@ -20,6 +20,8 @@ export function parseResults(
 ): Array<Results> {
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
+  let fieldNames: string[] | undefined
+  let fieldTypes: number[] | undefined
   let affectedRows = 0
   const parsers = { ...defaultParsers, ...options?.parsers }
 
@@ -27,35 +29,41 @@ export function parseResults(
     switch (message.name) {
       case 'rowDescription': {
         const msg = message as RowDescriptionMessage
-        currentResultSet.fields = msg.fields.map((field) => ({
-          name: field.name,
-          dataTypeID: field.dataTypeID,
-        }))
+        const n = msg.fields.length
+        fieldNames = new Array(n)
+        fieldTypes = new Array(n)
+        currentResultSet.fields = new Array(n)
+        for (let i = 0; i < n; i++) {
+          const field = msg.fields[i]
+          fieldNames[i] = field.name
+          fieldTypes[i] = field.dataTypeID
+          currentResultSet.fields[i] = {
+            name: field.name,
+            dataTypeID: field.dataTypeID,
+          }
+        }
         break
       }
       case 'dataRow': {
-        if (!currentResultSet) break
+        if (!fieldNames || !fieldTypes) break
         const msg = message as DataRowMessage
+        const n = msg.fields.length
         if (options?.rowMode === 'array') {
-          currentResultSet.rows.push(
-            msg.fields.map((field, i) =>
-              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
-            ),
-          )
+          const row = new Array<unknown>(n)
+          for (let i = 0; i < n; i++) {
+            row[i] = parseType(msg.fields[i], fieldTypes[i], parsers)
+          }
+          currentResultSet.rows.push(row)
         } else {
-          // rowMode === "object"
-          currentResultSet.rows.push(
-            Object.fromEntries(
-              msg.fields.map((field, i) => [
-                currentResultSet!.fields[i].name,
-                parseType(
-                  field,
-                  currentResultSet!.fields[i].dataTypeID,
-                  parsers,
-                ),
-              ]),
-            ),
-          )
+          const row: Record<string, unknown> = {}
+          for (let i = 0; i < n; i++) {
+            row[fieldNames[i]] = parseType(
+              msg.fields[i],
+              fieldTypes[i],
+              parsers,
+            )
+          }
+          currentResultSet.rows.push(row)
         }
         break
       }
@@ -70,6 +78,8 @@ export function parseResults(
         })
 
         currentResultSet = { rows: [], fields: [] }
+        fieldNames = undefined
+        fieldTypes = undefined
         break
       }
     }
