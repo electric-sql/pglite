@@ -364,6 +364,17 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
+        // Transformed classic artifacts retain the ordinary Emscripten heap as
+        // memory 0 and import the two reserved pointer domains after it. In
+        // single-user mode no tagged pointers are produced, so bind both
+        // reserved indices to the exact same Memory object. Extra imports are
+        // harmless for the untransformed artifact and keep this loader shared
+        // by both artifact families.
+        imports.pglite = {
+          ...(imports.pglite ?? {}),
+          global_memory: wasmMemory,
+          scoped_memory: wasmMemory,
+        }
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
 
         pglUtils
