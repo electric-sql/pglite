@@ -870,9 +870,9 @@ The hardest cases are pointer values loaded from memory and values crossing indi
 
 PostgreSQL stores many high-value pointer roots in process-global cells at fixed memory-0 addresses, including `BufferBlocks`, `ProcGlobal`, `MyProc`, `MainLWLockArray`, `ShmemBase`, and `CurrentMemoryContext`.
 
-The transformer should build a whole-module store set for each fixed-address cell. If every possible store has one domain, a load from that cell inherits the domain. This binary-level analysis requires no source metadata and can specialize some of PostgreSQL's hottest buffer, process-array, and LWLock address calculations.
+The transformer should build a whole-module store set for each fixed-address cell. Root-cell inference is allowed only when the cell's address constant provably does not escape: it is never stored as data, passed to an import/unknown/indirect callee, or arithmetic-combined into an address the analysis cannot enumerate. Every observed exact or constant-derived access must remain in the cell's store/load set. If the address escapes or an access cannot be accounted for, the cell remains `Unknown` unless a separately checked source annotation applies.
 
-Writes through unknown aliases invalidate the affected cell conservatively. Debug instrumentation can compare inferred root-cell domains with runtime tags.
+Within that non-escaping set, if every possible store has one domain, a load from the cell inherits the domain. This is an optimizer-grade checked assumption rather than a proof against arbitrary corrupted pointers: wild writes through invalid C pointers are treated as undefined behavior, as in ordinary alias-based compiler optimization. The build report identifies every specialized root cell and the facts used to admit it. Debug instrumentation asserts loaded tags at use sites, and differential generic/direct builds exercise the assumption. This binary-level analysis requires no source metadata and can specialize some of PostgreSQL's hottest buffer, process-array, and LWLock address calculations without pretending that every unknown store can be disambiguated.
 
 ### 11.11 Interprocedural summaries
 
@@ -1108,7 +1108,7 @@ The future side-module contract is:
 
 `__wasm_apply_data_relocs` and related dylink relocation paths write absolute memory-0 addresses and require explicit transformer allowlisting and fixtures.
 
-A transformed extension is also correct in classic single-user mode as a degenerate tagged ABI: allocators produce only memory-0 pointers and generic dispatch selects memory 0. The classic loader can provide tiny dummy memories for unused imports. However, shared and unshared import types are invariant and mismatches fail instantiation; the stampings differ by only memory limit-flag bytes but still require either a verified load-time restamp or dual-stamped artifacts.
+A transformed extension is also correct in classic single-user mode as a degenerate tagged ABI: allocators produce only memory-0 pointers and generic dispatch selects memory 0. The classic stamping declares compatible non-shared memory imports, so the loader binds the classic module's own memory object at indices 0, 1, and 2. Tags `10` and `11` are never produced, and the aliases add no backing stores or V8 guard reservations. However, shared and unshared import types are invariant and mismatches fail instantiation; the stampings differ by only memory limit-flag bytes but still require either a verified load-time restamp or dual-stamped artifacts.
 
 Unified transformed artifacts also inherit the multi-memory engine floor. Initial rollout therefore dual-publishes untransformed classic and statically linked/transformed postmaster families from one build pipeline. Node convergence can occur when classic support no longer includes Node 20; browser convergence waits for Safari multi-memory. Running transformed extensions in classic mode and diffing them against untransformed builds provides an ongoing transform-soundness harness.
 
@@ -1168,6 +1168,31 @@ The main PGlite repository and the `postgres-pglite` fork use matching implement
 4. verify a fresh recursive checkout resolves the recorded PostgreSQL commit and passes the relevant build/tests.
 
 The main repository must never depend on uncommitted submodule state or leave its gitlink pointing at an earlier PostgreSQL revision. Reviews and CI should report both commit IDs when a change spans the two repositories.
+
+### 12.13 PostgreSQL source-change policy
+
+Changes to the PostgreSQL fork must be kept to the minimum required to expose stable portability hooks. Process creation, signals, timers, waits, semaphores, sockets, shared-memory mapping, filesystem behavior, and other host-dependent semantics should be implemented in the PGlite libc/portability layer wherever possible. PostgreSQL should call a familiar libc or narrowly defined PGlite platform interface rather than contain Node, Worker, SAB, tagged-pointer, or JavaScript runtime logic itself.
+
+Prefer, in order:
+
+1. existing PostgreSQL portability interfaces and `EXEC_BACKEND` extension points;
+2. PGlite libc implementations or build-time symbol redirection with no PostgreSQL source change;
+3. small platform hooks whose implementation lives outside PostgreSQL core code;
+4. narrowly fenced PostgreSQL changes only when the previous options cannot preserve the required semantics.
+
+Necessary source changes should use short, obvious `__PGLITE__` fences and leave the upstream path structurally intact. Prefer an early hook or substituted operation:
+
+```c
+#ifdef __PGLITE__
+    return pgl_spawn_process(child_kind, parameter_file, client_sock);
+#endif
+
+/* Unmodified upstream implementation follows. */
+```
+
+Avoid duplicating whole upstream functions inside `#ifdef`/`#else` blocks, broad refactors made only for the Wasm port, or PGlite conditionals scattered through PostgreSQL algorithms. If a larger refactor is genuinely useful outside PGlite, design it as an upstreamable PostgreSQL change and keep the PGlite-specific implementation behind the resulting generic hook.
+
+Every PostgreSQL-fork patch should document why the libc/portability layer alone was insufficient, identify the smallest fenced surface, and include a focused test. Review should treat growth in the fork diff and merge-conflict surface as an architectural cost, not routine implementation detail.
 
 ## 13. PostgreSQL shared-memory integration
 
@@ -1798,13 +1823,23 @@ Each direction contains:
 
 Large query results and COPY streams must not accumulate without bound. Host shims copy between the connection ring and decoded memory-0 or memory-1 buffers in v1; the deferred tier adds memory 2 to the same decoder.
 
+PostgreSQL Workers may block on ring wake words with `Atomics.wait()`. JavaScript running in the supervisor or socket frontend must never block the Node main thread; its ring readers and writers await `Atomics.waitAsync()` on the corresponding SAB sequence word, then recheck cursors, close/error flags, and generations. A small wrapper handles both the synchronous and Promise-valued results allowed by the `Atomics.waitAsync()` API. The Node capability suite must assert main-thread `waitAsync` wake, timeout, and close behavior even though the Node 22 floor is already newer than the feature.
+
 ### 17.3 Descriptor ownership
 
 Descriptor tables are process-private and live in memory 0 or Worker runtime state. Connection and broker handles include process generations so unexpected Worker exit cannot leak or reassign an old handle.
 
 ### 17.4 Session-side API reuse
 
-`PGliteSession` should derive from `BasePGlite` and implement the protocol primitives over rings. Parser, serializer, transaction, notice, notification, and query-exclusivity behavior remains in the existing TypeScript layer.
+`PGliteSession` should derive from `BasePGlite` and implement the protocol primitives over rings. Parser, serializer, transaction, notice, notification, and query-exclusivity behavior remains in the existing TypeScript layer, but the single-user assumption that bytes arrive only while a query call is pumping must be removed.
+
+Every session starts exactly one continuous outbound-ring reader after startup. That reader is the sole owner of backend-protocol framing for the connection; query methods never race it by reading the ring directly. The dispatcher routes:
+
+- `NotificationResponse`, `NoticeResponse`, and asynchronous `ParameterStatus` to session-level state/events whether the backend is busy or idle;
+- query result, error, copy, and `ReadyForQuery` messages to the currently registered operation state machine;
+- backend EOF/error to both the active operation and the session lifecycle.
+
+A query registers its response sink before publishing request bytes, then waits until the dispatcher observes the matching completion/`ReadyForQuery`. Between queries the dispatcher continues draining, so another backend's `NOTIFY`, an extension notice, or a parameter change cannot fill the outbound ring and deadlock an idle listener. COPY installs a temporary operation mode in the same dispatcher rather than creating another reader. Messages that are neither asynchronous nor valid for the current operation are protocol errors. Session close stops the dispatcher only after EOF or an explicit abort and cannot strand already-framed asynchronous messages.
 
 ### 17.5 Replacement `pglite-socket`
 
@@ -1866,6 +1901,8 @@ net.Socket readable -> await protocolConnection.write() -> inbound SAB ring
 outbound SAB ring   -> for await protocolConnection.readable -> socket.write()
 ```
 
+Both pumps run without blocking the Node event loop: waits for SAB ring state use the main-thread `Atomics.waitAsync()` wrapper defined in Section 17.2, while Node-stream pressure uses pause/resume and `drain`.
+
 The inbound pump pauses the Node socket while the ring is full. The outbound pump waits for `drain` when `socket.write()` applies backpressure. No unbounded `Buffer.concat`, per-query queue, protocol-message reassembly, or whole-result buffering is allowed. Half-close and failure propagation are explicit:
 
 - client EOF calls `connection.end()` and lets the backend observe EOF;
@@ -1873,6 +1910,8 @@ The inbound pump pauses the Node socket while the ring is full. The outbound pum
 - socket errors abort the virtual descriptor and wake the backend;
 - backend failure destroys the OS socket after any already-published error bytes are flushed;
 - server shutdown stops admission first, then drains or aborts connections according to the selected PostgreSQL shutdown mode.
+
+Full duplex is an invariant: inbound and outbound pumps have separate wake sequences and make progress independently. Neither pump may hold a shared JavaScript mutex, await the other direction becoming empty, or make ring capacity available only after completing its own transfer. Close coordination may publish shared state and wake both pumps, but it cannot serialize them. This prevents bidirectional saturation—such as COPY FROM input while notices or other backend output are pending—from deadlocking the connection.
 
 The frontend may impose a hard host-resource ceiling, but normal PostgreSQL connection admission remains inside the postmaster so excess clients receive a valid PostgreSQL `ErrorResponse`, not arbitrary plaintext.
 
@@ -2228,11 +2267,11 @@ The ordering deliberately resolves transform correctness and cost before expensi
 
 Implement a Binaryen pass in generic-everything mode. Do not wait for provenance analysis. Cover every scalar, SIMD, atomic, wait/notify, and bulk-memory operation; side-effecting addresses; null and aperture traps; aliasing indices; and source-map retention. Author fixtures with Binaryen or generated binaries because WABT does not currently parse atomics carrying a nonzero memory index.
 
-Turn the experiments in `experiments/multi-memory-tests/` into CI capability assertions. They already establish on macOS arm64 that Node 22.13 and 24.15 support the required imports, atomics, wait/notify, aliasing, structured cloning, and growth, while Node 20.18 rejects multi-memory.
+Turn the experiments in `experiments/multi-memory-tests/` into CI capability assertions. They already establish on macOS arm64 that Node 22.13 and 24.15 support the required imports, atomics, wait/notify, aliasing, structured cloning, and growth, while Node 20.18 rejects multi-memory. Add a main-thread `Atomics.waitAsync()` fixture covering notification, timeout, the API's synchronous-result case, and ring-close wakeup.
 
 ### Phase 1: transformed current single-user PGlite
 
-Run today's single-user artifact through the generic transformer, with memory 0 as the real heap and tiny unused memories for the other imports. Keep the existing build, VFS, and single-user execution model unchanged.
+Run today's single-user artifact through the generic transformer, with memory 0 as the real heap and the compatible non-shared imports at indices 1 and 2 aliased to that same object. Keep the existing build, VFS, and single-user execution model unchanged without paying for unused guard reservations.
 
 - pass `pg_regress` and the existing PGlite suite;
 - differentially compare SQL results with the untransformed artifact;
@@ -2275,6 +2314,7 @@ SAB parameter records are a later startup optimization, not a Phase 4 prerequisi
 
 ### Phase 5: one backend session with two memory domains
 
+- build exact-revision host-native libpq, `psql`, `pg_isready`, and `pgbench` as client/prerequisite tools;
 - start the postmaster and required auxiliary Workers;
 - initialize primary shared memory and every v1 DSM/DSA allocation in memory 1;
 - start one backend through `SubPostmasterMain()` with a fresh memory 0;
@@ -2292,6 +2332,7 @@ Tag `11` remains invalid, the optional third import aliases memory 0, and all pa
 - cover independent GUCs, roles, prepared statements, portals, and temporary objects;
 - cover advisory locks, `LISTEN`/`NOTIFY`, cancellation, termination, and statement/lock/deadlock timeouts;
 - exercise those semantics through concurrent native socket clients, including a genuine libpq `CancelRequest` routed through the virtual postmaster;
+- run single- and multi-client `pgbench` workloads through `pglite-socket` as the first user-path concurrency and throughput baseline;
 - exercise auxiliary/background-worker startup and PG18 cumulative statistics DSA;
 - run the core `make check` regression and isolation schedules through the socket frontend using the host-native test drivers;
 - validate unexpected-exit handling and the selected in-place-reset or full-restart policy;
@@ -2302,7 +2343,7 @@ Passing this phase is a useful v1: persistent real sessions with process-private
 
 ### Phase 7: `make check-world` lifecycle harness
 
-- build host-native `psql`, libpq, `pg_regress`, `pg_isolation_regress`, TAP/Perl support, and client utilities from the exact PostgreSQL source revision;
+- extend Phase 5's host-tool build with `pg_regress`, `pg_isolation_regress`, TAP/Perl support, and the additional client utilities required by selected suites, all from the exact PostgreSQL source revision;
 - implement PGlite-aware `initdb`, foreground `postgres`, and `pg_ctl` lifecycle adapters so upstream recipes can create, configure, start, stop, restart, and destroy isolated temporary clusters;
 - make `PGLITE_TEST_PROVIDER=/absolute/path/to/provider make check` and the corresponding `make check-world` invocation canonical rather than maintaining a copied schedule;
 - preserve per-suite temporary PGDATA, port/socket allocation, configuration edits, parallel `make -j`, logs, result files, and upstream exit status;
@@ -2329,6 +2370,7 @@ These are separately gated projects rather than hidden v1 prerequisites:
 - reject Node runtimes below 22 or without multi-memory or required atomics;
 - validate the two active v1 import types and limits, plus the harmless alias used when a reserved third import is retained;
 - instantiate the same compiled module in multiple Workers;
+- assert that supervisor/main-thread `Atomics.waitAsync()` wakes on ring notification and close, returns on timeout, and handles both synchronous and asynchronous result forms;
 - run active data segments only against memory 0;
 - use a distinct table per instance;
 - assert that v1 never produces tag `11`; test dedicated, self-alias, and inherited scope bindings only in the deferred tier;
@@ -2383,7 +2425,8 @@ These are separately gated projects rather than hidden v1 prerequisites:
 - deadlock reporting through a real blocked `ProcSleep` → supervisor SIGALRM → `CheckDeadLock` path;
 - cancellation and backend termination;
 - backend PID reporting;
-- notifications across sessions;
+- notifications across sessions, including delivery to a `LISTEN` session that is otherwise idle;
+- idle and in-query `NoticeResponse`/`ParameterStatus` dispatch without a competing ring reader or stalled outbound ring;
 - portal and cursor cleanup.
 
 The full PostgreSQL `src/test/isolation` suite is the acceptance baseline for multi-session semantics, not a substitute for a few bespoke examples. PGlite-specific tests add protocol, cancellation, Worker-failure, and memory-lifecycle coverage.
@@ -2442,6 +2485,7 @@ The full PostgreSQL `src/test/isolation` suite is the acceptance baseline for mu
 - sequential and indexed scans;
 - sorts and hashes with spill;
 - cross-session transaction contention;
+- host-native `pgbench` single-client overhead, multi-client scaling, latency distribution, and sustained connection churn through `pglite-socket`;
 - deferred parallel scans, joins, and aggregation;
 - filesystem reads/writes from each active memory domain;
 - direct versus generic dispatch site cost;
@@ -2462,6 +2506,7 @@ The full PostgreSQL `src/test/isolation` suite is the acceptance baseline for mu
 - two clients can hold overlapping transactions and block/wake through PostgreSQL locks without a frontend query queue;
 - arbitrarily fragmented and coalesced protocol bytes pass unchanged; the package never relies on frontend-message boundaries;
 - inbound ring saturation pauses the Node socket and resumes without loss; outbound saturation respects `drain` and bounded memory;
+- simultaneous bidirectional saturation makes progress without deadlock, including COPY FROM input while notice/output traffic fills the outbound path;
 - client EOF, half-close, reset, backend error, postmaster shutdown, and frontend shutdown produce the expected cleanup on both sides;
 - `SSLRequest` receives the postmaster's v1 rejection and the same connection can continue with a startup packet;
 - `BackendKeyData` is forwarded unchanged and a separate libpq `CancelRequest` cancels only the matching backend;
@@ -2484,6 +2529,8 @@ The regression harness uses the unmodified host-side PostgreSQL test drivers whe
 - expected files, schedules, SQL, isolation specs, and extension test inputs from that same tree.
 
 The server under test is always PGlite behind the replacement socket package. There are two execution modes.
+
+Core `parallel_schedule` groups can start roughly 20 test clients at once. The canonical harness therefore provisions at least 25 PostgreSQL connections for test clients/setup and budgets approximately 30 live Workers including the postmaster and auxiliary processes. At the measured Node 22 reservation of roughly 10 GiB per shared Wasm memory, that is on the order of 300 GiB of virtual address space despite a far smaller RSS. Provider startup performs an address-space/`ulimit -v`/container preflight and reports the derived Worker and reservation budget. A constrained diagnostic profile may pass `--max-connections` to `pg_regress`, but it is labeled as reduced concurrency and does not satisfy the full parallel-schedule gate.
 
 #### Existing-cluster mode
 
@@ -2525,7 +2572,9 @@ pnpm pglite-pg-test make check-world -j8
 
 #### Capability and result policy
 
-`make check` core SQL plus isolation is a v1 correctness gate and should not carry PGlite-specific expected-output substitutions for semantic differences. Normal upstream platform result maps remain valid.
+`make check` core SQL plus isolation is a v1 correctness gate and must not carry PGlite-specific expected-output substitutions for semantic differences.
+
+The legitimate exception is PostgreSQL's existing platform-expected mechanism. Textual differences caused solely by the Emscripten/musl platform—such as libc `strerror()` wording, available locale/ICU data, or timezone database packaging—may use narrowly scoped `resultmap` entries and alternate expected files for a `wasm32-unknown-emscripten` server-platform tag. Because the regression driver itself is host-native, the provider must pass or expose the server platform for result-map selection rather than accidentally selecting the host triplet. Each entry records the exact platform reason and should be suitable for upstreaming; canonical expected files are never edited. A result difference in SQL semantics, catalog state, locking, errors beyond platform wording, or protocol behavior remains a failure/`BLOCKED` item rather than a result-map candidate.
 
 `make check-world` covers more than SQL server compatibility. It includes multiple-cluster replication and recovery, external authentication systems, SSL, locale-dependent behavior, dynamic libraries, procedural languages, `pg_upgrade`, direct control-file utilities, and tests that send OS signals to server children. The harness maintains a versioned manifest with three states:
 
@@ -2719,7 +2768,7 @@ The design should proceed only if the following gates pass:
 
 ### Gate A: runtime support
 
-- Node 22 and every supported newer release validate the two active shared-memory imports, indexed atomics, Workers, module/memory cloning, growth, and the reserved-import alias fixture;
+- Node 22 and every supported newer release validate the two active shared-memory imports, indexed atomics, Worker-side `Atomics.wait`, main-thread `Atomics.waitAsync`, Workers, module/memory cloning, growth, and the reserved-import alias fixture;
 - memory object counts are viable at target connection limits;
 - module and memory structured cloning is stable.
 
@@ -2743,7 +2792,9 @@ The review's Node 22.13 and 24.15 experiments pass this gate on macOS arm64; the
 
 - two sessions pass MVCC, locking, deadlock, signal, and crash tests;
 - native clients over the replacement socket frontend pass startup, authentication, concurrent-session, COPY, backpressure, disconnect, and real `CancelRequest` tests;
+- host-native `pgbench` demonstrates sustained multi-client progress and provides a user-path throughput/latency baseline;
 - the exact-revision host drivers pass core `make check`, including `src/test/isolation`, through temporary-cluster provider mode;
+- the canonical core run sustains upstream `parallel_schedule` concurrency rather than passing only with serialized tests;
 - private state and function tables are isolated;
 - unexpected Worker death follows safe postmaster policy.
 
@@ -2836,13 +2887,17 @@ The following are settled design decisions for the POC and v1 unless explicitly 
 - Queue signals and dispatch them in the target Worker.
 - Preserve SIGURG latch wakeups and negative-PID process-group semantics.
 - Use shared-word futex semaphores and `Atomics.wait()`/`Atomics.notify()` for blocking and wakeup.
+- Use `Atomics.waitAsync()` for every supervisor/session/socket wait that runs on the Node main thread; never call blocking `Atomics.wait()` there.
 - Drive SIGALRM/timeout expiry from supervisor-owned timers so blocked Workers can run deadlock and timeout handlers.
 - Use direct NODEFS first and preserve third-party filesystems through factories and a broker.
 - Do not require WasmFS for the POC.
 - Replace `pglite-socket` with a byte-transparent, bounded TCP/Unix-socket bridge to `openProtocolConnection()`; do not retain the global query queue or single-user compatibility path.
+- Give each session one continuous outbound protocol dispatcher so idle notices, notifications, and parameter changes cannot stall behind query calls.
+- Keep socket ingress and egress independently progressing under simultaneous saturation.
 - Let PostgreSQL handle startup, authentication, `BackendKeyData`, connection admission, and `CancelRequest`; the socket frontend owns only OS transport and optional future TLS termination.
 - Build exact-revision host-native PostgreSQL regression drivers and provide existing-cluster plus temporary-cluster test modes.
-- Make core `make check` and isolation pass a v1 gate; run `make check-world` through a versioned capability manifest that distinguishes unsupported suites from defects.
+- Use host-native `pgbench` through `pglite-socket` as a multi-client user-path workload and scaling baseline.
+- Make core `make check` and isolation pass at upstream parallel-schedule concurrency as a v1 gate; allow only narrowly justified Emscripten-platform `resultmap` variants, and run `make check-world` through a versioned capability manifest that distinguishes unsupported suites from defects.
 - Statically link the supported extension set for POC/v1; defer transformed side modules and dual-publish them during a later ABI transition.
 - Implement and test either generation-safe in-place memory-1 reinitialization or a full-cluster restart; never continue after an ambiguous shared-state crash.
 - Treat Worker and cluster memory release as distinct v1 lifecycle events; add root-scope release only in the deferred tier.
