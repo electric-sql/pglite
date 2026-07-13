@@ -2368,6 +2368,21 @@ Tuple deformation and expression evaluation are the leading cloning candidates. 
 
 The first guarded-clone experiment completed on 13 July 2026. An input-hash-pinned manifest selects 37 exported or internal hot functions and their pointer parameters. Each original entry performs one signed private-tag check per declared pointer, calls the private clone only when every check succeeds, and retains its generic body for null, global, scoped, indirect, or otherwise unclassified calls. Phase 0 includes private and tagged-global loop tests for this dispatch, and release differential SQL passes. The candidate improved the sound baseline to 3.089x worst case: 2.665x recursive, 3.089x indexed aggregate, and 1.395x pgbench-style, with a 1.028x artifact-size ratio. A separate sound inline-private fallback reached 1.872x but grew the artifact to 1.442x. Neither passes the gate. The clone result shows that entry parameters alone do not classify enough pointers loaded from executor, tuple, compression, and comparison structures; Phase 2C root/field metadata or an LLVM provenance pass is now the measured prerequisite to further Phase 2D specialization.
 
+The checked-source Phase 2C tranche completed on 13 July 2026 and passes the
+performance rescue target. PGlite libc provides a checked private-pointer
+identity; narrowly fenced executor annotations classify private control,
+slot/deformation arrays, and dynamically indexed cells, while shared-capable
+tuple payloads retain generic fallback. Binaryen accepts a parameter-wide
+annotation only when the marker assignment dominates every other parameter
+read in the function CFG. Release output removes the marker calls; a matched
+classic artifact removes the same calls without applying multi-memory
+lowering. Three independent five-pair series measured worst ratios of 1.303x,
+1.281x, and 1.264x. Conservative per-workload maxima were 1.242x recursive,
+1.303x indexed aggregate, and 1.212x pgbench-style, with 9/9 differential SQL
+cases passing and deterministic transformed and optimized artifacts. This
+passes Phase 2C's performance bound. Phase 2E remains mandatory before the
+Phase 2F exit gate is claimed.
+
 #### Phase 2E: host ABI hardening
 
 After the specialized single-user candidate has demonstrated adequate margin, build the tagged JavaScript view sets and complete pointer-bearing import manifests. Wrap Emscripten helpers that assume memory 0, add typed-array refresh rules, and make unknown pointer-bearing imports fail closed. This work must not be used to hide or defer the Phase 2 performance decision.

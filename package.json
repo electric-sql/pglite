@@ -32,6 +32,7 @@
     "wasm:multi-memory:phase2a": "./postgres-pglite/pglite/multi-memory/run-phase2a.sh",
     "wasm:multi-memory:phase2a-profile": "./postgres-pglite/pglite/multi-memory/run-phase2a-profile.sh",
     "wasm:multi-memory:phase2b": "./postgres-pglite/pglite/multi-memory/run-phase2b.sh",
+    "wasm:multi-memory:phase2c": "./postgres-pglite/pglite/multi-memory/run-phase2c.sh",
     "wasm:multi-memory:phase2d": "./postgres-pglite/pglite/multi-memory/run-phase2d.sh",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all",
