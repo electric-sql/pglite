@@ -2446,6 +2446,18 @@ pointer retains sound generic dispatch.
 
 Rebuild the complete dependency world and PostgreSQL with the pinned Emscripten toolchain, `-matomics`, `-mbulk-memory`, and `-sSHARED_MEMORY=1`, but still run one process. Import the shared global memory, validate tagged global allocations synthetically, and pass `pg_regress` again. This phase catches build-flag, libc, and host-loader assumptions independently of process emulation.
 
+The Phase 3 build/lowering POC gate completed on 13 July 2026 on a native
+Apple Silicon Docker builder. The architecture selector chose
+`emscripten/emsdk:3.1.74-arm64`; both resulting images inspect as `linux/arm64`
+and report `aarch64` at runtime, with no emulated fallback. A clean dependency,
+PostgreSQL, and contrib rebuild passed binary feature/import audits for the
+main module and 50 side modules, deterministic transformation, a synthetic
+tagged global allocation using ordinary, bulk, and atomic accesses, a
+disposable-package build, and 9/9 matched-classic differential SQL cases. The
+candidate rewrote 250,397 operations and remained free of the Emscripten
+pthread runtime. This passes the POC gate only. Full Phase 3 remains open until
+the `pg_regress` requirement above runs through the planned regression harness.
+
 ### Phase 4: process portability layer
 
 Build this against small mock modules from day one, then integrate it with the transformed artifact:
