@@ -2418,6 +2418,30 @@ Phase 2 passes only if the specialized artifact is sound and no worse than 1.35x
 
 The result should improve a sound generic baseline. A lack of precision is a performance issue, not a correctness escape hatch.
 
+The combined Phase 2F gate completed on 13 July 2026 and passes without
+changing the 1.35x limit. Transformer 0.8.0 reproduced byte-identical release
+artifacts before and after optimization, Phase 0 passed, and both the release
+and debug-assertion artifacts passed 9/9 differential SQL cases. The exact
+host manifest still accounts for 136 imports, 129 function imports, 50
+pointer-bearing functions, and 84 data-pointer parameters. All 57 basic PGlite
+test files passed (276 tests, one skip, no type errors), as did both Node
+runtime files (10 tests).
+
+The static report contains 128,328 proven-direct and 265,900 generic memory
+operations. The diagnostic memory-access build measured 119,959,566 direct
+and 718,918 generic runtime branches across setup, recursive, indexed
+aggregate, and pgbench-style workloads, or 99.404% direct. Three independent
+five-pair alternating-process series measured worst ratios of 1.276x, 1.275x,
+and 1.280x. Conservative per-workload maxima were 1.228x recursive, 1.280x
+indexed aggregate, and 1.239x pgbench-style. The candidate is 1.414x the
+matched classic size; median compile measurements were 14.48-14.59 ms versus
+10.48-10.53 ms, median startup was 1308-1329 ms versus 889-897 ms, and the
+transformation took 57.5 seconds in the pinned container.
+
+Phase 2 and Gate C are complete. This result authorizes Phase 3's
+shared/atomics world rebuild; it does not weaken the rule that every unproved
+pointer retains sound generic dispatch.
+
 ### Phase 3: shared/atomics world rebuild
 
 Rebuild the complete dependency world and PostgreSQL with the pinned Emscripten toolchain, `-matomics`, `-mbulk-memory`, and `-sSHARED_MEMORY=1`, but still run one process. Import the shared global memory, validate tagged global allocations synthetically, and pass `pg_regress` again. This phase catches build-flag, libc, and host-loader assumptions independently of process emulation.
