@@ -176,12 +176,14 @@ export class SharedByteRing {
   }
 
   close(): void {
+    this.validate?.()
     Atomics.store(this.words, this.field(RingField.Closed), 1)
     this.bump(RingField.DataSequence)
     this.bump(RingField.SpaceSequence)
   }
 
   abort(code = 1): void {
+    this.validate?.()
     Atomics.store(this.words, this.field(RingField.Error), code || 1)
     Atomics.store(this.words, this.field(RingField.Closed), 1)
     this.bump(RingField.DataSequence)
@@ -189,14 +191,17 @@ export class SharedByteRing {
   }
 
   get closed(): boolean {
+    this.validate?.()
     return Atomics.load(this.words, this.field(RingField.Closed)) !== 0
   }
 
   get freeBytes(): number {
+    this.validate?.()
     return this.capacity - this.usedBytes
   }
 
   get usedBytes(): number {
+    this.validate?.()
     return (
       (this.cursor(RingField.WriteCursor) -
         this.cursor(RingField.ReadCursor)) >>>
@@ -311,6 +316,12 @@ export class ConnectionTransport {
     if (!Number.isInteger(generation) || generation <= 0) {
       throw new RangeError('connection generation must be a positive integer')
     }
+    // Invalidate every older transport before clearing reusable ring state.
+    // Otherwise a stale frontend can race reset() and close or abort the next
+    // connection occupying this slot while the old generation is still
+    // visible.
+    Atomics.store(this.words, ConnectionField.Generation, generation)
+    this.expectedGeneration = generation
     for (const base of [INBOUND_BASE, OUTBOUND_BASE]) {
       for (let field = 0; field < RING_WORDS; field++) {
         Atomics.store(this.words, base + field, 0)
@@ -320,8 +331,6 @@ export class ConnectionTransport {
       this.buffer,
       HEADER_WORDS * Int32Array.BYTES_PER_ELEMENT,
     ).fill(0)
-    Atomics.store(this.words, ConnectionField.Generation, generation)
-    this.expectedGeneration = generation
   }
 
   get generation(): number {

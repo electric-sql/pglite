@@ -33,6 +33,16 @@ async function main(): Promise<void> {
   let fatalError: unknown
 
   try {
+    // The private memory must be owned by this Worker isolate. Creating it in
+    // the supervisor leaves its SharedArrayBuffer backing store subject to
+    // main-isolate GC after backend exit, which makes reconnect churn retain
+    // many already-dead backend heaps. Worker-owned memory is released with
+    // the isolate when the Worker terminates.
+    const privateMemory = new WebAssembly.Memory({
+      initial: data.privateInitialPages,
+      maximum: data.privateMaximumPages,
+      shared: true,
+    })
     debug('loading process artifact')
     const registry = ProcessControlRegistry.attach(data.controlBuffer)
     const packageBytes = readFileSync(data.artifact.data)
@@ -76,9 +86,9 @@ async function main(): Promise<void> {
       assertFilesystemOptions(filesystemOptions)
     }
     const memories = new PgliteMemoryViews({
-      private: data.privateMemory,
+      private: privateMemory,
       global: data.globalMemory,
-      scoped: data.privateMemory,
+      scoped: privateMemory,
     })
 
     debug('initializing Emscripten runtime')
@@ -101,7 +111,7 @@ async function main(): Promise<void> {
       arguments: [...data.arguments],
       noInitialRun: true,
       noExitRuntime: true,
-      wasmMemory: data.privateMemory,
+      wasmMemory: privateMemory,
       stdin: () => null,
       print: (text: string) => {
         if (data.debug) send({ type: 'stdout', pid: data.process.pid, text })
@@ -120,7 +130,7 @@ async function main(): Promise<void> {
           global_memory: data.globalMemory,
           // memory 2 is deliberately reserved but aliases this process's
           // private root in the two-domain v1 profile.
-          scoped_memory: data.privateMemory,
+          scoped_memory: privateMemory,
         }
         installMemoryAwareWasiFdWrite(imports, memories, () => postgres?.FS)
         WebAssembly.instantiate(data.wasmModule, imports).then((instance) =>
@@ -165,7 +175,7 @@ async function main(): Promise<void> {
       module: postgres,
       registry,
       process: data.process,
-      privateMemory: data.privateMemory,
+      privateMemory,
       connectionBuffers: data.connectionBuffers,
       inheritedConnectionId: data.inheritedConnectionId || undefined,
     })
@@ -174,7 +184,7 @@ async function main(): Promise<void> {
       module: postgres,
       registry,
       process: data.process,
-      privateMemory: data.privateMemory,
+      privateMemory,
       globalMemory: data.globalMemory,
       debug: data.debug,
       connectionIdForDescriptor: (descriptor) =>

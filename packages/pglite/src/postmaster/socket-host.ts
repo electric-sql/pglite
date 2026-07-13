@@ -123,7 +123,6 @@ export class VirtualSocketHost {
         this.options.process.pid
       ) {
         connection.transport.outbound.close()
-        this.options.registry.releaseConnection(connection.handle)
       }
     }
     this.connections.clear()
@@ -156,7 +155,9 @@ export class VirtualSocketHost {
     const handle = this.options.registry.waitForConnection()
     if (!handle) return -1
     if (!this.writeLoopbackAddress(addressPointer, addressLengthPointer)) {
-      this.options.registry.releaseConnection(handle)
+      ConnectionTransport.attach(
+        this.options.connectionBuffers[handle.slot],
+      ).abort(1)
       return -1
     }
     const connectionDescriptor = this.descriptorForConnection(handle.id)
@@ -219,7 +220,6 @@ export class VirtualSocketHost {
       this.options.process.pid
     ) {
       connection.transport.outbound.close()
-      this.options.registry.releaseConnection(connection.handle)
     }
     return 0
   }

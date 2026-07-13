@@ -26,7 +26,8 @@ export type WorkerFilesystemDescriptor =
 export interface PostgresProcessWorkerData {
   readonly artifact: PostmasterArtifactPaths
   readonly wasmModule: WebAssembly.Module
-  readonly privateMemory: WebAssembly.Memory
+  readonly privateInitialPages: number
+  readonly privateMaximumPages: number
   readonly globalMemory: WebAssembly.Memory
   readonly controlBuffer: SharedArrayBuffer
   readonly connectionBuffers: readonly SharedArrayBuffer[]

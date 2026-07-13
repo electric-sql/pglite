@@ -364,6 +364,18 @@ describe('Phase 4 process portability primitives', () => {
     ).toBe(0)
   })
 
+  it('prevents a stale frontend from closing a reused connection ring', () => {
+    const current = ConnectionTransport.create(32, 1)
+    const stale = ConnectionTransport.attach(current.buffer)
+
+    current.reset(2)
+
+    expect(() => stale.end()).toThrow('stale PGlite connection transport')
+    expect(() => stale.abort()).toThrow('stale PGlite connection transport')
+    expect(current.inbound.closed).toBe(false)
+    expect(current.outbound.closed).toBe(false)
+  })
+
   it('handles both synchronous and asynchronous Atomics.waitAsync results', async () => {
     const words = new Int32Array(new SharedArrayBuffer(4))
     expect(await waitAsync(words, 0, 1, 1_000)).toBe('not-equal')
@@ -512,6 +524,8 @@ describe('Phase 4 process portability primitives', () => {
     expect(backendModule.invoke(backendModule.socketHost[4], descriptor)).toBe(
       0,
     )
+    await pending.transport.waitForClose()
+    expect(broker.release(pending.handle.id)).toBe(true)
     postmasterSockets.dispose()
     backendSockets.dispose()
     broker.close()

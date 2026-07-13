@@ -121,6 +121,27 @@ describe('PGliteSocketServer', () => {
     await once(socket, 'close')
   })
 
+  it('turns an abrupt client reset into backend EOF', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    const address = await server.start()
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+    const socket = createConnection(address.port, address.host)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+
+    socket.resetAndDestroy()
+    await waitFor(() => connection.ended)
+    expect(connection.aborted).toBe(false)
+    connection.closeBackend()
+    await waitFor(() => server.connectionCount === 0)
+  })
+
   it('uses PostgreSQL Unix-socket naming and cleans lifecycle metadata', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'pglite-socket-'))
     directories.add(directory)
@@ -197,6 +218,7 @@ class FakeProtocolConnection implements PGliteProtocolConnection {
   readonly readable: AsyncIterable<Uint8Array>
   readonly closed: Promise<void>
   aborted = false
+  ended = false
   writeStarted = false
 
   private readonly output = new AsyncQueue<Uint8Array | null>()
@@ -224,7 +246,9 @@ class FakeProtocolConnection implements PGliteProtocolConnection {
     this.received.push(data.slice())
   }
 
-  async end(): Promise<void> {}
+  async end(): Promise<void> {
+    this.ended = true
+  }
 
   abort(): void {
     this.aborted = true

@@ -267,7 +267,13 @@ class SocketBridge {
   abort(reason: unknown): void {
     if (this.abortReason) return
     this.abortReason = toError(reason)
-    this.connection.abort(this.abortReason)
+    try {
+      this.connection.abort(this.abortReason)
+    } catch {
+      // A generation-safe transport can already have been released and
+      // reused after PostgreSQL closed it. Never let a stale bridge mutate
+      // the next connection occupying that ring slot.
+    }
     this.socket.destroy(this.abortReason)
   }
 
@@ -275,7 +281,20 @@ class SocketBridge {
     const onSocketError = (error: Error) => {
       if (!this.abortReason) {
         this.abortReason = error
-        this.connection.abort(error)
+        // A TCP reset is an ordinary PostgreSQL client disconnect, not a
+        // backend failure.  Close only the frontend-to-backend direction so
+        // recv() observes EOF and PostgreSQL performs normal proc_exit(0)
+        // cleanup.  Reserve a ring abort for an internal bridge failure or
+        // an explicit frontend shutdown.
+        void this.connection
+          .end()
+          .catch((closeError) => {
+            try {
+              this.connection.abort(closeError)
+            } catch {
+              // The ring was already released and reused by a newer client.
+            }
+          })
       }
     }
     this.socket.on('error', onSocketError)

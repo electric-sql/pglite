@@ -32,6 +32,7 @@ const WASM_PAGE_BYTES = 65_536
 const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
 const ARTIFACT_GLOBAL_INITIAL_PAGES = 2
 const ARTIFACT_MAXIMUM_PAGES = 16_384
+const GLOBAL_SHM_ALLOCATION_GENERATION_WORD = (0x1_0000 >>> 2) + 5
 const ownedDirectories = new Set<string>()
 
 export interface ProtocolPeerInfo {
@@ -60,6 +61,8 @@ export interface PGlitePostmasterOptions {
   readonly startParams?: readonly string[]
   /** Existing PGlite filesystem used by the supervisor-owned initializer. */
   readonly fs?: Filesystem
+  /** Existing PGlite ICU data tarball used while initializing PGDATA. */
+  readonly icuDataDir?: Blob | File
   /** Creates an ordinary PGlite filesystem locally in every process Worker. */
   readonly workerFilesystem?: WorkerFilesystemFactory
   readonly privateInitialMemory?: number
@@ -77,12 +80,13 @@ export interface PGlitePostmasterDiagnostics {
   readonly globalMemoryBytes: number
   readonly privateMemoryMaximumBytes: number
   readonly globalMemoryMaximumBytes: number
+  readonly globalShmAllocationGeneration: number
 }
 
 interface WorkerRecord {
   readonly handle: ProcessHandle
   readonly worker: Worker
-  readonly privateMemory: WebAssembly.Memory
+  readonly privateMemoryBytes: number
   readonly connectionId: number
   reportedExitCode?: number
   settled: boolean
@@ -170,6 +174,7 @@ export class PGlitePostmaster {
         const initializer = await PGlite.create({
           dataDir: `file://${dataDir}`,
           fs: options.fs,
+          icuDataDir: options.icuDataDir,
           debug: options.debug ? 1 : 0,
         })
         await initializer.close()
@@ -206,9 +211,9 @@ export class PGlitePostmaster {
   ): Promise<PGliteProtocolConnection> {
     this.assertOpen()
     const connection = this.broker.connect()
-    const raw = new RawProtocolConnection(connection.transport)
-    void raw.closed.finally(() => this.broker.delete(connection.handle.id))
-    return raw
+    return new RawProtocolConnection(connection.transport, () =>
+      this.broker.release(connection.handle.id),
+    )
   }
 
   async createSession(
@@ -233,13 +238,30 @@ export class PGlitePostmaster {
       privateMemoriesStarted: this.privateMemoriesStarted,
       privateMemoriesReleased: this.privateMemoriesReleased,
       privateMemoryBytes: live.reduce(
-        (total, record) => total + record.privateMemory.buffer.byteLength,
+        (total, record) => total + record.privateMemoryBytes,
         0,
       ),
       globalMemoryBytes: this.globalMemory.buffer.byteLength,
       privateMemoryMaximumBytes: this.privateMaximumPages * WASM_PAGE_BYTES,
       globalMemoryMaximumBytes: this.globalMaximumPages * WASM_PAGE_BYTES,
+      globalShmAllocationGeneration: Atomics.load(
+        new Uint32Array(this.globalMemory.buffer),
+        GLOBAL_SHM_ALLOCATION_GENERATION_WORD,
+      ),
     }
+  }
+
+  /** @internal Phase-gate fault injection; never a graceful backend stop. */
+  async terminateWorkerForTesting(pid: number): Promise<void> {
+    this.assertOpen()
+    const record = this.workers.get(pid)
+    if (!record) throw new Error(`PostgreSQL Worker ${pid} is not live`)
+    const snapshot = this.registry.snapshot(record.handle)
+    if (snapshot.kind === PostgresProcessKind.Postmaster) {
+      throw new Error('refusing to fault-inject the postmaster Worker')
+    }
+    await record.worker.terminate()
+    this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
   }
 
   async close(): Promise<void> {
@@ -308,7 +330,10 @@ export class PGlitePostmaster {
       this.registry.completeSpawn(request)
     } catch (error) {
       this.registry.failSpawn(request)
-      if (this.debug) console.error(error)
+      console.error(
+        `[postgres:${request.handle.pid}] Worker startup failed`,
+        error,
+      )
     }
   }
 
@@ -317,14 +342,11 @@ export class PGlitePostmaster {
     connectionId: number,
     args: readonly string[],
   ): Promise<void> {
-    const privateMemory = createProcessMemory(
-      this.privateInitialPages,
-      this.privateMaximumPages,
-    )
     const workerData: PostgresProcessWorkerData = {
       artifact: this.artifact,
       wasmModule: this.wasmModule,
-      privateMemory,
+      privateInitialPages: this.privateInitialPages,
+      privateMaximumPages: this.privateMaximumPages,
       globalMemory: this.globalMemory,
       controlBuffer: this.registry.buffer,
       connectionBuffers: this.broker.buffers,
@@ -339,7 +361,7 @@ export class PGlitePostmaster {
     const record: WorkerRecord = {
       handle,
       worker,
-      privateMemory,
+      privateMemoryBytes: this.privateInitialPages * WASM_PAGE_BYTES,
       connectionId,
       settled: false,
     }
@@ -350,7 +372,7 @@ export class PGlitePostmaster {
       let ready = false
       const startupTimer = setTimeout(() => {
         if (!ready) {
-          this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
+          record.reportedExitCode = 1
           void worker.terminate()
           rejectReady(
             new Error(`PostgreSQL Worker ${handle.pid} startup timed out`),
@@ -371,23 +393,20 @@ export class PGlitePostmaster {
             console.log(
               `[postgres:${message.pid}] Worker process exited (${message.code})`,
             )
-          this.settleWorker(
-            record,
-            message.code === 0
-              ? ProcessExitKind.Normal
-              : ProcessExitKind.WorkerFailure,
-            message.code,
-          )
           // Emscripten can retain timers after callMain() has completed. The
           // explicit process-exit message is authoritative and is sent only
           // after the PostgreSQL host adapters have finished their cleanup.
+          // Keep the process registered until the Node Worker has actually
+          // exited: that preserves waitpid/max_connections backpressure and
+          // prevents rapid reconnects from accumulating terminating Workers
+          // and their private Wasm memories.
           void worker.terminate()
         } else if (message.type === 'fatal') {
           if (!ready) {
             clearTimeout(startupTimer)
             rejectReady(new Error(message.error))
           }
-          this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
+          record.reportedExitCode = 1
           void worker.terminate()
           if (this.debug) console.error(message.error)
         } else if (message.type === 'stderr') {
@@ -401,7 +420,7 @@ export class PGlitePostmaster {
           clearTimeout(startupTimer)
           rejectReady(error)
         }
-        this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
+        record.reportedExitCode = 1
       })
       worker.once('exit', (code) => {
         if (!ready) {
@@ -412,10 +431,13 @@ export class PGlitePostmaster {
             ),
           )
         }
+        const processExitCode = record.reportedExitCode ?? code
         this.settleWorker(
           record,
-          code === 0 ? ProcessExitKind.Normal : ProcessExitKind.WorkerFailure,
-          record.reportedExitCode ?? code,
+          processExitCode === 0
+            ? ProcessExitKind.Normal
+            : ProcessExitKind.WorkerFailure,
+          processExitCode,
         )
       })
     })
@@ -430,7 +452,11 @@ export class PGlitePostmaster {
     record.settled = true
     this.workers.delete(record.handle.pid)
     this.privateMemoriesReleased++
+    if (exitKind === ProcessExitKind.WorkerFailure && record.connectionId) {
+      this.broker.abort(record.connectionId, 1)
+    }
     this.registry.markExit(record.handle, exitKind, exitCode)
+    record.worker.removeAllListeners()
   }
 
   private assertOpen(): void {
@@ -442,10 +468,19 @@ export class PGlitePostmaster {
 class RawProtocolConnection implements PGliteProtocolConnection {
   readonly readable: AsyncIterable<Uint8Array>
   readonly closed: Promise<void>
+  private readonly frontendClosed: Promise<void>
+  private markFrontendClosed!: () => void
 
-  constructor(private readonly transport: ConnectionTransport) {
+  constructor(
+    private readonly transport: ConnectionTransport,
+    release: () => void,
+  ) {
     this.readable = transport.readable()
     this.closed = transport.waitForClose()
+    this.frontendClosed = new Promise<void>((resolve) => {
+      this.markFrontendClosed = resolve
+    })
+    void Promise.allSettled([this.closed, this.frontendClosed]).then(release)
   }
 
   write(data: Uint8Array): Promise<void> {
@@ -453,12 +488,31 @@ class RawProtocolConnection implements PGliteProtocolConnection {
   }
 
   async end(): Promise<void> {
-    this.transport.end()
+    try {
+      this.transport.end()
+    } catch (error) {
+      if (!isStaleConnectionError(error)) throw error
+    } finally {
+      this.markFrontendClosed()
+    }
   }
 
   abort(_reason?: unknown): void {
-    this.transport.abort()
+    try {
+      this.transport.abort()
+    } catch (error) {
+      if (!isStaleConnectionError(error)) throw error
+    } finally {
+      this.markFrontendClosed()
+    }
   }
+}
+
+function isStaleConnectionError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message === 'stale PGlite connection transport'
+  )
 }
 
 function resolveWorkerFilesystem(

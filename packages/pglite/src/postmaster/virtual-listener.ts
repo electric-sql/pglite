@@ -50,11 +50,18 @@ export class VirtualConnectionBroker {
     return this.connections.get(connectionId)
   }
 
-  delete(connectionId: number, abortCode?: number): boolean {
+  abort(connectionId: number, abortCode = 1): boolean {
     const connection = this.connections.get(connectionId)
     if (!connection) return false
-    if (abortCode !== undefined) connection.transport.abort(abortCode)
+    connection.transport.abort(abortCode)
+    return true
+  }
+
+  release(connectionId: number): boolean {
+    const connection = this.connections.get(connectionId)
+    if (!connection) return false
     this.connections.delete(connectionId)
+    this.registry.releaseConnection(connection.handle)
     return true
   }
 
