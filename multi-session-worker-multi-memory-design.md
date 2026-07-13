@@ -2387,6 +2387,29 @@ Phase 2F exit gate is claimed.
 
 After the specialized single-user candidate has demonstrated adequate margin, build the tagged JavaScript view sets and complete pointer-bearing import manifests. Wrap Emscripten helpers that assume memory 0, add typed-array refresh rules, and make unknown pointer-bearing imports fail closed. This work must not be used to hide or defer the Phase 2 performance decision.
 
+The Phase 2E host ABI gate completed on 13 July 2026. The checked manifest is
+pinned to the optimized Phase 2C Wasm and generated Emscripten glue hashes and
+is regenerated from the real import section plus Emscripten signature metadata.
+Because Emscripten `p` also represents pointer-width sizes and handles, an
+explicit policy classifies every such parameter rather than inferring that it
+is a dereferenceable pointer. The candidate has 136 imports, 129 function
+imports, 50 pointer-bearing functions, and 84 data-pointer parameters. Function
+classes are 22 scalar, 57 opaque indirect calls, 12 guarded private-only
+Emscripten helpers, and 38 imports requiring tagged memory-aware replacements.
+Any unknown or stale import, incomplete pointer-width classification, or
+missing tagged implementation fails before instantiation.
+
+The reusable TypeScript host layer now owns lazy view refresh after shared or
+unshared memory growth, unsigned tag and aperture decoding, current v1 scoped
+tag rejection with explicit deferred-tier opt-in, tagged UTF-8/get/set helpers,
+branded memory-aware import adapters, private-only guards, exact manifest
+auditing, and hardened import construction. Seven focused tests cover active
+and reserved domains, null and boundary failures, memory growth, tagged values
+and strings, legacy memory-0 rejection, unknown imports, and missing tagged
+implementations. The gate runs tests, typecheck, lint, formatting, and manifest
+verification in the pinned builder container. Phase 2F remains required before
+claiming the overall Phase 2 exit.
+
 #### Phase 2F: exit gate
 
 Re-run Phase 0, the complete Phase 1 differential and package suites, debug tag assertions, and the alternating-process performance suite. Report static and dynamic direct/generic counts, ranked residual generic sites, artifact size, compile time, startup, and each workload ratio.
