@@ -15,6 +15,7 @@ import {
   VirtualConnectionBroker,
   VirtualSocketHost,
   waitAsync,
+  createMemoryAwareFdRead,
   createMemoryAwareFdWrite,
   type ProcessHandle,
   type VirtualConnectionHandle,
@@ -37,6 +38,51 @@ interface Phase4WorkerMessage {
 }
 
 describe('tagged WASI host bridge', () => {
+  it('reads into a memory-1 iovec payload and preserves the private fast path', () => {
+    const privateMemory = sharedMemory()
+    const globalMemory = sharedMemory()
+    const memories = new PgliteMemoryViews({
+      private: privateMemory,
+      global: globalMemory,
+      scoped: privateMemory,
+    })
+    const iovecs = 0x100
+    const bytesRead = 0x120
+    const privateData = new DataView(privateMemory.buffer)
+    const payload = new TextEncoder().encode('wal-record')
+    privateData.setUint32(iovecs, 0x80000040, true)
+    privateData.setUint32(iovecs + 4, payload.byteLength, true)
+
+    const fileSystem = {
+      getStream: vi.fn(() => ({ fd: 7 })),
+      read: vi.fn(
+        (
+          _stream: unknown,
+          buffer: Uint8Array,
+          offset: number,
+          length: number,
+        ) => {
+          buffer.set(payload.subarray(0, length), offset)
+          return Math.min(payload.byteLength, length)
+        },
+      ),
+    } as unknown as PostgresMod['FS']
+    const original = vi.fn(() => 73)
+    const fdRead = createMemoryAwareFdRead(original, memories, () => fileSystem)
+
+    expect(fdRead(7, iovecs, 1, bytesRead)).toBe(0)
+    expect(original).not.toHaveBeenCalled()
+    expect(privateData.getUint32(bytesRead, true)).toBe(payload.byteLength)
+    expect(
+      new Uint8Array(globalMemory.buffer, 0x40, payload.byteLength),
+    ).toEqual(payload)
+
+    privateData.setUint32(iovecs, 0x200, true)
+    expect(fdRead(7, iovecs, 1, bytesRead)).toBe(73)
+    expect(original).toHaveBeenCalledWith(7, iovecs, 1, bytesRead)
+    expect(fileSystem.read).toHaveBeenCalledTimes(1)
+  })
+
   it('writes a memory-1 iovec payload and preserves the private fast path', () => {
     const privateMemory = sharedMemory()
     const globalMemory = sharedMemory()

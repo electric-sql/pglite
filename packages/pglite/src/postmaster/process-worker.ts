@@ -8,7 +8,10 @@ import { PgliteMemoryViews } from '../wasm/multi-memory.js'
 import { ProcessControlRegistry, ProcessState } from './control.js'
 import { PostmasterProcessHost } from './process-host.js'
 import { VirtualSocketHost } from './socket-host.js'
-import { installMemoryAwareWasiFdWrite } from './wasi-host.js'
+import {
+  installMemoryAwareWasiFdRead,
+  installMemoryAwareWasiFdWrite,
+} from './wasi-host.js'
 import type {
   PostgresProcessWorkerData,
   PostgresProcessWorkerMessage,
@@ -132,6 +135,7 @@ async function main(): Promise<void> {
           // private root in the two-domain v1 profile.
           scoped_memory: privateMemory,
         }
+        installMemoryAwareWasiFdRead(imports, memories, () => postgres?.FS)
         installMemoryAwareWasiFdWrite(imports, memories, () => postgres?.FS)
         WebAssembly.instantiate(data.wasmModule, imports).then((instance) =>
           (
