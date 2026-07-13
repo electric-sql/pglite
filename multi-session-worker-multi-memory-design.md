@@ -2446,17 +2446,30 @@ pointer retains sound generic dispatch.
 
 Rebuild the complete dependency world and PostgreSQL with the pinned Emscripten toolchain, `-matomics`, `-mbulk-memory`, and `-sSHARED_MEMORY=1`, but still run one process. Import the shared global memory, validate tagged global allocations synthetically, and pass `pg_regress` again. This phase catches build-flag, libc, and host-loader assumptions independently of process emulation.
 
-The Phase 3 build/lowering POC gate completed on 13 July 2026 on a native
-Apple Silicon Docker builder. The architecture selector chose
-`emscripten/emsdk:3.1.74-arm64`; both resulting images inspect as `linux/arm64`
-and report `aarch64` at runtime, with no emulated fallback. A clean dependency,
-PostgreSQL, and contrib rebuild passed binary feature/import audits for the
-main module and 50 side modules, deterministic transformation, a synthetic
-tagged global allocation using ordinary, bulk, and atomic accesses, a
-disposable-package build, and 9/9 matched-classic differential SQL cases. The
-candidate rewrote 250,397 operations and remained free of the Emscripten
-pthread runtime. This passes the POC gate only. Full Phase 3 remains open until
-the `pg_regress` requirement above runs through the planned regression harness.
+Phase 3 completed on 13 July 2026 on a native Apple Silicon Docker builder. The
+architecture selector chose `emscripten/emsdk:3.1.74-arm64`; both resulting
+images inspect as `linux/arm64` and report `aarch64` at runtime, with no
+emulated fallback. A clean dependency, PostgreSQL, and contrib rebuild passed
+binary feature/import audits for the main module and 50 side modules,
+deterministic transformation, a synthetic tagged global allocation using
+ordinary, bulk, and atomic accesses, a disposable-package build, and 9/9
+matched-classic differential SQL cases. The candidate rewrote 250,408
+operations and remained free of the Emscripten pthread runtime.
+
+The pinned container also builds exact-revision native ARM64 `libpq`, `psql`,
+and `pg_regress` from a clean source archive. A TCP-backed, serialized upstream
+corpus of 12 tests passes against the transformed artifact, including
+`test_setup`, character/integer/OID types, and floating-point types. The
+test-only `regress.so` is rebuilt with the shared Wasm world and audited like
+the other side modules. A diagnostic serialized execution of the complete
+230-test core schedule reaches the expected Phase 4 boundary at the first
+streaming `COPY FROM STDIN`: the current synchronous single-thread input pump
+cannot wait for frontend frames that arrive after `CopyInResponse`. It would be
+misleading to emulate that exchange in the Phase 3 harness. Worker-backed
+full-duplex rings address it in Phase 4/5, and the unmodified concurrent core
+schedule remains the Phase 6 gate. This closes Phase 3's shared-world and
+applicable single-backend regression gate without claiming the later
+multi-session transport gate.
 
 ### Phase 4: process portability layer
 
