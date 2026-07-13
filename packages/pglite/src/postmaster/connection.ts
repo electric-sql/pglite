@@ -159,6 +159,22 @@ export class SharedByteRing {
     }
   }
 
+  async waitUntilClosed(): Promise<void> {
+    while (!this.closed) {
+      const sequence = Atomics.load(
+        this.words,
+        this.field(RingField.DataSequence),
+      )
+      if (!this.closed) {
+        await waitAsync(
+          this.words,
+          this.field(RingField.DataSequence),
+          sequence,
+        )
+      }
+    }
+  }
+
   close(): void {
     Atomics.store(this.words, this.field(RingField.Closed), 1)
     this.bump(RingField.DataSequence)
@@ -340,6 +356,10 @@ export class ConnectionTransport {
   abort(code = 1): void {
     this.inbound.abort(code)
     this.outbound.abort(code)
+  }
+
+  waitForClose(): Promise<void> {
+    return this.outbound.waitUntilClosed()
   }
 }
 

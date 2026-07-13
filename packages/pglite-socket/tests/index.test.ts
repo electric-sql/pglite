@@ -1,497 +1,320 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  beforeAll,
-  afterAll,
-} from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
-import { PGLiteSocketHandler, PGLiteSocketServer } from '../src'
-import { Socket, createConnection } from 'net'
-import { existsSync } from 'fs'
-import { unlink } from 'fs/promises'
+import { once } from 'node:events'
+import { existsSync } from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { createConnection, type Socket } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import type {
+  PGliteProtocolConnection,
+  ProtocolPeerInfo,
+} from '@electric-sql/pglite/postmaster'
+import { PGliteSocketServer } from '../src/index.js'
 
-// Mock timers for testing timeouts
-beforeAll(() => {
-  vi.useFakeTimers()
+const servers = new Set<PGliteSocketServer>()
+const directories = new Set<string>()
+
+afterEach(async () => {
+  await Promise.allSettled([...servers].map((server) => server.stop()))
+  servers.clear()
+  await Promise.all(
+    [...directories].map((directory) =>
+      rm(directory, { recursive: true, force: true }),
+    ),
+  )
+  directories.clear()
 })
 
-afterAll(() => {
-  vi.useRealTimers()
-})
-
-async function testSocket(
-  fn: (socketOptions: {
-    host?: string
-    port?: number
-    path?: string
-  }) => Promise<void>,
-) {
-  describe('TCP socket server', async () => {
-    await fn({ host: '127.0.0.1', port: 5433 })
-  })
-  describe('unix socket server', async () => {
-    await fn({ path: '/tmp/.s.PGSQL.5432' })
-  })
-}
-
-// Create a mock Socket for testing
-const createMockSocket = () => {
-  const eventHandlers: Record<string, Array<(data: any) => void>> = {}
-
-  const mockSocket = {
-    // Socket methods we need for testing
-    removeAllListeners: vi.fn(),
-    end: vi.fn(),
-    destroy: vi.fn(),
-    write: vi.fn(),
-    writable: true,
-    remoteAddress: '127.0.0.1',
-    remotePort: 12345,
-    setNoDelay: vi.fn(),
-
-    // Mock on method with tracking of handlers
-    on: vi
-      .fn()
-      .mockImplementation((event: string, callback: (data: any) => void) => {
-        if (!eventHandlers[event]) {
-          eventHandlers[event] = []
-        }
-        eventHandlers[event].push(callback)
-        return mockSocket
+describe('PGliteSocketServer', () => {
+  it('forwards arbitrary TCP bytes without parsing or reassembly', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
       }),
-
-    // Store event handlers for testing
-    eventHandlers,
-
-    // Helper to emit events
-    emit(event: string, data: any) {
-      if (eventHandlers[event]) {
-        eventHandlers[event].forEach((handler) => handler(data))
-      }
-    },
-  }
-
-  return mockSocket as unknown as Socket
-}
-
-// Create a mock QueryQueueManager for testing
-const createMockQueryQueue = () => {
-  return {
-    enqueue: vi.fn().mockResolvedValue(new Uint8Array(0)),
-    clearQueueForHandler: vi.fn(),
-    clearTransactionIfNeeded: vi.fn(),
-    getQueueLength: vi.fn().mockReturnValue(0),
-  }
-}
-
-describe('PGLiteSocketHandler', () => {
-  let handler: PGLiteSocketHandler
-  let mockSocket: ReturnType<typeof createMockSocket> & {
-    eventHandlers: Record<string, Array<(data: any) => void>>
-  }
-  let mockQueryQueue: ReturnType<typeof createMockQueryQueue>
-
-  beforeEach(async () => {
-    // Create a mock query queue for testing
-    mockQueryQueue = createMockQueryQueue()
-    handler = new PGLiteSocketHandler({ queryQueue: mockQueryQueue as any })
-    mockSocket = createMockSocket() as any
-  })
-
-  afterEach(async () => {
-    // Ensure handler is detached
-    if (handler?.isAttached) {
-      await handler.detach(true)
-    }
-  })
-
-  it('should attach to a socket', async () => {
-    // Attach mock socket to handler
-    await handler.attach(mockSocket)
-
-    // Check that the socket is attached
-    expect(handler.isAttached).toBe(true)
-    expect(mockSocket.on).toHaveBeenCalledWith('data', expect.any(Function))
-    expect(mockSocket.on).toHaveBeenCalledWith('error', expect.any(Function))
-    expect(mockSocket.on).toHaveBeenCalledWith('close', expect.any(Function))
-  })
-
-  it('should detach from a socket', async () => {
-    // First attach
-    await handler.attach(mockSocket)
-    expect(handler.isAttached).toBe(true)
-
-    // Then detach
-    await handler.detach(false)
-    expect(handler.isAttached).toBe(false)
-    expect(mockSocket.removeAllListeners).toHaveBeenCalled()
-  })
-
-  it('should close socket when detaching with close option', async () => {
-    // Attach mock socket to handler
-    await handler.attach(mockSocket)
-
-    // Detach with close option
-    await handler.detach(true)
-    expect(handler.isAttached).toBe(false)
-    expect(mockSocket.end).toHaveBeenCalled()
-  })
-
-  it('should reject attaching multiple sockets', async () => {
-    // Attach first socket
-    await handler.attach(mockSocket)
-
-    // Trying to attach another socket should throw an error
-    const anotherMockSocket = createMockSocket()
-    await expect(handler.attach(anotherMockSocket)).rejects.toThrow(
-      'Socket already attached',
     )
+    const address = await server.start()
+    expect(address.transport).toBe('tcp')
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+
+    const socket = createConnection(address.port, address.host)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    expect(postmaster.peers).toEqual([
+      expect.objectContaining({ transport: 'tcp' }),
+    ])
+
+    socket.write(Uint8Array.of(0, 0, 0))
+    socket.write(Uint8Array.of(8, 4, 210, 22, 47))
+    await waitFor(() => flatten(connection.received).length === 8)
+    expect(flatten(connection.received)).toEqual(
+      Uint8Array.of(0, 0, 0, 8, 4, 210, 22, 47),
+    )
+
+    const response = readBytes(socket, 7)
+    connection.publish(Uint8Array.of(78))
+    connection.publish(Uint8Array.of(82, 0, 0, 0, 4, 0))
+    expect(await response).toEqual(Uint8Array.of(78, 82, 0, 0, 0, 4, 0))
+
+    connection.closeBackend()
+    await once(socket, 'close')
+    await waitFor(() => server.connectionCount === 0)
+    expect(server.connectionCount).toBe(0)
   })
 
-  it('should emit error event when socket has error', async () => {
-    // Set up error listener
-    const errorHandler = vi.fn()
-    handler.addEventListener('error', errorHandler)
+  it('maps concurrent sockets to independent postmaster connections', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    const address = await server.start()
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+    const sockets = [
+      createConnection(address.port, address.host),
+      createConnection(address.port, address.host),
+    ]
+    await Promise.all(sockets.map((socket) => once(socket, 'connect')))
+    const connections = await Promise.all([
+      postmaster.nextConnection(),
+      postmaster.nextConnection(),
+    ])
+    await waitFor(() => server.connectionCount === 2)
 
-    // Attach socket
-    await handler.attach(mockSocket)
+    sockets[0].write(Uint8Array.of(1, 2, 3))
+    sockets[1].write(Uint8Array.of(4, 5, 6))
+    await waitFor(() => connections.every(({ received }) => received.length))
+    expect(flatten(connections[0].received)).toEqual(Uint8Array.of(1, 2, 3))
+    expect(flatten(connections[1].received)).toEqual(Uint8Array.of(4, 5, 6))
 
-    // Mock the event handler logic directly instead of triggering actual error handlers
-    const customEvent = new CustomEvent('error', {
-      detail: { code: 'MOCK_ERROR', message: 'Test socket error' },
-    })
-    handler.dispatchEvent(customEvent)
-
-    // Verify error handler was called
-    expect(errorHandler).toHaveBeenCalled()
+    connections.forEach((connection) => connection.closeBackend())
+    await Promise.all(sockets.map((socket) => once(socket, 'close')))
   })
 
-  it('should emit close event when socket closes', async () => {
-    // Set up close listener
-    const closeHandler = vi.fn()
-    handler.addEventListener('close', closeHandler)
+  it('keeps outbound progress independent while inbound applies backpressure', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    const address = await server.start()
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+    const socket = createConnection(address.port, address.host)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    const releaseInbound = connection.blockWrites()
 
-    // Attach socket
-    await handler.attach(mockSocket)
+    socket.write(new Uint8Array(32 * 1024).fill(7))
+    await waitFor(() => connection.writeStarted)
+    const outbound = readBytes(socket, 4)
+    connection.publish(Uint8Array.of(9, 8, 7, 6))
+    expect(await outbound).toEqual(Uint8Array.of(9, 8, 7, 6))
 
-    // Mock the event handler logic directly instead of triggering actual socket handlers
-    const customEvent = new CustomEvent('close')
-    handler.dispatchEvent(customEvent)
-
-    // Verify close handler was called
-    expect(closeHandler).toHaveBeenCalled()
+    releaseInbound()
+    await waitFor(() => flatten(connection.received).length === 32 * 1024)
+    connection.closeBackend()
+    await once(socket, 'close')
   })
-})
 
-testSocket(async (connOptions) => {
-  describe('PGLiteSocketServer', () => {
-    let db: PGlite
-    let server: PGLiteSocketServer
-
-    beforeEach(async () => {
-      // Create a PGlite instance for testing
-      db = await PGlite.create()
-      if (connOptions.path) {
-        if (existsSync(connOptions.path)) {
-          try {
-            await unlink(connOptions.path)
-            console.log(`Removed old socket at ${connOptions.path}`)
-          } catch (err) {
-            console.log('')
-          }
-        }
-      }
+  it('uses PostgreSQL Unix-socket naming and cleans lifecycle metadata', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'pglite-socket-'))
+    directories.add(directory)
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { directory, port: 55432 },
+      }),
+    )
+    const address = await server.start()
+    expect(address).toEqual({
+      transport: 'unix',
+      directory,
+      port: 55432,
+      path: join(directory, '.s.PGSQL.55432'),
+      lockPath: join(directory, '.s.PGSQL.55432.lock'),
     })
+    if (address.transport !== 'unix') throw new Error('expected Unix address')
+    expect(existsSync(address.path)).toBe(true)
+    expect(existsSync(address.lockPath!)).toBe(true)
 
-    afterEach(async () => {
-      // Stop server if running
-      try {
-        await server?.stop()
-      } catch (e) {
-        // Ignore errors during cleanup
-      }
+    const socket = createConnection(address.path)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    expect(postmaster.peers).toEqual([{ transport: 'unix' }])
+    connection.closeBackend()
+    await once(socket, 'close')
+    await server.stop()
+    expect(existsSync(address.path)).toBe(false)
+    expect(existsSync(address.lockPath!)).toBe(false)
+  })
 
-      // Close database
-      await db.close()
-    })
-
-    it('should start and stop server', async () => {
-      // Create server
-      server = new PGLiteSocketServer({
-        db,
-        host: connOptions.host,
-        port: connOptions.port,
-        path: connOptions.path,
-      })
-
-      // Start server
-      await server.start()
-
-      // Try to connect to confirm server is running
-      let client
-      if (connOptions.path) {
-        // unix socket
-        client = createConnection({ path: connOptions.path })
-      } else {
-        if (connOptions.port) {
-          // TCP socket
-          client = createConnection({
-            port: connOptions.port,
-            host: connOptions.host,
-          })
-        } else {
-          throw new Error(
-            'need to specify connOptions.path or connOptions.port',
-          )
-        }
-      }
-      client.on('error', () => {
-        // Ignore connection errors during test
-      })
-
-      await new Promise<void>((resolve) => {
-        client.on('connect', () => {
-          client.end()
-          resolve()
-        })
-
-        // Set timeout to resolve in case connection fails
-        setTimeout(resolve, 100)
-      })
-
-      // Stop server
-      await server.stop()
-
-      // Try to connect again - should fail
-      await expect(
-        new Promise<void>((resolve, reject) => {
-          let failClient
-          if (connOptions.path) {
-            // unix socket
-            failClient = createConnection({ path: connOptions.path })
-          } else {
-            if (connOptions.port) {
-              // TCP socket
-              failClient = createConnection({
-                port: connOptions.port,
-                host: connOptions.host,
-              })
-            } else {
-              throw new Error(
-                'need to specify connOptions.path or connOptions.port',
-              )
-            }
-          }
-
-          failClient.on('error', () => {
-            // Expected error - connection should fail
-            resolve()
-          })
-
-          failClient.on('connect', () => {
-            failClient.end()
-            reject(new Error('Connection should have failed'))
-          })
-
-          // Set timeout to resolve in case no events fire
-          setTimeout(resolve, 100)
-        }),
-      ).resolves.not.toThrow()
-    })
-
-    describe('Connection multiplexing', () => {
-      beforeEach(() => {
-        // Create a server for testing
-        server = new PGLiteSocketServer({
-          db,
-          host: connOptions.host,
-          port: connOptions.port,
-          path: connOptions.path,
-          maxConnections: 100,
-        })
-      })
-
-      it('should create a handler for a new connection', async () => {
-        await server.start()
-
-        // Create mock socket
-        const socket1 = createMockSocket()
-
-        // Setup event listener
-        const connectionHandler = vi.fn()
-        server.addEventListener('connection', connectionHandler)
-
-        // Handle connection
-        await (server as any).handleConnection(socket1)
-
-        // Verify handler was created and tracked
-        expect((server as any).handlers.size).toBe(1)
-        expect(connectionHandler).toHaveBeenCalled()
-      })
-
-      it('should handle multiple simultaneous connections', async () => {
-        await server.start()
-
-        // Setup event listeners
-        const connectionHandler = vi.fn()
-        server.addEventListener('connection', connectionHandler)
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-        const socket3 = createMockSocket()
-
-        // Handle connections - all should be accepted simultaneously
-        await (server as any).handleConnection(socket1)
-        await (server as any).handleConnection(socket2)
-        await (server as any).handleConnection(socket3)
-
-        // All three sockets should have handlers (multiplexed)
-        expect((server as any).handlers.size).toBe(3)
-        expect(connectionHandler).toHaveBeenCalledTimes(3)
-
-        // None should be closed - they're all active
-        expect(socket1.end).not.toHaveBeenCalled()
-        expect(socket2.end).not.toHaveBeenCalled()
-        expect(socket3.end).not.toHaveBeenCalled()
-      })
-
-      it('should remove handler when connection closes', async () => {
-        await server.start()
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-
-        // Handle connections
-        await (server as any).handleConnection(socket1)
-        await (server as any).handleConnection(socket2)
-
-        // Both should be tracked
-        expect((server as any).handlers.size).toBe(2)
-
-        // Get the first handler and simulate close
-        const handlers = Array.from((server as any).handlers)
-        const handler1 = handlers[0] as PGLiteSocketHandler
-        handler1.dispatchEvent(new CustomEvent('close'))
-
-        // First handler should be removed, second still active
-        expect((server as any).handlers.size).toBe(1)
-      })
-
-      it('should reject connections when max connections reached', async () => {
-        // Create server with low max connections
-        server = new PGLiteSocketServer({
-          db,
-          host: connOptions.host,
-          port: connOptions.port,
-          path: connOptions.path,
-          maxConnections: 2,
-        })
-
-        await server.start()
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-        const socket3 = createMockSocket()
-
-        // Handle first two connections - should succeed
-        await (server as any).handleConnection(socket1)
-        await (server as any).handleConnection(socket2)
-
-        expect((server as any).handlers.size).toBe(2)
-
-        // Third connection should be rejected
-        await (server as any).handleConnection(socket3)
-
-        // Third socket should be closed
-        expect(socket3.end).toHaveBeenCalled()
-        expect((server as any).handlers.size).toBe(2)
-      })
-
-      it('should provide stats about active connections', async () => {
-        await server.start()
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-
-        // Check initial stats (maxConnections is set to 100 in beforeEach)
-        let stats = server.getStats()
-        expect(stats.activeConnections).toBe(0)
-        expect(stats.maxConnections).toBe(100)
-
-        // Handle connections
-        await (server as any).handleConnection(socket1)
-        await (server as any).handleConnection(socket2)
-
-        // Check updated stats
-        stats = server.getStats()
-        expect(stats.activeConnections).toBe(2)
-      })
-
-      it('should clean up all handlers when stopping the server', async () => {
-        await server.start()
-
-        // Create mock sockets
-        const socket1 = createMockSocket()
-        const socket2 = createMockSocket()
-        const socket3 = createMockSocket()
-
-        // Handle connections
-        await (server as any).handleConnection(socket1)
-        await (server as any).handleConnection(socket2)
-        await (server as any).handleConnection(socket3)
-
-        expect((server as any).handlers.size).toBe(3)
-
-        // Stop the server
-        await server.stop()
-
-        // All connections should be closed
-        expect(socket1.end).toHaveBeenCalled()
-        expect(socket2.end).toHaveBeenCalled()
-        expect(socket3.end).toHaveBeenCalled()
-
-        // Handlers should be cleared
-        expect((server as any).handlers.size).toBe(0)
-      })
-
-      it('should start server with OS-assigned port when port is 0', async () => {
-        server = new PGLiteSocketServer({
-          db,
-          host: connOptions.host,
-          port: 0, // Let OS assign port
-        })
-
-        await server.start()
-        const assignedPort = (server as any).port
-        expect(assignedPort).toBeGreaterThan(1024)
-
-        // Try to connect to confirm server is running
-        const client = createConnection({
-          port: assignedPort,
-          host: connOptions.host,
-        })
-
-        await new Promise<void>((resolve, reject) => {
-          client.on('error', () => {
-            reject(new Error('Connection should have failed'))
-          })
-          client.on('connect', () => {
-            client.end()
-            resolve()
-          })
-          setTimeout(resolve, 100)
-        })
-
-        await server.stop()
-      })
-    })
+  it('aborts every virtual connection when the frontend stops', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    const address = await server.start()
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+    const socket = createConnection(address.port, address.host)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    await server.stop()
+    expect(connection.aborted).toBe(true)
+    expect(server.connectionCount).toBe(0)
+    expect(server.isListening).toBe(false)
   })
 })
+
+class FakePostmaster {
+  readonly peers: ProtocolPeerInfo[] = []
+  private readonly pending = new AsyncQueue<FakeProtocolConnection>()
+
+  async openProtocolConnection(
+    peer?: ProtocolPeerInfo,
+  ): Promise<PGliteProtocolConnection> {
+    this.peers.push(peer ?? { transport: 'tcp' })
+    const connection = new FakeProtocolConnection()
+    this.pending.push(connection)
+    return connection
+  }
+
+  nextConnection(): Promise<FakeProtocolConnection> {
+    return this.pending.shift()
+  }
+}
+
+class FakeProtocolConnection implements PGliteProtocolConnection {
+  readonly received: Uint8Array[] = []
+  readonly readable: AsyncIterable<Uint8Array>
+  readonly closed: Promise<void>
+  aborted = false
+  writeStarted = false
+
+  private readonly output = new AsyncQueue<Uint8Array | null>()
+  private resolveClosed!: () => void
+  private writeBarrier?: Promise<void>
+
+  constructor() {
+    this.closed = new Promise((resolveClosed) => {
+      this.resolveClosed = resolveClosed
+    })
+    this.readable = this.readOutput()
+  }
+
+  blockWrites(): () => void {
+    let release!: () => void
+    this.writeBarrier = new Promise((resolveWrite) => {
+      release = resolveWrite
+    })
+    return release
+  }
+
+  async write(data: Uint8Array): Promise<void> {
+    this.writeStarted = true
+    await this.writeBarrier
+    this.received.push(data.slice())
+  }
+
+  async end(): Promise<void> {}
+
+  abort(): void {
+    this.aborted = true
+    this.output.push(null)
+    this.resolveClosed()
+  }
+
+  publish(data: Uint8Array): void {
+    this.output.push(data)
+  }
+
+  closeBackend(): void {
+    this.output.push(null)
+    this.resolveClosed()
+  }
+
+  private async *readOutput(): AsyncGenerator<Uint8Array> {
+    while (true) {
+      const value = await this.output.shift()
+      if (value === null) return
+      yield value
+    }
+  }
+}
+
+class AsyncQueue<T> {
+  private readonly values: T[] = []
+  private readonly waiters: Array<(value: T) => void> = []
+
+  push(value: T): void {
+    const waiter = this.waiters.shift()
+    if (waiter) waiter(value)
+    else this.values.push(value)
+  }
+
+  shift(): Promise<T> {
+    const value = this.values.shift()
+    if (value !== undefined) return Promise.resolve(value)
+    return new Promise((resolveValue) => this.waiters.push(resolveValue))
+  }
+}
+
+function tracked(server: PGliteSocketServer): PGliteSocketServer {
+  servers.add(server)
+  return server
+}
+
+function flatten(chunks: readonly Uint8Array[]): Uint8Array {
+  const output = new Uint8Array(
+    chunks.reduce((total, chunk) => total + chunk.byteLength, 0),
+  )
+  let offset = 0
+  for (const chunk of chunks) {
+    output.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return output
+}
+
+function readBytes(socket: Socket, count: number): Promise<Uint8Array> {
+  return new Promise((resolveRead, rejectRead) => {
+    const chunks: Uint8Array[] = []
+    const onData = (chunk: Buffer) => {
+      chunks.push(chunk)
+      const bytes = flatten(chunks)
+      if (bytes.byteLength >= count) {
+        cleanup()
+        resolveRead(bytes.slice(0, count))
+      }
+    }
+    const onError = (error: Error) => {
+      cleanup()
+      rejectRead(error)
+    }
+    const cleanup = () => {
+      socket.off('data', onData)
+      socket.off('error', onError)
+    }
+    socket.on('data', onData)
+    socket.on('error', onError)
+  })
+}
+
+async function waitFor(
+  predicate: () => boolean,
+  timeout = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + timeout
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error('condition timed out')
+    await new Promise((resolveWait) => setTimeout(resolveWait, 5))
+  }
+}

@@ -12,6 +12,8 @@ const POINTER_TAG_MASK = 0xc0000000
 const GLOBAL_POINTER_TAG = 0x80000000
 const POINTER_OFFSET_MASK = 0x3fffffff
 const WNOHANG = 1
+const WASM_PAGE_BYTES = 65_536
+const GLOBAL_APERTURE_BYTES = 0x40000000
 
 // Emscripten 3.1.74 exposes WASI errno values through its musl headers.
 const ERRNO = {
@@ -29,6 +31,7 @@ export interface PostmasterProcessHostOptions {
   readonly process: ProcessHandle
   readonly privateMemory: WebAssembly.Memory
   readonly globalMemory: WebAssembly.Memory
+  readonly debug?: boolean
   readonly connectionIdForDescriptor?: (descriptor: number) => number
 }
 
@@ -94,6 +97,12 @@ export class PostmasterProcessHost {
       'ipi',
     )
     module._pgl_set_futex_host(futexWait, futexWake)
+
+    const ensureSharedMemory = this.addFunction(
+      (requiredBytes: number) => this.ensureSharedMemory(requiredBytes),
+      'ii',
+    )
+    module._pgl_set_shmem_host(ensureSharedMemory)
     this.installed = true
   }
 
@@ -124,7 +133,9 @@ export class PostmasterProcessHost {
         parameterFile,
         {
           connectionId,
-          scopePolicy: ProcessScopePolicy.NewRoot,
+          // v1 reserves memory index 2 but aliases it to this Worker's
+          // private memory. Dedicated/inherited roots are a Phase 8 gate.
+          scopePolicy: ProcessScopePolicy.SelfAlias,
         },
       )
       return child.pid
@@ -223,6 +234,28 @@ export class PostmasterProcessHost {
       return Atomics.notify(words, index, Math.max(0, count))
     } catch {
       this.setErrno(ERRNO.EINVAL)
+      return -1
+    }
+  }
+
+  private ensureSharedMemory(requiredBytes: number): number {
+    try {
+      const required = requiredBytes >>> 0
+      if (required === 0 || required > GLOBAL_APERTURE_BYTES) return -1
+      const memory = this.options.globalMemory
+      const currentPages = memory.buffer.byteLength / WASM_PAGE_BYTES
+      const requiredPages = Math.ceil(required / WASM_PAGE_BYTES)
+      if (this.options.debug) {
+        console.error(
+          `[postgres:${this.options.process.pid}] shared memory request ` +
+            `${required} bytes (current ${memory.buffer.byteLength})`,
+        )
+      }
+      if (requiredPages > currentPages)
+        memory.grow(requiredPages - currentPages)
+      return 0
+    } catch (error) {
+      if (this.options.debug) console.error(error)
       return -1
     }
   }

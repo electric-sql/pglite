@@ -63,8 +63,16 @@ export class SupervisorTimers {
     const live = new Set<string>()
     for (const handle of this.registry.handles()) {
       const key = timerKey(handle)
+      let request: ProcessTimerRequest
+      try {
+        // A Worker may be reaped between handles() taking its snapshot and
+        // this SAB read. Treat that generation as gone instead of failing the
+        // supervisor loop during ordinary process exit.
+        request = this.registry.timerRequest(handle)
+      } catch {
+        continue
+      }
       live.add(key)
-      const request = this.registry.timerRequest(handle)
       if (this.generations.get(key) === request.generation) continue
       this.generations.set(key, request.generation)
       this.arm(request)

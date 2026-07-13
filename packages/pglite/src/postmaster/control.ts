@@ -193,7 +193,18 @@ export async function waitAsync(
   timeout?: number,
 ): Promise<'ok' | 'not-equal' | 'timed-out'> {
   const wait = atomicsWaitAsync(words, index, expected, timeout)
-  return wait.async ? await wait.value : wait.value
+  if (!wait.async) return wait.value
+
+  // V8's Atomics.waitAsync promise does not keep Node's event loop alive. A
+  // postmaster shutdown can otherwise lose its last Worker while the
+  // supervisor is still awaiting a SAB state transition, and Node exits with
+  // an unsettled top-level await. Keep one ref'ed host handle for the wait.
+  const keepAlive = setInterval(() => {}, 60_000)
+  try {
+    return await wait.value
+  } finally {
+    clearInterval(keepAlive)
+  }
 }
 
 export class ProcessControlRegistry {

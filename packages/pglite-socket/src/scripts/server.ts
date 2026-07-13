@@ -1,418 +1,210 @@
 #!/usr/bin/env node
 
-import { PGlite, DebugLevel } from '@electric-sql/pglite'
-import type { Extension, Extensions } from '@electric-sql/pglite'
-import { PGLiteSocketServer } from '../index'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { spawn, ChildProcess } from 'node:child_process'
+import { PGlitePostmaster } from '@electric-sql/pglite/postmaster'
+import {
+  PGliteSocketServer,
+  type PGliteSocketAddress,
+  type PGliteSocketListenOptions,
+} from '../index.js'
 
-// Define command line argument options
-const args = parseArgs({
+const parsed = parseArgs({
   options: {
-    db: {
-      type: 'string',
-      short: 'd',
-      default: 'memory://',
-      help: 'Database path (relative or absolute). Use memory:// for in-memory database.',
-    },
-    port: {
-      type: 'string',
-      short: 'p',
-      default: '5432',
-      help: 'Port to listen on',
-    },
-    host: {
-      type: 'string',
-      short: 'h',
-      default: '127.0.0.1',
-      help: 'Host to bind to',
-    },
-    path: {
-      type: 'string',
-      short: 'u',
-      default: undefined,
-      help: 'unix socket to bind to. Takes precedence over host:port',
-    },
-    debug: {
-      type: 'string',
-      short: 'v',
-      default: '0',
-      help: 'Debug level (0-5)',
-    },
-    extensions: {
-      type: 'string',
-      short: 'e',
-      default: undefined,
-      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis etc.)',
-    },
-    run: {
-      type: 'string',
-      short: 'r',
-      default: undefined,
-      help: 'Command to run after server starts',
-    },
-    'include-database-url': {
-      type: 'boolean',
-      default: false,
-      help: 'Include DATABASE_URL in the environment of the subprocess',
-    },
-    'shutdown-timeout': {
-      type: 'string',
-      default: '5000',
-      help: 'Timeout in milliseconds for graceful subprocess shutdown (default: 5000)',
-    },
-    'max-connections': {
-      type: 'string',
-      short: 'm',
-      default: '1',
-      help: 'Maximum concurrent connections (default: 1)',
-    },
-    help: {
-      type: 'boolean',
-      short: '?',
-      default: false,
-      help: 'Show help',
-    },
+    db: { type: 'string', short: 'd', default: 'file://./pglite-data' },
+    host: { type: 'string', short: 'h', default: '127.0.0.1' },
+    port: { type: 'string', short: 'p', default: '5432' },
+    socket: { type: 'string', short: 'u' },
+    'socket-directory': { type: 'string' },
+    'max-connections': { type: 'string', short: 'm', default: '20' },
+    'shared-buffers': { type: 'string', default: '16MB' },
+    set: { type: 'string', multiple: true, default: [] },
+    wasm: { type: 'string' },
+    glue: { type: 'string' },
+    data: { type: 'string' },
+    run: { type: 'string', short: 'r' },
+    'include-database-url': { type: 'boolean', default: false },
+    debug: { type: 'boolean', short: 'v', default: false },
+    help: { type: 'boolean', short: '?', default: false },
   },
 })
 
-const help = `PGlite Socket Server
+const help = `PGlite multi-session socket server
 Usage: pglite-server [options]
 
 Options:
-  -d, --db=PATH       Database path (default: memory://)
-  -p, --port=PORT     Port to listen on (default: 5432)
-  -h, --host=HOST     Host to bind to (default: 127.0.0.1)
-  -u, --path=UNIX     Unix socket to bind to (default: undefined). Takes precedence over host:port
-  -v, --debug=LEVEL   Debug level 0-5 (default: 0)
-  -e, --extensions=LIST  Comma-separated list of extensions to load
-                         Formats: vector, pgcrypto (built-in/contrib)
-                                  @org/package/path:exportedName (npm package)
-  -r, --run=COMMAND   Command to run after server starts
-  --include-database-url  Include DATABASE_URL in subprocess environment
-  --shutdown-timeout=MS   Timeout for graceful subprocess shutdown in ms (default: 5000)
-  -m, --max-connections=N Maximum concurrent connections (default is no concurrency: 1)
+  -d, --db=PATH                 PGDATA directory (default: file://./pglite-data)
+  -h, --host=HOST               TCP host (default: 127.0.0.1)
+  -p, --port=PORT               TCP or PostgreSQL Unix-socket port (default: 5432)
+  -u, --socket=PATH             Exact Unix-socket path
+      --socket-directory=DIR    Create DIR/.s.PGSQL.<port> and lock metadata
+  -m, --max-connections=N       PostgreSQL max_connections (default: 20)
+      --shared-buffers=SIZE     PostgreSQL shared_buffers (default: 16MB)
+      --set=NAME=VALUE          Additional PostgreSQL setting (repeatable)
+      --wasm=PATH               Postmaster Wasm artifact
+      --glue=PATH               Matching Emscripten JavaScript artifact
+      --data=PATH               Matching preloaded-data artifact
+  -r, --run=COMMAND             Run a command after readiness
+      --include-database-url    Export DATABASE_URL to the command
+  -v, --debug                   Enable process/frontend diagnostics
+  -?, --help                    Show this help
 `
 
-interface ServerConfig {
-  dbPath: string
-  port: number
-  host: string
-  path?: string
-  debugLevel: DebugLevel
-  extensionNames?: string[]
-  runCommand?: string
-  includeDatabaseUrl: boolean
-  shutdownTimeout: number
-  maxConnections: number
+if (parsed.values.help) {
+  process.stdout.write(help)
+  process.exit(0)
 }
 
-class PGLiteServerRunner {
-  private config: ServerConfig
-  private db: PGlite | null = null
-  private server: PGLiteSocketServer | null = null
-  private subprocessManager: SubprocessManager | null = null
+let postmaster: PGlitePostmaster | undefined
+let server: PGliteSocketServer | undefined
+let child: ChildProcess | undefined
+let shuttingDown = false
 
-  constructor(config: ServerConfig) {
-    this.config = config
+async function main(): Promise<void> {
+  const port = integerOption('port', parsed.values.port as string, 0, 65_535)
+  const maxConnections = integerOption(
+    'max-connections',
+    parsed.values['max-connections'] as string,
+    1,
+    10_000,
+  )
+  const artifactParts = [
+    parsed.values.wasm,
+    parsed.values.glue,
+    parsed.values.data,
+  ]
+  if (
+    artifactParts.some((value) => value !== undefined) &&
+    !artifactParts.every((value) => value !== undefined)
+  ) {
+    throw new Error('--wasm, --glue, and --data must be supplied together')
   }
 
-  static parseConfig(): ServerConfig {
-    const extensionsArg = args.values.extensions as string | undefined
-    return {
-      dbPath: args.values.db as string,
-      port: parseInt(args.values.port as string, 10),
-      host: args.values.host as string,
-      path: args.values.path as string,
-      debugLevel: parseInt(args.values.debug as string, 10) as DebugLevel,
-      extensionNames: extensionsArg
-        ? extensionsArg.split(',').map((e) => e.trim())
-        : undefined,
-      runCommand: args.values.run as string,
-      includeDatabaseUrl: args.values['include-database-url'] as boolean,
-      shutdownTimeout: parseInt(args.values['shutdown-timeout'] as string, 10),
-      maxConnections: parseInt(args.values['max-connections'] as string, 10),
-    }
-  }
-
-  private createDatabaseUrl(): string {
-    const { host, port, path } = this.config
-
-    if (path) {
-      // Unix socket connection
-      const socketDir = path.endsWith('/.s.PGSQL.5432')
-        ? path.slice(0, -13)
-        : path
-      return `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(socketDir)}`
-    } else {
-      // TCP connection
-      return `postgresql://postgres:postgres@${host}:${port}/postgres`
-    }
-  }
-
-  private async importExtensions(): Promise<Extensions | undefined> {
-    if (!this.config.extensionNames?.length) {
-      return undefined
-    }
-
-    const extensions: Extensions = {}
-
-    // Built-in extensions that are not in contrib
-    const builtInExtensions = ['live']
-
-    for (const name of this.config.extensionNames) {
-      let ext: Extension | null = null
-
-      try {
-        // Check if this is a custom package path (contains ':')
-        // Format: @org/package/path:exportedName or package/path:exportedName
-        if (name.includes(':')) {
-          const [packagePath, exportName] = name.split(':')
-          if (!packagePath || !exportName) {
-            throw new Error(
-              `Invalid extension format '${name}'. Expected: package/path:exportedName`,
-            )
-          }
-          const mod = await import(packagePath)
-          ext = mod[exportName] as Extension
-          if (ext) {
-            extensions[exportName] = ext
-            console.log(
-              `Imported extension '${exportName}' from '${packagePath}'`,
-            )
-          }
-        } else if (builtInExtensions.includes(name)) {
-          // Built-in extension (e.g., @electric-sql/pglite/live)
-          const mod = await import(`@electric-sql/pglite/${name}`)
-          ext = mod[name] as Extension
-          if (ext) {
-            extensions[name] = ext
-            console.log(`Imported extension: ${name}`)
-          }
-        } else {
-          // Try contrib first (e.g., @electric-sql/pglite/contrib/pgcrypto)
-          try {
-            const mod = await import(`@electric-sql/pglite/contrib/${name}`)
-            ext = mod[name] as Extension
-          } catch (e) {
-            // Fall back to external package (e.g., @electric-sql/pglite-<extension>)
-            const mod = await import(`@electric-sql/pglite-${name}`)
-            ext = mod[name] as Extension
-          }
-          if (ext) {
-            extensions[name] = ext
-            console.log(`Imported extension: ${name}`)
-          }
+  const startParams = (parsed.values.set as string[]).flatMap((setting) => [
+    '-c',
+    setting,
+  ])
+  postmaster = await PGlitePostmaster.create({
+    dataDir: parsed.values.db as string,
+    maxConnections,
+    sharedBuffers: parsed.values['shared-buffers'] as string,
+    startParams,
+    debug: parsed.values.debug as boolean,
+    artifact: artifactParts[0]
+      ? {
+          wasm: resolve(artifactParts[0] as string),
+          glue: resolve(artifactParts[1] as string),
+          data: resolve(artifactParts[2] as string),
         }
-      } catch (error) {
-        console.error(`Failed to import extension '${name}':`, error)
-        throw new Error(`Failed to import extension '${name}'`)
-      }
-    }
+      : undefined,
+  })
+  server = new PGliteSocketServer({
+    postmaster,
+    listen: listenOptions(port),
+    debug: parsed.values.debug as boolean,
+  })
+  const address = await server.start()
+  const environment = clientEnvironment(address)
+  process.stdout.write(
+    `${JSON.stringify({ type: 'pglite-ready', address, environment })}\n`,
+  )
 
-    return Object.keys(extensions).length > 0 ? extensions : undefined
-  }
-
-  private async initializeDatabase(): Promise<void> {
-    console.log(`Initializing PGLite with database: ${this.config.dbPath}`)
-    console.log(`Debug level: ${this.config.debugLevel}`)
-
-    const extensions = await this.importExtensions()
-
-    this.db = new PGlite(this.config.dbPath, {
-      debug: this.config.debugLevel,
-      extensions,
-    })
-    await this.db.waitReady
-    console.log('PGlite database initialized')
-  }
-
-  private setupServerEventHandlers(): void {
-    if (!this.server || !this.subprocessManager) {
-      throw new Error('Server or subprocess manager not initialized')
-    }
-
-    this.server.addEventListener('listening', (event) => {
-      const detail = (
-        event as CustomEvent<{ port: number; host: string } | { host: string }>
-      ).detail
-      console.log(`PGLiteSocketServer listening on ${JSON.stringify(detail)}`)
-
-      // Run the command after server starts listening
-      if (this.config.runCommand && this.subprocessManager) {
-        const databaseUrl = this.createDatabaseUrl()
-        this.subprocessManager.spawn(
-          this.config.runCommand,
-          databaseUrl,
-          this.config.includeDatabaseUrl,
-        )
-      }
-    })
-
-    this.server.addEventListener('connection', (event) => {
-      const { clientAddress, clientPort } = (
-        event as CustomEvent<{ clientAddress: string; clientPort: number }>
-      ).detail
-      console.log(`Client connected from ${clientAddress}:${clientPort}`)
-    })
-
-    this.server.addEventListener('error', (event) => {
-      const error = (event as CustomEvent<Error>).detail
-      console.error('Socket server error:', error)
-    })
-  }
-
-  private setupSignalHandlers(): void {
-    process.on('SIGINT', () => this.shutdown())
-    process.on('SIGTERM', () => this.shutdown())
-  }
-
-  async start(): Promise<void> {
-    try {
-      // Initialize database
-      await this.initializeDatabase()
-
-      if (!this.db) {
-        throw new Error('Database initialization failed')
-      }
-
-      // Create and setup the socket server
-      this.server = new PGLiteSocketServer({
-        db: this.db,
-        port: this.config.port,
-        host: this.config.host,
-        path: this.config.path,
-        inspect: this.config.debugLevel > 0,
-        maxConnections: this.config.maxConnections,
-      })
-
-      // Create subprocess manager
-      this.subprocessManager = new SubprocessManager((exitCode) => {
-        this.shutdown(exitCode)
-      })
-
-      // Setup event handlers
-      this.setupServerEventHandlers()
-      this.setupSignalHandlers()
-
-      // Start the server
-      await this.server.start()
-    } catch (error) {
-      console.error('Failed to start PGLiteSocketServer:', error)
-      throw error
-    }
-  }
-
-  async shutdown(exitCode: number = 0): Promise<void> {
-    console.log('\nShutting down PGLiteSocketServer...')
-
-    // Terminate subprocess if running
-    if (this.subprocessManager) {
-      this.subprocessManager.terminate(this.config.shutdownTimeout)
-    }
-
-    // Stop server
-    if (this.server) {
-      await this.server.stop()
-    }
-
-    // Close database
-    if (this.db) {
-      await this.db.close()
-    }
-
-    console.log('Server stopped')
-    process.exit(exitCode)
-  }
-}
-
-class SubprocessManager {
-  private childProcess: ChildProcess | null = null
-  private onExit: (code: number) => void
-
-  constructor(onExit: (code: number) => void) {
-    this.onExit = onExit
-  }
-
-  get process(): ChildProcess | null {
-    return this.childProcess
-  }
-
-  spawn(
-    command: string,
-    databaseUrl: string,
-    includeDatabaseUrl: boolean,
-  ): void {
-    console.log(`Running command: ${command}`)
-
-    // Prepare environment variables
-    const env = { ...process.env }
-    if (includeDatabaseUrl) {
-      env.DATABASE_URL = databaseUrl
-      console.log(`Setting DATABASE_URL=${databaseUrl}`)
-    }
-
-    // Parse and spawn the command
-    const commandParts = command.trim().split(/\s+/)
-    this.childProcess = spawn(commandParts[0], commandParts.slice(1), {
-      env,
+  const command = parsed.values.run as string | undefined
+  if (command) {
+    child = spawn(command, {
+      shell: true,
       stdio: 'inherit',
+      env: {
+        ...process.env,
+        ...environment,
+        ...(parsed.values['include-database-url']
+          ? { DATABASE_URL: databaseURL(address) }
+          : {}),
+      },
     })
-
-    this.childProcess.on('error', (error) => {
-      console.error('Error running command:', error)
-      // If subprocess fails to start, shutdown the server
-      console.log('Subprocess failed to start, shutting down...')
-      this.onExit(1)
+    const exitCode = await new Promise<number>((resolveExit, rejectExit) => {
+      child!.once('error', rejectExit)
+      child!.once('exit', (code, signal) => {
+        resolveExit(code ?? (signal ? 128 : 1))
+      })
     })
-
-    this.childProcess.on('close', (code) => {
-      console.log(`Command exited with code ${code}`)
-      this.childProcess = null
-
-      // If child process exits with non-zero code, notify parent
-      if (code !== null && code !== 0) {
-        console.log(
-          `Child process failed with exit code ${code}, shutting down...`,
-        )
-        this.onExit(code)
-      }
-    })
-  }
-
-  terminate(timeout: number): void {
-    if (this.childProcess) {
-      console.log('Terminating child process...')
-      this.childProcess.kill('SIGTERM')
-
-      // Give it a moment to exit gracefully, then force kill if needed
-      setTimeout(() => {
-        if (this.childProcess && !this.childProcess.killed) {
-          console.log('Force killing child process...')
-          this.childProcess.kill('SIGKILL')
-        }
-      }, timeout)
-    }
+    await shutdown()
+    process.exitCode = exitCode
   }
 }
 
-// Main execution
-async function main() {
-  // Show help and exit if requested
-  if (args.values.help) {
-    console.log(help)
-    process.exit(0)
+function listenOptions(port: number): PGliteSocketListenOptions {
+  const socket = parsed.values.socket as string | undefined
+  const directory = parsed.values['socket-directory'] as string | undefined
+  if (socket && directory) {
+    throw new Error('--socket and --socket-directory are mutually exclusive')
   }
+  if (socket) return { path: socket }
+  if (directory) return { directory, port: port || 5432 }
+  return { host: parsed.values.host as string, port }
+}
 
-  try {
-    const config = PGLiteServerRunner.parseConfig()
-    const serverRunner = new PGLiteServerRunner(config)
-    await serverRunner.start()
-  } catch (error) {
-    console.error('Unhandled error:', error)
-    process.exit(1)
+function clientEnvironment(
+  address: PGliteSocketAddress,
+): Record<string, string> {
+  return {
+    PGHOST:
+      address.transport === 'tcp'
+        ? address.host
+        : (address.directory ?? address.path),
+    PGPORT: String(address.port ?? 5432),
+    PGDATABASE: 'postgres',
+    PGUSER: 'postgres',
+    PGSSLMODE: 'disable',
   }
 }
 
-// Run the main function
-main()
+function databaseURL(address: PGliteSocketAddress): string {
+  if (address.transport === 'tcp') {
+    return `postgresql://postgres@${address.host}:${address.port}/postgres?sslmode=disable`
+  }
+  const host = encodeURIComponent(address.directory ?? address.path)
+  return `postgresql://postgres@/postgres?host=${host}&port=${address.port ?? 5432}&sslmode=disable`
+}
+
+function integerOption(
+  name: string,
+  value: string,
+  minimum: number,
+  maximum: number,
+): number {
+  const parsedValue = Number(value)
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < minimum ||
+    parsedValue > maximum
+  ) {
+    throw new Error(
+      `--${name} must be an integer from ${minimum} to ${maximum}`,
+    )
+  }
+  return parsedValue
+}
+
+async function shutdown(): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
+  child?.kill('SIGTERM')
+  await server?.stop()
+  await postmaster?.close()
+}
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    void shutdown().then(() => {
+      process.exitCode = signal === 'SIGINT' ? 130 : 143
+    })
+  })
+}
+
+void main().catch(async (error) => {
+  console.error(error)
+  await shutdown()
+  process.exitCode = 1
+})

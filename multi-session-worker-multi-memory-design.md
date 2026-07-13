@@ -4,7 +4,7 @@ Status: design proposal for a proof of concept
 Initial target: Node.js 22 or newer; server-class runtimes only  
 Execution model: one Node Worker per PostgreSQL process  
 Memory model: staged multi-memory; private plus cluster-global in v1, root-scoped later  
-Last updated: 2026-07-12
+Last updated: 2026-07-13
 
 ## 1. Summary
 
@@ -2521,10 +2521,10 @@ and reproduces byte-identical Wasm and reports, then optimizes and audits the
 result. The candidate has the required three imports (`env.memory`, global,
 and scoped), retains all 13 required portability exports, and rewrites 249,777
 memory operations. Two real Node Workers instantiate the generated Emscripten
-module with separate 128 MiB shared private memories, one common global memory,
+module with separate 32 MiB shared private memories, one common global memory,
 and scoped memory aliased to private; their PIDs and private bytes remain
 independent, their global atomic counter reaches two, and their per-instance
-function tables are usable. The package typecheck/build, 11 focused tests, and
+function tables are usable. The package typecheck/build, 12 focused tests, and
 zero-warning lint all pass. This completes the process-portability substrate;
 starting the real postmaster, assigning primary shared memory, reaching
 `ReadyForQuery`, and reclaiming a backend memory remain Phase 5 gates.
@@ -2542,6 +2542,51 @@ starting the real postmaster, assigning primary shared memory, reaching
 - close the session and demonstrate that memory 0 becomes reclaimable.
 
 Tag `11` remains invalid, the optional third import aliases memory 0, and all parallel-query GUCs remain zero.
+
+Phase 5 completed on 13 July 2026. `PGlitePostmaster.create()` now initializes
+an ordinary PGlite data directory, compiles the transformed artifact once, and
+runs the postmaster, auxiliary processes, and client backends as independent
+Node Workers. Each Worker enters the generated module once through
+`callMain()` and then runs PostgreSQL's normal blocking process loop; the
+existing single-user `PGlite` runtime retains its separate unrolled-loop
+artifact. Sessions expose the normal PGlite query, exec, transaction,
+notification, and lifecycle interface over a raw PostgreSQL protocol
+connection.
+
+The clean native ARM64 gate reaches `ReadyForQuery`, executes raw-protocol and
+normal-interface `SELECT`, DDL, DML, parameterized, concurrent, temporary-table,
+and `LISTEN`/`NOTIFY` operations, and shuts down cleanly. Eleven process
+memories were created and all eleven were released; no live private memory
+remained after shutdown. The postmaster artifact now starts each private memory
+at 32 MiB with a 1 GiB ceiling. Cluster-global memory starts at 128 KiB, grows
+on demand to about 22 MiB for a 16 MiB shared-buffer configuration, and has a
+1 GiB ceiling. Memory 2 remains an alias of the process's memory 0 and all
+parallel-query settings remain disabled.
+
+The replacement `pglite-socket` is a thin TCP and PostgreSQL-style Unix-socket
+frontend. It preserves PostgreSQL startup packets (including `SSLRequest`) and
+maps every accepted OS connection directly to one real postmaster connection,
+without a SQL parser, queue, or backend multiplexer. Exact-revision native
+ARM64 `libpq`, `psql`, `pg_isready`, `pgbench`, and `pg_regress` tools are built
+from an isolated archive inside the pinned Docker tool image. `pg_isready` and
+`psql` pass over TCP and Unix sockets with `PGSSLMODE=prefer`, including DDL and
+DML, and socket closure releases the corresponding backend memories.
+
+The filesystem path remains pluggable. Direct NODEFS is the default, with a
+separate mount and descriptor table in every Worker. A structured-cloneable
+Worker factory descriptor can dynamically create an ordinary existing PGlite
+`Filesystem` implementation inside each process; the gate passes using a
+third-party-style `BaseFilesystem` implementation. Emscripten's reverse
+`preRun` registration order is handled explicitly so environment setup,
+filesystem mounting, and the inherited working-directory restore occur in the
+required order. WasmFS is not a prerequisite.
+
+The specialized transform also gained coverage for LLVM-folded tagged pointer
+offsets. Tagged immediates cannot take the private direct or inline fast path;
+they use the canonical generic decoder. Both outlined and inline artifact
+runtime suites cover the case, and the full 118-shape Phase 0 opcode,
+provenance, debug-assertion, profile, source-map, and Node 20/22/24 capability
+suite passes.
 
 ### Phase 6: multi-session correctness and memory value
 

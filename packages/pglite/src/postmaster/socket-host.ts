@@ -16,6 +16,8 @@ const POLLNVAL = 0x0020
 const POLLRDHUP = 0x2000
 const POLLFD_BYTES = 8
 const PGL_SOCKET_NOT_HANDLED = -2
+const AF_INET = 2
+const SOCKADDR_IN_BYTES = 16
 
 const ERRNO = {
   EAGAIN: 6,
@@ -59,7 +61,11 @@ export class VirtualSocketHost {
       'iii',
     )
     const acceptSocket = this.addFunction(
-      (descriptor: number) => this.acceptSocket(descriptor),
+      (
+        descriptor: number,
+        addressPointer: number,
+        addressLengthPointer: number,
+      ) => this.acceptSocket(descriptor, addressPointer, addressLengthPointer),
       'iipp',
     )
     const closeSocket = this.addFunction(
@@ -111,6 +117,15 @@ export class VirtualSocketHost {
     for (const callback of this.callbacks)
       this.options.module.removeFunction(callback)
     this.callbacks.length = 0
+    for (const connection of this.connections.values()) {
+      if (
+        this.options.registry.connectionOwner(connection.handle) ===
+        this.options.process.pid
+      ) {
+        connection.transport.outbound.close()
+        this.options.registry.releaseConnection(connection.handle)
+      }
+    }
     this.connections.clear()
     this.installed = false
   }
@@ -132,10 +147,18 @@ export class VirtualSocketHost {
     return this.listener(descriptor) ? 0 : -1
   }
 
-  private acceptSocket(descriptor: number): number {
+  private acceptSocket(
+    descriptor: number,
+    addressPointer: number,
+    addressLengthPointer: number,
+  ): number {
     if (!this.listener(descriptor)) return -1
     const handle = this.options.registry.waitForConnection()
     if (!handle) return -1
+    if (!this.writeLoopbackAddress(addressPointer, addressLengthPointer)) {
+      this.options.registry.releaseConnection(handle)
+      return -1
+    }
     const connectionDescriptor = this.descriptorForConnection(handle.id)
     this.connections.set(connectionDescriptor, {
       handle,
@@ -144,6 +167,43 @@ export class VirtualSocketHost {
       ),
     })
     return connectionDescriptor
+  }
+
+  private writeLoopbackAddress(
+    addressPointer: number,
+    addressLengthPointer: number,
+  ): boolean {
+    // accept(2) permits both pointers to be null when the caller does not need
+    // a peer address. PostgreSQL supplies sockaddr_storage and requires a
+    // valid family for HBA matching and pg_getnameinfo_all().
+    if (addressPointer === 0 && addressLengthPointer === 0) return true
+    if (
+      addressPointer === 0 ||
+      addressLengthPointer === 0 ||
+      !this.privateRange(addressLengthPointer, 4)
+    ) {
+      this.setErrno(ERRNO.EINVAL)
+      return false
+    }
+    const view = new DataView(this.options.privateMemory.buffer)
+    const capacity = view.getUint32(addressLengthPointer, true)
+    if (
+      capacity < SOCKADDR_IN_BYTES ||
+      !this.privateRange(addressPointer, SOCKADDR_IN_BYTES)
+    ) {
+      this.setErrno(ERRNO.EINVAL)
+      return false
+    }
+    new Uint8Array(
+      this.options.privateMemory.buffer,
+      addressPointer,
+      SOCKADDR_IN_BYTES,
+    ).fill(0)
+    view.setUint16(addressPointer, AF_INET, true)
+    view.setUint16(addressPointer + 2, 5432, false)
+    view.setUint32(addressPointer + 4, 0x7f000001, false)
+    view.setUint32(addressLengthPointer, SOCKADDR_IN_BYTES, true)
+    return true
   }
 
   private closeSocket(descriptor: number): number {
@@ -191,7 +251,8 @@ export class VirtualSocketHost {
     length: number,
   ): number {
     const connection = this.connection(descriptor)
-    if (!connection || !this.privateRange(pointer, length)) return -1
+    const validRange = this.privateRange(pointer, length)
+    if (!connection || !validRange) return -1
     const bytes = new Uint8Array(
       this.options.privateMemory.buffer,
       pointer,
@@ -229,6 +290,9 @@ export class VirtualSocketHost {
 
   private scanPollDescriptors(pointer: number, count: number): number {
     const view = new DataView(this.options.privateMemory.buffer)
+    const parentDead = this.options.registry.snapshot(
+      this.options.process,
+    ).parentDead
     let ready = 0
     for (let index = 0; index < count; index++) {
       const base = pointer + index * POLLFD_BYTES
@@ -262,6 +326,11 @@ export class VirtualSocketHost {
           }
         } else if (descriptor >= CONNECTION_DESCRIPTOR_BASE) {
           returned |= POLLNVAL | POLLERR
+        } else if (parentDead) {
+          // EXEC_BACKEND Workers do not inherit PostgreSQL's parent-death
+          // pipe.  Wake its WaitEventSet slot from the generation-checked
+          // Control SAB parent state instead.
+          returned |= POLLHUP
         }
       }
       view.setInt16(base + 6, returned, true)

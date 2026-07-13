@@ -1,5 +1,5 @@
 import { Worker } from 'node:worker_threads'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ConnectionTransport,
   PGLITE_SIGNALS,
@@ -15,10 +15,12 @@ import {
   VirtualConnectionBroker,
   VirtualSocketHost,
   waitAsync,
+  createMemoryAwareFdWrite,
   type ProcessHandle,
   type VirtualConnectionHandle,
 } from '../dist/postmaster/index.js'
 import type { PostgresMod } from '../src/postgresMod.js'
+import { PgliteMemoryViews } from '../src/wasm/multi-memory.js'
 
 const workerUrl = new URL(
   '../dist/postmaster/phase4-worker.js',
@@ -33,6 +35,57 @@ interface Phase4WorkerMessage {
   tableLength?: number
   connection?: VirtualConnectionHandle
 }
+
+describe('tagged WASI host bridge', () => {
+  it('writes a memory-1 iovec payload and preserves the private fast path', () => {
+    const privateMemory = sharedMemory()
+    const globalMemory = sharedMemory()
+    const memories = new PgliteMemoryViews({
+      private: privateMemory,
+      global: globalMemory,
+      scoped: privateMemory,
+    })
+    const iovecs = 0x100
+    const bytesWritten = 0x120
+    const privateData = new DataView(privateMemory.buffer)
+    const payload = new TextEncoder().encode('checkpoint')
+    new Uint8Array(globalMemory.buffer).set(payload, 0x40)
+    privateData.setUint32(iovecs, 0x80000040, true)
+    privateData.setUint32(iovecs + 4, payload.byteLength, true)
+
+    const writes: Uint8Array[] = []
+    const fileSystem = {
+      getStream: vi.fn(() => ({ fd: 7 })),
+      write: vi.fn(
+        (
+          _stream: unknown,
+          buffer: Uint8Array,
+          offset: number,
+          length: number,
+        ) => {
+          writes.push(buffer.slice(offset, offset + length))
+          return length
+        },
+      ),
+    } as unknown as PostgresMod['FS']
+    const original = vi.fn(() => 73)
+    const fdWrite = createMemoryAwareFdWrite(
+      original,
+      memories,
+      () => fileSystem,
+    )
+
+    expect(fdWrite(7, iovecs, 1, bytesWritten)).toBe(0)
+    expect(original).not.toHaveBeenCalled()
+    expect(privateData.getUint32(bytesWritten, true)).toBe(payload.byteLength)
+    expect(writes).toEqual([payload])
+
+    privateData.setUint32(iovecs, 0x200, true)
+    expect(fdWrite(7, iovecs, 1, bytesWritten)).toBe(73)
+    expect(original).toHaveBeenCalledWith(7, iovecs, 1, bytesWritten)
+    expect(fileSystem.write).toHaveBeenCalledTimes(1)
+  })
+})
 
 afterEach(async () => {
   await Promise.all([...workers].map((worker) => worker.terminate()))
@@ -365,6 +418,10 @@ describe('Phase 4 process portability primitives', () => {
     expect(fake.invoke(fake.futexHost[0], 0x8000000c, 8, 0)).toBe(-1)
     expect(new Int32Array(privateMemory.buffer)[1]).toBe(6)
 
+    expect(fake.invoke(fake.shmemHost[0], 2 * 65_536)).toBe(0)
+    expect(globalMemory.buffer.byteLength).toBe(2 * 65_536)
+    expect(fake.invoke(fake.shmemHost[0], 0x40000001)).toBe(-1)
+
     registry.markExit(request.handle, ProcessExitKind.Normal, 5)
     expect(fake.invoke(fake.processHost[3], childPid, 256, 0)).toBe(childPid)
     expect(new Int32Array(privateMemory.buffer)[64]).toBe(5 << 8)
@@ -400,12 +457,18 @@ describe('Phase 4 process portability primitives', () => {
     ).toBe(0)
 
     const pending = broker.connect()
+    const acceptView = new DataView(postmasterMemory.buffer)
+    acceptView.setUint32(768, 128, true)
     const descriptor = postmasterModule.invoke(
       postmasterModule.socketHost[3],
       listener,
-      0,
-      0,
+      800,
+      768,
     )
+    expect(acceptView.getUint32(768, true)).toBe(16)
+    expect(acceptView.getUint16(800, true)).toBe(2)
+    expect(acceptView.getUint16(802, false)).toBe(5432)
+    expect(acceptView.getUint32(804, false)).toBe(0x7f000001)
     expect(postmasterSockets.connectionIdForDescriptor(descriptor)).toBe(
       pending.handle.id,
     )
@@ -576,6 +639,7 @@ interface FakeModule {
   readonly processHost: number[]
   readonly signalHost: number[]
   readonly futexHost: number[]
+  readonly shmemHost: number[]
   readonly socketHost: number[]
   invoke(index: number, ...arguments_: number[]): number
 }
@@ -586,6 +650,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
   const processHost: number[] = []
   const signalHost: number[] = []
   const futexHost: number[] = []
+  const shmemHost: number[] = []
   const socketHost: number[] = []
   const bytes = () => new Uint8Array(memory.buffer)
   const module = {
@@ -615,6 +680,9 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     _pgl_set_futex_host(...indices: number[]) {
       futexHost.push(...indices)
     },
+    _pgl_set_shmem_host(...indices: number[]) {
+      shmemHost.push(...indices)
+    },
     _pgl_set_socket_host(...indices: number[]) {
       socketHost.push(...indices)
     },
@@ -624,6 +692,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     processHost,
     signalHost,
     futexHost,
+    shmemHost,
     socketHost,
     invoke(index, ...arguments_) {
       const callback = callbacks.get(index)
