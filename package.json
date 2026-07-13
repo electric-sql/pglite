@@ -39,6 +39,7 @@
     "wasm:multi-memory:phase3": "./postgres-pglite/pglite/multi-memory/run-phase3.sh",
     "wasm:multi-memory:phase4": "./postgres-pglite/pglite/multi-memory/run-phase4.sh",
     "wasm:multi-memory:phase6": "./postgres-pglite/pglite/multi-memory/run-phase6.sh",
+    "wasm:multi-memory:phase7": "./postgres-pglite/pglite/multi-memory/run-phase7.sh",
     "build:all": "pnpm wasm:build && pnpm ts:build",
     "build:all:debug": "DEBUG=true pnpm build:all",
     "prepare": "husky",

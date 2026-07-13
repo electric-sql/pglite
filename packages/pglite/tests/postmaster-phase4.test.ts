@@ -93,6 +93,16 @@ afterEach(async () => {
 })
 
 describe('Phase 4 process portability primitives', () => {
+  it('can align the synthetic postmaster PID with a foreground host process', () => {
+    const registry = ProcessControlRegistry.create(4, 42_000)
+    const postmaster = registry.reserve(PostgresProcessKind.Postmaster)
+
+    expect(postmaster.pid).toBe(42_000)
+    expect(() => ProcessControlRegistry.create(4, 0)).toThrow(
+      'initialPid must be a positive signed 32-bit integer',
+    )
+  })
+
   it('queues blocked signals and dispatches them in the target Worker', async () => {
     const registry = ProcessControlRegistry.create(8)
     const parent = registry.reserve(PostgresProcessKind.Postmaster)

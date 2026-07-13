@@ -59,6 +59,12 @@ export interface PGlitePostmasterOptions {
   readonly debug?: boolean
   readonly initialize?: boolean
   readonly startParams?: readonly string[]
+  /**
+   * Keep settings owned by PGDATA instead of applying PGlite's managed
+   * single-cluster defaults as command-line overrides. The process-host
+   * portability settings remain enforced.
+   */
+  readonly respectPostgresqlConfig?: boolean
   /** Existing PGlite filesystem used by the supervisor-owned initializer. */
   readonly fs?: Filesystem
   /** Existing PGlite ICU data tarball used while initializing PGDATA. */
@@ -69,6 +75,19 @@ export interface PGlitePostmasterOptions {
   readonly privateMaximumMemory?: number
   readonly globalInitialMemory?: number
   readonly globalMaximumMemory?: number
+  /**
+   * Synthetic PID assigned to the postmaster. Test providers can set this to
+   * the foreground host wrapper PID so postmaster.pid retains its usual
+   * top-level process meaning.
+   */
+  readonly postmasterPid?: number
+}
+
+export type PGlitePostmasterShutdownMode = 'smart' | 'fast' | 'immediate'
+
+export interface PGlitePostmasterExit {
+  readonly exitKind: ProcessExitKind
+  readonly exitCode: number
 }
 
 export interface PGlitePostmasterDiagnostics {
@@ -114,6 +133,9 @@ export class PGlitePostmaster {
   private readonly sessions = new Set<PGlitePostmasterSession>()
   private closing = false
   private closed = false
+  private closePromise?: Promise<void>
+  private readonly postmasterExit: Promise<PGlitePostmasterExit>
+  private resolvePostmasterExit!: (exit: PGlitePostmasterExit) => void
   private spawnLoop?: Promise<void>
   private timerLoop?: Promise<void>
   private privateMemoriesStarted = 0
@@ -139,7 +161,10 @@ export class PGlitePostmaster {
       options.workerUrl ?? new URL('./process-worker.js', import.meta.url)
     this.debug = options.debug ?? false
     const maxProcesses = Math.max(32, this.maxConnections + 16)
-    this.registry = ProcessControlRegistry.create(maxProcesses)
+    this.registry = ProcessControlRegistry.create(
+      maxProcesses,
+      options.postmasterPid,
+    )
     this.globalMemory = createProcessMemory(
       memory.globalInitialPages,
       memory.globalMaximumPages,
@@ -147,6 +172,9 @@ export class PGlitePostmaster {
     this.postmasterProcess = this.registry.reserve(
       PostgresProcessKind.Postmaster,
     )
+    this.postmasterExit = new Promise<PGlitePostmasterExit>((resolve) => {
+      this.resolvePostmasterExit = resolve
+    })
     this.registry.transition(this.postmasterProcess, ProcessState.Starting)
     this.broker = new VirtualConnectionBroker(
       this.registry,
@@ -264,9 +292,35 @@ export class PGlitePostmaster {
     this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
   }
 
-  async close(): Promise<void> {
-    if (this.closed || this.closing) return
+  close(): Promise<void> {
+    return this.shutdown('smart')
+  }
+
+  shutdown(mode: PGlitePostmasterShutdownMode): Promise<void> {
+    if (this.closed) return Promise.resolve()
+    if (this.closePromise) return this.closePromise
     this.closing = true
+    this.closePromise = this.finishShutdown(mode)
+    return this.closePromise
+  }
+
+  reload(): void {
+    this.assertOpen()
+    if (this.registry.isCurrent(this.postmasterProcess)) {
+      this.registry.queueSignalHandle(
+        this.postmasterProcess,
+        PGLITE_SIGNALS.SIGHUP,
+      )
+    }
+  }
+
+  waitForExit(): Promise<PGlitePostmasterExit> {
+    return this.postmasterExit
+  }
+
+  private async finishShutdown(
+    mode: PGlitePostmasterShutdownMode,
+  ): Promise<void> {
     await Promise.allSettled(
       [...this.sessions].map((session) => session.close()),
     )
@@ -274,7 +328,11 @@ export class PGlitePostmaster {
     if (this.registry.isCurrent(this.postmasterProcess)) {
       this.registry.queueSignalHandle(
         this.postmasterProcess,
-        PGLITE_SIGNALS.SIGTERM,
+        mode === 'smart'
+          ? PGLITE_SIGNALS.SIGTERM
+          : mode === 'fast'
+            ? PGLITE_SIGNALS.SIGINT
+            : PGLITE_SIGNALS.SIGQUIT,
       )
     }
     const deadline = Date.now() + 5_000
@@ -456,6 +514,9 @@ export class PGlitePostmaster {
       this.broker.abort(record.connectionId, 1)
     }
     this.registry.markExit(record.handle, exitKind, exitCode)
+    if (record.handle.pid === this.postmasterProcess.pid) {
+      this.resolvePostmasterExit({ exitKind, exitCode })
+    }
     record.worker.removeAllListeners()
   }
 
@@ -660,22 +721,27 @@ function postmasterArguments(
   options: PGlitePostmasterOptions,
   maxConnections: number,
 ): string[] {
-  const config = [
+  const portabilityConfig = [
     ['shared_memory_type', 'sysv'],
     ['dynamic_shared_memory_type', 'sysv'],
     ['min_dynamic_shared_memory', '0'],
-    ['shared_buffers', options.sharedBuffers ?? '16MB'],
-    ['max_connections', String(maxConnections)],
-    ['listen_addresses', '127.0.0.1'],
-    ['unix_socket_directories', ''],
     ['logging_collector', 'off'],
     ['huge_pages', 'off'],
     ['io_method', 'sync'],
-    ['max_parallel_workers', '0'],
-    ['max_parallel_workers_per_gather', '0'],
-    ['max_parallel_maintenance_workers', '0'],
     ['jit', 'off'],
   ]
+  const managedConfig = options.respectPostgresqlConfig
+    ? []
+    : [
+        ['shared_buffers', options.sharedBuffers ?? '16MB'],
+        ['max_connections', String(maxConnections)],
+        ['listen_addresses', '127.0.0.1'],
+        ['unix_socket_directories', ''],
+        ['max_parallel_workers', '0'],
+        ['max_parallel_workers_per_gather', '0'],
+        ['max_parallel_maintenance_workers', '0'],
+      ]
+  const config = [...portabilityConfig, ...managedConfig]
   return [
     '-D',
     '/pglite/data',

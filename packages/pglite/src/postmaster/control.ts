@@ -233,9 +233,19 @@ export class ProcessControlRegistry {
     }
   }
 
-  static create(maxProcesses: number): ProcessControlRegistry {
+  static create(
+    maxProcesses: number,
+    initialPid = 10_000,
+  ): ProcessControlRegistry {
     if (!Number.isInteger(maxProcesses) || maxProcesses <= 0) {
       throw new RangeError('maxProcesses must be a positive integer')
+    }
+    if (
+      !Number.isInteger(initialPid) ||
+      initialPid <= 0 ||
+      initialPid >= 0x7fff_ffff
+    ) {
+      throw new RangeError('initialPid must be a positive signed 32-bit integer')
     }
     const buffer = new SharedArrayBuffer(
       (HEADER_WORDS + maxProcesses * PROCESS_WORDS) *
@@ -247,7 +257,7 @@ export class ProcessControlRegistry {
     Atomics.store(words, HeaderField.Magic, CONTROL_MAGIC)
     Atomics.store(words, HeaderField.Version, CONTROL_VERSION)
     Atomics.store(words, HeaderField.MaxProcesses, maxProcesses)
-    Atomics.store(words, HeaderField.NextPid, 10_000)
+    Atomics.store(words, HeaderField.NextPid, initialPid)
     Atomics.store(words, HeaderField.NextConnectionId, 1)
     return new ProcessControlRegistry(buffer)
   }
