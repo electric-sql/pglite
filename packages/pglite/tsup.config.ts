@@ -24,6 +24,8 @@ const entryPoints = [
   'src/templating.ts',
   'src/live/index.ts',
   'src/worker/index.ts',
+  'src/postmaster/index.ts',
+  'src/postmaster/phase4-worker.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

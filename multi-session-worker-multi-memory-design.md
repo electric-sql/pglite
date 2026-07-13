@@ -2486,6 +2486,49 @@ Build this against small mock modules from day one, then integrate it with the t
 
 SAB parameter records are a later startup optimization, not a Phase 4 prerequisite.
 
+Phase 4 completed on 13 July 2026. A clean native ARM64 source build now
+enables `EXEC_BACKEND` without enabling Emscripten's pthread runtime. The
+PostgreSQL fork changes are limited to compile-time-fenced process launch,
+signal dispatch, interrupt polling, and shared-word semaphore hooks; process,
+signal, timer, futex, and virtual-socket behavior is implemented behind the
+PGlite libc abstraction. The incremental backend build path regenerates all
+cross-directory headers and export lists, explicitly orders the core archives
+and provenance-marked objects, and installs a fresh generated module from
+inside the pinned Docker image.
+
+The Node portability layer now has a versioned Control SAB with generation-safe
+process and connection slots, synthetic PIDs, parent and process-group
+tracking, wait/reap state, queued and blocked signal masks, spawn payloads, and
+supervisor timer requests. Per-instance callback tables bind the generated
+module to Worker spawn, `getpid`, positive- and negative-PID signal delivery,
+`waitpid`, signal masks, supervisor-owned `SIGALRM`, and tagged private/global
+futex operations. PostgreSQL's `PGSemaphore` uses two shared atomic words, and
+the mock Worker gates cover semaphore blocking, latch/SIGURG wakeup, blocked
+signal delivery, process groups, exit status, and both synchronous and
+asynchronous Atomics waits.
+
+The virtual listener uses pre-shared, generation-checked connection slots and
+bounded full-duplex SAB byte rings. The PGlite libc socket surface delegates
+`socket`, `bind`, `listen`, `accept`, `recv`, `send`, `close`, and `poll` to a
+per-Worker host; inherited connections are restored by stable connection ID,
+and data activity wakes the current owner through the Control SAB. Temporary
+`BackendParameters` remain on NODEFS. A focused generated-module test invokes
+these real callback exports and verifies that two Workers mounting the same
+host directory can exchange a parameter file.
+
+The formal gate transforms the exact postmaster-profile source artifact twice
+and reproduces byte-identical Wasm and reports, then optimizes and audits the
+result. The candidate has the required three imports (`env.memory`, global,
+and scoped), retains all 13 required portability exports, and rewrites 249,777
+memory operations. Two real Node Workers instantiate the generated Emscripten
+module with separate 128 MiB shared private memories, one common global memory,
+and scoped memory aliased to private; their PIDs and private bytes remain
+independent, their global atomic counter reaches two, and their per-instance
+function tables are usable. The package typecheck/build, 11 focused tests, and
+zero-warning lint all pass. This completes the process-portability substrate;
+starting the real postmaster, assigning primary shared memory, reaching
+`ReadyForQuery`, and reclaiming a backend memory remain Phase 5 gates.
+
 ### Phase 5: one backend session with two memory domains
 
 - build exact-revision host-native libpq, `psql`, `pg_isready`, and `pgbench` as client/prerequisite tools;

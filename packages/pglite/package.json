@@ -60,6 +60,16 @@
         "default": "./dist/worker/index.cjs"
       }
     },
+    "./postmaster": {
+      "import": {
+        "types": "./dist/postmaster/index.d.ts",
+        "default": "./dist/postmaster/index.js"
+      },
+      "require": {
+        "types": "./dist/postmaster/index.d.cts",
+        "default": "./dist/postmaster/index.cjs"
+      }
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
