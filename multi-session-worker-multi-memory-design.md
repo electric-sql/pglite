@@ -2344,6 +2344,10 @@ A proven value lowers to an original-sized direct indexed-memory operation with 
 
 The first target is 70–85% of dynamic accesses direct, not a percentage of static sites. Measure before adding more analysis machinery.
 
+The first conservative tranche completed on 13 July 2026. Binaryen local reaching definitions, constants and select/phi agreement, Emscripten private stack/memory-base and `GOT.mem` roots, a validated private-allocator return manifest, and direct-only internal parameter propagation prove 126,473 of 395,210 static operations (32.0%) private; 2,295 internal i32 parameters reached a private fixed point. Exported and table-referenced parameters remain unknown, and the allocator manifest explicitly excludes shared-memory, DSM, DSA, and `shm_toc` allocation. The Phase 0 provenance fixture and release differential SQL pass.
+
+This static result does not yet buy meaningful throughput. The candidate measured 3.795x worst case, with 3.423x recursive, 3.795x indexed aggregate, and 1.513x pgbench-style ratios. Its residual profile explains the miss: only 351 of `ExecInterpExpr`'s 2,793 static operations are direct, while the hot loop bodies in `memcpy`, `memset`, `memcmp`, `strlen`, `pglz_compress`, `qsort_interruptible`, `ExecScan`, and tuple-slot paths remain almost entirely generic. Phase 2B therefore has not reached its 70–85% dynamic target. Further broad, unprofiled local inference is unlikely to close the gap; proceed directly to sound function-boundary hoisting or private/global clones for the ranked bimodal paths, retaining generic exported entry points.
+
 #### Phase 2C: fixed roots and minimal metadata
 
 For dynamically important unresolved loads, add the fixed-address root-cell store-set analysis described above. Infer a domain only when the root address does not escape and every store is accounted for. Rank remaining unknown sites again.
