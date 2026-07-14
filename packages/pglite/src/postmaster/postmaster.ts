@@ -870,10 +870,13 @@ export class PGlitePostmaster {
       record.handle.generation === root.handle.generation
     ) {
       root.exited = true
-      for (const pid of root.members) {
-        const descendant = this.workers.get(pid)
-        if (descendant) void descendant.worker.terminate()
-      }
+      // A scoped-memory root owns the backing store, not the lifetime of
+      // every process attached to it.  In particular, bgw_notify_pid asks
+      // PostgreSQL to notify a registering backend when a dynamic background
+      // worker starts or stops; it does not make that worker a child that
+      // dies with the registering backend.  Keep the root memory alive until
+      // its final attached process exits and let PostgreSQL's postmaster
+      // decide which workers must be signalled or terminated.
     }
     if (root.exited && root.members.size === 0) {
       this.scopedRoots.delete(root.handle.pid)
