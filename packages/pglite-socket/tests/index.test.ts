@@ -142,6 +142,31 @@ describe('PGliteSocketServer', () => {
     await waitFor(() => server.connectionCount === 0)
   })
 
+  it('closes a waiting client immediately when the backend stream fails', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      new PGliteSocketServer({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    const address = await server.start()
+    if (address.transport !== 'tcp') throw new Error('expected TCP address')
+    const socket = createConnection(address.port, address.host)
+    socket.on('error', () => undefined)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    const socketClosed = new Promise<void>((resolveClose) => {
+      socket.once('close', () => resolveClose())
+    })
+
+    connection.failBackend(new Error('synthetic backend failure'))
+
+    await socketClosed
+    await waitFor(() => server.connectionCount === 0)
+    expect(connection.aborted).toBe(true)
+  })
+
   it('uses PostgreSQL Unix-socket naming and cleans lifecycle metadata', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'pglite-socket-'))
     directories.add(directory)
@@ -221,7 +246,7 @@ class FakeProtocolConnection implements PGliteProtocolConnection {
   ended = false
   writeStarted = false
 
-  private readonly output = new AsyncQueue<Uint8Array | null>()
+  private readonly output = new AsyncQueue<Uint8Array | Error | null>()
   private resolveClosed!: () => void
   private writeBarrier?: Promise<void>
 
@@ -265,10 +290,16 @@ class FakeProtocolConnection implements PGliteProtocolConnection {
     this.resolveClosed()
   }
 
+  failBackend(error: Error): void {
+    this.output.push(error)
+    this.resolveClosed()
+  }
+
   private async *readOutput(): AsyncGenerator<Uint8Array> {
     while (true) {
       const value = await this.output.shift()
       if (value === null) return
+      if (value instanceof Error) throw value
       yield value
     }
   }

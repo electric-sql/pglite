@@ -108,6 +108,7 @@ interface WorkerRecord {
   readonly privateMemoryBytes: number
   readonly connectionId: number
   reportedExitCode?: number
+  reportedExitKind?: ProcessExitKind
   settled: boolean
 }
 
@@ -447,6 +448,11 @@ export class PGlitePostmaster {
           resolveReady()
         } else if (message.type === 'exit') {
           record.reportedExitCode = message.code
+          // A PostgreSQL process that deliberately proc_exit()s has exited
+          // normally even when its Unix exit status is non-zero. Preserve
+          // buffered protocol errors and let the postmaster interpret that
+          // status; only failures of the Worker host itself abort the ring.
+          record.reportedExitKind = ProcessExitKind.Normal
           if (this.debug)
             console.log(
               `[postgres:${message.pid}] Worker process exited (${message.code})`,
@@ -465,6 +471,7 @@ export class PGlitePostmaster {
             rejectReady(new Error(message.error))
           }
           record.reportedExitCode = 1
+          record.reportedExitKind = ProcessExitKind.WorkerFailure
           void worker.terminate()
           if (this.debug) console.error(message.error)
         } else if (message.type === 'stderr') {
@@ -479,6 +486,7 @@ export class PGlitePostmaster {
           rejectReady(error)
         }
         record.reportedExitCode = 1
+        record.reportedExitKind = ProcessExitKind.WorkerFailure
       })
       worker.once('exit', (code) => {
         if (!ready) {
@@ -492,9 +500,10 @@ export class PGlitePostmaster {
         const processExitCode = record.reportedExitCode ?? code
         this.settleWorker(
           record,
-          processExitCode === 0
-            ? ProcessExitKind.Normal
-            : ProcessExitKind.WorkerFailure,
+          record.reportedExitKind ??
+            (code === 0
+              ? ProcessExitKind.Normal
+              : ProcessExitKind.WorkerFailure),
           processExitCode,
         )
       })

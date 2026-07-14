@@ -286,22 +286,23 @@ class SocketBridge {
         // recv() observes EOF and PostgreSQL performs normal proc_exit(0)
         // cleanup.  Reserve a ring abort for an internal bridge failure or
         // an explicit frontend shutdown.
-        void this.connection
-          .end()
-          .catch((closeError) => {
-            try {
-              this.connection.abort(closeError)
-            } catch {
-              // The ring was already released and reused by a newer client.
-            }
-          })
+        void this.connection.end().catch((closeError) => {
+          try {
+            this.connection.abort(closeError)
+          } catch {
+            // The ring was already released and reused by a newer client.
+          }
+        })
       }
     }
     this.socket.on('error', onSocketError)
 
+    // Observe each pump failure immediately. Waiting for both before aborting
+    // deadlocks when the backend ring fails while the client is still waiting
+    // for a response and therefore keeps its write half open.
     const results = await Promise.allSettled([
-      this.pumpInbound(),
-      this.pumpOutbound(),
+      this.watchPump(this.pumpInbound()),
+      this.watchPump(this.pumpOutbound()),
     ])
     const failure = results.find(
       (result): result is PromiseRejectedResult => result.status === 'rejected',
@@ -313,6 +314,15 @@ class SocketBridge {
     await this.connection.closed.catch(() => undefined)
     if (this.debug && failure) {
       console.error('[PGliteSocketServer] bridge failed', failure.reason)
+    }
+  }
+
+  private async watchPump(pump: Promise<void>): Promise<void> {
+    try {
+      await pump
+    } catch (error) {
+      if (!this.abortReason) this.abort(error)
+      throw error
     }
   }
 
