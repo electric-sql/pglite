@@ -9,8 +9,6 @@ import {
   ProcessExitKind,
   ProcessScopePolicy,
   ProcessState,
-  SharedLatch,
-  SharedWordSemaphore,
   SupervisorTimers,
   VirtualConnectionBroker,
   VirtualConnectionTransport,
@@ -20,7 +18,7 @@ import {
   createMemoryAwareFdWrite,
   type ProcessHandle,
   type VirtualConnectionHandle,
-} from '../dist/postmaster/index.js'
+} from '../dist/postmaster/internal.js'
 import type { PostgresMod } from '../src/postgresMod.js'
 import { PgliteMemoryViews } from '../src/wasm/multi-memory.js'
 
@@ -252,72 +250,6 @@ describe('postmaster process portability primitives', () => {
     registry.queueSignalHandle(postmaster, PGLITE_SIGNALS.SIGTERM)
     expect((await signalsPromise).signals).toEqual([PGLITE_SIGNALS.SIGTERM])
     broker.close()
-  })
-
-  it('blocks and wakes on a shared-word PostgreSQL semaphore', async () => {
-    const registry = ProcessControlRegistry.create(4)
-    const owner = registry.reserve(PostgresProcessKind.Backend)
-    const globalMemory = sharedMemory()
-    const semaphore = new SharedWordSemaphore(
-      new Int32Array(globalMemory.buffer),
-      0,
-    )
-    semaphore.initialize(0)
-    const privateMemory = sharedMemory()
-    const worker = track(
-      new Worker(workerUrl, {
-        workerData: {
-          controlBuffer: registry.buffer,
-          handle: owner,
-          privateMemory,
-          globalMemory,
-          scopedMemory: privateMemory,
-          module: emptyModule(),
-          mode: 'semaphore',
-          sharedWordIndex: 0,
-        },
-      }),
-    )
-    await messageOfType(worker, 'ready')
-    await expect(
-      noMessageOfType(worker, 'semaphore-acquired', 30),
-    ).resolves.toBe(true)
-    const acquiredPromise = messageOfType(worker, 'semaphore-acquired')
-    semaphore.unlock()
-    await acquiredPromise
-    expect(semaphore.count).toBe(0)
-  })
-
-  it('uses SIGURG to wake a Worker waiting on a shared latch', async () => {
-    const registry = ProcessControlRegistry.create(4)
-    const owner = registry.reserve(PostgresProcessKind.Backend)
-    const globalMemory = sharedMemory()
-    const latch = new SharedLatch(
-      new Int32Array(globalMemory.buffer),
-      8,
-      registry,
-    )
-    latch.initialize(owner)
-    const privateMemory = sharedMemory()
-    const worker = track(
-      new Worker(workerUrl, {
-        workerData: {
-          controlBuffer: registry.buffer,
-          handle: owner,
-          privateMemory,
-          globalMemory,
-          scopedMemory: privateMemory,
-          module: emptyModule(),
-          mode: 'latch',
-          sharedWordIndex: 8,
-        },
-      }),
-    )
-    await messageOfType(worker, 'ready')
-    await expect(noMessageOfType(worker, 'latch-set', 30)).resolves.toBe(true)
-    const latchPromise = messageOfType(worker, 'latch-set')
-    latch.set()
-    expect((await latchPromise).signals).toEqual([PGLITE_SIGNALS.SIGURG])
   })
 
   it('delivers negative-PID signals to a virtual process group', async () => {

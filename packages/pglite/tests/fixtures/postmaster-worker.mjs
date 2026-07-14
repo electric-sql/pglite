@@ -7,10 +7,7 @@ import {
   ProcessExitKind,
   ProcessScopePolicy,
   ProcessState,
-  SharedLatch,
-  SharedWordSemaphore,
-  signalsFromMask,
-} from '../../dist/postmaster/index.js'
+} from '../../dist/postmaster/internal.js'
 
 const data = workerData
 const registry = ProcessControlRegistry.attach(data.controlBuffer)
@@ -35,15 +32,13 @@ try {
   if (data.mode === 'signals') {
     runSignals()
   } else if (data.mode === 'echo') {
-    runEcho()
+    await runEcho()
   } else if (data.mode === 'spawn') {
     runSpawn()
   } else if (data.mode === 'listener') {
     runListener()
-  } else if (data.mode === 'semaphore') {
-    runSemaphore()
   } else {
-    runLatch()
+    throw new Error(`unsupported postmaster test Worker mode: ${data.mode}`)
   }
   registry.markExit(data.handle, ProcessExitKind.Normal, 0)
 } catch (error) {
@@ -71,13 +66,13 @@ function runSignals() {
   }
 }
 
-function runEcho() {
+async function runEcho() {
   assert.ok(data.connectionBuffer)
   const connection = ConnectionTransport.attach(data.connectionBuffer)
-  let chunk = connection.inbound.readBlocking(7)
+  let chunk = await connection.inbound.read(7)
   while (chunk !== null) {
-    connection.outbound.writeBlocking(chunk)
-    chunk = connection.inbound.readBlocking(7)
+    await connection.outbound.write(chunk)
+    chunk = await connection.inbound.read(7)
   }
   connection.outbound.close()
 }
@@ -106,26 +101,10 @@ function runListener() {
   runSignals()
 }
 
-function runSemaphore() {
-  assert.notEqual(data.sharedWordIndex, undefined)
-  const semaphore = new SharedWordSemaphore(
-    new Int32Array(data.globalMemory.buffer),
-    data.sharedWordIndex,
-  )
-  assert.ok(semaphore.lock(2_000))
-  parentPort?.postMessage({ type: 'semaphore-acquired' })
-}
-
-function runLatch() {
-  assert.notEqual(data.sharedWordIndex, undefined)
-  const latch = new SharedLatch(
-    new Int32Array(data.globalMemory.buffer),
-    data.sharedWordIndex,
-    registry,
-  )
-  assert.ok(latch.wait(data.handle, 2_000))
-  parentPort?.postMessage({
-    type: 'latch-set',
-    signals: signalsFromMask(registry.takeDeliverableSignals(data.handle)),
-  })
+function signalsFromMask(mask) {
+  const result = []
+  for (let signal = 1; signal <= 31; signal++) {
+    if ((mask & (1 << (signal - 1))) !== 0) result.push(signal)
+  }
+  return result
 }

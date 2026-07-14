@@ -51,7 +51,6 @@ export interface PostgresMod
   _pgl_set_clock_host: (realtime_microseconds: number) => void
   _pgl_set_shmem_host: (ensure_capacity: number) => void
   _pgl_set_scoped_shmem_host: (ensure_capacity: number) => void
-  _pgl_set_scoped_shmem_enabled: (enabled: number) => void
   _pgl_set_scoped_shmem_mode: (mode: number) => void
   _pgl_shm_scope_root: () => bigint
   _pgl_shm_registry_offset: () => number

@@ -478,19 +478,6 @@ export class PGlitePostmaster {
     }
   }
 
-  /** @internal Phase-gate fault injection; never a graceful backend stop. */
-  async terminateWorkerForTesting(pid: number): Promise<void> {
-    this.assertOpen()
-    const record = this.workers.get(pid)
-    if (!record) throw new Error(`PostgreSQL Worker ${pid} is not live`)
-    const snapshot = this.registry.snapshot(record.handle)
-    if (snapshot.kind === PostgresProcessKind.Postmaster) {
-      throw new Error('refusing to fault-inject the postmaster Worker')
-    }
-    await record.worker.terminate()
-    this.settleWorker(record, ProcessExitKind.WorkerFailure, 1)
-  }
-
   close(): Promise<void> {
     return this.shutdown('smart')
   }

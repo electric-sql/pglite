@@ -197,10 +197,6 @@ export class PGliteSocketServer extends EventTarget {
     await this.stop()
   }
 
-  getServerConn(): string {
-    return formatAddress(this.currentAddress ?? this.configuredAddress)
-  }
-
   private async accept(socket: Socket): Promise<void> {
     if (!this.active) {
       socket.destroy()

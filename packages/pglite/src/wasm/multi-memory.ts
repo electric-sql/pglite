@@ -8,32 +8,14 @@ export type PgliteMemoryIndex = 0 | 1 | 2
 
 export interface WasmViews {
   readonly buffer: ArrayBuffer | SharedArrayBuffer
-  readonly i8: Int8Array
   readonly u8: Uint8Array
-  readonly i16: Int16Array
-  readonly u16: Uint16Array
-  readonly i32: Int32Array
-  readonly u32: Uint32Array
-  readonly i64: BigInt64Array
-  readonly u64: BigUint64Array
-  readonly f32: Float32Array
-  readonly f64: Float64Array
   readonly data: DataView
 }
 function createViews(memory: WebAssembly.Memory): WasmViews {
   const buffer = memory.buffer
   return {
     buffer,
-    i8: new Int8Array(buffer),
     u8: new Uint8Array(buffer),
-    i16: new Int16Array(buffer),
-    u16: new Uint16Array(buffer),
-    i32: new Int32Array(buffer),
-    u32: new Uint32Array(buffer),
-    i64: new BigInt64Array(buffer),
-    u64: new BigUint64Array(buffer),
-    f32: new Float32Array(buffer),
-    f64: new Float64Array(buffer),
     data: new DataView(buffer),
   }
 }

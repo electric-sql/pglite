@@ -13,19 +13,6 @@ export class SupervisorTimers {
 
   constructor(private readonly registry: ProcessControlRegistry) {}
 
-  schedule(handle: ProcessHandle, delayMs: number): void {
-    if (!Number.isFinite(delayMs) || delayMs < 0) {
-      throw new RangeError('timer delay must be a non-negative number')
-    }
-    this.cancel(handle)
-    const key = timerKey(handle)
-    const timer = setTimeout(() => {
-      this.timers.delete(key)
-      this.registry.queueSignalHandle(handle, PGLITE_SIGNALS.SIGALRM)
-    }, delayMs)
-    this.timers.set(key, timer)
-  }
-
   async run(): Promise<void> {
     if (this.running)
       throw new Error('supervisor timer loop is already running')

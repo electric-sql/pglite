@@ -1,12 +1,8 @@
-export * from './connection.js'
-export * from './control.js'
-export * from './latch.js'
-export * from './process-host.js'
-export * from './semaphore.js'
-export * from './socket-host.js'
 export * from './postmaster.js'
 export * from './session.js'
-export type * from './worker-types.js'
-export * from './timers.js'
-export * from './virtual-listener.js'
-export * from './wasi-host.js'
+export { PostgresProcessKind, ProcessExitKind } from './control.js'
+export type { BrokeredFilesystemDiagnostics } from './filesystem-broker.js'
+export type {
+  PostmasterArtifactPaths,
+  WorkerFilesystemFactory,
+} from './worker-types.js'

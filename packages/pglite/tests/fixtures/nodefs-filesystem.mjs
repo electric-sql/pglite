@@ -1,6 +1,9 @@
-export default function createNodeFilesystem({ root }) {
+export default function createNodeFilesystem({ root, mounts = [] }) {
   if (typeof root !== 'string' || root.length === 0) {
     throw new TypeError('NODEFS test factory requires a root')
+  }
+  if (!Array.isArray(mounts)) {
+    throw new TypeError('NODEFS test mounts must be an array')
   }
   let pg
   return {
@@ -18,6 +21,21 @@ export default function createNodeFilesystem({ root }) {
                 { root },
                 '/pglite/data',
               )
+              for (const mount of mounts) {
+                if (
+                  typeof mount?.root !== 'string' ||
+                  typeof mount?.path !== 'string' ||
+                  !mount.path.startsWith('/')
+                ) {
+                  throw new TypeError('invalid NODEFS test mount')
+                }
+                module.FS.mkdirTree(mount.path)
+                module.FS.mount(
+                  module.FS.filesystems.NODEFS,
+                  { root: mount.root },
+                  mount.path,
+                )
+              }
             },
           ],
         },
@@ -26,7 +44,7 @@ export default function createNodeFilesystem({ root }) {
     async syncToFs() {},
     async initialSyncFs() {},
     async dumpTar() {
-      throw new Error('not used by the Worker factory gate')
+      throw new Error('NODEFS test filesystem does not implement dumpTar')
     },
     async closeFs() {
       pg.Module.FS.quit()

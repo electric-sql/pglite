@@ -727,29 +727,6 @@ export class ProcessControlRegistry {
     }
   }
 
-  async waitForConnectionAsync(
-    timeout?: number,
-  ): Promise<VirtualConnectionHandle | undefined> {
-    const started = performance.now()
-    while (true) {
-      const connection = this.acceptConnection()
-      if (connection) return connection
-      const elapsed = performance.now() - started
-      if (timeout !== undefined && elapsed >= timeout) return undefined
-      const sequence = Atomics.load(
-        this.words,
-        HeaderField.ListenerWakeSequence,
-      )
-      if (this.hasReadyConnection()) continue
-      await waitAsync(
-        this.words,
-        HeaderField.ListenerWakeSequence,
-        sequence,
-        timeout === undefined ? undefined : Math.max(0, timeout - elapsed),
-      )
-    }
-  }
-
   releaseConnection(connection: VirtualConnectionHandle): void {
     this.assertConnection(connection, ConnectionRequestState.Claimed)
     Atomics.store(
@@ -1200,20 +1177,6 @@ export class ProcessControlRegistry {
     )
   }
 
-  async waitAsync(
-    handle: ProcessHandle,
-    sequence: number,
-    timeout?: number,
-  ): Promise<string> {
-    this.assertCurrent(handle)
-    return waitAsync(
-      this.words,
-      this.index(handle.slot, ProcessField.WakeSequence),
-      sequence,
-      timeout,
-    )
-  }
-
   markExit(
     handle: ProcessHandle,
     exitKind: ProcessExitKind,
@@ -1323,10 +1286,6 @@ export class ProcessControlRegistry {
 
   registryWakeSequence(): number {
     return Atomics.load(this.words, HeaderField.WakeSequence)
-  }
-
-  waitForRegistryChange(sequence: number, timeout?: number): string {
-    return Atomics.wait(this.words, HeaderField.WakeSequence, sequence, timeout)
   }
 
   async waitForRegistryChangeAsync(
@@ -1597,12 +1556,4 @@ function timerMilliseconds(value: number, name: string): number {
     throw new RangeError(`${name} is outside the supported range`)
   }
   return Math.ceil(value)
-}
-
-export function signalsFromMask(mask: number): number[] {
-  const result: number[] = []
-  for (let signal = 1; signal <= 31; signal++) {
-    if ((mask & signalBit(signal)) !== 0) result.push(signal)
-  }
-  return result
 }

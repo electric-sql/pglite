@@ -100,24 +100,6 @@ export class SharedByteRing {
     }
   }
 
-  writeBlocking(input: Uint8Array): void {
-    let offset = 0
-    while (offset < input.length) {
-      const written = this.tryWrite(input.subarray(offset))
-      if (written > 0) {
-        offset += written
-        continue
-      }
-      const sequence = Atomics.load(
-        this.words,
-        this.field(RingField.SpaceSequence),
-      )
-      if (this.freeBytes === 0) {
-        Atomics.wait(this.words, this.field(RingField.SpaceSequence), sequence)
-      }
-    }
-  }
-
   tryRead(maxBytes = this.capacity): Uint8Array | null {
     this.checkError()
     const read = this.cursor(RingField.ReadCursor)
@@ -153,20 +135,6 @@ export class SharedByteRing {
           this.field(RingField.DataSequence),
           sequence,
         )
-      }
-    }
-  }
-
-  readBlocking(maxBytes = this.capacity): Uint8Array | null {
-    while (true) {
-      const output = this.tryRead(maxBytes)
-      if (output === null || output.length > 0) return output
-      const sequence = Atomics.load(
-        this.words,
-        this.field(RingField.DataSequence),
-      )
-      if (this.usedBytes === 0 && !this.closed) {
-        Atomics.wait(this.words, this.field(RingField.DataSequence), sequence)
       }
     }
   }

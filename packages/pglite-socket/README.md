@@ -45,8 +45,8 @@ Listening modes are:
 { directory: '/tmp', port: 5432 }  // /tmp/.s.PGSQL.5432 plus .lock metadata
 ```
 
-`start()` returns the effective address. `address`, `connectionCount`,
-`isListening`, and `getServerConn()` expose the current frontend state.
+`start()` returns the effective address. `address`, `connectionCount`, and
+`isListening` expose the current frontend state.
 
 The bridge does not parse frontend messages. Its two independent pumps apply
 backpressure directly between Node streams and the postmaster's bounded SAB
