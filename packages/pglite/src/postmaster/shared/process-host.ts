@@ -6,8 +6,8 @@ import {
   type ProcessControlRegistry,
   type ProcessHandle,
 } from './control.js'
-import type { PostgresMod } from '../postgresMod.js'
-import type { ProcessScopedMemoryMode } from './worker-types.js'
+import type { PostgresMod } from '../../postgresMod.js'
+import type { ProcessScopedMemoryMode } from './process-types.js'
 
 const POINTER_TAG_MASK = 0xc0000000
 const GLOBAL_POINTER_TAG = 0x80000000

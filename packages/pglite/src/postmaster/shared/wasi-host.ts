@@ -1,5 +1,8 @@
-import type { FS as PostgresFileSystem } from '../postgresMod.js'
-import { PgliteMemoryViews, type DecodedPointer } from '../wasm/multi-memory.js'
+import type { FS as PostgresFileSystem } from '../../postgresMod.js'
+import {
+  PgliteMemoryViews,
+  type DecodedPointer,
+} from '../../wasm/multi-memory.js'
 
 const WASI_EBADF = 8
 const IOVEC_BYTES = 8

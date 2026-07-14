@@ -4,9 +4,9 @@ import {
   ERRNO_CODES,
   type Filesystem,
   type FsStats,
-} from '../fs/base.js'
-import type { PGlite } from '../pglite.js'
-import type { ProcessHandle } from './control.js'
+} from '../../fs/base.js'
+import type { PGlite } from '../../pglite.js'
+import type { ProcessHandle } from '../shared/control.js'
 
 const HEADER_WORDS = 16
 const HEADER_BYTES = HEADER_WORDS * Int32Array.BYTES_PER_ELEMENT

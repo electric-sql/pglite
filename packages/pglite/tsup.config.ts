@@ -27,6 +27,7 @@ const entryPoints = [
   'src/postmaster/index.ts',
   'src/postmaster/internal.ts',
   'src/postmaster/process-worker.ts',
+  'src/postmaster/unsupported.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

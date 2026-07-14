@@ -61,14 +61,21 @@
       }
     },
     "./postmaster": {
-      "import": {
-        "types": "./dist/postmaster/index.d.ts",
-        "default": "./dist/postmaster/index.js"
+      "browser": {
+        "types": "./dist/postmaster/unsupported.d.ts",
+        "default": "./dist/postmaster/unsupported.js"
       },
-      "require": {
-        "types": "./dist/postmaster/index.d.cts",
-        "default": "./dist/postmaster/index.cjs"
-      }
+      "node": {
+        "import": {
+          "types": "./dist/postmaster/index.d.ts",
+          "default": "./dist/postmaster/index.js"
+        },
+        "require": {
+          "types": "./dist/postmaster/index.d.cts",
+          "default": "./dist/postmaster/index.cjs"
+        }
+      },
+      "default": "./dist/postmaster/unsupported.js"
     },
     "./nodefs": {
       "import": {

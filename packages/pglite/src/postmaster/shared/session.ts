@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex'
-import { BasePGlite } from '../base.js'
-import type { DumpTarCompressionOptions } from '../fs/tarUtils.js'
+import { BasePGlite } from '../../base.js'
+import type { DumpTarCompressionOptions } from '../../fs/tarUtils.js'
 import type {
   DebugLevel,
   ExecProtocolOptions,
@@ -10,7 +10,7 @@ import type {
   PGliteInterface,
   SerializerOptions,
   Transaction,
-} from '../interface.js'
+} from '../../interface.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
 import {
@@ -19,7 +19,7 @@ import {
   type NoticeMessage,
   type NotificationResponseMessage,
 } from '@electric-sql/pg-protocol/messages'
-import type { PGliteProtocolConnection } from './postmaster.js'
+import type { PGliteProtocolConnection } from '../types.js'
 
 const FRONTEND_QUERY = 0x51
 const FRONTEND_PARSE = 0x50

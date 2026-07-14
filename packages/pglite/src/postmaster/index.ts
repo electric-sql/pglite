@@ -1,8 +1,9 @@
-export * from './postmaster.js'
-export * from './session.js'
-export { PostgresProcessKind, ProcessExitKind } from './control.js'
-export type { BrokeredFilesystemDiagnostics } from './filesystem-broker.js'
+export * from './types.js'
+export * from './node/postmaster.js'
+export * from './shared/session.js'
+export { PostgresProcessKind, ProcessExitKind } from './shared/control.js'
+export type { BrokeredFilesystemDiagnostics } from './node/filesystem-broker.js'
 export type {
   PostmasterArtifactPaths,
   WorkerFilesystemFactory,
-} from './worker-types.js'
+} from './node/worker-types.js'

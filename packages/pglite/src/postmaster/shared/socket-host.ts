@@ -10,7 +10,7 @@ import {
   type VirtualConnectionHandle,
   VirtualConnectionTransport,
 } from './control.js'
-import type { PostgresMod } from '../postgresMod.js'
+import type { PostgresMod } from '../../postgresMod.js'
 
 const SOCKET_DESCRIPTOR_BASE = 0x3c000000
 const CONNECTION_DESCRIPTOR_BASE = 0x3e000000

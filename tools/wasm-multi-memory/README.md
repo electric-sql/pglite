@@ -67,6 +67,10 @@ source-provenance profiles, transforms and optimizes the generated Wasm twice,
 audits its ABI and process exports, and instantiates the real artifact in
 multiple Node Workers. It also runs the focused TypeScript tests for process
 control, signals, timers, semaphores, connection rings, and virtual sockets.
+The audited `postmaster.wasm`, Emscripten glue, and preload data are copied to
+`packages/pglite/release` inside the pinned container, then included in the
+normal package build. Consumers therefore do not need to provide artifact
+paths to `PGlitePostmaster.create()`.
 
 The default output is `tools/wasm-multi-memory/.out/postmaster-build`.
 Override it with `PGLITE_POSTMASTER_BUILD_OUT`.

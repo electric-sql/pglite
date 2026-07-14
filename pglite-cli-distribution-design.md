@@ -1546,6 +1546,22 @@ Exit criterion: the reorganized Node `PGlitePostmaster` passes the existing
 artifact, primitive, session, stress, VFS, memory-churn, TypeScript, and classic
 compatibility suites with no intentional runtime behavior change.
 
+Phase 1 implementation record, 2026-07-14:
+
+- The postmaster source is split into `postmaster/shared` and `postmaster/node`;
+  browser/default resolution uses an explicit unsupported-platform stub and the
+  ordinary package root remains independent of Node and postmaster modules.
+- The normal package build copies the transformed postmaster Wasm, data, glue,
+  and Worker artifacts into `dist`. Both ESM and CommonJS resolve those assets
+  relative to a packed installation.
+- Native ARM64 Docker builds pass the artifact and side-module audits, 16
+  focused primitive/view tests, eight API/runtime tests, socket, libpq, COPY,
+  and backpressure integration, 230 core regression tests, 119 isolation tests,
+  and the 10,000-session memory/crash stress gate.
+- The classic package suite passes 288 tests with one existing skip. TypeScript,
+  lint, export-shape, root build-graph, fresh packed ESM, and fresh packed
+  CommonJS checks pass without an intentional runtime behavior change.
+
 ### Phase 2: extract the Node network-server package
 
 - Create `packages/pglite-server`.

@@ -12,6 +12,7 @@ INLINE="${OUT}/postmaster.inline.wasm"
 CANDIDATE="${OUT}/postmaster.wasm"
 REPORT="${OUT}/postmaster.report.json"
 EXPORTS="${OUT}/source-function-exports.txt"
+PACKAGE_OUT=${PGLITE_POSTMASTER_PACKAGE_OUT:-}
 
 test -f "${INPUT}"
 test -f "${GLUE}"
@@ -72,12 +73,24 @@ wasm-opt "${INLINE}" -O3 --all-features -o "${CANDIDATE}"
 node22 "${REPO_ROOT}/tests/postmaster/artifact-audit.mjs" \
   "${INPUT}" "${CANDIDATE}" "${REPORT}" "${OUT}/artifact-audit.json"
 
+if [[ -n "${PACKAGE_OUT}" ]]; then
+  mkdir -p "${PACKAGE_OUT}"
+  cp "${CANDIDATE}" "${PACKAGE_OUT}/postmaster.wasm"
+  cp "${GLUE}" "${PACKAGE_OUT}/postmaster.js"
+  cp "${DATA}" "${PACKAGE_OUT}/postmaster.data"
+fi
+
 pnpm -C "${REPO_ROOT}/packages/pglite" typecheck
 pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postmaster-build.log
 pnpm -C "${REPO_ROOT}/packages/pglite" exec vitest run \
-  tests/postmaster-primitives.test.ts --maxWorkers=1 --minWorkers=1
+  tests/postmaster-primitives.test.ts \
+  tests/postmaster-exports.test.ts \
+  --maxWorkers=1 --minWorkers=1
 pnpm -C "${REPO_ROOT}/packages/pglite" exec eslint \
-  src/postmaster tests/postmaster-primitives.test.ts --max-warnings=0
+  src/postmaster \
+  tests/postmaster-primitives.test.ts \
+  tests/postmaster-exports.test.ts \
+  --max-warnings=0
 
 grep -q '__PGLITE_POSTMASTER__' \
   "${REPO_ROOT}/postgres-pglite/src/backend/port/posix_sema.c"

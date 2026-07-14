@@ -32,5 +32,6 @@ docker run --rm \
     INSTALL_FOLDER=/postmaster-build/source-build \
       ./build-pglite.sh
     cd /work
-    ./tests/postmaster/build-artifact.sh /work
+    PGLITE_POSTMASTER_PACKAGE_OUT=/work/packages/pglite/release \
+      ./tests/postmaster/build-artifact.sh /work
   '

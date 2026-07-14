@@ -3,9 +3,9 @@ import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { measureMemory } from 'node:vm'
 import { Worker } from 'node:worker_threads'
-import type { Filesystem } from '../fs/base.js'
-import { PGlite } from '../pglite.js'
-import { ConnectionTransport } from './connection.js'
+import type { Filesystem } from '../../fs/base.js'
+import { PGlite } from '../../pglite.js'
+import { ConnectionTransport } from '../shared/connection.js'
 import {
   PGLITE_SIGNALS,
   PostgresProcessKind,
@@ -16,19 +16,19 @@ import {
   VirtualConnectionTransport,
   type ProcessHandle,
   type SpawnRequest,
-} from './control.js'
+} from '../shared/control.js'
 import {
   BrokeredFilesystemHost,
   initializerFilesystem,
   isBrokeredFilesystemBackend,
   type BrokeredFilesystemDiagnostics,
 } from './filesystem-broker.js'
-import { SupervisorTimers } from './timers.js'
-import { VirtualConnectionBroker } from './virtual-listener.js'
+import { SupervisorTimers } from '../shared/timers.js'
+import { VirtualConnectionBroker } from '../shared/virtual-listener.js'
 import {
   PGlitePostmasterSession,
   type PGlitePostmasterSessionOptions,
-} from './session.js'
+} from '../shared/session.js'
 import type {
   PostgresProcessWorkerData,
   PostgresProcessWorkerMessage,
@@ -36,6 +36,13 @@ import type {
   WorkerFilesystemDescriptor,
   WorkerFilesystemFactory,
 } from './worker-types.js'
+import type {
+  PGlitePostmasterExit,
+  PGlitePostmasterShutdownMode,
+  PGliteProtocolConnection,
+  PGliteScopedMemoryMode,
+  ProtocolPeerInfo,
+} from '../types.js'
 
 const WASM_PAGE_BYTES = 65_536
 const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
@@ -52,20 +59,6 @@ const SCOPED_SHM_MAX_SCOPES = 640
 const RETIRED_BACKING_STORE_COLLECTION_INTERVAL = 128
 const PGLITE_PROCESS_USER_ID = 123
 const ownedDirectories = new Set<string>()
-
-export interface ProtocolPeerInfo {
-  readonly transport: 'tcp' | 'unix'
-  readonly remoteAddress?: string
-  readonly remotePort?: number
-}
-
-export interface PGliteProtocolConnection {
-  readonly readable: AsyncIterable<Uint8Array>
-  readonly closed: Promise<void>
-  write(data: Uint8Array): Promise<void>
-  end(): Promise<void>
-  abort(reason?: unknown): void
-}
 
 export interface PGlitePostmasterOptions {
   /** Node directory, with the existing PGlite `file://` spelling supported. */
@@ -116,15 +109,6 @@ export interface PGlitePostmasterOptions {
    * top-level process meaning.
    */
   readonly postmasterPid?: number
-}
-
-export type PGliteScopedMemoryMode = 'dedicated' | 'compact'
-
-export type PGlitePostmasterShutdownMode = 'smart' | 'fast' | 'immediate'
-
-export interface PGlitePostmasterExit {
-  readonly exitKind: ProcessExitKind
-  readonly exitCode: number
 }
 
 export interface PGlitePostmasterDiagnostics {
@@ -1202,15 +1186,9 @@ function resolveArtifact(
   artifact: PostmasterArtifactPaths | undefined,
 ): PostmasterArtifactPaths {
   const resolved = artifact ?? {
-    wasm: fileURLToPath(
-      new URL('../../release/postmaster.wasm', import.meta.url),
-    ),
-    glue: fileURLToPath(
-      new URL('../../release/postmaster.js', import.meta.url),
-    ),
-    data: fileURLToPath(
-      new URL('../../release/postmaster.data', import.meta.url),
-    ),
+    wasm: fileURLToPath(new URL('../postmaster.wasm', import.meta.url)),
+    glue: fileURLToPath(new URL('../postmaster.js', import.meta.url)),
+    data: fileURLToPath(new URL('../postmaster.data', import.meta.url)),
   }
   const result = {
     wasm: resolve(resolved.wasm),
