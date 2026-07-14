@@ -2018,6 +2018,31 @@ An existing runtime `Filesystem` object can remain in the supervisor realm. Work
 
 This is slower but preserves compatibility for stateful or non-cloneable third-party implementations. The broker owns global backing handles, validates process generations, and closes every handle on Worker failure.
 
+The implemented Node contract accepts the existing `fs` option directly when
+the object supplies the synchronous operations of `BaseFilesystem`. A separate
+`workerFilesystem` factory is not required. Each process receives a private
+64 KiB broker channel with a bounded 48 KiB I/O chunk. The Worker publishes a
+fully populated request with an atomic release store, notifies the supervisor,
+and blocks only its own thread with `Atomics.wait()`. The supervisor remains
+the sole caller of the backing object, executes requests serially on the Node
+event loop, publishes the response, and wakes that Worker.
+
+Every process has a local descriptor namespace. The supervisor maps those
+local descriptors to backing handles, so offsets and close ownership cannot
+cross process generations even when the backing implementation uses one
+global handle table. Normal close, fatal Worker exit, startup failure, and
+postmaster shutdown all converge on idempotent detach. Detach closes every
+remaining backing handle before closing the channel. Final broker shutdown
+attempts both filesystem sync and close exactly once and preserves both errors
+if both operations fail.
+
+Requests and responses contain JSON metadata plus bounded byte payloads.
+Reads and writes larger than one channel payload are chunked without allocating
+a high-water buffer in the supervisor. The ordinary `Filesystem` initialization
+contract is retained; a LIFO initializer facade handles PGlite's nested
+no-initdb bootstrap instances without closing the user-owned backing object
+before the postmaster starts.
+
 ### 18.5 Initialization ownership
 
 Only `PGlitePostmaster` initializes, restores, dumps, or replaces PGDATA. Child Workers attach to an already initialized directory. The supervisor prevents two independent clusters from opening the same directory without an explicit safe ownership mechanism.
@@ -2653,9 +2678,18 @@ The transform preserves `dylink.0`, produces byte-identical repeat builds, and
 audits shared import types and aperture maximums after optimization. The full
 gate also passes native libpq cancellation/COPY/backpressure and the selected
 `test_setup int8 create_table create_index select` upstream regression corpus.
-Serializable and brokered third-party filesystem hardening remains the active
-Phase 8 item; browser work remains intentionally out of scope for this Node-only
-plan.
+Serializable and brokered third-party filesystem hardening is also complete.
+The existing structured-cloneable Worker factory remains the direct path. A
+non-cloneable `BaseFilesystem` can now be passed through the existing `fs`
+option and is served by the supervisor SAB broker. The live gate performs
+roughly 12,000 VFS requests across concurrent sessions, writes 512 KiB of table
+payload, forces a backend failure and PostgreSQL crash recovery, shuts down,
+and restarts from the same backing store. The two runs opened and closed
+2,449/2,449 and 164/164 backing handles respectively; both ended with zero live
+channels, handles, private memories, or scoped roots, and each backing object
+was closed exactly once. The reusable gate then passed native libpq
+cancellation/COPY/backpressure and all five selected upstream regression tests.
+Browser work remains intentionally out of scope for this Node-only plan.
 
 ## 26. Test plan
 
@@ -2759,7 +2793,7 @@ The full PostgreSQL `src/test/isolation` suite is the acceptance baseline for mu
 - rename, unlink, truncate, and temporary files behave correctly;
 - crash and restart recovery;
 - dump/restore consistency;
-- brokered third-party filesystem behavior and cleanup when that deferred adapter is implemented.
+- brokered third-party filesystem concurrency, failure cleanup, balanced backing handles, exactly-once final close, and persistence across restart.
 
 ### 26.9 Memory tests
 

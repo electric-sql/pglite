@@ -1,4 +1,5 @@
 import type { ProcessHandle, ProcessScopePolicy } from './control.js'
+import type { BrokeredFilesystemChannel } from './filesystem-broker.js'
 
 export interface PostmasterArtifactPaths {
   readonly wasm: string
@@ -21,6 +22,10 @@ export type WorkerFilesystemDescriptor =
   | {
       readonly kind: 'factory'
       readonly factory: WorkerFilesystemFactory
+    }
+  | {
+      readonly kind: 'broker'
+      readonly channel: BrokeredFilesystemChannel
     }
 
 export type ProcessScopedMemoryMode = 'disabled' | 'dedicated' | 'compact'
@@ -50,6 +55,12 @@ export interface PostgresProcessWorkerData {
 }
 
 export type PostgresProcessWorkerMessage =
+  | {
+      readonly type: 'filesystem-request'
+      readonly pid: number
+      readonly generation: number
+      readonly sequence: number
+    }
   | {
       readonly type: 'scoped-memory-ready'
       readonly pid: number

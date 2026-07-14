@@ -10,6 +10,7 @@ import {
   ProcessScopePolicy,
   ProcessState,
 } from './control.js'
+import { BrokeredFilesystem } from './filesystem-broker.js'
 import { PostmasterProcessHost } from './process-host.js'
 import { VirtualSocketHost } from './socket-host.js'
 import {
@@ -97,6 +98,18 @@ async function main(): Promise<void> {
       default: (options: Partial<PostgresMod>) => Promise<PostgresMod>
     }
     let filesystemOptions: Partial<PostgresMod> = {}
+    const facade = {
+      dataDir: data.dataDirectory,
+      debug: data.debug ? 1 : 0,
+      get Module() {
+        if (!postgres) {
+          throw new Error(
+            'Worker filesystem accessed PGlite.Module before preRun',
+          )
+        }
+        return postgres
+      },
+    } as unknown as PGlite
     if (data.filesystem.kind === 'factory') {
       const namespace = (await import(
         data.filesystem.factory.module
@@ -115,18 +128,21 @@ async function main(): Promise<void> {
           'Worker filesystem factory did not return a PGlite Filesystem',
         )
       }
-      const facade = {
-        dataDir: data.dataDirectory,
-        debug: data.debug ? 1 : 0,
-        get Module() {
-          if (!postgres) {
-            throw new Error(
-              'Worker filesystem accessed PGlite.Module before preRun',
-            )
-          }
-          return postgres
-        },
-      } as unknown as PGlite
+      filesystemOptions = (await filesystem.init(facade, {})).emscriptenOpts
+      assertFilesystemOptions(filesystemOptions)
+    } else if (data.filesystem.kind === 'broker') {
+      filesystem = new BrokeredFilesystem(
+        data.dataDirectory,
+        data.filesystem.channel,
+        (sequence) =>
+          send({
+            type: 'filesystem-request',
+            pid: data.process.pid,
+            generation: data.process.generation,
+            sequence,
+          }),
+        data.debug,
+      )
       filesystemOptions = (await filesystem.init(facade, {})).emscriptenOpts
       assertFilesystemOptions(filesystemOptions)
     }

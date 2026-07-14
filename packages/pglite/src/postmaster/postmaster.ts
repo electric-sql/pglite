@@ -16,6 +16,12 @@ import {
   type ProcessHandle,
   type SpawnRequest,
 } from './control.js'
+import {
+  BrokeredFilesystemHost,
+  initializerFilesystem,
+  isBrokeredFilesystemBackend,
+  type BrokeredFilesystemDiagnostics,
+} from './filesystem-broker.js'
 import { SupervisorTimers } from './timers.js'
 import { VirtualConnectionBroker } from './virtual-listener.js'
 import {
@@ -73,11 +79,18 @@ export interface PGlitePostmasterOptions {
    * portability settings remain enforced.
    */
   readonly respectPostgresqlConfig?: boolean
-  /** Existing PGlite filesystem used by the supervisor-owned initializer. */
+  /**
+   * Existing synchronous PGlite `BaseFilesystem`. Without `workerFilesystem`,
+   * it remains in the supervisor and is exposed to every process through a
+   * bounded synchronous SAB broker.
+   */
   readonly fs?: Filesystem
   /** Existing PGlite ICU data tarball used while initializing PGDATA. */
   readonly icuDataDir?: Blob | File
-  /** Creates an ordinary PGlite filesystem locally in every process Worker. */
+  /**
+   * Alternatively creates an ordinary PGlite filesystem locally in every
+   * process Worker. Its options must be structured-cloneable.
+   */
   readonly workerFilesystem?: WorkerFilesystemFactory
   readonly privateInitialMemory?: number
   readonly privateMaximumMemory?: number
@@ -130,6 +143,12 @@ export interface PGlitePostmasterDiagnostics {
   /** Unique Wasm backing-store bytes, without double-counting compact roots. */
   readonly totalUniqueMemoryBytes: number
   readonly scopedLifetime: PGliteScopedLifetimeDiagnostics
+  readonly filesystem: PGlitePostmasterFilesystemDiagnostics
+}
+
+export interface PGlitePostmasterFilesystemDiagnostics {
+  readonly strategy: 'nodefs' | 'factory' | 'broker'
+  readonly broker?: BrokeredFilesystemDiagnostics
 }
 
 export interface PGliteScopedLifetimeDiagnostics {
@@ -170,6 +189,22 @@ interface ScopedRootRecord {
   exited: boolean
 }
 
+type DirectWorkerFilesystemDescriptor = Exclude<
+  WorkerFilesystemDescriptor,
+  { readonly kind: 'broker' }
+>
+
+type ResolvedWorkerFilesystem =
+  | {
+      readonly kind: 'direct'
+      readonly descriptor: DirectWorkerFilesystemDescriptor
+    }
+  | {
+      readonly kind: 'broker'
+      readonly host: BrokeredFilesystemHost
+      readonly initializer: Filesystem
+    }
+
 export class PGlitePostmaster {
   readonly dataDir: string
   readonly maxConnections: number
@@ -179,7 +214,7 @@ export class PGlitePostmaster {
   private readonly artifact: PostmasterArtifactPaths
   private readonly wasmModule: WebAssembly.Module
   private readonly workerUrl: URL
-  private readonly filesystem: WorkerFilesystemDescriptor
+  private readonly filesystem: ResolvedWorkerFilesystem
   private readonly privateInitialPages: number
   private readonly privateMaximumPages: number
   private readonly globalMaximumPages: number
@@ -212,7 +247,7 @@ export class PGlitePostmaster {
     dataDir: string,
     artifact: PostmasterArtifactPaths,
     wasmModule: WebAssembly.Module,
-    filesystem: WorkerFilesystemDescriptor,
+    filesystem: ResolvedWorkerFilesystem,
   ) {
     this.dataDir = dataDir
     this.maxConnections = options.maxConnections ?? 20
@@ -271,8 +306,10 @@ export class PGlitePostmaster {
       throw new Error(`PGlite data directory is already open: ${dataDir}`)
     }
     ownedDirectories.add(dataDir)
+    let filesystem: ResolvedWorkerFilesystem | undefined
     try {
       mkdirSync(dataDir, { recursive: true })
+      filesystem = resolveWorkerFilesystem(options, dataDir)
       if (
         options.initialize !== false &&
         (options.fs !== undefined ||
@@ -280,7 +317,8 @@ export class PGlitePostmaster {
       ) {
         const initializer = await PGlite.create({
           dataDir: `file://${dataDir}`,
-          fs: options.fs,
+          fs:
+            filesystem.kind === 'broker' ? filesystem.initializer : options.fs,
           icuDataDir: options.icuDataDir,
           debug: options.debug ? 1 : 0,
         })
@@ -297,7 +335,6 @@ export class PGlitePostmaster {
 
       const artifact = resolveArtifact(options.artifact)
       const wasmModule = await WebAssembly.compile(readFileSync(artifact.wasm))
-      const filesystem = resolveWorkerFilesystem(options, dataDir)
       const postmaster = new PGlitePostmaster(
         options,
         dataDir,
@@ -305,9 +342,17 @@ export class PGlitePostmaster {
         wasmModule,
         filesystem,
       )
-      await postmaster.start(options)
+      try {
+        await postmaster.start(options)
+      } catch (error) {
+        await postmaster.shutdown('immediate').catch(() => {})
+        throw error
+      }
       return postmaster
     } catch (error) {
+      if (filesystem?.kind === 'broker') {
+        await filesystem.host.close().catch(() => {})
+      }
       ownedDirectories.delete(dataDir)
       throw error
     }
@@ -409,6 +454,13 @@ export class PGlitePostmaster {
         this.globalMemory.buffer.byteLength +
         scopedMemoryBytes,
       scopedLifetime,
+      filesystem:
+        this.filesystem.kind === 'broker'
+          ? {
+              strategy: 'broker',
+              broker: this.filesystem.host.diagnostics(),
+            }
+          : { strategy: this.filesystem.descriptor.kind },
     }
   }
 
@@ -483,9 +535,15 @@ export class PGlitePostmaster {
       ),
     )
     this.broker.close()
-    this.closed = true
-    this.closing = false
-    ownedDirectories.delete(this.dataDir)
+    try {
+      if (this.filesystem.kind === 'broker') {
+        await this.filesystem.host.close()
+      }
+    } finally {
+      this.closed = true
+      this.closing = false
+      ownedDirectories.delete(this.dataDir)
+    }
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -566,6 +624,15 @@ export class PGlitePostmaster {
     } else if (scopeRoot) {
       throw new Error('SelfAlias Worker unexpectedly has a scope root')
     }
+    let workerFilesystem: WorkerFilesystemDescriptor
+    if (this.filesystem.kind === 'broker') {
+      workerFilesystem = {
+        kind: 'broker',
+        channel: this.filesystem.host.attach(handle),
+      }
+    } else {
+      workerFilesystem = this.filesystem.descriptor
+    }
     const workerData: PostgresProcessWorkerData = {
       artifact: this.artifact,
       wasmModule: this.wasmModule,
@@ -587,12 +654,20 @@ export class PGlitePostmaster {
       postmaster: this.postmasterProcess,
       inheritedConnectionId: connectionId,
       dataDirectory: this.dataDir,
-      filesystem: this.filesystem,
+      filesystem: workerFilesystem,
       arguments: args,
       osUser: this.osUser,
       debug: this.debug,
     }
-    const worker = new Worker(this.workerUrl, { workerData })
+    let worker: Worker
+    try {
+      worker = new Worker(this.workerUrl, { workerData })
+    } catch (error) {
+      if (this.filesystem.kind === 'broker') {
+        this.filesystem.host.detach(handle)
+      }
+      throw error
+    }
     const record: WorkerRecord = {
       handle,
       worker,
@@ -620,7 +695,21 @@ export class PGlitePostmaster {
       }, 30_000)
 
       worker.on('message', (message: PostgresProcessWorkerMessage) => {
-        if (message.type === 'scoped-memory-ready') {
+        if (message.type === 'filesystem-request') {
+          if (
+            this.filesystem.kind !== 'broker' ||
+            message.pid !== handle.pid ||
+            message.generation !== handle.generation ||
+            !Number.isSafeInteger(message.sequence) ||
+            message.sequence <= 0
+          ) {
+            record.reportedExitCode = 1
+            record.reportedExitKind = ProcessExitKind.WorkerFailure
+            void worker.terminate()
+            return
+          }
+          this.filesystem.host.dispatch(handle, message.sequence)
+        } else if (message.type === 'scoped-memory-ready') {
           if (
             rootMemoryReady ||
             scopePolicy !== ProcessScopePolicy.NewRoot ||
@@ -738,6 +827,9 @@ export class PGlitePostmaster {
     if (record.settled) return
     record.settled = true
     this.workers.delete(record.handle.pid)
+    if (this.filesystem.kind === 'broker') {
+      this.filesystem.host.detach(record.handle)
+    }
     this.privateMemoriesReleased++
     this.settleScopedMembership(record)
     if (exitKind === ProcessExitKind.WorkerFailure && record.connectionId) {
@@ -910,14 +1002,25 @@ function isStaleConnectionError(error: unknown): boolean {
 function resolveWorkerFilesystem(
   options: PGlitePostmasterOptions,
   dataDir: string,
-): WorkerFilesystemDescriptor {
+): ResolvedWorkerFilesystem {
   if (!options.workerFilesystem) {
     if (options.fs) {
-      throw new Error(
-        'A custom postmaster fs requires a workerFilesystem factory',
-      )
+      if (!isBrokeredFilesystemBackend(options.fs)) {
+        throw new TypeError(
+          'A custom postmaster fs must implement the synchronous BaseFilesystem operations or provide a workerFilesystem factory',
+        )
+      }
+      const host = new BrokeredFilesystemHost(options.fs)
+      return {
+        kind: 'broker',
+        host,
+        initializer: initializerFilesystem(options.fs),
+      }
     }
-    return { kind: 'nodefs', root: dataDir }
+    return {
+      kind: 'direct',
+      descriptor: { kind: 'nodefs', root: dataDir },
+    }
   }
   const factory = options.workerFilesystem
   let module = factory.module
@@ -930,8 +1033,11 @@ function resolveWorkerFilesystem(
     throw new TypeError('workerFilesystem options must be structured-cloneable')
   }
   return {
-    kind: 'factory',
-    factory: { ...factory, module },
+    kind: 'direct',
+    descriptor: {
+      kind: 'factory',
+      factory: { ...factory, module },
+    },
   }
 }
 
