@@ -35,6 +35,13 @@ const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
 const ARTIFACT_GLOBAL_INITIAL_PAGES = 2
 const ARTIFACT_MAXIMUM_PAGES = 16_384
 const GLOBAL_SHM_ALLOCATION_GENERATION_WORD = (0x1_0000 >>> 2) + 5
+const SCOPED_SHM_REGISTRY_WORD = 0x1_0000 >>> 2
+const SCOPED_SHM_MAGIC_READY = 0x5047_4c53
+const SCOPED_SHM_REGISTRY_VERSION = 3
+const SCOPED_SHM_SCOPE_DIRECTORY_WORD =
+  SCOPED_SHM_REGISTRY_WORD + (18_464 >>> 2)
+const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
+const SCOPED_SHM_MAX_SCOPES = 256
 const PGLITE_PROCESS_USER_ID = 123
 const ownedDirectories = new Set<string>()
 
@@ -112,6 +119,24 @@ export interface PGlitePostmasterDiagnostics {
   readonly globalMemoryMaximumBytes: number
   readonly scopedMemoryMaximumBytes: number
   readonly globalShmAllocationGeneration: number
+  readonly scopedLifetime: PGliteScopedLifetimeDiagnostics
+}
+
+export interface PGliteScopedLifetimeDiagnostics {
+  readonly readyRoots: number
+  readonly activeRootScopes: number
+  readonly activeSessionScopes: number
+  readonly activeTransactionScopes: number
+  readonly activeSubtransactionScopes: number
+  readonly activePortalScopes: number
+  readonly activeQueryScopes: number
+  readonly activeParallelContextScopes: number
+  readonly closingScopes: number
+  readonly deadScopes: number
+  readonly attachments: number
+  readonly activeWorkers: number
+  /** Logically owned/reusable bytes, not the Wasm backing-store byteLength. */
+  readonly allocatedBytes: number
 }
 
 interface WorkerRecord {
@@ -304,6 +329,9 @@ export class PGlitePostmaster {
 
   diagnostics(): PGlitePostmasterDiagnostics {
     const live = [...this.workers.values()]
+    const scopedLifetime = readScopedLifetimeDiagnostics(
+      this.scopedRoots.values(),
+    )
     return {
       liveProcesses: live.length,
       livePrivateMemories: live.length,
@@ -328,6 +356,7 @@ export class PGlitePostmaster {
         new Uint32Array(this.globalMemory.buffer),
         GLOBAL_SHM_ALLOCATION_GENERATION_WORD,
       ),
+      scopedLifetime,
     }
   }
 
@@ -686,6 +715,78 @@ export class PGlitePostmaster {
   private assertOpen(): void {
     if (this.closing || this.closed)
       throw new Error('PGlite postmaster is closed')
+  }
+}
+
+function readScopedLifetimeDiagnostics(
+  roots: Iterable<ScopedRootRecord>,
+): PGliteScopedLifetimeDiagnostics {
+  let readyRoots = 0
+  let activeRootScopes = 0
+  let activeSessionScopes = 0
+  let activeTransactionScopes = 0
+  let activeSubtransactionScopes = 0
+  let activePortalScopes = 0
+  let activeQueryScopes = 0
+  let activeParallelContextScopes = 0
+  let closingScopes = 0
+  let deadScopes = 0
+  let attachments = 0
+  let activeWorkers = 0
+  let allocatedBytes = 0
+
+  for (const root of roots) {
+    const words = new Uint32Array(root.memory.buffer)
+    if (
+      Atomics.load(words, SCOPED_SHM_REGISTRY_WORD) !==
+        SCOPED_SHM_MAGIC_READY ||
+      Atomics.load(words, SCOPED_SHM_REGISTRY_WORD + 1) !==
+        SCOPED_SHM_REGISTRY_VERSION
+    ) {
+      continue
+    }
+    readyRoots++
+    for (let slot = 0; slot < SCOPED_SHM_MAX_SCOPES; slot++) {
+      const offset =
+        SCOPED_SHM_SCOPE_DIRECTORY_WORD + slot * SCOPED_SHM_SCOPE_WORDS
+      const state = Atomics.load(words, offset)
+      const kind = Atomics.load(words, offset + 1)
+      if (state === 1) {
+        if (kind === 1) activeRootScopes++
+        else if (kind === 2) activeSessionScopes++
+        else if (kind === 3) activeTransactionScopes++
+        else if (kind === 4) activeSubtransactionScopes++
+        else if (kind === 5) activePortalScopes++
+        else if (kind === 6) activeQueryScopes++
+        else if (kind === 7) activeParallelContextScopes++
+      } else if (state === 2) {
+        closingScopes++
+      } else if (state === 3) {
+        deadScopes++
+      }
+      if (state !== 1 && state !== 2) continue
+      attachments += Atomics.load(words, offset + 6)
+      activeWorkers += Atomics.load(words, offset + 7)
+      allocatedBytes +=
+        Atomics.load(words, offset + 10) +
+        Atomics.load(words, offset + 11) * 0x1_0000_0000
+    }
+  }
+
+  return {
+    readyRoots,
+    activeRootScopes,
+    activeSessionScopes,
+    activeTransactionScopes,
+    activeSubtransactionScopes,
+    activePortalScopes,
+    activeQueryScopes,
+    activeParallelContextScopes,
+    closingScopes,
+    deadScopes,
+    attachments,
+    activeWorkers,
+    allocatedBytes,
   }
 }
 
