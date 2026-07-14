@@ -48,9 +48,12 @@ Run commands from the parent PGlite checkout.
 pnpm wasm:multi-memory:test
 ```
 
-This generates exhaustive fixtures and validates deterministic lowering,
-opcode accounting, pointer-domain traps and aliases, atomics, bulk-memory
-operations, provenance, names, source maps, and supported Node runtimes.
+This runs the TypeScript/Vitest transformer suite, generating exhaustive
+fixtures once and validating deterministic lowering, opcode accounting,
+pointer-domain traps and aliases, atomics, bulk-memory operations, provenance,
+names, and source maps. A separate, deliberately small runtime-capability gate
+checks the required multi-memory and Worker-transfer behavior in the pinned
+Node versions.
 Results are written to `tools/wasm-multi-memory/.out/transformer-tests`.
 
 ### Build the postmaster artifact
@@ -136,6 +139,8 @@ separate extension artifacts from the same source.
 
 - `tools/wasm-multi-memory/transformer/`: the native Binaryen lowering tool;
 - `tools/wasm-multi-memory/tests/`: focused transformer fixtures and tests;
+- `tools/wasm-multi-memory/runtime-capabilities/`: minimal pinned-Node
+  admission checks, separate from transformer correctness;
 - `tools/wasm-multi-memory/side-modules/`: deterministic extension lowering
   and ABI audit tooling;
 - `tools/wasm-multi-memory/emscripten/`: the pinned dynamic-loader patch;

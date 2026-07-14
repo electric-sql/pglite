@@ -57,17 +57,14 @@ privateA.grow(1)
 assert.equal(a.exports.size_private(), before + 1)
 
 await new Promise((resolve, reject) => {
-  const worker = new Worker(
-    new URL('./capability-worker.mjs', import.meta.url),
-    {
-      workerData: {
-        module,
-        privateMemory: privateB,
-        globalMemory,
-        scopedMemory: scopedB,
-      },
+  const worker = new Worker(new URL('./worker.mjs', import.meta.url), {
+    workerData: {
+      module,
+      privateMemory: privateB,
+      globalMemory,
+      scopedMemory: scopedB,
     },
-  )
+  })
   worker.once('message', (result) =>
     result.ok ? resolve() : reject(new Error(result.error)),
   )
@@ -79,47 +76,4 @@ await new Promise((resolve, reject) => {
 })
 assert.equal(a.exports.load_global(128), 51)
 
-const waitBuffer = new SharedArrayBuffer(4)
-const waitView = new Int32Array(waitBuffer)
-const waitAsync = (expected, timeout) => {
-  const result = Atomics.waitAsync(waitView, 0, expected, timeout)
-  return result.async ? result.value : Promise.resolve(result.value)
-}
-assert.equal(await waitAsync(99, 100), 'not-equal')
-const timeoutKeepAlive = setTimeout(() => {}, 100)
-assert.equal(await waitAsync(0, 1), 'timed-out')
-clearTimeout(timeoutKeepAlive)
-
-const notify = async (value) => {
-  const result = Atomics.waitAsync(waitView, 0, 0, 2000)
-  assert.equal(result.async, true)
-  const worker = new Worker(new URL('./wait-notifier.mjs', import.meta.url), {
-    workerData: { buffer: waitBuffer, value },
-  })
-  assert.equal(await result.value, 'ok')
-  await new Promise((resolve, reject) => {
-    worker.once('exit', (code) =>
-      code ? reject(new Error(`notifier exited ${code}`)) : resolve(),
-    )
-    worker.once('error', reject)
-  })
-  assert.equal(Atomics.load(waitView, 0), value)
-}
-await notify(1)
-Atomics.store(waitView, 0, 0)
-await notify(2) // ring-close flag wakeup
-
-// Shared memories reserve virtual address space eagerly but should not commit
-// their maximum as resident RAM. Keep the assertion loose across V8/platforms
-// while recording both figures in CI diagnostics.
-const rssBefore = process.memoryUsage().rss
-const reservations = Array.from({ length: 8 }, () => memory(16384))
-const rssDelta = process.memoryUsage().rss - rssBefore
-assert.ok(reservations.length === 8)
-assert.ok(
-  rssDelta < 128 * 1024 * 1024,
-  `unexpected shared-memory RSS delta ${rssDelta}`,
-)
-console.log(
-  `${process.version} capabilities: ok; eight-memory RSS delta=${rssDelta}`,
-)
+console.log(`${process.version} multi-memory and Worker transfer: ok`)

@@ -26,6 +26,7 @@ docker build \
   --build-arg "NODE22_VERSION=${PGLITE_NODE22_VERSION}" \
   --build-arg "NODE24_VERSION=${PGLITE_NODE24_VERSION}" \
   --build-arg "PNPM_VERSION=${PGLITE_PNPM_VERSION}" \
+  --build-arg "VITEST_VERSION=${PGLITE_VITEST_VERSION}" \
   --file "${SCRIPT_DIR}/Dockerfile" \
   "${SCRIPT_DIR}" >/dev/null
 
