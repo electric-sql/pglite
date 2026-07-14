@@ -10,6 +10,7 @@ import {
   PostgresProcessKind,
   ProcessControlRegistry,
   ProcessExitKind,
+  ProcessScopePolicy,
   ProcessState,
   VirtualConnectionTransport,
   type ProcessHandle,
@@ -77,6 +78,8 @@ export interface PGlitePostmasterOptions {
   readonly privateMaximumMemory?: number
   readonly globalInitialMemory?: number
   readonly globalMaximumMemory?: number
+  readonly scopedInitialMemory?: number
+  readonly scopedMaximumMemory?: number
   /** OS identity presented to PostgreSQL for local-socket peer authentication. */
   readonly osUser?: string
   /**
@@ -101,8 +104,13 @@ export interface PGlitePostmasterDiagnostics {
   readonly privateMemoriesReleased: number
   readonly privateMemoryBytes: number
   readonly globalMemoryBytes: number
+  readonly liveScopedMemories: number
+  readonly scopedMemoriesStarted: number
+  readonly scopedMemoriesReleased: number
+  readonly scopedMemoryBytes: number
   readonly privateMemoryMaximumBytes: number
   readonly globalMemoryMaximumBytes: number
+  readonly scopedMemoryMaximumBytes: number
   readonly globalShmAllocationGeneration: number
 }
 
@@ -111,9 +119,18 @@ interface WorkerRecord {
   readonly worker: Worker
   readonly privateMemoryBytes: number
   readonly connectionId: number
+  readonly scopePolicy: ProcessScopePolicy
+  readonly scopeRoot?: ProcessHandle
   reportedExitCode?: number
   reportedExitKind?: ProcessExitKind
   settled: boolean
+}
+
+interface ScopedRootRecord {
+  readonly handle: ProcessHandle
+  readonly memory: WebAssembly.Memory
+  readonly members: Set<number>
+  exited: boolean
 }
 
 export class PGlitePostmaster {
@@ -129,12 +146,15 @@ export class PGlitePostmaster {
   private readonly privateInitialPages: number
   private readonly privateMaximumPages: number
   private readonly globalMaximumPages: number
+  private readonly scopedInitialPages: number
+  private readonly scopedMaximumPages: number
   private readonly osUser: string
   private readonly debug: boolean
   private readonly postmasterProcess: ProcessHandle
   private readonly broker: VirtualConnectionBroker
   private readonly timers: SupervisorTimers
   private readonly workers = new Map<number, WorkerRecord>()
+  private readonly scopedRoots = new Map<number, ScopedRootRecord>()
   private readonly pendingStarts = new Set<Promise<void>>()
   private readonly sessions = new Set<PGlitePostmasterSession>()
   private closing = false
@@ -146,6 +166,8 @@ export class PGlitePostmaster {
   private timerLoop?: Promise<void>
   private privateMemoriesStarted = 0
   private privateMemoriesReleased = 0
+  private scopedMemoriesStarted = 0
+  private scopedMemoriesReleased = 0
 
   private constructor(
     options: PGlitePostmasterOptions,
@@ -163,6 +185,8 @@ export class PGlitePostmaster {
     this.privateInitialPages = memory.privateInitialPages
     this.privateMaximumPages = memory.privateMaximumPages
     this.globalMaximumPages = memory.globalMaximumPages
+    this.scopedInitialPages = memory.scopedInitialPages
+    this.scopedMaximumPages = memory.scopedMaximumPages
     this.osUser = options.osUser ?? 'postgres'
     if (this.osUser.length === 0 || this.osUser.includes('\0')) {
       throw new TypeError('osUser must be a non-empty string without NUL')
@@ -290,8 +314,16 @@ export class PGlitePostmaster {
         0,
       ),
       globalMemoryBytes: this.globalMemory.buffer.byteLength,
+      liveScopedMemories: this.scopedRoots.size,
+      scopedMemoriesStarted: this.scopedMemoriesStarted,
+      scopedMemoriesReleased: this.scopedMemoriesReleased,
+      scopedMemoryBytes: [...this.scopedRoots.values()].reduce(
+        (total, root) => total + root.memory.buffer.byteLength,
+        0,
+      ),
       privateMemoryMaximumBytes: this.privateMaximumPages * WASM_PAGE_BYTES,
       globalMemoryMaximumBytes: this.globalMaximumPages * WASM_PAGE_BYTES,
+      scopedMemoryMaximumBytes: this.scopedMaximumPages * WASM_PAGE_BYTES,
       globalShmAllocationGeneration: Atomics.load(
         new Uint32Array(this.globalMemory.buffer),
         GLOBAL_SHM_ALLOCATION_GENERATION_WORD,
@@ -386,6 +418,7 @@ export class PGlitePostmaster {
       this.postmasterProcess,
       0,
       postmasterArguments(options, this.maxConnections),
+      ProcessScopePolicy.SelfAlias,
     )
   }
 
@@ -401,10 +434,13 @@ export class PGlitePostmaster {
 
   private async startRequestedWorker(request: SpawnRequest): Promise<void> {
     try {
-      await this.startWorker(request.handle, request.connectionId, [
-        `--forkchild=${request.childKind}`,
-        request.parameterFile,
-      ])
+      await this.startWorker(
+        request.handle,
+        request.connectionId,
+        [`--forkchild=${request.childKind}`, request.parameterFile],
+        request.scopePolicy,
+        request.scopeRoot,
+      )
       this.registry.completeSpawn(request)
     } catch (error) {
       this.registry.failSpawn(request)
@@ -419,13 +455,47 @@ export class PGlitePostmaster {
     handle: ProcessHandle,
     connectionId: number,
     args: readonly string[],
+    scopePolicy: ProcessScopePolicy,
+    scopeRoot?: ProcessHandle,
   ): Promise<void> {
+    let scopedMemory: WebAssembly.Memory | undefined
+    let inheritedRoot: ScopedRootRecord | undefined
+    if (
+      scopePolicy === ProcessScopePolicy.InheritRoot ||
+      scopePolicy === ProcessScopePolicy.AttachRoot
+    ) {
+      if (!scopeRoot) throw new Error('scoped child has no root handle')
+      inheritedRoot = this.scopedRoots.get(scopeRoot.pid)
+      if (
+        !inheritedRoot ||
+        inheritedRoot.exited ||
+        inheritedRoot.handle.generation !== scopeRoot.generation
+      ) {
+        throw new Error(`scoped root ${scopeRoot.pid} is not live`)
+      }
+      scopedMemory = inheritedRoot.memory
+    } else if (scopePolicy === ProcessScopePolicy.NewRoot) {
+      if (
+        !scopeRoot ||
+        scopeRoot.pid !== handle.pid ||
+        scopeRoot.generation !== handle.generation
+      ) {
+        throw new Error('new scoped root does not match its Worker')
+      }
+    } else if (scopeRoot) {
+      throw new Error('SelfAlias Worker unexpectedly has a scope root')
+    }
     const workerData: PostgresProcessWorkerData = {
       artifact: this.artifact,
       wasmModule: this.wasmModule,
       privateInitialPages: this.privateInitialPages,
       privateMaximumPages: this.privateMaximumPages,
+      scopedInitialPages: this.scopedInitialPages,
+      scopedMaximumPages: this.scopedMaximumPages,
       globalMemory: this.globalMemory,
+      scopedMemory,
+      scopePolicy,
+      scopeRoot,
       controlBuffer: this.registry.buffer,
       connectionBuffers: this.broker.buffers,
       process: handle,
@@ -443,13 +513,17 @@ export class PGlitePostmaster {
       worker,
       privateMemoryBytes: this.privateInitialPages * WASM_PAGE_BYTES,
       connectionId,
+      scopePolicy,
+      scopeRoot,
       settled: false,
     }
+    inheritedRoot?.members.add(handle.pid)
     this.privateMemoriesStarted++
     this.workers.set(handle.pid, record)
 
     await new Promise<void>((resolveReady, rejectReady) => {
       let ready = false
+      let rootMemoryReady = scopePolicy !== ProcessScopePolicy.NewRoot
       const startupTimer = setTimeout(() => {
         if (!ready) {
           record.reportedExitCode = 1
@@ -461,7 +535,41 @@ export class PGlitePostmaster {
       }, 30_000)
 
       worker.on('message', (message: PostgresProcessWorkerMessage) => {
-        if (message.type === 'runtime-ready') {
+        if (message.type === 'scoped-memory-ready') {
+          if (
+            rootMemoryReady ||
+            scopePolicy !== ProcessScopePolicy.NewRoot ||
+            !scopeRoot ||
+            message.pid !== handle.pid ||
+            message.root.pid !== scopeRoot.pid ||
+            message.root.generation !== scopeRoot.generation
+          ) {
+            record.reportedExitCode = 1
+            record.reportedExitKind = ProcessExitKind.WorkerFailure
+            void worker.terminate()
+            return
+          }
+          const root: ScopedRootRecord = {
+            handle: scopeRoot,
+            memory: message.memory,
+            members: new Set([handle.pid]),
+            exited: false,
+          }
+          this.scopedRoots.set(scopeRoot.pid, root)
+          this.scopedMemoriesStarted++
+          rootMemoryReady = true
+        } else if (message.type === 'runtime-ready') {
+          if (!rootMemoryReady) {
+            record.reportedExitCode = 1
+            record.reportedExitKind = ProcessExitKind.WorkerFailure
+            void worker.terminate()
+            rejectReady(
+              new Error(
+                `PostgreSQL Worker ${handle.pid} omitted scoped memory`,
+              ),
+            )
+            return
+          }
           ready = true
           clearTimeout(startupTimer)
           if (this.debug)
@@ -540,6 +648,7 @@ export class PGlitePostmaster {
     record.settled = true
     this.workers.delete(record.handle.pid)
     this.privateMemoriesReleased++
+    this.settleScopedMembership(record)
     if (exitKind === ProcessExitKind.WorkerFailure && record.connectionId) {
       this.broker.abort(record.connectionId, 1)
     }
@@ -548,6 +657,30 @@ export class PGlitePostmaster {
       this.resolvePostmasterExit({ exitKind, exitCode })
     }
     record.worker.removeAllListeners()
+  }
+
+  private settleScopedMembership(record: WorkerRecord): void {
+    const rootHandle = record.scopeRoot
+    if (!rootHandle) return
+    const root = this.scopedRoots.get(rootHandle.pid)
+    if (!root || root.handle.generation !== rootHandle.generation) return
+
+    root.members.delete(record.handle.pid)
+    if (
+      record.scopePolicy === ProcessScopePolicy.NewRoot &&
+      record.handle.pid === root.handle.pid &&
+      record.handle.generation === root.handle.generation
+    ) {
+      root.exited = true
+      for (const pid of root.members) {
+        const descendant = this.workers.get(pid)
+        if (descendant) void descendant.worker.terminate()
+      }
+    }
+    if (root.exited && root.members.size === 0) {
+      this.scopedRoots.delete(root.handle.pid)
+      this.scopedMemoriesReleased++
+    }
   }
 
   private assertOpen(): void {
@@ -639,6 +772,8 @@ interface ResolvedMemoryOptions {
   privateMaximumPages: number
   globalInitialPages: number
   globalMaximumPages: number
+  scopedInitialPages: number
+  scopedMaximumPages: number
 }
 
 function resolveMemoryOptions(
@@ -664,21 +799,36 @@ function resolveMemoryOptions(
     ARTIFACT_MAXIMUM_PAGES,
     'globalMaximumMemory',
   )
+  const scopedInitialPages = memoryPages(
+    options.scopedInitialMemory,
+    ARTIFACT_GLOBAL_INITIAL_PAGES,
+    'scopedInitialMemory',
+  )
+  const scopedMaximumPages = memoryPages(
+    options.scopedMaximumMemory,
+    ARTIFACT_MAXIMUM_PAGES,
+    'scopedMaximumMemory',
+  )
   if (privateInitialPages < ARTIFACT_PRIVATE_INITIAL_PAGES) {
     throw new RangeError('privateInitialMemory is below the artifact minimum')
   }
   if (globalInitialPages < ARTIFACT_GLOBAL_INITIAL_PAGES) {
     throw new RangeError('globalInitialMemory is below the registry minimum')
   }
+  if (scopedInitialPages < ARTIFACT_GLOBAL_INITIAL_PAGES) {
+    throw new RangeError('scopedInitialMemory is below the artifact minimum')
+  }
   if (
     privateMaximumPages > ARTIFACT_MAXIMUM_PAGES ||
-    globalMaximumPages > ARTIFACT_MAXIMUM_PAGES
+    globalMaximumPages > ARTIFACT_MAXIMUM_PAGES ||
+    scopedMaximumPages > ARTIFACT_MAXIMUM_PAGES
   ) {
     throw new RangeError('postmaster memory maximum exceeds the 1 GiB ABI')
   }
   if (
     privateInitialPages > privateMaximumPages ||
-    globalInitialPages > globalMaximumPages
+    globalInitialPages > globalMaximumPages ||
+    scopedInitialPages > scopedMaximumPages
   ) {
     throw new RangeError('postmaster memory initial size exceeds its maximum')
   }
@@ -687,6 +837,8 @@ function resolveMemoryOptions(
     privateMaximumPages,
     globalInitialPages,
     globalMaximumPages,
+    scopedInitialPages,
+    scopedMaximumPages,
   }
 }
 
@@ -766,9 +918,6 @@ function postmasterArguments(
         ['max_connections', String(maxConnections)],
         ['listen_addresses', '127.0.0.1'],
         ['unix_socket_directories', ''],
-        ['max_parallel_workers', '0'],
-        ['max_parallel_workers_per_gather', '0'],
-        ['max_parallel_maintenance_workers', '0'],
       ]
   const config = [...portabilityConfig, ...managedConfig]
   return [

@@ -1,4 +1,4 @@
-import type { ProcessHandle } from './control.js'
+import type { ProcessHandle, ProcessScopePolicy } from './control.js'
 
 export interface PostmasterArtifactPaths {
   readonly wasm: string
@@ -28,7 +28,12 @@ export interface PostgresProcessWorkerData {
   readonly wasmModule: WebAssembly.Module
   readonly privateInitialPages: number
   readonly privateMaximumPages: number
+  readonly scopedInitialPages: number
+  readonly scopedMaximumPages: number
   readonly globalMemory: WebAssembly.Memory
+  readonly scopedMemory?: WebAssembly.Memory
+  readonly scopePolicy: ProcessScopePolicy
+  readonly scopeRoot?: ProcessHandle
   readonly controlBuffer: SharedArrayBuffer
   readonly connectionBuffers: readonly SharedArrayBuffer[]
   readonly process: ProcessHandle
@@ -42,6 +47,12 @@ export interface PostgresProcessWorkerData {
 }
 
 export type PostgresProcessWorkerMessage =
+  | {
+      readonly type: 'scoped-memory-ready'
+      readonly pid: number
+      readonly root: ProcessHandle
+      readonly memory: WebAssembly.Memory
+    }
   | { readonly type: 'runtime-ready'; readonly pid: number }
   | { readonly type: 'stdout'; readonly pid: number; readonly text: string }
   | { readonly type: 'stderr'; readonly pid: number; readonly text: string }

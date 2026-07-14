@@ -10,6 +10,7 @@ import type { PostgresMod } from '../postgresMod.js'
 
 const POINTER_TAG_MASK = 0xc0000000
 const GLOBAL_POINTER_TAG = 0x80000000
+const SCOPED_POINTER_TAG = 0xc0000000
 const POINTER_OFFSET_MASK = 0x3fffffff
 const WNOHANG = 1
 const WASM_PAGE_BYTES = 65_536
@@ -31,6 +32,7 @@ export interface PostmasterProcessHostOptions {
   readonly process: ProcessHandle
   readonly privateMemory: WebAssembly.Memory
   readonly globalMemory: WebAssembly.Memory
+  readonly scopedMemory: WebAssembly.Memory
   readonly debug?: boolean
   readonly connectionIdForDescriptor?: (descriptor: number) => number
 }
@@ -56,8 +58,15 @@ export class PostmasterProcessHost {
         childKindPointer: number,
         parameterFilePointer: number,
         descriptor: number,
-      ) => this.spawn(childKindPointer, parameterFilePointer, descriptor),
-      'ippi',
+        scopeLeaderPid: number,
+      ) =>
+        this.spawn(
+          childKindPointer,
+          parameterFilePointer,
+          descriptor,
+          scopeLeaderPid,
+        ),
+      'ippii',
     )
     const getpid = this.addFunction(() => this.options.process.pid, 'i')
     const kill = this.addFunction(
@@ -107,10 +116,28 @@ export class PostmasterProcessHost {
     module._pgl_set_clock_host(clockNow)
 
     const ensureSharedMemory = this.addFunction(
-      (requiredBytes: number) => this.ensureSharedMemory(requiredBytes),
+      (requiredBytes: number) =>
+        this.ensureMemory(
+          this.options.globalMemory,
+          requiredBytes,
+          'global shared',
+        ),
+      'ii',
+    )
+    const ensureScopedMemory = this.addFunction(
+      (requiredBytes: number) =>
+        this.ensureMemory(
+          this.options.scopedMemory,
+          requiredBytes,
+          'root-scoped shared',
+        ),
       'ii',
     )
     module._pgl_set_shmem_host(ensureSharedMemory)
+    module._pgl_set_scoped_shmem_host(ensureScopedMemory)
+    module._pgl_set_scoped_shmem_enabled(
+      this.options.scopedMemory === this.options.privateMemory ? 0 : 1,
+    )
     this.installed = true
   }
 
@@ -126,6 +153,7 @@ export class PostmasterProcessHost {
     childKindPointer: number,
     parameterFilePointer: number,
     descriptor: number,
+    scopeLeaderPid: number,
   ): number {
     try {
       const childKind = this.privateString(childKindPointer)
@@ -134,22 +162,55 @@ export class PostmasterProcessHost {
         descriptor < 0
           ? 0
           : (this.options.connectionIdForDescriptor?.(descriptor) ?? descriptor)
+      const childProcessKind = processKind(childKind)
+      const scope = this.scopePolicy(childProcessKind, scopeLeaderPid)
       const child = this.options.registry.requestSpawn(
         this.options.process,
-        processKind(childKind),
+        childProcessKind,
         childKind,
         parameterFile,
         {
           connectionId,
-          // v1 reserves memory index 2 but aliases it to this Worker's
-          // private memory. Dedicated/inherited roots are a Phase 8 gate.
-          scopePolicy: ProcessScopePolicy.SelfAlias,
+          ...scope,
         },
       )
       return child.pid
     } catch {
       this.setErrno(ERRNO.EINVAL)
       return -1
+    }
+  }
+
+  private scopePolicy(
+    childKind: PostgresProcessKind,
+    scopeLeaderPid: number,
+  ): {
+    scopePolicy: ProcessScopePolicy
+    scopeRoot?: ProcessHandle
+  } {
+    if (scopeLeaderPid > 0) {
+      const leader = this.options.registry.lookup(scopeLeaderPid)
+      if (!leader) throw new Error(`scope leader ${scopeLeaderPid} is not live`)
+      const root = this.options.registry.snapshot(leader).scopeRoot
+      if (!root) throw new Error(`scope leader ${scopeLeaderPid} has no root`)
+      return {
+        scopePolicy: ProcessScopePolicy.AttachRoot,
+        scopeRoot: root,
+      }
+    }
+    const parent = this.options.registry.snapshot(this.options.process)
+    if (parent.kind === PostgresProcessKind.Postmaster) {
+      return {
+        scopePolicy:
+          childKind === PostgresProcessKind.Auxiliary
+            ? ProcessScopePolicy.SelfAlias
+            : ProcessScopePolicy.NewRoot,
+      }
+    }
+    return {
+      scopePolicy: parent.scopeRoot
+        ? ProcessScopePolicy.InheritRoot
+        : ProcessScopePolicy.SelfAlias,
     }
   }
 
@@ -246,16 +307,19 @@ export class PostmasterProcessHost {
     }
   }
 
-  private ensureSharedMemory(requiredBytes: number): number {
+  private ensureMemory(
+    memory: WebAssembly.Memory,
+    requiredBytes: number,
+    label: string,
+  ): number {
     try {
       const required = requiredBytes >>> 0
       if (required === 0 || required > GLOBAL_APERTURE_BYTES) return -1
-      const memory = this.options.globalMemory
       const currentPages = memory.buffer.byteLength / WASM_PAGE_BYTES
       const requiredPages = Math.ceil(required / WASM_PAGE_BYTES)
       if (this.options.debug) {
         console.error(
-          `[postgres:${this.options.process.pid}] shared memory request ` +
+          `[postgres:${this.options.process.pid}] ${label} memory request ` +
             `${required} bytes (current ${memory.buffer.byteLength})`,
         )
       }
@@ -277,7 +341,9 @@ export class PostmasterProcessHost {
         ? this.options.privateMemory
         : tag === GLOBAL_POINTER_TAG
           ? this.options.globalMemory
-          : undefined
+          : tag === SCOPED_POINTER_TAG
+            ? this.options.scopedMemory
+            : undefined
     if (!memory || offset % Int32Array.BYTES_PER_ELEMENT !== 0) {
       throw new RangeError('invalid tagged futex address')
     }

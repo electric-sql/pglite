@@ -454,18 +454,34 @@ describe('Phase 4 process portability primitives', () => {
       process: parent,
       privateMemory,
       globalMemory,
+      scopedMemory: privateMemory,
     })
     host.install()
 
-    const childPid = fake.invoke(fake.processHost[0], 64, 128, -1)
+    const childPid = fake.invoke(fake.processHost[0], 64, 128, -1, 0)
     const request = registry.claimSpawn()
     expect(request).toMatchObject({
       childKind: 'backend',
       parameterFile: '/pgdata/pgsql_tmp/backend.parameters',
       connectionId: 0,
+      scopePolicy: ProcessScopePolicy.NewRoot,
+      scopeRoot: request?.handle,
     })
     expect(request?.handle.pid).toBe(childPid)
     if (!request) throw new Error('missing callback spawn request')
+    expect(registry.completeSpawn(request)).toBe(true)
+
+    writeCString(privateMemory, 192, 'bgworker')
+    const parallelPid = fake.invoke(fake.processHost[0], 192, 128, -1, childPid)
+    const parallel = registry.claimSpawn()
+    expect(parallel).toMatchObject({
+      childKind: 'bgworker',
+      scopePolicy: ProcessScopePolicy.AttachRoot,
+      scopeRoot: request.handle,
+    })
+    expect(parallel?.handle.pid).toBe(parallelPid)
+    if (!parallel) throw new Error('missing parallel callback spawn request')
+    expect(registry.completeSpawn(parallel)).toBe(true)
 
     fake.invoke(fake.signalHost[1], signalMask(PGLITE_SIGNALS.SIGUSR1))
     registry.queueSignalHandle(parent, PGLITE_SIGNALS.SIGUSR1)
@@ -503,7 +519,9 @@ describe('Phase 4 process portability primitives', () => {
     expect(fake.invoke(fake.shmemHost[0], 2 * 65_536)).toBe(0)
     expect(globalMemory.buffer.byteLength).toBe(2 * 65_536)
     expect(fake.invoke(fake.shmemHost[0], 0x40000001)).toBe(-1)
+    expect(fake.scopedShmemEnabled).toEqual([0])
 
+    registry.markExit(parallel.handle, ProcessExitKind.Normal, 0)
     registry.markExit(request.handle, ProcessExitKind.Normal, 5)
     expect(fake.invoke(fake.processHost[3], childPid, 256, 0)).toBe(childPid)
     expect(new Int32Array(privateMemory.buffer)[64]).toBe(5 << 8)
@@ -887,6 +905,8 @@ interface FakeModule {
   readonly futexHost: number[]
   readonly clockHost: number[]
   readonly shmemHost: number[]
+  readonly scopedShmemHost: number[]
+  readonly scopedShmemEnabled: number[]
   readonly socketHost: number[]
   invoke(index: number, ...arguments_: number[]): number
 }
@@ -899,6 +919,8 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
   const futexHost: number[] = []
   const clockHost: number[] = []
   const shmemHost: number[] = []
+  const scopedShmemHost: number[] = []
+  const scopedShmemEnabled: number[] = []
   const socketHost: number[] = []
   const bytes = () => new Uint8Array(memory.buffer)
   const module = {
@@ -934,6 +956,12 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     _pgl_set_shmem_host(...indices: number[]) {
       shmemHost.push(...indices)
     },
+    _pgl_set_scoped_shmem_host(...indices: number[]) {
+      scopedShmemHost.push(...indices)
+    },
+    _pgl_set_scoped_shmem_enabled(enabled: number) {
+      scopedShmemEnabled.push(enabled)
+    },
     _pgl_set_socket_host(...indices: number[]) {
       socketHost.push(...indices)
     },
@@ -945,6 +973,8 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     futexHost,
     clockHost,
     shmemHost,
+    scopedShmemHost,
+    scopedShmemEnabled,
     socketHost,
     invoke(index, ...arguments_) {
       const callback = callbacks.get(index)

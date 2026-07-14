@@ -1,7 +1,7 @@
 const CONTROL_MAGIC = 0x50474354
-const CONTROL_VERSION = 4
+const CONTROL_VERSION = 5
 const HEADER_WORDS = 8
-const PROCESS_WORDS = 20
+const PROCESS_WORDS = 22
 const CHILD_KIND_BYTES = 64
 const PARAMETER_FILE_BYTES = 1024
 const SPAWN_PAYLOAD_BYTES = CHILD_KIND_BYTES + PARAMETER_FILE_BYTES
@@ -34,6 +34,8 @@ const enum ProcessField {
   Flags,
   SpawnState,
   ScopePolicy,
+  ScopeRootPid,
+  ScopeRootGeneration,
   ChildKindLength,
   ParameterFileLength,
   TimerDelayMs,
@@ -141,6 +143,8 @@ export interface ProcessSnapshot extends ProcessHandle {
   readonly exitKind: ProcessExitKind
   readonly exitCode: number
   readonly connectionId: number
+  readonly scopePolicy: ProcessScopePolicy
+  readonly scopeRoot?: ProcessHandle
   readonly parentDead: boolean
 }
 
@@ -152,6 +156,7 @@ export interface ReserveProcessOptions {
 
 export interface SpawnProcessOptions extends ReserveProcessOptions {
   scopePolicy?: ProcessScopePolicy
+  scopeRoot?: ProcessHandle
 }
 
 export interface SpawnRequest {
@@ -162,6 +167,7 @@ export interface SpawnRequest {
   readonly parameterFile: string
   readonly connectionId: number
   readonly scopePolicy: ProcessScopePolicy
+  readonly scopeRoot?: ProcessHandle
 }
 
 export interface VirtualConnectionHandle {
@@ -355,6 +361,20 @@ export class ProcessControlRegistry {
       ...options,
       parentPid: parent.pid,
     })
+    const scopePolicy = options.scopePolicy ?? ProcessScopePolicy.SelfAlias
+    let scopeRoot: ProcessHandle | undefined
+    try {
+      scopeRoot = this.resolveSpawnScopeRoot(
+        parent,
+        handle,
+        scopePolicy,
+        options.scopeRoot,
+      )
+    } catch (error) {
+      this.markExit(handle, ProcessExitKind.WorkerFailure, 1)
+      this.reap(handle)
+      throw error
+    }
     const payload = new Uint8Array(
       this.buffer,
       this.payloadOffset(handle.slot),
@@ -366,7 +386,17 @@ export class ProcessControlRegistry {
     Atomics.store(
       this.words,
       this.index(handle.slot, ProcessField.ScopePolicy),
-      options.scopePolicy ?? ProcessScopePolicy.SelfAlias,
+      scopePolicy,
+    )
+    Atomics.store(
+      this.words,
+      this.index(handle.slot, ProcessField.ScopeRootPid),
+      scopeRoot?.pid ?? 0,
+    )
+    Atomics.store(
+      this.words,
+      this.index(handle.slot, ProcessField.ScopeRootGeneration),
+      scopeRoot?.generation ?? 0,
     )
     Atomics.store(
       this.words,
@@ -437,6 +467,27 @@ export class ProcessControlRegistry {
         this.payloadOffset(slot),
         SPAWN_PAYLOAD_BYTES,
       )
+      const scopeRootPid = Atomics.load(
+        this.words,
+        this.index(slot, ProcessField.ScopeRootPid),
+      )
+      const scopeRootGeneration = Atomics.load(
+        this.words,
+        this.index(slot, ProcessField.ScopeRootGeneration),
+      )
+      const scopeRoot =
+        scopeRootPid === 0
+          ? undefined
+          : this.lookupGeneration(scopeRootPid, scopeRootGeneration)
+      if (scopeRootPid !== 0 && !scopeRoot) {
+        this.markExit(handle, ProcessExitKind.WorkerFailure, 1)
+        Atomics.store(
+          this.words,
+          this.index(slot, ProcessField.SpawnState),
+          SpawnRequestState.None,
+        )
+        continue
+      }
       return {
         handle,
         parentPid: Atomics.load(
@@ -464,6 +515,7 @@ export class ProcessControlRegistry {
           this.words,
           this.index(slot, ProcessField.ScopePolicy),
         ) as ProcessScopePolicy,
+        scopeRoot,
       }
     }
     return undefined
@@ -901,6 +953,8 @@ export class ProcessControlRegistry {
       exitKind: load(ProcessField.ExitKind) as ProcessExitKind,
       exitCode: load(ProcessField.ExitCode),
       connectionId: load(ProcessField.ConnectionId),
+      scopePolicy: load(ProcessField.ScopePolicy) as ProcessScopePolicy,
+      scopeRoot: this.scopeRootForSlot(handle.slot),
       parentDead: (load(ProcessField.Flags) & ProcessFlag.ParentDead) !== 0,
     }
   }
@@ -923,6 +977,64 @@ export class ProcessControlRegistry {
       }
     }
     return undefined
+  }
+
+  private lookupGeneration(
+    pid: number,
+    generation: number,
+  ): ProcessHandle | undefined {
+    const handle = this.lookup(pid)
+    return handle?.generation === generation ? handle : undefined
+  }
+
+  private scopeRootForSlot(slot: number): ProcessHandle | undefined {
+    const pid = Atomics.load(
+      this.words,
+      this.index(slot, ProcessField.ScopeRootPid),
+    )
+    if (pid === 0) return undefined
+    const generation = Atomics.load(
+      this.words,
+      this.index(slot, ProcessField.ScopeRootGeneration),
+    )
+    return this.lookupGeneration(pid, generation)
+  }
+
+  private resolveSpawnScopeRoot(
+    parent: ProcessHandle,
+    child: ProcessHandle,
+    policy: ProcessScopePolicy,
+    requested: ProcessHandle | undefined,
+  ): ProcessHandle | undefined {
+    if (policy === ProcessScopePolicy.SelfAlias) {
+      if (requested) throw new Error('SelfAlias cannot attach a scope root')
+      return undefined
+    }
+    if (policy === ProcessScopePolicy.NewRoot) {
+      if (requested) throw new Error('NewRoot cannot attach another root')
+      return child
+    }
+    if (policy === ProcessScopePolicy.InheritRoot) {
+      if (requested) throw new Error('InheritRoot selects the parent root')
+      const root = this.scopeRootForSlot(parent.slot)
+      if (!root) throw new Error(`process ${parent.pid} has no scope root`)
+      return root
+    }
+    if (policy === ProcessScopePolicy.AttachRoot) {
+      if (!requested || !this.isCurrent(requested)) {
+        throw new Error('AttachRoot requires a live scope root')
+      }
+      const snapshot = this.snapshot(requested)
+      if (
+        snapshot.scopePolicy !== ProcessScopePolicy.NewRoot ||
+        snapshot.scopeRoot?.pid !== requested.pid ||
+        snapshot.scopeRoot.generation !== requested.generation
+      ) {
+        throw new Error('AttachRoot target is not a root process')
+      }
+      return requested
+    }
+    throw new RangeError(`invalid process scope policy ${policy}`)
   }
 
   setBlockedSignals(handle: ProcessHandle, mask: number): void {

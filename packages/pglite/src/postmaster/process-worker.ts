@@ -5,7 +5,11 @@ import type { Filesystem } from '../fs/base.js'
 import type { PGlite } from '../pglite.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PgliteMemoryViews } from '../wasm/multi-memory.js'
-import { ProcessControlRegistry, ProcessState } from './control.js'
+import {
+  ProcessControlRegistry,
+  ProcessScopePolicy,
+  ProcessState,
+} from './control.js'
 import { PostmasterProcessHost } from './process-host.js'
 import { VirtualSocketHost } from './socket-host.js'
 import {
@@ -46,6 +50,38 @@ async function main(): Promise<void> {
       maximum: data.privateMaximumPages,
       shared: true,
     })
+    let scopedMemory: WebAssembly.Memory
+    if (data.scopePolicy === ProcessScopePolicy.SelfAlias) {
+      if (data.scopeRoot || data.scopedMemory) {
+        throw new Error('SelfAlias Worker received a scoped root binding')
+      }
+      scopedMemory = privateMemory
+    } else if (data.scopePolicy === ProcessScopePolicy.NewRoot) {
+      if (
+        !data.scopeRoot ||
+        data.scopeRoot.pid !== data.process.pid ||
+        data.scopeRoot.generation !== data.process.generation ||
+        data.scopedMemory
+      ) {
+        throw new Error('NewRoot Worker received an invalid root binding')
+      }
+      scopedMemory = new WebAssembly.Memory({
+        initial: data.scopedInitialPages,
+        maximum: data.scopedMaximumPages,
+        shared: true,
+      })
+      send({
+        type: 'scoped-memory-ready',
+        pid: data.process.pid,
+        root: data.scopeRoot,
+        memory: scopedMemory,
+      })
+    } else {
+      if (!data.scopeRoot || !data.scopedMemory) {
+        throw new Error('inherited Worker has no scoped root memory')
+      }
+      scopedMemory = data.scopedMemory
+    }
     debug('loading process artifact')
     const registry = ProcessControlRegistry.attach(data.controlBuffer)
     const packageBytes = readFileSync(data.artifact.data)
@@ -91,7 +127,7 @@ async function main(): Promise<void> {
     const memories = new PgliteMemoryViews({
       private: privateMemory,
       global: data.globalMemory,
-      scoped: privateMemory,
+      scoped: scopedMemory,
     })
 
     debug('initializing Emscripten runtime')
@@ -131,9 +167,7 @@ async function main(): Promise<void> {
         imports.pglite = {
           ...(imports.pglite ?? {}),
           global_memory: data.globalMemory,
-          // memory 2 is deliberately reserved but aliases this process's
-          // private root in the two-domain v1 profile.
-          scoped_memory: privateMemory,
+          scoped_memory: scopedMemory,
         }
         installMemoryAwareWasiFdRead(imports, memories, () => postgres?.FS)
         installMemoryAwareWasiFdWrite(imports, memories, () => postgres?.FS)
@@ -192,6 +226,7 @@ async function main(): Promise<void> {
       process: data.process,
       privateMemory,
       globalMemory: data.globalMemory,
+      scopedMemory,
       debug: data.debug,
       connectionIdForDescriptor: (descriptor) =>
         socketHost!.connectionIdForDescriptor(descriptor),

@@ -46,6 +46,8 @@ export interface PostgresMod
   _pgl_set_futex_host: (wait_futex: number, wake_futex: number) => void
   _pgl_set_clock_host: (realtime_microseconds: number) => void
   _pgl_set_shmem_host: (ensure_capacity: number) => void
+  _pgl_set_scoped_shmem_host: (ensure_capacity: number) => void
+  _pgl_set_scoped_shmem_enabled: (enabled: number) => void
   _pgl_set_socket_host: (
     create_socket: number,
     connect_socket: number,
