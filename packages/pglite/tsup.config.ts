@@ -25,7 +25,6 @@ const entryPoints = [
   'src/live/index.ts',
   'src/worker/index.ts',
   'src/postmaster/index.ts',
-  'src/postmaster/phase4-worker.ts',
   'src/postmaster/process-worker.ts',
 ]
 

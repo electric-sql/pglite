@@ -24,13 +24,10 @@ import {
 import type { PostgresMod } from '../src/postgresMod.js'
 import { PgliteMemoryViews } from '../src/wasm/multi-memory.js'
 
-const workerUrl = new URL(
-  '../dist/postmaster/phase4-worker.js',
-  import.meta.url,
-)
+const workerUrl = new URL('./fixtures/postmaster-worker.mjs', import.meta.url)
 const workers = new Set<Worker>()
 
-interface Phase4WorkerMessage {
+interface PostmasterWorkerMessage {
   type: string
   signals?: number[]
   scopedAliasesPrivate?: boolean
@@ -139,7 +136,7 @@ afterEach(async () => {
   workers.clear()
 })
 
-describe('Phase 4 process portability primitives', () => {
+describe('postmaster process portability primitives', () => {
   it('can align the synthetic postmaster PID with a foreground host process', () => {
     const registry = ProcessControlRegistry.create(4, 42_000)
     const postmaster = registry.reserve(PostgresProcessKind.Postmaster)
@@ -822,7 +819,7 @@ function track(worker: Worker): Worker {
 function messageOfType(
   worker: Worker,
   type: string,
-): Promise<Phase4WorkerMessage> {
+): Promise<PostmasterWorkerMessage> {
   return new Promise((resolve, reject) => {
     const onMessage = (message: unknown) => {
       if (!isWorkerMessage(message) || message.type !== type) return
@@ -835,7 +832,7 @@ function messageOfType(
     }
     const onExit = (code: number) => {
       cleanup()
-      reject(new Error(`phase4 Worker exited before ${type}: ${code}`))
+      reject(new Error(`postmaster Worker exited before ${type}: ${code}`))
     }
     const cleanup = () => {
       worker.off('message', onMessage)
@@ -868,7 +865,7 @@ function noMessageOfType(
   })
 }
 
-function isWorkerMessage(message: unknown): message is Phase4WorkerMessage {
+function isWorkerMessage(message: unknown): message is PostmasterWorkerMessage {
   return (
     typeof message === 'object' &&
     message !== null &&

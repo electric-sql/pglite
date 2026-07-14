@@ -1206,7 +1206,7 @@ function createProcessMemory(
 function resolveDataDirectory(value: string): string {
   if (value.startsWith('file:')) return resolve(fileURLToPath(value))
   if (value.includes('://')) {
-    throw new Error('The postmaster POC currently requires a Node file:// VFS')
+    throw new Error('The postmaster currently requires a Node file:// VFS')
   }
   return resolve(value)
 }

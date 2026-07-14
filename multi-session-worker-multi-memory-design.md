@@ -2795,10 +2795,10 @@ and durable results, and invoke the in-image runners. The principal closeout
 commands are:
 
 ```sh
-./postgres-pglite/pglite/multi-memory/run-phase0.sh
-./postgres-pglite/pglite/multi-memory/run-phase6.sh
-PGLITE_PHASE7_TARGET=check-world PGLITE_PHASE7_JOBS=2 \
-  ./postgres-pglite/pglite/multi-memory/run-phase7.sh
+pnpm wasm:multi-memory:test
+pnpm wasm:postmaster:test
+PGLITE_POSTGRES_TEST_TARGET=check-world PGLITE_POSTGRES_TEST_JOBS=2 \
+  pnpm wasm:postmaster:test:postgres
 ```
 
 ## 26. Test plan

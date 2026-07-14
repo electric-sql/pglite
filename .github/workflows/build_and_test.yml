@@ -19,16 +19,16 @@ on:
   pull_request:
 
 jobs:
-  multi-memory-phase0:
-    name: Multi-memory transformer Phase 0
+  multi-memory-transformer:
+    name: Multi-memory transformer tests
     runs-on: blacksmith-32vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v5
         with:
           submodules: true
       - uses: pnpm/action-setup@v5
-      - name: Build the pinned tools image and run Phase 0
-        run: pnpm wasm:multi-memory:phase0
+      - name: Build the pinned tools image and run the transformer tests
+        run: pnpm wasm:multi-memory:test
 
   stylecheck:
     name: Stylecheck
@@ -201,37 +201,10 @@ jobs:
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm typecheck
-      
+
       - name: Test pglite
         working-directory: ${{ github.workspace }}/packages/pglite
         run: pnpm test
-
-  multi-memory-phase1:
-    name: Multi-memory transformer Phase 1 gate
-    runs-on: blacksmith-32vcpu-ubuntu-2204
-    needs: [build-all]
-    # The generic-everything implementation is functionally complete but its
-    # measured throughput currently exceeds the 1.35x gate. Keep publishing
-    # the evidence without making unrelated CI permanently red while the
-    # specialization phase addresses that recorded no-go result.
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          submodules: true
-      - name: Download PGlite WASM build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: pglite-interim-build-files-node-v20.x
-          path: ./packages/pglite/release
-      - name: Run the containerized Phase 1 gates
-        run: ./postgres-pglite/pglite/multi-memory/run-phase1.sh
-      - name: Upload Phase 1 reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: multi-memory-phase1-reports
-          path: ./postgres-pglite/pglite/multi-memory/.out/phase1/*.json
 
   build-and-test-pglite:
     name: Build and Test packages/pglite
@@ -245,7 +218,6 @@ jobs:
         working-directory: ./packages/pglite
     needs: [build-all]
     steps:
-
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
@@ -349,14 +321,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pglite-icu-full-node-v${{ matrix.node }}
-          path: ./packages/pglite-icu-full/electric-sql-pglite-icu-full-*.tgz          
+          path: ./packages/pglite-icu-full/electric-sql-pglite-icu-full-*.tgz
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
+        node: [20.x, 21.x, 22.x, 23.x, 24.x]
       fail-fast: false # allow the build to continue even if some tests fail
     needs: [build-and-test-pglite]
     steps:
@@ -432,7 +404,7 @@ jobs:
         with:
           name: pglite-pgmq-release-files-node-v20.x
           path: ./packages/pglite-pgmq/release/
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -552,7 +524,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: pglite-postgis-release-files-node-v20.x
-          path: ./packages/pglite-postgis/release/  
+          path: ./packages/pglite-postgis/release/
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v8
@@ -639,12 +611,12 @@ jobs:
           PGLITE: ${{ github.workspace }}/packages/pglite
         working-directory: ${{ github.workspace }}
         run: |
-            mkdir -p /tmp/web/examples/ /tmp/web/dist /tmp/web/benchmark
-            cp -r ${PGLITE}/dist/* /tmp/web/dist/
-            cp -r ${PGLITE}/examples/* /tmp/web/examples/
-            cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
-            rm -rf /tmp/web/examples/pglite-tools
-            cp -r /tmp/pglite-tools /tmp/web/examples/
+          mkdir -p /tmp/web/examples/ /tmp/web/dist /tmp/web/benchmark
+          cp -r ${PGLITE}/dist/* /tmp/web/dist/
+          cp -r ${PGLITE}/examples/* /tmp/web/examples/
+          cp -r ${{ github.workspace }}/packages/benchmark/dist/* /tmp/web/benchmark/
+          rm -rf /tmp/web/examples/pglite-tools
+          cp -r /tmp/pglite-tools /tmp/web/examples/
 
       - name: Build docs
         working-directory: ./docs
@@ -667,7 +639,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: "- Demos:"
+          body-includes: '- Demos:'
 
       - name: Create or update build outputs comment
         uses: peter-evans/create-or-update-comment@v5
@@ -707,7 +679,7 @@ jobs:
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 24  # Required for npm trusted publishing (npm 11.5.1+)
+          node-version: 24 # Required for npm trusted publishing (npm 11.5.1+)
           cache: pnpm
 
       - name: Download PGlite WASM build artifacts

@@ -1,6 +1,6 @@
 export default function createNodeFilesystem({ root }) {
   if (typeof root !== 'string' || root.length === 0) {
-    throw new TypeError('worker NODEFS factory requires a root')
+    throw new TypeError('NODEFS test factory requires a root')
   }
   let pg
   return {

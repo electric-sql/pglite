@@ -1,36 +1,18 @@
 import assert from 'node:assert/strict'
 import { parentPort, workerData } from 'node:worker_threads'
 import {
+  ConnectionTransport,
+  PostgresProcessKind,
   ProcessControlRegistry,
   ProcessExitKind,
   ProcessScopePolicy,
   ProcessState,
-  PostgresProcessKind,
+  SharedLatch,
+  SharedWordSemaphore,
   signalsFromMask,
-  type ProcessHandle,
-} from './control.js'
-import { ConnectionTransport } from './connection.js'
-import { SharedLatch } from './latch.js'
-import { SharedWordSemaphore } from './semaphore.js'
+} from '../../dist/postmaster/index.js'
 
-interface Phase4WorkerData {
-  controlBuffer: SharedArrayBuffer
-  handle: ProcessHandle
-  privateMemory: WebAssembly.Memory
-  globalMemory: WebAssembly.Memory
-  scopedMemory: WebAssembly.Memory
-  connectionBuffer?: SharedArrayBuffer
-  module?: WebAssembly.Module
-  mode: 'signals' | 'echo' | 'spawn' | 'listener' | 'semaphore' | 'latch'
-  sharedWordIndex?: number
-  spawn?: {
-    childKind: string
-    parameterFile: string
-    connectionId: number
-  }
-}
-
-const data = workerData as Phase4WorkerData
+const data = workerData
 const registry = ProcessControlRegistry.attach(data.controlBuffer)
 const table = new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
 
@@ -69,44 +51,46 @@ try {
   throw error
 }
 
-function runSignals(): void {
-  while (true) {
+function runSignals() {
+  let waiting = true
+  while (waiting) {
     registry.transition(data.handle, ProcessState.Waiting)
     const sequence = registry.wakeSequence(data.handle)
     const mask = registry.takeDeliverableSignals(data.handle)
     if (mask !== 0) {
       registry.transition(data.handle, ProcessState.Runnable)
-      const signals = signalsFromMask(mask)
-      parentPort?.postMessage({ type: 'signals', signals })
-      return
+      parentPort?.postMessage({
+        type: 'signals',
+        signals: signalsFromMask(mask),
+      })
+      waiting = false
+      continue
     }
     registry.wait(data.handle, sequence)
     registry.transition(data.handle, ProcessState.Runnable)
   }
 }
 
-function runEcho(): void {
-  const connectionBuffer = data.connectionBuffer
-  assert.ok(connectionBuffer)
-  const connection = ConnectionTransport.attach(connectionBuffer)
-  while (true) {
-    const chunk = connection.inbound.readBlocking(7)
-    if (chunk === null) break
+function runEcho() {
+  assert.ok(data.connectionBuffer)
+  const connection = ConnectionTransport.attach(data.connectionBuffer)
+  let chunk = connection.inbound.readBlocking(7)
+  while (chunk !== null) {
     connection.outbound.writeBlocking(chunk)
+    chunk = connection.inbound.readBlocking(7)
   }
   connection.outbound.close()
 }
 
-function runSpawn(): void {
-  const spawn = data.spawn
-  assert.ok(spawn)
+function runSpawn() {
+  assert.ok(data.spawn)
   const child = registry.requestSpawn(
     data.handle,
     PostgresProcessKind.Backend,
-    spawn.childKind,
-    spawn.parameterFile,
+    data.spawn.childKind,
+    data.spawn.parameterFile,
     {
-      connectionId: spawn.connectionId,
+      connectionId: data.spawn.connectionId,
       scopePolicy: ProcessScopePolicy.NewRoot,
     },
   )
@@ -114,7 +98,7 @@ function runSpawn(): void {
   runSignals()
 }
 
-function runListener(): void {
+function runListener() {
   const connection = registry.waitForConnection(2_000)
   assert.ok(connection)
   parentPort?.postMessage({ type: 'accepted', connection })
@@ -122,23 +106,21 @@ function runListener(): void {
   runSignals()
 }
 
-function runSemaphore(): void {
-  const index = data.sharedWordIndex
-  assert.ok(index !== undefined)
+function runSemaphore() {
+  assert.notEqual(data.sharedWordIndex, undefined)
   const semaphore = new SharedWordSemaphore(
     new Int32Array(data.globalMemory.buffer),
-    index,
+    data.sharedWordIndex,
   )
   assert.ok(semaphore.lock(2_000))
   parentPort?.postMessage({ type: 'semaphore-acquired' })
 }
 
-function runLatch(): void {
-  const index = data.sharedWordIndex
-  assert.ok(index !== undefined)
+function runLatch() {
+  assert.notEqual(data.sharedWordIndex, undefined)
   const latch = new SharedLatch(
     new Int32Array(data.globalMemory.buffer),
-    index,
+    data.sharedWordIndex,
     registry,
   )
   assert.ok(latch.wait(data.handle, 2_000))
