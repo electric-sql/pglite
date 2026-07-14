@@ -146,10 +146,10 @@
     "build": "pnpm build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
     "dev-server": "pnpm http-server ../",
-    "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
-    "format": "prettier --write ./src ./tests",
+    "lint": "eslint ./src ./tests ./integration-tests --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src ./tests ./integration-tests",
     "typecheck": "tsc --noEmit",
-    "stylecheck": "pnpm lint && prettier --check ./src ./tests",
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests ./integration-tests",
     "prepublishOnly": "pnpm check:exports",
     "version": "echo $npm_package_version"
   },
