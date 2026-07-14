@@ -7,6 +7,7 @@ import {
   type ProcessHandle,
 } from './control.js'
 import type { PostgresMod } from '../postgresMod.js'
+import type { ProcessScopedMemoryMode } from './worker-types.js'
 
 const POINTER_TAG_MASK = 0xc0000000
 const GLOBAL_POINTER_TAG = 0x80000000
@@ -33,6 +34,7 @@ export interface PostmasterProcessHostOptions {
   readonly privateMemory: WebAssembly.Memory
   readonly globalMemory: WebAssembly.Memory
   readonly scopedMemory: WebAssembly.Memory
+  readonly scopedMemoryMode: ProcessScopedMemoryMode
   readonly debug?: boolean
   readonly connectionIdForDescriptor?: (descriptor: number) => number
 }
@@ -135,8 +137,12 @@ export class PostmasterProcessHost {
     )
     module._pgl_set_shmem_host(ensureSharedMemory)
     module._pgl_set_scoped_shmem_host(ensureScopedMemory)
-    module._pgl_set_scoped_shmem_enabled(
-      this.options.scopedMemory === this.options.privateMemory ? 0 : 1,
+    module._pgl_set_scoped_shmem_mode(
+      this.options.scopedMemoryMode === 'dedicated'
+        ? 1
+        : this.options.scopedMemoryMode === 'compact'
+          ? 2
+          : 0,
     )
     this.installed = true
   }

@@ -35,11 +35,9 @@ const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
 const ARTIFACT_GLOBAL_INITIAL_PAGES = 2
 const ARTIFACT_MAXIMUM_PAGES = 16_384
 const GLOBAL_SHM_ALLOCATION_GENERATION_WORD = (0x1_0000 >>> 2) + 5
-const SCOPED_SHM_REGISTRY_WORD = 0x1_0000 >>> 2
 const SCOPED_SHM_MAGIC_READY = 0x5047_4c53
 const SCOPED_SHM_REGISTRY_VERSION = 3
-const SCOPED_SHM_SCOPE_DIRECTORY_WORD =
-  SCOPED_SHM_REGISTRY_WORD + (18_464 >>> 2)
+const SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS = 18_464 >>> 2
 const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
 const SCOPED_SHM_MAX_SCOPES = 256
 const PGLITE_PROCESS_USER_ID = 123
@@ -87,6 +85,12 @@ export interface PGlitePostmasterOptions {
   readonly globalMaximumMemory?: number
   readonly scopedInitialMemory?: number
   readonly scopedMaximumMemory?: number
+  /**
+   * `compact` aliases a root backend's memories 0 and 2 and coordinates both
+   * allocators through Emscripten's atomic sbrk frontier. `dedicated` retains
+   * the stronger default isolation and independently reclaimable backing.
+   */
+  readonly scopedMemoryMode?: PGliteScopedMemoryMode
   /** OS identity presented to PostgreSQL for local-socket peer authentication. */
   readonly osUser?: string
   /**
@@ -96,6 +100,8 @@ export interface PGlitePostmasterOptions {
    */
   readonly postmasterPid?: number
 }
+
+export type PGliteScopedMemoryMode = 'dedicated' | 'compact'
 
 export type PGlitePostmasterShutdownMode = 'smart' | 'fast' | 'immediate'
 
@@ -119,6 +125,10 @@ export interface PGlitePostmasterDiagnostics {
   readonly globalMemoryMaximumBytes: number
   readonly scopedMemoryMaximumBytes: number
   readonly globalShmAllocationGeneration: number
+  readonly scopedMemoryMode: PGliteScopedMemoryMode
+  readonly compactRootBindings: number
+  /** Unique Wasm backing-store bytes, without double-counting compact roots. */
+  readonly totalUniqueMemoryBytes: number
   readonly scopedLifetime: PGliteScopedLifetimeDiagnostics
 }
 
@@ -154,6 +164,8 @@ interface WorkerRecord {
 interface ScopedRootRecord {
   readonly handle: ProcessHandle
   readonly memory: WebAssembly.Memory
+  readonly mode: PGliteScopedMemoryMode
+  readonly registryOffset: number
   readonly members: Set<number>
   exited: boolean
 }
@@ -173,6 +185,7 @@ export class PGlitePostmaster {
   private readonly globalMaximumPages: number
   private readonly scopedInitialPages: number
   private readonly scopedMaximumPages: number
+  private readonly scopedMemoryMode: PGliteScopedMemoryMode
   private readonly osUser: string
   private readonly debug: boolean
   private readonly postmasterProcess: ProcessHandle
@@ -212,6 +225,13 @@ export class PGlitePostmaster {
     this.globalMaximumPages = memory.globalMaximumPages
     this.scopedInitialPages = memory.scopedInitialPages
     this.scopedMaximumPages = memory.scopedMaximumPages
+    this.scopedMemoryMode = options.scopedMemoryMode ?? 'dedicated'
+    if (
+      this.scopedMemoryMode !== 'dedicated' &&
+      this.scopedMemoryMode !== 'compact'
+    ) {
+      throw new RangeError('scopedMemoryMode must be dedicated or compact')
+    }
     this.osUser = options.osUser ?? 'postgres'
     if (this.osUser.length === 0 || this.osUser.includes('\0')) {
       throw new TypeError('osUser must be a non-empty string without NUL')
@@ -329,6 +349,35 @@ export class PGlitePostmaster {
 
   diagnostics(): PGlitePostmasterDiagnostics {
     const live = [...this.workers.values()]
+    const compactRoots = [...this.scopedRoots.values()].filter(
+      ({ mode }) => mode === 'compact',
+    )
+    const dedicatedRoots = [...this.scopedRoots.values()].filter(
+      ({ mode }) => mode === 'dedicated',
+    )
+    const livePids = new Set(live.map(({ handle }) => handle.pid))
+    const baselinePrivateBytes = live.reduce(
+      (total, record) => total + record.privateMemoryBytes,
+      0,
+    )
+    const privateMemoryBytes =
+      baselinePrivateBytes +
+      compactRoots.reduce(
+        (total, root) =>
+          total +
+          (livePids.has(root.handle.pid)
+            ? Math.max(
+                0,
+                root.memory.buffer.byteLength -
+                  this.privateInitialPages * WASM_PAGE_BYTES,
+              )
+            : root.memory.buffer.byteLength),
+        0,
+      )
+    const scopedMemoryBytes = dedicatedRoots.reduce(
+      (total, root) => total + root.memory.buffer.byteLength,
+      0,
+    )
     const scopedLifetime = readScopedLifetimeDiagnostics(
       this.scopedRoots.values(),
     )
@@ -337,25 +386,28 @@ export class PGlitePostmaster {
       livePrivateMemories: live.length,
       privateMemoriesStarted: this.privateMemoriesStarted,
       privateMemoriesReleased: this.privateMemoriesReleased,
-      privateMemoryBytes: live.reduce(
-        (total, record) => total + record.privateMemoryBytes,
-        0,
-      ),
+      privateMemoryBytes,
       globalMemoryBytes: this.globalMemory.buffer.byteLength,
-      liveScopedMemories: this.scopedRoots.size,
+      liveScopedMemories: dedicatedRoots.length,
       scopedMemoriesStarted: this.scopedMemoriesStarted,
       scopedMemoriesReleased: this.scopedMemoriesReleased,
-      scopedMemoryBytes: [...this.scopedRoots.values()].reduce(
-        (total, root) => total + root.memory.buffer.byteLength,
-        0,
-      ),
+      scopedMemoryBytes,
       privateMemoryMaximumBytes: this.privateMaximumPages * WASM_PAGE_BYTES,
       globalMemoryMaximumBytes: this.globalMaximumPages * WASM_PAGE_BYTES,
-      scopedMemoryMaximumBytes: this.scopedMaximumPages * WASM_PAGE_BYTES,
+      scopedMemoryMaximumBytes:
+        (this.scopedMemoryMode === 'compact'
+          ? this.privateMaximumPages
+          : this.scopedMaximumPages) * WASM_PAGE_BYTES,
       globalShmAllocationGeneration: Atomics.load(
         new Uint32Array(this.globalMemory.buffer),
         GLOBAL_SHM_ALLOCATION_GENERATION_WORD,
       ),
+      scopedMemoryMode: this.scopedMemoryMode,
+      compactRootBindings: compactRoots.length,
+      totalUniqueMemoryBytes:
+        privateMemoryBytes +
+        this.globalMemory.buffer.byteLength +
+        scopedMemoryBytes,
       scopedLifetime,
     }
   }
@@ -523,6 +575,10 @@ export class PGlitePostmaster {
       scopedMaximumPages: this.scopedMaximumPages,
       globalMemory: this.globalMemory,
       scopedMemory,
+      scopedMemoryMode:
+        scopePolicy === ProcessScopePolicy.SelfAlias
+          ? 'disabled'
+          : this.scopedMemoryMode,
       scopePolicy,
       scopeRoot,
       controlBuffer: this.registry.buffer,
@@ -571,7 +627,11 @@ export class PGlitePostmaster {
             !scopeRoot ||
             message.pid !== handle.pid ||
             message.root.pid !== scopeRoot.pid ||
-            message.root.generation !== scopeRoot.generation
+            message.root.generation !== scopeRoot.generation ||
+            message.mode !== this.scopedMemoryMode ||
+            !Number.isInteger(message.registryOffset) ||
+            message.registryOffset <= 0 ||
+            message.registryOffset >= 0x4000_0000
           ) {
             record.reportedExitCode = 1
             record.reportedExitKind = ProcessExitKind.WorkerFailure
@@ -581,11 +641,13 @@ export class PGlitePostmaster {
           const root: ScopedRootRecord = {
             handle: scopeRoot,
             memory: message.memory,
+            mode: message.mode,
+            registryOffset: message.registryOffset,
             members: new Set([handle.pid]),
             exited: false,
           }
           this.scopedRoots.set(scopeRoot.pid, root)
-          this.scopedMemoriesStarted++
+          if (message.mode === 'dedicated') this.scopedMemoriesStarted++
           rootMemoryReady = true
         } else if (message.type === 'runtime-ready') {
           if (!rootMemoryReady) {
@@ -708,7 +770,7 @@ export class PGlitePostmaster {
     }
     if (root.exited && root.members.size === 0) {
       this.scopedRoots.delete(root.handle.pid)
-      this.scopedMemoriesReleased++
+      if (root.mode === 'dedicated') this.scopedMemoriesReleased++
     }
   }
 
@@ -737,18 +799,23 @@ function readScopedLifetimeDiagnostics(
 
   for (const root of roots) {
     const words = new Uint32Array(root.memory.buffer)
+    const registryWord = root.registryOffset >>> 2
     if (
-      Atomics.load(words, SCOPED_SHM_REGISTRY_WORD) !==
-        SCOPED_SHM_MAGIC_READY ||
-      Atomics.load(words, SCOPED_SHM_REGISTRY_WORD + 1) !==
-        SCOPED_SHM_REGISTRY_VERSION
+      registryWord +
+        SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS +
+        SCOPED_SHM_MAX_SCOPES * SCOPED_SHM_SCOPE_WORDS >
+        words.length ||
+      Atomics.load(words, registryWord) !== SCOPED_SHM_MAGIC_READY ||
+      Atomics.load(words, registryWord + 1) !== SCOPED_SHM_REGISTRY_VERSION
     ) {
       continue
     }
     readyRoots++
     for (let slot = 0; slot < SCOPED_SHM_MAX_SCOPES; slot++) {
       const offset =
-        SCOPED_SHM_SCOPE_DIRECTORY_WORD + slot * SCOPED_SHM_SCOPE_WORDS
+        registryWord +
+        SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS +
+        slot * SCOPED_SHM_SCOPE_WORDS
       const state = Atomics.load(words, offset)
       const kind = Atomics.load(words, offset + 1)
       if (state === 1) {

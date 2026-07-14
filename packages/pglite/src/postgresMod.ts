@@ -48,6 +48,10 @@ export interface PostgresMod
   _pgl_set_shmem_host: (ensure_capacity: number) => void
   _pgl_set_scoped_shmem_host: (ensure_capacity: number) => void
   _pgl_set_scoped_shmem_enabled: (enabled: number) => void
+  _pgl_set_scoped_shmem_mode: (mode: number) => void
+  _pgl_shm_scope_root: () => bigint
+  _pgl_shm_registry_offset: () => number
+  _pgl_shm_compact_frontier: () => number
   _pgl_set_socket_host: (
     create_socket: number,
     connect_socket: number,

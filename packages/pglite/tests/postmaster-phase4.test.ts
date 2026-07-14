@@ -455,6 +455,7 @@ describe('Phase 4 process portability primitives', () => {
       privateMemory,
       globalMemory,
       scopedMemory: privateMemory,
+      scopedMemoryMode: 'disabled',
     })
     host.install()
 
@@ -519,7 +520,7 @@ describe('Phase 4 process portability primitives', () => {
     expect(fake.invoke(fake.shmemHost[0], 2 * 65_536)).toBe(0)
     expect(globalMemory.buffer.byteLength).toBe(2 * 65_536)
     expect(fake.invoke(fake.shmemHost[0], 0x40000001)).toBe(-1)
-    expect(fake.scopedShmemEnabled).toEqual([0])
+    expect(fake.scopedShmemMode).toEqual([0])
 
     registry.markExit(parallel.handle, ProcessExitKind.Normal, 0)
     registry.markExit(request.handle, ProcessExitKind.Normal, 5)
@@ -906,7 +907,7 @@ interface FakeModule {
   readonly clockHost: number[]
   readonly shmemHost: number[]
   readonly scopedShmemHost: number[]
-  readonly scopedShmemEnabled: number[]
+  readonly scopedShmemMode: number[]
   readonly socketHost: number[]
   invoke(index: number, ...arguments_: number[]): number
 }
@@ -920,7 +921,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
   const clockHost: number[] = []
   const shmemHost: number[] = []
   const scopedShmemHost: number[] = []
-  const scopedShmemEnabled: number[] = []
+  const scopedShmemMode: number[] = []
   const socketHost: number[] = []
   const bytes = () => new Uint8Array(memory.buffer)
   const module = {
@@ -959,8 +960,8 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     _pgl_set_scoped_shmem_host(...indices: number[]) {
       scopedShmemHost.push(...indices)
     },
-    _pgl_set_scoped_shmem_enabled(enabled: number) {
-      scopedShmemEnabled.push(enabled)
+    _pgl_set_scoped_shmem_mode(mode: number) {
+      scopedShmemMode.push(mode)
     },
     _pgl_set_socket_host(...indices: number[]) {
       socketHost.push(...indices)
@@ -974,7 +975,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     clockHost,
     shmemHost,
     scopedShmemHost,
-    scopedShmemEnabled,
+    scopedShmemMode,
     socketHost,
     invoke(index, ...arguments_) {
       const callback = callbacks.get(index)

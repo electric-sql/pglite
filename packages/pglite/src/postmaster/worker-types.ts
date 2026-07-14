@@ -23,6 +23,8 @@ export type WorkerFilesystemDescriptor =
       readonly factory: WorkerFilesystemFactory
     }
 
+export type ProcessScopedMemoryMode = 'disabled' | 'dedicated' | 'compact'
+
 export interface PostgresProcessWorkerData {
   readonly artifact: PostmasterArtifactPaths
   readonly wasmModule: WebAssembly.Module
@@ -32,6 +34,7 @@ export interface PostgresProcessWorkerData {
   readonly scopedMaximumPages: number
   readonly globalMemory: WebAssembly.Memory
   readonly scopedMemory?: WebAssembly.Memory
+  readonly scopedMemoryMode: ProcessScopedMemoryMode
   readonly scopePolicy: ProcessScopePolicy
   readonly scopeRoot?: ProcessHandle
   readonly controlBuffer: SharedArrayBuffer
@@ -52,6 +55,8 @@ export type PostgresProcessWorkerMessage =
       readonly pid: number
       readonly root: ProcessHandle
       readonly memory: WebAssembly.Memory
+      readonly mode: Exclude<ProcessScopedMemoryMode, 'disabled'>
+      readonly registryOffset: number
     }
   | { readonly type: 'runtime-ready'; readonly pid: number }
   | { readonly type: 'stdout'; readonly pid: number; readonly text: string }

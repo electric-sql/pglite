@@ -52,7 +52,11 @@ async function main(): Promise<void> {
     })
     let scopedMemory: WebAssembly.Memory
     if (data.scopePolicy === ProcessScopePolicy.SelfAlias) {
-      if (data.scopeRoot || data.scopedMemory) {
+      if (
+        data.scopeRoot ||
+        data.scopedMemory ||
+        data.scopedMemoryMode !== 'disabled'
+      ) {
         throw new Error('SelfAlias Worker received a scoped root binding')
       }
       scopedMemory = privateMemory
@@ -61,23 +65,25 @@ async function main(): Promise<void> {
         !data.scopeRoot ||
         data.scopeRoot.pid !== data.process.pid ||
         data.scopeRoot.generation !== data.process.generation ||
-        data.scopedMemory
+        data.scopedMemory ||
+        data.scopedMemoryMode === 'disabled'
       ) {
         throw new Error('NewRoot Worker received an invalid root binding')
       }
-      scopedMemory = new WebAssembly.Memory({
-        initial: data.scopedInitialPages,
-        maximum: data.scopedMaximumPages,
-        shared: true,
-      })
-      send({
-        type: 'scoped-memory-ready',
-        pid: data.process.pid,
-        root: data.scopeRoot,
-        memory: scopedMemory,
-      })
+      scopedMemory =
+        data.scopedMemoryMode === 'compact'
+          ? privateMemory
+          : new WebAssembly.Memory({
+              initial: data.scopedInitialPages,
+              maximum: data.scopedMaximumPages,
+              shared: true,
+            })
     } else {
-      if (!data.scopeRoot || !data.scopedMemory) {
+      if (
+        !data.scopeRoot ||
+        !data.scopedMemory ||
+        data.scopedMemoryMode === 'disabled'
+      ) {
         throw new Error('inherited Worker has no scoped root memory')
       }
       scopedMemory = data.scopedMemory
@@ -227,11 +233,30 @@ async function main(): Promise<void> {
       privateMemory,
       globalMemory: data.globalMemory,
       scopedMemory,
+      scopedMemoryMode: data.scopedMemoryMode,
       debug: data.debug,
       connectionIdForDescriptor: (descriptor) =>
         socketHost!.connectionIdForDescriptor(descriptor),
     })
     processHost.install()
+
+    if (data.scopePolicy === ProcessScopePolicy.NewRoot) {
+      if (!data.scopeRoot || postgres._pgl_shm_scope_root() === 0n) {
+        throw new Error('could not initialize the Worker scoped-memory root')
+      }
+      const registryOffset = postgres._pgl_shm_registry_offset() >>> 0
+      if (registryOffset === 0) {
+        throw new Error('Worker scoped-memory registry has no address')
+      }
+      send({
+        type: 'scoped-memory-ready',
+        pid: data.process.pid,
+        root: data.scopeRoot,
+        memory: scopedMemory,
+        mode: data.scopedMemoryMode as 'dedicated' | 'compact',
+        registryOffset,
+      })
+    }
 
     registry.transition(data.process, ProcessState.Runnable)
     send({ type: 'runtime-ready', pid: data.process.pid })
