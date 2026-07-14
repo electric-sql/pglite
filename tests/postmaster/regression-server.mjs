@@ -31,8 +31,8 @@ assert.equal(process.arch, 'arm64')
 const { PGlitePostmaster } = await import(
   pathToFileURL(join(repoRoot, 'packages/pglite/dist/postmaster/index.js')).href
 )
-const { PGliteSocketServer } = await import(
-  pathToFileURL(join(repoRoot, 'packages/pglite-socket/dist/index.js')).href
+const { PGliteServer } = await import(
+  pathToFileURL(join(repoRoot, 'packages/pglite-server/dist/index.js')).href
 )
 
 await Promise.all([
@@ -89,7 +89,7 @@ const postmaster = await PGlitePostmaster.create({
     },
   },
 })
-const socket = new PGliteSocketServer({
+const socket = await PGliteServer.create({
   postmaster,
   listen: { host: '127.0.0.1', port },
 })
@@ -116,7 +116,8 @@ try {
     await setup.close()
   }
 
-  const address = await socket.start()
+  const address = socket.address
+  assert.ok(address)
   assert.equal(address.transport, 'tcp')
   await writeFile(
     readyPath,
@@ -139,7 +140,7 @@ try {
   )
 } catch (error) {
   clearInterval(sampleTimer)
-  await socket.stop().catch(() => undefined)
+  await socket.close().catch(() => undefined)
   await postmaster.close().catch(() => undefined)
   throw error
 }
@@ -149,7 +150,7 @@ async function stop(signal, failed = false) {
   stopping = true
   clearInterval(sampleTimer)
   const beforeShutdown = postmaster.diagnostics()
-  await socket.stop().catch((error) => console.error(error))
+  await socket.close().catch((error) => console.error(error))
   await postmaster.close().catch((error) => console.error(error))
   const shutdown = postmaster.diagnostics()
   peak = maximumSample(peak, sample())

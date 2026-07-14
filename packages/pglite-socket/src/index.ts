@@ -1,450 +1,826 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import {
-  createServer,
-  type AddressInfo,
-  type Server,
-  type Socket,
-} from 'node:net'
-import type {
-  PGlitePostmaster,
-  PGliteProtocolConnection,
-  ProtocolPeerInfo,
-} from '@electric-sql/pglite/postmaster'
+import type { PGlite } from '@electric-sql/pglite'
+import { type Server, type Socket, createServer } from 'net'
 
-const DEFAULT_HOST = '127.0.0.1'
-const DEFAULT_PORT = 5432
+// Connection queue timeout in milliseconds
+export const CONNECTION_QUEUE_TIMEOUT = 60000 // 60 seconds
+export const SSL_REQUEST_CODE = 80877103
+export const SSL_REQUEST_LENGTH = 8
+export const CANCEL_REQUEST_CODE = 80877102
+export const CANCEL_REQUEST_LENGTH = 16
 
-export interface PGliteSocketTcpListenOptions {
-  readonly host?: string
-  readonly port?: number
-  readonly path?: never
-  readonly directory?: never
-}
-
-export interface PGliteSocketUnixPathListenOptions {
-  readonly path: string
-  readonly host?: never
-  readonly directory?: never
-  readonly port?: never
-}
-
-export interface PGliteSocketUnixDirectoryListenOptions {
-  readonly directory: string
-  readonly port?: number
-  readonly host?: never
-  readonly path?: never
-}
-
-export type PGliteSocketListenOptions =
-  | PGliteSocketTcpListenOptions
-  | PGliteSocketUnixPathListenOptions
-  | PGliteSocketUnixDirectoryListenOptions
-
-export type PGliteSocketAddress =
-  | {
-      readonly transport: 'tcp'
-      readonly host: string
-      readonly port: number
-    }
-  | {
-      readonly transport: 'unix'
-      readonly path: string
-      readonly directory?: string
-      readonly port?: number
-      readonly lockPath?: string
-    }
-
-export interface PGliteSocketServerOptions {
-  /** A caller-owned multi-session postmaster. `stop()` does not close it. */
-  readonly postmaster: Pick<PGlitePostmaster, 'openProtocolConnection'>
-  readonly listen?: PGliteSocketListenOptions
-  readonly debug?: boolean
+/**
+ * Represents a queued query waiting for PGlite access
+ */
+interface QueuedQuery {
+  handlerId: number
+  message: Uint8Array
+  resolve: (resultSize: number) => void
+  reject: (error: Error) => void
+  timestamp: number
+  onData: (data: Uint8Array) => void
 }
 
 /**
- * A byte-transparent Node socket frontend for `PGlitePostmaster`.
- *
- * PostgreSQL, not this package, owns startup, authentication, protocol
- * framing, session state, connection admission, cancellation, and errors.
- * Each accepted OS socket maps to one raw virtual postmaster connection.
+ * Global query queue manager
+ * Ensures only one query executes at a time in PGlite
  */
-export class PGliteSocketServer extends EventTarget {
-  readonly postmaster: Pick<PGlitePostmaster, 'openProtocolConnection'>
+class QueryQueueManager {
+  private queue: QueuedQuery[] = []
+  private processing = false
+  private db: PGlite
+  private debug: boolean
+  private lastHandlerId: null | number = null
 
-  private readonly configuredAddress: PGliteSocketAddress
-  private readonly debug: boolean
-  private readonly bridges = new Set<SocketBridge>()
-  private server?: Server
-  private currentAddress?: PGliteSocketAddress
-  private active = false
-
-  constructor(options: PGliteSocketServerOptions) {
-    super()
-    this.postmaster = options.postmaster
-    this.configuredAddress = resolveListenAddress(options.listen ?? {})
-    this.debug = options.debug ?? false
+  constructor(db: PGlite, debug = false) {
+    this.db = db
+    this.debug = debug
   }
 
-  get address(): PGliteSocketAddress | undefined {
-    return this.currentAddress
-  }
-
-  get connectionCount(): number {
-    return this.bridges.size
-  }
-
-  get isListening(): boolean {
-    return this.active
-  }
-
-  async start(): Promise<PGliteSocketAddress> {
-    if (this.server) throw new Error('PGlite socket server is already started')
-
-    const configured = this.configuredAddress
-    if (configured.transport === 'unix') {
-      mkdirSync(dirname(configured.path), { recursive: true })
-      if (configured.lockPath && existsSync(configured.lockPath)) {
-        throw new Error(
-          `PostgreSQL Unix-socket lock already exists: ${configured.lockPath}`,
-        )
-      }
+  private log(message: string, ...args: any[]): void {
+    if (this.debug) {
+      console.log(`[QueryQueueManager] ${message}`, ...args)
     }
+  }
 
-    const server = createServer({ allowHalfOpen: true }, (socket) => {
-      void this.accept(socket)
+  async enqueue(
+    handlerId: number,
+    message: Uint8Array,
+    onData: (data: Uint8Array) => void,
+  ): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const query: QueuedQuery = {
+        handlerId,
+        message,
+        resolve,
+        reject,
+        timestamp: Date.now(),
+        onData,
+      }
+
+      this.queue.push(query)
+      this.log(
+        `enqueued query from handler #${handlerId}, queue size: ${this.queue.length}`,
+      )
+
+      // Process queue if not already processing
+      if (!this.processing) {
+        this.processQueue()
+      }
     })
-    this.server = server
-    this.active = true
-
-    const startupError = (error: Error) => {
-      this.emit('error', error)
-    }
-    server.on('error', startupError)
-
-    let lockWritten = false
-    try {
-      await new Promise<void>((resolveStart, rejectStart) => {
-        const reject = (error: Error) => rejectStart(error)
-        server.once('error', reject)
-        const ready = () => {
-          server.off('error', reject)
-          resolveStart()
-        }
-        if (configured.transport === 'unix') {
-          server.listen(configured.path, ready)
-        } else {
-          server.listen(configured.port, configured.host, ready)
-        }
-      })
-
-      if (configured.transport === 'tcp') {
-        const address = server.address()
-        if (!address || typeof address === 'string') {
-          throw new Error('TCP listener did not return an address')
-        }
-        this.currentAddress = {
-          transport: 'tcp',
-          host: configured.host,
-          port: (address as AddressInfo).port,
-        }
-      } else {
-        this.currentAddress = configured
-        if (configured.lockPath) {
-          writeSocketLock(configured)
-          lockWritten = true
-        }
-      }
-
-      this.log(`listening on ${formatAddress(this.currentAddress)}`)
-      this.emit('listening', this.currentAddress)
-      return this.currentAddress
-    } catch (error) {
-      this.active = false
-      this.server = undefined
-      server.close()
-      if (lockWritten && configured.transport === 'unix') {
-        rmSync(configured.lockPath!, { force: true })
-      }
-      throw error
-    }
   }
 
-  async stop(): Promise<void> {
-    const server = this.server
-    if (!server) return
-
-    // Stop admission before aborting bridges. `server.close()` does not
-    // resolve until existing sockets close, so initiate it first and await it
-    // only after both pumps have been woken.
-    this.active = false
-    this.server = undefined
-    const serverClosed = new Promise<void>((resolveClose, rejectClose) => {
-      server.close((error) => (error ? rejectClose(error) : resolveClose()))
-    })
-
-    for (const bridge of this.bridges) {
-      bridge.abort(new Error('PGlite socket frontend stopped'))
-    }
-    await Promise.allSettled([...this.bridges].map(({ closed }) => closed))
-    await serverClosed
-    removeSocketMetadata(this.currentAddress ?? this.configuredAddress)
-    this.currentAddress = undefined
-    this.emit('close', undefined)
-  }
-
-  async [Symbol.asyncDispose](): Promise<void> {
-    await this.stop()
-  }
-
-  private async accept(socket: Socket): Promise<void> {
-    if (!this.active) {
-      socket.destroy()
+  private async processQueue(): Promise<void> {
+    if (this.processing || this.queue.length === 0) {
       return
     }
 
-    if (this.configuredAddress.transport === 'tcp') socket.setNoDelay(true)
-    const peer: ProtocolPeerInfo =
-      this.configuredAddress.transport === 'unix'
-        ? { transport: 'unix' }
-        : {
-            transport: 'tcp',
-            remoteAddress: socket.remoteAddress,
-            remotePort: socket.remotePort,
-          }
+    this.processing = true
 
-    try {
-      const connection = await this.postmaster.openProtocolConnection(peer)
-      if (!this.active || socket.destroyed) {
-        connection.abort(new Error('socket closed before virtual admission'))
-        socket.destroy()
+    while (this.queue.length > 0) {
+      let query
+
+      if (this.db.isInTransaction() && this.lastHandlerId) {
+        const i = this.queue.findIndex(
+          (q) => q.handlerId === this.lastHandlerId,
+        )
+        if (i === -1) {
+          // we didn't find any other query from the same client!
+          this.log(
+            `transaction started, but no query from the same handler id found in queue`,
+            this.lastHandlerId,
+          )
+          query = null
+        } else {
+          query = this.queue.splice(i, 1)[0]
+        }
+      } else {
+        query = this.queue.shift()
+      }
+      if (!query) break
+
+      const waitTime = Date.now() - query.timestamp
+      this.log(
+        `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
+      )
+
+      let result = 0
+      try {
+        // Execute the query with exclusive access to PGlite
+        await this.db.runExclusive(async () => {
+          return await this.db.execProtocolRawStream(query.message, {
+            onRawData: (data) => {
+              result += data.length
+              query.onData(data)
+            },
+          })
+        })
+      } catch (error) {
+        this.log(`query from handler #${query.handlerId} failed:`, error)
+        query.reject(error as Error)
         return
       }
-      const bridge = new SocketBridge(socket, connection, this.debug)
-      this.bridges.add(bridge)
-      this.emit('connection', {
-        transport: peer.transport,
-        remoteAddress: peer.remoteAddress,
-        remotePort: peer.remotePort,
-      })
-      try {
-        await bridge.closed
-      } finally {
-        this.bridges.delete(bridge)
+
+      this.log(
+        `query from handler #${query.handlerId} completed, ${result} bytes`,
+      )
+      this.lastHandlerId = query.handlerId
+      query.resolve(result)
+    }
+
+    this.processing = false
+    this.log(`queue processing complete, queue length is`, this.queue.length)
+  }
+
+  getQueueLength(): number {
+    return this.queue.length
+  }
+
+  clearQueueForHandler(handlerId: number): void {
+    const before = this.queue.length
+    this.queue = this.queue.filter((q) => {
+      if (q.handlerId === handlerId) {
+        q.reject(new Error('Handler disconnected'))
+        return false
       }
-    } catch (error) {
-      socket.destroy()
-      this.emit('connection-error', toError(error))
+      return true
+    })
+    const removed = before - this.queue.length
+    if (removed > 0) {
+      this.log(`cleared ${removed} queries for handler #${handlerId}`)
     }
   }
 
-  private log(message: string): void {
-    if (this.debug) console.log(`[PGliteSocketServer] ${message}`)
-  }
-
-  private emit(type: string, detail: unknown): void {
-    this.dispatchEvent(new CustomEvent(type, { detail }))
+  async clearTransactionIfNeeded(handlerId: number): Promise<void> {
+    if (this.db.isInTransaction() && this.lastHandlerId === handlerId) {
+      await this.db.exec('ROLLBACK')
+      this.lastHandlerId = null
+      await this.processQueue()
+    }
   }
 }
 
-class SocketBridge {
-  readonly closed: Promise<void>
+/**
+ * Options for creating a PGLiteSocketHandler
+ */
+export interface PGLiteSocketHandlerOptions {
+  /** The query queue manager */
+  queryQueue: QueryQueueManager
+  /** Whether to close the socket when detached (default: false) */
+  closeOnDetach?: boolean
+  /** Print the incoming and outgoing data to the console in hex and ascii */
+  inspect?: boolean
+  /** Enable debug logging of method calls */
+  debug?: boolean
+  /** Idle timeout in ms (0 to disable, default: 0) */
+  idleTimeout?: number
+}
 
-  private abortReason?: Error
+/**
+ * Handler for a single socket connection to PGlite
+ * Each connection can remain open and send multiple queries
+ */
+export class PGLiteSocketHandler extends EventTarget {
+  private queryQueue: QueryQueueManager
+  private socket: Socket | null = null
+  private active = false
+  private closeOnDetach: boolean
+  private inspect: boolean
+  private debug: boolean
+  private readonly id: number
+  private messageBuffer: Buffer = Buffer.alloc(0)
+  private idleTimer?: NodeJS.Timeout
+  private idleTimeout: number
+  private lastActivityTime: number = Date.now()
 
-  constructor(
-    private readonly socket: Socket,
-    private readonly connection: PGliteProtocolConnection,
-    private readonly debug: boolean,
-  ) {
-    this.closed = this.run()
+  // Static counter for generating unique handler IDs
+  private static nextHandlerId = 1
+
+  constructor(options: PGLiteSocketHandlerOptions) {
+    super()
+    this.queryQueue = options.queryQueue
+    this.closeOnDetach = options.closeOnDetach ?? false
+    this.inspect = options.inspect ?? false
+    this.debug = options.debug ?? false
+    this.idleTimeout = options.idleTimeout ?? 0
+    this.id = PGLiteSocketHandler.nextHandlerId++
+
+    this.log('constructor: created new handler')
   }
 
-  abort(reason: unknown): void {
-    if (this.abortReason) return
-    this.abortReason = toError(reason)
-    try {
-      this.connection.abort(this.abortReason)
-    } catch {
-      // A generation-safe transport can already have been released and
-      // reused after PostgreSQL closed it. Never let a stale bridge mutate
-      // the next connection occupying that ring slot.
-    }
-    this.socket.destroy(this.abortReason)
+  public get handlerId(): number {
+    return this.id
   }
 
-  private async run(): Promise<void> {
-    const onSocketError = (error: Error) => {
-      if (!this.abortReason) {
-        this.abortReason = error
-        // A TCP reset is an ordinary PostgreSQL client disconnect, not a
-        // backend failure.  Close only the frontend-to-backend direction so
-        // recv() observes EOF and PostgreSQL performs normal proc_exit(0)
-        // cleanup.  Reserve a ring abort for an internal bridge failure or
-        // an explicit frontend shutdown.
-        void this.connection.end().catch((closeError) => {
-          try {
-            this.connection.abort(closeError)
-          } catch {
-            // The ring was already released and reused by a newer client.
-          }
-        })
-      }
+  private log(message: string, ...args: any[]): void {
+    if (this.debug) {
+      console.log(`[PGLiteSocketHandler#${this.id}] ${message}`, ...args)
     }
-    this.socket.on('error', onSocketError)
+  }
 
-    // Observe each pump failure immediately. Waiting for both before aborting
-    // deadlocks when the backend ring fails while the client is still waiting
-    // for a response and therefore keeps its write half open.
-    const results = await Promise.allSettled([
-      this.watchPump(this.pumpInbound()),
-      this.watchPump(this.pumpOutbound()),
-    ])
-    const failure = results.find(
-      (result): result is PromiseRejectedResult => result.status === 'rejected',
+  public async attach(socket: Socket): Promise<PGLiteSocketHandler> {
+    this.log(
+      `attach: attaching socket from ${socket.remoteAddress}:${socket.remotePort}`,
     )
-    if (failure && !this.abortReason) this.abort(failure.reason)
 
-    this.socket.off('error', onSocketError)
-    if (!this.socket.destroyed) this.socket.destroy()
-    await this.connection.closed.catch(() => undefined)
-    if (this.debug && failure) {
-      console.error('[PGliteSocketServer] bridge failed', failure.reason)
+    if (this.socket) {
+      throw new Error('Socket already attached')
     }
+
+    this.socket = socket
+    this.active = true
+    this.lastActivityTime = Date.now()
+
+    // Set up socket options
+    socket.setNoDelay(true)
+
+    // Set up idle timeout if configured
+    if (this.idleTimeout > 0) {
+      this.resetIdleTimer()
+    }
+
+    // Setup event handlers
+    this.log(`attach: setting up socket event handlers`)
+
+    socket.on('data', (data) => {
+      this.lastActivityTime = Date.now()
+      this.resetIdleTimer()
+
+      setImmediate(async () => {
+        try {
+          await this.handleData(data)
+        } catch (err) {
+          this.log('socket on data error: ', err)
+          this.handleError(err as Error)
+        }
+      })
+    })
+
+    socket.on('error', (err) => {
+      setImmediate(() => this.handleError(err))
+    })
+
+    socket.on('close', () => {
+      setImmediate(() => this.handleClose())
+    })
+
+    this.log(`attach: socket handler ready`)
+    return this
   }
 
-  private async watchPump(pump: Promise<void>): Promise<void> {
-    try {
-      await pump
-    } catch (error) {
-      if (!this.abortReason) this.abort(error)
-      throw error
+  private resetIdleTimer(): void {
+    if (this.idleTimeout <= 0) return
+
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer)
     }
+
+    this.idleTimer = setTimeout(() => {
+      const idleTime = Date.now() - this.lastActivityTime
+      this.log(`idle timeout after ${idleTime}ms`)
+      this.handleError(new Error('Idle timeout'))
+    }, this.idleTimeout)
   }
 
-  private async pumpInbound(): Promise<void> {
-    try {
-      for await (const chunk of this.socket) {
-        const bytes =
-          typeof chunk === 'string' ? Buffer.from(chunk) : new Uint8Array(chunk)
-        if (bytes.byteLength > 0) await this.connection.write(bytes)
+  public async detach(close?: boolean): Promise<PGLiteSocketHandler> {
+    this.log(`detach: detaching socket, close=${close ?? this.closeOnDetach}`)
+
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer)
+      this.idleTimer = undefined
+    }
+
+    // Clear any pending queries for this handler
+    this.queryQueue.clearQueueForHandler(this.id)
+
+    await this.queryQueue.clearTransactionIfNeeded(this.id)
+
+    if (!this.socket) {
+      this.log(`detach: no socket attached, nothing to do`)
+      return this
+    }
+
+    // Remove all listeners
+    this.socket.removeAllListeners('data')
+    this.socket.removeAllListeners('error')
+    this.socket.removeAllListeners('close')
+
+    // Close the socket if requested
+    if (close ?? this.closeOnDetach) {
+      if (this.socket.writable) {
+        this.log(`detach: closing socket`)
+        try {
+          this.socket.end()
+          this.socket.destroy()
+        } catch (err) {
+          this.log(`detach: error closing socket:`, err)
+        }
       }
-      await this.connection.end()
-    } catch (error) {
-      if (!this.abortReason) throw error
     }
+
+    this.socket = null
+    this.active = false
+    this.messageBuffer = Buffer.alloc(0)
+
+    this.log(`detach: handler cleaned up`)
+    return this
   }
 
-  private async pumpOutbound(): Promise<void> {
+  public get isAttached(): boolean {
+    return this.socket !== null
+  }
+
+  private handleSslRequest(): boolean {
+    if (this.messageBuffer.length < SSL_REQUEST_LENGTH) {
+      return false
+    }
+
+    const len = this.messageBuffer.readInt32BE(0)
+    const code = this.messageBuffer.readInt32BE(4)
+
+    if (len === SSL_REQUEST_LENGTH && code === SSL_REQUEST_CODE) {
+      if (this.socket?.writable) {
+        this.socket.write(Buffer.from('N'))
+      }
+      this.messageBuffer = this.messageBuffer.slice(SSL_REQUEST_LENGTH)
+      return true
+    }
+
+    return false
+  }
+
+  // CancelRequest arrives on its own connection during startup, before any
+  // typed message. PGlite has no backend process to signal, so we consume the
+  // message and silently drop it (the wire protocol expects no response).
+  private handleCancelRequest(): boolean {
+    if (this.messageBuffer.length < CANCEL_REQUEST_LENGTH) {
+      return false
+    }
+
+    const len = this.messageBuffer.readInt32BE(0)
+    const code = this.messageBuffer.readInt32BE(4)
+
+    if (len === CANCEL_REQUEST_LENGTH && code === CANCEL_REQUEST_CODE) {
+      this.messageBuffer = this.messageBuffer.slice(CANCEL_REQUEST_LENGTH)
+      this.log('handleData: CancelRequest received, ignoring (not supported)')
+      return true
+    }
+
+    return false
+  }
+
+  private async handleData(data: Buffer): Promise<number> {
+    if (!this.socket || !this.active) {
+      this.log(`handleData: no active socket, ignoring data`)
+      return 0
+    }
+
+    this.log(`handleData: received ${data.length} bytes`)
+
+    // Append to buffer for message reassembly
+    this.messageBuffer = Buffer.concat([this.messageBuffer, data])
+
+    // Print the incoming data to the console
+    this.inspectData('incoming', data)
+
     try {
-      for await (const chunk of this.connection.readable) {
-        if (this.socket.destroyed) return
-        if (!this.socket.write(chunk)) await waitForDrain(this.socket)
+      let totalProcessed = 0
+
+      while (this.messageBuffer.length > 0) {
+        if (this.handleSslRequest()) {
+          continue
+        }
+
+        if (this.handleCancelRequest()) {
+          continue
+        }
+
+        // Determine message length
+        let messageLength = 0
+        let isComplete = false
+
+        // Handle startup message (no type byte, just length)
+        if (this.messageBuffer.length >= 4) {
+          const firstInt = this.messageBuffer.readInt32BE(0)
+
+          if (this.messageBuffer.length >= 8) {
+            const secondInt = this.messageBuffer.readInt32BE(4)
+            // PostgreSQL 3.0 protocol version
+            if (secondInt === 196608 || secondInt === 0x00030000) {
+              messageLength = firstInt
+              isComplete = this.messageBuffer.length >= messageLength
+            }
+          }
+
+          // Regular message (type byte + length)
+          if (!isComplete && this.messageBuffer.length >= 5) {
+            const msgLength = this.messageBuffer.readInt32BE(1)
+            messageLength = 1 + msgLength
+            isComplete = this.messageBuffer.length >= messageLength
+          }
+        }
+
+        if (!isComplete || messageLength === 0) {
+          this.log(
+            `handleData: incomplete message, buffering ${this.messageBuffer.length} bytes`,
+          )
+          break
+        }
+
+        // Extract and process complete message
+        const message = this.messageBuffer.slice(0, messageLength)
+        this.messageBuffer = this.messageBuffer.slice(messageLength)
+
+        this.log(`handleData: processing message of ${message.length} bytes`)
+
+        // Check if socket is still active before processing
+        if (!this.active || !this.socket) {
+          this.log(`handleData: socket no longer active, stopping processing`)
+          break
+        }
+
+        let socketWriteError: any = undefined
+        // Queue the query for execution
+        // This allows multiple connections to queue queries simultaneously
+        await this.queryQueue.enqueue(
+          this.id,
+          new Uint8Array(message),
+          (data) => {
+            this.log(`handleData: received ${data.length} bytes from PGlite`)
+
+            // Print the outgoing data to the console
+            this.inspectData('outgoing', data)
+
+            // Send response if available
+            if (
+              data.length > 0 &&
+              this.socket &&
+              this.socket.writable &&
+              this.active
+            ) {
+              // await new Promise<number>((resolve, reject) => {
+              this.log(`handleData: writing response to socket`)
+              if (this.socket?.writable) {
+                this.socket.write(Buffer.from(data), (err?: any) => {
+                  if (err) {
+                    this.log(`handleData: error writing to socket:`, err)
+                    socketWriteError = err
+                  } else {
+                    this.log(`handleData: socket sent: ${data.length} bytes`)
+                  }
+                })
+              } else {
+                this.log(`handleData: socket no longer writable`)
+              }
+            }
+            totalProcessed += data.length
+          },
+        )
+        if (socketWriteError) throw socketWriteError
       }
-      if (!this.socket.destroyed) {
-        await new Promise<void>((resolveEnd) => this.socket.end(resolveEnd))
-      }
-    } catch (error) {
-      if (!this.abortReason) throw error
+
+      // Emit data event with byte sizes
+      this.dispatchEvent(
+        new CustomEvent('data', {
+          detail: { incoming: data.length, outgoing: totalProcessed },
+        }),
+      )
+
+      return totalProcessed
+    } catch (err) {
+      this.log(`handleData: error processing data:`, err)
+      throw err
     }
   }
-}
 
-async function waitForDrain(socket: Socket): Promise<void> {
-  await new Promise<void>((resolveDrain, rejectDrain) => {
-    const cleanup = () => {
-      socket.off('drain', onDrain)
-      socket.off('close', onClose)
-      socket.off('error', onError)
+  private handleError(err: Error): void {
+    if (!this.active) {
+      this.log(`handleError: handler not active, ignoring error`)
+      return
     }
-    const onDrain = () => {
-      cleanup()
-      resolveDrain()
+
+    // ECONNRESET is expected behavior when clients disconnect
+    if (err.message?.includes('ECONNRESET')) {
+      this.log(
+        `handleError: client disconnected (ECONNRESET) - normal behavior`,
+      )
+    } else if (err.message?.includes('Idle timeout')) {
+      this.log(`handleError: connection idle timeout`)
+    } else {
+      this.log(`handleError:`, err)
     }
-    const onClose = () => {
-      cleanup()
-      rejectDrain(
-        new Error('socket closed while applying outbound backpressure'),
+
+    this.active = false
+
+    // Emit error event
+    this.dispatchEvent(new CustomEvent('error', { detail: err }))
+
+    // Clean up
+    this.detach(true)
+  }
+
+  private handleClose(): void {
+    this.log(`handleClose: socket closed`)
+    this.active = false
+    this.dispatchEvent(new CustomEvent('close'))
+    this.detach(false)
+  }
+
+  private inspectData(
+    direction: 'incoming' | 'outgoing',
+    data: Buffer | Uint8Array,
+  ): void {
+    if (!this.inspect) return
+    console.log('-'.repeat(75))
+    if (direction === 'incoming') {
+      console.log('-> incoming', data.length, 'bytes')
+    } else {
+      console.log('<- outgoing', data.length, 'bytes')
+    }
+
+    for (let offset = 0; offset < data.length; offset += 16) {
+      const chunkSize = Math.min(16, data.length - offset)
+
+      let hexPart = ''
+      for (let i = 0; i < 16; i++) {
+        if (i < chunkSize) {
+          const byte = data[offset + i]
+          hexPart += byte.toString(16).padStart(2, '0') + ' '
+        } else {
+          hexPart += '   '
+        }
+      }
+
+      let asciiPart = ''
+      for (let i = 0; i < chunkSize; i++) {
+        const byte = data[offset + i]
+        asciiPart += byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.'
+      }
+
+      console.log(
+        `${offset.toString(16).padStart(8, '0')}  ${hexPart} ${asciiPart}`,
       )
     }
-    const onError = (error: Error) => {
-      cleanup()
-      rejectDrain(error)
-    }
-    socket.once('drain', onDrain)
-    socket.once('close', onClose)
-    socket.once('error', onError)
-  })
+  }
 }
 
-function resolveListenAddress(
-  listen: PGliteSocketListenOptions,
-): PGliteSocketAddress {
-  if ('path' in listen && listen.path !== undefined) {
-    return { transport: 'unix', path: resolve(listen.path) }
+/**
+ * Options for creating a PGLiteSocketServer
+ */
+export interface PGLiteSocketServerOptions {
+  /** The PGlite database instance */
+  db: PGlite
+  /** The port to listen on (default: 5432) */
+  port?: number
+  /** The host to bind to (default: 127.0.0.1) */
+  host?: string
+  /** Unix socket path to bind to (default: undefined) */
+  path?: string
+  /** Print the incoming and outgoing data to the console in hex and ascii */
+  inspect?: boolean
+  /** Enable debug logging of method calls */
+  debug?: boolean
+  /** Idle timeout in ms (0 to disable, default: 0) */
+  idleTimeout?: number
+  /** Maximum concurrent connections (default: 1) */
+  maxConnections?: number
+}
+
+/**
+ * PGLite Socket Server with support for multiple concurrent connections
+ * Connections remain open and queries are queued at the query level
+ */
+export class PGLiteSocketServer extends EventTarget {
+  readonly db: PGlite
+  private server: Server | null = null
+  private port?: number
+  private host?: string
+  private path?: string
+  private active = false
+  private inspect: boolean
+  private debug: boolean
+  private idleTimeout: number
+  private maxConnections: number
+  private handlers: Set<PGLiteSocketHandler> = new Set()
+  private queryQueue: QueryQueueManager
+
+  constructor(options: PGLiteSocketServerOptions) {
+    super()
+    this.db = options.db
+    if (options.path) {
+      this.path = options.path
+    } else {
+      if (typeof options.port === 'number') {
+        // Keep port undefined on port 0, will be set by the OS when we start the server.
+        this.port = options.port ?? options.port
+      } else {
+        this.port = 5432
+      }
+      this.host = options.host || '127.0.0.1'
+    }
+    this.inspect = options.inspect ?? false
+    this.debug = options.debug ?? false
+    this.idleTimeout = options.idleTimeout ?? 0
+    this.maxConnections = options.maxConnections ?? 1
+
+    // Create the shared query queue
+    this.queryQueue = new QueryQueueManager(this.db, this.debug)
+
+    this.log(`constructor: created server on ${this.getServerConn()}`)
+    this.log(`constructor: max connections: ${this.maxConnections}`)
+    if (this.idleTimeout > 0) {
+      this.log(`constructor: idle timeout: ${this.idleTimeout}ms`)
+    }
   }
-  if ('directory' in listen && listen.directory !== undefined) {
-    const port = validatedPort(listen.port ?? DEFAULT_PORT, false)
-    const directory = resolve(listen.directory)
-    const path = join(directory, `.s.PGSQL.${port}`)
+
+  private log(message: string, ...args: any[]): void {
+    if (this.debug) {
+      console.log(`[PGLiteSocketServer] ${message}`, ...args)
+    }
+  }
+
+  public async start(): Promise<void> {
+    this.log(`start: starting server on ${this.getServerConn()}`)
+
+    if (this.server) {
+      throw new Error('Socket server already started')
+    }
+
+    // Ensure PGlite is ready before accepting connections
+    await this.db.waitReady
+
+    this.active = true
+    this.server = createServer((socket) => {
+      setImmediate(() => this.handleConnection(socket))
+    })
+
+    this.server.maxConnections = this.maxConnections
+
+    return new Promise<void>((resolve, reject) => {
+      if (!this.server) return reject(new Error('Server not initialized'))
+
+      let listening = false
+
+      this.server.on('error', (err) => {
+        this.log(`start: server error:`, err)
+        this.dispatchEvent(new CustomEvent('error', { detail: err }))
+        if (!listening) {
+          reject(err)
+        }
+      })
+
+      if (this.path) {
+        this.server.listen(this.path, () => {
+          listening = true
+          this.log(`start: server listening on ${this.getServerConn()}`)
+          this.dispatchEvent(
+            new CustomEvent('listening', {
+              detail: { path: this.path },
+            }),
+          )
+          resolve()
+        })
+      } else {
+        const server = this.server
+        server.listen(this.port, this.host, () => {
+          listening = true
+          const address = server.address()
+          // We are not using pipes, so return type should be AddressInfo
+          if (address === null || typeof address !== 'object') {
+            throw Error('Expected address info')
+          }
+          // Assign the new port number
+          this.port = address.port
+          this.log(`start: server listening on ${this.getServerConn()}`)
+          this.dispatchEvent(
+            new CustomEvent('listening', {
+              detail: { port: this.port, host: this.host },
+            }),
+          )
+          resolve()
+        })
+      }
+    })
+  }
+
+  public getServerConn(): string {
+    if (this.path) return this.path
+    return `${this.host}:${this.port}`
+  }
+
+  public async stop(): Promise<void> {
+    this.log(`stop: stopping server`)
+
+    this.active = false
+
+    // Detach all handlers
+    this.log(`stop: detaching ${this.handlers.size} handlers`)
+    for (const handler of this.handlers) {
+      handler.detach(true)
+    }
+    this.handlers.clear()
+
+    if (!this.server) {
+      this.log(`stop: server not running, nothing to do`)
+      return Promise.resolve()
+    }
+
+    return new Promise<void>((resolve) => {
+      if (!this.server) return resolve()
+
+      this.server.close(() => {
+        this.log(`stop: server closed`)
+        this.server = null
+        this.dispatchEvent(new CustomEvent('close'))
+        resolve()
+      })
+    })
+  }
+
+  private async handleConnection(socket: Socket): Promise<void> {
+    const clientInfo = {
+      clientAddress: socket.remoteAddress || 'unknown',
+      clientPort: socket.remotePort || 0,
+    }
+
+    this.log(
+      `handleConnection: new connection from ${clientInfo.clientAddress}:${clientInfo.clientPort}`,
+    )
+    this.log(
+      `handleConnection: active connections: ${this.handlers.size}, queued queries: ${this.queryQueue.getQueueLength()}`,
+    )
+
+    if (!this.active) {
+      this.log(`handleConnection: server not active, closing connection`)
+      try {
+        socket.end()
+      } catch (err) {
+        this.log(`handleConnection: error closing socket:`, err)
+      }
+      return
+    }
+
+    // Check connection limit
+    if (this.handlers.size >= this.maxConnections) {
+      this.log(`handleConnection: max connections reached, rejecting`)
+      socket.write(Buffer.from('Too many connections\n'))
+      socket.end()
+      return
+    }
+
+    // Create a new handler for this connection
+    const handler = new PGLiteSocketHandler({
+      queryQueue: this.queryQueue,
+      closeOnDetach: true,
+      inspect: this.inspect,
+      debug: this.debug,
+      idleTimeout: this.idleTimeout,
+    })
+
+    // Track this handler
+    this.handlers.add(handler)
+
+    // Handle errors
+    handler.addEventListener('error', (event) => {
+      const error = (event as CustomEvent<Error>).detail
+
+      if (error?.message?.includes('ECONNRESET')) {
+        this.log(
+          `handler #${handler.handlerId}: client disconnected (ECONNRESET)`,
+        )
+      } else if (error?.message?.includes('Idle timeout')) {
+        this.log(`handler #${handler.handlerId}: idle timeout`)
+      } else {
+        this.log(`handler #${handler.handlerId}: error:`, error)
+      }
+    })
+
+    // Handle close event
+    handler.addEventListener('close', () => {
+      this.log(`handler #${handler.handlerId}: closed`)
+      this.handlers.delete(handler)
+      this.log(`handleConnection: active connections: ${this.handlers.size}`)
+    })
+
+    try {
+      await handler.attach(socket)
+      this.dispatchEvent(new CustomEvent('connection', { detail: clientInfo }))
+    } catch (err) {
+      this.log(`handleConnection: error attaching socket:`, err)
+      this.handlers.delete(handler)
+      this.dispatchEvent(new CustomEvent('error', { detail: err }))
+      try {
+        socket.end()
+      } catch (closeErr) {
+        this.log(`handleConnection: error closing socket:`, closeErr)
+      }
+    }
+  }
+
+  public getStats() {
     return {
-      transport: 'unix',
-      directory,
-      port,
-      path,
-      lockPath: `${path}.lock`,
+      activeConnections: this.handlers.size,
+      queuedQueries: this.queryQueue.getQueueLength(),
+      maxConnections: this.maxConnections,
     }
   }
-  return {
-    transport: 'tcp',
-    host: listen.host ?? DEFAULT_HOST,
-    port: validatedPort(listen.port ?? DEFAULT_PORT, true),
-  }
-}
-
-function validatedPort(value: number, allowZero: boolean): number {
-  if (
-    !Number.isInteger(value) ||
-    value < (allowZero ? 0 : 1) ||
-    value > 65_535
-  ) {
-    throw new RangeError(`invalid PostgreSQL socket port: ${value}`)
-  }
-  return value
-}
-
-function formatAddress(address: PGliteSocketAddress): string {
-  return address.transport === 'unix'
-    ? address.path
-    : `${address.host}:${address.port}`
-}
-
-function writeSocketLock(
-  address: Extract<PGliteSocketAddress, { transport: 'unix' }>,
-): void {
-  if (!address.lockPath || !address.directory || !address.port) return
-  const contents = [
-    process.pid,
-    address.directory,
-    Math.floor(Date.now() / 1_000),
-    address.port,
-    address.directory,
-    '',
-    'ready',
-  ].join('\n')
-  writeFileSync(address.lockPath, `${contents}\n`, { flag: 'wx' })
-}
-
-function removeSocketMetadata(address: PGliteSocketAddress): void {
-  if (address.transport !== 'unix') return
-  if (address.lockPath && existsSync(address.lockPath)) {
-    rmSync(address.lockPath, { force: true })
-  }
-  // Node normally removes its Unix socket on server close. Remove a leftover
-  // only after our own listener has closed or failed startup.
-  if (existsSync(address.path)) rmSync(address.path, { force: true })
-}
-
-function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value))
 }

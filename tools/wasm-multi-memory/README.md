@@ -152,7 +152,7 @@ separate extension artifacts from the same source.
 - `tests/postgres/`: the upstream regression provider and result classifier;
 - `packages/pglite/integration-tests/postmaster/`: PGlite API and runtime
   integration scenarios;
-- `packages/pglite-socket/integration-tests/`: native socket-client scenarios;
+- `packages/pglite-server/integration-tests/`: native socket-client scenarios;
 - `postgres-pglite/pglite/tests/postmaster/`: PostgreSQL-build-only fixture
   generation.
 

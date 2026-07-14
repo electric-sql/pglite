@@ -24,8 +24,8 @@ async function main() {
     pathToFileURL(join(repoRoot, 'packages/pglite/dist/postmaster/index.js'))
       .href
   )
-  const { PGliteSocketServer } = await import(
-    pathToFileURL(join(repoRoot, 'packages/pglite-socket/dist/index.js')).href
+  const { PGliteServer } = await import(
+    pathToFileURL(join(repoRoot, 'packages/pglite-server/dist/index.js')).href
   )
   const root = await mkdtemp(join(tmpdir(), 'pglite-socket-frontend-'))
   const dataDirectory = join(root, 'data')
@@ -33,6 +33,7 @@ async function main() {
   let postmaster
   let tcp
   let unix
+  let owned
 
   try {
     postmaster = await withTimeout(
@@ -45,16 +46,18 @@ async function main() {
       60_000,
       'postmaster startup',
     )
-    tcp = new PGliteSocketServer({
+    tcp = await PGliteServer.create({
       postmaster,
       listen: { host: '127.0.0.1', port: 0 },
     })
-    unix = new PGliteSocketServer({
+    unix = await PGliteServer.create({
       postmaster,
       listen: { directory: socketDirectory, port: 55432 },
     })
-    const tcpAddress = await tcp.start()
-    const unixAddress = await unix.start()
+    const tcpAddress = tcp.address
+    const unixAddress = unix.address
+    assert.ok(tcpAddress)
+    assert.ok(unixAddress)
     assert.equal(tcpAddress.transport, 'tcp')
     assert.equal(unixAddress.transport, 'unix')
     const releasedBeforeClients =
@@ -139,8 +142,8 @@ async function main() {
       ],
     )
 
-    await tcp.stop()
-    await unix.stop()
+    await tcp.close()
+    await unix.close()
     await waitFor(
       () =>
         postmaster.diagnostics().privateMemoriesReleased >=
@@ -157,10 +160,44 @@ async function main() {
     assert.equal(shutdown.liveProcesses, 0)
     assert.equal(shutdown.livePrivateMemories, 0)
 
+    owned = await PGliteServer.create({
+      postmaster: {
+        dataDir: `file://${join(root, 'owned-data')}`,
+        maxConnections: 4,
+        sharedBuffers: '16MB',
+        artifact: { wasm, glue, data },
+      },
+      listen: { host: '127.0.0.1', port: 0 },
+    })
+    const ownedAddress = owned.address
+    if (ownedAddress?.transport !== 'tcp') {
+      throw new Error('owned server did not create a TCP listener')
+    }
+    const ownedReadiness = await runUntilSuccess(
+      pgIsReady,
+      [],
+      {
+        ...commonEnvironment,
+        PGHOST: ownedAddress.host,
+        PGPORT: String(ownedAddress.port),
+      },
+      30_000,
+    )
+    assert.equal(
+      ownedReadiness.code,
+      0,
+      `${ownedReadiness.stdout}\n${ownedReadiness.stderr}`,
+    )
+    const ownedPostmaster = owned.postmaster
+    await owned.close({ mode: 'fast' })
+    assert.equal(ownedPostmaster.diagnostics().liveProcesses, 0)
+    owned = undefined
+
     console.log('Native TCP/Unix socket frontend test: PASS')
   } finally {
-    await tcp?.stop().catch(() => undefined)
-    await unix?.stop().catch(() => undefined)
+    await owned?.close({ mode: 'immediate' }).catch(() => undefined)
+    await tcp?.close().catch(() => undefined)
+    await unix?.close().catch(() => undefined)
     await postmaster?.close().catch(() => undefined)
     await rm(root, { recursive: true, force: true })
   }

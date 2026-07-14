@@ -1588,6 +1588,24 @@ connections on explicit TCP and Unix listeners, preserves postmaster ownership
 semantics, and shuts down without CLI code. The classic socket package remains
 compatible with its published line.
 
+Phase 2 implementation record, 2026-07-14:
+
+- `@electric-sql/pglite-server` now owns the byte-transparent Node TCP and Unix
+  listener bridge and exposes `PGliteServer.create()` with caller-owned and
+  server-owned postmaster forms. Unexpected postmaster exit closes listeners;
+  listener startup failure closes only a postmaster created by the server.
+- Native `psql`, `pg_isready`, and `pgbench` clients pass through the extracted
+  frontend over TCP and PostgreSQL-named Unix sockets. The server-owned form is
+  also exercised against the real postmaster artifact and its requested
+  shutdown mode.
+- `packages/pglite-socket` is restored from the published `0.2.7` source at
+  `25d0a55e1`, apart from formatting cleanup and a README migration notice. Its
+  61 classic tests, TypeScript build, package build, and export checks pass.
+- The new server's ten unit/lifecycle tests, TypeScript, lint, build, export
+  checks, native integration gate, libpq/COPY/backpressure gate, and a targeted
+  upstream regression schedule pass. Fresh npm and pnpm installs of packed core
+  and server tarballs resolve both declared ESM and CommonJS entries.
+
 ### Phase 3: complete production Node hosting semantics
 
 - Add optional VFS capability metadata and worker-aware factory or broker

@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_ROOT=${1:?main PGlite repository root is required}
 MM_ROOT="${REPO_ROOT}/tools/wasm-multi-memory"
 PGLITE_INTEGRATION="${REPO_ROOT}/packages/pglite/integration-tests/postmaster"
-SOCKET_INTEGRATION="${REPO_ROOT}/packages/pglite-socket/integration-tests"
+SERVER_INTEGRATION="${REPO_ROOT}/packages/pglite-server/integration-tests"
 OUT=/postmaster-test
 POSTMASTER_BUILD=/postmaster-build
 SOURCE_OUT="${OUT}/source-build"
@@ -102,14 +102,14 @@ cc -O2 -Wall -Wextra -Werror \
   -I"${NATIVE}/build/src/include" \
   -I"${NATIVE}/source/src/include" \
   -I"${NATIVE}/source/src/interfaces/libpq" \
-  "${SOCKET_INTEGRATION}/fixtures/native-client-test.c" \
+  "${SERVER_INTEGRATION}/fixtures/native-client-test.c" \
   -L"${NATIVE}/build/src/interfaces/libpq" \
   -Wl,-rpath,"${NATIVE}/build/src/interfaces/libpq" \
   -lpq -pthread \
   -o "${OUT}/native-client-test"
 pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postmaster-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-socket" build \
-  >/tmp/pglite-socket-postmaster-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-server" build \
+  >/tmp/pglite-server-postmaster-test-build.log
 
 PGLITE_POSTMASTER_INTEGRATION_CONFIG=$(node22 - \
   "${REPO_ROOT}" "${ARTIFACT_OUT}/postmaster.wasm" \
@@ -131,7 +131,7 @@ export PGLITE_POSTMASTER_INTEGRATION_CONFIG
 pnpm -C "${REPO_ROOT}/packages/pglite" exec vitest run \
   integration-tests/postmaster/postmaster.integration.test.ts \
   --config integration-tests/postmaster/vitest.config.ts
-pnpm -C "${REPO_ROOT}/packages/pglite-socket" exec vitest run \
+pnpm -C "${REPO_ROOT}/packages/pglite-server" exec vitest run \
   integration-tests/socket.integration.test.ts \
   --config integration-tests/vitest.config.ts
 
