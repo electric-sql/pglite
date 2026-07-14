@@ -487,6 +487,10 @@ describe('Phase 4 process portability primitives', () => {
     expect(fake.invoke(fake.futexHost[0], 0x8000000c, 8, 0)).toBe(-1)
     expect(new Int32Array(privateMemory.buffer)[1]).toBe(6)
 
+    const realtimeMicroseconds = fake.invoke(fake.clockHost[0])
+    expect(realtimeMicroseconds).toBeGreaterThan(Date.now() * 1000 - 1_000_000)
+    expect(realtimeMicroseconds).toBeLessThan(Date.now() * 1000 + 1_000_000)
+
     expect(fake.invoke(fake.shmemHost[0], 2 * 65_536)).toBe(0)
     expect(globalMemory.buffer.byteLength).toBe(2 * 65_536)
     expect(fake.invoke(fake.shmemHost[0], 0x40000001)).toBe(-1)
@@ -508,6 +512,7 @@ describe('Phase 4 process portability primitives', () => {
       module: postmasterModule.module,
       registry,
       process: postmaster,
+      postmaster,
       privateMemory: postmasterMemory,
       connectionBuffers: broker.buffers,
     })
@@ -519,17 +524,17 @@ describe('Phase 4 process portability primitives', () => {
       0,
     )
     expect(
-      postmasterModule.invoke(postmasterModule.socketHost[1], listener, 0, 0),
+      postmasterModule.invoke(postmasterModule.socketHost[2], listener, 0, 0),
     ).toBe(0)
     expect(
-      postmasterModule.invoke(postmasterModule.socketHost[2], listener, 16),
+      postmasterModule.invoke(postmasterModule.socketHost[3], listener, 16),
     ).toBe(0)
 
     const pending = broker.connect()
     const acceptView = new DataView(postmasterMemory.buffer)
     acceptView.setUint32(768, 128, true)
     const descriptor = postmasterModule.invoke(
-      postmasterModule.socketHost[3],
+      postmasterModule.socketHost[4],
       listener,
       800,
       768,
@@ -557,6 +562,7 @@ describe('Phase 4 process portability primitives', () => {
       module: backendModule.module,
       registry,
       process: backend,
+      postmaster,
       privateMemory: backendMemory,
       connectionBuffers: broker.buffers,
       inheritedConnectionId: pending.handle.id,
@@ -567,12 +573,12 @@ describe('Phase 4 process portability primitives', () => {
     const poll = new DataView(backendMemory.buffer)
     poll.setInt32(512, descriptor, true)
     poll.setInt16(516, 1, true)
-    expect(backendModule.invoke(backendModule.socketHost[7], 512, 1, 100)).toBe(
+    expect(backendModule.invoke(backendModule.socketHost[8], 512, 1, 100)).toBe(
       1,
     )
     expect(poll.getInt16(518, true) & 1).toBe(1)
     expect(
-      backendModule.invoke(backendModule.socketHost[5], descriptor, 600, 16, 0),
+      backendModule.invoke(backendModule.socketHost[6], descriptor, 600, 16, 0),
     ).toBe(4)
     expect([...new Uint8Array(backendMemory.buffer, 600, 4)]).toEqual([
       1, 2, 3, 4,
@@ -580,14 +586,143 @@ describe('Phase 4 process portability primitives', () => {
 
     new Uint8Array(backendMemory.buffer, 700, 3).set([7, 8, 9])
     expect(
-      backendModule.invoke(backendModule.socketHost[6], descriptor, 700, 3, 0),
+      backendModule.invoke(backendModule.socketHost[7], descriptor, 700, 3, 0),
     ).toBe(3)
     expect([...(await pending.transport.outbound.read(3))!]).toEqual([7, 8, 9])
-    expect(backendModule.invoke(backendModule.socketHost[4], descriptor)).toBe(
+    expect(backendModule.invoke(backendModule.socketHost[5], descriptor)).toBe(
       0,
     )
     await pending.transport.waitForClose()
     expect(broker.release(pending.handle.id)).toBe(true)
+
+    // A libpq client running inside a backend uses the same bounded rings to
+    // connect back through the postmaster. This is the path used by dblink
+    // and postgres_fdw; the client and server views reverse ring direction.
+    const clientDescriptor = backendModule.invoke(
+      backendModule.socketHost[0],
+      1,
+      1,
+      0,
+    )
+    const clientAddress = new DataView(backendMemory.buffer)
+    clientAddress.setUint16(900, 1, true)
+    expect(
+      backendModule.invoke(
+        backendModule.socketHost[1],
+        clientDescriptor,
+        900,
+        110,
+      ),
+    ).toBe(0)
+
+    acceptView.setUint32(768, 128, true)
+    const nestedAcceptedDescriptor = postmasterModule.invoke(
+      postmasterModule.socketHost[4],
+      listener,
+      800,
+      768,
+    )
+    const nestedConnectionId = postmasterSockets.connectionIdForDescriptor(
+      nestedAcceptedDescriptor,
+    )
+    const nestedHandle = registry.findConnection(nestedConnectionId)
+    if (!nestedHandle) throw new Error('missing nested virtual connection')
+    expect(registry.connectionInitiator(nestedHandle)).toBe(backend.pid)
+
+    const nestedBackend = registry.reserve(PostgresProcessKind.Backend, {
+      parentPid: postmaster.pid,
+      connectionId: nestedConnectionId,
+    })
+    const nestedMemory = sharedMemory()
+    const nestedModule = fakeModule(nestedMemory)
+    const nestedSockets = new VirtualSocketHost({
+      module: nestedModule.module,
+      registry,
+      process: nestedBackend,
+      postmaster,
+      privateMemory: nestedMemory,
+      connectionBuffers: broker.buffers,
+      inheritedConnectionId: nestedConnectionId,
+    })
+    nestedSockets.install()
+
+    new Uint8Array(backendMemory.buffer, 920, 3).set([11, 12, 13])
+    expect(
+      backendModule.invoke(
+        backendModule.socketHost[7],
+        clientDescriptor,
+        920,
+        3,
+        0,
+      ),
+    ).toBe(3)
+    expect(
+      nestedModule.invoke(
+        nestedModule.socketHost[6],
+        nestedAcceptedDescriptor,
+        940,
+        3,
+        0,
+      ),
+    ).toBe(3)
+    expect([...new Uint8Array(nestedMemory.buffer, 940, 3)]).toEqual([
+      11, 12, 13,
+    ])
+
+    new Uint8Array(nestedMemory.buffer, 960, 2).set([21, 22])
+    const clientWakeSequence = registry.snapshot(backend).wakeSequence
+    expect(
+      nestedModule.invoke(
+        nestedModule.socketHost[7],
+        nestedAcceptedDescriptor,
+        960,
+        2,
+        0,
+      ),
+    ).toBe(2)
+    expect(registry.snapshot(backend).wakeSequence).toBeGreaterThan(
+      clientWakeSequence,
+    )
+    expect(
+      backendModule.invoke(
+        backendModule.socketHost[6],
+        clientDescriptor,
+        980,
+        2,
+        0,
+      ),
+    ).toBe(2)
+    expect([...new Uint8Array(backendMemory.buffer, 980, 2)]).toEqual([21, 22])
+
+    expect(
+      nestedModule.invoke(nestedModule.socketHost[5], nestedAcceptedDescriptor),
+    ).toBe(0)
+    nestedSockets.dispose()
+    expect(registry.findConnection(nestedConnectionId)).toBeUndefined()
+
+    // A terminated nested backend is a normal broken socket.  The cached
+    // libpq client must observe EPIPE so postgres_fdw can reconnect; a host
+    // exception here would crash the outer backend and trigger recovery.
+    new Uint8Array(backendMemory.buffer, 920, 1).set([31])
+    expect(
+      backendModule.invoke(
+        backendModule.socketHost[7],
+        clientDescriptor,
+        920,
+        1,
+        0,
+      ),
+    ).toBe(-1)
+    expect(new Int32Array(backendMemory.buffer)[1]).toBe(64)
+    expect(
+      backendModule.invoke(backendModule.socketHost[5], clientDescriptor),
+    ).toBe(0)
+    expect(
+      postmasterModule.invoke(
+        postmasterModule.socketHost[5],
+        nestedAcceptedDescriptor,
+      ),
+    ).toBe(0)
 
     const unixPending = broker.connect({
       transport: VirtualConnectionTransport.Unix,
@@ -596,7 +731,7 @@ describe('Phase 4 process portability primitives', () => {
     })
     acceptView.setUint32(768, 128, true)
     const unixDescriptor = postmasterModule.invoke(
-      postmasterModule.socketHost[3],
+      postmasterModule.socketHost[4],
       listener,
       800,
       768,
@@ -609,7 +744,7 @@ describe('Phase 4 process portability primitives', () => {
       groupId: 123,
     })
     expect(
-      postmasterModule.invoke(postmasterModule.socketHost[4], unixDescriptor),
+      postmasterModule.invoke(postmasterModule.socketHost[5], unixDescriptor),
     ).toBe(0)
     expect(broker.abort(unixPending.handle.id)).toBe(true)
     await unixPending.transport.waitForClose()
@@ -734,13 +869,14 @@ function signalMask(signal: number): number {
   return 1 << (signal - 1)
 }
 
-type NumericCallback = (...arguments_: number[]) => number | void
+type NumericCallback = (...arguments_: number[]) => bigint | number | void
 
 interface FakeModule {
   readonly module: PostgresMod
   readonly processHost: number[]
   readonly signalHost: number[]
   readonly futexHost: number[]
+  readonly clockHost: number[]
   readonly shmemHost: number[]
   readonly socketHost: number[]
   invoke(index: number, ...arguments_: number[]): number
@@ -752,6 +888,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
   const processHost: number[] = []
   const signalHost: number[] = []
   const futexHost: number[] = []
+  const clockHost: number[] = []
   const shmemHost: number[] = []
   const socketHost: number[] = []
   const bytes = () => new Uint8Array(memory.buffer)
@@ -782,6 +919,9 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     _pgl_set_futex_host(...indices: number[]) {
       futexHost.push(...indices)
     },
+    _pgl_set_clock_host(...indices: number[]) {
+      clockHost.push(...indices)
+    },
     _pgl_set_shmem_host(...indices: number[]) {
       shmemHost.push(...indices)
     },
@@ -794,6 +934,7 @@ function fakeModule(memory: WebAssembly.Memory): FakeModule {
     processHost,
     signalHost,
     futexHost,
+    clockHost,
     shmemHost,
     socketHost,
     invoke(index, ...arguments_) {

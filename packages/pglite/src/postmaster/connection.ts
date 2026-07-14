@@ -30,6 +30,18 @@ export class RingAbortedError extends Error {
   }
 }
 
+export class RingClosedError extends Error {
+  constructor() {
+    super('cannot write to a closed PGlite connection ring')
+  }
+}
+
+export class StaleConnectionTransportError extends Error {
+  constructor() {
+    super('stale PGlite connection transport')
+  }
+}
+
 export class SharedByteRing {
   private readonly words: Int32Array
   private readonly bytes: Uint8Array
@@ -49,7 +61,7 @@ export class SharedByteRing {
   tryWrite(input: Uint8Array): number {
     this.checkError()
     if (Atomics.load(this.words, this.field(RingField.Closed)) !== 0) {
-      throw new Error('cannot write to a closed PGlite connection ring')
+      throw new RingClosedError()
     }
     const read = this.cursor(RingField.ReadCursor)
     const write = this.cursor(RingField.WriteCursor)
@@ -342,7 +354,7 @@ export class ConnectionTransport {
       Atomics.load(this.words, ConnectionField.Generation) !==
       this.expectedGeneration
     ) {
-      throw new Error('stale PGlite connection transport')
+      throw new StaleConnectionTransportError()
     }
   }
 

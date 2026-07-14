@@ -1,4 +1,9 @@
-import { ConnectionTransport } from './connection.js'
+import {
+  ConnectionTransport,
+  RingAbortedError,
+  RingClosedError,
+  StaleConnectionTransportError,
+} from './connection.js'
 import {
   type ProcessControlRegistry,
   type ProcessHandle,
@@ -7,7 +12,7 @@ import {
 } from './control.js'
 import type { PostgresMod } from '../postgresMod.js'
 
-const LISTENER_DESCRIPTOR = 0x3d000000
+const SOCKET_DESCRIPTOR_BASE = 0x3c000000
 const CONNECTION_DESCRIPTOR_BASE = 0x3e000000
 const POLLIN = 0x0001
 const POLLOUT = 0x0004
@@ -19,35 +24,48 @@ const POLLFD_BYTES = 8
 const PGL_SOCKET_NOT_HANDLED = -2
 const AF_INET = 2
 const AF_UNIX = 1
+const AF_INET6 = 10
 const SOCKADDR_IN_BYTES = 16
 const SOCKADDR_UN_BYTES = 110
 
 const ERRNO = {
   EAGAIN: 6,
+  ECONNREFUSED: 14,
+  ECONNRESET: 15,
   EINTR: 27,
   EINVAL: 28,
+  EPIPE: 64,
 } as const
 
 interface OpenVirtualConnection {
   readonly handle: VirtualConnectionHandle
   readonly transport: ConnectionTransport
+  readonly role: 'client' | 'server'
 }
 
 export interface VirtualSocketHostOptions {
   readonly module: PostgresMod
   readonly registry: ProcessControlRegistry
   readonly process: ProcessHandle
+  readonly postmaster: ProcessHandle
   readonly privateMemory: WebAssembly.Memory
   readonly connectionBuffers: readonly SharedArrayBuffer[]
   readonly inheritedConnectionId?: number
+  readonly debug?: boolean
 }
 
 /** Implements PostgreSQL's socket and poll surface over bounded SAB rings. */
 export class VirtualSocketHost {
   private readonly callbacks: number[] = []
   private readonly connections = new Map<number, OpenVirtualConnection>()
+  private readonly pendingSockets = new Set<number>()
+  private readonly listeners = new Set<number>()
+  private readonly nestedServerConnections = new Map<
+    number,
+    VirtualConnectionHandle
+  >()
+  private nextSocketDescriptor = SOCKET_DESCRIPTOR_BASE
   private installed = false
-  private listenerOpen = false
 
   constructor(private readonly options: VirtualSocketHostOptions) {}
 
@@ -55,6 +73,11 @@ export class VirtualSocketHost {
     if (this.installed)
       throw new Error('PGlite socket host is already installed')
     const createSocket = this.addFunction(() => this.createSocket(), 'iiii')
+    const connectSocket = this.addFunction(
+      (descriptor: number, addressPointer: number, addressLength: number) =>
+        this.connectSocket(descriptor, addressPointer, addressLength),
+      'iipi',
+    )
     const bindSocket = this.addFunction(
       (descriptor: number) => this.bindSocket(descriptor),
       'iipi',
@@ -92,6 +115,7 @@ export class VirtualSocketHost {
     )
     this.options.module._pgl_set_socket_host(
       createSocket,
+      connectSocket,
       bindSocket,
       listenSocket,
       acceptSocket,
@@ -121,28 +145,116 @@ export class VirtualSocketHost {
       this.options.module.removeFunction(callback)
     this.callbacks.length = 0
     for (const connection of this.connections.values()) {
-      if (
-        this.options.registry.connectionOwner(connection.handle) ===
-        this.options.process.pid
-      ) {
-        connection.transport.outbound.close()
+      this.closeConnection(connection)
+    }
+    for (const handle of this.nestedServerConnections.values()) {
+      try {
+        this.options.registry.releaseConnection(handle)
+      } catch {
+        // A failed child startup or postmaster crash may already have
+        // invalidated the generation. Cleanup is generation-safe.
       }
     }
     this.connections.clear()
+    this.nestedServerConnections.clear()
+    this.pendingSockets.clear()
+    this.listeners.clear()
     this.installed = false
   }
 
   private createSocket(): number {
-    if (this.listenerOpen) {
+    const descriptor = this.nextSocketDescriptor++
+    if (descriptor >= CONNECTION_DESCRIPTOR_BASE) {
+      this.setErrno(ERRNO.EAGAIN)
+      return -1
+    }
+    this.pendingSockets.add(descriptor)
+    return descriptor
+  }
+
+  private connectSocket(
+    descriptor: number,
+    addressPointer: number,
+    addressLength: number,
+  ): number {
+    if (
+      !this.pendingSockets.has(descriptor) ||
+      !this.privateRange(addressPointer, addressLength) ||
+      addressLength < 2
+    ) {
       this.setErrno(ERRNO.EINVAL)
       return -1
     }
-    this.listenerOpen = true
-    return LISTENER_DESCRIPTOR
+    const family = new DataView(this.options.privateMemory.buffer).getUint16(
+      addressPointer,
+      true,
+    )
+    if (this.options.debug) {
+      console.error(
+        `[postgres:${this.options.process.pid}] virtual connect ` +
+          `fd=${descriptor} family=${family} length=${addressLength}`,
+      )
+    }
+    const transport =
+      family === AF_UNIX
+        ? VirtualConnectionTransport.Unix
+        : family === AF_INET || family === AF_INET6
+          ? VirtualConnectionTransport.Tcp
+          : undefined
+    if (transport === undefined) {
+      if (this.options.debug) {
+        console.error(
+          `[postgres:${this.options.process.pid}] unsupported virtual ` +
+            `socket family ${family}`,
+        )
+      }
+      this.setErrno(ERRNO.ECONNREFUSED)
+      return -1
+    }
+
+    let handle: VirtualConnectionHandle | undefined
+    try {
+      handle = this.options.registry.reserveConnection(
+        {
+          transport,
+          userId: 123,
+          groupId: 123,
+        },
+        this.options.process,
+      )
+      const connection = ConnectionTransport.attach(
+        this.options.connectionBuffers[handle.slot],
+        () => this.options.registry.notifyConnectionOwner(handle!),
+      )
+      connection.reset(handle.generation)
+      this.options.registry.publishConnection(handle, this.options.postmaster)
+      this.pendingSockets.delete(descriptor)
+      this.connections.set(descriptor, {
+        handle,
+        transport: connection,
+        role: 'client',
+      })
+      return 0
+    } catch (error) {
+      if (handle) this.options.registry.cancelReservedConnection(handle)
+      if (this.options.debug) {
+        console.error(
+          `[postgres:${this.options.process.pid}] virtual connect failed`,
+          error,
+        )
+      }
+      this.setErrno(ERRNO.EAGAIN)
+      return -1
+    }
   }
 
   private bindSocket(descriptor: number): number {
-    return this.listener(descriptor) ? 0 : -1
+    if (!this.pendingSockets.has(descriptor)) {
+      this.setErrno(ERRNO.EINVAL)
+      return -1
+    }
+    this.listeners.add(descriptor)
+    return 0
   }
 
   private listenSocket(descriptor: number): number {
@@ -168,8 +280,13 @@ export class VirtualSocketHost {
       handle,
       transport: ConnectionTransport.attach(
         this.options.connectionBuffers[handle.slot],
+        () => this.options.registry.notifyConnectionInitiator(handle),
       ),
+      role: 'server',
     })
+    if (this.options.registry.connectionInitiator(handle) !== 0) {
+      this.nestedServerConnections.set(handle.id, handle)
+    }
     return connectionDescriptor
   }
 
@@ -221,19 +338,14 @@ export class VirtualSocketHost {
   }
 
   private closeSocket(descriptor: number): number {
-    if (descriptor === LISTENER_DESCRIPTOR && this.listenerOpen) {
-      this.listenerOpen = false
+    if (this.pendingSockets.delete(descriptor)) {
+      this.listeners.delete(descriptor)
       return 0
     }
     const connection = this.connections.get(descriptor)
     if (!connection) return PGL_SOCKET_NOT_HANDLED
     this.connections.delete(descriptor)
-    if (
-      this.options.registry.connectionOwner(connection.handle) ===
-      this.options.process.pid
-    ) {
-      connection.transport.outbound.close()
-    }
+    this.closeConnection(connection)
     return 0
   }
 
@@ -244,7 +356,12 @@ export class VirtualSocketHost {
   ): number {
     const connection = this.connection(descriptor)
     if (!connection || !this.privateRange(pointer, length)) return -1
-    const chunk = connection.transport.inbound.tryRead(length)
+    let chunk: Uint8Array | null
+    try {
+      chunk = this.readRing(connection).tryRead(length)
+    } catch (error) {
+      return this.connectionFailure(error)
+    }
     if (chunk === null) return 0
     if (chunk.length === 0) {
       this.setErrno(ERRNO.EAGAIN)
@@ -271,7 +388,12 @@ export class VirtualSocketHost {
       pointer,
       length,
     )
-    const written = connection.transport.outbound.tryWrite(bytes)
+    let written: number
+    try {
+      written = this.writeRing(connection).tryWrite(bytes)
+    } catch (error) {
+      return this.connectionFailure(error)
+    }
     if (written === 0 && length > 0) {
       this.setErrno(ERRNO.EAGAIN)
       return -1
@@ -312,29 +434,27 @@ export class VirtualSocketHost {
       const descriptor = view.getInt32(base, true)
       const events = view.getInt16(base + 4, true)
       let returned = 0
-      if (descriptor === LISTENER_DESCRIPTOR && this.listenerOpen) {
+      if (this.listeners.has(descriptor)) {
         if (this.options.registry.hasPendingConnection()) returned |= POLLIN
       } else {
         const connection = this.connections.get(descriptor)
         if (connection) {
+          const readRing = this.readRing(connection)
+          const writeRing = this.writeRing(connection)
           if (
             (events & POLLIN) !== 0 &&
-            (connection.transport.inbound.usedBytes > 0 ||
-              connection.transport.inbound.closed)
+            (readRing.usedBytes > 0 || readRing.closed)
           ) {
             returned |= POLLIN
           }
           if (
             (events & POLLOUT) !== 0 &&
-            connection.transport.outbound.freeBytes > 0 &&
-            !connection.transport.outbound.closed
+            writeRing.freeBytes > 0 &&
+            !writeRing.closed
           ) {
             returned |= POLLOUT
           }
-          if (
-            connection.transport.inbound.closed ||
-            connection.transport.outbound.closed
-          ) {
+          if (readRing.closed || writeRing.closed) {
             returned |= POLLHUP | POLLRDHUP
           }
         } else if (descriptor >= CONNECTION_DESCRIPTOR_BASE) {
@@ -360,14 +480,69 @@ export class VirtualSocketHost {
       handle,
       transport: ConnectionTransport.attach(
         this.options.connectionBuffers[handle.slot],
+        () => this.options.registry.notifyConnectionInitiator(handle),
       ),
+      role: 'server',
     })
+    if (this.options.registry.connectionInitiator(handle) !== 0) {
+      this.nestedServerConnections.set(handle.id, handle)
+    }
   }
 
   private listener(descriptor: number): boolean {
-    if (descriptor === LISTENER_DESCRIPTOR && this.listenerOpen) return true
+    if (this.listeners.has(descriptor)) return true
     this.setErrno(ERRNO.EINVAL)
     return false
+  }
+
+  private readRing(connection: OpenVirtualConnection) {
+    return connection.role === 'server'
+      ? connection.transport.inbound
+      : connection.transport.outbound
+  }
+
+  private writeRing(connection: OpenVirtualConnection) {
+    return connection.role === 'server'
+      ? connection.transport.outbound
+      : connection.transport.inbound
+  }
+
+  private closeConnection(connection: OpenVirtualConnection): void {
+    if (
+      connection.role === 'server' &&
+      this.options.registry.connectionOwner(connection.handle) !==
+        this.options.process.pid
+    ) {
+      // The postmaster closes its accepted descriptor after handing the
+      // connection to an EXEC_BACKEND child. Only the assigned backend owns
+      // the ring endpoints and may publish EOF to the client.
+      return
+    }
+    try {
+      const readRing = this.readRing(connection)
+      const writeRing = this.writeRing(connection)
+      if (!writeRing.closed) writeRing.close()
+      if (!readRing.closed) readRing.close()
+    } catch (error) {
+      // A reused generation belongs to another connection and must never be
+      // closed by this stale descriptor.
+      if (!(error instanceof StaleConnectionTransportError)) throw error
+    }
+  }
+
+  private connectionFailure(error: unknown): number {
+    if (error instanceof RingClosedError) {
+      this.setErrno(ERRNO.EPIPE)
+      return -1
+    }
+    if (
+      error instanceof RingAbortedError ||
+      error instanceof StaleConnectionTransportError
+    ) {
+      this.setErrno(ERRNO.ECONNRESET)
+      return -1
+    }
+    throw error
   }
 
   private connection(descriptor: number): OpenVirtualConnection | undefined {

@@ -1,11 +1,11 @@
 const CONTROL_MAGIC = 0x50474354
-const CONTROL_VERSION = 3
+const CONTROL_VERSION = 4
 const HEADER_WORDS = 8
 const PROCESS_WORDS = 20
 const CHILD_KIND_BYTES = 64
 const PARAMETER_FILE_BYTES = 1024
 const SPAWN_PAYLOAD_BYTES = CHILD_KIND_BYTES + PARAMETER_FILE_BYTES
-const CONNECTION_WORDS = 7
+const CONNECTION_WORDS = 8
 
 const enum HeaderField {
   Magic,
@@ -53,6 +53,7 @@ const enum ConnectionField {
   Transport,
   UserId,
   GroupId,
+  InitiatorPid,
 }
 
 export enum PostgresProcessKind {
@@ -510,7 +511,9 @@ export class ProcessControlRegistry {
       userId: 0,
       groupId: 0,
     },
+    initiator?: ProcessHandle,
   ): VirtualConnectionHandle {
+    if (initiator) this.assertCurrent(initiator)
     if (
       peer.transport !== VirtualConnectionTransport.Tcp &&
       peer.transport !== VirtualConnectionTransport.Unix
@@ -574,6 +577,11 @@ export class ProcessControlRegistry {
         this.connectionIndex(slot, ConnectionField.GroupId),
         peer.groupId,
       )
+      Atomics.store(
+        this.words,
+        this.connectionIndex(slot, ConnectionField.InitiatorPid),
+        initiator?.pid ?? 0,
+      )
       return { slot, id, generation }
     }
     throw new Error('PGlite virtual-listener queue is full')
@@ -592,6 +600,31 @@ export class ProcessControlRegistry {
     )
     this.wakeListener()
     this.wake(postmaster)
+  }
+
+  cancelReservedConnection(connection: VirtualConnectionHandle): void {
+    this.assertConnection(connection, ConnectionRequestState.Reserved)
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.ConnectionId),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.InitiatorPid),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.State),
+      ConnectionRequestState.Free,
+    )
+    this.wakeListener()
   }
 
   acceptConnection(): VirtualConnectionHandle | undefined {
@@ -694,6 +727,11 @@ export class ProcessControlRegistry {
     )
     Atomics.store(
       this.words,
+      this.connectionIndex(connection.slot, ConnectionField.InitiatorPid),
+      0,
+    )
+    Atomics.store(
+      this.words,
       this.connectionIndex(connection.slot, ConnectionField.State),
       ConnectionRequestState.Free,
     )
@@ -724,6 +762,19 @@ export class ProcessControlRegistry {
     const owner = this.lookup(ownerPid)
     if (!owner) return false
     this.wake(owner)
+    return true
+  }
+
+  notifyConnectionInitiator(connection: VirtualConnectionHandle): boolean {
+    if (!this.isConnectionCurrent(connection)) return false
+    const initiatorPid = Atomics.load(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.InitiatorPid),
+    )
+    if (initiatorPid === 0) return false
+    const initiator = this.lookup(initiatorPid)
+    if (!initiator) return false
+    this.wake(initiator)
     return true
   }
 
@@ -764,6 +815,14 @@ export class ProcessControlRegistry {
     return Atomics.load(
       this.words,
       this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
+    )
+  }
+
+  connectionInitiator(connection: VirtualConnectionHandle): number {
+    if (!this.isConnectionCurrent(connection)) return 0
+    return Atomics.load(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.InitiatorPid),
     )
   }
 

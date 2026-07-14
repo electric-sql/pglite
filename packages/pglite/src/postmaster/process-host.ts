@@ -98,6 +98,13 @@ export class PostmasterProcessHost {
     )
     module._pgl_set_futex_host(futexWait, futexWake)
 
+    const clockNow = this.addFunction(
+      () =>
+        BigInt(Math.floor((performance.timeOrigin + performance.now()) * 1000)),
+      'j',
+    )
+    module._pgl_set_clock_host(clockNow)
+
     const ensureSharedMemory = this.addFunction(
       (requiredBytes: number) => this.ensureSharedMemory(requiredBytes),
       'ii',

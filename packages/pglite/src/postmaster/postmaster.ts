@@ -429,6 +429,7 @@ export class PGlitePostmaster {
       controlBuffer: this.registry.buffer,
       connectionBuffers: this.broker.buffers,
       process: handle,
+      postmaster: this.postmasterProcess,
       inheritedConnectionId: connectionId,
       dataDirectory: this.dataDir,
       filesystem: this.filesystem,
@@ -756,7 +757,6 @@ function postmasterArguments(
     ['min_dynamic_shared_memory', '0'],
     ['logging_collector', 'off'],
     ['huge_pages', 'off'],
-    ['io_method', 'sync'],
     ['jit', 'off'],
   ]
   const managedConfig = options.respectPostgresqlConfig

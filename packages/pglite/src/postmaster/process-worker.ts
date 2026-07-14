@@ -179,9 +179,11 @@ async function main(): Promise<void> {
       module: postgres,
       registry,
       process: data.process,
+      postmaster: data.postmaster,
       privateMemory,
       connectionBuffers: data.connectionBuffers,
       inheritedConnectionId: data.inheritedConnectionId || undefined,
+      debug: data.debug,
     })
     socketHost.install()
     processHost = new PostmasterProcessHost({

@@ -32,6 +32,7 @@ export interface PostgresProcessWorkerData {
   readonly controlBuffer: SharedArrayBuffer
   readonly connectionBuffers: readonly SharedArrayBuffer[]
   readonly process: ProcessHandle
+  readonly postmaster: ProcessHandle
   readonly inheritedConnectionId: number
   readonly dataDirectory: string
   readonly filesystem: WorkerFilesystemDescriptor
