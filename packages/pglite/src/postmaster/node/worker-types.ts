@@ -1,6 +1,10 @@
 import type { ProcessHandle, ProcessScopePolicy } from '../shared/control.js'
 import type { BrokeredFilesystemChannel } from './filesystem-broker.js'
 import type { ProcessScopedMemoryMode } from '../shared/process-types.js'
+import type {
+  FilesystemCapabilities,
+  PGliteClusterLeaseProvider,
+} from '../../fs/base.js'
 export type { ProcessScopedMemoryMode } from '../shared/process-types.js'
 
 export interface PostmasterArtifactPaths {
@@ -17,6 +21,9 @@ export interface WorkerFilesystemFactory {
   readonly module: string
   readonly export?: string
   readonly options?: unknown
+  readonly capabilities?: FilesystemCapabilities
+  /** Supervisor-side lease implementation; never cloned into a Worker. */
+  readonly clusterLeaseProvider?: PGliteClusterLeaseProvider
 }
 
 export type WorkerFilesystemDescriptor =

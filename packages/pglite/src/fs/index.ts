@@ -6,8 +6,12 @@ export {
   BaseFilesystem,
   ERRNO_CODES,
   type Filesystem,
+  type FilesystemCapabilities,
   type FsType,
   type FsStats,
+  type PGliteClusterLease,
+  type PGliteClusterLeaseMetadata,
+  type PGliteClusterLeaseProvider,
 } from './base.js'
 
 export function parseDataDir(dataDir?: string) {

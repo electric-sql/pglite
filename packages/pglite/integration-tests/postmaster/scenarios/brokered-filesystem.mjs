@@ -35,17 +35,22 @@ let sessions = []
 let errnoCodes
 
 try {
-  const [{ PGlitePostmaster }, { BaseFilesystem, ERRNO_CODES }] =
-    await Promise.all([
-      import(
-        pathToFileURL(
-          join(repoRoot, 'packages/pglite/dist/postmaster/index.js'),
-        ).href
-      ),
-      import(
-        pathToFileURL(join(repoRoot, 'packages/pglite/dist/fs/base.js')).href
-      ),
-    ])
+  const [
+    { PGlitePostmaster },
+    { BaseFilesystem, ERRNO_CODES },
+    { NodeClusterLeaseProvider },
+  ] = await Promise.all([
+    import(
+      pathToFileURL(join(repoRoot, 'packages/pglite/dist/postmaster/index.js'))
+        .href
+    ),
+    import(
+      pathToFileURL(join(repoRoot, 'packages/pglite/dist/fs/base.js')).href
+    ),
+    import(
+      pathToFileURL(join(repoRoot, 'packages/pglite/dist/fs/nodefs.js')).href
+    ),
+  ])
   errnoCodes = ERRNO_CODES
 
   class NonCloneableNodeFilesystem extends BaseFilesystem {
@@ -59,6 +64,16 @@ try {
         debug: process.env.PGLITE_BROKER_FS_DEBUG === 'true',
       })
       this.root = root
+      this.capabilities = {
+        multiSession: 'supervisor-broker',
+        persistence: 'persistent',
+        clusterLease: 'exclusive',
+      }
+      const leaseProvider = new NodeClusterLeaseProvider()
+      this.clusterLeaseProvider = {
+        acquireExclusiveClusterLease: (_dataDir, metadata) =>
+          leaseProvider.acquireExclusiveClusterLease(root, metadata),
+      }
     }
 
     chmod(path, mode) {

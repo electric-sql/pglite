@@ -18,10 +18,17 @@ let postmaster
 let session
 
 try {
-  const { PGlitePostmaster } = await import(
-    pathToFileURL(join(repoRoot, 'packages/pglite/dist/postmaster/index.js'))
-      .href
-  )
+  const [{ PGlitePostmaster }, { NodeClusterLeaseProvider }] =
+    await Promise.all([
+      import(
+        pathToFileURL(
+          join(repoRoot, 'packages/pglite/dist/postmaster/index.js'),
+        ).href
+      ),
+      import(
+        pathToFileURL(join(repoRoot, 'packages/pglite/dist/fs/nodefs.js')).href
+      ),
+    ])
   postmaster = await PGlitePostmaster.create({
     dataDir: `file://${dataDirectory}`,
     maxConnections: 4,
@@ -33,6 +40,12 @@ try {
         'packages/pglite/tests/fixtures/nodefs-filesystem.mjs',
       ),
       options: { root: dataDirectory },
+      capabilities: {
+        multiSession: 'worker-factory',
+        persistence: 'persistent',
+        clusterLease: 'exclusive',
+      },
+      clusterLeaseProvider: new NodeClusterLeaseProvider(),
     },
   })
   session = await createSessionWhenReady(postmaster)

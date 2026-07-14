@@ -6,6 +6,12 @@ import {
   loadExtensions,
 } from './extensionUtils.js'
 import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
+import {
+  acquireFilesystemClusterLease,
+  inheritedClusterLease,
+  type InheritedClusterLeaseOptions,
+} from './fs/cluster-lease.js'
+import type { PGliteClusterLease } from './fs/base.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -102,6 +108,8 @@ export class PGlite
 
   #extensions: Extensions
   #extensionsClose: Array<() => Promise<void>> = []
+  #clusterLease?: PGliteClusterLease
+  #ownsClusterLease = false
 
   #protocolParser = new ProtocolParser()
 
@@ -220,7 +228,10 @@ export class PGlite
     this.#extensions = options.extensions ?? {}
 
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options ?? {})
+    this.waitReady = this.#init(options ?? {}).catch(async (error) => {
+      await this.#abortInitialization().catch(() => {})
+      throw error
+    })
   }
 
   /**
@@ -292,7 +303,7 @@ export class PGlite
    * Initialize the database
    * @returns A promise that resolves when the database is ready
    */
-  async #init(options: PGliteOptions) {
+  async #init(options: PGliteOptions & InheritedClusterLeaseOptions) {
     // PGlite modifies process.exitCode when it does exit(XX)
     // we need to restore the previous value
     const prevExitCode = pglUtils.pgliteProc.exitCode
@@ -303,6 +314,15 @@ export class PGlite
       const { dataDir, fsType } = parseDataDir(options.dataDir)
       this.fs = await loadFs(dataDir, fsType)
     }
+
+    const clusterLease = await acquireFilesystemClusterLease(
+      this.fs,
+      parseDataDir(options.dataDir).dataDir,
+      'classic',
+      options[inheritedClusterLease],
+    )
+    this.#clusterLease = clusterLease.lease
+    this.#ownsClusterLease = clusterLease.owned
 
     const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
     const extensionInitFns: Array<() => Promise<void>> = []
@@ -569,6 +589,9 @@ export class PGlite
           pgInitDbOpts.dataDir = undefined
           pgInitDbOpts.extensions = undefined
           pgInitDbOpts.loadDataDir = undefined
+          ;(pgInitDbOpts as PGliteOptions & InheritedClusterLeaseOptions)[
+            inheritedClusterLease
+          ] = this.#clusterLease
           const pg_initDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
@@ -798,10 +821,16 @@ export class PGlite
   async close() {
     await this._checkReady()
     this.#closing = true
+    let closeError: unknown
+    let filesystemClosed = false
 
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
-      await closeFn()
+      try {
+        await closeFn()
+      } catch (error) {
+        closeError ??= error
+      }
     }
 
     // Close the database
@@ -824,12 +853,12 @@ export class PGlite
     }
 
     // Close the filesystem
-    await this.fs!.closeFs()
-
-    this.#closed = true
-    this.#closing = false
-    this.#ready = false
-    this.#running = false
+    try {
+      await this.fs!.closeFs()
+      filesystemClosed = true
+    } catch (error) {
+      closeError ??= error
+    }
 
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
@@ -840,6 +869,52 @@ export class PGlite
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
+    }
+
+    try {
+      if (filesystemClosed) await this.#releaseClusterLease()
+    } catch (error) {
+      closeError ??= error
+    } finally {
+      this.#closed = true
+      this.#closing = false
+      this.#ready = false
+      this.#running = false
+    }
+
+    if (closeError) throw closeError
+  }
+
+  async #releaseClusterLease(): Promise<void> {
+    if (!this.#ownsClusterLease || !this.#clusterLease) return
+    this.#ownsClusterLease = false
+    await this.#clusterLease.release()
+  }
+
+  async #abortInitialization(): Promise<void> {
+    if (!this.mod) {
+      await this.#releaseClusterLease()
+      return
+    }
+
+    try {
+      this.mod._pgl_setPGliteActive(0)
+      this.mod._pgl_run_atexit_funcs()
+    } catch {
+      // Continue with filesystem and runtime teardown.
+    }
+
+    let filesystemClosed = false
+    try {
+      await this.fs?.closeFs()
+      filesystemClosed = true
+    } finally {
+      try {
+        this.mod._emscripten_force_exit(1)
+      } catch {
+        // Emscripten reports forced exit by throwing.
+      }
+      if (filesystemClosed) await this.#releaseClusterLease()
     }
   }
 

@@ -1172,12 +1172,12 @@ content-derived, not a timestamp.
 ### 12.2 Persistent cluster identity
 
 Exact npm versions do not protect a data directory that outlives an
-installation. Every initialized data directory therefore contains:
+installation. Every initialized data directory therefore has:
 
 - PostgreSQL's native `PG_VERSION` and control-file identity;
 - a small versioned PGlite manifest under `PGDATA/.pglite/cluster.json`;
-- a cross-runtime ownership lock used by both classic `PGlite` and the
-  multi-session postmaster.
+- an associated cross-runtime ownership lock used by both classic `PGlite`
+  and the multi-session postmaster.
 
 The manifest records only disk-compatibility and diagnostic information, not
 unnecessarily restrictive JavaScript package versions:
@@ -1225,6 +1225,17 @@ administrative recovery action after validation; it is never cleared by age or
 PID metadata alone. A later browser implementation uses the stable Web Lock and
 generation-fencing protocol specified by the browser design, not the Node lock
 implementation.
+
+For the direct Node filesystem, the authoritative lock file is a hidden sibling
+of `PGDATA`, named `.<directory-name>.pglite.lock`. Keeping it beside rather
+than inside `PGDATA` is intentional: ownership must be acquired before initdb,
+while native initdb requires an existing target directory to be empty. The
+file stores diagnostic owner metadata while its open file description carries
+the OS advisory lock. The file's presence is never itself proof of ownership,
+and it may remain after clean shutdown or a crash. Canonicalizing `PGDATA`
+before deriving the sibling path makes aliases and symlinks converge on the
+same lock. Backend-provided lease implementations may use another location but
+must provide the same exclusion and crash-release semantics.
 
 Core expresses that requirement as a filesystem capability, shared by classic
 and postmaster startup:

@@ -1,9 +1,15 @@
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { measureMemory } from 'node:vm'
 import { Worker } from 'node:worker_threads'
-import type { Filesystem } from '../../fs/base.js'
+import type { Filesystem, PGliteClusterLease } from '../../fs/base.js'
+import type { PGliteOptions } from '../../interface.js'
+import { NodeFS } from '../../fs/nodefs.js'
+import {
+  acquireFilesystemClusterLease,
+  inheritedClusterLease,
+} from '../../fs/cluster-lease.js'
 import { PGlite } from '../../pglite.js'
 import { ConnectionTransport } from '../shared/connection.js'
 import {
@@ -36,6 +42,7 @@ import type {
   WorkerFilesystemDescriptor,
   WorkerFilesystemFactory,
 } from './worker-types.js'
+import { assertPostmasterFilesystemSelection } from './filesystem-selection.js'
 import type {
   PGlitePostmasterExit,
   PGlitePostmasterShutdownMode,
@@ -58,7 +65,6 @@ const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
 const SCOPED_SHM_MAX_SCOPES = 640
 const RETIRED_BACKING_STORE_COLLECTION_INTERVAL = 128
 const PGLITE_PROCESS_USER_ID = 123
-const ownedDirectories = new Set<string>()
 
 export interface PGlitePostmasterOptions {
   /** Node directory, with the existing PGlite `file://` spelling supported. */
@@ -207,6 +213,7 @@ export class PGlitePostmaster {
   private readonly wasmModule: WebAssembly.Module
   private readonly workerUrl: URL
   private readonly filesystem: ResolvedWorkerFilesystem
+  private readonly clusterLease?: PGliteClusterLease
   private readonly privateInitialPages: number
   private readonly privateMaximumPages: number
   private readonly globalMaximumPages: number
@@ -243,12 +250,14 @@ export class PGlitePostmaster {
     artifact: PostmasterArtifactPaths,
     wasmModule: WebAssembly.Module,
     filesystem: ResolvedWorkerFilesystem,
+    clusterLease?: PGliteClusterLease,
   ) {
     this.dataDir = dataDir
     this.maxConnections = options.maxConnections ?? 20
     this.artifact = artifact
     this.wasmModule = wasmModule
     this.filesystem = filesystem
+    this.clusterLease = clusterLease
     const memory = resolveMemoryOptions(options)
     this.privateInitialPages = memory.privateInitialPages
     this.privateMaximumPages = memory.privateMaximumPages
@@ -297,26 +306,35 @@ export class PGlitePostmaster {
   ): Promise<PGlitePostmaster> {
     assertNodeCapabilities()
     const dataDir = resolveDataDirectory(options.dataDir)
-    if (ownedDirectories.has(dataDir)) {
-      throw new Error(`PGlite data directory is already open: ${dataDir}`)
-    }
-    ownedDirectories.add(dataDir)
     let filesystem: ResolvedWorkerFilesystem | undefined
+    let clusterLease: PGliteClusterLease | undefined
+    let ownsClusterLease = false
     try {
-      mkdirSync(dataDir, { recursive: true })
+      const leaseFilesystem = resolveLeaseFilesystem(options, dataDir)
+      const acquired = await acquireFilesystemClusterLease(
+        leaseFilesystem,
+        dataDir,
+        'postmaster',
+      )
+      clusterLease = acquired.lease
+      ownsClusterLease = acquired.owned
       filesystem = resolveWorkerFilesystem(options, dataDir)
       if (
         options.initialize !== false &&
         (options.fs !== undefined ||
           !existsSync(resolve(dataDir, 'PG_VERSION')))
       ) {
-        const initializer = await PGlite.create({
+        const initializerOptions = {
           dataDir: `file://${dataDir}`,
           fs:
             filesystem.kind === 'broker' ? filesystem.initializer : options.fs,
           icuDataDir: options.icuDataDir,
           debug: options.debug ? 1 : 0,
-        })
+        } as PGliteOptions & {
+          [inheritedClusterLease]?: PGliteClusterLease
+        }
+        initializerOptions[inheritedClusterLease] = clusterLease
+        const initializer = await PGlite.create(initializerOptions)
         await initializer.close()
       }
       if (!options.fs && !existsSync(resolve(dataDir, 'PG_VERSION'))) {
@@ -336,6 +354,7 @@ export class PGlitePostmaster {
         artifact,
         wasmModule,
         filesystem,
+        clusterLease,
       )
       try {
         await postmaster.start(options)
@@ -343,12 +362,15 @@ export class PGlitePostmaster {
         await postmaster.shutdown('immediate').catch(() => {})
         throw error
       }
+      ownsClusterLease = false
       return postmaster
     } catch (error) {
       if (filesystem?.kind === 'broker') {
         await filesystem.host.close().catch(() => {})
       }
-      ownedDirectories.delete(dataDir)
+      if (ownsClusterLease) {
+        await clusterLease?.release().catch(() => {})
+      }
       throw error
     }
   }
@@ -521,14 +543,19 @@ export class PGlitePostmaster {
     )
     await this.collectRetiredBackingStores(true)
     this.broker.close()
+    let filesystemClosed = this.filesystem.kind === 'direct'
     try {
       if (this.filesystem.kind === 'broker') {
         await this.filesystem.host.close()
+        filesystemClosed = true
       }
     } finally {
-      this.closed = true
-      this.closing = false
-      ownedDirectories.delete(this.dataDir)
+      try {
+        if (filesystemClosed) await this.clusterLease?.release()
+      } finally {
+        this.closed = true
+        this.closing = false
+      }
     }
   }
 
@@ -1038,6 +1065,7 @@ function resolveWorkerFilesystem(
   options: PGlitePostmasterOptions,
   dataDir: string,
 ): ResolvedWorkerFilesystem {
+  assertPostmasterFilesystemSelection(options.fs, options.workerFilesystem)
   if (!options.workerFilesystem) {
     if (options.fs) {
       if (!isBrokeredFilesystemBackend(options.fs)) {
@@ -1058,6 +1086,8 @@ function resolveWorkerFilesystem(
     }
   }
   const factory = options.workerFilesystem
+  const { clusterLeaseProvider: _clusterLeaseProvider, ...workerFactory } =
+    factory
   let module = factory.module
   if (module.startsWith('.') || module.startsWith('/')) {
     module = pathToFileURL(resolve(module)).href
@@ -1071,9 +1101,22 @@ function resolveWorkerFilesystem(
     kind: 'direct',
     descriptor: {
       kind: 'factory',
-      factory: { ...factory, module },
+      factory: { ...workerFactory, module },
     },
   }
+}
+
+function resolveLeaseFilesystem(
+  options: PGlitePostmasterOptions,
+  dataDir: string,
+): Filesystem {
+  if (options.fs) return options.fs
+  if (!options.workerFilesystem) return new NodeFS(dataDir)
+
+  return {
+    capabilities: options.workerFilesystem.capabilities,
+    clusterLeaseProvider: options.workerFilesystem.clusterLeaseProvider,
+  } as Filesystem
 }
 
 interface ResolvedMemoryOptions {

@@ -28,6 +28,13 @@ describe.sequential('Worker-backed PGlite postmaster integration', () => {
     )
   })
 
+  test('serializes classic and postmaster cluster ownership', async () => {
+    await runScenario(
+      new URL('./scenarios/cluster-ownership.mjs', import.meta.url),
+      [config.repoRoot, ...artifact, output('cluster-ownership')],
+    )
+  })
+
   test('speaks the postmaster/backend protocol', async () => {
     await runScenario(
       new URL('./scenarios/postmaster-session.mjs', import.meta.url),

@@ -32,6 +32,21 @@ describe('postmaster package boundaries', () => {
     ).toBe('PGlitePostmasterUnavailableError')
   })
 
+  test('exports the direct Node lease provider for pluggable filesystems', () => {
+    expect(
+      runNode([
+        '-e',
+        "import('@electric-sql/pglite/nodefs').then(({ NodeClusterLeaseProvider }) => console.log(typeof NodeClusterLeaseProvider))",
+      ]),
+    ).toBe('function')
+    expect(
+      runNode([
+        '-e',
+        "console.log(typeof require('@electric-sql/pglite/nodefs').NodeClusterLeaseProvider)",
+      ]),
+    ).toBe('function')
+  })
+
   test('keeps postmaster and Node modules outside the root ESM graph', () => {
     const graph = collectLocalModuleGraph(resolve(packageRoot, 'dist/index.js'))
     expect([...graph]).not.toContainEqual(

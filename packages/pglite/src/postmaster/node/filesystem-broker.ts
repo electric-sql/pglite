@@ -788,11 +788,15 @@ function deserializeError(serialized: SerializedError | undefined): Error {
     serialized?.message ?? 'PGlite filesystem broker error',
   )
   error.name = serialized?.name ?? 'Error'
+  const filesystemError = error as Error & {
+    code?: string | number
+    errno?: string | number
+  }
   if (serialized?.code !== undefined) {
-    ;(error as Error & { code?: string | number }).code = serialized.code
+    filesystemError.code = serialized.code
   }
   if (serialized?.errno !== undefined) {
-    ;(error as Error & { errno?: string | number }).errno = serialized.errno
+    filesystemError.errno = serialized.errno
   }
   return error
 }

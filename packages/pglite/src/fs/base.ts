@@ -5,12 +5,51 @@ import { PGDATA } from '../initdb.js'
 
 export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
 
+/** How a filesystem implementation can participate in a multi-session host. */
+export type FilesystemMultiSessionAccess =
+  | 'supervisor-broker'
+  | 'worker-factory'
+  | 'unsupported'
+
+/**
+ * Optional, cloneable capability metadata. Filesystems without metadata keep
+ * the classic API behavior and may still be used through the supervisor
+ * broker when they implement the synchronous `BaseFilesystem` operations.
+ */
+export interface FilesystemCapabilities {
+  readonly multiSession?: FilesystemMultiSessionAccess
+  readonly persistence?: 'ephemeral' | 'persistent'
+  readonly clusterLease?: 'exclusive' | 'unsupported'
+}
+
+export interface PGliteClusterLeaseMetadata {
+  readonly ownerToken: string
+  readonly runtime: 'classic' | 'postmaster'
+  readonly pid?: number
+  readonly startedAt: string
+}
+
+export interface PGliteClusterLease extends AsyncDisposable {
+  readonly ownerToken: string
+  release(): Promise<void>
+}
+
+export interface PGliteClusterLeaseProvider {
+  acquireExclusiveClusterLease(
+    canonicalDataDir: string,
+    metadata: PGliteClusterLeaseMetadata,
+  ): Promise<PGliteClusterLease>
+}
+
 /**
  * Filesystem interface.
  * All virtual filesystems that are compatible with PGlite must implement
  * this interface.
  */
 export interface Filesystem {
+  readonly capabilities?: FilesystemCapabilities
+  readonly clusterLeaseProvider?: PGliteClusterLeaseProvider
+
   /**
    * Initiate the filesystem and return the options to pass to the emscripten module.
    */
