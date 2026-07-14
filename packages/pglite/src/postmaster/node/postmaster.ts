@@ -43,6 +43,10 @@ import type {
   WorkerFilesystemFactory,
 } from './worker-types.js'
 import { assertPostmasterFilesystemSelection } from './filesystem-selection.js'
+import {
+  PostgresNodeNetworkHostController,
+  registerPostgresNodeNetworkHostController,
+} from './network-host.js'
 import type {
   PGlitePostmasterExit,
   PGlitePostmasterShutdownMode,
@@ -225,6 +229,7 @@ export class PGlitePostmaster {
   private readonly postmasterProcess: ProcessHandle
   private readonly broker: VirtualConnectionBroker
   private readonly timers: SupervisorTimers
+  private readonly networkHost = new PostgresNodeNetworkHostController()
   private readonly workers = new Map<number, WorkerRecord>()
   private readonly scopedRoots = new Map<number, ScopedRootRecord>()
   private readonly pendingStarts = new Set<Promise<void>>()
@@ -299,6 +304,7 @@ export class PGlitePostmaster {
       this.postmasterProcess,
     )
     this.timers = new SupervisorTimers(this.registry)
+    registerPostgresNodeNetworkHostController(this, this.networkHost)
   }
 
   static async create(
@@ -542,6 +548,7 @@ export class PGlitePostmaster {
       ),
     )
     await this.collectRetiredBackingStores(true)
+    await this.networkHost.dispose()
     this.broker.close()
     let filesystemClosed = this.filesystem.kind === 'direct'
     try {
@@ -708,7 +715,14 @@ export class PGlitePostmaster {
       }, 30_000)
 
       worker.on('message', (message: PostgresProcessWorkerMessage) => {
-        if (message.type === 'filesystem-request') {
+        if (
+          message.type === 'network-bind' ||
+          message.type === 'network-configure-unix' ||
+          message.type === 'network-listen' ||
+          message.type === 'network-close'
+        ) {
+          this.networkHost.dispatch(message, handle)
+        } else if (message.type === 'filesystem-request') {
           if (
             this.filesystem.kind !== 'broker' ||
             message.pid !== handle.pid ||
@@ -840,6 +854,7 @@ export class PGlitePostmaster {
     if (record.settled) return
     record.settled = true
     this.workers.delete(record.handle.pid)
+    this.networkHost.processExited(record.handle)
     if (this.filesystem.kind === 'broker') {
       this.filesystem.host.detach(record.handle)
     }

@@ -254,6 +254,8 @@ export interface PostgresHostBindRequest {
   readonly host?: string
   readonly port?: number
   readonly path?: string
+  readonly unixMode?: number
+  readonly unixGroup?: string
 }
 
 export interface PostgresNodeNetworkHost {
@@ -274,9 +276,12 @@ listener at that point, and bridges accepted sockets through the public
 `openProtocolConnection()` API. Listener identifiers are generation-fenced;
 stale close operations cannot affect a replacement listener. Attachment is
 exclusive per postmaster, and detachment closes every listener created by that
-host before it resolves. The exact internal spelling may acquire additional
-result and error types during implementation, but it may not expand into a
-general postmaster-runtime API.
+host before it resolves. For Unix sockets, core adds PostgreSQL's resolved
+`unix_socket_permissions` and `unix_socket_group` values to the request before
+the host materializes the listener; the Node host, rather than WasmFS, owns the
+externally visible socket and lock paths. The exact internal spelling may
+acquire additional result and error types during implementation, but it may not
+expand into a general postmaster-runtime API.
 
 ### 6.1 `@electric-sql/pglite`
 
@@ -1640,6 +1645,37 @@ Browser note: the shared public types, process protocols, VFS capability
 vocabulary, and artifact identity produced by Phases 1-3 must remain suitable
 for the separate browser design. No SharedWorker, Web Lock, OPFS executor,
 multi-tab, or browser capability implementation is part of these phases.
+
+Phase 3 implementation record, 2026-07-14:
+
+- Core exposes optional VFS capability metadata and uses one authoritative,
+  generation-fenced Node cluster lease for classic and postmaster runtimes.
+  Persistent runtimes fail closed when the backend cannot provide the required
+  exclusive-lock semantics; existing third-party VFS implementations retain
+  their source-compatible API.
+- The narrow `_internal/node-network-host` attachment carries decoded IPv4,
+  IPv6, and Unix bind requests. PostgreSQL remains authoritative for effective
+  address, port, backlog, Unix mode, and Unix group policy. Listener IDs are
+  generation-fenced, attachment is exclusive, late attachment replays desired
+  listeners, and detach or postmaster exit closes only materialized listeners.
+- `PGliteServer.create({ mode: 'postgres' })` is distinct from the existing
+  explicit listener mode. It waits for a PostgreSQL-selected listener, exposes
+  all effective addresses, propagates bind failures to PostgreSQL and the
+  caller, and bridges accepted sockets through `openProtocolConnection()`.
+- Host-visible Unix socket and lock paths are owned by the Node host. It applies
+  resolved permissions before accepting clients and removes only paths owned by
+  the attachment. Empty and numeric Unix group values are supported; named
+  host-group lookup is rejected explicitly rather than guessed by Wasm.
+- The PostgreSQL fork change is limited to a fenced call through PGlite libc
+  for resolved Unix policy and to suppressing duplicate virtual-filesystem
+  socket/lock creation. The callback is appended to the existing socket-host
+  ABI so the classic non-SAB runtime and callback ordering remain unchanged.
+- A fresh native ARM64 Wasm build passes deterministic artifact audits, nine
+  postmaster integration tests, strict TCP bind-failure and native-client tests,
+  strict Unix permission/lock/cleanup tests, concurrent native clients, HBA
+  password rejection and acceptance, libpq cancel/COPY/backpressure, and a
+  targeted upstream regression schedule. Core/server TypeScript, lint, build,
+  and ESM/CommonJS packed-export gates pass.
 
 ### Phase 4: establish tool-runner APIs
 

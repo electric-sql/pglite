@@ -11,6 +11,7 @@ import {
   VirtualConnectionTransport,
 } from './control.js'
 import type { PostgresMod } from '../../postgresMod.js'
+import type { PostgresSocketAddress } from './network-host.js'
 
 const SOCKET_DESCRIPTOR_BASE = 0x3c000000
 const CONNECTION_DESCRIPTOR_BASE = 0x3e000000
@@ -26,9 +27,11 @@ const AF_INET = 2
 const AF_UNIX = 1
 const AF_INET6 = 10
 const SOCKADDR_IN_BYTES = 16
+const SOCKADDR_IN6_BYTES = 28
 const SOCKADDR_UN_BYTES = 110
 
 const ERRNO = {
+  EAFNOSUPPORT: 5,
   EAGAIN: 6,
   ECONNREFUSED: 14,
   ECONNRESET: 15,
@@ -36,6 +39,18 @@ const ERRNO = {
   EINVAL: 28,
   EPIPE: 64,
 } as const
+
+export interface VirtualSocketNetworkHost {
+  bind(descriptor: number, address: PostgresSocketAddress): number
+  configureUnix(
+    descriptor: number,
+    path: string,
+    mode: number,
+    group: string,
+  ): number
+  listen(descriptor: number, backlog: number): number
+  close(descriptor: number): number
+}
 
 interface OpenVirtualConnection {
   readonly handle: VirtualConnectionHandle
@@ -51,6 +66,7 @@ export interface VirtualSocketHostOptions {
   readonly privateMemory: WebAssembly.Memory
   readonly connectionBuffers: readonly SharedArrayBuffer[]
   readonly inheritedConnectionId?: number
+  readonly networkHost?: VirtualSocketNetworkHost
   readonly debug?: boolean
 }
 
@@ -79,12 +95,24 @@ export class VirtualSocketHost {
       'iipi',
     )
     const bindSocket = this.addFunction(
-      (descriptor: number) => this.bindSocket(descriptor),
+      (descriptor: number, addressPointer: number, addressLength: number) =>
+        this.bindSocket(descriptor, addressPointer, addressLength),
       'iipi',
     )
     const listenSocket = this.addFunction(
-      (descriptor: number) => this.listenSocket(descriptor),
+      (descriptor: number, backlog: number) =>
+        this.listenSocket(descriptor, backlog),
       'iii',
+    )
+    const configureUnixSocket = this.addFunction(
+      (
+        descriptor: number,
+        pathPointer: number,
+        groupPointer: number,
+        mode: number,
+      ) =>
+        this.configureUnixSocket(descriptor, pathPointer, groupPointer, mode),
+      'iippi',
     )
     const acceptSocket = this.addFunction(
       (
@@ -123,6 +151,7 @@ export class VirtualSocketHost {
       receiveSocket,
       sendSocket,
       pollSockets,
+      configureUnixSocket,
     )
 
     if (this.options.inheritedConnectionId) {
@@ -154,6 +183,9 @@ export class VirtualSocketHost {
         // A failed child startup or postmaster crash may already have
         // invalidated the generation. Cleanup is generation-safe.
       }
+    }
+    for (const descriptor of this.listeners) {
+      this.options.networkHost?.close(descriptor)
     }
     this.connections.clear()
     this.nestedServerConnections.clear()
@@ -248,17 +280,73 @@ export class VirtualSocketHost {
     }
   }
 
-  private bindSocket(descriptor: number): number {
+  private bindSocket(
+    descriptor: number,
+    addressPointer: number,
+    addressLength: number,
+  ): number {
     if (!this.pendingSockets.has(descriptor)) {
       this.setErrno(ERRNO.EINVAL)
       return -1
+    }
+    if (this.options.networkHost) {
+      let address: PostgresSocketAddress
+      try {
+        address = decodePostgresSocketAddress(
+          this.options.privateMemory,
+          addressPointer,
+          addressLength,
+        )
+      } catch (error) {
+        this.setErrno(
+          error instanceof UnsupportedSocketFamilyError
+            ? ERRNO.EAFNOSUPPORT
+            : ERRNO.EINVAL,
+        )
+        return -1
+      }
+      const result = this.options.networkHost.bind(descriptor, address)
+      if (result !== 0) return result
     }
     this.listeners.add(descriptor)
     return 0
   }
 
-  private listenSocket(descriptor: number): number {
-    return this.listener(descriptor) ? 0 : -1
+  private listenSocket(descriptor: number, backlog: number): number {
+    if (!this.listener(descriptor)) return -1
+    return this.options.networkHost?.listen(descriptor, backlog) ?? 0
+  }
+
+  private configureUnixSocket(
+    descriptor: number,
+    pathPointer: number,
+    groupPointer: number,
+    mode: number,
+  ): number {
+    if (
+      !this.listener(descriptor) ||
+      pathPointer === 0 ||
+      groupPointer === 0 ||
+      !Number.isInteger(mode) ||
+      mode < 0 ||
+      mode > 0o7777
+    ) {
+      this.setErrno(ERRNO.EINVAL)
+      return -1
+    }
+    let path: string
+    let group: string
+    try {
+      path = this.options.module.UTF8ToString(pathPointer)
+      group = this.options.module.UTF8ToString(groupPointer)
+    } catch {
+      this.setErrno(ERRNO.EINVAL)
+      return -1
+    }
+    return (
+      this.options.networkHost?.configureUnix(descriptor, path, mode, group) ??
+      0
+    )
   }
 
   private acceptSocket(
@@ -339,7 +427,9 @@ export class VirtualSocketHost {
 
   private closeSocket(descriptor: number): number {
     if (this.pendingSockets.delete(descriptor)) {
-      this.listeners.delete(descriptor)
+      if (this.listeners.delete(descriptor)) {
+        return this.options.networkHost?.close(descriptor) ?? 0
+      }
       return 0
     }
     const connection = this.connections.get(descriptor)
@@ -575,4 +665,88 @@ export class VirtualSocketHost {
     this.callbacks.push(index)
     return index
   }
+}
+
+class UnsupportedSocketFamilyError extends Error {}
+
+export function decodePostgresSocketAddress(
+  memory: WebAssembly.Memory,
+  pointer: number,
+  length: number,
+): PostgresSocketAddress {
+  if (
+    !Number.isInteger(pointer) ||
+    !Number.isInteger(length) ||
+    pointer < 0 ||
+    length < 2 ||
+    pointer + length > memory.buffer.byteLength
+  ) {
+    throw new RangeError('invalid PostgreSQL socket address range')
+  }
+  const view = new DataView(memory.buffer, pointer, length)
+  const bytes = new Uint8Array(memory.buffer, pointer, length)
+  const family = view.getUint16(0, true)
+  if (family === AF_INET) {
+    if (length < SOCKADDR_IN_BYTES) throw new RangeError('short sockaddr_in')
+    return {
+      transport: 'tcp',
+      port: view.getUint16(2, false),
+      host: `${bytes[4]}.${bytes[5]}.${bytes[6]}.${bytes[7]}`,
+    }
+  }
+  if (family === AF_INET6) {
+    if (length < SOCKADDR_IN6_BYTES) throw new RangeError('short sockaddr_in6')
+    const words: number[] = []
+    for (let offset = 8; offset < 24; offset += 2) {
+      words.push(view.getUint16(offset, false))
+    }
+    const scope = view.getUint32(24, true)
+    return {
+      transport: 'tcp',
+      port: view.getUint16(2, false),
+      host: `${formatIpv6(words)}${scope === 0 ? '' : `%${scope}`}`,
+    }
+  }
+  if (family === AF_UNIX) {
+    if (length > SOCKADDR_UN_BYTES) throw new RangeError('long sockaddr_un')
+    let end = 2
+    while (end < length && bytes[end] !== 0) end++
+    if (end === 2 || bytes[2] === 0) {
+      throw new RangeError('empty or abstract Unix socket path')
+    }
+    const path = new TextDecoder('utf-8', { fatal: true }).decode(
+      bytes.subarray(2, end),
+    )
+    if (path.includes('\0')) throw new RangeError('invalid Unix socket path')
+    return { transport: 'unix', path }
+  }
+  throw new UnsupportedSocketFamilyError(`unsupported socket family ${family}`)
+}
+
+function formatIpv6(words: readonly number[]): string {
+  let bestStart = -1
+  let bestLength = 0
+  for (let start = 0; start < words.length; ) {
+    if (words[start] !== 0) {
+      start++
+      continue
+    }
+    let end = start + 1
+    while (end < words.length && words[end] === 0) end++
+    if (end - start > bestLength && end - start >= 2) {
+      bestStart = start
+      bestLength = end - start
+    }
+    start = end
+  }
+  if (bestStart < 0) return words.map((word) => word.toString(16)).join(':')
+  const left = words
+    .slice(0, bestStart)
+    .map((word) => word.toString(16))
+    .join(':')
+  const right = words
+    .slice(bestStart + bestLength)
+    .map((word) => word.toString(16))
+    .join(':')
+  return `${left}::${right}`
 }

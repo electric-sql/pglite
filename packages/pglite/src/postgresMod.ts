@@ -65,6 +65,7 @@ export interface PostgresMod
     receive_socket: number,
     send_socket: number,
     poll_sockets: number,
+    configure_unix_socket: number,
   ) => void
   _pgl_set_pipe_fn: (pipe_fn: number) => number
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number

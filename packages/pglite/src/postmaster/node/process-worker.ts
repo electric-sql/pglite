@@ -13,6 +13,17 @@ import {
 import { BrokeredFilesystem } from './filesystem-broker.js'
 import { PostmasterProcessHost } from '../shared/process-host.js'
 import { VirtualSocketHost } from '../shared/socket-host.js'
+import type {
+  PostgresSocketAddress,
+  PostgresSocketOperation,
+} from '../shared/network-host.js'
+import {
+  NETWORK_RESPONSE_ERRNO,
+  NETWORK_RESPONSE_GENERATION,
+  NETWORK_RESPONSE_LISTENER_ID,
+  NETWORK_RESPONSE_STATE,
+  NETWORK_RESPONSE_WORDS,
+} from '../shared/network-host.js'
 import {
   installMemoryAwareWasiFdRead,
   installMemoryAwareWasiFdWrite,
@@ -243,6 +254,12 @@ async function main(): Promise<void> {
       privateMemory,
       connectionBuffers: data.connectionBuffers,
       inheritedConnectionId: data.inheritedConnectionId || undefined,
+      networkHost: new WorkerNetworkHost(
+        postgres,
+        privateMemory,
+        data.process,
+        send,
+      ),
       debug: data.debug,
     })
     socketHost.install()
@@ -310,6 +327,128 @@ async function main(): Promise<void> {
       send({ type: 'exit', pid: data.process.pid, code: exitCode ?? 1 })
     }
     port.close()
+  }
+}
+
+interface WorkerListenerHandle {
+  readonly listenerId: number
+  readonly generation: number
+}
+
+type PostgresSocketOperationRequest =
+  PostgresSocketOperation extends infer Operation
+    ? Operation extends PostgresSocketOperation
+      ? Omit<Operation, 'response'>
+      : never
+    : never
+
+class WorkerNetworkHost {
+  private readonly listeners = new Map<number, WorkerListenerHandle>()
+
+  constructor(
+    private readonly module: PostgresMod,
+    private readonly memory: WebAssembly.Memory,
+    private readonly process: PostgresProcessWorkerData['process'],
+    private readonly send: (message: PostgresProcessWorkerMessage) => void,
+  ) {}
+
+  bind(descriptor: number, address: PostgresSocketAddress): number {
+    if (this.listeners.has(descriptor)) return this.fail(28)
+    const response = this.request({
+      type: 'network-bind',
+      pid: this.process.pid,
+      generation: this.process.generation,
+      descriptor,
+      address,
+    })
+    if (response.errno !== 0) return this.fail(response.errno)
+    if (response.listenerId <= 0 || response.generation <= 0) {
+      return this.fail(29)
+    }
+    this.listeners.set(descriptor, {
+      listenerId: response.listenerId,
+      generation: response.generation,
+    })
+    return 0
+  }
+
+  listen(descriptor: number, backlog: number): number {
+    const listener = this.listeners.get(descriptor)
+    if (!listener) return this.fail(8)
+    const response = this.request({
+      type: 'network-listen',
+      pid: this.process.pid,
+      generation: this.process.generation,
+      descriptor,
+      listenerId: listener.listenerId,
+      listenerGeneration: listener.generation,
+      backlog,
+    })
+    return response.errno === 0 ? 0 : this.fail(response.errno)
+  }
+
+  configureUnix(
+    descriptor: number,
+    path: string,
+    mode: number,
+    group: string,
+  ): number {
+    const listener = this.listeners.get(descriptor)
+    if (!listener) return this.fail(8)
+    const response = this.request({
+      type: 'network-configure-unix',
+      pid: this.process.pid,
+      generation: this.process.generation,
+      descriptor,
+      listenerId: listener.listenerId,
+      listenerGeneration: listener.generation,
+      path,
+      mode,
+      group,
+    })
+    return response.errno === 0 ? 0 : this.fail(response.errno)
+  }
+
+  close(descriptor: number): number {
+    const listener = this.listeners.get(descriptor)
+    if (!listener) return this.fail(8)
+    const response = this.request({
+      type: 'network-close',
+      pid: this.process.pid,
+      generation: this.process.generation,
+      descriptor,
+      listenerId: listener.listenerId,
+      listenerGeneration: listener.generation,
+    })
+    if (response.errno !== 0) return this.fail(response.errno)
+    this.listeners.delete(descriptor)
+    return 0
+  }
+
+  private request(operation: PostgresSocketOperationRequest): {
+    errno: number
+    listenerId: number
+    generation: number
+  } {
+    const buffer = new SharedArrayBuffer(
+      NETWORK_RESPONSE_WORDS * Int32Array.BYTES_PER_ELEMENT,
+    )
+    const words = new Int32Array(buffer)
+    this.send({ ...operation, response: { buffer } } as PostgresSocketOperation)
+    const result = Atomics.wait(words, NETWORK_RESPONSE_STATE, 0, 30_000)
+    if (result === 'timed-out')
+      return { errno: 29, listenerId: 0, generation: 0 }
+    return {
+      errno: Atomics.load(words, NETWORK_RESPONSE_ERRNO),
+      listenerId: Atomics.load(words, NETWORK_RESPONSE_LISTENER_ID),
+      generation: Atomics.load(words, NETWORK_RESPONSE_GENERATION),
+    }
+  }
+
+  private fail(errno: number): -1 {
+    const pointer = this.module.___errno_location()
+    new Int32Array(this.memory.buffer)[pointer / 4] = errno
+    return -1
   }
 }
 

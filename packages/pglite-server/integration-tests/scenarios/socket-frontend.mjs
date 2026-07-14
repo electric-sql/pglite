@@ -2,10 +2,11 @@
 
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { createServer } from 'node:net'
 
 const [repoRoot, wasm, glue, data, nativeRoot] = process.argv.slice(2)
 if (!nativeRoot) {
@@ -34,6 +35,9 @@ async function main() {
   let tcp
   let unix
   let owned
+  let strict
+  let strictPostmaster
+  let occupied
 
   try {
     postmaster = await withTimeout(
@@ -193,14 +197,238 @@ async function main() {
     assert.equal(ownedPostmaster.diagnostics().liveProcesses, 0)
     owned = undefined
 
+    const strictPort = await reservePort()
+    const strictPostmasterOptions = (dataName) => ({
+      dataDir: `file://${join(root, dataName)}`,
+      maxConnections: 4,
+      sharedBuffers: '16MB',
+      artifact: { wasm, glue, data },
+      respectPostgresqlConfig: true,
+      startParams: [
+        '-c',
+        'listen_addresses=127.0.0.1',
+        '-c',
+        `port=${strictPort}`,
+        '-c',
+        'unix_socket_directories=',
+      ],
+    })
+    strictPostmaster = await withTimeout(
+      PGlitePostmaster.create(strictPostmasterOptions('strict-failure-data')),
+      60_000,
+      'strict failure postmaster startup',
+    )
+
+    occupied = createServer()
+    await new Promise((resolveListen, rejectListen) => {
+      occupied.once('error', rejectListen)
+      occupied.listen(strictPort, '127.0.0.1', resolveListen)
+    })
+    await assert.rejects(
+      PGliteServer.create({ postmaster: strictPostmaster, mode: 'postgres' }),
+      (error) => error?.code === 'EADDRINUSE',
+    )
+    await strictPostmaster.shutdown('immediate')
+    strictPostmaster = undefined
+    await new Promise((resolveClose, rejectClose) =>
+      occupied.close((error) =>
+        error ? rejectClose(error) : resolveClose(undefined),
+      ),
+    )
+    occupied = undefined
+
+    strictPostmaster = await withTimeout(
+      PGlitePostmaster.create(strictPostmasterOptions('strict-success-data')),
+      60_000,
+      'strict postmaster startup',
+    )
+
+    strict = await PGliteServer.create({
+      postmaster: strictPostmaster,
+      mode: 'postgres',
+    })
+    assert.equal(strict.address, undefined)
+    assert.deepEqual(strict.addresses, [
+      { transport: 'tcp', host: '127.0.0.1', port: strictPort },
+    ])
+    const strictResult = await runUntilSuccess(
+      psql,
+      ['-X', '--no-psqlrc', '-A', '-t', '-c', 'SELECT 6 * 7'],
+      {
+        ...commonEnvironment,
+        PGHOST: '127.0.0.1',
+        PGPORT: String(strictPort),
+      },
+      30_000,
+    )
+    assert.equal(strictResult.code, 0, strictResult.stderr)
+    assert.match(strictResult.stdout, /^42$/m)
+    const strictConcurrent = await Promise.all(
+      [11, 22, 33].map((value) =>
+        run(
+          psql,
+          [
+            '-X',
+            '--no-psqlrc',
+            '-A',
+            '-t',
+            '-c',
+            `SELECT pg_sleep(0.1), ${value}`,
+          ],
+          {
+            ...commonEnvironment,
+            PGHOST: '127.0.0.1',
+            PGPORT: String(strictPort),
+          },
+        ),
+      ),
+    )
+    assert.ok(
+      strictConcurrent.every(({ code }) => code === 0),
+      strictConcurrent.map(({ stderr }) => stderr).join('\n'),
+    )
+    assert.deepEqual(
+      strictConcurrent.map(({ stdout }) => Number(stdout.trim().split('|')[1])),
+      [11, 22, 33],
+    )
+
+    const strictAdmin = await strictPostmaster.createSession()
+    await strictAdmin.exec("ALTER ROLE postgres PASSWORD 'strict-secret'")
+    await writeFile(
+      join(root, 'strict-success-data', 'pg_hba.conf'),
+      'host all all 127.0.0.1/32 scram-sha-256\n',
+    )
+    const reload = await strictAdmin.query(
+      'SELECT pg_reload_conf() AS reloaded',
+    )
+    assert.deepEqual(reload.rows, [{ reloaded: true }])
+    const noPassword = await run(
+      psql,
+      ['-X', '--no-psqlrc', '-w', '-c', 'SELECT 1'],
+      {
+        ...commonEnvironment,
+        PGHOST: '127.0.0.1',
+        PGPORT: String(strictPort),
+        PGPASSFILE: '/dev/null',
+      },
+    )
+    assert.notEqual(noPassword.code, 0)
+    assert.match(
+      noPassword.stderr,
+      /(?:no password supplied|password authentication failed)/,
+    )
+    const withPassword = await run(
+      psql,
+      ['-X', '--no-psqlrc', '-w', '-A', '-t', '-c', 'SELECT 8 * 8'],
+      {
+        ...commonEnvironment,
+        PGHOST: '127.0.0.1',
+        PGPORT: String(strictPort),
+        PGPASSFILE: '/dev/null',
+        PGPASSWORD: 'strict-secret',
+      },
+    )
+    assert.equal(withPassword.code, 0, withPassword.stderr)
+    assert.match(withPassword.stdout, /^64$/m)
+    await strictAdmin.close()
+    await strict.close()
+    strict = undefined
+    await strictPostmaster.shutdown('fast')
+    strictPostmaster = undefined
+
+    const strictSocketDirectory = join(root, 'strict-socket')
+    await mkdir(strictSocketDirectory)
+    strictPostmaster = await withTimeout(
+      PGlitePostmaster.create({
+        dataDir: `file://${join(root, 'strict-unix-data')}`,
+        maxConnections: 4,
+        sharedBuffers: '16MB',
+        artifact: { wasm, glue, data },
+        respectPostgresqlConfig: true,
+        startParams: [
+          '-c',
+          'listen_addresses=',
+          '-c',
+          `port=${strictPort}`,
+          '-c',
+          `unix_socket_directories=${strictSocketDirectory}`,
+          '-c',
+          'unix_socket_permissions=0750',
+        ],
+      }),
+      60_000,
+      'strict Unix postmaster startup',
+    )
+    strict = await PGliteServer.create({
+      postmaster: strictPostmaster,
+      mode: 'postgres',
+    })
+    const strictSocketPath = join(
+      strictSocketDirectory,
+      `.s.PGSQL.${strictPort}`,
+    )
+    assert.deepEqual(strict.addresses, [
+      {
+        transport: 'unix',
+        path: strictSocketPath,
+        directory: strictSocketDirectory,
+        port: strictPort,
+        lockPath: `${strictSocketPath}.lock`,
+      },
+    ])
+    assert.equal((await stat(strictSocketPath)).mode & 0o777, 0o750)
+    await access(`${strictSocketPath}.lock`)
+    assert.equal((await stat(`${strictSocketPath}.lock`)).mode & 0o777, 0o600)
+    const strictUnixResult = await runUntilSuccess(
+      psql,
+      ['-X', '--no-psqlrc', '-A', '-t', '-c', 'SELECT 7 * 6'],
+      {
+        ...commonEnvironment,
+        PGHOST: strictSocketDirectory,
+        PGPORT: String(strictPort),
+      },
+      30_000,
+    )
+    assert.equal(strictUnixResult.code, 0, strictUnixResult.stderr)
+    assert.match(strictUnixResult.stdout, /^42$/m)
+    await strict.close()
+    strict = undefined
+    await assert.rejects(access(strictSocketPath))
+    await assert.rejects(access(`${strictSocketPath}.lock`))
+    await strictPostmaster.shutdown('fast')
+    strictPostmaster = undefined
+
     console.log('Native TCP/Unix socket frontend test: PASS')
   } finally {
+    if (occupied) {
+      await new Promise((resolveClose) => occupied.close(() => resolveClose()))
+    }
+    await strict?.close().catch(() => undefined)
+    await strictPostmaster?.shutdown('immediate').catch(() => undefined)
     await owned?.close({ mode: 'immediate' }).catch(() => undefined)
     await tcp?.close().catch(() => undefined)
     await unix?.close().catch(() => undefined)
     await postmaster?.close().catch(() => undefined)
     await rm(root, { recursive: true, force: true })
   }
+}
+
+async function reservePort() {
+  const server = createServer()
+  await new Promise((resolveListen, rejectListen) => {
+    server.once('error', rejectListen)
+    server.listen(0, '127.0.0.1', resolveListen)
+  })
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('port probe did not return a TCP address')
+  }
+  await new Promise((resolveClose, rejectClose) =>
+    server.close((error) =>
+      error ? rejectClose(error) : resolveClose(undefined),
+    ),
+  )
+  return address.port
 }
 
 function run(command, args, environment) {

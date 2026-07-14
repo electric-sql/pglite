@@ -1,10 +1,14 @@
 import { once } from 'node:events'
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { createConnection, type Socket } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type {
+  PostgresHostBindRequest,
+  PostgresNodeNetworkHost,
+} from '@electric-sql/pglite/_internal/node-network-host'
 import {
   PGlitePostmaster,
   ProcessExitKind,
@@ -14,6 +18,49 @@ import {
   type ProtocolPeerInfo,
 } from '@electric-sql/pglite/postmaster'
 import { PGliteServer } from '../src/index.js'
+
+const strictHosts = vi.hoisted(
+  () => new WeakMap<object, PostgresNodeNetworkHost>(),
+)
+
+vi.mock('@electric-sql/pglite/_internal/node-network-host', () => ({
+  attachPostgresNodeNetworkHost: async (
+    postmaster: object,
+    host: PostgresNodeNetworkHost,
+  ) => {
+    const active = new Map<number, PostgresHostBindRequest>()
+    const proxy: PostgresNodeNetworkHost = {
+      async bind(request) {
+        await host.bind(request)
+        active.set(request.listenerId, request)
+      },
+      listen: (listenerId, generation, backlog) =>
+        host.listen(listenerId, generation, backlog),
+      async close(listenerId, generation) {
+        await host.close(listenerId, generation)
+        active.delete(listenerId)
+      },
+    }
+    strictHosts.set(postmaster, proxy)
+    const desired = (
+      postmaster as { strictListeners?: readonly PostgresHostBindRequest[] }
+    ).strictListeners
+    for (const request of desired ?? []) {
+      await proxy.bind(request)
+      await proxy.listen(request.listenerId, request.generation, 64)
+    }
+    let detached = false
+    const detach = async () => {
+      if (detached) return
+      detached = true
+      for (const request of [...active.values()]) {
+        await proxy.close(request.listenerId, request.generation)
+      }
+      strictHosts.delete(postmaster)
+    }
+    return { detach, [Symbol.asyncDispose]: detach }
+  },
+}))
 
 const servers = new Set<PGliteServer>()
 const directories = new Set<string>()
@@ -291,6 +338,94 @@ describe('PGliteServer', () => {
       createPostmaster.mockRestore()
     }
   })
+
+  it('materializes generation-fenced PostgreSQL-controlled listeners', async () => {
+    const postmaster = new FakePostmaster([
+      {
+        listenerId: 7,
+        generation: 11,
+        transport: 'tcp',
+        host: '127.0.0.1',
+        port: 0,
+      },
+    ])
+    const server = tracked(
+      await PGliteServer.create({ postmaster, mode: 'postgres' }),
+    )
+    const host = strictHosts.get(postmaster)
+    if (!host) throw new Error('strict network host was not attached')
+    expect(server.isListening).toBe(true)
+    expect(server.address).toBeUndefined()
+    const [address] = server.addresses
+    expect(address).toMatchObject({ transport: 'tcp', host: '127.0.0.1' })
+    if (address?.transport !== 'tcp') throw new Error('expected TCP address')
+    expect(address.port).toBeGreaterThan(0)
+
+    const socket = createConnection(address.port, address.host)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    socket.write(Uint8Array.of(1, 3, 5))
+    await waitFor(() => connection.received.length > 0)
+    expect(flatten(connection.received)).toEqual(Uint8Array.of(1, 3, 5))
+    await expect(host.close(7, 12)).rejects.toMatchObject({ code: 'EBADF' })
+
+    await server.close()
+    expect(server.isListening).toBe(false)
+    expect(server.addresses).toEqual([])
+    expect(connection.aborted).toBe(true)
+    socket.destroy()
+  })
+
+  it('keeps explicit and PostgreSQL-controlled configuration distinct', async () => {
+    await expect(
+      PGliteServer.create({
+        postmaster: new FakePostmaster(),
+        mode: 'postgres',
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    ).rejects.toThrow('cannot be combined')
+  })
+
+  it('applies PostgreSQL-controlled Unix metadata and cleans owned paths', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'pglite-strict-unix-'))
+    directories.add(directory)
+    const path = join(directory, '.s.PGSQL.55439')
+    const postmaster = new FakePostmaster([
+      {
+        listenerId: 8,
+        generation: 12,
+        transport: 'unix',
+        path,
+        unixMode: 0o750,
+        unixGroup: '',
+      },
+    ])
+    const server = tracked(
+      await PGliteServer.create({ postmaster, mode: 'postgres' }),
+    )
+    expect(server.addresses).toEqual([
+      {
+        transport: 'unix',
+        path,
+        directory,
+        port: 55439,
+        lockPath: `${path}.lock`,
+      },
+    ])
+    expect(statSync(path).mode & 0o777).toBe(0o750)
+    expect(existsSync(`${path}.lock`)).toBe(true)
+    expect(statSync(`${path}.lock`).mode & 0o777).toBe(0o600)
+
+    const socket = createConnection(path)
+    await once(socket, 'connect')
+    const connection = await postmaster.nextConnection()
+    expect(postmaster.peers).toEqual([{ transport: 'unix' }])
+    connection.closeBackend()
+    await once(socket, 'close')
+    await server.close()
+    expect(existsSync(path)).toBe(false)
+    expect(existsSync(`${path}.lock`)).toBe(false)
+  })
 })
 
 class FakePostmaster {
@@ -300,7 +435,7 @@ class FakePostmaster {
   private readonly exitPromise: Promise<PGlitePostmasterExit>
   private resolveExit!: (exit: PGlitePostmasterExit) => void
 
-  constructor() {
+  constructor(readonly strictListeners?: readonly PostgresHostBindRequest[]) {
     this.exitPromise = new Promise((resolveExit) => {
       this.resolveExit = resolveExit
     })

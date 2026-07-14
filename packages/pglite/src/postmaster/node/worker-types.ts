@@ -5,6 +5,7 @@ import type {
   FilesystemCapabilities,
   PGliteClusterLeaseProvider,
 } from '../../fs/base.js'
+import type { PostgresSocketOperation } from '../shared/network-host.js'
 export type { ProcessScopedMemoryMode } from '../shared/process-types.js'
 
 export interface PostmasterArtifactPaths {
@@ -62,6 +63,7 @@ export interface PostgresProcessWorkerData {
 }
 
 export type PostgresProcessWorkerMessage =
+  | PostgresSocketOperation
   | {
       readonly type: 'filesystem-request'
       readonly pid: number

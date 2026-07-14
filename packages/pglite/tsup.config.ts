@@ -26,6 +26,7 @@ const entryPoints = [
   'src/worker/index.ts',
   'src/postmaster/index.ts',
   'src/postmaster/internal.ts',
+  'src/postmaster/node-network-host.ts',
   'src/postmaster/process-worker.ts',
   'src/postmaster/unsupported.ts',
 ]

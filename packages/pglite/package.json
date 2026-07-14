@@ -87,6 +87,16 @@
         "default": "./dist/fs/nodefs.cjs"
       }
     },
+    "./_internal/node-network-host": {
+      "import": {
+        "types": "./dist/postmaster/node-network-host.d.ts",
+        "default": "./dist/postmaster/node-network-host.js"
+      },
+      "require": {
+        "types": "./dist/postmaster/node-network-host.d.cts",
+        "default": "./dist/postmaster/node-network-host.cjs"
+      }
+    },
     "./opfs-ahp": {
       "import": {
         "types": "./dist/fs/opfs-ahp.d.ts",
