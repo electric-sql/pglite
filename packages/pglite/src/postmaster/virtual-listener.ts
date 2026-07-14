@@ -3,6 +3,7 @@ import {
   type ProcessControlRegistry,
   type ProcessHandle,
   type VirtualConnectionHandle,
+  type VirtualConnectionPeer,
 } from './control.js'
 
 export interface PendingVirtualConnection {
@@ -25,8 +26,8 @@ export class VirtualConnectionBroker {
     )
   }
 
-  connect(): PendingVirtualConnection {
-    const handle = this.registry.reserveConnection()
+  connect(peer?: VirtualConnectionPeer): PendingVirtualConnection {
+    const handle = this.registry.reserveConnection(peer)
     const transport = ConnectionTransport.attach(
       this.buffers[handle.slot],
       () => this.registry.notifyConnectionOwner(handle),

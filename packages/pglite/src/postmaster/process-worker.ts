@@ -167,8 +167,8 @@ async function main(): Promise<void> {
         (module: PostgresMod) => {
           module.ENV.PGDATA = '/pglite/data'
           module.ENV.HOME = '/home/postgres'
-          module.ENV.USER = 'postgres'
-          module.ENV.LOGNAME = 'postgres'
+          module.ENV.USER = data.osUser
+          module.ENV.LOGNAME = data.osUser
           module.ENV.ICU_DATA = '/pglite/icu'
         },
       ],

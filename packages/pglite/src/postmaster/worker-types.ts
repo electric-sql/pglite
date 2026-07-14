@@ -36,6 +36,7 @@ export interface PostgresProcessWorkerData {
   readonly dataDirectory: string
   readonly filesystem: WorkerFilesystemDescriptor
   readonly arguments: readonly string[]
+  readonly osUser: string
   readonly debug: boolean
 }
 

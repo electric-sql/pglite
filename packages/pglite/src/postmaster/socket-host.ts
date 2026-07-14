@@ -3,6 +3,7 @@ import {
   type ProcessControlRegistry,
   type ProcessHandle,
   type VirtualConnectionHandle,
+  VirtualConnectionTransport,
 } from './control.js'
 import type { PostgresMod } from '../postgresMod.js'
 
@@ -17,7 +18,9 @@ const POLLRDHUP = 0x2000
 const POLLFD_BYTES = 8
 const PGL_SOCKET_NOT_HANDLED = -2
 const AF_INET = 2
+const AF_UNIX = 1
 const SOCKADDR_IN_BYTES = 16
+const SOCKADDR_UN_BYTES = 110
 
 const ERRNO = {
   EAGAIN: 6,
@@ -154,7 +157,7 @@ export class VirtualSocketHost {
     if (!this.listener(descriptor)) return -1
     const handle = this.options.registry.waitForConnection()
     if (!handle) return -1
-    if (!this.writeLoopbackAddress(addressPointer, addressLengthPointer)) {
+    if (!this.writePeerAddress(handle, addressPointer, addressLengthPointer)) {
       ConnectionTransport.attach(
         this.options.connectionBuffers[handle.slot],
       ).abort(1)
@@ -170,7 +173,8 @@ export class VirtualSocketHost {
     return connectionDescriptor
   }
 
-  private writeLoopbackAddress(
+  private writePeerAddress(
+    connection: VirtualConnectionHandle,
     addressPointer: number,
     addressLengthPointer: number,
   ): boolean {
@@ -188,9 +192,14 @@ export class VirtualSocketHost {
     }
     const view = new DataView(this.options.privateMemory.buffer)
     const capacity = view.getUint32(addressLengthPointer, true)
+    const peer = this.options.registry.connectionPeer(connection)
+    const addressBytes =
+      peer.transport === VirtualConnectionTransport.Unix
+        ? SOCKADDR_UN_BYTES
+        : SOCKADDR_IN_BYTES
     if (
-      capacity < SOCKADDR_IN_BYTES ||
-      !this.privateRange(addressPointer, SOCKADDR_IN_BYTES)
+      capacity < addressBytes ||
+      !this.privateRange(addressPointer, addressBytes)
     ) {
       this.setErrno(ERRNO.EINVAL)
       return false
@@ -198,12 +207,16 @@ export class VirtualSocketHost {
     new Uint8Array(
       this.options.privateMemory.buffer,
       addressPointer,
-      SOCKADDR_IN_BYTES,
+      addressBytes,
     ).fill(0)
-    view.setUint16(addressPointer, AF_INET, true)
-    view.setUint16(addressPointer + 2, 5432, false)
-    view.setUint32(addressPointer + 4, 0x7f000001, false)
-    view.setUint32(addressLengthPointer, SOCKADDR_IN_BYTES, true)
+    if (peer.transport === VirtualConnectionTransport.Unix) {
+      view.setUint16(addressPointer, AF_UNIX, true)
+    } else {
+      view.setUint16(addressPointer, AF_INET, true)
+      view.setUint16(addressPointer + 2, 5432, false)
+      view.setUint32(addressPointer + 4, 0x7f000001, false)
+    }
+    view.setUint32(addressLengthPointer, addressBytes, true)
     return true
   }
 

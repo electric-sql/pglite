@@ -1,11 +1,11 @@
 const CONTROL_MAGIC = 0x50474354
-const CONTROL_VERSION = 2
+const CONTROL_VERSION = 3
 const HEADER_WORDS = 8
 const PROCESS_WORDS = 20
 const CHILD_KIND_BYTES = 64
 const PARAMETER_FILE_BYTES = 1024
 const SPAWN_PAYLOAD_BYTES = CHILD_KIND_BYTES + PARAMETER_FILE_BYTES
-const CONNECTION_WORDS = 4
+const CONNECTION_WORDS = 7
 
 const enum HeaderField {
   Magic,
@@ -49,7 +49,10 @@ const enum ConnectionField {
   State,
   Generation,
   ConnectionId,
-  Flags,
+  OwnerPid,
+  Transport,
+  UserId,
+  GroupId,
 }
 
 export enum PostgresProcessKind {
@@ -95,6 +98,17 @@ export enum ConnectionRequestState {
   Reserved,
   Ready,
   Claimed,
+}
+
+export enum VirtualConnectionTransport {
+  Tcp = 1,
+  Unix,
+}
+
+export interface VirtualConnectionPeer {
+  readonly transport: VirtualConnectionTransport
+  readonly userId: number
+  readonly groupId: number
 }
 
 export const PGLITE_SIGNALS = {
@@ -245,7 +259,9 @@ export class ProcessControlRegistry {
       initialPid <= 0 ||
       initialPid >= 0x7fff_ffff
     ) {
-      throw new RangeError('initialPid must be a positive signed 32-bit integer')
+      throw new RangeError(
+        'initialPid must be a positive signed 32-bit integer',
+      )
     }
     const buffer = new SharedArrayBuffer(
       (HEADER_WORDS + maxProcesses * PROCESS_WORDS) *
@@ -488,7 +504,29 @@ export class ProcessControlRegistry {
     )
   }
 
-  reserveConnection(): VirtualConnectionHandle {
+  reserveConnection(
+    peer: VirtualConnectionPeer = {
+      transport: VirtualConnectionTransport.Tcp,
+      userId: 0,
+      groupId: 0,
+    },
+  ): VirtualConnectionHandle {
+    if (
+      peer.transport !== VirtualConnectionTransport.Tcp &&
+      peer.transport !== VirtualConnectionTransport.Unix
+    ) {
+      throw new RangeError('invalid PGlite virtual connection transport')
+    }
+    if (
+      !Number.isInteger(peer.userId) ||
+      peer.userId < 0 ||
+      peer.userId > 0xffff_ffff ||
+      !Number.isInteger(peer.groupId) ||
+      peer.groupId < 0 ||
+      peer.groupId > 0xffff_ffff
+    ) {
+      throw new RangeError('invalid PGlite virtual connection credentials')
+    }
     for (let slot = 0; slot < this.maxProcesses; slot++) {
       const stateIndex = this.connectionIndex(slot, ConnectionField.State)
       if (
@@ -515,6 +553,26 @@ export class ProcessControlRegistry {
         this.words,
         this.connectionIndex(slot, ConnectionField.ConnectionId),
         id,
+      )
+      Atomics.store(
+        this.words,
+        this.connectionIndex(slot, ConnectionField.OwnerPid),
+        0,
+      )
+      Atomics.store(
+        this.words,
+        this.connectionIndex(slot, ConnectionField.Transport),
+        peer.transport,
+      )
+      Atomics.store(
+        this.words,
+        this.connectionIndex(slot, ConnectionField.UserId),
+        peer.userId,
+      )
+      Atomics.store(
+        this.words,
+        this.connectionIndex(slot, ConnectionField.GroupId),
+        peer.groupId,
       )
       return { slot, id, generation }
     }
@@ -616,7 +674,22 @@ export class ProcessControlRegistry {
     )
     Atomics.store(
       this.words,
-      this.connectionIndex(connection.slot, ConnectionField.Flags),
+      this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.Transport),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.UserId),
+      0,
+    )
+    Atomics.store(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.GroupId),
       0,
     )
     Atomics.store(
@@ -635,7 +708,7 @@ export class ProcessControlRegistry {
     this.assertCurrent(owner)
     Atomics.store(
       this.words,
-      this.connectionIndex(connection.slot, ConnectionField.Flags),
+      this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
       owner.pid,
     )
     this.wake(owner)
@@ -645,7 +718,7 @@ export class ProcessControlRegistry {
     if (!this.isConnectionCurrent(connection)) return false
     const ownerPid = Atomics.load(
       this.words,
-      this.connectionIndex(connection.slot, ConnectionField.Flags),
+      this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
     )
     if (ownerPid === 0) return false
     const owner = this.lookup(ownerPid)
@@ -690,8 +763,37 @@ export class ProcessControlRegistry {
     if (!this.isConnectionCurrent(connection)) return 0
     return Atomics.load(
       this.words,
-      this.connectionIndex(connection.slot, ConnectionField.Flags),
+      this.connectionIndex(connection.slot, ConnectionField.OwnerPid),
     )
+  }
+
+  connectionPeer(connection: VirtualConnectionHandle): VirtualConnectionPeer {
+    if (!this.isConnectionCurrent(connection)) {
+      throw new Error(`stale PGlite connection handle ${connection.id}`)
+    }
+    const transport = Atomics.load(
+      this.words,
+      this.connectionIndex(connection.slot, ConnectionField.Transport),
+    ) as VirtualConnectionTransport
+    if (
+      transport !== VirtualConnectionTransport.Tcp &&
+      transport !== VirtualConnectionTransport.Unix
+    ) {
+      throw new Error(`invalid PGlite connection transport ${transport}`)
+    }
+    return {
+      transport,
+      userId:
+        Atomics.load(
+          this.words,
+          this.connectionIndex(connection.slot, ConnectionField.UserId),
+        ) >>> 0,
+      groupId:
+        Atomics.load(
+          this.words,
+          this.connectionIndex(connection.slot, ConnectionField.GroupId),
+        ) >>> 0,
+    }
   }
 
   notify(handle: ProcessHandle): void {

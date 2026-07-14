@@ -11,6 +11,7 @@ import {
   ProcessControlRegistry,
   ProcessExitKind,
   ProcessState,
+  VirtualConnectionTransport,
   type ProcessHandle,
   type SpawnRequest,
 } from './control.js'
@@ -33,6 +34,7 @@ const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
 const ARTIFACT_GLOBAL_INITIAL_PAGES = 2
 const ARTIFACT_MAXIMUM_PAGES = 16_384
 const GLOBAL_SHM_ALLOCATION_GENERATION_WORD = (0x1_0000 >>> 2) + 5
+const PGLITE_PROCESS_USER_ID = 123
 const ownedDirectories = new Set<string>()
 
 export interface ProtocolPeerInfo {
@@ -75,6 +77,8 @@ export interface PGlitePostmasterOptions {
   readonly privateMaximumMemory?: number
   readonly globalInitialMemory?: number
   readonly globalMaximumMemory?: number
+  /** OS identity presented to PostgreSQL for local-socket peer authentication. */
+  readonly osUser?: string
   /**
    * Synthetic PID assigned to the postmaster. Test providers can set this to
    * the foreground host wrapper PID so postmaster.pid retains its usual
@@ -125,6 +129,7 @@ export class PGlitePostmaster {
   private readonly privateInitialPages: number
   private readonly privateMaximumPages: number
   private readonly globalMaximumPages: number
+  private readonly osUser: string
   private readonly debug: boolean
   private readonly postmasterProcess: ProcessHandle
   private readonly broker: VirtualConnectionBroker
@@ -158,6 +163,10 @@ export class PGlitePostmaster {
     this.privateInitialPages = memory.privateInitialPages
     this.privateMaximumPages = memory.privateMaximumPages
     this.globalMaximumPages = memory.globalMaximumPages
+    this.osUser = options.osUser ?? 'postgres'
+    if (this.osUser.length === 0 || this.osUser.includes('\0')) {
+      throw new TypeError('osUser must be a non-empty string without NUL')
+    }
     this.workerUrl =
       options.workerUrl ?? new URL('./process-worker.js', import.meta.url)
     this.debug = options.debug ?? false
@@ -236,10 +245,20 @@ export class PGlitePostmaster {
   }
 
   async openProtocolConnection(
-    _peer?: ProtocolPeerInfo,
+    peer: ProtocolPeerInfo = { transport: 'tcp' },
   ): Promise<PGliteProtocolConnection> {
     this.assertOpen()
-    const connection = this.broker.connect()
+    const connection = this.broker.connect({
+      transport:
+        peer.transport === 'unix'
+          ? VirtualConnectionTransport.Unix
+          : VirtualConnectionTransport.Tcp,
+      // The Wasm libc presents one synthetic process identity. Node's socket
+      // API does not expose SO_PEERCRED, so local peer authentication models
+      // a same-user client, which is also how the provider runs native tools.
+      userId: PGLITE_PROCESS_USER_ID,
+      groupId: PGLITE_PROCESS_USER_ID,
+    })
     return new RawProtocolConnection(connection.transport, () =>
       this.broker.release(connection.handle.id),
     )
@@ -414,6 +433,7 @@ export class PGlitePostmaster {
       dataDirectory: this.dataDir,
       filesystem: this.filesystem,
       arguments: args,
+      osUser: this.osUser,
       debug: this.debug,
     }
     const worker = new Worker(this.workerUrl, { workerData })

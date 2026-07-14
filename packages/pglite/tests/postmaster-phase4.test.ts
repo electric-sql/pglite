@@ -13,6 +13,7 @@ import {
   SharedWordSemaphore,
   SupervisorTimers,
   VirtualConnectionBroker,
+  VirtualConnectionTransport,
   VirtualSocketHost,
   waitAsync,
   createMemoryAwareFdRead,
@@ -537,6 +538,11 @@ describe('Phase 4 process portability primitives', () => {
     expect(acceptView.getUint16(800, true)).toBe(2)
     expect(acceptView.getUint16(802, false)).toBe(5432)
     expect(acceptView.getUint32(804, false)).toBe(0x7f000001)
+    expect(registry.connectionPeer(pending.handle)).toEqual({
+      transport: VirtualConnectionTransport.Tcp,
+      userId: 0,
+      groupId: 0,
+    })
     expect(postmasterSockets.connectionIdForDescriptor(descriptor)).toBe(
       pending.handle.id,
     )
@@ -582,6 +588,32 @@ describe('Phase 4 process portability primitives', () => {
     )
     await pending.transport.waitForClose()
     expect(broker.release(pending.handle.id)).toBe(true)
+
+    const unixPending = broker.connect({
+      transport: VirtualConnectionTransport.Unix,
+      userId: 123,
+      groupId: 123,
+    })
+    acceptView.setUint32(768, 128, true)
+    const unixDescriptor = postmasterModule.invoke(
+      postmasterModule.socketHost[3],
+      listener,
+      800,
+      768,
+    )
+    expect(acceptView.getUint32(768, true)).toBe(110)
+    expect(acceptView.getUint16(800, true)).toBe(1)
+    expect(registry.connectionPeer(unixPending.handle)).toEqual({
+      transport: VirtualConnectionTransport.Unix,
+      userId: 123,
+      groupId: 123,
+    })
+    expect(
+      postmasterModule.invoke(postmasterModule.socketHost[4], unixDescriptor),
+    ).toBe(0)
+    expect(broker.abort(unixPending.handle.id)).toBe(true)
+    await unixPending.transport.waitForClose()
+    expect(broker.release(unixPending.handle.id)).toBe(true)
     postmasterSockets.dispose()
     backendSockets.dispose()
     broker.close()
