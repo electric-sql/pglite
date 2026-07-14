@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { measureMemory } from 'node:vm'
 import { Worker } from 'node:worker_threads'
 import type { Filesystem } from '../fs/base.js'
 import { PGlite } from '../pglite.js'
@@ -40,12 +41,15 @@ const WASM_PAGE_BYTES = 65_536
 const ARTIFACT_PRIVATE_INITIAL_PAGES = 512
 const ARTIFACT_GLOBAL_INITIAL_PAGES = 2
 const ARTIFACT_MAXIMUM_PAGES = 16_384
-const GLOBAL_SHM_ALLOCATION_GENERATION_WORD = (0x1_0000 >>> 2) + 5
+const SHM_ALLOCATION_GENERATION_WORD_OFFSET = 5
+const GLOBAL_SHM_ALLOCATION_GENERATION_WORD =
+  (0x1_0000 >>> 2) + SHM_ALLOCATION_GENERATION_WORD_OFFSET
 const SCOPED_SHM_MAGIC_READY = 0x5047_4c53
-const SCOPED_SHM_REGISTRY_VERSION = 3
+const SCOPED_SHM_REGISTRY_VERSION = 4
 const SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS = 18_464 >>> 2
 const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
-const SCOPED_SHM_MAX_SCOPES = 256
+const SCOPED_SHM_MAX_SCOPES = 640
+const RETIRED_BACKING_STORE_COLLECTION_INTERVAL = 128
 const PGLITE_PROCESS_USER_ID = 123
 const ownedDirectories = new Set<string>()
 
@@ -134,6 +138,8 @@ export interface PGlitePostmasterDiagnostics {
   readonly scopedMemoriesStarted: number
   readonly scopedMemoriesReleased: number
   readonly scopedMemoryBytes: number
+  readonly v8BackingStoreCollections: number
+  readonly retiredScopedMemoriesAwaitingCollection: number
   readonly privateMemoryMaximumBytes: number
   readonly globalMemoryMaximumBytes: number
   readonly scopedMemoryMaximumBytes: number
@@ -153,6 +159,8 @@ export interface PGlitePostmasterFilesystemDiagnostics {
 
 export interface PGliteScopedLifetimeDiagnostics {
   readonly readyRoots: number
+  /** Sum of allocation/release events across all currently ready roots. */
+  readonly allocationGeneration: number
   readonly activeRootScopes: number
   readonly activeSessionScopes: number
   readonly activeTransactionScopes: number
@@ -241,6 +249,9 @@ export class PGlitePostmaster {
   private privateMemoriesReleased = 0
   private scopedMemoriesStarted = 0
   private scopedMemoriesReleased = 0
+  private v8BackingStoreCollections = 0
+  private retiredScopedMemoriesAwaitingCollection = 0
+  private backingStoreCollection?: Promise<void>
 
   private constructor(
     options: PGlitePostmasterOptions,
@@ -437,6 +448,9 @@ export class PGlitePostmaster {
       scopedMemoriesStarted: this.scopedMemoriesStarted,
       scopedMemoriesReleased: this.scopedMemoriesReleased,
       scopedMemoryBytes,
+      v8BackingStoreCollections: this.v8BackingStoreCollections,
+      retiredScopedMemoriesAwaitingCollection:
+        this.retiredScopedMemoriesAwaitingCollection,
       privateMemoryMaximumBytes: this.privateMaximumPages * WASM_PAGE_BYTES,
       globalMemoryMaximumBytes: this.globalMaximumPages * WASM_PAGE_BYTES,
       scopedMemoryMaximumBytes:
@@ -534,6 +548,7 @@ export class PGlitePostmaster {
         (loop): loop is Promise<void> => loop !== undefined,
       ),
     )
+    await this.collectRetiredBackingStores(true)
     this.broker.close()
     try {
       if (this.filesystem.kind === 'broker') {
@@ -863,6 +878,46 @@ export class PGlitePostmaster {
     if (root.exited && root.members.size === 0) {
       this.scopedRoots.delete(root.handle.pid)
       if (root.mode === 'dedicated') this.scopedMemoriesReleased++
+      this.retiredScopedMemoriesAwaitingCollection++
+      void this.collectRetiredBackingStores()
+    }
+  }
+
+  private async collectRetiredBackingStores(force = false): Promise<void> {
+    if (this.backingStoreCollection) {
+      if (!force) return
+      await this.backingStoreCollection
+    }
+    if (
+      this.retiredScopedMemoriesAwaitingCollection === 0 ||
+      (!force &&
+        this.retiredScopedMemoriesAwaitingCollection <
+          RETIRED_BACKING_STORE_COLLECTION_INTERVAL)
+    ) {
+      return
+    }
+
+    this.retiredScopedMemoriesAwaitingCollection = 0
+    const collection = measureMemory({
+      mode: 'summary',
+      execution: 'eager',
+    }).then(() => {
+      this.v8BackingStoreCollections++
+    })
+    this.backingStoreCollection = collection
+    try {
+      await collection
+    } finally {
+      if (this.backingStoreCollection === collection) {
+        this.backingStoreCollection = undefined
+      }
+    }
+    if (
+      force ||
+      this.retiredScopedMemoriesAwaitingCollection >=
+        RETIRED_BACKING_STORE_COLLECTION_INTERVAL
+    ) {
+      await this.collectRetiredBackingStores(force)
     }
   }
 
@@ -876,6 +931,7 @@ function readScopedLifetimeDiagnostics(
   roots: Iterable<ScopedRootRecord>,
 ): PGliteScopedLifetimeDiagnostics {
   let readyRoots = 0
+  let allocationGeneration = 0
   let activeRootScopes = 0
   let activeSessionScopes = 0
   let activeTransactionScopes = 0
@@ -903,6 +959,10 @@ function readScopedLifetimeDiagnostics(
       continue
     }
     readyRoots++
+    allocationGeneration += Atomics.load(
+      words,
+      registryWord + SHM_ALLOCATION_GENERATION_WORD_OFFSET,
+    )
     for (let slot = 0; slot < SCOPED_SHM_MAX_SCOPES; slot++) {
       const offset =
         registryWord +
@@ -934,6 +994,7 @@ function readScopedLifetimeDiagnostics(
 
   return {
     readyRoots,
+    allocationGeneration,
     activeRootScopes,
     activeSessionScopes,
     activeTransactionScopes,
