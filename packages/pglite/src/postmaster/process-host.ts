@@ -100,7 +100,8 @@ export class PostmasterProcessHost {
 
     const clockNow = this.addFunction(
       () =>
-        BigInt(Math.floor((performance.timeOrigin + performance.now()) * 1000)),
+        BigInt(Math.floor(performance.timeOrigin * 1000)) +
+        BigInt(Math.floor(performance.now() * 1000)),
       'j',
     )
     module._pgl_set_clock_host(clockNow)

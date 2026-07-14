@@ -491,6 +491,15 @@ describe('Phase 4 process portability primitives', () => {
     expect(realtimeMicroseconds).toBeGreaterThan(Date.now() * 1000 - 1_000_000)
     expect(realtimeMicroseconds).toBeLessThan(Date.now() * 1000 + 1_000_000)
 
+    const performanceNow = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(1_000.001)
+    const firstMicrosecond = fake.invoke(fake.clockHost[0])
+    const nextMicrosecond = fake.invoke(fake.clockHost[0])
+    performanceNow.mockRestore()
+    expect(nextMicrosecond - firstMicrosecond).toBe(1)
+
     expect(fake.invoke(fake.shmemHost[0], 2 * 65_536)).toBe(0)
     expect(globalMemory.buffer.byteLength).toBe(2 * 65_536)
     expect(fake.invoke(fake.shmemHost[0], 0x40000001)).toBe(-1)
