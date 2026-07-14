@@ -157,6 +157,10 @@ async function main(): Promise<void> {
       noInitialRun: true,
       noExitRuntime: true,
       wasmMemory: privateMemory,
+      pgliteMemoryABI: {
+        globalMemory: data.globalMemory,
+        scopedMemory,
+      },
       stdin: () => null,
       print: (text: string) => {
         if (data.debug) send({ type: 'stdout', pid: data.process.pid, text })

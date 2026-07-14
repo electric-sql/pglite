@@ -2625,6 +2625,38 @@ These are separately gated projects rather than hidden v1 prerequisites:
 4. Harden serializable and brokered third-party filesystem adapters beyond direct NODEFS.
 5. Explore browser multi-session only as a distinct product project, including COOP/COEP, OPFS brokering, and Safari capability tracking.
 
+#### Phase 8 scoped-memory and dynamic-module result
+
+The first three deferred projects completed on 14 July 2026. Memory 2 now has
+root, session, transaction, subtransaction, query, and parallel-context
+ownership, including inherited DSA placement and failure cleanup. Real parallel
+queries use root-scoped storage without increasing the cluster-global memory
+high-water mark. Hierarchy, query/transaction cleanup, generation safety,
+parallel-worker failure, and clean-shutdown diagnostics pass with dedicated
+scoped memories.
+
+Compact binding is implemented as an explicit experimental mode, but dedicated
+scoped memory remains the default. Compact binding removes exactly 128 KiB of
+idle allocation per root, yet the equal mixed workload used 55,050,240 bytes
+versus 48,824,320 bytes with dedicated backing, an increase of 6,225,920 bytes.
+Repeated RSS/VSZ samples did not establish a stable physical-memory advantage.
+The compact path remains useful for constrained experiments, but these results
+do not justify trading away the stronger isolation and reclamation boundary.
+
+Dynamic side modules now have a deterministic, image-owned transform and audit
+pipeline. The pinned Emscripten loader requires one compatible
+`pglite.multi-memory.abi` section and exact private/global/scoped imports before
+instantiation. A live C extension proves backend-private data and relocations,
+cluster-global pointer dereferences, tag-3 query allocations, and reclamation
+across independent sessions; classic and ABI-tampered modules are rejected.
+The transform preserves `dylink.0`, produces byte-identical repeat builds, and
+audits shared import types and aperture maximums after optimization. The full
+gate also passes native libpq cancellation/COPY/backpressure and the selected
+`test_setup int8 create_table create_index select` upstream regression corpus.
+Serializable and brokered third-party filesystem hardening remains the active
+Phase 8 item; browser work remains intentionally out of scope for this Node-only
+plan.
+
 ## 26. Test plan
 
 ### 26.1 Feature and loader tests
