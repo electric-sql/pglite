@@ -83,17 +83,17 @@ Arguments after a PostgreSQL-derived command are passed to that program
 unchanged. Environment variables, streaming standard input/output, exit status,
 and `SIGINT` cancellation are preserved.
 
-| Command | Compatibility and intentional differences |
-| --- | --- |
-| `initdb` | Native defaults and argument meanings; Node filesystem paths only. Full ICU inventory can be supplied through `PGLITE_CONFIG`. |
-| `postgres` | Foreground multi-session postmaster with PostgreSQL-controlled TCP and Unix listeners. No SSL, GSS, LDAP, forked logging collector, or daemon mode. |
-| `server` | PGlite-specific explicit listener frontend; this is not a native PostgreSQL command. |
-| `pg_isready` | Native connection options and exit statuses over TCP or Unix sockets. |
-| `psql` | SQL, scripts, variables, COPY streams, and meta-commands work. The build has no readline, tab completion, interactive line editing, pager process, or shell escapes. |
-| `pg_dump` | Plain, custom, tar, and directory output are available. Parallel jobs are unsupported; use `--jobs=1`. |
-| `pg_restore` | Restores supported archive formats. Parallel jobs are unsupported; use `--jobs=1`. |
-| `createdb`, `createuser`, `dropdb`, `dropuser` | Native options and connection behavior. Interactive password input uses the invocation streams. |
-| `clusterdb`, `vacuumdb`, `reindexdb` | Native options and database maintenance behavior; operations remain subject to the server's available extensions and build features. |
+| Command                                        | Compatibility and intentional differences                                                                                                                            |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initdb`                                       | Native defaults and argument meanings; Node filesystem paths only. Full ICU inventory can be supplied through `PGLITE_CONFIG`.                                       |
+| `postgres`                                     | Foreground multi-session postmaster with PostgreSQL-controlled TCP and Unix listeners. No SSL, GSS, LDAP, forked logging collector, or daemon mode.                  |
+| `server`                                       | PGlite-specific explicit listener frontend; this is not a native PostgreSQL command.                                                                                 |
+| `pg_isready`                                   | Native connection options and exit statuses over TCP or Unix sockets.                                                                                                |
+| `psql`                                         | SQL, scripts, variables, COPY streams, and meta-commands work. The build has no readline, tab completion, interactive line editing, pager process, or shell escapes. |
+| `pg_dump`                                      | Plain, custom, tar, and directory output are available. Parallel jobs are unsupported; use `--jobs=1`.                                                               |
+| `pg_restore`                                   | Restores supported archive formats. Parallel jobs are unsupported; use `--jobs=1`.                                                                                   |
+| `createdb`, `createuser`, `dropdb`, `dropuser` | Native options and connection behavior. Interactive password input uses the invocation streams.                                                                      |
+| `clusterdb`, `vacuumdb`, `reindexdb`           | Native options and database maintenance behavior; operations remain subject to the server's available extensions and build features.                                 |
 
 The client programs are isolated in Workers and connect through Node's TCP or
 Unix-socket host. They are compiled without SSL, GSS, LDAP, and host process
@@ -101,3 +101,13 @@ execution. Files are visible under the invocation working directory and the
 absolute `HOME`, `PGPASSFILE`, `PGSERVICEFILE`, and `PGSYSCONFDIR` paths. A
 relative output or archive path therefore resolves inside the current working
 directory; arbitrary host paths are not implicitly mounted.
+
+## Distribution size
+
+The umbrella package contains only the CLI and re-export layer (about 26 KB as
+an npm tarball). Its installed dependencies carry the implementation: the
+current core tarball is about 22.0 MB compressed, the complete tools tarball is
+about 2.92 MB, and the server wrapper is about 33 KB. Tool-by-tool raw and gzip
+costs are published in the `@electric-sql/pglite-tools` README. Ordinary
+`@electric-sql/pglite` root imports do not load the opt-in postmaster assets,
+and core does not contain the client-tool artifacts.

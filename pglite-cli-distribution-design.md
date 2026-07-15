@@ -1,6 +1,6 @@
 # PGlite Node Distribution and PostgreSQL-Compatible CLI
 
-Status: accepted design; implementation in progress<br>
+Status: implementation complete; npm name reservation pending<br>
 Initial target: Node.js 22 or newer<br>
 Repository package: `packages/pglite-cli`<br>
 Published package and executable: `pglite`<br>
@@ -1211,9 +1211,10 @@ owned.
 Startup validates native PostgreSQL metadata first and the PGlite manifest
 second. It refuses incompatible PostgreSQL majors, catalog versions, page
 formats, or storage features before starting a Worker that can modify the
-cluster. A missing manifest on an otherwise valid native PostgreSQL directory
-is handled by an explicit import/adoption command or option; it is never
-silently created during ordinary server startup.
+cluster. The initial release rejects a missing manifest on an otherwise valid
+native PostgreSQL directory. A future explicit import/adoption command may
+create one after validating the directory; ordinary server startup never does
+so silently.
 
 Classic and multi-session PGlite may open the same compatible cluster
 sequentially. They may never own it concurrently. Both modes acquire the same
@@ -1505,7 +1506,8 @@ persistent-cluster compatibility rules are fixed.
 
 Phase 0 repository decision record, 2026-07-14:
 
-- npm returned `E404` for both proposed names. This verifies current registry
+- npm returned `E404` for both proposed names, most recently reverified from the
+  pinned Docker tool image on 2026-07-15. This verifies current registry
   availability but does not reserve either name; authenticated reservation is
   the remaining external release-owner action and is not represented as a code
   change.
@@ -1808,7 +1810,8 @@ Phase 6 implementation record, 2026-07-15:
   loop after another listener claims a pending connection. Server-owned
   shutdown also drains listeners concurrently with postmaster shutdown while
   preserving caller-owned lifecycle semantics.
-- Native ARM64 Docker `make check` passes all 230 core regression tests. The
+- Native ARM64 Docker `make check` passes all 230 core regression tests at
+  PostgreSQL revision `4e8a8d2c9a`. The
   adapted `make -j2 -k check-world` records 226 passing supported suite/TAP
   events, 11 explicitly unsupported events, 26 blocked events, no supported
   failures, and 188 passing temporary-cluster lifecycles with no failed
@@ -1851,8 +1854,11 @@ Phase 7 implementation record, 2026-07-15:
 - A fresh packed installation runs every advertised command against one live
   multi-session server. It exercises concurrent native clients, Wasm psql SQL,
   variables, meta-commands, streamed `COPY FROM STDIN`, database and role
-  creation/removal, maintenance commands, custom-format dump, table removal,
-  archive restore, and restored-row verification. Clean ESM and CommonJS
+  creation/removal, maintenance commands, and table removal; plain, custom,
+  tar, and directory-format dumps; archive listing; custom
+  archive restore; and restored-row verification. The packed umbrella tarball
+  also runs `initdb` and a queryable foreground `postgres` through a clean
+  `npx --package` installation. Clean ESM and CommonJS
   imports prove identity for core, postmaster, server, all new scoped tool
   entry points, and the umbrella tools re-exports.
 - The explicit compatibility table records the missing SSL, GSS, LDAP,
@@ -1862,16 +1868,29 @@ Phase 7 implementation record, 2026-07-15:
   lifecycle semantics, while a partial native-shaped `pg_ctl` would add a
   second lifecycle contract without providing daemon mode.
 - The nine Phase 7 JS/Wasm artifact pairs add 4,939,651 bytes raw and 1,735,821
-  bytes when each file is gzipped. The final tools tarball is 8,631,921 bytes
-  unpacked and 2,916,089 bytes compressed, increases of 5,138,488 and 1,785,064
-  bytes over the Phase 5 package measurement. The umbrella tarball is 89,966
-  bytes unpacked and 25,966 bytes compressed, increases of 16,566 and 5,240
+  bytes when each file is gzipped. The final tools tarball is 8,633,040 bytes
+  unpacked and 2,916,833 bytes compressed, increases of 5,139,607 and 1,785,808
+  bytes over the Phase 5 package measurement. The umbrella tarball is 91,614
+  bytes unpacked and 26,257 bytes compressed, increases of 18,214 and 5,531
   bytes.
 - Node 22 passes 16 focused tools tests with seven Docker runtime cases gated
   separately and 24 CLI tests. Both packages pass TypeScript, lint, formatting,
   builds, and ESM/CommonJS export audits. The native ARM64 packed-package gate
   passes from artifact build through clean installation, programmatic imports,
   all command integrations, signal shutdown, and cluster cleanup.
+
+Final implementation audit, 2026-07-15:
+
+- Every in-repository acceptance criterion in Section 19 is implemented and
+  passes its documented Node 22 / native ARM64 Docker gate. The final
+  exact-revision PostgreSQL evidence is 230/230 for `make check`; for
+  `make check-world`, 226 supported events pass, 11 are explicitly unsupported,
+  26 are explicitly blocked, all 188 temporary-cluster lifecycles pass, and
+  upstream make exits zero.
+- The sole remaining release gate is the external Phase 0 action: an
+  authenticated project owner must reserve the currently available `pglite`
+  and `@electric-sql/pglite-server` npm names. No implementation work depends on
+  that action, but the packages must not be published until it is complete.
 
 ## 17. Alternatives considered
 
@@ -1916,18 +1935,27 @@ but risks shadowing system tools in npm-managed PATHs. The subcommand interface
 is safer and clearer. Deferred unless a separate opt-in compatibility package
 is justified.
 
-## 18. Open questions
+## 18. Resolved implementation questions
 
-1. Which commands justify their installed artifact cost in the first release?
-2. How closely can the Wasm utilities preserve native terminal, locale, and
-   signal behavior?
-3. Does CommonJS support remain required for the new Node-only packages?
-4. What is the supported CLI configuration mechanism for selecting a third-party
-   VFS, if one is needed?
-5. Which PostgreSQL version string should `pglite --version` report alongside
-   the distribution version?
-6. Should adoption of an otherwise compatible native PostgreSQL data directory
-   be exposed in the initial release or deferred until upgrade tooling exists?
+1. The first command set is `initdb`, `postgres`, `server`, `pg_isready`,
+   `psql`, `pg_dump`, `pg_restore`, `createdb`, `createuser`, `dropdb`,
+   `dropuser`, `clusterdb`, `vacuumdb`, and `reindexdb`. Phase 7 records the
+   artifact cost; `pg_ctl` remains test-provider infrastructure.
+2. Wasm utilities preserve argument meanings, environment, streams,
+   cancellation, and status through their native entry points. The published
+   compatibility table identifies unavailable native terminal, process,
+   security-library, locale-data, filesystem, and parallel-operation features.
+3. CommonJS remains supported for every new public package subpath and is part
+   of the packed-package and export-audit gates.
+4. Trusted Node-only VFS and worker-factory configuration uses the documented
+   `PGLITE_CONFIG` JavaScript module. The CLI accepts only the enumerated
+   pluggable runtime fields; it does not move the VFS API into the distribution
+   package.
+5. `pglite --version` reports the distribution version followed by the exact
+   PostgreSQL version embedded in the postmaster runtime identity.
+6. Native PostgreSQL data-directory adoption is deferred. The initial release
+   rejects a missing PGlite manifest before mutation; explicit, recoverable
+   adoption belongs with future upgrade tooling.
 
 ## 19. Acceptance criteria
 

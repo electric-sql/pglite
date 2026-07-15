@@ -55,6 +55,31 @@ SSL, GSS, LDAP, or readline. Parallel dump and restore modes and operations
 that launch host programs are not supported; use one job. Files must be under
 the mounted working directory or one of the mounted environment paths above.
 
+### Installed artifact cost
+
+Each command has independent Emscripten glue and Wasm so that every invocation
+owns fresh process state. These are the release artifact sizes for the current
+PostgreSQL 18 / Emscripten 3.1.74 build; gzip is measured per file and summed
+for each command.
+
+| Command      | Raw JS + Wasm | Gzip JS + Wasm |
+| ------------ | ------------: | -------------: |
+| `pg_dump`    |     858,347 B |      306,048 B |
+| `pg_isready` |     461,744 B |      162,477 B |
+| `psql`       |     919,556 B |      303,832 B |
+| `pg_restore` |     639,707 B |      229,859 B |
+| `createdb`   |     479,003 B |      170,275 B |
+| `createuser` |     482,655 B |      172,099 B |
+| `dropdb`     |     474,810 B |      168,866 B |
+| `dropuser`   |     474,607 B |      168,833 B |
+| `clusterdb`  |     480,456 B |      171,441 B |
+| `vacuumdb`   |     499,217 B |      176,307 B |
+| `reindexdb`  |     489,640 B |      174,309 B |
+
+The packed tools package is 8,633,040 bytes unpacked and 2,916,833 bytes as an
+npm tarball. Rebuilds must update these measurements when artifact contents or
+the command set changes.
+
 Standalone Node initialization is available from
 `@electric-sql/pglite-tools/initdb`. It uses native initdb defaults and writes
 the PGlite cluster manifest after successful initialization.

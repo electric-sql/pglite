@@ -169,14 +169,36 @@ SELECT value FROM cli_archive_test WHERE value = 'streamed';
     assert.equal(result.code, 0, `${command}: ${result.stderr}`)
   }
 
-  const archive = join(projectRoot, 'cli-archive.dump')
-  const dump = await run(
-    executable,
-    ['pg_dump', '--format=custom', '--file', archive, 'postgres'],
-    { cwd: projectRoot, env: environment },
-  )
-  assert.equal(dump.code, 0, dump.stderr)
-  assert.ok((await readFile(archive)).byteLength > 1_000)
+  const plainArchive = join(projectRoot, 'cli-archive.sql')
+  const customArchive = join(projectRoot, 'cli-archive.dump')
+  const tarArchive = join(projectRoot, 'cli-archive.tar')
+  const directoryArchive = join(projectRoot, 'cli-archive-directory')
+  for (const [format, archive] of [
+    ['plain', plainArchive],
+    ['custom', customArchive],
+    ['tar', tarArchive],
+    ['directory', directoryArchive],
+  ]) {
+    const dump = await run(
+      executable,
+      ['pg_dump', `--format=${format}`, '--file', archive, 'postgres'],
+      { cwd: projectRoot, env: environment },
+    )
+    assert.equal(dump.code, 0, `${format}: ${dump.stderr}`)
+  }
+  assert.match(await readFile(plainArchive, 'utf8'), /cli_archive_test/)
+  assert.ok((await readFile(customArchive)).byteLength > 1_000)
+  assert.ok((await readFile(tarArchive)).byteLength > 1_000)
+  await access(join(directoryArchive, 'toc.dat'))
+
+  for (const archive of [customArchive, tarArchive, directoryArchive]) {
+    const list = await run(executable, ['pg_restore', '--list', archive], {
+      cwd: projectRoot,
+      env: environment,
+    })
+    assert.equal(list.code, 0, list.stderr)
+    assert.match(list.stdout, /cli_archive_test/)
+  }
 
   const dropTable = await run(
     executable,
@@ -194,7 +216,7 @@ SELECT value FROM cli_archive_test WHERE value = 'streamed';
   assert.equal(dropTable.code, 0, dropTable.stderr)
   const restore = await run(
     executable,
-    ['pg_restore', '--dbname=postgres', archive],
+    ['pg_restore', '--dbname=postgres', customArchive],
     { cwd: projectRoot, env: environment },
   )
   assert.equal(restore.code, 0, restore.stderr)
@@ -423,26 +445,119 @@ async function assertNpxTarball() {
       /^pglite-[^-]+\.tgz$/.test(name),
     )
     assert.ok(cliArchive)
-    const help = await run(
-      'npx',
-      ['--yes', `--package=${join(packRoot, cliArchive)}`, 'pglite', '--help'],
-      {
-        cwd: npxProject,
-        env: {
-          ...process.env,
-          npm_config_registry: `http://127.0.0.1:${address.port}/`,
-          npm_config_cache: join(outputRoot, 'npm-cache'),
-          npm_config_audit: 'false',
-          npm_config_fund: 'false',
-        },
-      },
-    )
+    const npxEnvironment = {
+      ...process.env,
+      npm_config_registry: `http://127.0.0.1:${address.port}/`,
+      npm_config_cache: join(outputRoot, 'npm-cache'),
+      npm_config_audit: 'false',
+      npm_config_fund: 'false',
+    }
+    const npxArguments = [
+      '--yes',
+      `--package=${join(packRoot, cliArchive)}`,
+      'pglite',
+    ]
+    const help = await run('npx', [...npxArguments, '--help'], {
+      cwd: npxProject,
+      env: npxEnvironment,
+    })
     assert.equal(help.code, 0, help.stderr)
     assert.match(help.stdout, /Usage: pglite/)
+
+    const npxDataDirectory = join(npxProject, 'pgdata')
+    const init = await run(
+      'npx',
+      [...npxArguments, 'initdb', '-D', npxDataDirectory],
+      { cwd: npxProject, env: npxEnvironment },
+    )
+    assert.equal(init.code, 0, init.stderr)
+    assert.match(
+      await readFile(join(npxDataDirectory, 'PG_VERSION'), 'utf8'),
+      /^18/,
+    )
+    await assertNpxPostgres(
+      npxArguments,
+      npxProject,
+      npxDataDirectory,
+      npxEnvironment,
+    )
   } finally {
     await new Promise((resolve, reject) =>
       registry.close((error) => (error ? reject(error) : resolve())),
     )
+  }
+}
+
+async function assertNpxPostgres(
+  npxArguments,
+  npxProject,
+  npxDataDirectory,
+  npxEnvironment,
+) {
+  const port = await reservePort()
+  const environment = {
+    ...npxEnvironment,
+    PGHOST: '127.0.0.1',
+    PGPORT: String(port),
+    PGDATABASE: 'postgres',
+    PGUSER: 'postgres',
+    PGSSLMODE: 'disable',
+  }
+  const child = spawn(
+    'npx',
+    [
+      ...npxArguments,
+      'postgres',
+      '-D',
+      npxDataDirectory,
+      '-c',
+      'listen_addresses=127.0.0.1',
+      '-c',
+      `port=${port}`,
+      '-c',
+      'unix_socket_directories=',
+    ],
+    {
+      cwd: npxProject,
+      env: environment,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
+  const output = collectOutput(child)
+  let operationError
+  try {
+    const ready = await waitForSuccess(
+      () =>
+        run(
+          psql,
+          ['-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', 'SELECT 42'],
+          {
+            cwd: npxProject,
+            env: { ...environment, LD_LIBRARY_PATH: libraryPath },
+          },
+        ),
+      60_000,
+    )
+    assert.match(ready.stdout, /^42$/m)
+    process.kill(-child.pid, 'SIGTERM')
+    await childExit(child, 30_000)
+    await waitForMissing(join(npxDataDirectory, 'postmaster.pid'), 30_000)
+  } catch (error) {
+    operationError = error
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      try {
+        process.kill(-child.pid, 'SIGQUIT')
+      } catch (error) {
+        if (error?.code !== 'ESRCH') operationError ??= error
+      }
+      await childExit(child, 15_000).catch(() => undefined)
+    }
+  }
+  if (operationError) throw operationError
+  if (child.exitCode && child.exitCode !== 0) {
+    throw new Error(`npx postgres failed\n${output.stderr()}`)
   }
 }
 
@@ -468,6 +583,19 @@ async function waitForSuccess(operation, timeout) {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error(`operation did not succeed: ${last?.stderr ?? 'no result'}`)
+}
+
+async function waitForMissing(path, timeout) {
+  const deadline = Date.now() + timeout
+  while (Date.now() < deadline) {
+    try {
+      await access(path)
+    } catch {
+      return
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  throw new Error(`${path} was not removed`)
 }
 
 function collectOutput(child) {
