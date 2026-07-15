@@ -13,21 +13,21 @@ const HEADER_BYTES = HEADER_WORDS * Int32Array.BYTES_PER_ELEMENT
 const CHANNEL_BYTES = 64 * 1024
 const IO_CHUNK_BYTES = 48 * 1024
 
-enum ChannelWord {
-  State = 0,
-  Sequence = 1,
-  RequestMetadataBytes = 2,
-  RequestDataBytes = 3,
-  ResponseMetadataBytes = 4,
-  ResponseDataBytes = 5,
-}
+const ChannelWord = {
+  State: 0,
+  Sequence: 1,
+  RequestMetadataBytes: 2,
+  RequestDataBytes: 3,
+  ResponseMetadataBytes: 4,
+  ResponseDataBytes: 5,
+} as const
 
-enum ChannelState {
-  Idle = 0,
-  Request = 1,
-  Response = 2,
-  Closed = 3,
-}
+const ChannelState = {
+  Idle: 0,
+  Request: 1,
+  Response: 2,
+  Closed: 3,
+} as const
 
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder('utf-8', { fatal: true })

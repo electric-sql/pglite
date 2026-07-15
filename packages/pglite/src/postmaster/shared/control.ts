@@ -7,106 +7,130 @@ const PARAMETER_FILE_BYTES = 1024
 const SPAWN_PAYLOAD_BYTES = CHILD_KIND_BYTES + PARAMETER_FILE_BYTES
 const CONNECTION_WORDS = 8
 
-const enum HeaderField {
-  Magic,
-  Version,
-  MaxProcesses,
-  NextPid,
-  WakeSequence,
-  LiveProcesses,
-  ListenerWakeSequence,
-  NextConnectionId,
-}
+const HeaderField = {
+  Magic: 0,
+  Version: 1,
+  MaxProcesses: 2,
+  NextPid: 3,
+  WakeSequence: 4,
+  LiveProcesses: 5,
+  ListenerWakeSequence: 6,
+  NextConnectionId: 7,
+} as const
 
-const enum ProcessField {
-  Generation,
-  Pid,
-  ParentPid,
-  ProcessGroup,
-  Kind,
-  State,
-  PendingSignals,
-  BlockedSignals,
-  WakeSequence,
-  ExitKind,
-  ExitCode,
-  ConnectionId,
-  Flags,
-  SpawnState,
-  ScopePolicy,
-  ScopeRootPid,
-  ScopeRootGeneration,
-  ChildKindLength,
-  ParameterFileLength,
-  TimerDelayMs,
-  TimerIntervalMs,
-  TimerGeneration,
-}
+const ProcessField = {
+  Generation: 0,
+  Pid: 1,
+  ParentPid: 2,
+  ProcessGroup: 3,
+  Kind: 4,
+  State: 5,
+  PendingSignals: 6,
+  BlockedSignals: 7,
+  WakeSequence: 8,
+  ExitKind: 9,
+  ExitCode: 10,
+  ConnectionId: 11,
+  Flags: 12,
+  SpawnState: 13,
+  ScopePolicy: 14,
+  ScopeRootPid: 15,
+  ScopeRootGeneration: 16,
+  ChildKindLength: 17,
+  ParameterFileLength: 18,
+  TimerDelayMs: 19,
+  TimerIntervalMs: 20,
+  TimerGeneration: 21,
+} as const
 
-const enum ProcessFlag {
-  ParentDead = 1,
-}
+type ProcessField = (typeof ProcessField)[keyof typeof ProcessField]
 
-const enum ConnectionField {
-  State,
-  Generation,
-  ConnectionId,
-  OwnerPid,
-  Transport,
-  UserId,
-  GroupId,
-  InitiatorPid,
-}
+const ProcessFlag = {
+  ParentDead: 1,
+} as const
 
-export enum PostgresProcessKind {
-  Postmaster = 1,
-  Backend,
-  Auxiliary,
-  BackgroundWorker,
-}
+const ConnectionField = {
+  State: 0,
+  Generation: 1,
+  ConnectionId: 2,
+  OwnerPid: 3,
+  Transport: 4,
+  UserId: 5,
+  GroupId: 6,
+  InitiatorPid: 7,
+} as const
 
-export enum ProcessState {
-  Free,
-  Reserved,
-  Starting,
-  Runnable,
-  Waiting,
-  Stopping,
-  Exited,
-  Failed,
-}
+type ConnectionField = (typeof ConnectionField)[keyof typeof ConnectionField]
 
-export enum ProcessExitKind {
-  None,
-  Normal,
-  Signal,
-  WorkerFailure,
-}
+export const PostgresProcessKind = {
+  Postmaster: 1,
+  Backend: 2,
+  Auxiliary: 3,
+  BackgroundWorker: 4,
+} as const
 
-export enum SpawnRequestState {
-  None,
-  Ready,
-  Claimed,
-}
+export type PostgresProcessKind =
+  (typeof PostgresProcessKind)[keyof typeof PostgresProcessKind]
 
-export enum ProcessScopePolicy {
-  SelfAlias,
-  NewRoot,
-  InheritRoot,
-  AttachRoot,
-}
+export const ProcessState = {
+  Free: 0,
+  Reserved: 1,
+  Starting: 2,
+  Runnable: 3,
+  Waiting: 4,
+  Stopping: 5,
+  Exited: 6,
+  Failed: 7,
+} as const
 
-export enum ConnectionRequestState {
-  Free,
-  Reserved,
-  Ready,
-  Claimed,
-}
+export type ProcessState = (typeof ProcessState)[keyof typeof ProcessState]
 
-export enum VirtualConnectionTransport {
-  Tcp = 1,
-  Unix,
-}
+export const ProcessExitKind = {
+  None: 0,
+  Normal: 1,
+  Signal: 2,
+  WorkerFailure: 3,
+} as const
+
+export type ProcessExitKind =
+  (typeof ProcessExitKind)[keyof typeof ProcessExitKind]
+
+export const SpawnRequestState = {
+  None: 0,
+  Ready: 1,
+  Claimed: 2,
+} as const
+
+export type SpawnRequestState =
+  (typeof SpawnRequestState)[keyof typeof SpawnRequestState]
+
+export const ProcessScopePolicy = {
+  SelfAlias: 0,
+  NewRoot: 1,
+  InheritRoot: 2,
+  AttachRoot: 3,
+} as const
+
+export type ProcessScopePolicy =
+  (typeof ProcessScopePolicy)[keyof typeof ProcessScopePolicy]
+
+export const ConnectionRequestState = {
+  Free: 0,
+  Reserved: 1,
+  Ready: 2,
+  Claimed: 3,
+} as const
+
+export type ConnectionRequestState =
+  (typeof ConnectionRequestState)[keyof typeof ConnectionRequestState]
+
+export const VirtualConnectionTransport = {
+  Tcp: 1,
+  Unix: 2,
+} as const
+
+export type VirtualConnectionTransport =
+  (typeof VirtualConnectionTransport)[keyof typeof VirtualConnectionTransport]
 
 export interface VirtualConnectionPeer {
   readonly transport: VirtualConnectionTransport

@@ -4,21 +4,23 @@ const CONNECTION_MAGIC = 0x5047434e
 const CONNECTION_VERSION = 1
 const HEADER_WORDS = 18
 
-const enum ConnectionField {
-  Magic,
-  Version,
-  Generation,
-  Capacity,
-}
+const ConnectionField = {
+  Magic: 0,
+  Version: 1,
+  Generation: 2,
+  Capacity: 3,
+} as const
 
-const enum RingField {
-  ReadCursor,
-  WriteCursor,
-  DataSequence,
-  SpaceSequence,
-  Closed,
-  Error,
-}
+const RingField = {
+  ReadCursor: 0,
+  WriteCursor: 1,
+  DataSequence: 2,
+  SpaceSequence: 3,
+  Closed: 4,
+  Error: 5,
+} as const
+
+type RingField = (typeof RingField)[keyof typeof RingField]
 
 const RING_WORDS = 6
 const INBOUND_BASE = 6
