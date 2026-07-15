@@ -93,6 +93,41 @@ describe('pglite CLI dispatcher', () => {
     expect(fixture.stdout()).not.toContain('Usage:')
   })
 
+  it('treats global-looking arguments after a native command as native argv', async () => {
+    const fixture = cliFixture({ readyExitCode: 2 })
+    const argv = ['--pglite-log-level=trace', '--help', '-V', '--', '-?']
+    expect(await runCli(['psql', ...argv], fixture.runtime)).toBe(2)
+    expect(fixture.runTool).toHaveBeenCalledWith(
+      'psql',
+      expect.objectContaining({ argv }),
+    )
+  })
+
+  it('honors the global option terminator before the command', async () => {
+    const fixture = cliFixture({ readyExitCode: 2 })
+    expect(await runCli(['--', 'psql', '--help'], fixture.runtime)).toBe(2)
+    expect(fixture.runTool).toHaveBeenCalledWith(
+      'psql',
+      expect.objectContaining({ argv: ['--help'] }),
+    )
+  })
+
+  it('declaratively parses global options before the command', async () => {
+    const fixture = cliFixture({ serverStartupError: new Error('stop') })
+    expect(
+      await runCli(
+        ['--pglite-log-level', 'debug', 'server', '-Ddata'],
+        fixture.runtime,
+      ),
+    ).toBe(1)
+    expect(fixture.createServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        debug: true,
+        postmaster: expect.objectContaining({ debug: true }),
+      }),
+    )
+  })
+
   it('keeps explicit server options distinct from native postgres argv', async () => {
     const fixture = cliFixture({ serverStartupError: new Error('stop') })
     expect(
@@ -149,6 +184,50 @@ describe('pglite CLI dispatcher', () => {
         }),
       }),
     )
+  })
+
+  it('parses the complete PGlite-owned server option schema declaratively', async () => {
+    const fixture = cliFixture({ serverStartupError: new Error('stop') })
+    expect(
+      await runCli(
+        [
+          'server',
+          '-Ddata',
+          '--pglite-max-sessions=12',
+          '--max-connections=9',
+          '--pglite-private-memory-limit=64MiB',
+          '--pglite-global-memory-limit=32MiB',
+          '--pglite-log-level=debug',
+          '--unix=-socket',
+        ],
+        fixture.runtime,
+      ),
+    ).toBe(1)
+    expect(fixture.createServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        listen: { path: resolve('/test/cwd/-socket') },
+        postmaster: expect.objectContaining({
+          maxConnections: 9,
+          privateMaximumMemory: 64 * 1024 * 1024,
+          globalMaximumMemory: 32 * 1024 * 1024,
+          debug: true,
+        }),
+      }),
+    )
+  })
+
+  it('reports built-in parser failures as CLI usage errors', async () => {
+    const fixture = cliFixture()
+    expect(
+      await runCli(
+        ['server', '-D', 'data', '--definitely-not-an-option'],
+        fixture.runtime,
+      ),
+    ).toBe(2)
+    expect(fixture.stderr()).toContain(
+      "Unknown option '--definitely-not-an-option'",
+    )
+    expect(fixture.createServer).not.toHaveBeenCalled()
   })
 
   it('loads only pluggable runtime fields from PGLITE_CONFIG', async () => {

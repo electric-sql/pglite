@@ -1750,6 +1750,9 @@ Phase 5 implementation record, 2026-07-15:
   and `pg_isready`. Native argument vectors remain intact after the command
   boundary, while only documented PGlite hosting controls and the host `-D`
   mapping are consumed. Neither server mode initializes implicitly.
+- Global and PGlite-owned `server` options use Node's declarative `parseArgs`
+  parser. Native tool vectors remain opaque, while `postgres` retains only the
+  narrow ordered extractor needed to remove host `-D` and `--pglite-*` controls.
 - `server` retains an explicit loopback-oriented PGlite listener contract;
   `postgres` uses PostgreSQL-controlled listeners and configuration. Foreground
   `SIGTERM`, `SIGINT`, and `SIGQUIT` map to smart, fast, and immediate shutdown,
@@ -1868,11 +1871,11 @@ Phase 7 implementation record, 2026-07-15:
 - The nine Phase 7 JS/Wasm artifact pairs add 4,939,651 bytes raw and 1,735,821
   bytes when each file is gzipped. The final tools tarball is 8,633,615 bytes
   unpacked and 2,916,939 bytes compressed, increases of 5,140,182 and 1,785,914
-  bytes over the Phase 5 package measurement. The umbrella tarball is 91,614
-  bytes unpacked and 26,257 bytes compressed, increases of 18,214 and 5,531
+  bytes over the Phase 5 package measurement. The umbrella tarball is 94,605
+  bytes unpacked and 27,364 bytes compressed, increases of 21,205 and 6,638
   bytes.
 - Node 22 passes 17 focused tools tests with seven Docker runtime cases gated
-  separately and 24 CLI tests. Both packages pass TypeScript, lint, formatting,
+  separately and 29 CLI tests. Both packages pass TypeScript, lint, formatting,
   builds, and ESM/CommonJS export audits. The native ARM64 packed-package gate
   passes from artifact build through clean installation, programmatic imports,
   all command integrations, signal shutdown, and cluster cleanup.

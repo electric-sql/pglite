@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { parseArgs } from 'node:util'
 import { pgliteRuntimeIdentity } from '@electric-sql/pglite'
 import type {
   PGlitePostmasterExit,
@@ -45,6 +46,26 @@ const COMMANDS = [
 
 type Command = (typeof COMMANDS)[number]
 
+const GLOBAL_OPTIONS = {
+  help: { type: 'boolean', short: '?' },
+  version: { type: 'boolean', short: 'V' },
+  'pglite-log-level': { type: 'string' },
+} as const
+
+const SERVER_OPTIONS = {
+  help: { type: 'boolean', short: '?' },
+  pgdata: { type: 'string', short: 'D' },
+  host: { type: 'string', short: 'h' },
+  port: { type: 'string', short: 'p' },
+  unix: { type: 'string', short: 'k' },
+  'max-connections': { type: 'string' },
+  'shared-buffers': { type: 'string' },
+  'pglite-max-sessions': { type: 'string' },
+  'pglite-private-memory-limit': { type: 'string' },
+  'pglite-global-memory-limit': { type: 'string' },
+  'pglite-log-level': { type: 'string' },
+} as const
+
 export interface SignalSource {
   on(signal: NodeJS.Signals, listener: () => void): unknown
   off(signal: NodeJS.Signals, listener: () => void): unknown
@@ -83,6 +104,22 @@ interface PostmasterRuntimeOptions {
 }
 
 class CliUsageError extends Error {}
+
+function parseOwnedArguments<T>(operation: () => T): T {
+  try {
+    return operation()
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      error.code.startsWith('ERR_PARSE_ARGS_')
+    ) {
+      throw new CliUsageError(error.message)
+    }
+    throw error
+  }
+}
 
 export async function runCli(
   argv: readonly string[],
@@ -152,36 +189,62 @@ function parseGlobalOptions(
   argv: readonly string[],
   env: Readonly<Record<string, string | undefined>>,
 ): GlobalOptions {
-  let debug = debugEnabled(env.PGLITE_LOG_LEVEL)
-  let index = 0
-  for (; index < argv.length; index++) {
-    const argument = argv[index]
-    if (argument === '--') {
-      index++
-      break
+  const boundary = globalCommandBoundary(argv)
+  const parsed = parseOwnedArguments(() =>
+    parseArgs({
+      args: argv.slice(0, boundary.optionsEnd),
+      options: GLOBAL_OPTIONS,
+      strict: true,
+      allowPositionals: false,
+      tokens: true,
+    }),
+  )
+  const debug = debugEnabled(
+    parsed.values['pglite-log-level'] ?? env.PGLITE_LOG_LEVEL,
+  )
+  const metaOption = parsed.tokens.find(
+    (token) =>
+      token.kind === 'option' &&
+      (token.name === 'help' || token.name === 'version'),
+  )
+  if (metaOption?.kind === 'option') {
+    return {
+      command: metaOption.name,
+      args: [],
+      debug,
     }
-    if (argument === '--help' || argument === '-?') {
-      return { command: 'help', args: [], debug }
-    }
-    if (argument === '--version' || argument === '-V') {
-      return { command: 'version', args: [], debug }
-    }
-    const logLevel = optionValue(argv, index, argument, '--pglite-log-level')
-    if (logLevel) {
-      debug = debugEnabled(logLevel.value)
-      index = logLevel.nextIndex
-      continue
-    }
-    if (argument.startsWith('-')) {
-      throw new CliUsageError(`unknown global option ${argument}`)
-    }
-    return { command: argument, args: argv.slice(index + 1), debug }
   }
   return {
-    command: argv[index],
-    args: argv.slice(index + 1),
+    command: argv[boundary.commandIndex],
+    args: argv.slice(boundary.commandIndex + 1),
     debug,
   }
+}
+
+function globalCommandBoundary(argv: readonly string[]): {
+  readonly optionsEnd: number
+  readonly commandIndex: number
+} {
+  for (let index = 0; index < argv.length; index++) {
+    const argument = argv[index]
+    if (argument === '--') {
+      return { optionsEnd: index, commandIndex: index + 1 }
+    }
+    if (!argument.startsWith('-')) {
+      return { optionsEnd: index, commandIndex: index }
+    }
+    if (globalOptionConsumesNextArgument(argument)) index++
+  }
+  return { optionsEnd: argv.length, commandIndex: argv.length }
+}
+
+function globalOptionConsumesNextArgument(argument: string): boolean {
+  return Object.entries(GLOBAL_OPTIONS).some(
+    ([name, option]) =>
+      option.type === 'string' &&
+      (argument === `--${name}` ||
+        ('short' in option && argument === `-${option.short}`)),
+  )
 }
 
 async function runInitdb(
@@ -248,11 +311,11 @@ async function runServer(
   globalDebug: boolean,
   runtime: CliRuntime,
 ): Promise<number> {
-  if (hasHelp(argv)) {
+  const parsed = parseServerOptions(argv, globalDebug, runtime)
+  if (!parsed) {
     await write(runtime.stdout, serverHelp())
     return 0
   }
-  const parsed = parseServerOptions(argv, globalDebug, runtime)
   const server = await runtime.createServer({
     postmaster: await configuredPostmaster(parsed.postmaster, runtime),
     listen: parsed.listen,
@@ -297,73 +360,52 @@ function parseServerOptions(
   argv: readonly string[],
   globalDebug: boolean,
   runtime: CliRuntime,
-): ParsedServerOptions {
-  let dataDir: string | undefined
-  let host = '127.0.0.1'
-  let port = 5432
-  let unixPath: string | undefined
-  let sharedBuffers: string | undefined
-  const postmaster = runtimeOptions(globalDebug, runtime.env, 20)
+): ParsedServerOptions | undefined {
+  const parsed = parseOwnedArguments(() =>
+    parseArgs({
+      args: [...argv],
+      options: SERVER_OPTIONS,
+      strict: true,
+      allowPositionals: false,
+      tokens: true,
+    }),
+  )
+  if (parsed.values.help) return undefined
 
-  for (let index = 0; index < argv.length; index++) {
-    const argument = argv[index]
-    const data = pgdataOption(argv, index, argument)
-    if (data) {
-      dataDir = data.value
-      index = data.nextIndex
-      continue
-    }
-    const hostOption = optionValue(argv, index, argument, '--host', '-h')
-    if (hostOption) {
-      host = hostOption.value
-      index = hostOption.nextIndex
-      continue
-    }
-    const portOption = optionValue(argv, index, argument, '--port', '-p')
-    if (portOption) {
-      port = integerOption(portOption.value, 'port', 0, 65_535)
-      index = portOption.nextIndex
-      continue
-    }
-    const unixOption = optionValue(argv, index, argument, '--unix', '-k')
-    if (unixOption) {
-      unixPath = resolveDataDirectory(unixOption.value, runtime.cwd)
-      index = unixOption.nextIndex
-      continue
-    }
-    const connections = optionValue(argv, index, argument, '--max-connections')
-    if (connections) {
-      postmaster.maxConnections = integerOption(
-        connections.value,
-        'max-connections',
-        1,
-        10_000,
-      )
-      index = connections.nextIndex
-      continue
-    }
-    const buffers = optionValue(argv, index, argument, '--shared-buffers')
-    if (buffers) {
-      sharedBuffers = buffers.value
-      index = buffers.nextIndex
-      continue
-    }
-    const consumed = consumeRuntimeOption(argv, index, argument, postmaster)
-    if (consumed !== undefined) {
-      index = consumed
-      continue
-    }
-    throw new CliUsageError(`unknown server option ${argument}`)
-  }
-  dataDir ??= runtime.env.PGDATA
+  const dataDir = parsed.values.pgdata ?? runtime.env.PGDATA
   if (!dataDir) {
     throw new CliUsageError('server requires -D, --pgdata, or PGDATA')
   }
+  const postmaster = runtimeOptions(globalDebug, runtime.env, 20)
+  for (const token of parsed.tokens) {
+    if (token.kind !== 'option' || typeof token.value !== 'string') continue
+    if (
+      token.name === 'max-connections' ||
+      token.name === 'pglite-max-sessions'
+    ) {
+      postmaster.maxConnections = integerOption(
+        token.value,
+        token.name,
+        1,
+        10_000,
+      )
+    } else if (token.name === 'pglite-private-memory-limit') {
+      postmaster.privateMaximumMemory = memoryBytes(token.value)
+    } else if (token.name === 'pglite-global-memory-limit') {
+      postmaster.globalMaximumMemory = memoryBytes(token.value)
+    } else if (token.name === 'pglite-log-level') {
+      postmaster.debug = debugEnabled(token.value)
+    }
+  }
+  const port = integerOption(parsed.values.port ?? '5432', 'port', 0, 65_535)
+  const unixPath = parsed.values.unix
+    ? resolveDataDirectory(parsed.values.unix, runtime.cwd)
+    : undefined
   const postmasterOptions: PGlitePostmasterOptions = {
     dataDir: resolveDataDirectory(dataDir, runtime.cwd),
     initialize: false,
     maxConnections: postmaster.maxConnections,
-    sharedBuffers,
+    sharedBuffers: parsed.values['shared-buffers'],
     privateMaximumMemory: postmaster.privateMaximumMemory,
     globalMaximumMemory: postmaster.globalMaximumMemory,
     debug: postmaster.debug,
@@ -371,7 +413,9 @@ function parseServerOptions(
   }
   return {
     postmaster: postmasterOptions,
-    listen: unixPath ? { path: unixPath } : { host, port },
+    listen: unixPath
+      ? { path: unixPath }
+      : { host: parsed.values.host ?? '127.0.0.1', port },
   }
 }
 
