@@ -85,7 +85,7 @@ interface PGliteServerBaseOptions {
 
 export type PGliteServerPostmaster = Pick<
   PGlitePostmaster,
-  'openProtocolConnection' | 'waitForExit' | 'shutdown'
+  'openProtocolConnection' | 'waitForExit' | 'shutdown' | 'reload'
 >
 
 export interface PGliteServerWithPostmasterOptions
@@ -305,6 +305,11 @@ export class PGliteServer extends EventTarget {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.close()
+  }
+
+  /** Request PostgreSQL to reload its configuration (the SIGHUP intent). */
+  reload(): void {
+    this.postmaster.reload()
   }
 
   private async finishClose(

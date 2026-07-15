@@ -306,6 +306,18 @@ describe('PGliteServer', () => {
     expect(postmaster.shutdownCalls).toEqual([])
   })
 
+  it('delegates configuration reload through the public postmaster API', async () => {
+    const postmaster = new FakePostmaster()
+    const server = tracked(
+      await PGliteServer.create({
+        postmaster,
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    )
+    server.reload()
+    expect(postmaster.reloadCalls).toBe(1)
+  })
+
   it('closes its listener when the postmaster exits', async () => {
     const postmaster = new FakePostmaster()
     const server = tracked(
@@ -450,6 +462,7 @@ describe('PGliteServer', () => {
 class FakePostmaster {
   readonly peers: ProtocolPeerInfo[] = []
   readonly shutdownCalls: PGlitePostmasterShutdownMode[] = []
+  reloadCalls = 0
   private readonly pending = new AsyncQueue<FakeProtocolConnection>()
   private readonly exitPromise: Promise<PGlitePostmasterExit>
   private resolveExit!: (exit: PGlitePostmasterExit) => void
@@ -480,6 +493,10 @@ class FakePostmaster {
   async shutdown(mode: PGlitePostmasterShutdownMode): Promise<void> {
     this.shutdownCalls.push(mode)
     this.exit()
+  }
+
+  reload(): void {
+    this.reloadCalls++
   }
 
   exit(): void {

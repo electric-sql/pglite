@@ -9,6 +9,10 @@ import {
 import { nativeToolRuntimeIdentity } from './native-tool-identity.js'
 
 export { PGliteToolHostError }
+export type {
+  PostgresToolInvocation,
+  PostgresToolRunner,
+} from './tool-runner.js'
 
 export const pgIsReadyRunner: PostgresToolRunner = createNativeToolRunner(
   'pg_isready',

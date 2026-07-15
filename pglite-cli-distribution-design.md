@@ -1329,9 +1329,9 @@ Tests must run the packed tarball, not only workspace source. In a clean
 temporary project they should verify:
 
 ```sh
-npx --yes ./pglite-*.tgz --help
-npx --yes ./pglite-*.tgz initdb -D ./pgdata
-npx --yes ./pglite-*.tgz postgres -D ./pgdata -p <port>
+npx --yes --package=./pglite-*.tgz pglite --help
+npx --yes --package=./pglite-*.tgz pglite initdb -D ./pgdata
+npx --yes --package=./pglite-*.tgz pglite postgres -D ./pgdata -p <port>
 ```
 
 The suite should then connect with a native PostgreSQL client, execute SQL,
@@ -1745,6 +1745,43 @@ Phase 4 implementation record, 2026-07-15:
 
 Exit criterion: a clean Node project can use both `npx pglite` and
 `import { PGlite } from 'pglite'`.
+
+Phase 5 implementation record, 2026-07-15:
+
+- The unscoped `pglite@0.5.4` package now provides one Node 22 executable and
+  explicit root, postmaster, server, and tools entry points. Its packed
+  manifest resolves the tested core `0.5.4`, server `0.1.0`, and tools `0.4.4`
+  releases exactly; core, server, and the umbrella package are in the fixed
+  release group that will align their versions when published.
+- The dispatcher implements `help`, `version`, `initdb`, `server`, `postgres`,
+  and `pg_isready`. Native argument vectors remain intact after the command
+  boundary, while only documented PGlite hosting controls and the host `-D`
+  mapping are consumed. Neither server mode initializes implicitly.
+- `server` retains an explicit loopback-oriented PGlite listener contract;
+  `postgres` uses PostgreSQL-controlled listeners and configuration. Foreground
+  `SIGTERM`, `SIGINT`, and `SIGQUIT` map to smart, fast, and immediate shutdown,
+  and `SIGHUP` delegates through the public server/postmaster reload API.
+- A clean Docker-contained Node 22 test packs all four constituent packages,
+  installs them with npm, and also runs the umbrella tarball through
+  `npx --yes --package=... pglite`. Packed ESM and CommonJS imports exit without
+  side effects and retain public class identity. The packaged CLI initializes a
+  persistent cluster, serves two concurrent native `psql` clients, remains live
+  across configuration reload, exits cleanly after `SIGTERM`, and removes
+  `postmaster.pid`.
+- The native `linux/arm64` integration gate also exposed and fixed an
+  unconditional `pg_isready.wasm` install in the PostgreSQL fork; the artifact
+  is now fenced to Emscripten builds and the exact-revision native tools build
+  passes again.
+- Packed sizes are 66,904,203 bytes raw/21,975,580 bytes compressed for core,
+  125,300/32,877 for server, 3,493,433/1,131,025 for tools, and
+  73,400/20,726 for the umbrella package. No Wasm file is duplicated across
+  core and tools. The classic and postmaster preload data files have distinct
+  content hashes, so the current package does not contain a byte-identical data
+  payload that can be removed mechanically.
+- Node 22 passes 15 server tests, 15 tools tests with seven Docker integration
+  cases gated separately, and 12 CLI unit/export tests. TypeScript, lint,
+  formatting, builds, export-shape checks, the native tool build, and the packed
+  runtime scenario pass.
 
 ### Phase 6: PostgreSQL regression integration
 

@@ -3,7 +3,12 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@electric-sql/pglite", "@electric-sql/pglite-prepopulatedfs"]
+    [
+      "@electric-sql/pglite",
+      "@electric-sql/pglite-prepopulatedfs",
+      "@electric-sql/pglite-server",
+      "pglite"
+    ]
   ],
   "linked": [],
   "access": "public",
