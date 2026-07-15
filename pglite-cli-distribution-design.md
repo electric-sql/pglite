@@ -1,6 +1,6 @@
 # PGlite Node Distribution and PostgreSQL-Compatible CLI
 
-Status: implementation complete; npm name reservation pending<br>
+Status: implementation complete<br>
 Initial target: Node.js 22 or newer<br>
 Repository package: `packages/pglite-cli`<br>
 Published package and executable: `pglite`<br>
@@ -52,10 +52,6 @@ The proposed package boundaries are:
 | `packages/pglite-tools`  | `@electric-sql/pglite-tools`  | PostgreSQL client and administrative tools                    |
 | `packages/pglite-cli`    | `pglite`                      | Batteries-included Node distribution and CLI                  |
 | `packages/pglite-socket` | `@electric-sql/pglite-socket` | Compatibility line for the classic single-user socket wrapper |
-
-At the time of writing, `pglite` is not registered in the public npm registry.
-That observation is not a guarantee that the name will remain available. The
-name should be reserved before implementation depends on it.
 
 ## 2. Decision
 
@@ -1477,12 +1473,8 @@ verify that unauthenticated and authenticated outcomes are determined by
 
 ## 16. Migration plan
 
-### Phase 0: validate names and package boundaries
+### Phase 0: validate package boundaries
 
-- Verify the `pglite` and `@electric-sql/pglite-server` npm names and have an
-  authenticated project owner reserve them. Source reorganisation may proceed
-  after availability is verified, but neither package may be released until
-  reservation is confirmed.
 - Record that the branch-only postmaster export and rewritten socket `0.3.0`
   have not been published; preserve the published classic socket line.
 - Measure current core, postmaster, socket, and tool artifacts.
@@ -1500,17 +1492,12 @@ verify that unauthenticated and authenticated outcomes are determined by
 - Put core, server, and the umbrella package in a coordinated release group and
   define exact peer and dependency resolution tests.
 
-Exit criterion: published-name ownership, public exports, package ownership,
-network and initdb contracts, runtime identity, lifecycle semantics, and Node
-persistent-cluster compatibility rules are fixed.
+Exit criterion: public exports, package ownership, network and initdb contracts,
+runtime identity, lifecycle semantics, and Node persistent-cluster compatibility
+rules are fixed.
 
 Phase 0 repository decision record, 2026-07-14:
 
-- npm returned `E404` for both proposed names, most recently reverified from the
-  pinned Docker tool image on 2026-07-15. This verifies current registry
-  availability but does not reserve either name; authenticated reservation is
-  the remaining external release-owner action and is not represented as a code
-  change.
 - The branch-only `@electric-sql/pglite/postmaster` export and socket `0.3.0`
   rewrite are unpublished. The socket restoration source is
   `@electric-sql/pglite-socket@0.2.7` at `25d0a55e1`.
@@ -1888,10 +1875,6 @@ Final implementation audit, 2026-07-15:
   `make check-world`, 226 supported events pass, 11 are explicitly unsupported,
   26 are explicitly blocked, all 188 temporary-cluster lifecycles pass, and
   upstream make exits zero.
-- The sole remaining release gate is the external Phase 0 action: an
-  authenticated project owner must reserve the currently available `pglite`
-  and `@electric-sql/pglite-server` npm names. No implementation work depends on
-  that action, but the packages must not be published until it is complete.
 
 ## 17. Alternatives considered
 
