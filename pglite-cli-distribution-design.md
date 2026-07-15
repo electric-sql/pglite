@@ -1674,10 +1674,11 @@ Phase 3 implementation record, 2026-07-14:
   ABI so the classic non-SAB runtime and callback ordering remain unchanged.
 - A fresh native ARM64 Wasm build passes deterministic artifact audits, nine
   postmaster integration tests, strict TCP bind-failure and native-client tests,
-  strict Unix permission/lock/cleanup tests, concurrent native clients, HBA
-  password rejection and acceptance, libpq cancel/COPY/backpressure, and a
-  targeted upstream regression schedule. Core/server TypeScript, lint, build,
-  and ESM/CommonJS packed-export gates pass.
+  strict Unix permission/lock/cleanup tests, concurrent native clients, separate
+  TCP `host` and Unix `local` HBA password rejection and acceptance, libpq
+  cancel/COPY/backpressure, and a targeted upstream regression schedule.
+  Core/server TypeScript, lint, build, and ESM/CommonJS packed-export gates
+  pass.
 
 ### Phase 4: establish tool-runner APIs
 

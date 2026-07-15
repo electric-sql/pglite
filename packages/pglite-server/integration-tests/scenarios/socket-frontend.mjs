@@ -391,6 +391,46 @@ async function main() {
     )
     assert.equal(strictUnixResult.code, 0, strictUnixResult.stderr)
     assert.match(strictUnixResult.stdout, /^42$/m)
+
+    const strictUnixAdmin = await strictPostmaster.createSession()
+    await strictUnixAdmin.exec("ALTER ROLE postgres PASSWORD 'local-secret'")
+    await writeFile(
+      join(root, 'strict-unix-data', 'pg_hba.conf'),
+      'local all all scram-sha-256\n',
+    )
+    const strictUnixReload = await strictUnixAdmin.query(
+      'SELECT pg_reload_conf() AS reloaded',
+    )
+    assert.deepEqual(strictUnixReload.rows, [{ reloaded: true }])
+    const strictUnixNoPassword = await run(
+      psql,
+      ['-X', '--no-psqlrc', '-w', '-c', 'SELECT 1'],
+      {
+        ...commonEnvironment,
+        PGHOST: strictSocketDirectory,
+        PGPORT: String(strictPort),
+        PGPASSFILE: '/dev/null',
+      },
+    )
+    assert.notEqual(strictUnixNoPassword.code, 0)
+    assert.match(
+      strictUnixNoPassword.stderr,
+      /(?:no password supplied|password authentication failed)/,
+    )
+    const strictUnixWithPassword = await run(
+      psql,
+      ['-X', '--no-psqlrc', '-w', '-A', '-t', '-c', 'SELECT 9 * 9'],
+      {
+        ...commonEnvironment,
+        PGHOST: strictSocketDirectory,
+        PGPORT: String(strictPort),
+        PGPASSFILE: '/dev/null',
+        PGPASSWORD: 'local-secret',
+      },
+    )
+    assert.equal(strictUnixWithPassword.code, 0, strictUnixWithPassword.stderr)
+    assert.match(strictUnixWithPassword.stdout, /^81$/m)
+    await strictUnixAdmin.close()
     await strict.close()
     strict = undefined
     await assert.rejects(access(strictSocketPath))
