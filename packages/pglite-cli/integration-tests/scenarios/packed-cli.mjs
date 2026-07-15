@@ -119,6 +119,114 @@ try {
   )
   assert.match(afterReload.stdout, /^42$/m)
 
+  const wasmPsql = await run(
+    executable,
+    [
+      'psql',
+      '-X',
+      '--no-psqlrc',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      "CREATE TABLE cli_archive_test(value text); INSERT INTO cli_archive_test VALUES ('restored');",
+    ],
+    { cwd: projectRoot, env: environment },
+  )
+  assert.equal(wasmPsql.code, 0, wasmPsql.stderr)
+
+  const streamedPsql = await run(
+    executable,
+    ['psql', '-X', '--no-psqlrc', '-v', 'ON_ERROR_STOP=1'],
+    {
+      cwd: projectRoot,
+      env: environment,
+      input: String.raw`\pset format unaligned
+\pset tuples_only on
+COPY cli_archive_test(value) FROM STDIN;
+streamed
+\.
+SELECT value FROM cli_archive_test WHERE value = 'streamed';
+`,
+    },
+  )
+  assert.equal(streamedPsql.code, 0, streamedPsql.stderr)
+  assert.match(streamedPsql.stdout, /^streamed$/m)
+
+  for (const [command, args] of [
+    ['createdb', ['cli_admin_test']],
+    [
+      'createuser',
+      ['--no-superuser', '--no-createdb', '--no-createrole', 'cli_role_test'],
+    ],
+    ['vacuumdb', ['--analyze', 'postgres']],
+    ['reindexdb', ['postgres']],
+    ['clusterdb', ['postgres']],
+  ]) {
+    const result = await run(executable, [command, ...args], {
+      cwd: projectRoot,
+      env: environment,
+    })
+    assert.equal(result.code, 0, `${command}: ${result.stderr}`)
+  }
+
+  const archive = join(projectRoot, 'cli-archive.dump')
+  const dump = await run(
+    executable,
+    ['pg_dump', '--format=custom', '--file', archive, 'postgres'],
+    { cwd: projectRoot, env: environment },
+  )
+  assert.equal(dump.code, 0, dump.stderr)
+  assert.ok((await readFile(archive)).byteLength > 1_000)
+
+  const dropTable = await run(
+    executable,
+    [
+      'psql',
+      '-X',
+      '--no-psqlrc',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      'DROP TABLE cli_archive_test',
+    ],
+    { cwd: projectRoot, env: environment },
+  )
+  assert.equal(dropTable.code, 0, dropTable.stderr)
+  const restore = await run(
+    executable,
+    ['pg_restore', '--dbname=postgres', archive],
+    { cwd: projectRoot, env: environment },
+  )
+  assert.equal(restore.code, 0, restore.stderr)
+  const restored = await run(
+    executable,
+    [
+      'psql',
+      '-X',
+      '--no-psqlrc',
+      '-A',
+      '-t',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      'SELECT value FROM cli_archive_test',
+    ],
+    { cwd: projectRoot, env: environment },
+  )
+  assert.equal(restored.code, 0, restored.stderr)
+  assert.match(restored.stdout, /^restored$/m)
+
+  for (const [command, name] of [
+    ['dropuser', 'cli_role_test'],
+    ['dropdb', 'cli_admin_test'],
+  ]) {
+    const result = await run(executable, [command, name], {
+      cwd: projectRoot,
+      env: environment,
+    })
+    assert.equal(result.code, 0, `${command}: ${result.stderr}`)
+  }
+
   postgres.kill('SIGTERM')
   const exit = await childExit(postgres, 30_000)
   postgres = undefined
@@ -183,7 +291,27 @@ async function assertProgrammaticImports() {
     [
       '--input-type=module',
       '-e',
-      "import { PGlite } from 'pglite'; import { PGlite as ScopedPGlite } from '@electric-sql/pglite'; import { PGlitePostmaster } from 'pglite/postmaster'; import { PGlitePostmaster as ScopedPostmaster } from '@electric-sql/pglite/postmaster'; import { PGliteServer } from 'pglite/server'; import { PGliteServer as ScopedServer } from '@electric-sql/pglite-server'; if (PGlite !== ScopedPGlite || PGlitePostmaster !== ScopedPostmaster || PGliteServer !== ScopedServer) process.exit(9)",
+      `import { PGlite } from 'pglite'
+import { PGlite as ScopedPGlite } from '@electric-sql/pglite'
+import { PGlitePostmaster } from 'pglite/postmaster'
+import { PGlitePostmaster as ScopedPostmaster } from '@electric-sql/pglite/postmaster'
+import { PGliteServer } from 'pglite/server'
+import { PGliteServer as ScopedServer } from '@electric-sql/pglite-server'
+import * as tools from 'pglite/tools'
+import { runPsql, psqlRunner } from '@electric-sql/pglite-tools/psql'
+import { runPgRestore, pgRestoreRunner } from '@electric-sql/pglite-tools/pg_restore'
+import * as admin from '@electric-sql/pglite-tools/admin'
+if (
+  PGlite !== ScopedPGlite ||
+  PGlitePostmaster !== ScopedPostmaster ||
+  PGliteServer !== ScopedServer ||
+  tools.runPsql !== runPsql ||
+  tools.psqlRunner !== psqlRunner ||
+  tools.runPgRestore !== runPgRestore ||
+  tools.pgRestoreRunner !== pgRestoreRunner ||
+  tools.runCreateDb !== admin.runCreateDb ||
+  tools.reindexDbRunner !== admin.reindexDbRunner
+) process.exit(9)`,
     ],
     { cwd: projectRoot },
   )
@@ -192,7 +320,27 @@ async function assertProgrammaticImports() {
     process.execPath,
     [
       '-e',
-      "const { PGlite } = require('pglite'); const { PGlite: ScopedPGlite } = require('@electric-sql/pglite'); const { PGlitePostmaster } = require('pglite/postmaster'); const { PGlitePostmaster: ScopedPostmaster } = require('@electric-sql/pglite/postmaster'); const { PGliteServer } = require('pglite/server'); const { PGliteServer: ScopedServer } = require('@electric-sql/pglite-server'); if (PGlite !== ScopedPGlite || PGlitePostmaster !== ScopedPostmaster || PGliteServer !== ScopedServer) process.exit(9)",
+      `const { PGlite } = require('pglite')
+const { PGlite: ScopedPGlite } = require('@electric-sql/pglite')
+const { PGlitePostmaster } = require('pglite/postmaster')
+const { PGlitePostmaster: ScopedPostmaster } = require('@electric-sql/pglite/postmaster')
+const { PGliteServer } = require('pglite/server')
+const { PGliteServer: ScopedServer } = require('@electric-sql/pglite-server')
+const tools = require('pglite/tools')
+const { runPsql, psqlRunner } = require('@electric-sql/pglite-tools/psql')
+const { runPgRestore, pgRestoreRunner } = require('@electric-sql/pglite-tools/pg_restore')
+const admin = require('@electric-sql/pglite-tools/admin')
+if (
+  PGlite !== ScopedPGlite ||
+  PGlitePostmaster !== ScopedPostmaster ||
+  PGliteServer !== ScopedServer ||
+  tools.runPsql !== runPsql ||
+  tools.psqlRunner !== psqlRunner ||
+  tools.runPgRestore !== runPgRestore ||
+  tools.pgRestoreRunner !== pgRestoreRunner ||
+  tools.runCreateDb !== admin.runCreateDb ||
+  tools.reindexDbRunner !== admin.reindexDbRunner
+) process.exit(9)`,
     ],
     { cwd: projectRoot },
   )
@@ -358,9 +506,10 @@ function run(command, args, options = {}) {
     const child = spawn(command, args, {
       cwd: options.cwd,
       env: options.env ?? process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
     })
     const output = collectOutput(child)
+    if (options.input !== undefined) child.stdin.end(options.input)
     child.once('error', reject)
     child.once('exit', (code, signal) =>
       resolve({

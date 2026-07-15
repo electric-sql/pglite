@@ -18,6 +18,14 @@ libpq to a TCP or Unix-socket PGlite server; they do not use an in-process
 ```typescript
 import { pgIsReady } from '@electric-sql/pglite-tools/pg_isready'
 import { runPgDump } from '@electric-sql/pglite-tools/pg_dump/native'
+import { runPgRestore } from '@electric-sql/pglite-tools/pg_restore'
+import { runPsql } from '@electric-sql/pglite-tools/psql'
+import {
+  runCreateDb,
+  runCreateUser,
+  runDropDb,
+  runDropUser,
+} from '@electric-sql/pglite-tools/admin'
 
 const invocation = {
   argv: ['-h', '127.0.0.1', '-p', '5432'],
@@ -29,11 +37,23 @@ const invocation = {
 
 const readiness = await pgIsReady(invocation)
 const dump = await runPgDump(invocation)
+const query = await runPsql({
+  ...invocation,
+  argv: [...invocation.argv, '-c', 'select current_database()'],
+})
 ```
 
 Each invocation creates fresh Wasm process state in a Worker. A file URL or
 path supplied as `cwd` is mounted through NODEFS, as are absolute `HOME`,
 `PGPASSFILE`, `PGSERVICEFILE`, and `PGSYSCONFDIR` locations.
+
+The native-style set contains `psql`, `pg_dump`, `pg_restore`, `pg_isready`,
+`createdb`, `createuser`, `dropdb`, `dropuser`, `clusterdb`, `vacuumdb`, and
+`reindexdb`. Each named export has a `PostgresToolRunner` form as well as its
+`run*` convenience function. These are PostgreSQL programs compiled without
+SSL, GSS, LDAP, or readline. Parallel dump and restore modes and operations
+that launch host programs are not supported; use one job. Files must be under
+the mounted working directory or one of the mounted environment paths above.
 
 Standalone Node initialization is available from
 `@electric-sql/pglite-tools/initdb`. It uses native initdb defaults and writes

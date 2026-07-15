@@ -12,12 +12,27 @@ import {
   type PGliteServerOptions,
 } from '@electric-sql/pglite-server'
 import { initdb, type InitdbOptions } from '@electric-sql/pglite-tools/initdb'
+import type { PostgresToolInvocation } from '@electric-sql/pglite-tools/pg_isready'
 import {
-  pgIsReady,
-  type PostgresToolInvocation,
-} from '@electric-sql/pglite-tools/pg_isready'
+  nativeToolRunners,
+  type NativeToolCommand,
+} from '@electric-sql/pglite-tools/_internal/native-tools'
 import packageJson from '../package.json'
 import type { PGliteNodeConfiguration } from './config.js'
+
+const POSTGRES_TOOL_COMMANDS = [
+  'pg_isready',
+  'psql',
+  'pg_dump',
+  'pg_restore',
+  'createdb',
+  'createuser',
+  'dropdb',
+  'dropuser',
+  'clusterdb',
+  'vacuumdb',
+  'reindexdb',
+] as const satisfies readonly NativeToolCommand[]
 
 const COMMANDS = [
   'help',
@@ -25,7 +40,7 @@ const COMMANDS = [
   'initdb',
   'server',
   'postgres',
-  'pg_isready',
+  ...POSTGRES_TOOL_COMMANDS,
 ] as const
 
 type Command = (typeof COMMANDS)[number]
@@ -43,7 +58,10 @@ export interface CliRuntime {
   readonly stderr: NodeJS.WritableStream
   readonly signals: SignalSource
   readonly initdb: (options: InitdbOptions) => Promise<{ exitCode: number }>
-  readonly pgIsReady: (invocation: PostgresToolInvocation) => Promise<number>
+  readonly runTool: (
+    command: NativeToolCommand,
+    invocation: PostgresToolInvocation,
+  ) => Promise<number>
   readonly createServer: (options: PGliteServerOptions) => Promise<PGliteServer>
   readonly loadConfiguration: (
     specifier: string,
@@ -91,7 +109,8 @@ function defaultRuntime(): CliRuntime {
     stderr: process.stderr,
     signals: process,
     initdb,
-    pgIsReady,
+    runTool: (command, invocation) =>
+      nativeToolRunners[command].run(invocation),
     createServer: (options) => PGliteServer.create(options),
     loadConfiguration: loadConfigurationModule,
   }
@@ -120,7 +139,9 @@ async function dispatch(
     return 0
   }
   if (command === 'initdb') return runInitdb(global.args, runtime)
-  if (command === 'pg_isready') return runPgIsReady(global.args, runtime)
+  if (isPostgresToolCommand(command)) {
+    return runPostgresTool(command, global.args, runtime)
+  }
   if (command === 'server') {
     return runServer(global.args, global.debug, runtime)
   }
@@ -200,12 +221,13 @@ async function runInitdb(
   )
 }
 
-async function runPgIsReady(
+async function runPostgresTool(
+  command: NativeToolCommand,
   argv: readonly string[],
   runtime: CliRuntime,
 ): Promise<number> {
   return withToolSignals(runtime, (signal) =>
-    runtime.pgIsReady({
+    runtime.runTool(command, {
       argv,
       env: runtime.env,
       cwd: runtime.cwd,
@@ -215,6 +237,10 @@ async function runPgIsReady(
       signal,
     }),
   )
+}
+
+function isPostgresToolCommand(value: string): value is NativeToolCommand {
+  return (POSTGRES_TOOL_COMMANDS as readonly string[]).includes(value)
 }
 
 async function runServer(
@@ -764,8 +790,8 @@ function commandHelp(command: string | undefined): string {
   if (command === 'initdb') return initdbHelp()
   if (command === 'server') return serverHelp()
   if (command === 'postgres') return postgresHelp()
-  if (command === 'pg_isready') {
-    return 'Usage: pglite pg_isready [PostgreSQL pg_isready options]\n'
+  if (isPostgresToolCommand(command)) {
+    return `Usage: pglite ${command} [PostgreSQL ${command} options]\n\nRun "pglite ${command} --help" for the PostgreSQL option reference.\n`
   }
   return command === 'version' ? versionText() : mainHelp()
 }
@@ -780,6 +806,16 @@ Commands:
   server       run the PGlite-oriented Node socket server
   postgres     run with PostgreSQL-controlled listeners and arguments
   pg_isready   report PostgreSQL connection readiness
+  psql         run SQL and psql meta-commands
+  pg_dump      export a PostgreSQL database
+  pg_restore   restore a pg_dump archive
+  createdb     create a database
+  createuser   create a role
+  dropdb       remove a database
+  dropuser     remove a role
+  clusterdb    cluster tables
+  vacuumdb     vacuum and analyze databases
+  reindexdb    reindex databases
   help         show help for a command
   version      show PGlite and PostgreSQL versions
 

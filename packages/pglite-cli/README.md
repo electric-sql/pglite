@@ -11,6 +11,14 @@ npx pglite initdb -D ./pgdata
 npx pglite postgres -D ./pgdata -c listen_addresses=127.0.0.1 -p 5432
 ```
 
+In another process, the bundled PostgreSQL clients can use that listener:
+
+```sh
+npx pglite psql -h 127.0.0.1 -p 5432 postgres
+npx pglite pg_dump -h 127.0.0.1 -p 5432 -Fc -f backup.dump postgres
+npx pglite pg_restore -h 127.0.0.1 -p 5432 -d postgres backup.dump
+```
+
 `postgres` runs in the foreground and lets PostgreSQL resolve listener settings
 from its command line and configuration files. `SIGTERM`, `SIGINT`, and
 `SIGQUIT` request smart, fast, and immediate shutdown respectively; `SIGHUP`
@@ -68,3 +76,28 @@ collation inventory. Data-directory, PostgreSQL argument, listener, lifecycle,
 and memory controls remain authoritative in the CLI and cannot be replaced by
 the module. Loading a module executes it with the permissions of the `pglite`
 process; do not use an untrusted path.
+
+## PostgreSQL command compatibility
+
+Arguments after a PostgreSQL-derived command are passed to that program
+unchanged. Environment variables, streaming standard input/output, exit status,
+and `SIGINT` cancellation are preserved.
+
+| Command | Compatibility and intentional differences |
+| --- | --- |
+| `initdb` | Native defaults and argument meanings; Node filesystem paths only. Full ICU inventory can be supplied through `PGLITE_CONFIG`. |
+| `postgres` | Foreground multi-session postmaster with PostgreSQL-controlled TCP and Unix listeners. No SSL, GSS, LDAP, forked logging collector, or daemon mode. |
+| `server` | PGlite-specific explicit listener frontend; this is not a native PostgreSQL command. |
+| `pg_isready` | Native connection options and exit statuses over TCP or Unix sockets. |
+| `psql` | SQL, scripts, variables, COPY streams, and meta-commands work. The build has no readline, tab completion, interactive line editing, pager process, or shell escapes. |
+| `pg_dump` | Plain, custom, tar, and directory output are available. Parallel jobs are unsupported; use `--jobs=1`. |
+| `pg_restore` | Restores supported archive formats. Parallel jobs are unsupported; use `--jobs=1`. |
+| `createdb`, `createuser`, `dropdb`, `dropuser` | Native options and connection behavior. Interactive password input uses the invocation streams. |
+| `clusterdb`, `vacuumdb`, `reindexdb` | Native options and database maintenance behavior; operations remain subject to the server's available extensions and build features. |
+
+The client programs are isolated in Workers and connect through Node's TCP or
+Unix-socket host. They are compiled without SSL, GSS, LDAP, and host process
+execution. Files are visible under the invocation working directory and the
+absolute `HOME`, `PGPASSFILE`, `PGSERVICEFILE`, and `PGSYSCONFDIR` paths. A
+relative output or archive path therefore resolves inside the current working
+directory; arbitrary host paths are not implicitly mounted.

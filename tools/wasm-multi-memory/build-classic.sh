@@ -18,8 +18,7 @@ docker run --rm \
       ./build-pglite.sh
     cd /work
     pnpm wasm:copy-pglite
-    pnpm wasm:copy-pgdump
-    pnpm wasm:copy-pgisready
+    pnpm wasm:copy-client-tools
     pnpm wasm:copy-initdb
     pnpm wasm:copy-other_extensions
     node tools/wasm-multi-memory/generate-artifact-metadata.mjs

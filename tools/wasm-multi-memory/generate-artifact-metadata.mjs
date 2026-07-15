@@ -10,6 +10,19 @@ const postgresRoot = resolve(root, 'postgres-pglite')
 const release = resolve(root, 'packages/pglite/release')
 const output = resolve(release, 'runtime-identity.json')
 const toolsRelease = resolve(root, 'packages/pglite-tools/release')
+const toolCommands = [
+  'pg_dump',
+  'pg_isready',
+  'psql',
+  'pg_restore',
+  'createdb',
+  'createuser',
+  'dropdb',
+  'dropuser',
+  'clusterdb',
+  'vacuumdb',
+  'reindexdb',
+]
 const pglitePackage = JSON.parse(
   readFileSync(resolve(root, 'packages/pglite/package.json'), 'utf8'),
 )
@@ -86,10 +99,12 @@ writeFileSync(
       postgresVersionNum,
       catalogVersion,
       emscriptenVersion,
-      artifacts: {
-        pg_dump: toolIdentity('pg_dump.wasm'),
-        pg_isready: toolIdentity('pg_isready.wasm'),
-      },
+      artifacts: Object.fromEntries(
+        toolCommands.map((command) => [
+          command,
+          toolIdentity(`${command}.wasm`),
+        ]),
+      ),
     },
     null,
     2,

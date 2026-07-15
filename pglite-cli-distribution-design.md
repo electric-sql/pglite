@@ -4,7 +4,7 @@ Status: accepted design; implementation in progress<br>
 Initial target: Node.js 22 or newer<br>
 Repository package: `packages/pglite-cli`<br>
 Published package and executable: `pglite`<br>
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
 ## 1. Summary
 
@@ -1833,6 +1833,45 @@ Phase 6 implementation record, 2026-07-15:
 
 Exit criterion: each advertised command has packaged integration tests and
 documented differences from native PostgreSQL.
+
+Phase 7 implementation record, 2026-07-15:
+
+- `@electric-sql/pglite-tools` now publishes isolated native-style runners for
+  `psql`, `pg_restore`, `createdb`, `createuser`, `dropdb`, `dropuser`,
+  `clusterdb`, `vacuumdb`, and `reindexdb` in addition to the existing
+  `pg_dump` and `pg_isready` runners. The umbrella `pglite/tools` entry point
+  re-exports the same runner and convenience-function identities; the CLI
+  dispatches every command through one revision-identified internal registry.
+- All client programs use the shared Worker, stream, filesystem, cancellation,
+  libpq socket-host, and artifact-identity runtime. A nonblocking receive with
+  no buffered socket data reports `EAGAIN`, matching libpq's poll contract
+  instead of trapping psql after `ReadyForQuery`. The only additional
+  PostgreSQL-fork changes are Emscripten-fenced Makefile definitions selecting
+  PostgreSQL's existing private frontend encoding symbols for static linkage.
+- A fresh packed installation runs every advertised command against one live
+  multi-session server. It exercises concurrent native clients, Wasm psql SQL,
+  variables, meta-commands, streamed `COPY FROM STDIN`, database and role
+  creation/removal, maintenance commands, custom-format dump, table removal,
+  archive restore, and restored-row verification. Clean ESM and CommonJS
+  imports prove identity for core, postmaster, server, all new scoped tool
+  entry points, and the umbrella tools re-exports.
+- The explicit compatibility table records the missing SSL, GSS, LDAP,
+  readline, host-process, and parallel dump/restore facilities and the mounted
+  host-path boundary. `pg_ctl` remains regression-provider infrastructure, not
+  an advertised command: the foreground CLI already has tested signal and
+  lifecycle semantics, while a partial native-shaped `pg_ctl` would add a
+  second lifecycle contract without providing daemon mode.
+- The nine Phase 7 JS/Wasm artifact pairs add 4,939,651 bytes raw and 1,735,821
+  bytes when each file is gzipped. The final tools tarball is 8,631,921 bytes
+  unpacked and 2,916,089 bytes compressed, increases of 5,138,488 and 1,785,064
+  bytes over the Phase 5 package measurement. The umbrella tarball is 89,966
+  bytes unpacked and 25,966 bytes compressed, increases of 16,566 and 5,240
+  bytes.
+- Node 22 passes 16 focused tools tests with seven Docker runtime cases gated
+  separately and 24 CLI tests. Both packages pass TypeScript, lint, formatting,
+  builds, and ESM/CommonJS export audits. The native ARM64 packed-package gate
+  passes from artifact build through clean installation, programmatic imports,
+  all command integrations, signal shutdown, and cluster cleanup.
 
 ## 17. Alternatives considered
 

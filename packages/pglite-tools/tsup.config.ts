@@ -7,6 +7,10 @@ const entryPoints = [
   'src/pg_dump.ts',
   'src/pg_dump_native.ts',
   'src/pg_isready.ts',
+  'src/psql.ts',
+  'src/pg_restore.ts',
+  'src/admin.ts',
+  'src/native-tools-internal.ts',
   'src/initdb.ts',
   'src/native-tool-worker.ts',
 ]
@@ -28,7 +32,19 @@ export default defineConfig([
     onSuccess: async () => {
       cpSync(resolve('release/pg_dump.wasm'), resolve('dist/pg_dump.wasm'))
       mkdirSync(resolve('dist/native'), { recursive: true })
-      for (const command of ['pg_dump', 'pg_isready']) {
+      for (const command of [
+        'pg_dump',
+        'pg_isready',
+        'psql',
+        'pg_restore',
+        'createdb',
+        'createuser',
+        'dropdb',
+        'dropuser',
+        'clusterdb',
+        'vacuumdb',
+        'reindexdb',
+      ]) {
         cpSync(
           resolve(`release/${command}.js`),
           resolve(`dist/native/${command}.js`),

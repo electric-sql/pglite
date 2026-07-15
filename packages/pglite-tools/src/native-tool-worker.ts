@@ -26,9 +26,11 @@ interface ToolModule {
   HEAPU8: Uint8Array
   ENV: Record<string, string>
   FS: {
+    chmod(path: string, mode: number): void
     chdir(path: string): void
     mkdirTree(path: string): void
     mount(type: unknown, options: { root: string }, mountpoint: string): void
+    writeFile(path: string, data: Uint8Array): void
     filesystems: { readonly NODEFS?: unknown }
   }
   addFunction(callback: CallableFunction, signature: string): number
@@ -59,9 +61,10 @@ async function run(): Promise<void> {
   }
   const callbacks: number[] = []
 
+  const executable = `/pglite/bin/${data.command}`
   const module = await imported.default({
     noInitialRun: true,
-    thisProgram: data.command,
+    thisProgram: executable,
     arguments: [],
     stdin: () => {
       if (stdinOffset >= stdin.length) {
@@ -87,6 +90,7 @@ async function run(): Promise<void> {
           else mod.ENV[name] = value
         }
         mountHostPaths(mod)
+        installExecutablePlaceholder(mod, executable)
         installSocketHost(mod, callbacks)
       },
     ],
@@ -124,6 +128,15 @@ async function run(): Promise<void> {
     output[stream] = []
     streamRequest(stream, Uint8Array.from(pending))
   }
+}
+
+function installExecutablePlaceholder(
+  module: ToolModule,
+  executable: string,
+): void {
+  module.FS.mkdirTree('/pglite/bin')
+  module.FS.writeFile(executable, new Uint8Array())
+  module.FS.chmod(executable, 0o555)
 }
 
 function mountHostPaths(module: ToolModule): void {

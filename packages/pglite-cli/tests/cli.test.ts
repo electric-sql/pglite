@@ -48,18 +48,34 @@ describe('pglite CLI dispatcher', () => {
     expect(fixture.stderr()).toContain('/test/cwd/cluster')
   })
 
-  it('passes pg_isready arguments through without reparsing them', async () => {
-    const fixture = cliFixture({ readyExitCode: 2 })
-    const argv = ['-h', 'db.example', '-p', '55432', '--timeout=9']
-    expect(await runCli(['pg_isready', ...argv], fixture.runtime)).toBe(2)
-    expect(fixture.pgIsReady).toHaveBeenCalledWith(
-      expect.objectContaining({
-        argv,
-        env: fixture.runtime.env,
-        cwd: '/test/cwd',
-      }),
-    )
-  })
+  it.each([
+    'pg_isready',
+    'psql',
+    'pg_dump',
+    'pg_restore',
+    'createdb',
+    'createuser',
+    'dropdb',
+    'dropuser',
+    'clusterdb',
+    'vacuumdb',
+    'reindexdb',
+  ] as const)(
+    'passes %s arguments through without reparsing them',
+    async (command) => {
+      const fixture = cliFixture({ readyExitCode: 2 })
+      const argv = ['-h', 'db.example', '-p', '55432', '--timeout=9']
+      expect(await runCli([command, ...argv], fixture.runtime)).toBe(2)
+      expect(fixture.runTool).toHaveBeenCalledWith(
+        command,
+        expect.objectContaining({
+          argv,
+          env: fixture.runtime.env,
+          cwd: '/test/cwd',
+        }),
+      )
+    },
+  )
 
   it('does not interpret native arguments after -- as CLI help or version', async () => {
     const fixture = cliFixture()
@@ -235,7 +251,7 @@ function cliFixture(options: FixtureOptions = {}) {
   const stdout = outputStream()
   const stderr = outputStream()
   const initdb = vi.fn(async () => ({ exitCode: options.initdbExitCode ?? 0 }))
-  const pgIsReady = vi.fn(async () => options.readyExitCode ?? 0)
+  const runTool = vi.fn(async () => options.readyExitCode ?? 0)
   const createServer = vi.fn(async (_serverOptions: PGliteServerOptions) => {
     if (options.serverStartupError) throw options.serverStartupError
     return (options.server ?? new FakeServer()) as unknown as PGliteServer
@@ -249,14 +265,14 @@ function cliFixture(options: FixtureOptions = {}) {
     stderr: stderr.stream,
     signals: options.signals ?? new FakeSignals(),
     initdb,
-    pgIsReady,
+    runTool,
     createServer,
     loadConfiguration,
   }
   return {
     runtime,
     initdb,
-    pgIsReady,
+    runTool,
     createServer,
     loadConfiguration,
     stdout: stdout.text,

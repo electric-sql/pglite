@@ -53,7 +53,6 @@ interface OpenSocket {
   length: number
   ended: boolean
   errno: number
-  pendingReceive?: Extract<NativeToolWorkerMessage, { type: 'socket-receive' }>
 }
 
 async function runNativeTool(
@@ -207,12 +206,10 @@ async function runNativeTool(
     socket.on('data', (chunk: Buffer) => {
       state.chunks.push(new Uint8Array(chunk))
       state.length += chunk.byteLength
-      servicePendingReceive(state)
       servicePendingPolls()
     })
     socket.on('end', () => {
       state.ended = true
-      servicePendingReceive(state)
       servicePendingPolls()
     })
     socket.on('error', (error: NodeJS.ErrnoException) => {
@@ -226,7 +223,6 @@ async function runNativeTool(
       ) {
         complete(message.response, -state.errno)
       }
-      servicePendingReceive(state)
       servicePendingPolls()
     })
   }
@@ -256,26 +252,17 @@ async function runNativeTool(
       complete(message.response, -9)
       return
     }
-    if (state.pendingReceive) {
-      complete(message.response, -11)
-      return
-    }
-    state.pendingReceive = message
-    servicePendingReceive(state)
-  }
-
-  function servicePendingReceive(state: OpenSocket): void {
-    const request = state.pendingReceive
-    if (!request) return
-    if (state.length === 0 && !state.ended) return
-    state.pendingReceive = undefined
     if (state.length === 0) {
-      complete(request.response, state.errno ? -state.errno : 0, 0)
+      complete(
+        message.response,
+        state.ended ? (state.errno ? -state.errno : 0) : -11,
+        0,
+      )
       return
     }
-    const target = responseBytes(request.response)
+    const target = responseBytes(message.response)
     let offset = 0
-    const maximum = Math.min(request.maximum, target.byteLength)
+    const maximum = Math.min(message.maximum, target.byteLength)
     while (offset < maximum && state.chunks.length > 0) {
       const first = state.chunks[0]
       const length = Math.min(first.byteLength, maximum - offset)
@@ -285,7 +272,7 @@ async function runNativeTool(
       if (length === first.byteLength) state.chunks.shift()
       else state.chunks[0] = first.subarray(length)
     }
-    complete(request.response, 0, offset)
+    complete(message.response, 0, offset)
   }
 
   function pollSockets(
