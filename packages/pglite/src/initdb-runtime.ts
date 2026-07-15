@@ -53,6 +53,7 @@ export async function runInitdbRuntime(
     dataDir: invocation.dataDir,
     argv: [...invocation.argv],
     env: { ...invocation.env },
+    icuDataDir: invocation.icuDataDir,
     assets: {
       postgresWasm: new URL('./pglite.wasm', import.meta.url).href,
       postgresData: new URL('./pglite.data', import.meta.url).href,
@@ -188,6 +189,12 @@ function assertInvocation(invocation: InitdbRuntimeInvocation): void {
     if (typeof argument !== 'string' || argument.includes('\0')) {
       throw new TypeError('initdb argv contains an invalid argument')
     }
+  }
+  if (
+    invocation.icuDataDir !== undefined &&
+    !(invocation.icuDataDir instanceof Blob)
+  ) {
+    throw new TypeError('initdb icuDataDir must be a Blob or File')
   }
   for (const stream of [
     invocation.stdin,

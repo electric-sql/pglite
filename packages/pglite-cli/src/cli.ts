@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { pgliteRuntimeIdentity } from '@electric-sql/pglite'
 import type {
   PGlitePostmasterExit,
@@ -17,6 +17,7 @@ import {
   type PostgresToolInvocation,
 } from '@electric-sql/pglite-tools/pg_isready'
 import packageJson from '../package.json'
+import type { PGliteNodeConfiguration } from './config.js'
 
 const COMMANDS = [
   'help',
@@ -44,6 +45,10 @@ export interface CliRuntime {
   readonly initdb: (options: InitdbOptions) => Promise<{ exitCode: number }>
   readonly pgIsReady: (invocation: PostgresToolInvocation) => Promise<number>
   readonly createServer: (options: PGliteServerOptions) => Promise<PGliteServer>
+  readonly loadConfiguration: (
+    specifier: string,
+    cwd: string,
+  ) => Promise<unknown>
 }
 
 interface GlobalOptions {
@@ -88,6 +93,7 @@ function defaultRuntime(): CliRuntime {
     initdb,
     pgIsReady,
     createServer: (options) => PGliteServer.create(options),
+    loadConfiguration: loadConfigurationModule,
   }
 }
 
@@ -178,18 +184,19 @@ async function runInitdb(
   }
   const resolved = resolveDataDirectory(dataDir, runtime.cwd)
   await write(runtime.stderr, `pglite: initializing ${resolved}\n`)
+  const options = await configuredInitdb(
+    {
+      dataDir: resolved,
+      args: argv,
+      env: runtime.env,
+      stdin: runtime.stdin,
+      stdout: runtime.stdout,
+      stderr: runtime.stderr,
+    },
+    runtime,
+  )
   return withToolSignals(runtime, (signal) =>
-    runtime
-      .initdb({
-        dataDir: resolved,
-        args: argv,
-        env: runtime.env,
-        stdin: runtime.stdin,
-        stdout: runtime.stdout,
-        stderr: runtime.stderr,
-        signal,
-      })
-      .then((result) => result.exitCode),
+    runtime.initdb({ ...options, signal }).then((result) => result.exitCode),
   )
 }
 
@@ -221,7 +228,7 @@ async function runServer(
   }
   const parsed = parseServerOptions(argv, globalDebug, runtime)
   const server = await runtime.createServer({
-    postmaster: parsed.postmaster,
+    postmaster: await configuredPostmaster(parsed.postmaster, runtime),
     listen: parsed.listen,
     debug: parsed.postmaster.debug,
   })
@@ -246,7 +253,7 @@ async function runPostgres(
   }
   const parsed = parsePostgresOptions(argv, globalDebug, runtime)
   const server = await runtime.createServer({
-    postmaster: parsed.postmaster,
+    postmaster: await configuredPostmaster(parsed.postmaster, runtime),
     mode: 'postgres',
     debug: parsed.postmaster.debug,
   })
@@ -623,6 +630,84 @@ function memoryBytes(value: string): number {
 function debugEnabled(value: string | undefined): boolean {
   if (!value) return false
   return ['1', 'true', 'debug', 'trace'].includes(value.toLowerCase())
+}
+
+async function configuredPostmaster(
+  options: PGlitePostmasterOptions,
+  runtime: CliRuntime,
+): Promise<PGlitePostmasterOptions> {
+  const specifier = runtime.env.PGLITE_CONFIG
+  if (!specifier) return options
+  const loaded = await runtime.loadConfiguration(specifier, runtime.cwd)
+  if (!loaded || typeof loaded !== 'object' || Array.isArray(loaded)) {
+    throw new TypeError(
+      'PGLITE_CONFIG must default-export a configuration object',
+    )
+  }
+  const configuration = loaded as PGliteNodeConfiguration
+  const postmaster = configuration.postmaster
+  if (postmaster === undefined) return options
+  if (
+    !postmaster ||
+    typeof postmaster !== 'object' ||
+    Array.isArray(postmaster)
+  ) {
+    throw new TypeError('PGLITE_CONFIG postmaster must be an object')
+  }
+  const allowed = new Set([
+    'artifact',
+    'fs',
+    'workerFilesystem',
+    'icuDataDir',
+    'osUser',
+  ])
+  for (const name of Object.keys(postmaster)) {
+    if (!allowed.has(name)) {
+      throw new TypeError(`PGLITE_CONFIG cannot override postmaster.${name}`)
+    }
+  }
+  return { ...options, ...postmaster }
+}
+
+async function configuredInitdb(
+  options: InitdbOptions,
+  runtime: CliRuntime,
+): Promise<InitdbOptions> {
+  const specifier = runtime.env.PGLITE_CONFIG
+  if (!specifier) return options
+  const loaded = await runtime.loadConfiguration(specifier, runtime.cwd)
+  if (!loaded || typeof loaded !== 'object' || Array.isArray(loaded)) {
+    throw new TypeError(
+      'PGLITE_CONFIG must default-export a configuration object',
+    )
+  }
+  const configuration = loaded as PGliteNodeConfiguration
+  const configured = configuration.initdb
+  if (configured === undefined) return options
+  if (
+    !configured ||
+    typeof configured !== 'object' ||
+    Array.isArray(configured)
+  ) {
+    throw new TypeError('PGLITE_CONFIG initdb must be an object')
+  }
+  for (const name of Object.keys(configured)) {
+    if (name !== 'icuDataDir') {
+      throw new TypeError(`PGLITE_CONFIG cannot override initdb.${name}`)
+    }
+  }
+  return { ...options, ...configured }
+}
+
+async function loadConfigurationModule(
+  specifier: string,
+  cwd: string,
+): Promise<unknown> {
+  const url = specifier.startsWith('file:')
+    ? new URL(specifier)
+    : pathToFileURL(resolve(cwd, specifier))
+  const module = (await import(url.href)) as { default?: unknown }
+  return module.default
 }
 
 function hasHelp(argv: readonly string[]): boolean {

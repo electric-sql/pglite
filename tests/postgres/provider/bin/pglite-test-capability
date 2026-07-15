@@ -29,6 +29,7 @@ done
 test -n "${SUITE}"
 test -n "${TARGET}"
 test "$#" -gt 0
+RECORDED_TARGET=${PGLITE_POSTGRES_TEST_TARGET:-${TARGET}}
 
 STATE=$(node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
   classify "${SUITE}")
@@ -36,14 +37,14 @@ case "${STATE}" in
   UNSUPPORTED)
     echo "PGlite capability: UNSUPPORTED ${SUITE} (not executed)"
     node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
-      record suite "${SUITE}" "${STATE}" unsupported 0 0 "${TARGET}"
+      record suite "${SUITE}" "${STATE}" unsupported 0 0 "${RECORDED_TARGET}"
     exit 0
     ;;
   BLOCKED)
     if [ "${PGLITE_POSTGRES_TEST_RUN_BLOCKED:-false}" != true ]; then
       echo "PGlite capability: BLOCKED ${SUITE} (recorded, not executed)"
       node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
-        record suite "${SUITE}" "${STATE}" blocked 0 0 "${TARGET}"
+        record suite "${SUITE}" "${STATE}" blocked 0 0 "${RECORDED_TARGET}"
       exit 0
     fi
     ;;
@@ -67,5 +68,5 @@ else
 fi
 node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
   record suite "${SUITE}" "${STATE}" "${OUTCOME}" "${STATUS}" \
-  "$((END - START))" "${TARGET}"
+  "$((END - START))" "${RECORDED_TARGET}"
 exit "${STATUS}"

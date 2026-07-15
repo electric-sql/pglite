@@ -10,6 +10,7 @@ export interface InitdbOptions {
   readonly dataDir: string | URL
   readonly args?: readonly string[]
   readonly env?: Readonly<Record<string, string | undefined>>
+  readonly icuDataDir?: Blob | File
   readonly stdin?: NodeJS.ReadableStream
   readonly stdout?: NodeJS.WritableStream
   readonly stderr?: NodeJS.WritableStream
@@ -38,6 +39,7 @@ export async function initdb(options: InitdbOptions): Promise<InitdbResult> {
     dataDir,
     argv: args,
     env: { ...process.env, ...options.env },
+    icuDataDir: options.icuDataDir,
     stdin: options.stdin ?? process.stdin,
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,

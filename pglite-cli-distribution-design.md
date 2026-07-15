@@ -1793,6 +1793,36 @@ Phase 5 implementation record, 2026-07-15:
 
 Exit criterion: the CLI is a supported frontend for upstream regression runs.
 
+Phase 6 implementation record, 2026-07-15:
+
+- The exact packed `pglite` distribution now drives PostgreSQL's temporary
+  clusters through Docker-contained `initdb`, `postgres`, and `pg_ctl`
+  adapters. The provider preserves native client argument vectors, translates
+  smart, fast, immediate, restart, status, and reload lifecycle operations,
+  and records every cluster result against the exact PostgreSQL revision.
+- Standalone initialization accepts the same configured full ICU archive as
+  postmaster startup. This restores the standard ICU collation inventory for
+  packed CLI clusters without embedding test-only policy in the public tool.
+- PostgreSQL listener accepts are nonblocking across multiple effective
+  listeners, preventing an empty listener from trapping the postmaster main
+  loop after another listener claims a pending connection. Server-owned
+  shutdown also drains listeners concurrently with postmaster shutdown while
+  preserving caller-owned lifecycle semantics.
+- Native ARM64 Docker `make check` passes all 230 core regression tests. The
+  adapted `make -j2 -k check-world` records 226 passing supported suite/TAP
+  events, 11 explicitly unsupported events, 26 blocked events, no supported
+  failures, and 188 passing temporary-cluster lifecycles with no failed
+  clusters. The upstream make exits zero.
+- The capability policy defaults to supported and is revision-fenced. Narrow
+  exact or prefix rules document absent build features separately from work
+  that remains blocked; the summary fails on a supported failure, lifecycle
+  failure, stale revision, target mismatch, or non-zero upstream exit.
+- Complete logs, machine-readable summaries, per-cluster records, individual
+  capability events, the packed provider, and the exact native build tree are
+  retained with a canonical replay command. `tests/postgres/README.md`
+  documents the Docker-only workflow and the evidence required before adding
+  a capability rule.
+
 ### Phase 7: expand the command suite
 
 - Add `psql`, `pg_dump`, and `pg_restore` based on usefulness and artifact cost.

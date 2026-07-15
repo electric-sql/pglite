@@ -48,6 +48,11 @@ for (const event of capabilityEvents) {
   if (event.postgresRevision !== config.postgresRevision) {
     throw new Error(`stale capability event for ${event.path}`)
   }
+  if (event.target !== target) {
+    throw new Error(
+      `capability event target mismatch for ${event.path}: ${event.target}`,
+    )
+  }
 }
 if (target === 'check-world' && capabilityEvents.length === 0) {
   throw new Error('check-world produced no capability events')
@@ -98,25 +103,19 @@ const unsupportedPaths = [
       .map((event) => event.path),
   ),
 ].sort()
-const peak = clusters.reduce(
-  (current, cluster) => ({
-    workers: Math.max(current.workers, cluster.peak?.liveProcesses ?? 0),
-    rss: Math.max(current.rss, cluster.peak?.rss ?? 0),
-    privateMemoryBytes: Math.max(
-      current.privateMemoryBytes,
-      cluster.peak?.privateMemoryBytes ?? 0,
-    ),
-    globalMemoryBytes: Math.max(
-      current.globalMemoryBytes,
-      cluster.peak?.globalMemoryBytes ?? 0,
-    ),
-  }),
-  { workers: 0, rss: 0, privateMemoryBytes: 0, globalMemoryBytes: 0 },
-)
+const failedClusters = clusters.filter((cluster) => cluster.status !== 'pass')
 const summary = {
   schema: 1,
-  status: status === 0 && supportedFailures.length === 0 ? 'pass' : 'fail',
-  supportedStatus: supportedFailures.length === 0 ? 'pass' : 'fail',
+  status:
+    status === 0 &&
+    supportedFailures.length === 0 &&
+    failedClusters.length === 0
+      ? 'pass'
+      : 'fail',
+  supportedStatus:
+    supportedFailures.length === 0 && failedClusters.length === 0
+      ? 'pass'
+      : 'fail',
   target,
   upstreamExitStatus: status,
   postgresRevision: config.postgresRevision,
@@ -140,9 +139,8 @@ const summary = {
   clusters: {
     count: clusters.length,
     passed: clusters.filter((cluster) => cluster.status === 'pass').length,
-    failed: clusters.filter((cluster) => cluster.status !== 'pass').length,
+    failed: failedClusters.length,
   },
-  peak,
   preserved: {
     log: join(out, `results/${target}.log`),
     nativeBuild: join(out, 'native/build'),
@@ -156,3 +154,4 @@ await writeFile(
   `${JSON.stringify(summary, null, 2)}\n`,
 )
 console.log(JSON.stringify(summary, null, 2))
+if (summary.status !== 'pass') process.exitCode = 1

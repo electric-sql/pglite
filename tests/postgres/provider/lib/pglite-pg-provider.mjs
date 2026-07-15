@@ -13,7 +13,7 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import { userInfo } from 'node:os'
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 const PROVIDER_SCHEMA = 1
 const STATE_FILE = '.pglite-provider.json'
@@ -57,18 +57,24 @@ async function runInitdb(args) {
   await chmod(pgdata, modes.directory)
 
   try {
-    const { PGlite } = await import(
-      pathToFileURL(join(config.repoRoot, 'packages/pglite/dist/index.js')).href
+    const status = await spawnAndWait(
+      config.cliExecutable,
+      ['initdb', '-D', pgdata, ...parsed.initdbArgs],
+      {
+        env: {
+          ...process.env,
+          PGDATA: pgdata,
+          PGUSER: parsed.username,
+          PGLITE_CONFIG: config.cliConfigModule,
+        },
+        stdio: 'inherit',
+      },
     )
-    const icuArchive = await readFile(config.icuArchive)
-    const database = await PGlite.create({
-      dataDir: `file://${pgdata}`,
-      icuDataDir: new Blob([icuArchive]),
-      initDbStartParams: parsed.initdbArgs,
-    })
-    await database.close()
+    if (status !== 0) {
+      fail(`initdb: packed pglite CLI exited with status ${status}`)
+    }
     if (!existsSync(join(pgdata, 'PG_VERSION'))) {
-      fail(`initdb: PGlite did not initialize ${pgdata}`)
+      fail(`initdb: packed pglite CLI did not initialize ${pgdata}`)
     }
     await writeFile(
       join(pgdata, CLUSTER_FILE),
@@ -85,7 +91,6 @@ async function runInitdb(args) {
   } finally {
     process.umask(previousUmask)
   }
-  console.log(`PGlite PostgreSQL data directory initialized at ${pgdata}`)
 }
 
 async function runPostgres(args) {
@@ -103,9 +108,6 @@ async function runPostgres(args) {
     runPostgresDescribe(pgdata, parsed)
     return
   }
-  // PostgreSQL derives its process umask from the data-directory mode.  The
-  // provider process and all of its Worker threads must do the same because
-  // NODEFS applies the host process umask when PostgreSQL creates files.
   process.umask(dataDirectoryModesForPath(pgdata).umask)
   await removeStaleLifecycle(pgdata)
 
@@ -119,9 +121,18 @@ async function runPostgres(args) {
   const listenAddresses = splitSettingList(
     setting('listen_addresses', '127.0.0.1'),
   )
-  const listen = socketDirectories.length
-    ? { directory: socketDirectories[0], port }
-    : { host: listenAddresses.find(Boolean) ?? '127.0.0.1', port }
+  const address = socketDirectories.length
+    ? {
+        transport: 'unix',
+        directory: socketDirectories[0],
+        path: join(socketDirectories[0], `.s.PGSQL.${port}`),
+        port,
+      }
+    : {
+        transport: 'tcp',
+        host: listenAddresses.find(Boolean) ?? '127.0.0.1',
+        port,
+      }
   const configuredConnections = Number.parseInt(
     setting('max_connections', '100'),
     10,
@@ -131,90 +142,47 @@ async function runPostgres(args) {
     Number.isInteger(configuredConnections) ? configuredConnections : 100,
   )
   const cluster = await readClusterMetadata(pgdata)
-
-  const { PGlitePostmaster } = await import(
-    pathToFileURL(
-      join(config.repoRoot, 'packages/pglite/dist/postmaster/index.js'),
-    ).href
-  )
-  const { PGliteSocketServer } = await import(
-    pathToFileURL(join(config.repoRoot, 'packages/pglite-socket/dist/index.js'))
-      .href
-  )
-  const icuArchive = await readFile(config.icuArchive)
-  const postmaster = await PGlitePostmaster.create({
-    dataDir: `file://${pgdata}`,
-    initialize: false,
-    postmasterPid: process.pid,
-    maxConnections,
-    osUser: cluster.bootstrapSuperuser,
-    respectPostgresqlConfig: true,
-    icuDataDir: new Blob([icuArchive]),
-    artifact: config.artifact,
-    // The Node socket frontend owns the host TCP/Unix listener.  PostgreSQL's
-    // listener is the PGlite virtual socket, so prevent the Wasm postmaster
-    // from also trying to materialize the configured host Unix socket inside
-    // each Worker's Emscripten filesystem.  The settings above have already
-    // been captured for PGliteSocketServer before applying these internal
-    // transport overrides.
-    startParams: [
-      ...parsed.startParams,
-      '-c',
-      'listen_addresses=127.0.0.1',
-      '-c',
-      'unix_socket_directories=',
-    ],
-    privateMaximumMemory: config.privateMaximumMemory,
-    globalMaximumMemory: config.globalMaximumMemory,
-    workerFilesystem: {
-      module: config.workerFilesystemModule,
-      options: {
-        root: pgdata,
-        mounts: config.mounts,
-      },
-    },
-    debug: process.env.PGLITE_PROVIDER_DEBUG === 'true',
-  })
-  const socket = new PGliteSocketServer({ postmaster, listen })
   const startedAt = Date.now()
-  let peak = sample(postmaster)
-  const sampler = setInterval(() => {
-    peak = maximumSample(peak, sample(postmaster))
-  }, 100)
-  let requestedMode
-  let shutdownPromise
-
-  const shutdown = (mode, reason) => {
-    requestedMode ??= mode
-    if (!shutdownPromise) {
-      shutdownPromise = (async () => {
-        await socket.stop().catch((error) => console.error(error))
-        await postmaster
-          .shutdown(requestedMode)
-          .catch((error) => console.error(error))
-        return reason
-      })()
+  const child = spawn(
+    config.cliExecutable,
+    ['postgres', '-D', pgdata, ...parsed.startParams, '-p', String(port)],
+    {
+      env: {
+        ...process.env,
+        PGDATA: pgdata,
+        PGLITE_CONFIG: config.cliConfigModule,
+        PGLITE_PROVIDER_OS_USER: cluster.bootstrapSuperuser,
+        PGLITE_MAX_SESSIONS: String(maxConnections),
+        PGLITE_PRIVATE_MEMORY_LIMIT: String(config.privateMaximumMemory),
+        PGLITE_GLOBAL_MEMORY_LIMIT: String(config.globalMaximumMemory),
+        PGLITE_LOG_LEVEL:
+          process.env.PGLITE_PROVIDER_DEBUG === 'true' ? 'debug' : 'off',
+      },
+      stdio: 'inherit',
+    },
+  )
+  let shutdownSignal
+  const handlers = new Map()
+  for (const signal of ['SIGTERM', 'SIGINT', 'SIGQUIT', 'SIGHUP']) {
+    const handler = () => {
+      if (signal !== 'SIGHUP') shutdownSignal ??= signal
+      if (child.exitCode === null && child.signalCode === null) {
+        const forwarded = child.kill(signal)
+        if (process.env.PGLITE_PROVIDER_DEBUG === 'true') {
+          console.error(
+            `provider: forwarded ${signal} to packed CLI ${child.pid}: ${forwarded}`,
+          )
+        }
+      }
     }
-    return shutdownPromise
+    handlers.set(signal, handler)
+    process.on(signal, handler)
   }
-
-  process.on('SIGTERM', () => void shutdown('smart', 'SIGTERM'))
-  process.on('SIGINT', () => void shutdown('fast', 'SIGINT'))
-  process.on('SIGQUIT', () => void shutdown('immediate', 'SIGQUIT'))
-  process.on('SIGHUP', () => {
-    try {
-      postmaster.reload()
-    } catch (error) {
-      console.error(error)
-    }
-  })
-
   let status = 'pass'
-  let reason = 'postmaster-exit'
-  let postmasterExit
+  let reason = 'requested-shutdown'
+  let cliExit
   try {
-    await waitForPostmasterReady(postmaster, pgdata)
-    const address = await socket.start()
+    await waitForCliReady(child, pgdata)
     await writeLifecycle(pgdata, {
       schema: PROVIDER_SCHEMA,
       status: 'ready',
@@ -224,25 +192,22 @@ async function runPostgres(args) {
       address,
       startedAt: new Date(startedAt).toISOString(),
       serverArgs: parsed.serverArgs,
-      diagnostics: postmaster.diagnostics(),
     })
-    postmasterExit = await postmaster.waitForExit()
-    if (!requestedMode) {
+    cliExit = await childResult(child)
+    if (!shutdownSignal || cliExit.code !== 0) {
       status = 'fail'
-      reason = 'unexpected-postmaster-exit'
-      await shutdown('immediate', reason)
-    } else {
-      reason = await shutdownPromise
+      reason = shutdownSignal ? 'shutdown-failed' : 'unexpected-cli-exit'
     }
   } catch (error) {
     status = 'fail'
     reason = 'provider-error'
     console.error(error)
-    await shutdown('immediate', reason)
   } finally {
-    clearInterval(sampler)
-    await shutdownPromise?.catch(() => undefined)
-    peak = maximumSample(peak, sample(postmaster))
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill('SIGQUIT')
+      cliExit = await childResult(child).catch(() => undefined)
+    }
+    for (const [signal, handler] of handlers) process.off(signal, handler)
     const result = {
       schema: PROVIDER_SCHEMA,
       status,
@@ -250,9 +215,8 @@ async function runPostgres(args) {
       pid: process.pid,
       pgdata,
       elapsedMs: Date.now() - startedAt,
-      postmasterExit,
-      shutdown: postmaster.diagnostics(),
-      peak,
+      cliExecutable: config.cliExecutable,
+      cliExit,
     }
     await writeClusterResult(result)
     await rm(join(pgdata, STATE_FILE), { force: true })
@@ -916,41 +880,43 @@ function validateConfig(value) {
     value.resultsRoot,
     value.postgresBuild,
     value.postgresExecutable,
+    value.cliExecutable,
+    value.cliConfigModule,
   ]) {
     assert.equal(typeof path, 'string', 'provider config path is missing')
   }
-}
-
-function sample(postmaster) {
-  const memory = process.memoryUsage()
-  const diagnostics = postmaster.diagnostics()
-  return {
-    rss: memory.rss,
-    heapTotal: memory.heapTotal,
-    heapUsed: memory.heapUsed,
-    external: memory.external,
-    arrayBuffers: memory.arrayBuffers,
-    liveProcesses: diagnostics.liveProcesses,
-    livePrivateMemories: diagnostics.livePrivateMemories,
-    privateMemoryBytes: diagnostics.privateMemoryBytes,
-    globalMemoryBytes: diagnostics.globalMemoryBytes,
-  }
-}
-
-function maximumSample(left, right) {
-  return Object.fromEntries(
-    Object.keys(left).map((key) => [key, Math.max(left[key], right[key])]),
-  )
 }
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds))
 }
 
-async function waitForPostmasterReady(postmaster, pgdata) {
+function childResult(child) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve({ code: child.exitCode, signal: child.signalCode })
+  }
+  return new Promise((resolveChild, rejectChild) => {
+    child.once('error', rejectChild)
+    child.once('exit', (code, signal) => resolveChild({ code, signal }))
+  })
+}
+
+async function spawnAndWait(executable, args, options = {}) {
+  const result = await childResult(spawn(executable, args, options))
+  if (result.signal) {
+    fail(`${basename(executable)} terminated by ${result.signal}`)
+  }
+  return result.code ?? 1
+}
+
+async function waitForCliReady(child, pgdata) {
   const deadline = Date.now() + 60_000
-  const exited = postmaster.waitForExit().then((result) => ({ result }))
   while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(
+        `packed pglite CLI exited before becoming ready (status ${child.exitCode}, signal ${child.signalCode})`,
+      )
+    }
     try {
       // PostgreSQL publishes startup state in the eighth line of
       // postmaster.pid.  This is the same readiness source used by pg_ctl and
@@ -964,17 +930,9 @@ async function waitForPostmasterReady(postmaster, pgdata) {
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error
     }
-    const outcome = await Promise.race([
-      exited,
-      delay(100).then(() => undefined),
-    ])
-    if (outcome) {
-      throw new Error(
-        `PGlite postmaster exited before becoming ready (${outcome.result.exitKind}, ${outcome.result.exitCode})`,
-      )
-    }
+    await delay(100)
   }
-  throw new Error('PGlite postmaster did not become ready within 60 seconds')
+  throw new Error('packed pglite CLI did not become ready within 60 seconds')
 }
 
 function fail(message) {

@@ -39,3 +39,32 @@ Use `@electric-sql/pglite` directly when you only need the embedded API. Use
 `@electric-sql/pglite-server` directly when composing a Node socket frontend
 around a postmaster. Browser multi-session hosting is intentionally outside the
 scope of this Node distribution phase.
+
+For Node filesystem implementations that require a Worker factory, set
+`PGLITE_CONFIG` to a JavaScript module path. The module is explicitly trusted
+application code and may default-export only the documented pluggable fields:
+
+```js
+import { readFile } from 'node:fs/promises'
+
+/** @type {import('pglite').PGliteNodeConfiguration} */
+export default {
+  initdb: {
+    icuDataDir: new Blob([await readFile('./icu-data.tar.gz')]),
+  },
+  postmaster: {
+    workerFilesystem: {
+      module: new URL('./filesystem.mjs', import.meta.url).href,
+      options: {},
+    },
+  },
+}
+```
+
+The initdb configuration supports only `icuDataDir`. The postmaster fields are
+`artifact`, `fs`, `workerFilesystem`, `icuDataDir`, and `osUser`. Use the same
+ICU archive for both when initializing a cluster that needs the complete ICU
+collation inventory. Data-directory, PostgreSQL argument, listener, lifecycle,
+and memory controls remain authoritative in the CLI and cannot be replaced by
+the module. Loading a module executes it with the permissions of the `pglite`
+process; do not use an untrusted path.

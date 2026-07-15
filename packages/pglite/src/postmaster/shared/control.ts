@@ -706,27 +706,6 @@ export class ProcessControlRegistry {
     return undefined
   }
 
-  waitForConnection(timeout?: number): VirtualConnectionHandle | undefined {
-    const started = performance.now()
-    while (true) {
-      const connection = this.acceptConnection()
-      if (connection) return connection
-      const elapsed = performance.now() - started
-      if (timeout !== undefined && elapsed >= timeout) return undefined
-      const sequence = Atomics.load(
-        this.words,
-        HeaderField.ListenerWakeSequence,
-      )
-      if (this.hasReadyConnection()) continue
-      Atomics.wait(
-        this.words,
-        HeaderField.ListenerWakeSequence,
-        sequence,
-        timeout === undefined ? undefined : Math.max(0, timeout - elapsed),
-      )
-    }
-  }
-
   releaseConnection(connection: VirtualConnectionHandle): void {
     this.assertConnection(connection, ConnectionRequestState.Claimed)
     Atomics.store(

@@ -526,14 +526,21 @@ export class PGlitePostmaster {
       [...this.sessions].map((session) => session.close()),
     )
     this.timers.close()
-    if (this.registry.isCurrent(this.postmasterProcess)) {
-      this.registry.queueSignalHandle(
+    const postmasterCurrent = this.registry.isCurrent(this.postmasterProcess)
+    let signalQueued = false
+    if (postmasterCurrent) {
+      signalQueued = this.registry.queueSignalHandle(
         this.postmasterProcess,
         mode === 'smart'
           ? PGLITE_SIGNALS.SIGTERM
           : mode === 'fast'
             ? PGLITE_SIGNALS.SIGINT
             : PGLITE_SIGNALS.SIGQUIT,
+      )
+    }
+    if (this.debug) {
+      console.error(
+        `[postgres:${this.postmasterProcess.pid}] shutdown ${mode}: current=${postmasterCurrent} queued=${signalQueued}`,
       )
     }
     const deadline = Date.now() + 5_000

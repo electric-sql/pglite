@@ -32,6 +32,7 @@ describe('initdb', () => {
     const stdout = new PassThrough()
     const stderr = new PassThrough()
     const signal = new AbortController().signal
+    const icuDataDir = new Blob(['icu archive'])
     const result = await initdb({
       dataDir: './relative-pgdata',
       args: ['--encoding=LATIN1', '--auth-host=scram-sha-256'],
@@ -40,6 +41,7 @@ describe('initdb', () => {
       stdout,
       stderr,
       signal,
+      icuDataDir,
     })
 
     expect(result.exitCode).toBe(7)
@@ -57,6 +59,7 @@ describe('initdb', () => {
         stdout,
         stderr,
         signal,
+        icuDataDir,
       }),
     )
   })

@@ -4,6 +4,7 @@ export interface InitdbWorkerData {
   readonly dataDir: string
   readonly argv: readonly string[]
   readonly env: Readonly<Record<string, string | undefined>>
+  readonly icuDataDir?: Blob
   readonly assets: {
     readonly postgresWasm: string
     readonly postgresData: string

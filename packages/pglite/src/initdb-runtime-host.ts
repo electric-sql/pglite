@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pglUtils } from '@electric-sql/pglite-utils'
 import PostgresModFactory from '../release/pglite.js'
+import { loadTar } from './fs/tarUtils.js'
 import type { PostgresMod } from './postgresMod.js'
 import {
   ICU_DATA_PATH,
@@ -100,6 +102,11 @@ export async function executeInitdbRuntime(
     })
     postgres = initializedPostgres
     installBootstrapCommandHost(initializedPostgres)
+    if (data.icuDataDir) {
+      pglUtils.rmdirRecursive(initializedPostgres.FS, ICU_DATA_PATH)
+      initializedPostgres.FS.mkdirTree(ICU_DATA_PATH)
+      await loadTar(initializedPostgres.FS, data.icuDataDir, ICU_DATA_PATH)
+    }
 
     const argv = mapPgdataArguments(data.argv)
     let initdbStdout = ''

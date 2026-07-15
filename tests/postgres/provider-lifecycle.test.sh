@@ -65,6 +65,7 @@ STATUS=$?
 set -e
 test "${STATUS}" -eq 3
 test ! -e "${PGDATA}/.pglite-provider.json"
+test ! -e "${PGDATA}/postmaster.pid"
 
 cp -RPp "${PGDATA}" "${CLONE_DATA}"
 cp "${COPIED_STATE}" "${CLONE_DATA}/.pglite-provider.json"
@@ -74,6 +75,7 @@ cp "${COPIED_STATE}" "${CLONE_DATA}/.pglite-provider.json"
   -p "${CLONE_PORT}" -d postgres -Atqc 'SELECT 6 * 7'
 "${PROVIDER}/bin/pg_ctl" -D "${CLONE_DATA}" -m fast stop
 test ! -e "${CLONE_DATA}/.pglite-provider.json"
+test ! -e "${CLONE_DATA}/postmaster.pid"
 trap - EXIT
 
 echo 'PGlite PostgreSQL test-provider lifecycle: PASS'

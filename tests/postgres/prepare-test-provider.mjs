@@ -13,17 +13,18 @@ import {
 import { dirname, join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const [repoRootArg, postmasterTestArg, postgresTestArg, nativeArg] =
+const [repoRootArg, postmasterTestArg, postgresTestArg, nativeArg, cliArg] =
   process.argv.slice(2)
-if (!nativeArg) {
+if (!cliArg) {
   throw new Error(
-    'usage: prepare-test-provider.mjs REPO_ROOT POSTMASTER_TEST POSTGRES_TEST NATIVE',
+    'usage: prepare-test-provider.mjs REPO_ROOT POSTMASTER_TEST POSTGRES_TEST NATIVE PGLITE_CLI',
   )
 }
 const repoRoot = resolve(repoRootArg)
 const postmasterTest = resolve(postmasterTestArg)
 const postgresTest = resolve(postgresTestArg)
 const native = resolve(nativeArg)
+const cliExecutable = resolve(cliArg)
 const pgRoot = join(repoRoot, 'postgres-pglite')
 const source = join(repoRoot, 'tests/postgres/provider')
 const provider = join(postgresTest, 'provider')
@@ -79,6 +80,8 @@ const config = {
     'packages/pglite/tests/fixtures/nodefs-filesystem.mjs',
   ),
   postgresExecutable: join(native, 'install/bin/postgres'),
+  cliExecutable,
+  cliConfigModule: join(provider, 'pglite.config.mjs'),
   privateMaximumMemory: 1024 * 1024 * 1024,
   globalMaximumMemory: 1024 * 1024 * 1024,
   resultsRoot,
@@ -99,6 +102,7 @@ for (const path of [
   config.icuArchive,
   config.workerFilesystemModule,
   config.postgresExecutable,
+  config.cliExecutable,
   psql,
 ]) {
   assert.equal(typeof path, 'string')
@@ -106,5 +110,32 @@ for (const path of [
 await writeFile(
   join(provider, 'config.json'),
   `${JSON.stringify(config, null, 2)}\n`,
+)
+await writeFile(
+  config.cliConfigModule,
+  `import { readFile } from 'node:fs/promises'
+
+const config = JSON.parse(
+  await readFile(new URL('./config.json', import.meta.url), 'utf8'),
+)
+const icuArchive = await readFile(config.icuArchive)
+
+export default {
+  initdb: {
+    icuDataDir: new Blob([icuArchive]),
+  },
+  postmaster: {
+    artifact: config.artifact,
+    icuDataDir: new Blob([icuArchive]),
+    osUser: process.env.PGLITE_PROVIDER_OS_USER,
+    workerFilesystem: {
+      module: config.workerFilesystemModule,
+      options: {
+        root: process.env.PGDATA,
+        mounts: config.mounts,
+      },
+    },
+  },
+}\n`,
 )
 console.log(provider)

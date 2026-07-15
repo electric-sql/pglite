@@ -20,6 +20,7 @@ test "$(uname -m)" = aarch64
   exit 1
 }
 export PGLITE_POSTGRES_TEST_JOBS="${JOBS}"
+export PGLITE_POSTGRES_TEST_TARGET="${TARGET}"
 perl -MIPC::Run -e 'print "PostgreSQL TAP dependency: PASS\n"'
 test -f "${POSTMASTER_TEST}/artifact/postmaster.wasm"
 test -f "${POSTMASTER_TEST}/source-build/bin/pglite.js"
@@ -30,11 +31,19 @@ PGLITE_BUILD_JOBS="${JOBS}" \
   "${POSTMASTER_TEST_ROOT}/build-native-regress-tools.sh" \
   "${REPO_ROOT}" "${NATIVE}"
 pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-socket" build \
-  >/tmp/pglite-socket-postgres-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-server" build \
+  >/tmp/pglite-server-postgres-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-tools" build \
+  >/tmp/pglite-tools-postgres-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-cli" build \
+  >/tmp/pglite-cli-postgres-test-build.log
+PGLITE_CLI=$("${REPO_ROOT}/tests/cli/pack-distribution.sh" \
+  "${REPO_ROOT}" "${OUT}/distribution" | tail -n 1)
+test -x "${PGLITE_CLI}"
 
 PROVIDER=$(node22 "${POSTGRES_TEST_ROOT}/prepare-test-provider.mjs" \
-  "${REPO_ROOT}" "${POSTMASTER_TEST}" "${OUT}" "${NATIVE}")
+  "${REPO_ROOT}" "${POSTMASTER_TEST}" "${OUT}" "${NATIVE}" \
+  "${PGLITE_CLI}")
 test "${PROVIDER}" = "${OUT}/provider"
 export PGLITE_TEST_PROVIDER="${PROVIDER}"
 export PATH="${PROVIDER}/bin:${NATIVE}/build/src/bin/psql:${PATH}"
@@ -45,6 +54,10 @@ rm -rf "${OUT}/results/raw-${TARGET}" "${OUT}/results/${TARGET}.log"
 mkdir -p "${OUT}/results/raw-${TARGET}"
 "${POSTGRES_TEST_ROOT}/provider-lifecycle.test.sh" \
   "${PROVIDER}" "${OUT}/results/raw-${TARGET}"
+if [ "${PGLITE_POSTGRES_TEST_LIFECYCLE_ONLY:-false}" = true ]; then
+  echo 'PGlite PostgreSQL test-provider lifecycle-only gate: PASS'
+  exit 0
+fi
 set +e
 MAKE_OPTIONS=(-C "${NATIVE}/build" -j"${JOBS}")
 if [ "${TARGET}" = check-world ]; then

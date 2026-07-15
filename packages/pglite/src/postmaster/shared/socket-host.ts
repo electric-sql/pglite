@@ -355,8 +355,15 @@ export class VirtualSocketHost {
     addressLengthPointer: number,
   ): number {
     if (!this.listener(descriptor)) return -1
-    const handle = this.options.registry.waitForConnection()
-    if (!handle) return -1
+    const handle = this.options.registry.acceptConnection()
+    if (!handle) {
+      // PostgreSQL configures listening sockets as nonblocking. A single
+      // pending connection can make multiple listener descriptors readable;
+      // after one descriptor claims it, the others must not trap the
+      // postmaster outside its signal-dispatch loop.
+      this.setErrno(ERRNO.EAGAIN)
+      return -1
+    }
     if (!this.writePeerAddress(handle, addressPointer, addressLengthPointer)) {
       ConnectionTransport.attach(
         this.options.connectionBuffers[handle.slot],

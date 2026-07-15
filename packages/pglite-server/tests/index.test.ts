@@ -59,6 +59,8 @@ vi.mock('@electric-sql/pglite/_internal/node-network-host', () => ({
     const detach = async () => {
       if (detached) return
       detached = true
+      await (postmaster as { readonly detachBarrier?: Promise<void> })
+        .detachBarrier
       for (const request of [...active.values()]) {
         await proxy.close(request.listenerId, request.generation)
       }
@@ -417,6 +419,36 @@ describe('PGliteServer', () => {
     ).rejects.toThrow('cannot be combined')
   })
 
+  it('does not wait for PostgreSQL bridge drainage before owned shutdown', async () => {
+    const postmaster = new FakePostmaster(
+      [
+        {
+          listenerId: 9,
+          generation: 13,
+          transport: 'tcp',
+          host: '127.0.0.1',
+          port: 0,
+        },
+      ],
+      true,
+    )
+    const createPostmaster = vi
+      .spyOn(PGlitePostmaster, 'create')
+      .mockResolvedValue(postmaster as unknown as PGlitePostmaster)
+    try {
+      const server = tracked(
+        await PGliteServer.create({
+          postmaster: { dataDir: '/unused-test-data-directory' },
+          mode: 'postgres',
+        }),
+      )
+      await server.close({ mode: 'fast' })
+      expect(postmaster.shutdownCalls).toEqual(['fast'])
+    } finally {
+      createPostmaster.mockRestore()
+    }
+  })
+
   it('applies PostgreSQL-controlled Unix metadata and cleans owned paths', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'pglite-strict-unix-'))
     directories.add(directory)
@@ -466,11 +498,21 @@ class FakePostmaster {
   private readonly pending = new AsyncQueue<FakeProtocolConnection>()
   private readonly exitPromise: Promise<PGlitePostmasterExit>
   private resolveExit!: (exit: PGlitePostmasterExit) => void
+  readonly detachBarrier?: Promise<void>
+  private releaseDetach?: () => void
 
-  constructor(readonly strictListeners?: readonly PostgresHostBindRequest[]) {
+  constructor(
+    readonly strictListeners?: readonly PostgresHostBindRequest[],
+    blockDetachUntilShutdown = false,
+  ) {
     this.exitPromise = new Promise((resolveExit) => {
       this.resolveExit = resolveExit
     })
+    if (blockDetachUntilShutdown) {
+      this.detachBarrier = new Promise((resolveDetach) => {
+        this.releaseDetach = resolveDetach
+      })
+    }
   }
 
   async openProtocolConnection(
@@ -492,6 +534,7 @@ class FakePostmaster {
 
   async shutdown(mode: PGlitePostmasterShutdownMode): Promise<void> {
     this.shutdownCalls.push(mode)
+    this.releaseDetach?.()
     this.exit()
   }
 

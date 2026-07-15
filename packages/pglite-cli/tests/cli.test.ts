@@ -135,6 +135,52 @@ describe('pglite CLI dispatcher', () => {
     )
   })
 
+  it('loads only pluggable runtime fields from PGLITE_CONFIG', async () => {
+    const fixture = cliFixture({
+      serverStartupError: new Error('stop'),
+      env: { PGLITE_CONFIG: './pglite.config.mjs' },
+      configuration: { postmaster: { osUser: 'regression-user' } },
+    })
+    expect(await runCli(['postgres', '-D', 'data'], fixture.runtime)).toBe(1)
+    expect(fixture.loadConfiguration).toHaveBeenCalledWith(
+      './pglite.config.mjs',
+      '/test/cwd',
+    )
+    expect(fixture.createServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        postmaster: expect.objectContaining({ osUser: 'regression-user' }),
+      }),
+    )
+
+    const rejected = cliFixture({
+      env: { PGLITE_CONFIG: './bad.mjs' },
+      configuration: { postmaster: { dataDir: '/override' } },
+    })
+    expect(await runCli(['server', '-D', 'data'], rejected.runtime)).toBe(1)
+    expect(rejected.stderr()).toContain('cannot override postmaster.dataDir')
+    expect(rejected.createServer).not.toHaveBeenCalled()
+  })
+
+  it('loads only the ICU archive from PGLITE_CONFIG for initdb', async () => {
+    const icuDataDir = new Blob(['icu archive'])
+    const fixture = cliFixture({
+      env: { PGLITE_CONFIG: './pglite.config.mjs' },
+      configuration: { initdb: { icuDataDir } },
+    })
+    expect(await runCli(['initdb', '-D', 'data'], fixture.runtime)).toBe(0)
+    expect(fixture.initdb).toHaveBeenCalledWith(
+      expect.objectContaining({ icuDataDir }),
+    )
+
+    const rejected = cliFixture({
+      env: { PGLITE_CONFIG: './bad.mjs' },
+      configuration: { initdb: { dataDir: '/override' } },
+    })
+    expect(await runCli(['initdb', '-D', 'data'], rejected.runtime)).toBe(1)
+    expect(rejected.stderr()).toContain('cannot override initdb.dataDir')
+    expect(rejected.initdb).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['SIGTERM', 'smart'],
     ['SIGINT', 'fast'],
@@ -181,6 +227,8 @@ interface FixtureOptions {
   readonly serverStartupError?: Error
   readonly signals?: FakeSignals
   readonly server?: FakeServer
+  readonly env?: Readonly<Record<string, string | undefined>>
+  readonly configuration?: unknown
 }
 
 function cliFixture(options: FixtureOptions = {}) {
@@ -192,8 +240,9 @@ function cliFixture(options: FixtureOptions = {}) {
     if (options.serverStartupError) throw options.serverStartupError
     return (options.server ?? new FakeServer()) as unknown as PGliteServer
   })
+  const loadConfiguration = vi.fn(async () => options.configuration)
   const runtime: CliRuntime = {
-    env: { LANG: 'C', PGUSER: 'postgres' },
+    env: { LANG: 'C', PGUSER: 'postgres', ...options.env },
     cwd: '/test/cwd',
     stdin: Readable.from([]),
     stdout: stdout.stream,
@@ -202,12 +251,14 @@ function cliFixture(options: FixtureOptions = {}) {
     initdb,
     pgIsReady,
     createServer,
+    loadConfiguration,
   }
   return {
     runtime,
     initdb,
     pgIsReady,
     createServer,
+    loadConfiguration,
     stdout: stdout.text,
     stderr: stderr.text,
   }

@@ -486,6 +486,27 @@ describe('postmaster process portability primitives', () => {
     expect(
       postmasterModule.invoke(postmasterModule.socketHost[3], listener, 16),
     ).toBe(0)
+    const secondListener = postmasterModule.invoke(
+      postmasterModule.socketHost[0],
+      1,
+      1,
+      0,
+    )
+    expect(
+      postmasterModule.invoke(
+        postmasterModule.socketHost[2],
+        secondListener,
+        0,
+        0,
+      ),
+    ).toBe(0)
+    expect(
+      postmasterModule.invoke(
+        postmasterModule.socketHost[3],
+        secondListener,
+        16,
+      ),
+    ).toBe(0)
 
     const pending = broker.connect()
     const acceptView = new DataView(postmasterMemory.buffer)
@@ -508,6 +529,15 @@ describe('postmaster process portability primitives', () => {
     expect(postmasterSockets.connectionIdForDescriptor(descriptor)).toBe(
       pending.handle.id,
     )
+    expect(
+      postmasterModule.invoke(
+        postmasterModule.socketHost[4],
+        secondListener,
+        800,
+        768,
+      ),
+    ).toBe(-1)
+    expect(new Int32Array(postmasterMemory.buffer)[1]).toBe(6)
 
     const backend = registry.reserve(PostgresProcessKind.Backend, {
       parentPid: postmaster.pid,

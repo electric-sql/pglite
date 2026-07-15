@@ -19,6 +19,7 @@ const config = JSON.parse(
 const manifest = JSON.parse(
   await readFile(resolve(providerRoot, 'capabilities.json'), 'utf8'),
 )
+const recordedTarget = process.env.PGLITE_POSTGRES_TEST_TARGET ?? 'check'
 validateInputs()
 
 if (command === 'classify') {
@@ -155,7 +156,7 @@ async function runProve(proveArgs) {
         outcome: 'unsupported',
         exitStatus: 0,
         elapsedMs: 0,
-        target: 'check',
+        target: recordedTarget,
       })
       continue
     }
@@ -171,7 +172,7 @@ async function runProve(proveArgs) {
         outcome: 'blocked',
         exitStatus: 0,
         elapsedMs: 0,
-        target: 'check',
+        target: recordedTarget,
       })
       continue
     }
@@ -185,7 +186,7 @@ async function runProve(proveArgs) {
       outcome: status === 0 ? 'pass' : 'fail',
       exitStatus: status,
       elapsedMs: Date.now() - startedAt,
-      target: 'check',
+      target: recordedTarget,
     })
     if (status !== 0) overallStatus = status
   }

@@ -18,6 +18,7 @@ export interface InitdbRuntimeInvocation {
   readonly dataDir: string
   readonly argv: readonly string[]
   readonly env: Readonly<Record<string, string | undefined>>
+  readonly icuDataDir?: Blob
   readonly stdin: NodeJS.ReadableStream
   readonly stdout: NodeJS.WritableStream
   readonly stderr: NodeJS.WritableStream

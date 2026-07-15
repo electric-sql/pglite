@@ -315,8 +315,15 @@ export class PGliteServer extends EventTarget {
   private async finishClose(
     mode: PGlitePostmasterShutdownMode | undefined,
   ): Promise<void> {
-    await this.stopListeners()
-    if (this.ownsPostmaster) await this.postmaster.shutdown(mode ?? 'smart')
+    const listeners = this.stopListeners()
+    if (!this.ownsPostmaster) {
+      await listeners
+      return
+    }
+    // Closing a bridge can depend on its backend observing postmaster
+    // shutdown, while PostgreSQL shutdown must not wait for bridge drainage.
+    // Stop admission and advance both sides together.
+    await Promise.all([listeners, this.postmaster.shutdown(mode ?? 'smart')])
   }
 
   private async stopListeners(): Promise<void> {
