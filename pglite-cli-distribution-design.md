@@ -1609,7 +1609,9 @@ Phase 2 implementation record, 2026-07-14:
 - The new server's ten unit/lifecycle tests, TypeScript, lint, build, export
   checks, native integration gate, libpq/COPY/backpressure gate, and a targeted
   upstream regression schedule pass. Fresh npm and pnpm installs of packed core
-  and server tarballs resolve both declared ESM and CommonJS entries.
+  and server tarballs resolve both declared ESM and CommonJS entries. The pnpm
+  install also exercises caller-owned and server-owned postmasters from the
+  tarballs and verifies their distinct shutdown behavior.
 
 ### Phase 3: complete production Node hosting semantics
 
@@ -1661,11 +1663,12 @@ Phase 3 implementation record, 2026-07-14:
   ABI so the classic non-SAB runtime and callback ordering remain unchanged.
 - A fresh native ARM64 Wasm build passes deterministic artifact audits, nine
   postmaster integration tests, strict TCP bind-failure and native-client tests,
-  strict Unix permission/lock/cleanup tests, concurrent native clients, separate
-  TCP `host` and Unix `local` HBA password rejection and acceptance, libpq
-  cancel/COPY/backpressure, and a targeted upstream regression schedule.
-  Core/server TypeScript, lint, build, and ESM/CommonJS packed-export gates
-  pass.
+  real IPv4 and IPv6 loopback queries against PostgreSQL-selected dual-stack
+  listeners, strict Unix permission/lock/cleanup tests, concurrent native
+  clients, separate TCP `host` and Unix `local` HBA password rejection and
+  acceptance, libpq cancel/COPY/backpressure, and a targeted upstream regression
+  schedule. Core/server TypeScript, lint, build, and ESM/CommonJS packed-export
+  gates pass.
 
 ### Phase 4: establish tool-runner APIs
 
@@ -1758,6 +1761,10 @@ Phase 5 implementation record, 2026-07-15:
   persistent cluster, serves two concurrent native `psql` clients, remains live
   across configuration reload, exits cleanly after `SIGTERM`, and removes
   `postmaster.pid`.
+- The packed gate also exercises the explicit `pglite server` frontend, all
+  three native `initdb` authentication controls, and package artifact ownership;
+  server and umbrella tarballs contain no Wasm, preload-data, or process-Worker
+  copies owned by core or tools.
 - The native `linux/arm64` integration gate also exposed and fixed an
   unconditional `pg_isready.wasm` install in the PostgreSQL fork; the artifact
   is now fenced to Emscripten builds and the exact-revision native tools build
@@ -1849,6 +1856,9 @@ Phase 7 implementation record, 2026-07-15:
   `npx --package` installation. Clean ESM and CommonJS
   imports prove identity for core, postmaster, server, all new scoped tool
   entry points, and the umbrella tools re-exports.
+- Every advertised native command is also checked from the packed executable
+  for `--help`, `--version`, and invalid-option behavior. Every packaged runner
+  shares a tested pre-aborted cancellation contract and returns exit status 130.
 - The explicit compatibility table records the missing SSL, GSS, LDAP,
   readline, host-process, and parallel dump/restore facilities and the mounted
   host-path boundary. `pg_ctl` remains regression-provider infrastructure, not
@@ -1856,12 +1866,12 @@ Phase 7 implementation record, 2026-07-15:
   lifecycle semantics, while a partial native-shaped `pg_ctl` would add a
   second lifecycle contract without providing daemon mode.
 - The nine Phase 7 JS/Wasm artifact pairs add 4,939,651 bytes raw and 1,735,821
-  bytes when each file is gzipped. The final tools tarball is 8,633,040 bytes
-  unpacked and 2,916,833 bytes compressed, increases of 5,139,607 and 1,785,808
+  bytes when each file is gzipped. The final tools tarball is 8,633,615 bytes
+  unpacked and 2,916,939 bytes compressed, increases of 5,140,182 and 1,785,914
   bytes over the Phase 5 package measurement. The umbrella tarball is 91,614
   bytes unpacked and 26,257 bytes compressed, increases of 18,214 and 5,531
   bytes.
-- Node 22 passes 16 focused tools tests with seven Docker runtime cases gated
+- Node 22 passes 17 focused tools tests with seven Docker runtime cases gated
   separately and 24 CLI tests. Both packages pass TypeScript, lint, formatting,
   builds, and ESM/CommonJS export audits. The native ARM64 packed-package gate
   passes from artifact build through clean installation, programmatic imports,

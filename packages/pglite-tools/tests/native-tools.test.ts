@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { PassThrough, Readable } from 'node:stream'
 import {
   nativeToolCommands,
   nativeToolRuntimeIdentity,
@@ -15,6 +16,23 @@ describe('native PostgreSQL tool registry', () => {
       expect(
         nativeToolRuntimeIdentity.artifacts[command].artifactSha256,
       ).toMatch(/^[0-9a-f]{64}$/)
+    }
+  })
+
+  it('gives every packaged runner the shared cancellation contract', async () => {
+    for (const command of nativeToolCommands) {
+      const controller = new AbortController()
+      controller.abort()
+      await expect(
+        nativeToolRunners[command].run({
+          argv: ['--version'],
+          env: { LANG: 'C' },
+          stdin: Readable.from([]),
+          stdout: new PassThrough(),
+          stderr: new PassThrough(),
+          signal: controller.signal,
+        }),
+      ).resolves.toBe(130)
     }
   })
 })

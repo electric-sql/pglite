@@ -27,6 +27,19 @@ const dataDirectory = join(projectRoot, 'pgdata')
 const serverLog = join(outputRoot, 'postgres.log')
 const psql = join(nativeRoot, 'build/src/bin/psql/psql')
 const libraryPath = join(nativeRoot, 'build/src/interfaces/libpq')
+const nativeCommands = [
+  'pg_isready',
+  'psql',
+  'pg_dump',
+  'pg_restore',
+  'createdb',
+  'createuser',
+  'dropdb',
+  'dropuser',
+  'clusterdb',
+  'vacuumdb',
+  'reindexdb',
+]
 let postgres
 
 try {
@@ -35,6 +48,8 @@ try {
   await mkdir(projectRoot, { recursive: true })
   await packPackages()
   await installPackages()
+  await assertPackedArtifactOwnership()
+  await assertPnpmPackedCoreServer()
 
   const executable = join(projectRoot, 'node_modules/.bin/pglite')
   await access(executable)
@@ -42,6 +57,8 @@ try {
   await assertNpxTarball()
 
   await assertProgrammaticImports()
+  await assertNativeCommandContracts(executable)
+  await assertInitdbAuthentication(executable)
 
   const init = await run(executable, ['initdb', '-D', dataDirectory], {
     cwd: projectRoot,
@@ -259,6 +276,7 @@ SELECT value FROM cli_archive_test WHERE value = 'streamed';
     `server exit ${JSON.stringify(exit)}\n${output.stderr()}`,
   )
   await assert.rejects(access(join(dataDirectory, 'postmaster.pid')))
+  await assertExplicitServer(executable, dataDirectory)
 } finally {
   if (postgres && postgres.exitCode === null && postgres.signalCode === null) {
     postgres.kill('SIGQUIT')
@@ -305,6 +323,219 @@ async function installPackages() {
     { cwd: projectRoot },
   )
   assert.equal(result.code, 0, result.stderr)
+}
+
+async function assertPackedArtifactOwnership() {
+  const modules = join(projectRoot, 'node_modules')
+  const corePackage = join(modules, '@electric-sql/pglite')
+  const serverPackage = join(modules, '@electric-sql/pglite-server')
+  const toolsPackage = join(modules, '@electric-sql/pglite-tools')
+  const distributionPackage = join(modules, 'pglite')
+  const core = join(corePackage, 'dist')
+  const tools = join(toolsPackage, 'dist')
+
+  await access(join(core, 'postmaster.wasm'))
+  await access(join(core, 'postmaster/process-worker.js'))
+  await access(join(tools, 'native/psql.wasm'))
+  await assert.rejects(access(join(core, 'native/psql.wasm')))
+  await assert.rejects(access(join(tools, 'postmaster.wasm')))
+
+  for (const directory of [serverPackage, distributionPackage]) {
+    const files = await recursiveFiles(directory)
+    assert.equal(
+      files.some(
+        (file) =>
+          file.endsWith('.wasm') ||
+          file.endsWith('.data') ||
+          /(?:^|\/)process-worker\./.test(file),
+      ),
+      false,
+      `${directory} contains a core runtime artifact`,
+    )
+  }
+}
+
+async function recursiveFiles(directory, relative = '') {
+  const files = []
+  for (const entry of await readdir(join(directory, relative), {
+    withFileTypes: true,
+  })) {
+    const path = join(relative, entry.name)
+    if (entry.isDirectory())
+      files.push(...(await recursiveFiles(directory, path)))
+    else files.push(path)
+  }
+  return files
+}
+
+async function assertPnpmPackedCoreServer() {
+  const pnpmProject = join(outputRoot, 'pnpm-project')
+  await mkdir(pnpmProject, { recursive: true })
+  const archives = await readdir(packRoot)
+  const coreArchive = archives.find((name) =>
+    /^electric-sql-pglite-[0-9].*\.tgz$/.test(name),
+  )
+  const serverArchive = archives.find((name) =>
+    /^electric-sql-pglite-server-.*\.tgz$/.test(name),
+  )
+  assert.ok(coreArchive)
+  assert.ok(serverArchive)
+  await writeFile(
+    join(pnpmProject, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: 'pglite-pnpm-packed-test',
+        private: true,
+        type: 'module',
+        dependencies: {
+          '@electric-sql/pglite': `file:${join(packRoot, coreArchive)}`,
+          '@electric-sql/pglite-server': `file:${join(packRoot, serverArchive)}`,
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  )
+  const install = await run(
+    'pnpm',
+    [
+      'install',
+      '--ignore-workspace',
+      '--ignore-scripts',
+      '--store-dir',
+      '/tmp/pnpm-store',
+    ],
+    { cwd: pnpmProject },
+  )
+  assert.equal(install.code, 0, `${install.stdout}\n${install.stderr}`)
+  await assert.rejects(
+    access(join(pnpmProject, 'node_modules/@electric-sql/pglite/src')),
+  )
+
+  const commonjs = await run(
+    process.execPath,
+    [
+      '-e',
+      `const { PGlitePostmaster } = require('@electric-sql/pglite/postmaster')
+const { PGliteServer } = require('@electric-sql/pglite-server')
+if (typeof PGlitePostmaster.create !== 'function' || typeof PGliteServer.create !== 'function') process.exit(9)`,
+    ],
+    { cwd: pnpmProject },
+  )
+  assert.equal(commonjs.code, 0, commonjs.stderr)
+  await assertPackedServerLifecycles(pnpmProject)
+}
+
+async function assertPackedServerLifecycles(pnpmProject) {
+  const script = join(pnpmProject, 'server-lifecycles.mjs')
+  const lifecycleRoot = join(pnpmProject, 'lifecycles')
+  await mkdir(lifecycleRoot, { recursive: true })
+  await writeFile(
+    script,
+    `import assert from 'node:assert/strict'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { PGlitePostmaster } from '@electric-sql/pglite/postmaster'
+import { PGliteServer } from '@electric-sql/pglite-server'
+
+const root = process.argv[2]
+const options = (name) => ({
+  dataDir: pathToFileURL(join(root, name)).href,
+  maxConnections: 4,
+  sharedBuffers: '16MB',
+})
+const readySession = async (postmaster) => {
+  let last
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try { return await postmaster.createSession() }
+    catch (error) {
+      last = error
+      if (error?.code !== '57P03') throw error
+      await new Promise((resolve) => setTimeout(resolve, 25))
+    }
+  }
+  throw last
+}
+
+const caller = await PGlitePostmaster.create(options('caller-owned'))
+const callerServer = await PGliteServer.create({
+  postmaster: caller,
+  listen: { host: '127.0.0.1', port: 0 },
+})
+try {
+  let session = await readySession(caller)
+  assert.deepEqual((await session.query('SELECT 6 * 7 AS answer')).rows, [{ answer: 42 }])
+  await session.close()
+  await callerServer.close()
+  session = await readySession(caller)
+  assert.deepEqual((await session.query('SELECT 7 * 7 AS answer')).rows, [{ answer: 49 }])
+  await session.close()
+} finally {
+  await callerServer.close().catch(() => undefined)
+  await caller.shutdown('fast')
+}
+
+const owned = await PGliteServer.create({
+  postmaster: options('server-owned'),
+  listen: { host: '127.0.0.1', port: 0 },
+})
+const ownedPostmaster = owned.postmaster
+const ownedSession = await readySession(ownedPostmaster)
+assert.deepEqual((await ownedSession.query('SELECT 8 * 8 AS answer')).rows, [{ answer: 64 }])
+await ownedSession.close()
+await owned.close({ mode: 'fast' })
+assert.equal(ownedPostmaster.diagnostics().liveProcesses, 0)
+`,
+  )
+  const lifecycle = await run(process.execPath, [script, lifecycleRoot], {
+    cwd: pnpmProject,
+  })
+  assert.equal(lifecycle.code, 0, lifecycle.stderr)
+}
+
+async function assertNativeCommandContracts(executable) {
+  for (const command of nativeCommands) {
+    const help = await run(executable, [command, '--help'], {
+      cwd: projectRoot,
+    })
+    assert.equal(help.code, 0, `${command} --help: ${help.stderr}`)
+    assert.match(help.stdout, new RegExp(command))
+
+    const version = await run(executable, [command, '--version'], {
+      cwd: projectRoot,
+    })
+    assert.equal(version.code, 0, `${command} --version: ${version.stderr}`)
+    assert.match(version.stdout, /PostgreSQL.*18\.3/)
+
+    const invalid = await run(
+      executable,
+      [command, '--definitely-not-a-postgresql-option'],
+      { cwd: projectRoot },
+    )
+    assert.notEqual(invalid.code, 0, `${command} accepted an invalid option`)
+    assert.match(invalid.stderr, /unrecognized option|Try .*--help/)
+  }
+}
+
+async function assertInitdbAuthentication(executable) {
+  const dataDir = join(projectRoot, 'auth-pgdata')
+  const init = await run(
+    executable,
+    [
+      'initdb',
+      '-D',
+      dataDir,
+      '--auth=reject',
+      '--auth-host=scram-sha-256',
+      '--auth-local=trust',
+    ],
+    { cwd: projectRoot },
+  )
+  assert.equal(init.code, 0, init.stderr)
+  const hba = await readFile(join(dataDir, 'pg_hba.conf'), 'utf8')
+  assert.match(hba, /^local\s+all\s+all\s+trust$/m)
+  assert.match(hba, /^host\s+all\s+all\s+127\.0\.0\.1\/32\s+scram-sha-256$/m)
+  assert.match(hba, /^host\s+all\s+all\s+::1\/128\s+scram-sha-256$/m)
 }
 
 async function assertProgrammaticImports() {
@@ -559,6 +790,64 @@ async function assertNpxPostgres(
   if (child.exitCode && child.exitCode !== 0) {
     throw new Error(`npx postgres failed\n${output.stderr()}`)
   }
+}
+
+async function assertExplicitServer(executable, dataDir) {
+  const port = await reservePort()
+  const environment = {
+    ...process.env,
+    PGHOST: '127.0.0.1',
+    PGPORT: String(port),
+    PGDATABASE: 'postgres',
+    PGUSER: 'postgres',
+    PGSSLMODE: 'disable',
+  }
+  const child = spawn(
+    executable,
+    [
+      'server',
+      '-D',
+      dataDir,
+      '--host=127.0.0.1',
+      `--port=${port}`,
+      '--max-connections=4',
+      '--shared-buffers=16MB',
+    ],
+    {
+      cwd: projectRoot,
+      env: environment,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
+  const output = collectOutput(child)
+  let operationError
+  try {
+    const ready = await waitForSuccess(
+      () =>
+        run(
+          psql,
+          ['-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', 'SELECT 12 * 7'],
+          {
+            cwd: projectRoot,
+            env: { ...environment, LD_LIBRARY_PATH: libraryPath },
+          },
+        ),
+      60_000,
+    )
+    assert.match(ready.stdout, /^84$/m)
+    child.kill('SIGINT')
+    const exit = await childExit(child, 30_000)
+    assert.equal(exit.code, 0, output.stderr())
+    await waitForMissing(join(dataDir, 'postmaster.pid'), 30_000)
+  } catch (error) {
+    operationError = error
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill('SIGQUIT')
+      await childExit(child, 15_000).catch(() => undefined)
+    }
+  }
+  if (operationError) throw operationError
 }
 
 async function waitUntilReady(executable, environment, output) {

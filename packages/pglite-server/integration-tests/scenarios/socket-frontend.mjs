@@ -198,7 +198,10 @@ async function main() {
     owned = undefined
 
     const strictPort = await reservePort()
-    const strictPostmasterOptions = (dataName) => ({
+    const strictPostmasterOptions = (
+      dataName,
+      listenAddresses = '127.0.0.1',
+    ) => ({
       dataDir: `file://${join(root, dataName)}`,
       maxConnections: 4,
       sharedBuffers: '16MB',
@@ -206,7 +209,7 @@ async function main() {
       respectPostgresqlConfig: true,
       startParams: [
         '-c',
-        'listen_addresses=127.0.0.1',
+        `listen_addresses=${listenAddresses}`,
         '-c',
         `port=${strictPort}`,
         '-c',
@@ -238,7 +241,9 @@ async function main() {
     occupied = undefined
 
     strictPostmaster = await withTimeout(
-      PGlitePostmaster.create(strictPostmasterOptions('strict-success-data')),
+      PGlitePostmaster.create(
+        strictPostmasterOptions('strict-success-data', '127.0.0.1,::1'),
+      ),
       60_000,
       'strict postmaster startup',
     )
@@ -248,9 +253,28 @@ async function main() {
       mode: 'postgres',
     })
     assert.equal(strict.address, undefined)
-    assert.deepEqual(strict.addresses, [
-      { transport: 'tcp', host: '127.0.0.1', port: strictPort },
-    ])
+    await waitFor(
+      () =>
+        strict.addresses.filter(({ transport }) => transport === 'tcp')
+          .length === 2,
+      5_000,
+      'dual-stack PostgreSQL listeners',
+    )
+    const strictTcpAddresses = strict.addresses.filter(
+      ({ transport }) => transport === 'tcp',
+    )
+    assert.equal(strictTcpAddresses.length, 2)
+    assert.ok(
+      strictTcpAddresses.some(
+        (address) =>
+          address.host === '127.0.0.1' && address.port === strictPort,
+      ),
+    )
+    assert.ok(
+      strictTcpAddresses.some(
+        (address) => address.host === '::1' && address.port === strictPort,
+      ),
+    )
     const strictResult = await runUntilSuccess(
       psql,
       ['-X', '--no-psqlrc', '-A', '-t', '-c', 'SELECT 6 * 7'],
@@ -263,6 +287,18 @@ async function main() {
     )
     assert.equal(strictResult.code, 0, strictResult.stderr)
     assert.match(strictResult.stdout, /^42$/m)
+    const strictIpv6Result = await runUntilSuccess(
+      psql,
+      ['-X', '--no-psqlrc', '-A', '-t', '-c', 'SELECT 7 * 9'],
+      {
+        ...commonEnvironment,
+        PGHOST: '::1',
+        PGPORT: String(strictPort),
+      },
+      30_000,
+    )
+    assert.equal(strictIpv6Result.code, 0, strictIpv6Result.stderr)
+    assert.match(strictIpv6Result.stdout, /^63$/m)
     const strictConcurrent = await Promise.all(
       [11, 22, 33].map((value) =>
         run(

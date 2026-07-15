@@ -76,7 +76,7 @@ for each command.
 | `vacuumdb`   |     499,217 B |      176,307 B |
 | `reindexdb`  |     489,640 B |      174,309 B |
 
-The packed tools package is 8,633,040 bytes unpacked and 2,916,833 bytes as an
+The packed tools package is 8,633,615 bytes unpacked and 2,916,939 bytes as an
 npm tarball. Rebuilds must update these measurements when artifact contents or
 the command set changes.
 
