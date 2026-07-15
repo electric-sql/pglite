@@ -115,13 +115,11 @@ async function flockPromise(
   fd: number,
   operation: 'exnb' | 'un',
 ): Promise<void> {
-  const { flock } = await import('fs-ext-extra-prebuilt')
-  await new Promise<void>((resolvePromise, reject) => {
-    flock(fd, operation, (error) => {
-      if (error) reject(error)
-      else resolvePromise()
-    })
-  })
+  // The addon's asynchronous callback bridge is not safe when the caller is
+  // itself a Node Worker. Both operations here are nonblocking (`exnb` and
+  // `un`), so the synchronous binding preserves semantics without blocking.
+  const { flockSync } = await import('fs-ext-extra-prebuilt')
+  flockSync(fd, operation)
 }
 
 function isLockContended(error: unknown): boolean {

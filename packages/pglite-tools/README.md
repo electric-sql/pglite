@@ -8,6 +8,37 @@ Install with:
 npm install @electric-sql/pglite-tools
 ```
 
+## Native-style Node runners
+
+The Node-only runners preserve PostgreSQL argv, environment, streaming stdio,
+exit status, and cancellation semantics. Client programs connect through
+libpq to a TCP or Unix-socket PGlite server; they do not use an in-process
+`PGlite` protocol stream.
+
+```typescript
+import { pgIsReady } from '@electric-sql/pglite-tools/pg_isready'
+import { runPgDump } from '@electric-sql/pglite-tools/pg_dump/native'
+
+const invocation = {
+  argv: ['-h', '127.0.0.1', '-p', '5432'],
+  env: process.env,
+  stdin: process.stdin,
+  stdout: process.stdout,
+  stderr: process.stderr,
+}
+
+const readiness = await pgIsReady(invocation)
+const dump = await runPgDump(invocation)
+```
+
+Each invocation creates fresh Wasm process state in a Worker. A file URL or
+path supplied as `cwd` is mounted through NODEFS, as are absolute `HOME`,
+`PGPASSFILE`, `PGSERVICEFILE`, and `PGSYSCONFDIR` locations.
+
+Standalone Node initialization is available from
+`@electric-sql/pglite-tools/initdb`. It uses native initdb defaults and writes
+the PGlite cluster manifest after successful initialization.
+
 ## `pgDump`
 
 pg_dump is a tool for dumping a PGlite database to a SQL file, this is a WASM build of pg_dump that can be used in a browser or other JavaScript environments. You can read more about pg_dump [in the Postgres docs](https://www.postgresql.org/docs/current/app-pgdump.html).
@@ -55,18 +86,20 @@ await pg.exec(`
 `)
 
 // store the current search path so it can be used in the restored db
-const initialSearchPath = (await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')).rows[0].search_path
+const initialSearchPath = (
+  await pg1.query<{ search_path: string }>('SHOW SEARCH_PATH;')
+).rows[0].search_path
 
 // Dump the database to a file
 const dump = await pgDump({ pg })
 // Get the dump text - used for restore
 const dumpContent = await dump.text()
 
-// Create a new database 
+// Create a new database
 const restoredPG = await PGlite.create()
 // ... and restore it using the dump
 await restoredPG.exec(dumpContent)
 
 // optional - after importing, set search path back to the initial one
-await restoredPG.exec(`SET search_path TO ${initialSearchPath};`);
+await restoredPG.exec(`SET search_path TO ${initialSearchPath};`)
 ```

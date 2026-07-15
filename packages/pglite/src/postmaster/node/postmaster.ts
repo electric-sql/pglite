@@ -43,6 +43,8 @@ import type {
   WorkerFilesystemFactory,
 } from './worker-types.js'
 import { assertPostmasterFilesystemSelection } from './filesystem-selection.js'
+import { validateClusterFiles } from '../../cluster-manifest.js'
+import { pgliteRuntimeIdentity } from '../../runtime-identity.js'
 import {
   PostgresNodeNetworkHostController,
   registerPostgresNodeNetworkHostController,
@@ -346,6 +348,7 @@ export class PGlitePostmaster {
       if (!options.fs && !existsSync(resolve(dataDir, 'PG_VERSION'))) {
         throw new Error(`PGlite data directory is not initialized: ${dataDir}`)
       }
+      if (!options.fs) validateNodeCluster(dataDir)
       if (!options.fs && existsSync(resolve(dataDir, 'postmaster.pid'))) {
         throw new Error(
           `PGlite data directory appears to be in use: ${dataDir}`,
@@ -941,6 +944,22 @@ export class PGlitePostmaster {
     if (this.closing || this.closed)
       throw new Error('PGlite postmaster is closed')
   }
+}
+
+function validateNodeCluster(dataDir: string): void {
+  const manifestPath = resolve(dataDir, '.pglite', 'cluster.json')
+  validateClusterFiles(
+    {
+      pgVersion: readFileSync(resolve(dataDir, 'PG_VERSION'), 'utf8'),
+      control: readFileSync(resolve(dataDir, 'global', 'pg_control')),
+      manifest: existsSync(manifestPath)
+        ? readFileSync(manifestPath, 'utf8')
+        : undefined,
+    },
+    pgliteRuntimeIdentity.artifacts.postmaster,
+    pgliteRuntimeIdentity.blockSize,
+    pgliteRuntimeIdentity.walBlockSize,
+  )
 }
 
 function readScopedLifetimeDiagnostics(

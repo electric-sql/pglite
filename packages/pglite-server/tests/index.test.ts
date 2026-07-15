@@ -22,8 +22,14 @@ import { PGliteServer } from '../src/index.js'
 const strictHosts = vi.hoisted(
   () => new WeakMap<object, PostgresNodeNetworkHost>(),
 )
+const networkHostIdentity = vi.hoisted(() => ({
+  coreVersion: '0.5.4',
+  contract: 'node-network-host',
+  abiVersion: 1,
+}))
 
 vi.mock('@electric-sql/pglite/_internal/node-network-host', () => ({
+  nodeNetworkHostIdentity: networkHostIdentity,
   attachPostgresNodeNetworkHost: async (
     postmaster: object,
     host: PostgresNodeNetworkHost,
@@ -66,6 +72,9 @@ const servers = new Set<PGliteServer>()
 const directories = new Set<string>()
 
 afterEach(async () => {
+  networkHostIdentity.coreVersion = '0.5.4'
+  networkHostIdentity.contract = 'node-network-host'
+  networkHostIdentity.abiVersion = 1
   await Promise.allSettled([...servers].map((server) => server.close()))
   servers.clear()
   await Promise.all(
@@ -77,6 +86,16 @@ afterEach(async () => {
 })
 
 describe('PGliteServer', () => {
+  it('rejects an incompatible core network-host contract before startup', async () => {
+    networkHostIdentity.abiVersion = 2
+    await expect(
+      PGliteServer.create({
+        postmaster: new FakePostmaster(),
+        listen: { host: '127.0.0.1', port: 0 },
+      }),
+    ).rejects.toThrow('Node network host')
+  })
+
   it('forwards arbitrary TCP bytes without parsing or reassembly', async () => {
     const postmaster = new FakePostmaster()
     const server = tracked(

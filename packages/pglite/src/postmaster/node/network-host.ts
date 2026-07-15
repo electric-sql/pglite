@@ -1,4 +1,6 @@
 import type { ProcessHandle } from '../shared/control.js'
+import { pgliteRuntimeIdentity } from '../../runtime-identity.js'
+import type { PGliteContractRequirement } from '../../runtime-contract.js'
 import {
   NETWORK_RESPONSE_ERRNO,
   NETWORK_RESPONSE_GENERATION,
@@ -11,6 +13,14 @@ import {
 } from '../shared/network-host.js'
 
 const controllers = new WeakMap<object, PostgresNodeNetworkHostController>()
+
+export const nodeNetworkHostIdentity: PGliteContractRequirement = Object.freeze(
+  {
+    coreVersion: pgliteRuntimeIdentity.pgliteVersion,
+    contract: 'node-network-host',
+    abiVersion: 1,
+  },
+)
 
 const ERRNO = {
   EACCES: 2,

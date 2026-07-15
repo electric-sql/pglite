@@ -47,6 +47,36 @@
         "types": "./dist/pg_dump.d.cts",
         "default": "./dist/pg_dump.cjs"
       }
+    },
+    "./initdb": {
+      "import": {
+        "types": "./dist/initdb.d.ts",
+        "default": "./dist/initdb.js"
+      },
+      "require": {
+        "types": "./dist/initdb.d.cts",
+        "default": "./dist/initdb.cjs"
+      }
+    },
+    "./pg_isready": {
+      "import": {
+        "types": "./dist/pg_isready.d.ts",
+        "default": "./dist/pg_isready.js"
+      },
+      "require": {
+        "types": "./dist/pg_isready.d.cts",
+        "default": "./dist/pg_isready.cjs"
+      }
+    },
+    "./pg_dump/native": {
+      "import": {
+        "types": "./dist/pg_dump_native.d.ts",
+        "default": "./dist/pg_dump_native.js"
+      },
+      "require": {
+        "types": "./dist/pg_dump_native.d.cts",
+        "default": "./dist/pg_dump_native.cjs"
+      }
     }
   },
   "scripts": {

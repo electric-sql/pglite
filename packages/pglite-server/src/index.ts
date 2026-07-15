@@ -3,6 +3,7 @@ import {
   chownSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -22,10 +23,15 @@ import {
 } from '@electric-sql/pglite/postmaster'
 import {
   attachPostgresNodeNetworkHost,
+  nodeNetworkHostIdentity,
   type PostgresHostBindRequest,
   type PostgresNodeNetworkHost,
   type PostgresNodeNetworkHostAttachment,
 } from '@electric-sql/pglite/_internal/node-network-host'
+
+const packageJson = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+) as { peerDependencies?: Record<string, string> }
 
 const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 5432
@@ -147,6 +153,7 @@ export class PGliteServer extends EventTarget {
   }
 
   static async create(options: PGliteServerOptions): Promise<PGliteServer> {
+    assertCompatibleNetworkHost()
     const ownsPostmaster = !isPostmaster(options.postmaster)
     const postmaster = ownsPostmaster
       ? await PGlitePostmaster.create(options.postmaster)
@@ -394,6 +401,22 @@ export class PGliteServer extends EventTarget {
 
   private emit(type: string, detail: unknown): void {
     this.dispatchEvent(new CustomEvent(type, { detail }))
+  }
+}
+
+function assertCompatibleNetworkHost(): void {
+  const requirement = packageJson.peerDependencies?.['@electric-sql/pglite']
+  const expectedVersion = requirement?.replace(/^workspace:/, '')
+  if (
+    nodeNetworkHostIdentity.contract !== 'node-network-host' ||
+    nodeNetworkHostIdentity.abiVersion !== 1 ||
+    (expectedVersion &&
+      expectedVersion !== '*' &&
+      expectedVersion !== nodeNetworkHostIdentity.coreVersion)
+  ) {
+    throw new Error(
+      `Incompatible @electric-sql/pglite Node network host: expected ${expectedVersion ?? 'the packaged peer'} ABI 1, received ${nodeNetworkHostIdentity.coreVersion} ABI ${nodeNetworkHostIdentity.abiVersion}`,
+    )
   }
 }
 

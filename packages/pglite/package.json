@@ -97,6 +97,16 @@
         "default": "./dist/postmaster/node-network-host.cjs"
       }
     },
+    "./_internal/initdb-runtime": {
+      "import": {
+        "types": "./dist/initdb-runtime.d.ts",
+        "default": "./dist/initdb-runtime.js"
+      },
+      "require": {
+        "types": "./dist/initdb-runtime.d.cts",
+        "default": "./dist/initdb-runtime.cjs"
+      }
+    },
     "./opfs-ahp": {
       "import": {
         "types": "./dist/fs/opfs-ahp.d.ts",

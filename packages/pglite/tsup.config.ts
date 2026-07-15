@@ -29,6 +29,8 @@ const entryPoints = [
   'src/postmaster/node-network-host.ts',
   'src/postmaster/process-worker.ts',
   'src/postmaster/unsupported.ts',
+  'src/initdb-runtime.ts',
+  'src/initdb-runtime-worker.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

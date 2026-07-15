@@ -1696,6 +1696,43 @@ callable without the umbrella CLI; the native runners pass argv/stream/exit-code
 contract tests and an initialized cluster boots under the released core
 postmaster and Node server host.
 
+Phase 4 implementation record, 2026-07-15:
+
+- Core now owns a versioned `_internal/initdb-runtime` Worker host. It maps the
+  caller's Node data directory through NODEFS, preserves native initdb argv and
+  defaults, streams all three standard streams with backpressure, returns the
+  native status, terminates on abort, and holds the authoritative cluster lease
+  from before initialization through manifest persistence.
+- `@electric-sql/pglite-tools/initdb` exposes the public initializer and checks
+  its exact core peer and initdb-runtime ABI. Core and the tools package also
+  publish generated, content-derived runtime identities; copied or mismatched
+  native tool Wasm is rejected before a Worker starts. The server performs the
+  corresponding exact peer and node-network-host ABI check.
+- Classic and postmaster startup validate native `PG_VERSION` and `pg_control`
+  identity followed by the atomic `.pglite/cluster.json` manifest before a
+  backend Worker may mutate the cluster. A standalone initialized cluster boots
+  sequentially under classic PGlite and the multi-session postmaster; a tampered
+  catalog manifest is rejected before `postmaster.pid` exists.
+- `pg_isready` and a socket/libpq-oriented native `pg_dump` runner use isolated
+  Workers, the PGlite libc socket host, Node TCP or Unix sockets, PostgreSQL
+  environment and service files, host working-directory output, streaming I/O,
+  native diagnostics and statuses, and status 130 cancellation. The existing
+  high-level `pgDump({ pg })` API and root export remain unchanged.
+- The canonical Docker-contained Wasm wrapper completes from clean configure
+  through build, artifact copying, extension copying, and metadata generation
+  in the native `linux/arm64` tools image. The produced standalone artifacts are
+  410,380 bytes for initdb Wasm, 327,661 for pg_isready, and 715,160 for pg_dump
+  (146,778, 126,303, and 267,002 bytes gzip respectively).
+- Seven real-runtime integration cases pass against wrapper-produced artifacts,
+  including native defaults, failure cleanup, initdb and client cancellation,
+  compatibility rejection, service-file lookup, readiness, and a host-file
+  dump containing live data. Tool and server contract tests, TypeScript, lint,
+  formatting, builds, and ESM/CommonJS export audits pass. The classic core
+  suite passes serially with 306 tests and one existing skip; Node filesystem
+  runtime tests pass 10/10. Fresh npm-packed core, server, and tools tarballs run
+  initdb, classic reopen/query, server/postmaster imports, and pg_isready from
+  both ESM and CommonJS installs.
+
 ### Phase 5: create `packages/pglite-cli`
 
 - Publish it locally as `pglite`.

@@ -8,4 +8,10 @@ export { MemoryFS } from './fs/memoryfs.js'
 export { IdbFs } from './fs/idbfs.js'
 export { Mutex } from 'async-mutex'
 export { formatQuery } from './utils.js'
+export {
+  pgliteRuntimeIdentity,
+  type PGliteArtifactIdentity,
+  type PGliteRuntimeIdentity,
+} from './runtime-identity.js'
+export { PGliteClusterCompatibilityError } from './cluster-manifest.js'
 export type * as postgresMod from './postgresMod.js'

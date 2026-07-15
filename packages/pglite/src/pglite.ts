@@ -25,6 +25,14 @@ import type {
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
+import {
+  createClusterManifestFromFiles,
+  encodingFromInitdbOutput,
+  readEmscriptenClusterFiles,
+  validateClusterFiles,
+  writeEmscriptenClusterManifest,
+} from './cluster-manifest.js'
+import { pgliteRuntimeIdentity } from './runtime-identity.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -567,6 +575,8 @@ export class PGlite
       await this.#fillIcuDataDir(options.icuDataDir)
     }
 
+    let initializedCluster = false
+    let initializedEncoding: string | undefined
     if (!options.noInitDb) {
       // If the user has provided a tarball to load the database from, do that now.
       // We do this after the initial sync so that we can throw if the database
@@ -609,15 +619,38 @@ export class PGlite
               )
             }
           }
+          initializedEncoding = encodingFromInitdbOutput(initdbResult.stdout)
 
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
           await loadTar(this.mod.FS, pgdatatar, PGDATA)
-
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
+          initializedCluster = true
         }
+      }
+      if (this.mod.FS.analyzePath(`${PGDATA}/PG_VERSION`).exists) {
+        let clusterFiles = readEmscriptenClusterFiles(this.mod.FS, PGDATA)
+        if (initializedCluster && clusterFiles.manifest === undefined) {
+          writeEmscriptenClusterManifest(
+            this.mod.FS,
+            PGDATA,
+            createClusterManifestFromFiles(clusterFiles, {
+              artifact: pgliteRuntimeIdentity.artifacts.classic,
+              pgliteVersion: pgliteRuntimeIdentity.pgliteVersion,
+              blockSize: pgliteRuntimeIdentity.blockSize,
+              walBlockSize: pgliteRuntimeIdentity.walBlockSize,
+              argv: options.initDbStartParams ?? [],
+              detectedEncoding: initializedEncoding,
+            }),
+          )
+          clusterFiles = readEmscriptenClusterFiles(this.mod.FS, PGDATA)
+        }
+        validateClusterFiles(
+          clusterFiles,
+          pgliteRuntimeIdentity.artifacts.classic,
+          pgliteRuntimeIdentity.blockSize,
+          pgliteRuntimeIdentity.walBlockSize,
+        )
+        if (initializedCluster) await this.syncToFs()
       }
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
