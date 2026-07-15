@@ -52,7 +52,10 @@ export async function executeInitdbRuntime(
       maximum: 32768,
     })
     const postgresData = exactArrayBuffer(postgresDataBytes)
-    const environment = runtimeEnvironment(data.env)
+    const environment = runtimeEnvironment(
+      data.env,
+      initdbBootstrapSuperuser(data.argv),
+    )
 
     const initializedPostgres = await PostgresModFactory({
       thisProgram: POSTGRES_EXE_PATH,
@@ -170,6 +173,7 @@ function installBootstrapCommandHost(mod: PostgresMod): void {
 
 function runtimeEnvironment(
   values: Readonly<Record<string, string | undefined>>,
+  bootstrapSuperuser: string,
 ): Record<string, string> {
   const environment: Record<string, string> = {
     HOME: '/home/postgres',
@@ -182,8 +186,31 @@ function runtimeEnvironment(
     if (value === undefined) delete environment[name]
     else environment[name] = value
   }
+  // The embedded runtime has one fixed OS identity. In particular, do not let
+  // the host's USER/PGUSER select a role that initdb did not create when its
+  // post-bootstrap subprocesses connect back to the new cluster.
+  environment.HOME = '/home/postgres'
+  environment.USER = 'postgres'
+  environment.LOGNAME = 'postgres'
+  environment.PGUSER = bootstrapSuperuser
   environment.PGDATA = PGDATA
   return environment
+}
+
+function initdbBootstrapSuperuser(argv: readonly string[]): string {
+  let username = 'postgres'
+  for (let index = 0; index < argv.length; index++) {
+    const argument = argv[index]
+    if (argument === '--') break
+    if (argument === '-U' || argument === '--username') {
+      if (index + 1 < argv.length) username = argv[++index]
+    } else if (argument.startsWith('--username=')) {
+      username = argument.slice('--username='.length)
+    } else if (argument.startsWith('-U') && argument.length > 2) {
+      username = argument.slice(2)
+    }
+  }
+  return username
 }
 
 function mapPgdataArguments(argv: readonly string[]): string[] {

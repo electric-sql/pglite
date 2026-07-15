@@ -77,6 +77,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends jq libipc-run-perl \
     && rm -rf /var/lib/apt/lists/*
 
+COPY emscripten/pglite-file-packager-shared-data.patch \
+  /tmp/pglite-file-packager-shared-data.patch
+RUN patch --directory=/emsdk/upstream/emscripten --strip=1 \
+      < /tmp/pglite-file-packager-shared-data.patch \
+    && rm /tmp/pglite-file-packager-shared-data.patch
+
 # Publish the deterministic side-module transform and audit pipeline in the
 # pinned image. Extension authors need only Docker plus their normal Emscripten
 # SIDE_MODULE; Binaryen, Node, and the ABI validator remain image-owned.
@@ -84,11 +90,36 @@ COPY side-modules/audit-side-module.mjs \
   /opt/pglite-multi-memory/bin/audit-side-module.mjs
 COPY side-modules/transform-side-module.sh \
   /opt/pglite-multi-memory/bin/pglite-transform-side-module
+COPY side-modules/transform-runtime-modules.sh \
+  /opt/pglite-multi-memory/bin/pglite-transform-runtime-modules
+COPY extensions/package-extension.mjs \
+  /opt/pglite-multi-memory/bin/package-extension.mjs
+COPY extensions/generate-wrapper.mjs \
+  /opt/pglite-multi-memory/bin/generate-extension-wrapper.mjs
+COPY extensions/build-initial.sh \
+  /opt/pglite-multi-memory/bin/pglite-build-initial-extension-artifacts
+COPY extensions/validate-initial-release.mjs \
+  /opt/pglite-multi-memory/bin/validate-initial-extension-release.mjs
 RUN chmod 0755 \
       /opt/pglite-multi-memory/bin/audit-side-module.mjs \
       /opt/pglite-multi-memory/bin/pglite-transform-side-module \
+      /opt/pglite-multi-memory/bin/pglite-transform-runtime-modules \
+      /opt/pglite-multi-memory/bin/package-extension.mjs \
+      /opt/pglite-multi-memory/bin/generate-extension-wrapper.mjs \
+      /opt/pglite-multi-memory/bin/pglite-build-initial-extension-artifacts \
+      /opt/pglite-multi-memory/bin/validate-initial-extension-release.mjs \
     && ln -s /opt/pglite-multi-memory/bin/pglite-transform-side-module \
-      /usr/local/bin/pglite-transform-side-module
+      /usr/local/bin/pglite-transform-side-module \
+    && ln -s /opt/pglite-multi-memory/bin/pglite-transform-runtime-modules \
+      /usr/local/bin/pglite-transform-runtime-modules \
+    && ln -s /opt/pglite-multi-memory/bin/package-extension.mjs \
+      /usr/local/bin/pglite-package-extension \
+    && ln -s /opt/pglite-multi-memory/bin/generate-extension-wrapper.mjs \
+      /usr/local/bin/pglite-generate-extension-wrapper \
+    && ln -s /opt/pglite-multi-memory/bin/pglite-build-initial-extension-artifacts \
+      /usr/local/bin/pglite-build-initial-extension-artifacts \
+    && ln -s /opt/pglite-multi-memory/bin/validate-initial-extension-release.mjs \
+      /usr/local/bin/pglite-validate-initial-extension-release
 
 LABEL org.opencontainers.image.title="PGlite multi-memory build and test tools" \
       org.opencontainers.image.binaryen-revision="${BINARYEN_COMMIT}" \

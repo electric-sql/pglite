@@ -69,6 +69,25 @@ describe.sequential('Worker-backed PGlite postmaster integration', () => {
     )
   })
 
+  test('loads the complete wasm32-initial extension set', async () => {
+    await runScenario(
+      new URL('./scenarios/extension-artifacts.mjs', import.meta.url),
+      [config.repoRoot, ...artifact],
+    )
+  })
+
+  test('preloads extensions and runs their background Workers', async () => {
+    await runScenario(
+      new URL('./scenarios/background-worker-extension.mjs', import.meta.url),
+      [
+        config.repoRoot,
+        ...artifact,
+        config.workerSpi.archive,
+        config.workerSpi.descriptor,
+      ],
+    )
+  })
+
   test('supports brokered filesystems and failure cleanup', async () => {
     await runScenario(
       new URL('./scenarios/brokered-filesystem.mjs', import.meta.url),

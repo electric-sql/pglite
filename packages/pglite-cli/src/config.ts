@@ -3,7 +3,14 @@ import type { PGlitePostmasterOptions } from '@electric-sql/pglite/postmaster'
 export type PGliteNodePostmasterConfiguration = Partial<
   Pick<
     PGlitePostmasterOptions,
-    'artifact' | 'fs' | 'workerFilesystem' | 'icuDataDir' | 'osUser'
+    | 'artifact'
+    | 'fs'
+    | 'workerFilesystem'
+    | 'icuDataDir'
+    | 'osUser'
+    | 'extensions'
+    | 'locateExtensionArtifact'
+    | 'extensionArtifactLimits'
   >
 >
 

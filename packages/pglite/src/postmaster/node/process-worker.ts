@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs'
 import { parentPort, workerData } from 'node:worker_threads'
 import { pathToFileURL } from 'node:url'
+import { pglUtils } from '@electric-sql/pglite-utils'
 import type { Filesystem } from '../../fs/base.js'
 import type { PGlite } from '../../pglite.js'
 import type { PostgresMod } from '../../postgresMod.js'
+import { loadExtensionFiles } from '../../extensionUtils.js'
 import { PgliteMemoryViews } from '../../wasm/multi-memory.js'
 import {
   ProcessControlRegistry,
@@ -102,7 +103,6 @@ async function main(): Promise<void> {
     }
     debug('loading process artifact')
     const registry = ProcessControlRegistry.attach(data.controlBuffer)
-    const packageBytes = readFileSync(data.artifact.data)
     const { default: createPostgres } = (await import(
       pathToFileURL(data.artifact.glue).href
     )) as {
@@ -180,6 +180,7 @@ async function main(): Promise<void> {
     postgres = await createPostgres({
       ...filesystemOptions,
       thisProgram: '/pglite/bin/postgres',
+      WASM_PREFIX: pglUtils.WASM_PREFIX,
       arguments: [...data.arguments],
       noInitialRun: true,
       noExitRuntime: true,
@@ -195,11 +196,10 @@ async function main(): Promise<void> {
       printErr: (text: string) => {
         send({ type: 'stderr', pid: data.process.pid, text })
       },
-      getPreloadedPackage: () =>
-        packageBytes.buffer.slice(
-          packageBytes.byteOffset,
-          packageBytes.byteOffset + packageBytes.byteLength,
-        ) as ArrayBuffer,
+      // The immutable Emscripten package is materialized once by the
+      // supervisor. Returning its SAB avoids a read plus ArrayBuffer copy in
+      // every PostgreSQL process Worker.
+      getPreloadedPackage: () => data.artifactData as unknown as ArrayBuffer,
       instantiateWasm(imports, success) {
         imports.pglite = {
           ...(imports.pglite ?? {}),
@@ -241,9 +241,28 @@ async function main(): Promise<void> {
           module.ENV.USER = data.osUser
           module.ENV.LOGNAME = data.osUser
           module.ENV.ICU_DATA = '/pglite/icu'
+          Object.assign(module.ENV, data.extensions.pgliteEnv)
         },
       ],
     })
+
+    const extensionHeapStart = postgres._pgl_heap_break() >>> 0
+    await loadExtensionFiles(
+      postgres,
+      new Map(
+        data.extensions.files.map(({ path, bytes }) => [
+          path,
+          new Uint8Array(bytes),
+        ]),
+      ),
+      data.extensions.sideModulePreloadOrder,
+      new Map(data.extensions.sideModulePaths),
+      debug,
+    )
+    const extensionLinkedDataBytes = Math.max(
+      0,
+      (postgres._pgl_heap_break() >>> 0) - extensionHeapStart,
+    )
 
     debug('installing process hosts')
     socketHost = new VirtualSocketHost({
@@ -296,7 +315,11 @@ async function main(): Promise<void> {
     }
 
     registry.transition(data.process, ProcessState.Runnable)
-    send({ type: 'runtime-ready', pid: data.process.pid })
+    send({
+      type: 'runtime-ready',
+      pid: data.process.pid,
+      extensionLinkedDataBytes,
+    })
     exitCode = 0
     try {
       exitCode = postgres.callMain([...data.arguments])

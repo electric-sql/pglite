@@ -14,7 +14,8 @@ docker run --rm \
     set -euo pipefail
     export PATH=/opt/node22/bin:${PATH}
     cd /work/postgres-pglite
-    DEBUG=false PGLITE_VERSION=$(node -p "require(\"/work/packages/pglite/package.json\").version") \
+    DEBUG=false PGLITE_INCREMENTAL=true \
+      PGLITE_VERSION=$(node -p "require(\"/work/packages/pglite/package.json\").version") \
       ./build-pglite.sh
     cd /work
     pnpm wasm:copy-pglite

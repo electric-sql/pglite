@@ -113,8 +113,17 @@ Unsupported and blocked suites are classified by
 This command consumes `tools/wasm-multi-memory/.out/postmaster-test` and writes
 reports and native test builds to `tools/wasm-multi-memory/.out/postgres-test`.
 Override the directory with `PGLITE_POSTGRES_TEST_OUT`, parallelism with
-`PGLITE_POSTGRES_TEST_JOBS`, and the target with
-`PGLITE_POSTGRES_TEST_TARGET`.
+`PGLITE_POSTGRES_TEST_JOBS`, `pg_regress` live connections with
+`PGLITE_POSTGRES_TEST_MAX_CONNECTIONS` (default `4`), and the target with
+`PGLITE_POSTGRES_TEST_TARGET`. The explicit session cap keeps the full
+vector/PostGIS inventory within the Docker memory budget; dedicated postmaster
+stress scenarios cover higher connection churn and concurrency independently.
+The provider also selects compact scoped memory and 256 MiB private/global/
+scoped growth ceilings; these are runtime controls, not changes to the 1 GiB
+artifact ABI.
+The default top-level job count is `2` for `check` and `1` for `check-world`,
+so independent extension-heavy clusters do not compete for the same Docker
+memory budget.
 
 The commands are intentionally layered: the PostgreSQL suite reuses the
 postmaster integration artifact, and the integration suite reuses the clean

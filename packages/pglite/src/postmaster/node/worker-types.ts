@@ -14,6 +14,27 @@ export interface PostmasterArtifactPaths {
   readonly data: string
 }
 
+export interface PostmasterExtensionFile {
+  readonly path: string
+  readonly bytes: SharedArrayBuffer
+}
+
+/** Immutable, verified extension input shared by every process Worker. */
+export interface PostmasterExtensionSet {
+  readonly namespaceOrder: readonly string[]
+  readonly requiredSharedPreloadLibraries: readonly string[]
+  readonly files: readonly PostmasterExtensionFile[]
+  readonly sideModuleOrder: readonly string[]
+  /** Dependency-free modules safe for Emscripten's eager preload plugin. */
+  readonly sideModulePreloadOrder: readonly string[]
+  readonly sideModulePaths: readonly (readonly [string, string])[]
+  readonly pgliteEnv: Readonly<Record<string, string>>
+  readonly artifactBytes: number
+  readonly sideModuleBytes: number
+  readonly configurationMilliseconds: number
+  readonly preparationMilliseconds: number
+}
+
 /**
  * A structured-cloneable description of a module that creates one ordinary
  * PGlite `Filesystem` instance inside each PostgreSQL process Worker.
@@ -41,6 +62,8 @@ export type WorkerFilesystemDescriptor =
 export interface PostgresProcessWorkerData {
   readonly artifact: PostmasterArtifactPaths
   readonly wasmModule: WebAssembly.Module
+  /** One immutable package image shared by every Worker isolate. */
+  readonly artifactData: SharedArrayBuffer
   readonly privateInitialPages: number
   readonly privateMaximumPages: number
   readonly scopedInitialPages: number
@@ -60,6 +83,7 @@ export interface PostgresProcessWorkerData {
   readonly arguments: readonly string[]
   readonly osUser: string
   readonly debug: boolean
+  readonly extensions: PostmasterExtensionSet
 }
 
 export type PostgresProcessWorkerMessage =
@@ -78,7 +102,11 @@ export type PostgresProcessWorkerMessage =
       readonly mode: Exclude<ProcessScopedMemoryMode, 'disabled'>
       readonly registryOffset: number
     }
-  | { readonly type: 'runtime-ready'; readonly pid: number }
+  | {
+      readonly type: 'runtime-ready'
+      readonly pid: number
+      readonly extensionLinkedDataBytes: number
+    }
   | { readonly type: 'stdout'; readonly pid: number; readonly text: string }
   | { readonly type: 'stderr'; readonly pid: number; readonly text: string }
   | { readonly type: 'exit'; readonly pid: number; readonly code: number }

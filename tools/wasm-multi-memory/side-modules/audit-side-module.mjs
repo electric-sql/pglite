@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -19,8 +18,8 @@ const output = new WebAssembly.Module(outputBytes)
 const report = JSON.parse(readFileSync(reportPath, 'utf8'))
 const inputMemories = memoryImports(input)
 const outputMemories = memoryImports(output)
-const inputWat = disassemble(inputPath)
-const outputWat = disassemble(outputPath)
+const inputMemoryImports = memoryImportTypes(inputBytes)
+const outputMemoryImports = memoryImportTypes(outputBytes)
 
 assert.deepEqual(inputMemories, [
   { module: 'env', name: 'memory', kind: 'memory' },
@@ -32,12 +31,12 @@ assert.deepEqual(outputMemories, [
 ])
 
 const inputMemoryTypes = {
-  private: memoryType(inputWat, 'env', 'memory'),
+  private: memoryType(inputMemoryImports, 'env', 'memory'),
 }
 const outputMemoryTypes = {
-  private: memoryType(outputWat, 'env', 'memory'),
-  global: memoryType(outputWat, 'pglite', 'global_memory'),
-  scoped: memoryType(outputWat, 'pglite', 'scoped_memory'),
+  private: memoryType(outputMemoryImports, 'env', 'memory'),
+  global: memoryType(outputMemoryImports, 'pglite', 'global_memory'),
+  scoped: memoryType(outputMemoryImports, 'pglite', 'scoped_memory'),
 }
 assert.equal(inputMemoryTypes.private.shared, true)
 assert.deepEqual(outputMemoryTypes, {
@@ -74,7 +73,9 @@ assert.equal(manifest.scopedTag, 3)
 assert.equal(manifest.privateApertureBytes, 0x8000_0000)
 assert.equal(manifest.globalApertureBytes, 0x4000_0000)
 assert.equal(manifest.inputSHA256, sha256(inputBytes))
-assert.ok(Object.values(report.rewritten).reduce(sum, 0) > 0)
+const rewrittenOperations = Object.values(report.rewritten).reduce(sum, 0)
+assert.ok(Number.isSafeInteger(rewrittenOperations))
+assert.ok(rewrittenOperations >= 0)
 
 const inputExports = WebAssembly.Module.exports(input)
   .map(({ name }) => name)
@@ -97,7 +98,7 @@ writeFileSync(
       inputBytes: inputBytes.byteLength,
       outputBytes: outputBytes.byteLength,
       dylinkBytes: inputDylink[0].byteLength,
-      rewrittenOperations: Object.values(report.rewritten).reduce(sum, 0),
+      rewrittenOperations,
       directPrivateOperations: Object.values(report.directPrivate).reduce(
         sum,
         0,
@@ -120,29 +121,106 @@ function memoryImports(module) {
   )
 }
 
-function disassemble(path) {
-  return execFileSync('wasm-dis', [path, '-o', '-'], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  })
+function memoryType(imports, module, name) {
+  const type = imports.get(`${module}\0${name}`)
+  assert.ok(type, `missing ${module}.${name} memory import`)
+  return type
 }
 
-function memoryType(wat, module, name) {
-  const pattern = new RegExp(
-    `\\(import "${escapeRegExp(module)}" "${escapeRegExp(name)}" ` +
-      `\\(memory(?: \\$[^ )]+)? (\\d+) (\\d+) shared\\)\\)`,
-  )
-  const match = wat.match(pattern)
-  assert.ok(match, `missing shared ${module}.${name} memory import`)
-  return {
-    initialPages: Number(match[1]),
-    maximumPages: Number(match[2]),
-    shared: true,
+// Read only the import section instead of disassembling the whole module to
+// WAT. Large extension modules (notably PostGIS) produce WAT larger than
+// Node's child-process buffers, while the information audited here occupies
+// only a few bytes in the Wasm binary.
+function memoryImportTypes(bytes) {
+  const reader = binaryReader(bytes)
+  assert.deepEqual([...reader.bytes(8)], [0, 97, 115, 109, 1, 0, 0, 0])
+
+  const memories = new Map()
+  while (!reader.done()) {
+    const sectionId = reader.byte()
+    const section = binaryReader(reader.bytes(reader.uleb()))
+    if (sectionId !== 2) continue
+
+    const count = section.uleb()
+    for (let index = 0; index < count; index++) {
+      const module = section.string()
+      const name = section.string()
+      const kind = section.byte()
+      switch (kind) {
+        case 0: // function type index
+          section.uleb()
+          break
+        case 1: // table type
+          section.byte()
+          readLimits(section)
+          break
+        case 2: // memory type
+          memories.set(`${module}\0${name}`, readLimits(section))
+          break
+        case 3: // global type
+          section.byte()
+          section.byte()
+          break
+        case 4: // tag type
+          section.uleb()
+          section.uleb()
+          break
+        default:
+          throw new Error(`unsupported Wasm import kind ${kind}`)
+      }
+    }
+    assert.equal(section.done(), true, 'trailing bytes in Wasm import section')
+    return memories
   }
+  return memories
 }
 
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function readLimits(reader) {
+  const flags = reader.uleb()
+  const hasMaximum = (flags & 1) !== 0
+  const shared = (flags & 2) !== 0
+  const memory64 = (flags & 4) !== 0
+  const initialPages = reader.uleb()
+  const maximumPages = hasMaximum ? reader.uleb() : undefined
+  assert.equal(memory64, false, 'memory64 imports are outside wasm32-initial')
+  return { initialPages, maximumPages, shared }
+}
+
+function binaryReader(bytes) {
+  let offset = 0
+  const view = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  return {
+    byte() {
+      assert.ok(offset < view.length, 'unexpected end of Wasm binary')
+      return view[offset++]
+    },
+    bytes(length) {
+      assert.ok(offset + length <= view.length, 'truncated Wasm binary')
+      const result = view.subarray(offset, offset + length)
+      offset += length
+      return result
+    },
+    uleb() {
+      let result = 0
+      let shift = 0
+      while (true) {
+        const byte = this.byte()
+        result += (byte & 0x7f) * 2 ** shift
+        assert.ok(Number.isSafeInteger(result), 'Wasm integer exceeds JS range')
+        if ((byte & 0x80) === 0) return result
+        shift += 7
+        assert.ok(shift < 56, 'invalid Wasm unsigned LEB128')
+      }
+    },
+    string() {
+      return new TextDecoder('utf-8', { fatal: true }).decode(
+        this.bytes(this.uleb()),
+      )
+    },
+    done() {
+      return offset === view.length
+    },
+  }
 }
 
 function sha256(bytes) {

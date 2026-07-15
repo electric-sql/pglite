@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "releaseProfile": "wasm32-initial",
+  "targets": ["wasm32-classic", "wasm32-multi-memory"],
+  "extensions": [
+    {
+      "name": "vector",
+      "package": "@electric-sql/pglite-pgvector",
+      "directory": "packages/pglite-pgvector",
+      "role": "small-native-canary"
+    },
+    {
+      "name": "postgis",
+      "package": "@electric-sql/pglite-postgis",
+      "directory": "packages/pglite-postgis",
+      "role": "complex-multi-module-environment-canary"
+    }
+  ]
+}

@@ -9,6 +9,14 @@ export interface PostmasterIntegrationConfig {
   outputRoot: string
   nativeRoot: string
   pgbench: string
+  workerSpi: {
+    archive: string
+    descriptor: string
+  }
+  testDsa: {
+    archive: string
+    descriptor: string
+  }
   dynamic: {
     raw: string
     transformed: string

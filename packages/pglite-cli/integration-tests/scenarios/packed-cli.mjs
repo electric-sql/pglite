@@ -60,8 +60,15 @@ try {
   await assertNativeCommandContracts(executable)
   await assertInitdbAuthentication(executable)
 
+  const initEnvironment = {
+    ...process.env,
+    USER: 'host-user-without-a-postgres-role',
+    LOGNAME: 'host-user-without-a-postgres-role',
+    PGUSER: undefined,
+  }
   const init = await run(executable, ['initdb', '-D', dataDirectory], {
     cwd: projectRoot,
+    env: initEnvironment,
   })
   assert.equal(init.code, 0, `${init.stdout}\n${init.stderr}`)
   assert.match(await readFile(join(dataDirectory, 'PG_VERSION'), 'utf8'), /^18/)
@@ -528,8 +535,17 @@ async function assertInitdbAuthentication(executable) {
       '--auth=reject',
       '--auth-host=scram-sha-256',
       '--auth-local=trust',
+      '--username=pglite_owner',
     ],
-    { cwd: projectRoot },
+    {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        USER: 'another-host-user',
+        LOGNAME: 'another-host-user',
+        PGUSER: 'wrong-database-role',
+      },
+    },
   )
   assert.equal(init.code, 0, init.stderr)
   const hba = await readFile(join(dataDir, 'pg_hba.conf'), 'utf8')

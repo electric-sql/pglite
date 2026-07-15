@@ -9,6 +9,7 @@ OUT=/postgres-test
 NATIVE="${OUT}/native"
 TARGET=${PGLITE_POSTGRES_TEST_TARGET:-check}
 JOBS=${PGLITE_POSTGRES_TEST_JOBS:-2}
+MAX_CONNECTIONS=${PGLITE_POSTGRES_TEST_MAX_CONNECTIONS:-4}
 
 test -f /.dockerenv || {
   echo 'PostgreSQL regression tests must run inside the pinned Docker image' >&2
@@ -19,7 +20,12 @@ test "$(uname -m)" = aarch64
   echo "invalid PostgreSQL test parallel job count: ${JOBS}" >&2
   exit 1
 }
+[[ "${MAX_CONNECTIONS}" =~ ^[1-9][0-9]*$ ]] || {
+  echo "invalid PostgreSQL test connection limit: ${MAX_CONNECTIONS}" >&2
+  exit 1
+}
 export PGLITE_POSTGRES_TEST_JOBS="${JOBS}"
+export PGLITE_POSTGRES_TEST_MAX_CONNECTIONS="${MAX_CONNECTIONS}"
 export PGLITE_POSTGRES_TEST_TARGET="${TARGET}"
 perl -MIPC::Run -e 'print "PostgreSQL TAP dependency: PASS\n"'
 test -f "${POSTMASTER_TEST}/artifact/postmaster.wasm"
@@ -31,6 +37,10 @@ PGLITE_BUILD_JOBS="${JOBS}" \
   "${POSTMASTER_TEST_ROOT}/build-native-regress-tools.sh" \
   "${REPO_ROOT}" "${NATIVE}"
 pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postgres-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-pgvector" build \
+  >/tmp/pglite-pgvector-postgres-test-build.log
+pnpm -C "${REPO_ROOT}/packages/pglite-postgis" build \
+  >/tmp/pglite-postgis-postgres-test-build.log
 pnpm -C "${REPO_ROOT}/packages/pglite-server" build \
   >/tmp/pglite-server-postgres-test-build.log
 pnpm -C "${REPO_ROOT}/packages/pglite-tools" build \
@@ -64,6 +74,7 @@ if [ "${TARGET}" = check-world ]; then
   MAKE_OPTIONS+=(-k)
 fi
 make "${MAKE_OPTIONS[@]}" "${TARGET}" \
+  MAX_CONNECTIONS="${MAX_CONNECTIONS}" \
   PGLITE_TEST_CAPABILITY_RUNNER="${PROVIDER}/bin/pglite-test-capability" \
   PROVE="${PROVIDER}/bin/prove" \
   2>&1 | tee "${OUT}/results/${TARGET}.log"

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "releaseProfile": "wasm32-initial",
+  "archive": {
+    "maximumCompressedBytesPerExtension": 67108864,
+    "maximumExpandedBytesPerExtension": 268435456,
+    "maximumEntriesPerExtension": 4096,
+    "maximumSingleFileBytes": 134217728
+  },
+  "publication": {
+    "maximumCombinedCompressedArtifactBytes": 50331648,
+    "selectedTargetDownloadsOnly": true
+  },
+  "runtime": {
+    "maximumColdStartupMilliseconds": 15000,
+    "maximumProcessConfigurationMilliseconds": 50,
+    "maximumIncrementalLinkedBytesPerBackend": 33554432,
+    "maximumWasm32ClassicStartupRegressionPercent": 25
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "extensionName": "worker_spi",
+  "extensionVersion": "1.0.0",
+  "target": {
+    "pointerWidth": 32,
+    "memoryAddressWidth": 32,
+    "topology": "multi-memory",
+    "postgresMajor": 18,
+    "postgresAbi": "postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32",
+    "pgliteExtensionAbi": "pglite-extension-abi-v1",
+    "memoryAbi": "pglite-tagged-i32-v1",
+    "hostAbi": "pglite-host-abi-v1"
+  },
+  "sideModules": [],
+  "requiredSharedPreloadLibraries": ["worker_spi"],
+  "capabilities": {
+    "directSharedMemory": true,
+    "backgroundWorkers": true,
+    "parallelWorkers": false
+  }
+}

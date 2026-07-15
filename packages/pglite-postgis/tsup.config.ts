@@ -1,5 +1,3 @@
-import { cpSync } from 'fs'
-import { resolve } from 'path'
 import { defineConfig } from 'tsup'
 
 const entryPoints = ['src/index.ts']
@@ -18,8 +16,5 @@ export default defineConfig([
     minify: minify,
     shims: true,
     format: ['esm', 'cjs'],
-    onSuccess: async () => {
-      cpSync(resolve('release/postgis.tar.gz'), resolve('dist/postgis.tar.gz'))
-    },
   },
 ])

@@ -32,6 +32,11 @@ CLI while preserving native client programs and arguments. `prove` and the
 capability runner wrap exact-revision TAP and make suites so every executed or
 skipped area is recorded.
 
+The provider uses compact scoped memory, 256 MiB growth ceilings, and a 16 MiB
+`shared_buffers` baseline. Individual PostgreSQL tests can still override the
+database setting. These values keep supported single-cluster suites inside the
+Docker envelope without changing the artifact's production 1 GiB ABI.
+
 The lifecycle smoke gate runs before either upstream target and verifies:
 
 - initialization and foreground startup;

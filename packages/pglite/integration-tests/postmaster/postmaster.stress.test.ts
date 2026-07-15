@@ -15,6 +15,8 @@ test('reclaims 10,000 backend sessions and recovers from a crash', async () => {
       config.pgbench,
       config.outputRoot,
       join(config.outputRoot, 'stress.json'),
+      config.testDsa.archive,
+      config.testDsa.descriptor,
     ],
   )
 })

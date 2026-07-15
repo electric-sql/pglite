@@ -63,6 +63,8 @@ const SERVER_OPTIONS = {
   'pglite-max-sessions': { type: 'string' },
   'pglite-private-memory-limit': { type: 'string' },
   'pglite-global-memory-limit': { type: 'string' },
+  'pglite-scoped-memory-limit': { type: 'string' },
+  'pglite-scoped-memory-mode': { type: 'string' },
   'pglite-log-level': { type: 'string' },
 } as const
 
@@ -100,6 +102,8 @@ interface PostmasterRuntimeOptions {
   maxConnections: number
   privateMaximumMemory?: number
   globalMaximumMemory?: number
+  scopedMaximumMemory?: number
+  scopedMemoryMode?: 'compact' | 'dedicated'
   debug: boolean
 }
 
@@ -393,6 +397,10 @@ function parseServerOptions(
       postmaster.privateMaximumMemory = memoryBytes(token.value)
     } else if (token.name === 'pglite-global-memory-limit') {
       postmaster.globalMaximumMemory = memoryBytes(token.value)
+    } else if (token.name === 'pglite-scoped-memory-limit') {
+      postmaster.scopedMaximumMemory = memoryBytes(token.value)
+    } else if (token.name === 'pglite-scoped-memory-mode') {
+      postmaster.scopedMemoryMode = scopedMemoryMode(token.value)
     } else if (token.name === 'pglite-log-level') {
       postmaster.debug = debugEnabled(token.value)
     }
@@ -408,6 +416,8 @@ function parseServerOptions(
     sharedBuffers: parsed.values['shared-buffers'],
     privateMaximumMemory: postmaster.privateMaximumMemory,
     globalMaximumMemory: postmaster.globalMaximumMemory,
+    scopedMaximumMemory: postmaster.scopedMaximumMemory,
+    scopedMemoryMode: postmaster.scopedMemoryMode,
     debug: postmaster.debug,
     postmasterPid: process.pid,
   }
@@ -463,6 +473,8 @@ function parsePostgresOptions(
       maxConnections: postmaster.maxConnections,
       privateMaximumMemory: postmaster.privateMaximumMemory,
       globalMaximumMemory: postmaster.globalMaximumMemory,
+      scopedMaximumMemory: postmaster.scopedMaximumMemory,
+      scopedMemoryMode: postmaster.scopedMemoryMode,
       debug: postmaster.debug,
       postmasterPid: process.pid,
     },
@@ -483,6 +495,12 @@ function runtimeOptions(
       : undefined,
     globalMaximumMemory: env.PGLITE_GLOBAL_MEMORY_LIMIT
       ? memoryBytes(env.PGLITE_GLOBAL_MEMORY_LIMIT)
+      : undefined,
+    scopedMaximumMemory: env.PGLITE_SCOPED_MEMORY_LIMIT
+      ? memoryBytes(env.PGLITE_SCOPED_MEMORY_LIMIT)
+      : undefined,
+    scopedMemoryMode: env.PGLITE_SCOPED_MEMORY_MODE
+      ? scopedMemoryMode(env.PGLITE_SCOPED_MEMORY_MODE)
       : undefined,
     debug,
   }
@@ -523,6 +541,26 @@ function consumeRuntimeOption(
   if (globalMemory) {
     options.globalMaximumMemory = memoryBytes(globalMemory.value)
     return globalMemory.nextIndex
+  }
+  const scopedMemory = optionValue(
+    argv,
+    index,
+    argument,
+    '--pglite-scoped-memory-limit',
+  )
+  if (scopedMemory) {
+    options.scopedMaximumMemory = memoryBytes(scopedMemory.value)
+    return scopedMemory.nextIndex
+  }
+  const scopedMode = optionValue(
+    argv,
+    index,
+    argument,
+    '--pglite-scoped-memory-mode',
+  )
+  if (scopedMode) {
+    options.scopedMemoryMode = scopedMemoryMode(scopedMode.value)
+    return scopedMode.nextIndex
   }
   const logLevel = optionValue(argv, index, argument, '--pglite-log-level')
   if (logLevel) {
@@ -697,6 +735,13 @@ function memoryBytes(value: string): number {
   return bytes
 }
 
+function scopedMemoryMode(value: string): 'compact' | 'dedicated' {
+  if (value === 'compact' || value === 'dedicated') return value
+  throw new CliUsageError(
+    `pglite scoped memory mode must be compact or dedicated`,
+  )
+}
+
 function debugEnabled(value: string | undefined): boolean {
   if (!value) return false
   return ['1', 'true', 'debug', 'trace'].includes(value.toLowerCase())
@@ -730,6 +775,9 @@ async function configuredPostmaster(
     'workerFilesystem',
     'icuDataDir',
     'osUser',
+    'extensions',
+    'locateExtensionArtifact',
+    'extensionArtifactLimits',
   ])
   for (const name of Object.keys(postmaster)) {
     if (!allowed.has(name)) {
@@ -890,6 +938,8 @@ Options:
   --shared-buffers=SIZE                managed PostgreSQL shared_buffers
   --pglite-private-memory-limit=SIZE   per-backend Wasm maximum
   --pglite-global-memory-limit=SIZE    global shared Wasm maximum
+  --pglite-scoped-memory-limit=SIZE    scoped shared Wasm maximum
+  --pglite-scoped-memory-mode=MODE     compact or dedicated
 
 The first release never initializes implicitly; run pglite initdb first.
 `
@@ -906,6 +956,8 @@ PGlite options:
   --pglite-max-sessions=N
   --pglite-private-memory-limit=SIZE
   --pglite-global-memory-limit=SIZE
+  --pglite-scoped-memory-limit=SIZE
+  --pglite-scoped-memory-mode=MODE
   --pglite-log-level=LEVEL
 
 The first release runs in the foreground and never initializes implicitly.

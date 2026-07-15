@@ -3,6 +3,7 @@ import { BasePGlite } from './base.js'
 import {
   copyToFS,
   loadExtensionBundle,
+  loadExtensionFiles,
   loadExtensions,
 } from './extensionUtils.js'
 import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
@@ -32,7 +33,18 @@ import {
   validateClusterFiles,
   writeEmscriptenClusterManifest,
 } from './cluster-manifest.js'
-import { pgliteRuntimeIdentity } from './runtime-identity.js'
+import {
+  pgliteClassicWasmTarget,
+  pgliteRuntimeIdentity,
+} from './runtime-identity.js'
+import { prepareExtensionSet } from './extension-registry.js'
+import { loadExtensionArtifact } from './extension-archive.js'
+import {
+  DEFAULT_PGLITE_ARTIFACT_LIMITS,
+  assertExtensionHostCapabilities,
+  type PGliteArtifactLimits,
+  type PGliteProcessConfigValue,
+} from './extension-artifacts.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -334,6 +346,38 @@ export class PGlite
 
     const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
     const extensionInitFns: Array<() => Promise<void>> = []
+    const staticExtensions = Object.fromEntries(
+      Object.entries(this.#extensions).filter(
+        ([, extension]) =>
+          !(extension instanceof URL) && extension.backend !== undefined,
+      ),
+    )
+    const preparedExtensions = Object.keys(staticExtensions).length
+      ? prepareExtensionSet(staticExtensions, {
+          targetKey: 'wasm32-classic',
+          target: pgliteClassicWasmTarget,
+          locateExtensionArtifact: options.locateExtensionArtifact,
+          reservedNamespaces: pgliteReservedExtensionNamespaces,
+          coreProcessConfigKeys: pgliteCoreProcessConfigKeys,
+        })
+      : undefined
+    const artifactLimits: PGliteArtifactLimits = {
+      ...DEFAULT_PGLITE_ARTIFACT_LIMITS,
+      ...options.extensionArtifactLimits,
+    }
+    if (preparedExtensions) {
+      assertExtensionHostCapabilities(
+        preparedExtensions.requiredHostCapabilities,
+        classicHostCapabilities(),
+      )
+    }
+    const validatedArtifactsPromise = preparedExtensions
+      ? Promise.all(
+          preparedExtensions.extensions.map(({ descriptor }) =>
+            loadExtensionArtifact(descriptor, artifactLimits),
+          ),
+        )
+      : Promise.resolve([])
 
     const args = [
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -537,7 +581,10 @@ export class PGlite
         extensionBundlePromises[extName] = loadExtensionBundle(ext)
       } else {
         // Extension with JS setup function
-        const extRet = await ext.setup(this, emscriptenOpts)
+        const extRet = ext.setup
+          ? await ext.setup(this, emscriptenOpts)
+          : undefined
+        if (!extRet) continue
         if (extRet.emscriptenOpts) {
           emscriptenOpts = extRet.emscriptenOpts
         }
@@ -545,7 +592,7 @@ export class PGlite
           const instance = this as any
           instance[extName] = extRet.namespaceObj
         }
-        if (extRet.bundlePath) {
+        if (extRet.bundlePath && !ext.backend) {
           extensionBundlePromises[extName] = loadExtensionBundle(
             extRet.bundlePath,
           ) // Don't await here, this is parallel
@@ -558,6 +605,15 @@ export class PGlite
         }
         extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
       }
+    }
+    if (preparedExtensions) {
+      emscriptenOpts.PGLITE_ENV = {
+        ...(emscriptenOpts.PGLITE_ENV ?? {}),
+        ...resolveClassicProcessEnvironment(preparedExtensions.pgliteEnv),
+      }
+      extSharedPreloadLibraries.push(
+        ...preparedExtensions.requiredSharedPreloadLibraries,
+      )
     }
     emscriptenOpts['pg_extensions'] = extensionBundlePromises
 
@@ -654,6 +710,29 @@ export class PGlite
       }
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
+      if (preparedExtensions) {
+        const artifacts = await validatedArtifactsPromise
+        const files = new Map<string, Uint8Array>()
+        const sideModulePaths = new Map<string, string>()
+        for (const artifact of artifacts) {
+          for (const [path, bytes] of artifact.files) {
+            if (!files.has(path)) files.set(path, bytes)
+          }
+          for (const module of artifact.descriptor.manifest.sideModules) {
+            sideModulePaths.set(
+              `${artifact.descriptor.manifest.extensionName}:${module.logicalName}`,
+              module.path,
+            )
+          }
+        }
+        await loadExtensionFiles(
+          this.mod,
+          files,
+          preparedExtensions.sideModuleOrder,
+          sideModulePaths,
+          (...args) => this.#log(...args),
+        )
+      }
 
       this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
@@ -679,6 +758,36 @@ export class PGlite
       // Init extensions
       for (const initFn of extensionInitFns) {
         await initFn()
+      }
+
+      const lifecycleExtensions = preparedExtensions
+        ? [
+            ...preparedExtensions.extensions.map(
+              ({ namespace, extension }) => [namespace, extension] as const,
+            ),
+            ...Object.entries(this.#extensions).filter(
+              ([namespace]) => !(namespace in staticExtensions),
+            ),
+          ]
+        : Object.entries(this.#extensions)
+      for (const [extName, ext] of lifecycleExtensions) {
+        if (ext instanceof URL) continue
+        if (ext.clusterSetup) {
+          const result = await ext.clusterSetup(this)
+          if (result?.namespaceObj !== undefined) {
+            const instance = this as any
+            instance[extName] = result.namespaceObj
+          }
+          if (result?.close) this.#extensionsClose.push(result.close)
+        }
+        if (ext.sessionSetup) {
+          const result = await ext.sessionSetup(this)
+          if (result.namespaceObj !== undefined) {
+            const instance = this as any
+            instance[extName] = result.namespaceObj
+          }
+          if (result.close) this.#extensionsClose.push(result.close)
+        }
       }
     }
 
@@ -858,7 +967,7 @@ export class PGlite
     let filesystemClosed = false
 
     // Close all extensions
-    for (const closeFn of this.#extensionsClose) {
+    for (const closeFn of [...this.#extensionsClose].reverse()) {
       try {
         await closeFn()
       } catch (error) {
@@ -1466,4 +1575,57 @@ export class PGlite
   copyToFS(filePath: string, data: Uint8Array, mode?: number) {
     copyToFS(this.mod!.FS, filePath, data, mode)
   }
+}
+
+const pgliteReservedExtensionNamespaces = collectPrototypeNames(
+  PGlite.prototype,
+  ['fs', 'mod', 'debug', 'waitReady', 'serializers', 'parsers'],
+)
+
+const pgliteCoreProcessConfigKeys = new Set([
+  'PGDATA',
+  'PGUSER',
+  'PGDATABASE',
+  'LANG',
+  'LC_COLLATE',
+  'LC_CTYPE',
+  'TZ',
+  'PGTZ',
+  'PGCLIENTENCODING',
+  'ICU_DATA',
+])
+
+function collectPrototypeNames(
+  prototype: object,
+  additional: readonly string[],
+): ReadonlySet<string> {
+  const names = new Set(additional)
+  let current: object | null = prototype
+  while (current && current !== Object.prototype) {
+    for (const name of Object.getOwnPropertyNames(current)) names.add(name)
+    current = Object.getPrototypeOf(current)
+  }
+  return names
+}
+
+function resolveClassicProcessEnvironment(
+  environment: Readonly<Record<string, PGliteProcessConfigValue>>,
+): Record<string, string | number | boolean> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([key, value]) => [
+      key,
+      typeof value === 'object' ? `${PG_ROOT}/${value.artifactPath}` : value,
+    ]),
+  )
+}
+
+function classicHostCapabilities(): ReadonlySet<string> {
+  const capabilities = new Set<string>()
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    capabilities.add('node')
+  } else {
+    capabilities.add('browser')
+  }
+  if (typeof Worker !== 'undefined') capabilities.add('web-worker')
+  return capabilities
 }

@@ -34,6 +34,12 @@ npx pglite server -D ./pgdata --host 127.0.0.1 --port 5432
 TCP defaults to loopback. Binding a non-loopback address emits a warning; access
 is still governed by the cluster's PostgreSQL authentication configuration.
 
+Both server modes accept `--pglite-private-memory-limit`,
+`--pglite-global-memory-limit`, `--pglite-scoped-memory-limit`, and
+`--pglite-scoped-memory-mode=compact|dedicated`. The equivalent environment
+variables are `PGLITE_PRIVATE_MEMORY_LIMIT`, `PGLITE_GLOBAL_MEMORY_LIMIT`,
+`PGLITE_SCOPED_MEMORY_LIMIT`, and `PGLITE_SCOPED_MEMORY_MODE`.
+
 The package also re-exports the corresponding programmatic APIs:
 
 ```ts

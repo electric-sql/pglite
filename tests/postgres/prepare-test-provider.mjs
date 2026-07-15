@@ -30,9 +30,17 @@ const source = join(repoRoot, 'tests/postgres/provider')
 const provider = join(postgresTest, 'provider')
 const target = process.env.PGLITE_POSTGRES_TEST_TARGET ?? 'check'
 const jobs = Number.parseInt(process.env.PGLITE_POSTGRES_TEST_JOBS ?? '2', 10)
+const maxConnections = Number.parseInt(
+  process.env.PGLITE_POSTGRES_TEST_MAX_CONNECTIONS ?? '4',
+  10,
+)
 assert.ok(
   Number.isInteger(jobs) && jobs > 0,
   'invalid PostgreSQL test job count',
+)
+assert.ok(
+  Number.isInteger(maxConnections) && maxConnections > 0,
+  'invalid PostgreSQL test connection limit',
 )
 const resultsRoot = join(postgresTest, 'results', `raw-${target}`)
 const revision = execFileSync('git', ['-C', pgRoot, 'rev-parse', 'HEAD'], {
@@ -67,6 +75,7 @@ const config = {
   schema: 1,
   architecture: process.arch,
   jobs,
+  maxConnections,
   postgresRevision: revision,
   repoRoot,
   artifact: {
@@ -82,8 +91,12 @@ const config = {
   postgresExecutable: join(native, 'install/bin/postgres'),
   cliExecutable,
   cliConfigModule: join(provider, 'pglite.config.mjs'),
-  privateMaximumMemory: 1024 * 1024 * 1024,
-  globalMaximumMemory: 1024 * 1024 * 1024,
+  // Keep the regression provider representative of memory-constrained Node
+  // deployments. The artifact ABI still permits 1 GiB memories, but giving
+  // every auxiliary Worker that ceiling causes V8's shared-memory backing
+  // reservations to exhaust Docker when TAP tests run several clusters.
+  privateMaximumMemory: 256 * 1024 * 1024,
+  globalMaximumMemory: 256 * 1024 * 1024,
   resultsRoot,
   capabilityEvents: join(resultsRoot, 'capabilities', 'events'),
   postgresSource: join(native, 'source'),
@@ -114,11 +127,19 @@ await writeFile(
 await writeFile(
   config.cliConfigModule,
   `import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const config = JSON.parse(
   await readFile(new URL('./config.json', import.meta.url), 'utf8'),
 )
 const icuArchive = await readFile(config.icuArchive)
+const { vector } = await import(
+  pathToFileURL(join(config.repoRoot, 'packages/pglite-pgvector/dist/index.js'))
+)
+const { postgis } = await import(
+  pathToFileURL(join(config.repoRoot, 'packages/pglite-postgis/dist/index.js'))
+)
 
 export default {
   initdb: {
@@ -126,6 +147,7 @@ export default {
   },
   postmaster: {
     artifact: config.artifact,
+    extensions: { vector, postgis },
     icuDataDir: new Blob([icuArchive]),
     osUser: process.env.PGLITE_PROVIDER_OS_USER,
     workerFilesystem: {

@@ -18,6 +18,23 @@ test -f "${INPUT}"
 test -f "${GLUE}"
 test -f "${DATA}"
 mkdir -p "${OUT}"
+
+# The supervisor shares one immutable package buffer with every Worker. Fail
+# the build if Emscripten's generated file-packager glue only accepts a plain
+# ArrayBuffer; such an artifact builds successfully but fails as soon as the
+# first postmaster process receives the SharedArrayBuffer.
+node22 - "${GLUE}" <<'NODE'
+const fs = require('node:fs')
+const source = fs.readFileSync(process.argv[2], 'utf8')
+if (
+  !/arrayBuffer\.constructor\.name\s*===\s*SharedArrayBuffer\.name/.test(source)
+) {
+  throw new Error(
+    'postmaster glue does not accept SharedArrayBuffer package data; rebuild with the pinned patched Emscripten image',
+  )
+}
+NODE
+
 HASH=$(sha256sum "${INPUT}" | cut -d' ' -f1)
 FEATURES=(
   --enable-feature atomics
@@ -37,6 +54,11 @@ const names = WebAssembly.Module.exports(module)
   .sort()
 fs.writeFileSync(output, `${names.join('\n')}\n`)
 NODE
+
+grep -Fxq 'pgl_heap_break' "${EXPORTS}" || {
+  echo 'postmaster artifact does not export pgl_heap_break diagnostics' >&2
+  exit 1
+}
 
 SUMMARIES=()
 while IFS= read -r name; do

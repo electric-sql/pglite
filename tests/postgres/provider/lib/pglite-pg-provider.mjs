@@ -13,6 +13,7 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import { userInfo } from 'node:os'
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
+import { createConnection } from 'node:net'
 import { fileURLToPath } from 'node:url'
 
 const PROVIDER_SCHEMA = 1
@@ -59,7 +60,18 @@ async function runInitdb(args) {
   try {
     const status = await spawnAndWait(
       config.cliExecutable,
-      ['initdb', '-D', pgdata, ...parsed.initdbArgs],
+      [
+        'initdb',
+        '-D',
+        pgdata,
+        // PostgreSQL's native initdb default is sized for a host server. A
+        // Wasm postmaster keeps the buffer pool in its shared linear memory;
+        // use PGlite's compact test-provider baseline unless the invoking
+        // suite supplies a later -c assignment of its own.
+        '-c',
+        'shared_buffers=16MB',
+        ...parsed.initdbArgs,
+      ],
       {
         env: {
           ...process.env,
@@ -183,6 +195,7 @@ async function runPostgres(args) {
   let cliExit
   try {
     await waitForCliReady(child, pgdata)
+    await waitForListeningAddress(child, address)
     await writeLifecycle(pgdata, {
       schema: PROVIDER_SCHEMA,
       status: 'ready',
@@ -222,6 +235,38 @@ async function runPostgres(args) {
     await rm(join(pgdata, STATE_FILE), { force: true })
   }
   if (status !== 'pass') process.exitCode = 1
+}
+
+async function waitForListeningAddress(child, address) {
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      fail('provider: packed CLI exited before its listener became ready')
+    }
+    if (
+      address.transport === 'unix'
+        ? existsSync(address.path)
+        : await canConnect(address.host, address.port)
+    ) {
+      return
+    }
+    await delay(50)
+  }
+  fail('provider: packed CLI listener did not become ready within 30 seconds')
+}
+
+function canConnect(host, port) {
+  return new Promise((resolveConnection) => {
+    const socket = createConnection({ host, port })
+    const finish = (connected) => {
+      socket.removeAllListeners()
+      socket.destroy()
+      resolveConnection(connected)
+    }
+    socket.setTimeout(250, () => finish(false))
+    socket.once('connect', () => finish(true))
+    socket.once('error', () => finish(false))
+  })
 }
 
 async function runPgCtl(args) {

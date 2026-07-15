@@ -74,6 +74,46 @@ integration('standalone initdb runtime', () => {
     }
   }, 60_000)
 
+  it('does not use the host login as its post-bootstrap database role', async () => {
+    const root = await temporaryRoot()
+    const dataDir = join(root, 'host-identity')
+    const { initdb } = await import('../dist/initdb.js')
+    const result = await initdb({
+      dataDir,
+      stdin: Readable.from([]),
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      env: {
+        LANG: 'C.UTF-8',
+        USER: 'host-user-without-a-postgres-role',
+        LOGNAME: 'host-user-without-a-postgres-role',
+        PGUSER: undefined,
+      },
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(await readFile(join(dataDir, 'PG_VERSION'), 'utf8')).toBe('18\n')
+
+    const explicitDataDir = join(root, 'explicit-bootstrap-user')
+    const explicit = await initdb({
+      dataDir: explicitDataDir,
+      args: ['--username=pglite_owner'],
+      stdin: Readable.from([]),
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      env: {
+        LANG: 'C.UTF-8',
+        USER: 'another-host-user',
+        LOGNAME: 'another-host-user',
+        PGUSER: 'wrong-database-role',
+      },
+    })
+    expect(explicit.exitCode).toBe(0)
+    expect(await readFile(join(explicitDataDir, 'PG_VERSION'), 'utf8')).toBe(
+      '18\n',
+    )
+  }, 30_000)
+
   it('returns PostgreSQL failure status without creating a manifest', async () => {
     const root = await temporaryRoot()
     const dataDir = join(root, 'not-empty')

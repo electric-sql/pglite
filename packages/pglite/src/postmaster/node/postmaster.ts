@@ -5,6 +5,11 @@ import { measureMemory } from 'node:vm'
 import { Worker } from 'node:worker_threads'
 import type { Filesystem, PGliteClusterLease } from '../../fs/base.js'
 import type { PGliteOptions } from '../../interface.js'
+import type {
+  Extensions,
+  PGliteInterfaceExtensions,
+  PGlitePostmasterExtensions,
+} from '../../interface.js'
 import { NodeFS } from '../../fs/nodefs.js'
 import {
   acquireFilesystemClusterLease,
@@ -39,12 +44,23 @@ import type {
   PostgresProcessWorkerData,
   PostgresProcessWorkerMessage,
   PostmasterArtifactPaths,
+  PostmasterExtensionSet,
   WorkerFilesystemDescriptor,
   WorkerFilesystemFactory,
 } from './worker-types.js'
 import { assertPostmasterFilesystemSelection } from './filesystem-selection.js'
 import { validateClusterFiles } from '../../cluster-manifest.js'
 import { pgliteRuntimeIdentity } from '../../runtime-identity.js'
+import { pglitePostmasterWasmTarget } from '../../runtime-identity.js'
+import { prepareExtensionSet } from '../../extension-registry.js'
+import { loadExtensionArtifact } from '../../extension-archive.js'
+import {
+  DEFAULT_PGLITE_ARTIFACT_LIMITS,
+  assertExtensionHostCapabilities,
+  type PGliteArtifactLimits,
+  type PGliteExtensionArtifactLocator,
+  type PGliteProcessConfigValue,
+} from '../../extension-artifacts.js'
 import {
   PostgresNodeNetworkHostController,
   registerPostgresNodeNetworkHostController,
@@ -69,10 +85,15 @@ const SCOPED_SHM_REGISTRY_VERSION = 4
 const SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS = 18_464 >>> 2
 const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
 const SCOPED_SHM_MAX_SCOPES = 640
-const RETIRED_BACKING_STORE_COLLECTION_INTERVAL = 128
+// Reconnecting clients retire a complete Worker and its private Wasm memory.
+// Ask V8 to collect those unreachable backing stores often enough to keep the
+// process RSS bounded under sustained session churn.
+const RETIRED_BACKING_STORE_COLLECTION_INTERVAL = 64
 const PGLITE_PROCESS_USER_ID = 123
 
-export interface PGlitePostmasterOptions {
+export interface PGlitePostmasterOptions<
+  TExtensions extends Extensions = Extensions,
+> {
   /** Node directory, with the existing PGlite `file://` spelling supported. */
   readonly dataDir: string
   readonly maxConnections?: number
@@ -121,6 +142,10 @@ export interface PGlitePostmasterOptions {
    * top-level process meaning.
    */
   readonly postmasterPid?: number
+  /** Native extensions that must support the selected postmaster target. */
+  readonly extensions?: TExtensions
+  readonly locateExtensionArtifact?: PGliteExtensionArtifactLocator
+  readonly extensionArtifactLimits?: Partial<PGliteArtifactLimits>
 }
 
 export interface PGlitePostmasterDiagnostics {
@@ -144,6 +169,15 @@ export interface PGlitePostmasterDiagnostics {
   readonly compactRootBindings: number
   /** Unique Wasm backing-store bytes, without double-counting compact roots. */
   readonly totalUniqueMemoryBytes: number
+  /** Cluster-owned verified bytes, shared rather than copied to each Worker. */
+  readonly extensionArtifactBytes: number
+  /** Side-module input bytes linked independently by every process Worker. */
+  readonly extensionSideModuleBytesPerProcess: number
+  /** Sum across live Workers of side-module static data allocated at dlopen. */
+  readonly extensionLinkedDataBytes: number
+  readonly maximumExtensionLinkedDataBytesPerProcess: number
+  readonly extensionConfigurationMilliseconds: number
+  readonly extensionPreparationMilliseconds: number
   readonly scopedLifetime: PGliteScopedLifetimeDiagnostics
   readonly filesystem: PGlitePostmasterFilesystemDiagnostics
 }
@@ -179,6 +213,7 @@ interface WorkerRecord {
   readonly connectionId: number
   readonly scopePolicy: ProcessScopePolicy
   readonly scopeRoot?: ProcessHandle
+  extensionLinkedDataBytes: number
   reportedExitCode?: number
   reportedExitKind?: ProcessExitKind
   settled: boolean
@@ -209,7 +244,7 @@ type ResolvedWorkerFilesystem =
       readonly initializer: Filesystem
     }
 
-export class PGlitePostmaster {
+export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
   readonly dataDir: string
   readonly maxConnections: number
   readonly globalMemory: WebAssembly.Memory
@@ -232,6 +267,10 @@ export class PGlitePostmaster {
   private readonly broker: VirtualConnectionBroker
   private readonly timers: SupervisorTimers
   private readonly networkHost = new PostgresNodeNetworkHostController()
+  private readonly extensions: TExtensions
+  private readonly workerExtensions: PostmasterExtensionSet
+  private readonly artifactData: SharedArrayBuffer
+  private readonly clusterClose: Array<() => Promise<void>> = []
   private readonly workers = new Map<number, WorkerRecord>()
   private readonly scopedRoots = new Map<number, ScopedRootRecord>()
   private readonly pendingStarts = new Set<Promise<void>>()
@@ -252,19 +291,24 @@ export class PGlitePostmaster {
   private backingStoreCollection?: Promise<void>
 
   private constructor(
-    options: PGlitePostmasterOptions,
+    options: PGlitePostmasterOptions<TExtensions>,
     dataDir: string,
     artifact: PostmasterArtifactPaths,
     wasmModule: WebAssembly.Module,
+    artifactData: SharedArrayBuffer,
     filesystem: ResolvedWorkerFilesystem,
     clusterLease?: PGliteClusterLease,
+    workerExtensions: PostmasterExtensionSet = EMPTY_POSTMASTER_EXTENSIONS,
   ) {
     this.dataDir = dataDir
     this.maxConnections = options.maxConnections ?? 20
     this.artifact = artifact
     this.wasmModule = wasmModule
+    this.artifactData = artifactData
     this.filesystem = filesystem
     this.clusterLease = clusterLease
+    this.extensions = (options.extensions ?? {}) as TExtensions
+    this.workerExtensions = workerExtensions
     const memory = resolveMemoryOptions(options)
     this.privateInitialPages = memory.privateInitialPages
     this.privateMaximumPages = memory.privateMaximumPages
@@ -309,11 +353,16 @@ export class PGlitePostmaster {
     registerPostgresNodeNetworkHostController(this, this.networkHost)
   }
 
-  static async create(
-    options: PGlitePostmasterOptions,
-  ): Promise<PGlitePostmaster> {
+  static async create<TExtensions extends Extensions = Extensions>(
+    options: PGlitePostmasterOptions<TExtensions>,
+  ): Promise<
+    PGlitePostmaster<TExtensions> & PGlitePostmasterExtensions<TExtensions>
+  > {
     assertNodeCapabilities()
     const dataDir = resolveDataDirectory(options.dataDir)
+    // Exact target selection and artifact validation are pre-start gates. Do
+    // not initialize or otherwise mutate the cluster until they have passed.
+    const workerExtensions = await preparePostmasterExtensions(options)
     let filesystem: ResolvedWorkerFilesystem | undefined
     let clusterLease: PGliteClusterLease | undefined
     let ownsClusterLease = false
@@ -357,22 +406,29 @@ export class PGlitePostmaster {
 
       const artifact = resolveArtifact(options.artifact)
       const wasmModule = await WebAssembly.compile(readFileSync(artifact.wasm))
+      const artifactDataBytes = readFileSync(artifact.data)
+      const artifactData = new SharedArrayBuffer(artifactDataBytes.byteLength)
+      new Uint8Array(artifactData).set(artifactDataBytes)
       const postmaster = new PGlitePostmaster(
         options,
         dataDir,
         artifact,
         wasmModule,
+        artifactData,
         filesystem,
         clusterLease,
+        workerExtensions,
       )
       try {
         await postmaster.start(options)
+        await postmaster.setupClusterExtensions()
       } catch (error) {
         await postmaster.shutdown('immediate').catch(() => {})
         throw error
       }
       ownsClusterLease = false
-      return postmaster
+      return postmaster as PGlitePostmaster<TExtensions> &
+        PGlitePostmasterExtensions<TExtensions>
     } catch (error) {
       if (filesystem?.kind === 'broker') {
         await filesystem.host.close().catch(() => {})
@@ -406,16 +462,115 @@ export class PGlitePostmaster {
 
   async createSession(
     options: PGlitePostmasterSessionOptions = {},
-  ): Promise<PGlitePostmasterSession> {
+  ): Promise<PGlitePostmasterSession & PGliteInterfaceExtensions<TExtensions>> {
+    return this.createSessionForPeer(options, { transport: 'tcp' })
+  }
+
+  private async createSessionForPeer(
+    options: PGlitePostmasterSessionOptions,
+    peer: ProtocolPeerInfo,
+    initializeArrayTypes = true,
+    setupExtensions = true,
+  ): Promise<PGlitePostmasterSession & PGliteInterfaceExtensions<TExtensions>> {
     this.assertOpen()
-    const connection = await this.openProtocolConnection({ transport: 'tcp' })
-    const session = await PGlitePostmasterSession.create(
-      connection,
-      options,
-      (closed) => this.sessions.delete(closed),
-    )
+    const connection = await this.openProtocolConnection(peer)
+    let session: PGlitePostmasterSession
+    try {
+      session = await PGlitePostmasterSession.create(
+        connection,
+        options,
+        (closed) => this.sessions.delete(closed),
+        initializeArrayTypes,
+      )
+    } catch (error) {
+      connection.abort(error)
+      throw error
+    }
     this.sessions.add(session)
-    return session
+    try {
+      if (!setupExtensions) {
+        return session as PGlitePostmasterSession &
+          PGliteInterfaceExtensions<TExtensions>
+      }
+      for (const namespace of this.workerExtensions.namespaceOrder) {
+        const extension = this.extensions[namespace]
+        if (extension instanceof URL || !extension.sessionSetup) continue
+        const result = await extension.sessionSetup(session)
+        if (result.namespaceObj !== undefined) {
+          Object.defineProperty(session, namespace, {
+            value: result.namespaceObj,
+            configurable: false,
+            enumerable: true,
+            writable: false,
+          })
+        }
+        if (result.close) session.registerExtensionClose(result.close)
+      }
+      return session as PGlitePostmasterSession &
+        PGliteInterfaceExtensions<TExtensions>
+    } catch (error) {
+      await session.close().catch(() => {})
+      throw error
+    }
+  }
+
+  readonly runtimeTarget = pglitePostmasterWasmTarget
+
+  private async setupClusterExtensions(): Promise<void> {
+    // A Worker being runtime-ready means the postmaster has entered its main
+    // loop, but crash recovery can still briefly reject backend startup with
+    // SQLSTATE 57P03. Treat the administrative connection as the readiness
+    // barrier for PGlitePostmaster.create(), including when no extension has a
+    // cluster hook, so callers never receive a postmaster that cannot yet
+    // create its first normal PGlite session.
+    const deadline = Date.now() + 30_000
+    const hasClusterSetup = this.workerExtensions.namespaceOrder.some(
+      (namespace) => {
+        const extension = this.extensions[namespace]
+        return (
+          !(extension instanceof URL) && extension.clusterSetup !== undefined
+        )
+      },
+    )
+    let administrativeSession: PGlitePostmasterSession &
+      PGliteInterfaceExtensions<TExtensions>
+    for (;;) {
+      try {
+        // This is an in-process administrative connection. Present it as a
+        // local Unix peer so clusters with a conventional `local` HBA rule do
+        // not need to permit a synthetic TCP client merely to become ready.
+        administrativeSession = await this.createSessionForPeer(
+          { username: this.osUser },
+          { transport: 'unix' },
+          hasClusterSetup,
+          hasClusterSetup,
+        )
+        break
+      } catch (error) {
+        if (!isDatabaseStartingUpError(error) || Date.now() >= deadline) {
+          throw error
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+    }
+    try {
+      for (const namespace of this.workerExtensions.namespaceOrder) {
+        const extension = this.extensions[namespace]
+        if (extension instanceof URL || !extension.clusterSetup) continue
+        const result = await extension.clusterSetup(administrativeSession)
+        if (result?.namespaceObj !== undefined) {
+          Object.defineProperty(this, namespace, {
+            value: result.namespaceObj,
+            configurable: false,
+            enumerable: true,
+            writable: false,
+          })
+        }
+        if (result?.close) this.clusterClose.push(result.close)
+      }
+    } finally {
+      await administrativeSession.close()
+    }
   }
 
   diagnostics(): PGlitePostmasterDiagnostics {
@@ -452,6 +607,10 @@ export class PGlitePostmaster {
     const scopedLifetime = readScopedLifetimeDiagnostics(
       this.scopedRoots.values(),
     )
+    const extensionLinkedDataBytes = live.reduce(
+      (total, record) => total + record.extensionLinkedDataBytes,
+      0,
+    )
     return {
       liveProcesses: live.length,
       livePrivateMemories: live.length,
@@ -482,6 +641,17 @@ export class PGlitePostmaster {
         privateMemoryBytes +
         this.globalMemory.buffer.byteLength +
         scopedMemoryBytes,
+      extensionArtifactBytes: this.workerExtensions.artifactBytes,
+      extensionSideModuleBytesPerProcess: this.workerExtensions.sideModuleBytes,
+      extensionLinkedDataBytes,
+      maximumExtensionLinkedDataBytesPerProcess: Math.max(
+        0,
+        ...live.map(({ extensionLinkedDataBytes }) => extensionLinkedDataBytes),
+      ),
+      extensionConfigurationMilliseconds:
+        this.workerExtensions.configurationMilliseconds,
+      extensionPreparationMilliseconds:
+        this.workerExtensions.preparationMilliseconds,
       scopedLifetime,
       filesystem:
         this.filesystem.kind === 'broker'
@@ -525,6 +695,9 @@ export class PGlitePostmaster {
     await Promise.allSettled(
       [...this.sessions].map((session) => session.close()),
     )
+    for (const close of [...this.clusterClose].reverse()) {
+      await close().catch(() => {})
+    }
     this.timers.close()
     const postmasterCurrent = this.registry.isCurrent(this.postmasterProcess)
     let signalQueued = false
@@ -586,7 +759,11 @@ export class PGlitePostmaster {
     await this.startWorker(
       this.postmasterProcess,
       0,
-      postmasterArguments(options, this.maxConnections),
+      postmasterArguments(
+        options,
+        this.maxConnections,
+        this.workerExtensions.requiredSharedPreloadLibraries,
+      ),
       ProcessScopePolicy.SelfAlias,
     )
   }
@@ -666,6 +843,7 @@ export class PGlitePostmaster {
     const workerData: PostgresProcessWorkerData = {
       artifact: this.artifact,
       wasmModule: this.wasmModule,
+      artifactData: this.artifactData,
       privateInitialPages: this.privateInitialPages,
       privateMaximumPages: this.privateMaximumPages,
       scopedInitialPages: this.scopedInitialPages,
@@ -688,6 +866,7 @@ export class PGlitePostmaster {
       arguments: args,
       osUser: this.osUser,
       debug: this.debug,
+      extensions: this.workerExtensions,
     }
     let worker: Worker
     try {
@@ -705,6 +884,7 @@ export class PGlitePostmaster {
       connectionId,
       scopePolicy,
       scopeRoot,
+      extensionLinkedDataBytes: 0,
       settled: false,
     }
     inheritedRoot?.members.add(handle.pid)
@@ -787,6 +967,21 @@ export class PGlitePostmaster {
             )
             return
           }
+          if (
+            !Number.isSafeInteger(message.extensionLinkedDataBytes) ||
+            message.extensionLinkedDataBytes < 0
+          ) {
+            record.reportedExitCode = 1
+            record.reportedExitKind = ProcessExitKind.WorkerFailure
+            void worker.terminate()
+            rejectReady(
+              new Error(
+                `PostgreSQL Worker ${handle.pid} reported invalid extension memory`,
+              ),
+            )
+            return
+          }
+          record.extensionLinkedDataBytes = message.extensionLinkedDataBytes
           ready = true
           clearTimeout(startupTimer)
           if (this.debug)
@@ -1102,6 +1297,15 @@ function isStaleConnectionError(error: unknown): boolean {
   )
 }
 
+function isDatabaseStartingUpError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === '57P03'
+  )
+}
+
 function resolveWorkerFilesystem(
   options: PGlitePostmasterOptions,
   dataDir: string,
@@ -1289,6 +1493,7 @@ function resolveArtifact(
 function postmasterArguments(
   options: PGlitePostmasterOptions,
   maxConnections: number,
+  preloadLibraries: readonly string[],
 ): string[] {
   const portabilityConfig = [
     ['shared_memory_type', 'sysv'],
@@ -1311,8 +1516,128 @@ function postmasterArguments(
     '-D',
     '/pglite/data',
     ...config.flatMap(([name, value]) => ['-c', `${name}=${value}`]),
+    ...(preloadLibraries.length > 0
+      ? ['-c', `shared_preload_libraries=${preloadLibraries.join(',')}`]
+      : []),
     ...(options.startParams ?? []),
   ]
+}
+
+const EMPTY_POSTMASTER_EXTENSIONS: PostmasterExtensionSet = Object.freeze({
+  namespaceOrder: Object.freeze([]),
+  requiredSharedPreloadLibraries: Object.freeze([]),
+  files: Object.freeze([]),
+  sideModuleOrder: Object.freeze([]),
+  sideModulePreloadOrder: Object.freeze([]),
+  sideModulePaths: Object.freeze([]),
+  pgliteEnv: Object.freeze({}),
+  artifactBytes: 0,
+  sideModuleBytes: 0,
+  configurationMilliseconds: 0,
+  preparationMilliseconds: 0,
+})
+
+const POSTMASTER_CORE_ENV_KEYS = new Set([
+  'PGDATA',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'ICU_DATA',
+])
+
+async function preparePostmasterExtensions(
+  options: PGlitePostmasterOptions,
+): Promise<PostmasterExtensionSet> {
+  if (!options.extensions || Object.keys(options.extensions).length === 0) {
+    return EMPTY_POSTMASTER_EXTENSIONS
+  }
+  const preparationStarted = performance.now()
+  const configurationStarted = performance.now()
+  const prepared = prepareExtensionSet(options.extensions, {
+    targetKey: 'wasm32-multi-memory',
+    target: pglitePostmasterWasmTarget,
+    locateExtensionArtifact: options.locateExtensionArtifact,
+    reservedNamespaces: new Set(['ready', 'closed', 'debug', 'runtimeTarget']),
+    coreProcessConfigKeys: POSTMASTER_CORE_ENV_KEYS,
+  })
+  const configurationMilliseconds = performance.now() - configurationStarted
+  const limits = {
+    ...DEFAULT_PGLITE_ARTIFACT_LIMITS,
+    ...options.extensionArtifactLimits,
+  }
+  assertExtensionHostCapabilities(
+    prepared.requiredHostCapabilities,
+    new Set([
+      'node',
+      'worker-threads',
+      'shared-array-buffer',
+      'wasm-multi-memory',
+    ]),
+  )
+  const artifacts = await Promise.all(
+    prepared.extensions.map(({ descriptor }) =>
+      loadExtensionArtifact(descriptor, limits),
+    ),
+  )
+  const files = new Map<string, SharedArrayBuffer>()
+  for (const artifact of artifacts) {
+    for (const [path, bytes] of artifact.files) {
+      if (files.has(path)) continue
+      const shared = new SharedArrayBuffer(bytes.byteLength)
+      new Uint8Array(shared).set(bytes)
+      files.set(path, shared)
+    }
+  }
+  const sideModulePaths = new Map<string, string>()
+  for (const entry of prepared.extensions) {
+    for (const sideModule of entry.descriptor.manifest.sideModules) {
+      const identity = `${entry.extension.name}:${sideModule.logicalName}`
+      sideModulePaths.set(identity, sideModule.path)
+    }
+  }
+  const sideModulePathSet = new Set(sideModulePaths.values())
+  return Object.freeze({
+    namespaceOrder: Object.freeze(
+      prepared.extensions.map(({ namespace }) => namespace),
+    ),
+    requiredSharedPreloadLibraries: Object.freeze([
+      ...prepared.requiredSharedPreloadLibraries,
+    ]),
+    files: Object.freeze(
+      [...files].map(([path, bytes]) => Object.freeze({ path, bytes })),
+    ),
+    sideModuleOrder: Object.freeze([...prepared.sideModuleOrder]),
+    // Registration materializes immutable bytes, but compiling every root
+    // side module in every PostgreSQL process makes unused extensions impose
+    // a large per-backend cost. PostgreSQL's synchronous dlopen path compiles
+    // and relocates a module only when the extension is actually used.
+    sideModulePreloadOrder: Object.freeze([]),
+    sideModulePaths: Object.freeze([...sideModulePaths]),
+    pgliteEnv: Object.freeze(
+      Object.fromEntries(
+        Object.entries(prepared.pgliteEnv).map(([key, value]) => [
+          key,
+          expandProcessConfig(value),
+        ]),
+      ),
+    ),
+    artifactBytes: [...files.values()].reduce(
+      (total, bytes) => total + bytes.byteLength,
+      0,
+    ),
+    sideModuleBytes: [...files].reduce(
+      (total, [path, bytes]) =>
+        total + (sideModulePathSet.has(path) ? bytes.byteLength : 0),
+      0,
+    ),
+    configurationMilliseconds,
+    preparationMilliseconds: performance.now() - preparationStarted,
+  })
+}
+
+function expandProcessConfig(value: PGliteProcessConfigValue): string {
+  if (typeof value === 'object') return `/pglite/${value.artifactPath}`
+  return String(value)
 }
 
 function assertNodeCapabilities(): void {

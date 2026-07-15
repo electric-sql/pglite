@@ -94,7 +94,19 @@ function runSpawn() {
 }
 
 function runListener() {
-  const connection = registry.waitForConnection(2_000)
+  const deadline = performance.now() + 2_000
+  let connection
+  while (!connection && performance.now() < deadline) {
+    const sequence = registry.wakeSequence(data.handle)
+    connection = registry.acceptConnection()
+    if (!connection) {
+      registry.wait(
+        data.handle,
+        sequence,
+        Math.max(0, deadline - performance.now()),
+      )
+    }
+  }
   assert.ok(connection)
   parentPort?.postMessage({ type: 'accepted', connection })
   registry.releaseConnection(connection)

@@ -3,24 +3,43 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { rm, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const [repoRoot, wasm, glue, data, pgbench, outputRoot, resultPath] =
-  process.argv.slice(2)
-if (!resultPath) {
+const [
+  repoRoot,
+  wasm,
+  glue,
+  data,
+  pgbench,
+  outputRoot,
+  resultPath,
+  testDsaArchive,
+  testDsaDescriptor,
+] = process.argv.slice(2)
+if (!testDsaDescriptor) {
   throw new Error(
-    'usage: postmaster-stress.mjs REPO_ROOT WASM GLUE DATA PGBENCH OUTPUT_ROOT RESULT',
+    'usage: postmaster-stress.mjs REPO_ROOT WASM GLUE DATA PGBENCH OUTPUT_ROOT RESULT TEST_DSA_ARCHIVE TEST_DSA_DESCRIPTOR',
   )
 }
 assert.equal(process.arch, 'arm64')
+const churnTransactions = Number.parseInt(
+  process.env.PGLITE_POSTMASTER_STRESS_CHURN_TRANSACTIONS ?? '10000',
+  10,
+)
+assert.ok(churnTransactions > 0 && churnTransactions % 4 === 0)
 
 const { PGlitePostmaster, PostgresProcessKind } = await import(
   pathToFileURL(join(repoRoot, 'packages/pglite/dist/postmaster/index.js')).href
 )
-const { PGliteSocketServer } = await import(
-  pathToFileURL(join(repoRoot, 'packages/pglite-socket/dist/index.js')).href
+const { PGliteServer } = await import(
+  pathToFileURL(join(repoRoot, 'packages/pglite-server/dist/index.js')).href
+)
+const testDsa = await extensionFromDescriptor(
+  'test_dsa',
+  testDsaArchive,
+  testDsaDescriptor,
 )
 
 const dataDirectory = join(outputRoot, 'stress-pgdata')
@@ -45,6 +64,7 @@ try {
     privateMaximumMemory: 64 * 1024 * 1024,
     debug: process.env.PGLITE_POSTMASTER_TEST_DEBUG === 'true',
     artifact: { wasm, glue, data },
+    extensions: { testDsa },
     // Keep the 10,000-session reclamation measurement independent of the
     // default five-minute timed checkpoint. Checkpointer correctness and
     // crash recovery are exercised separately in this suite.
@@ -62,11 +82,12 @@ try {
       options: { root: dataDirectory },
     },
   })
-  socket = new PGliteSocketServer({
+  socket = await PGliteServer.create({
     postmaster,
     listen: { host: '127.0.0.1', port: 0 },
   })
-  const address = await socket.start()
+  const address = socket.address
+  assert.ok(address)
   assert.equal(address.transport, 'tcp')
 
   sampleTimer = setInterval(() => {
@@ -121,23 +142,23 @@ try {
       '-j',
       '4',
       '-t',
-      '2500',
+      String(churnTransactions / 4),
       '-f',
       churnScript,
       'postgres',
     ],
     pgbenchEnvironment,
   )
-  assert.equal(churn.transactions, 10_000)
+  assert.equal(churn.transactions, churnTransactions)
   await waitForIdle(postmaster, baseline.livePrivateMemories, 120_000)
   const afterChurn = postmaster.diagnostics()
   assert.ok(
     afterChurn.privateMemoriesStarted - beforeChurn.privateMemoriesStarted >=
-      10_000,
+      churnTransactions,
   )
   assert.ok(
     afterChurn.privateMemoriesReleased - beforeChurn.privateMemoriesReleased >=
-      10_000,
+      churnTransactions,
   )
   assert.equal(
     afterChurn.livePrivateMemories,
@@ -230,7 +251,7 @@ try {
   const beforeShutdown = postmaster.diagnostics()
   clearInterval(sampleTimer)
   sampleTimer = undefined
-  await socket.stop()
+  await socket.close()
   await postmaster.close()
   const shutdown = postmaster.diagnostics()
   assert.equal(shutdown.livePrivateMemories, 0)
@@ -284,7 +305,7 @@ try {
           churn,
         },
         sessionChurn: {
-          requested: 10_000,
+          requested: churnTransactions,
           concurrency: 4,
           before: beforeChurn,
           after: afterChurn,
@@ -328,7 +349,7 @@ try {
   throw error
 } finally {
   if (sampleTimer) clearInterval(sampleTimer)
-  await socket?.stop().catch(() => undefined)
+  await socket?.close().catch(() => undefined)
   await postmaster?.close().catch(() => undefined)
 }
 
@@ -411,7 +432,16 @@ async function waitForBackendCount(postmaster, target, timeout = 30_000) {
   while (Date.now() < deadline) {
     const backends = postmaster.registry
       .handles()
-      .map((handle) => postmaster.registry.snapshot(handle))
+      .flatMap((handle) => {
+        try {
+          return [postmaster.registry.snapshot(handle)]
+        } catch (error) {
+          // The supervisor may reap a backend between handles() and
+          // snapshot(); that means the backend has already left the count.
+          if (String(error).includes('stale PGlite process handle')) return []
+          throw error
+        }
+      })
       .filter(({ kind }) => kind === PostgresProcessKind.Backend).length
     if (backends <= target) return
     await delay(25)
@@ -488,4 +518,26 @@ function withTimeout(promise, timeout, label) {
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
+async function extensionFromDescriptor(name, archive, descriptorPath) {
+  const descriptor = JSON.parse(await readFile(descriptorPath, 'utf8'))
+  return {
+    name,
+    version: descriptor.extensionManifest.extensionVersion,
+    backend: {
+      targetKeys: ['wasm32-multi-memory'],
+      artifacts: {
+        'wasm32-multi-memory': {
+          targetKey: descriptor.targetKey,
+          target: descriptor.target,
+          url: pathToFileURL(archive),
+          archiveBytes: descriptor.archiveBytes,
+          archiveSha256: descriptor.archiveSha256,
+          manifestSha256: descriptor.manifestSha256,
+          manifest: descriptor.extensionManifest,
+        },
+      },
+    },
+  }
 }

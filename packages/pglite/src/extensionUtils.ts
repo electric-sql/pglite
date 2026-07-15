@@ -137,6 +137,56 @@ function loadExtension(
   return soPreloadPromises
 }
 
+export async function loadExtensionFiles(
+  mod: PostgresMod,
+  files: ReadonlyMap<string, Uint8Array>,
+  sideModulePreloadOrder: readonly string[],
+  sideModulePaths: ReadonlyMap<string, string>,
+  log: (...args: any[]) => void,
+): Promise<void> {
+  const preloadPaths = new Set(
+    sideModulePreloadOrder.map((identity) => sideModulePaths.get(identity)),
+  )
+  for (const [path, data] of files) {
+    if (!preloadPaths.has(path)) {
+      copyToFS(mod.FS, `${mod.WASM_PREFIX}/${path}`, data)
+    }
+  }
+  for (const identity of sideModulePreloadOrder) {
+    const path = sideModulePaths.get(identity)
+    if (!path) throw new Error(`Missing side-module path for ${identity}`)
+    const data = files.get(path)
+    if (!data) throw new Error(`Missing side-module bytes for ${identity}`)
+    const filePath = `${mod.WASM_PREFIX}/${path}`
+    const fileName = path.split('/').pop()!
+    const dirPath = dirname(filePath)
+    if (mod.FS.analyzePath(dirPath).exists === false) {
+      mod.FS.mkdirTree(dirPath)
+    }
+    log(`pgfs:ext preloading ${filePath}`)
+    await new Promise<void>((resolve) => {
+      mod.FS.createPreloadedFile(
+        dirPath,
+        fileName,
+        data as any,
+        true,
+        true,
+        () => resolve(),
+        (...args: any[]) => {
+          // Preloading is an optimization: Emscripten may reject compilation
+          // here for a large module even though its synchronous dlopen path can
+          // compile and relocate the same bytes. Preserve the classic loader's
+          // fallback, while leaving an actual dlopen/relocation failure fatal.
+          log(`pgfs:ext preload fallback ${filePath}`, args)
+          copyToFS(mod.FS, filePath, data)
+          resolve()
+        },
+        false,
+      )
+    })
+  }
+}
+
 export function copyToFS(
   fs: FS,
   filePath: string,

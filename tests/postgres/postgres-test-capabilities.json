@@ -58,6 +58,13 @@
     "blockedExecution": "record-unless-PGLITE_POSTGRES_TEST_RUN_BLOCKED=true",
     "rules": [
       {
+        "id": "libpq-three-postmaster-load-balancing",
+        "match": "exact",
+        "path": "src/interfaces/libpq/t/003_load_balance_host_list.pl",
+        "state": "BLOCKED",
+        "reason": "The test keeps three independent Wasm postmasters and their auxiliary Node Worker isolates live concurrently. It reaches 6.7 GiB before startup transients exhaust the 7.65 GiB Docker test VM and the cgroup OOM killer terminates one postmaster; completing it requires lower per-postmaster Worker-isolate residency or a deliberately larger test envelope."
+      },
+      {
         "id": "dblink-cross-cluster-outbound-socket",
         "match": "exact",
         "path": "contrib/dblink/t/001_auth_scram.pl",

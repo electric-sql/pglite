@@ -74,11 +74,13 @@ export class PGlitePostmasterSession
   #listenMutex = new Mutex()
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
+  #extensionClose: Array<() => Promise<void>> = []
 
   private constructor(
     private readonly connection: PGliteProtocolConnection,
     options: PGlitePostmasterSessionOptions,
     private readonly onClose: (session: PGlitePostmasterSession) => void,
+    private readonly initializeArrayTypes: boolean,
   ) {
     super()
     this.debug = options.debug ?? 0
@@ -94,8 +96,14 @@ export class PGlitePostmasterSession
     connection: PGliteProtocolConnection,
     options: PGlitePostmasterSessionOptions = {},
     onClose: (session: PGlitePostmasterSession) => void = () => {},
+    initializeArrayTypes = true,
   ): Promise<PGlitePostmasterSession> {
-    const session = new PGlitePostmasterSession(connection, options, onClose)
+    const session = new PGlitePostmasterSession(
+      connection,
+      options,
+      onClose,
+      initializeArrayTypes,
+    )
     try {
       await session.waitReady
       return session
@@ -117,6 +125,9 @@ export class PGlitePostmasterSession
     if (this.#closed || this.#closing) return
     this.#closing = true
     try {
+      for (const close of [...this.#extensionClose].reverse()) {
+        await close().catch(() => {})
+      }
       await this.waitReady.catch(() => {})
       if (!this.#closed) {
         await this.connection.write(serialize.end())
@@ -130,6 +141,11 @@ export class PGlitePostmasterSession
       this.#closing = false
       this.onClose(this)
     }
+  }
+
+  /** @internal Used by the postmaster extension lifecycle adapter. */
+  registerExtensionClose(close: () => Promise<void>): void {
+    this.#extensionClose.push(close)
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -275,7 +291,7 @@ export class PGlitePostmasterSession
       throw new Error('PostgreSQL startup did not authenticate the session')
     }
     this.#ready = true
-    await this._initArrayTypes()
+    if (this.initializeArrayTypes) await this._initArrayTypes()
   }
 
   async #exchange(

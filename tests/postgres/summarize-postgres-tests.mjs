@@ -121,11 +121,12 @@ const summary = {
   postgresRevision: config.postgresRevision,
   architecture: config.architecture,
   jobs: config.jobs,
+  maxConnections: config.maxConnections,
   provider,
   canonicalCommand:
     target === 'check-world'
-      ? `PGLITE_TEST_PROVIDER=${provider} PGLITE_TEST_CAPABILITY_RUNNER=${provider}/bin/pglite-test-capability make -j${config.jobs} -k ${target} PROVE=${provider}/bin/prove`
-      : `PGLITE_TEST_PROVIDER=${provider} make -j${config.jobs} ${target}`,
+      ? `PGLITE_TEST_PROVIDER=${provider} PGLITE_TEST_CAPABILITY_RUNNER=${provider}/bin/pglite-test-capability make -j${config.jobs} -k ${target} PROVE=${provider}/bin/prove MAX_CONNECTIONS=${config.maxConnections}`
+      : `PGLITE_TEST_PROVIDER=${provider} make -j${config.jobs} ${target} MAX_CONNECTIONS=${config.maxConnections}`,
   capabilityCounts,
   testPolicy: {
     defaultState: capabilities.testPolicy.defaultState,

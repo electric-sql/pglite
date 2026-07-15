@@ -55,6 +55,7 @@ export interface PostgresMod
   _pgl_shm_scope_root: () => bigint
   _pgl_shm_registry_offset: () => number
   _pgl_shm_compact_frontier: () => number
+  _pgl_heap_break: () => number
   _pgl_set_socket_host: (
     create_socket: number,
     connect_socket: number,
