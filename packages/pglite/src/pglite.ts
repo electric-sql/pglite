@@ -97,6 +97,7 @@ export class PGlite
   #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
+  #fsSyncFailure?: { error: unknown }
 
   readonly debug: DebugLevel = 0
 
@@ -812,7 +813,24 @@ export class PGlite
       this.mod!.removeFunction(this.#pglite_socket_write)
     }
 
-    // Close the filesystem
+    // Drain any in-flight relaxed-durability sync and perform a final strict
+    // sync before closing the filesystem. With relaxedDurability the last
+    // syncToFs() is fire-and-forget, so a sync can still be running against
+    // the filesystem here; the mutex serialises with it (waiting it out) and
+    // the strict syncToFs(false) guarantees the tail writes persist. Without
+    // this, on IdbFs an in-flight sync could open a transaction on an
+    // already-closing IDBDatabase connection (an uncaught InvalidStateError
+    // from inside an Emscripten callback) and the tail writes could be
+    // dropped.
+    let finalSyncError: { error: unknown } | undefined
+    try {
+      await this.#fsSyncMutex.runExclusive(() => this.fs!.syncToFs(false))
+    } catch (error) {
+      finalSyncError = { error }
+    }
+
+    // Close the filesystem even if the final sync failed so that any
+    // exclusive storage ownership is always released.
     await this.fs!.closeFs()
 
     this.#closed = true
@@ -829,6 +847,10 @@ export class PGlite
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
+    }
+
+    if (finalSyncError) {
+      throw finalSyncError.error
     }
   }
 
@@ -1130,6 +1152,12 @@ export class PGlite
    * run after every query to ensure that the filesystem is synced.
    */
   async syncToFs() {
+    if (this.#fsSyncFailure) {
+      // A previous background sync failed, so the database is no longer being
+      // persisted; surface the failure instead of continuing without
+      // durability.
+      throw this.#fsSyncFailure.error
+    }
     if (this.#fsSyncScheduled) {
       return
     }
@@ -1143,8 +1171,18 @@ export class PGlite
     }
 
     if (this.#relaxedDurability) {
-      doSync()
+      // The sync is intentionally not awaited, but its failure must not
+      // become an unhandled rejection: latch the first error so the next
+      // query or explicit syncToFs() call throws it.
+      void doSync().catch((error) => {
+        this.#fsSyncFailure ??= { error }
+      })
     } else {
+      // Awaited: the failure already reaches the caller, so it is NOT
+      // latched — the filesystem stays reachable and a stateful filesystem
+      // implementation decides for itself what later calls should throw.
+      // The latch exists only for the detached path above, which has no
+      // other way to report.
       await doSync()
     }
   }
