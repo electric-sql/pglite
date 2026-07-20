@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
-import { PGlite } from '../dist/index.js'
+import { PGlite, type Transaction } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -498,6 +498,61 @@ await testEsmCjsAndDTC(async (importType) => {
         affectedRows: 0,
       })
     })
+
+    it('rejects sql on closed transaction handles', async () => {
+      await db.exec('CREATE TABLE closed_transaction_test (id INT PRIMARY KEY)')
+
+      let committedTx: Transaction | undefined
+      await db.transaction(async (tx) => {
+        committedTx = tx
+      })
+
+      expect(committedTx?.closed).toBe(true)
+      await expect(
+        committedTx!.sql`INSERT INTO closed_transaction_test VALUES (1)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      let rolledBackTx: Transaction | undefined
+      await db.transaction(async (tx) => {
+        rolledBackTx = tx
+        await tx.rollback()
+      })
+
+      expect(rolledBackTx?.closed).toBe(true)
+      await expect(
+        rolledBackTx!.sql`INSERT INTO closed_transaction_test VALUES (2)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      const result = await db.query('SELECT id FROM closed_transaction_test')
+      expect(result.rows).toEqual([])
+    })
+
+    it('closes the transaction handle when the callback rejects', async () => {
+      await db.exec('CREATE TABLE closed_transaction_test (id INT PRIMARY KEY)')
+
+      let failedTx: Transaction | undefined
+      await expect(
+        db.transaction(async (tx) => {
+          failedTx = tx
+          throw new Error('boom')
+        }),
+      ).rejects.toThrow('boom')
+
+      expect(failedTx?.closed).toBe(true)
+      await expect(
+        failedTx!.query('INSERT INTO closed_transaction_test VALUES (1)'),
+      ).rejects.toThrow('Transaction is closed')
+      await expect(
+        failedTx!.exec('INSERT INTO closed_transaction_test VALUES (2)'),
+      ).rejects.toThrow('Transaction is closed')
+      await expect(
+        failedTx!.sql`INSERT INTO closed_transaction_test VALUES (3)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      const result = await db.query('SELECT id FROM closed_transaction_test')
+      expect(result.rows).toEqual([])
+    })
+
     it('merge delete', async () => {
       await db.exec(`
       CREATE TABLE employees (
