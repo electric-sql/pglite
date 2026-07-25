@@ -456,6 +456,12 @@ Result objects have the following properties:
 - `affectedRows?: number` <br />
   Count of the rows affected by the query. Note, this is _not_ the count of rows returned, it is the number or rows in the database changed by the query.
 
+- `command?: string` <br />
+  The command of the query that was run, taken from the command tag reported by Postgres, e.g. `SELECT`, `INSERT` or `CREATE`. Matches the `command` field of node-postgres query results.
+
+- `rowCount?: number` <br />
+  The number of rows reported by the command tag, e.g. the rows returned by a `SELECT` or changed by an `UPDATE`. Not set when the tag carries no count (e.g. `CREATE TABLE`). Unlike `affectedRows` this is per statement and not cumulative; it matches the `rowCount` field of node-postgres query results.
+
 - `fields: { name: string; dataTypeID: number }[]`<br />
   Field name and Postgres data type ID for each field returned.
 

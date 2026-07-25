@@ -49,11 +49,15 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(multiStatementResult).toEqual([
         {
           affectedRows: 1,
+          command: 'INSERT',
+          rowCount: 1,
           rows: [],
           fields: [],
         },
         {
           affectedRows: 2,
+          command: 'UPDATE',
+          rowCount: 1,
           rows: [],
           fields: [],
         },
@@ -64,6 +68,8 @@ await testEsmCjsAndDTC(async (importType) => {
             { name: 'name', dataTypeID: 25 },
           ],
           affectedRows: 2,
+          command: 'SELECT',
+          rowCount: 1,
         },
       ])
     })
@@ -98,6 +104,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
 
       const updateResult = await db.query("UPDATE test SET name = 'test2';")
@@ -105,6 +113,8 @@ await testEsmCjsAndDTC(async (importType) => {
         rows: [],
         fields: [],
         affectedRows: 1,
+        command: 'UPDATE',
+        rowCount: 1,
       })
     })
 
@@ -137,6 +147,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
 
       const updateResult =
@@ -145,6 +157,8 @@ await testEsmCjsAndDTC(async (importType) => {
         rows: [],
         fields: [],
         affectedRows: 1,
+        command: 'UPDATE',
+        rowCount: 1,
       })
     })
 
@@ -343,6 +357,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -376,6 +392,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -428,6 +446,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -472,6 +492,8 @@ await testEsmCjsAndDTC(async (importType) => {
             },
           ],
           affectedRows: 0,
+          command: 'SELECT',
+          rowCount: 2,
         })
         await tx.rollback()
       })
@@ -496,6 +518,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
     it('merge delete', async () => {
@@ -594,6 +618,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 2,
       })
     })
 
@@ -634,6 +660,8 @@ await testEsmCjsAndDTC(async (importType) => {
           { name: 'last_name', dataTypeID: 25 },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
     it('timezone', async () => {
@@ -821,6 +849,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
   })

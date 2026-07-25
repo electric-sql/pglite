@@ -64,6 +64,8 @@ describe(`pgvector`, () => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 3,
       },
     ])
   })
