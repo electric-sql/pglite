@@ -27,7 +27,7 @@ import { PGlite, DebugLevel } from '@electric-sql/pglite'
  * DEBUG=1 pnpm tsx examples/basic-server.ts
  * ```
  * You can also use a UNIX socket instead of the host:port
- * 
+ *
  * ```bash
  * UNIX=/tmp/.s.PGSQL.5432 DEBUG=1 pnpm tsx examples/basic-server.ts
  * ```

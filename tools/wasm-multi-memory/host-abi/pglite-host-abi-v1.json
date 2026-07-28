@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "abi": "pglite-host-abi-v1",
+  "owner": "pglite-libc",
+  "reviewPolicy": "an ABI-signature change requires a new host ABI identity and regenerated declarations",
+  "pointerWidths": {
+    "32": { "typescript": "number", "emscriptenSignature": "p" },
+    "64": { "typescript": "bigint", "emscriptenSignature": "p" }
+  },
+  "fixedScalars": {
+    "descriptor": "i32",
+    "processId": "i32",
+    "registryOffset": "u32",
+    "status": "i32",
+    "byteCount": "u32",
+    "wideScalar": "i64"
+  },
+  "memoryDomains": ["private", "global", "scoped"],
+  "publicPointerExposure": false
+}

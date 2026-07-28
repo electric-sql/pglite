@@ -47,6 +47,76 @@
         "types": "./dist/pg_dump.d.cts",
         "default": "./dist/pg_dump.cjs"
       }
+    },
+    "./initdb": {
+      "import": {
+        "types": "./dist/initdb.d.ts",
+        "default": "./dist/initdb.js"
+      },
+      "require": {
+        "types": "./dist/initdb.d.cts",
+        "default": "./dist/initdb.cjs"
+      }
+    },
+    "./pg_isready": {
+      "import": {
+        "types": "./dist/pg_isready.d.ts",
+        "default": "./dist/pg_isready.js"
+      },
+      "require": {
+        "types": "./dist/pg_isready.d.cts",
+        "default": "./dist/pg_isready.cjs"
+      }
+    },
+    "./pg_dump/native": {
+      "import": {
+        "types": "./dist/pg_dump_native.d.ts",
+        "default": "./dist/pg_dump_native.js"
+      },
+      "require": {
+        "types": "./dist/pg_dump_native.d.cts",
+        "default": "./dist/pg_dump_native.cjs"
+      }
+    },
+    "./psql": {
+      "import": {
+        "types": "./dist/psql.d.ts",
+        "default": "./dist/psql.js"
+      },
+      "require": {
+        "types": "./dist/psql.d.cts",
+        "default": "./dist/psql.cjs"
+      }
+    },
+    "./pg_restore": {
+      "import": {
+        "types": "./dist/pg_restore.d.ts",
+        "default": "./dist/pg_restore.js"
+      },
+      "require": {
+        "types": "./dist/pg_restore.d.cts",
+        "default": "./dist/pg_restore.cjs"
+      }
+    },
+    "./admin": {
+      "import": {
+        "types": "./dist/admin.d.ts",
+        "default": "./dist/admin.js"
+      },
+      "require": {
+        "types": "./dist/admin.d.cts",
+        "default": "./dist/admin.cjs"
+      }
+    },
+    "./_internal/native-tools": {
+      "import": {
+        "types": "./dist/native-tools-internal.d.ts",
+        "default": "./dist/native-tools-internal.js"
+      },
+      "require": {
+        "types": "./dist/native-tools-internal.d.cts",
+        "default": "./dist/native-tools-internal.cjs"
+      }
     }
   },
   "scripts": {

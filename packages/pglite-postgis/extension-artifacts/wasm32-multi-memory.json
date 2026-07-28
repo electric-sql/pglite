@@ -1,0 +1,41 @@
+{
+  "extensionName": "postgis",
+  "extensionVersion": "0.2.4",
+  "target": {
+    "pointerWidth": 32,
+    "memoryAddressWidth": 32,
+    "topology": "multi-memory",
+    "postgresMajor": 18,
+    "postgresAbi": "postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32",
+    "pgliteExtensionAbi": "pglite-extension-abi-v1",
+    "memoryAbi": "pglite-tagged-i32-v1",
+    "hostAbi": "pglite-host-abi-v1"
+  },
+  "sideModules": [
+    {
+      "logicalName": "postgis",
+      "path": "lib/postgresql/postgis-3.so",
+      "loadAfter": []
+    },
+    {
+      "logicalName": "postgis_raster",
+      "path": "lib/postgresql/postgis_raster-3.so",
+      "loadAfter": ["postgis:postgis"]
+    },
+    {
+      "logicalName": "postgis_topology",
+      "path": "lib/postgresql/postgis_topology-3.so",
+      "loadAfter": ["postgis:postgis"]
+    }
+  ],
+  "processConfig": {
+    "pgliteEnv": {
+      "POSTGIS_GDAL_ENABLED_DRIVERS": "ENABLE_ALL",
+      "POSTGIS_ENABLE_OUTDB_RASTERS": 1,
+      "PROJ_DATA": {
+        "artifactPath": "share/proj"
+      }
+    },
+    "requiredHostCapabilities": []
+  }
+}

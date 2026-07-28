@@ -3,9 +3,16 @@ import { BasePGlite } from './base.js'
 import {
   copyToFS,
   loadExtensionBundle,
+  loadExtensionFiles,
   loadExtensions,
 } from './extensionUtils.js'
 import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
+import {
+  acquireFilesystemClusterLease,
+  inheritedClusterLease,
+  type InheritedClusterLeaseOptions,
+} from './fs/cluster-lease.js'
+import type { PGliteClusterLease } from './fs/base.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -19,6 +26,25 @@ import type {
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
+import {
+  createClusterManifestFromFiles,
+  encodingFromInitdbOutput,
+  readEmscriptenClusterFiles,
+  validateClusterFiles,
+  writeEmscriptenClusterManifest,
+} from './cluster-manifest.js'
+import {
+  pgliteClassicWasmTarget,
+  pgliteRuntimeIdentity,
+} from './runtime-identity.js'
+import { prepareExtensionSet } from './extension-registry.js'
+import { loadExtensionArtifact } from './extension-archive.js'
+import {
+  DEFAULT_PGLITE_ARTIFACT_LIMITS,
+  assertExtensionHostCapabilities,
+  type PGliteArtifactLimits,
+  type PGliteProcessConfigValue,
+} from './extension-artifacts.js'
 
 // Importing the source as the built version is not ESM compatible
 import { Parser as ProtocolParser, serialize } from '@electric-sql/pg-protocol'
@@ -102,6 +128,8 @@ export class PGlite
 
   #extensions: Extensions
   #extensionsClose: Array<() => Promise<void>> = []
+  #clusterLease?: PGliteClusterLease
+  #ownsClusterLease = false
 
   #protocolParser = new ProtocolParser()
 
@@ -220,7 +248,10 @@ export class PGlite
     this.#extensions = options.extensions ?? {}
 
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options ?? {})
+    this.waitReady = this.#init(options ?? {}).catch(async (error) => {
+      await this.#abortInitialization().catch(() => {})
+      throw error
+    })
   }
 
   /**
@@ -292,7 +323,7 @@ export class PGlite
    * Initialize the database
    * @returns A promise that resolves when the database is ready
    */
-  async #init(options: PGliteOptions) {
+  async #init(options: PGliteOptions & InheritedClusterLeaseOptions) {
     // PGlite modifies process.exitCode when it does exit(XX)
     // we need to restore the previous value
     const prevExitCode = pglUtils.pgliteProc.exitCode
@@ -304,8 +335,49 @@ export class PGlite
       this.fs = await loadFs(dataDir, fsType)
     }
 
+    const clusterLease = await acquireFilesystemClusterLease(
+      this.fs,
+      parseDataDir(options.dataDir).dataDir,
+      'classic',
+      options[inheritedClusterLease],
+    )
+    this.#clusterLease = clusterLease.lease
+    this.#ownsClusterLease = clusterLease.owned
+
     const extensionBundlePromises: Record<string, Promise<Blob | null>> = {}
     const extensionInitFns: Array<() => Promise<void>> = []
+    const staticExtensions = Object.fromEntries(
+      Object.entries(this.#extensions).filter(
+        ([, extension]) =>
+          !(extension instanceof URL) && extension.backend !== undefined,
+      ),
+    )
+    const preparedExtensions = Object.keys(staticExtensions).length
+      ? prepareExtensionSet(staticExtensions, {
+          targetKey: 'wasm32-classic',
+          target: pgliteClassicWasmTarget,
+          locateExtensionArtifact: options.locateExtensionArtifact,
+          reservedNamespaces: pgliteReservedExtensionNamespaces,
+          coreProcessConfigKeys: pgliteCoreProcessConfigKeys,
+        })
+      : undefined
+    const artifactLimits: PGliteArtifactLimits = {
+      ...DEFAULT_PGLITE_ARTIFACT_LIMITS,
+      ...options.extensionArtifactLimits,
+    }
+    if (preparedExtensions) {
+      assertExtensionHostCapabilities(
+        preparedExtensions.requiredHostCapabilities,
+        classicHostCapabilities(),
+      )
+    }
+    const validatedArtifactsPromise = preparedExtensions
+      ? Promise.all(
+          preparedExtensions.extensions.map(({ descriptor }) =>
+            loadExtensionArtifact(descriptor, artifactLimits),
+          ),
+        )
+      : Promise.resolve([])
 
     const args = [
       // "-F", // Disable fsync (TODO: Only for in-memory mode?)
@@ -364,6 +436,17 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
+        // Transformed classic artifacts retain the ordinary Emscripten heap as
+        // memory 0 and import the two reserved pointer domains after it. In
+        // single-user mode no tagged pointers are produced, so bind both
+        // reserved indices to the exact same Memory object. Extra imports are
+        // harmless for the untransformed artifact and keep this loader shared
+        // by both artifact families.
+        imports.pglite = {
+          ...(imports.pglite ?? {}),
+          global_memory: wasmMemory,
+          scoped_memory: wasmMemory,
+        }
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
 
         pglUtils
@@ -498,7 +581,10 @@ export class PGlite
         extensionBundlePromises[extName] = loadExtensionBundle(ext)
       } else {
         // Extension with JS setup function
-        const extRet = await ext.setup(this, emscriptenOpts)
+        const extRet = ext.setup
+          ? await ext.setup(this, emscriptenOpts)
+          : undefined
+        if (!extRet) continue
         if (extRet.emscriptenOpts) {
           emscriptenOpts = extRet.emscriptenOpts
         }
@@ -506,7 +592,7 @@ export class PGlite
           const instance = this as any
           instance[extName] = extRet.namespaceObj
         }
-        if (extRet.bundlePath) {
+        if (extRet.bundlePath && !ext.backend) {
           extensionBundlePromises[extName] = loadExtensionBundle(
             extRet.bundlePath,
           ) // Don't await here, this is parallel
@@ -519,6 +605,15 @@ export class PGlite
         }
         extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
       }
+    }
+    if (preparedExtensions) {
+      emscriptenOpts.PGLITE_ENV = {
+        ...(emscriptenOpts.PGLITE_ENV ?? {}),
+        ...resolveClassicProcessEnvironment(preparedExtensions.pgliteEnv),
+      }
+      extSharedPreloadLibraries.push(
+        ...preparedExtensions.requiredSharedPreloadLibraries,
+      )
     }
     emscriptenOpts['pg_extensions'] = extensionBundlePromises
 
@@ -536,6 +631,8 @@ export class PGlite
       await this.#fillIcuDataDir(options.icuDataDir)
     }
 
+    let initializedCluster = false
+    let initializedEncoding: string | undefined
     if (!options.noInitDb) {
       // If the user has provided a tarball to load the database from, do that now.
       // We do this after the initial sync so that we can throw if the database
@@ -558,6 +655,9 @@ export class PGlite
           pgInitDbOpts.dataDir = undefined
           pgInitDbOpts.extensions = undefined
           pgInitDbOpts.loadDataDir = undefined
+          ;(pgInitDbOpts as PGliteOptions & InheritedClusterLeaseOptions)[
+            inheritedClusterLease
+          ] = this.#clusterLease
           const pg_initDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
@@ -575,18 +675,64 @@ export class PGlite
               )
             }
           }
+          initializedEncoding = encodingFromInitdbOutput(initdbResult.stdout)
 
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
           await loadTar(this.mod.FS, pgdatatar, PGDATA)
-
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
+          initializedCluster = true
         }
+      }
+      if (this.mod.FS.analyzePath(`${PGDATA}/PG_VERSION`).exists) {
+        let clusterFiles = readEmscriptenClusterFiles(this.mod.FS, PGDATA)
+        if (initializedCluster && clusterFiles.manifest === undefined) {
+          writeEmscriptenClusterManifest(
+            this.mod.FS,
+            PGDATA,
+            createClusterManifestFromFiles(clusterFiles, {
+              artifact: pgliteRuntimeIdentity.artifacts.classic,
+              pgliteVersion: pgliteRuntimeIdentity.pgliteVersion,
+              blockSize: pgliteRuntimeIdentity.blockSize,
+              walBlockSize: pgliteRuntimeIdentity.walBlockSize,
+              argv: options.initDbStartParams ?? [],
+              detectedEncoding: initializedEncoding,
+            }),
+          )
+          clusterFiles = readEmscriptenClusterFiles(this.mod.FS, PGDATA)
+        }
+        validateClusterFiles(
+          clusterFiles,
+          pgliteRuntimeIdentity.artifacts.classic,
+          pgliteRuntimeIdentity.blockSize,
+          pgliteRuntimeIdentity.walBlockSize,
+        )
+        if (initializedCluster) await this.syncToFs()
       }
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
+      if (preparedExtensions) {
+        const artifacts = await validatedArtifactsPromise
+        const files = new Map<string, Uint8Array>()
+        const sideModulePaths = new Map<string, string>()
+        for (const artifact of artifacts) {
+          for (const [path, bytes] of artifact.files) {
+            if (!files.has(path)) files.set(path, bytes)
+          }
+          for (const module of artifact.descriptor.manifest.sideModules) {
+            sideModulePaths.set(
+              `${artifact.descriptor.manifest.extensionName}:${module.logicalName}`,
+              module.path,
+            )
+          }
+        }
+        await loadExtensionFiles(
+          this.mod,
+          files,
+          preparedExtensions.sideModuleOrder,
+          sideModulePaths,
+          (...args) => this.#log(...args),
+        )
+      }
 
       this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
@@ -612,6 +758,36 @@ export class PGlite
       // Init extensions
       for (const initFn of extensionInitFns) {
         await initFn()
+      }
+
+      const lifecycleExtensions = preparedExtensions
+        ? [
+            ...preparedExtensions.extensions.map(
+              ({ namespace, extension }) => [namespace, extension] as const,
+            ),
+            ...Object.entries(this.#extensions).filter(
+              ([namespace]) => !(namespace in staticExtensions),
+            ),
+          ]
+        : Object.entries(this.#extensions)
+      for (const [extName, ext] of lifecycleExtensions) {
+        if (ext instanceof URL) continue
+        if (ext.clusterSetup) {
+          const result = await ext.clusterSetup(this)
+          if (result?.namespaceObj !== undefined) {
+            const instance = this as any
+            instance[extName] = result.namespaceObj
+          }
+          if (result?.close) this.#extensionsClose.push(result.close)
+        }
+        if (ext.sessionSetup) {
+          const result = await ext.sessionSetup(this)
+          if (result.namespaceObj !== undefined) {
+            const instance = this as any
+            instance[extName] = result.namespaceObj
+          }
+          if (result.close) this.#extensionsClose.push(result.close)
+        }
       }
     }
 
@@ -787,10 +963,16 @@ export class PGlite
   async close() {
     await this._checkReady()
     this.#closing = true
+    let closeError: unknown
+    let filesystemClosed = false
 
     // Close all extensions
-    for (const closeFn of this.#extensionsClose) {
-      await closeFn()
+    for (const closeFn of [...this.#extensionsClose].reverse()) {
+      try {
+        await closeFn()
+      } catch (error) {
+        closeError ??= error
+      }
     }
 
     // Close the database
@@ -813,12 +995,12 @@ export class PGlite
     }
 
     // Close the filesystem
-    await this.fs!.closeFs()
-
-    this.#closed = true
-    this.#closing = false
-    this.#ready = false
-    this.#running = false
+    try {
+      await this.fs!.closeFs()
+      filesystemClosed = true
+    } catch (error) {
+      closeError ??= error
+    }
 
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
@@ -829,6 +1011,52 @@ export class PGlite
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
+    }
+
+    try {
+      if (filesystemClosed) await this.#releaseClusterLease()
+    } catch (error) {
+      closeError ??= error
+    } finally {
+      this.#closed = true
+      this.#closing = false
+      this.#ready = false
+      this.#running = false
+    }
+
+    if (closeError) throw closeError
+  }
+
+  async #releaseClusterLease(): Promise<void> {
+    if (!this.#ownsClusterLease || !this.#clusterLease) return
+    this.#ownsClusterLease = false
+    await this.#clusterLease.release()
+  }
+
+  async #abortInitialization(): Promise<void> {
+    if (!this.mod) {
+      await this.#releaseClusterLease()
+      return
+    }
+
+    try {
+      this.mod._pgl_setPGliteActive(0)
+      this.mod._pgl_run_atexit_funcs()
+    } catch {
+      // Continue with filesystem and runtime teardown.
+    }
+
+    let filesystemClosed = false
+    try {
+      await this.fs?.closeFs()
+      filesystemClosed = true
+    } finally {
+      try {
+        this.mod._emscripten_force_exit(1)
+      } catch {
+        // Emscripten reports forced exit by throwing.
+      }
+      if (filesystemClosed) await this.#releaseClusterLease()
     }
   }
 
@@ -1347,4 +1575,57 @@ export class PGlite
   copyToFS(filePath: string, data: Uint8Array, mode?: number) {
     copyToFS(this.mod!.FS, filePath, data, mode)
   }
+}
+
+const pgliteReservedExtensionNamespaces = collectPrototypeNames(
+  PGlite.prototype,
+  ['fs', 'mod', 'debug', 'waitReady', 'serializers', 'parsers'],
+)
+
+const pgliteCoreProcessConfigKeys = new Set([
+  'PGDATA',
+  'PGUSER',
+  'PGDATABASE',
+  'LANG',
+  'LC_COLLATE',
+  'LC_CTYPE',
+  'TZ',
+  'PGTZ',
+  'PGCLIENTENCODING',
+  'ICU_DATA',
+])
+
+function collectPrototypeNames(
+  prototype: object,
+  additional: readonly string[],
+): ReadonlySet<string> {
+  const names = new Set(additional)
+  let current: object | null = prototype
+  while (current && current !== Object.prototype) {
+    for (const name of Object.getOwnPropertyNames(current)) names.add(name)
+    current = Object.getPrototypeOf(current)
+  }
+  return names
+}
+
+function resolveClassicProcessEnvironment(
+  environment: Readonly<Record<string, PGliteProcessConfigValue>>,
+): Record<string, string | number | boolean> {
+  return Object.fromEntries(
+    Object.entries(environment).map(([key, value]) => [
+      key,
+      typeof value === 'object' ? `${PG_ROOT}/${value.artifactPath}` : value,
+    ]),
+  )
+}
+
+function classicHostCapabilities(): ReadonlySet<string> {
+  const capabilities = new Set<string>()
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    capabilities.add('node')
+  } else {
+    capabilities.add('browser')
+  }
+  if (typeof Worker !== 'undefined') capabilities.add('web-worker')
+  return capabilities
 }

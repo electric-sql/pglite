@@ -3,6 +3,10 @@ import { copyFiles, findAndReplaceInDir } from '@electric-sql/pglite-utils/scrip
 async function main() {
   await copyFiles('./release', './dist')
   await findAndReplaceInDir('./dist', /\.\.\/release\//g, './', ['.js', '.cjs'])
+  await findAndReplaceInDir('./dist/postmaster', /\.\.\/release\//g, '../', [
+    '.js',
+    '.cjs',
+  ])
   await findAndReplaceInDir('./dist/contrib', /\.\.\/release\//g, '', [
     '.js',
     '.cjs',

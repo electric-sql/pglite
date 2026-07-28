@@ -23,6 +23,10 @@ export interface PostgresMod
   stdin: (() => number | null) | null
   FS: FS
   wasmMemory: WebAssembly.Memory
+  pgliteMemoryABI?: {
+    readonly globalMemory: WebAssembly.Memory
+    readonly scopedMemory: WebAssembly.Memory
+  }
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>
@@ -32,6 +36,38 @@ export interface PostgresMod
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
   _pgl_set_rw_cbs: (read_cb: number, write_cb: number) => void
+  _pgl_set_process_host: (
+    spawn_backend: number,
+    get_process_id: number,
+    send_signal: number,
+    wait_process: number,
+  ) => void
+  _pgl_set_signal_host: (
+    poll_signals: number,
+    set_signal_mask: number,
+    set_timer: number,
+  ) => void
+  _pgl_set_futex_host: (wait_futex: number, wake_futex: number) => void
+  _pgl_set_clock_host: (realtime_microseconds: number) => void
+  _pgl_set_shmem_host: (ensure_capacity: number) => void
+  _pgl_set_scoped_shmem_host: (ensure_capacity: number) => void
+  _pgl_set_scoped_shmem_mode: (mode: number) => void
+  _pgl_shm_scope_root: () => bigint
+  _pgl_shm_registry_offset: () => number
+  _pgl_shm_compact_frontier: () => number
+  _pgl_heap_break: () => number
+  _pgl_set_socket_host: (
+    create_socket: number,
+    connect_socket: number,
+    bind_socket: number,
+    listen_socket: number,
+    accept_socket: number,
+    close_socket: number,
+    receive_socket: number,
+    send_socket: number,
+    poll_sockets: number,
+    configure_unix_socket: number,
+  ) => void
   _pgl_set_pipe_fn: (pipe_fn: number) => number
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number
   _pgl_pq_flush: () => void
@@ -39,10 +75,7 @@ export interface PostgresMod
   _fclose: (stream: number) => number
   _fflush: (stream: number) => void
   _pgl_proc_exit: (code: number) => number
-  addFunction: (
-    cb: (ptr: any, length: number) => void,
-    signature: string,
-  ) => number
+  addFunction: (cb: CallableFunction, signature: string) => number
   removeFunction: (f: number) => void
   callMain: (args?: string[]) => number
   _PostgresMainLoopOnce: () => void
@@ -64,6 +97,7 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
+  ___errno_location: () => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

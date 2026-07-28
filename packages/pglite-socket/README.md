@@ -2,6 +2,9 @@
 
 A socket implementation for PGlite enabling remote connections. This package is a simple wrapper around the `net` module to allow PGlite to be used as a PostgreSQL server.
 
+> This package retains the classic single-session-compatible architecture. For
+> new multi-session Node servers, use `@electric-sql/pglite-server`.
+
 There are two main components to this package:
 
 - [`PGLiteSocketServer`](#pglitesocketserver) - A TCP server that allows PostgreSQL clients to connect to a PGlite database instance.

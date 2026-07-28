@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PROVIDER_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+exec node22 "${PROVIDER_ROOT}/lib/pglite-pg-provider.mjs" pg_ctl "$@"

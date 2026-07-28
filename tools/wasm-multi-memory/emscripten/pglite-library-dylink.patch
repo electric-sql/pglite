@@ -1,0 +1,66 @@
+diff --git a/src/library_dylink.js b/src/library_dylink.js
+index 57134a983..aa8d46f2c 100644
+--- a/src/library_dylink.js
++++ b/src/library_dylink.js
+@@ -740,3 +740,61 @@ var LibraryDylink = {
++      // PGlite's postmaster artifact uses a tagged three-memory ABI.  A side
++      // module must be transformed by the same toolchain and receive the
++      // current backend's private, cluster-global, and root-scoped memories.
++      // Keep this opt-in so ordinary Emscripten MAIN_MODULE users retain the
++      // upstream loader behavior.
++      var pgliteMemoryABI = Module['pgliteMemoryABI'];
++      if (pgliteMemoryABI) {
++        if (!(pgliteMemoryABI.globalMemory instanceof WebAssembly.Memory) ||
++            !(pgliteMemoryABI.scopedMemory instanceof WebAssembly.Memory)) {
++          throw new Error('PGlite dylink memory ABI has invalid memories');
++        }
++        var pgliteModule = binary instanceof WebAssembly.Module ?
++          binary : new WebAssembly.Module(binary);
++        var pgliteSections = WebAssembly.Module.customSections(
++          pgliteModule, 'pglite.multi-memory.abi');
++        if (pgliteSections.length != 1) {
++          throw new Error(
++            `PGlite side module '${libName}' has ${pgliteSections.length} memory ABI sections; expected exactly one`);
++        }
++        var pgliteManifest;
++        try {
++          pgliteManifest = JSON.parse(
++            new TextDecoder('utf-8', {fatal: true}).decode(pgliteSections[0]));
++        } catch (error) {
++          throw new Error(
++            `PGlite side module '${libName}' has invalid memory ABI metadata`,
++            {cause: error});
++        }
++        if (pgliteManifest.schema != 1 ||
++            pgliteManifest.tool != 'pglite-wasm-multi-memory' ||
++            pgliteManifest.pointerABI != 'pglite-tagged-i32-v1' ||
++            pgliteManifest.privateTag != 0 ||
++            pgliteManifest.globalTag != 2 ||
++            pgliteManifest.scopedTag != 3 ||
++            pgliteManifest.privateApertureBytes != 2147483648 ||
++            pgliteManifest.globalApertureBytes != 1073741824) {
++          throw new Error(
++            `PGlite side module '${libName}' has an incompatible memory ABI`);
++        }
++        var pgliteImports = WebAssembly.Module.imports(pgliteModule)
++          .filter((entry) => entry.kind == 'memory');
++        if (pgliteImports.length != 3 ||
++            !pgliteImports.some((entry) =>
++              entry.module == 'env' && entry.name == 'memory') ||
++            !pgliteImports.some((entry) =>
++              entry.module == 'pglite' && entry.name == 'global_memory') ||
++            !pgliteImports.some((entry) =>
++              entry.module == 'pglite' && entry.name == 'scoped_memory')) {
++          throw new Error(
++            `PGlite side module '${libName}' has incompatible memory imports`);
++        }
++        info['pglite'] = {
++          'global_memory': pgliteMemoryABI.globalMemory,
++          'scoped_memory': pgliteMemoryABI.scopedMemory,
++        };
++        binary = pgliteModule;
++      }
++
+       function postInstantiation(module, instance) {
+ #if ASSERTIONS
+         // the table should be unchanged

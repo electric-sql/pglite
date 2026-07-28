@@ -1,0 +1,321 @@
+{
+  "schema": 2,
+  "profile": "node-multi-memory-postgres-tests",
+  "revisionPolicy": "provider-config-exact-head",
+  "states": ["SUPPORTED", "UNSUPPORTED", "BLOCKED"],
+  "buildFeatures": {
+    "nodeOnly": true,
+    "ssl": false,
+    "gss": false,
+    "ldap": false,
+    "selinux": false,
+    "nativeChildPids": false,
+    "dynamicSideModules": false,
+    "hostCommandExecution": false,
+    "backendOutboundSockets": false,
+    "directIO": false
+  },
+  "capabilities": {
+    "core-regression": {
+      "state": "SUPPORTED",
+      "scope": "src/test/regress and src/test/isolation through temporary-cluster mode"
+    },
+    "tap-basic-lifecycle": {
+      "state": "SUPPORTED",
+      "scope": "single primary clusters using initdb, postgres, pg_ctl and native client utilities"
+    },
+    "backend-outbound-sockets": {
+      "state": "BLOCKED",
+      "reason": "Backend libpq sockets currently provide in-cluster SAB loopback; routing a backend connection to another PGlite postmaster or host endpoint needs a separate outbound socket broker."
+    },
+    "replication": {
+      "state": "BLOCKED",
+      "reason": "WAL sender/receiver, recovery commands, and multi-cluster lifecycle have not completed the PostgreSQL test provider gate"
+    },
+    "dynamic-modules": {
+      "state": "BLOCKED",
+      "reason": "only modules present in the test-only static registry are executable"
+    },
+    "ssl-gss-ldap": {
+      "state": "UNSUPPORTED",
+      "reason": "the pinned PostgreSQL test provider native and Wasm builds are configured without these external authentication capabilities"
+    },
+    "native-child-pids": {
+      "state": "UNSUPPORTED",
+      "reason": "backend PIDs are PostgreSQL process-registry IDs rather than host OS PIDs"
+    },
+    "pg-upgrade": {
+      "state": "UNSUPPORTED",
+      "reason": "the provider exposes one PG18 PGlite artifact and no older executable-compatible artifact"
+    },
+    "platform-locales": {
+      "state": "UNSUPPORTED",
+      "reason": "the artifact exposes its packaged libc/ICU locale inventory rather than the host inventory"
+    }
+  },
+  "testPolicy": {
+    "defaultState": "SUPPORTED",
+    "blockedExecution": "record-unless-PGLITE_POSTGRES_TEST_RUN_BLOCKED=true",
+    "rules": [
+      {
+        "id": "libpq-three-postmaster-load-balancing",
+        "match": "exact",
+        "path": "src/interfaces/libpq/t/003_load_balance_host_list.pl",
+        "state": "BLOCKED",
+        "reason": "The test keeps three independent Wasm postmasters and their auxiliary Node Worker isolates live concurrently. It reaches 6.7 GiB before startup transients exhaust the 7.65 GiB Docker test VM and the cgroup OOM killer terminates one postmaster; completing it requires lower per-postmaster Worker-isolate residency or a deliberately larger test envelope."
+      },
+      {
+        "id": "dblink-cross-cluster-outbound-socket",
+        "match": "exact",
+        "path": "contrib/dblink/t/001_auth_scram.pl",
+        "state": "BLOCKED",
+        "reason": "The SCRAM TAP test opens node 2's Unix socket from a backend in node 1; backend libpq currently supports in-cluster SAB loopback but not cross-postmaster host socket routing."
+      },
+      {
+        "id": "postgres-fdw-cross-cluster-outbound-socket",
+        "match": "exact",
+        "path": "contrib/postgres_fdw/t/001_auth_scram.pl",
+        "state": "BLOCKED",
+        "reason": "The SCRAM TAP test opens node 2's TCP socket from a backend in node 1; backend libpq currently supports in-cluster SAB loopback but not cross-postmaster host socket routing."
+      },
+      {
+        "id": "amcheck-pitr-system-command",
+        "match": "exact",
+        "path": "contrib/amcheck/t/005_pitr.pl",
+        "state": "BLOCKED",
+        "reason": "PITR requires archive_command and restore_command host command execution, which pgl_system deliberately rejects."
+      },
+      {
+        "id": "native-initdb-cli",
+        "match": "prefix",
+        "path": "src/bin/initdb",
+        "state": "UNSUPPORTED",
+        "reason": "The provider adapter implements cluster initialization for regression harnesses, not native initdb filesystem, permission, and option-surface conformance."
+      },
+      {
+        "id": "pg-upgrade-multiple-binaries",
+        "match": "prefix",
+        "path": "src/bin/pg_upgrade",
+        "state": "UNSUPPORTED",
+        "reason": "pg_upgrade requires executable-compatible old and new PostgreSQL installations; the provider supplies one PG18 Wasm artifact."
+      },
+      {
+        "id": "ssl-server",
+        "match": "prefix",
+        "path": "src/test/ssl",
+        "state": "UNSUPPORTED",
+        "reason": "The PostgreSQL test Wasm server is configured without SSL."
+      },
+      {
+        "id": "kerberos-server",
+        "match": "prefix",
+        "path": "src/test/kerberos",
+        "state": "UNSUPPORTED",
+        "reason": "The PostgreSQL test Wasm server is configured without GSSAPI/Kerberos."
+      },
+      {
+        "id": "ldap-server",
+        "match": "prefix",
+        "path": "src/test/ldap",
+        "state": "UNSUPPORTED",
+        "reason": "The PostgreSQL test Wasm server is configured without LDAP and the test LDAP daemon."
+      },
+      {
+        "id": "selinux-extension",
+        "match": "prefix",
+        "path": "contrib/sepgsql",
+        "state": "UNSUPPORTED",
+        "reason": "The Wasm build has no SELinux runtime or sepgsql module."
+      },
+      {
+        "id": "oauth-validator-module",
+        "match": "prefix",
+        "path": "src/test/modules/oauth_validator",
+        "state": "UNSUPPORTED",
+        "reason": "The Wasm build is configured without OAuth and does not include its validator module."
+      },
+      {
+        "id": "ldap-password-module",
+        "match": "prefix",
+        "path": "src/test/modules/ldap_password_func",
+        "state": "UNSUPPORTED",
+        "reason": "The Wasm build is configured without LDAP and does not include its password-hook test module."
+      },
+      {
+        "id": "ssl-passphrase-module",
+        "match": "prefix",
+        "path": "src/test/modules/ssl_passphrase_callback",
+        "state": "UNSUPPORTED",
+        "reason": "The Wasm build is configured without SSL and does not include its passphrase callback module."
+      },
+      {
+        "id": "exec-close-on-exec",
+        "match": "prefix",
+        "path": "src/test/modules/test_cloexec",
+        "state": "UNSUPPORTED",
+        "reason": "The provider uses Workers and virtual descriptors rather than native fork/exec file-descriptor inheritance."
+      },
+      {
+        "id": "object-access-native-pids",
+        "match": "prefix",
+        "path": "src/test/modules/test_oat_hooks",
+        "state": "UNSUPPORTED",
+        "reason": "The test observes native backend child PIDs, while PGlite backends use process-registry IDs."
+      },
+      {
+        "id": "aio-worker-native-signal",
+        "match": "exact",
+        "path": "src/test/modules/test_aio/t/002_io_workers.pl",
+        "state": "UNSUPPORTED",
+        "reason": "This test passes a synthetic I/O worker process-registry PID to host pg_ctl kill; PGlite Workers are not native child processes addressable by host OS signals."
+      },
+      {
+        "id": "vfs-direct-io",
+        "match": "exact",
+        "path": "src/test/modules/test_misc/t/004_io_direct.pl",
+        "state": "UNSUPPORTED",
+        "reason": "Emscripten filesystem adapters do not expose portable O_DIRECT alignment and host-filesystem semantics; the PGlite VFS contract uses buffered I/O."
+      },
+      {
+        "id": "standalone-single-user-cli",
+        "match": "exact",
+        "path": "src/test/modules/test_misc/t/008_replslot_single_user.pl",
+        "state": "UNSUPPORTED",
+        "reason": "This test invokes postgres --single directly. The PostgreSQL test provider exercises the multi-session postmaster and Worker backend architecture; the separate single-user PGlite constructor is outside this gate."
+      },
+      {
+        "id": "injection-points-disabled",
+        "match": "prefix",
+        "path": "src/test/modules/injection_points",
+        "state": "UNSUPPORTED",
+        "reason": "The PostgreSQL test server is not configured with PostgreSQL injection points."
+      },
+      {
+        "id": "recovery-replication",
+        "match": "prefix",
+        "path": "src/test/recovery",
+        "state": "BLOCKED",
+        "reason": "The recovery suite requires multi-cluster replication, PITR, archive commands, and recovery utilities not yet through the PostgreSQL test provider gate."
+      },
+      {
+        "id": "logical-replication",
+        "match": "prefix",
+        "path": "src/test/subscription",
+        "state": "BLOCKED",
+        "reason": "The logical replication multi-cluster suite has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "basebackup-replication",
+        "match": "prefix",
+        "path": "src/bin/pg_basebackup",
+        "state": "BLOCKED",
+        "reason": "The complete pg_basebackup replication and recovery suite has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "pg-ctl-promotion",
+        "match": "exact",
+        "path": "src/bin/pg_ctl/t/003_promote.pl",
+        "state": "BLOCKED",
+        "reason": "The test creates and promotes a streaming-replication standby; standby promotion has not completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "pg-ctl-logging-collector",
+        "match": "exact",
+        "path": "src/bin/pg_ctl/t/004_logrotate.pl",
+        "state": "UNSUPPORTED",
+        "reason": "The Node provider captures the foreground postmaster stream and deliberately disables PostgreSQL's forked logging collector, so pg_ctl logrotate has no server-side collector to rotate."
+      },
+      {
+        "id": "pg-dump-non-utf8-encoding-conversion",
+        "match": "exact",
+        "path": "src/bin/pg_dump/t/010_dump_connstr.pl",
+        "state": "UNSUPPORTED",
+        "reason": "The test initializes a LATIN1 cluster. The PostgreSQL test artifact does not yet load PostgreSQL's dynamic encoding-conversion side modules; UTF8 clusters and pg_dump connection-string behavior remain covered by the supported tests."
+      },
+      {
+        "id": "scripts-non-utf8-encoding-conversion",
+        "match": "exact",
+        "path": "src/bin/scripts/t/200_connstr.pl",
+        "state": "UNSUPPORTED",
+        "reason": "The test initializes a LATIN1 cluster. The PostgreSQL test artifact does not yet load PostgreSQL's dynamic encoding-conversion side modules; UTF8 clusters and client connection-string behavior remain covered by the supported tests."
+      },
+      {
+        "id": "verifybackup-standby-promotion",
+        "match": "exact",
+        "path": "src/bin/pg_verifybackup/t/007_wal.pl",
+        "state": "BLOCKED",
+        "reason": "The test creates and promotes a streaming-replication standby; standby promotion has not completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "combine-backup-replication-fixtures",
+        "match": "prefix",
+        "path": "src/bin/pg_combinebackup/t",
+        "state": "BLOCKED",
+        "reason": "The nontrivial pg_combinebackup TAP tests construct full and incremental backups through physical replication and recovery lifecycle that has not completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "combine-backup-cli",
+        "match": "exact",
+        "path": "src/bin/pg_combinebackup/t/001_basic.pl",
+        "state": "SUPPORTED",
+        "reason": "The basic utility option and error-surface test does not require a running server or replication lifecycle."
+      },
+      {
+        "id": "rewind-recovery",
+        "match": "prefix",
+        "path": "src/bin/pg_rewind",
+        "state": "BLOCKED",
+        "reason": "pg_rewind requires divergent multi-cluster recovery lifecycle that has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "test-decoding-replication",
+        "match": "prefix",
+        "path": "contrib/test_decoding",
+        "state": "BLOCKED",
+        "reason": "The logical decoding replication suite has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "bloom-wal-replication",
+        "match": "exact",
+        "path": "contrib/bloom/t/001_wal.pl",
+        "state": "BLOCKED",
+        "reason": "The test requires a streaming-replication standby, which has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "pg-visibility-replication",
+        "match": "exact",
+        "path": "contrib/pg_visibility/t/001_concurrent_transaction.pl",
+        "state": "BLOCKED",
+        "reason": "The test requires a streaming-replication standby, which has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "brin-wal-consistency-replication",
+        "match": "exact",
+        "path": "src/test/modules/brin/t/02_wal_consistency.pl",
+        "state": "BLOCKED",
+        "reason": "The test requires recovery and WAL replay, which have not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "commit-ts-standby",
+        "match": "exact",
+        "path": "src/test/modules/commit_ts/t/002_standby.pl",
+        "state": "BLOCKED",
+        "reason": "The test requires a streaming-replication standby, which has not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "commit-ts-standby-promotion",
+        "match": "exact",
+        "path": "src/test/modules/commit_ts/t/003_standby_2.pl",
+        "state": "BLOCKED",
+        "reason": "The test requires standby promotion and multi-node recovery, which have not yet completed the PostgreSQL test provider gate."
+      },
+      {
+        "id": "basebackup-shell-command",
+        "match": "prefix",
+        "path": "contrib/basebackup_to_shell",
+        "state": "BLOCKED",
+        "reason": "The module and tests invoke host shell commands, which pgl_system currently rejects."
+      }
+    ]
+  }
+}

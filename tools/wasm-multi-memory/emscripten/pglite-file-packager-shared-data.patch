@@ -1,0 +1,17 @@
+diff --git a/tools/file_packager.py b/tools/file_packager.py
+index 638209b59..4830b18d0 100755
+--- a/tools/file_packager.py
++++ b/tools/file_packager.py
+@@ -1021,7 +1021,11 @@ def generate_js(data_target, data_files, options):
+
+       function processPackageData(arrayBuffer) {
+         assert(arrayBuffer, 'Loading data file failed.');
+-        assert(arrayBuffer.constructor.name === ArrayBuffer.name, 'bad input to processPackageData');
++        assert(
++          arrayBuffer.constructor.name === ArrayBuffer.name ||
++            (typeof SharedArrayBuffer !== 'undefined' &&
++             arrayBuffer.constructor.name === SharedArrayBuffer.name),
++          'bad input to processPackageData');
+         var byteArray = new Uint8Array(arrayBuffer);
+         DataRequest.prototype.byteArray = byteArray;
+         var files = metadata['files'];

@@ -3,6 +3,14 @@ import { PGlite } from '@electric-sql/pglite'
 import { postgis } from '../src/index.js'
 
 describe(`postgis`, () => {
+  it('publishes the complete wasm32-initial artifact profile', () => {
+    expect(postgis.backend?.releaseProfile).toBe('wasm32-initial')
+    expect(postgis.backend?.targetKeys).toEqual([
+      'wasm32-classic',
+      'wasm32-multi-memory',
+    ])
+  })
+
   let pg: PGlite
   let dataDirArchive: File | Blob
   beforeEach(async () => {

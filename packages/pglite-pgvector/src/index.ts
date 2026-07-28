@@ -1,17 +1,10 @@
-import type {
-  Extension,
-  ExtensionSetupResult,
-  PGliteInterface,
-} from '@electric-sql/pglite'
+import { defineExtension } from '@electric-sql/pglite'
 
-const setup = async (_pg: PGliteInterface, emscriptenOpts: any) => {
-  return {
-    emscriptenOpts,
-    bundlePath: new URL('../release/vector.tar.gz', import.meta.url),
-  } satisfies ExtensionSetupResult
-}
+import { generatedExtensionBackend } from './generated-artifacts.js'
 
-export const vector = {
+/** pgvector for every PGlite runtime target published by this package. */
+export const vector = defineExtension({
   name: 'vector',
-  setup,
-} satisfies Extension
+  version: '0.0.5',
+  backend: generatedExtensionBackend,
+})

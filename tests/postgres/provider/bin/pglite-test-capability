@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROVIDER_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+SUITE=
+TARGET=
+
+while (($#)); do
+  case "$1" in
+    --suite)
+      SUITE=${2:?--suite requires a value}
+      shift 2
+      ;;
+    --target)
+      TARGET=${2:?--target requires a value}
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "pglite-test-capability: unsupported option: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+test -n "${SUITE}"
+test -n "${TARGET}"
+test "$#" -gt 0
+RECORDED_TARGET=${PGLITE_POSTGRES_TEST_TARGET:-${TARGET}}
+
+STATE=$(node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
+  classify "${SUITE}")
+case "${STATE}" in
+  UNSUPPORTED)
+    echo "PGlite capability: UNSUPPORTED ${SUITE} (not executed)"
+    node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
+      record suite "${SUITE}" "${STATE}" unsupported 0 0 "${RECORDED_TARGET}"
+    exit 0
+    ;;
+  BLOCKED)
+    if [ "${PGLITE_POSTGRES_TEST_RUN_BLOCKED:-false}" != true ]; then
+      echo "PGlite capability: BLOCKED ${SUITE} (recorded, not executed)"
+      node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
+        record suite "${SUITE}" "${STATE}" blocked 0 0 "${RECORDED_TARGET}"
+      exit 0
+    fi
+    ;;
+  SUPPORTED) ;;
+  *)
+    echo "pglite-test-capability: invalid state for ${SUITE}: ${STATE}" >&2
+    exit 2
+    ;;
+esac
+
+START=$(date +%s%3N)
+set +e
+"$@"
+STATUS=$?
+set -e
+END=$(date +%s%3N)
+if [ "${STATUS}" -eq 0 ]; then
+  OUTCOME=pass
+else
+  OUTCOME=fail
+fi
+node22 "${PROVIDER_ROOT}/lib/pglite-test-capabilities.mjs" \
+  record suite "${SUITE}" "${STATE}" "${OUTCOME}" "${STATUS}" \
+  "$((END - START))" "${RECORDED_TARGET}"
+exit "${STATUS}"

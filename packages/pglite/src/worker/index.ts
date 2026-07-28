@@ -111,6 +111,7 @@ export class PGliteWorker
           'URL extensions are not supported on the client side of a worker',
         )
       } else {
+        if (!ext.setup) continue
         const extRet = await ext.setup(this, {}, true)
         if (extRet.emscriptenOpts) {
           console.warn(
@@ -147,6 +148,16 @@ export class PGliteWorker
 
     // Wait for the worker let us know it's ready
     await this.#workerReadyPromise
+
+    for (const [extName, ext] of Object.entries(this.#extensions)) {
+      if (ext instanceof URL || !ext.sessionSetup) continue
+      const result = await ext.sessionSetup(this)
+      if (result.namespaceObj !== undefined) {
+        const instance = this as any
+        instance[extName] = result.namespaceObj
+      }
+      if (result.close) this.#extensionsClose.push(result.close)
+    }
 
     // Acquire the tab close lock, this is released then the tab, or this
     // PGliteWorker instance, is closed

@@ -115,7 +115,7 @@ async function execPgDump({
   }
 }
 
-interface PgDumpOptions {
+export interface PgDumpOptions {
   pg: PGlite
   args?: string[]
   database?: string

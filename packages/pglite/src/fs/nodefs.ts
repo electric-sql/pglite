@@ -1,19 +1,28 @@
-import * as fs from 'fs'
 import * as path from 'path'
 import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 import { PGDATA } from '../initdb.js'
+import { NodeClusterLeaseProvider } from './node-cluster-lease.js'
+
+export {
+  NodeClusterLeaseProvider,
+  PGliteClusterInUseError,
+} from './node-cluster-lease.js'
 
 export class NodeFS extends EmscriptenBuiltinFilesystem {
+  readonly capabilities = {
+    multiSession: 'worker-factory',
+    persistence: 'persistent',
+    clusterLease: 'exclusive',
+  } as const
+  readonly clusterLeaseProvider = new NodeClusterLeaseProvider()
+
   protected rootDir: string
 
   constructor(dataDir: string) {
     super(dataDir)
     this.rootDir = path.resolve(dataDir)
-    if (!fs.existsSync(path.join(this.rootDir))) {
-      fs.mkdirSync(this.rootDir)
-    }
   }
 
   async init(pg: PGlite, opts: Partial<PostgresMod>) {

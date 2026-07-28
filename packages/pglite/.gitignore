@@ -3,3 +3,4 @@ release/*
 !release/*.d.ts
 dist
 pgdata*
+.pgdata*.pglite.lock

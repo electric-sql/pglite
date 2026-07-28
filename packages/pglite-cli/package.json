@@ -1,0 +1,101 @@
+{
+  "name": "pglite",
+  "version": "0.5.4",
+  "description": "The batteries-included PGlite Node distribution and PostgreSQL-compatible command suite",
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite",
+    "directory": "packages/pglite-cli"
+  },
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "pglite",
+    "cli"
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "pglite": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./postmaster": {
+      "import": {
+        "types": "./dist/postmaster.d.ts",
+        "default": "./dist/postmaster.js"
+      },
+      "require": {
+        "types": "./dist/postmaster.d.cts",
+        "default": "./dist/postmaster.cjs"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
+    },
+    "./tools": {
+      "import": {
+        "types": "./dist/tools.d.ts",
+        "default": "./dist/tools.js"
+      },
+      "require": {
+        "types": "./dist/tools.d.cts",
+        "default": "./dist/tools.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsup && chmod +x dist/cli.js",
+    "check:exports": "attw . --pack --profile node16",
+    "lint": "eslint ./src ./tests ./integration-tests --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src ./tests ./integration-tests",
+    "typecheck": "tsc",
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests ./integration-tests",
+    "test": "vitest",
+    "prepublishOnly": "pnpm check:exports"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "workspace:0.5.4",
+    "@electric-sql/pglite-server": "workspace:0.1.0",
+    "@electric-sql/pglite-tools": "workspace:0.4.4"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
+    "@types/node": "^20.16.11",
+    "vitest": "^1.3.1"
+  }
+}

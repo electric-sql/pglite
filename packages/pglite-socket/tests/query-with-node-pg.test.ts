@@ -159,8 +159,8 @@ describe(`PGLite Socket Server`, () => {
 
       // Verify table exists by querying the schema
       const tableCheck = await client.query(`
-        SELECT table_name 
-        FROM information_schema.tables 
+        SELECT table_name
+        FROM information_schema.tables
         WHERE table_schema = 'public' AND table_name = 'test_users'
       `)
 
@@ -181,7 +181,7 @@ describe(`PGLite Socket Server`, () => {
       // Insert data
       const insertResult = await client.query(`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Alice', 'alice@example.com'),
           ('Bob', 'bob@example.com')
         RETURNING *
@@ -237,7 +237,7 @@ describe(`PGLite Socket Server`, () => {
 
       await client.query(`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Alice', 'alice@example.com'),
           ('Bob', 'bob@example.com')
       `)
@@ -445,7 +445,7 @@ describe(`PGLite Socket Server`, () => {
       // Insert 100 rows using generate_series (server-side generation)
       await client.query(`
         INSERT INTO test_users (name, value)
-        SELECT 
+        SELECT
           'User ' || i as name,
           i as value
         FROM generate_series(1, 100) as i
@@ -680,14 +680,14 @@ describe(`PGLite Socket Server`, () => {
 
       const aliceInsertPromise = alice.query(`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Alice', 'alice@example.com')
         RETURNING *
       `)
 
       const bobInsertPromise = bob.query(`
         INSERT INTO test_users (name, email)
-        VALUES 
+        VALUES
           ('Bob', 'bob@example.com')
         RETURNING *
       `)
@@ -759,7 +759,7 @@ describe(`PGLite Socket Server`, () => {
         // alice inserts data
         alice.query(`
           INSERT INTO test_users (name, email)
-          VALUES 
+          VALUES
             ('Alice', 'alice@example.com')
           RETURNING *
         `)
@@ -767,7 +767,7 @@ describe(`PGLite Socket Server`, () => {
         // client inserts data
         const bobInsert = bob.query(`
           INSERT INTO test_users (name, email)
-          VALUES 
+          VALUES
             ('Bob', 'bob@example.com')
           RETURNING *
         `)

@@ -1,0 +1,29 @@
+# Functions whose returned pointers are guaranteed to refer to backend-private
+# memory 0. The transformer validates every name against the exact Wasm export
+# table and requires an i32 return. Shared allocators (ShmemAlloc, DSM, DSA,
+# shm_toc) must never be added here.
+palloc
+palloc0
+palloc_extended
+repalloc
+repalloc0
+repalloc_huge
+MemoryContextAlloc
+MemoryContextAllocExtended
+MemoryContextAllocHuge
+MemoryContextAllocZero
+MemoryContextStrdup
+SPI_palloc
+SPI_repalloc
+malloc
+calloc
+realloc
+aligned_alloc
+strdup
+pstrdup
+pnstrdup
+guc_malloc
+_emscripten_stack_alloc
+__cxa_allocate_exception
+AllocSetContextCreateInternal
+GenerationContextCreate

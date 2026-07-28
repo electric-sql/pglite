@@ -3,6 +3,14 @@ import { PGlite } from '@electric-sql/pglite'
 import { vector } from '../src/index.js'
 
 describe(`pgvector`, () => {
+  it('publishes the complete wasm32-initial artifact profile', () => {
+    expect(vector.backend?.releaseProfile).toBe('wasm32-initial')
+    expect(vector.backend?.targetKeys).toEqual([
+      'wasm32-classic',
+      'wasm32-multi-memory',
+    ])
+  })
+
   it('basic', async () => {
     const pg = new PGlite({
       extensions: {

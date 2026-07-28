@@ -5,6 +5,12 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import type {
+  PGliteConfiguredArtifactOverride,
+  PGliteArtifactLimits,
+  PGliteExtensionBackendDescriptor,
+  PGliteExtensionArtifactLocator,
+} from './extension-artifacts.js'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -55,13 +61,43 @@ export type ExtensionSetup<TNamespace = any> = (
   clientOnly?: boolean,
 ) => Promise<ExtensionSetupResult<TNamespace>>
 
-export interface Extension<TNamespace = any> {
+export interface ExtensionLifecycleResult<TNamespace = any> {
+  namespaceObj?: TNamespace
+  close?: () => Promise<void>
+}
+
+export type ExtensionClusterSetup<TNamespace = never> = (
+  administrativeSession: PGliteInterface,
+) => Promise<void | ExtensionLifecycleResult<TNamespace>>
+
+export type ExtensionSessionSetup<TNamespace = any> = (
+  session: PGliteInterface,
+) => Promise<ExtensionLifecycleResult<TNamespace>>
+
+export interface Extension<TNamespace = any, TClusterNamespace = never> {
   name: string
-  setup: ExtensionSetup<TNamespace>
+  version?: string
+  dependsOn?: readonly string[]
+  backend?: PGliteExtensionBackendDescriptor
+  setup?: ExtensionSetup<TNamespace>
+  clusterSetup?: ExtensionClusterSetup<TClusterNamespace>
+  sessionSetup?: ExtensionSessionSetup<TNamespace>
+}
+
+export interface ConfigurableExtension<
+  TNamespace = any,
+  TClusterNamespace = never,
+> extends Extension<TNamespace, TClusterNamespace> {
+  configure(
+    options: PGliteConfiguredArtifactOverride,
+  ): ConfigurableExtension<TNamespace, TClusterNamespace>
 }
 
 export type ExtensionNamespace<T> =
   T extends Extension<infer TNamespace> ? TNamespace : any
+
+export type ExtensionClusterNamespace<T> =
+  T extends Extension<any, infer TNamespace> ? TNamespace : never
 
 export type Extensions = {
   [namespace: string]: Extension | URL
@@ -88,6 +124,8 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   dataDir?: string
   username?: string
   database?: string
+  locateExtensionArtifact?: PGliteExtensionArtifactLocator
+  extensionArtifactLimits?: Partial<PGliteArtifactLimits>
   fs?: Filesystem
   debug?: DebugLevel
   relaxedDurability?: boolean
@@ -158,13 +196,15 @@ export type PGliteInterface<T extends Extensions = Extensions> =
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions
   ? {
-      [K in keyof E]: E[K] extends Extension
-        ? Awaited<ReturnType<E[K]['setup']>>['namespaceObj'] extends infer N
-          ? N extends undefined | null | void
-            ? never
-            : N
-          : never
-        : never
+      [K in keyof E]: E[K] extends Extension ? ExtensionNamespace<E[K]> : never
+    }
+  : Record<string, never>
+
+export type PGlitePostmasterExtensions<E> = E extends Extensions
+  ? {
+      [K in keyof E as ExtensionClusterNamespace<E[K]> extends never
+        ? never
+        : K]: ExtensionClusterNamespace<E[K]>
     }
   : Record<string, never>
 

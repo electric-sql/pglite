@@ -60,6 +60,23 @@
         "default": "./dist/worker/index.cjs"
       }
     },
+    "./postmaster": {
+      "browser": {
+        "types": "./dist/postmaster/unsupported.d.ts",
+        "default": "./dist/postmaster/unsupported.js"
+      },
+      "node": {
+        "import": {
+          "types": "./dist/postmaster/index.d.ts",
+          "default": "./dist/postmaster/index.js"
+        },
+        "require": {
+          "types": "./dist/postmaster/index.d.cts",
+          "default": "./dist/postmaster/index.cjs"
+        }
+      },
+      "default": "./dist/postmaster/unsupported.js"
+    },
     "./nodefs": {
       "import": {
         "types": "./dist/fs/nodefs.d.ts",
@@ -68,6 +85,26 @@
       "require": {
         "types": "./dist/fs/nodefs.d.cts",
         "default": "./dist/fs/nodefs.cjs"
+      }
+    },
+    "./_internal/node-network-host": {
+      "import": {
+        "types": "./dist/postmaster/node-network-host.d.ts",
+        "default": "./dist/postmaster/node-network-host.js"
+      },
+      "require": {
+        "types": "./dist/postmaster/node-network-host.d.cts",
+        "default": "./dist/postmaster/node-network-host.cjs"
+      }
+    },
+    "./_internal/initdb-runtime": {
+      "import": {
+        "types": "./dist/initdb-runtime.d.ts",
+        "default": "./dist/initdb-runtime.js"
+      },
+      "require": {
+        "types": "./dist/initdb-runtime.d.cts",
+        "default": "./dist/initdb-runtime.cjs"
       }
     },
     "./opfs-ahp": {
@@ -98,6 +135,9 @@
   },
   "type": "module",
   "types": "dist/index.d.ts",
+  "dependencies": {
+    "fs-ext-extra-prebuilt": "2.2.9"
+  },
   "files": [
     "dist",
     "!dist/auth_delay.tar.gz",
@@ -130,15 +170,15 @@
     "test:node": "pnpm test:clean && pnpm vitest tests/targets/runtimes/node-*.test.js",
     "test:runtimes": "pnpm test:bun && pnpm test:node",
     "test:integration": "pnpm test:runtimes && pnpm test:web",
-    "test:clean": "rm -rf ./pgdata-test",
+    "test:clean": "rm -rf ./pgdata-test ./.pgdata-test.pglite.lock",
     "build:js": "tsup && tsx scripts/bundle-wasm.ts",
     "build": "pnpm build:js",
     "dev": "concurrently \"tsup --watch\" \"sleep 1 && tsx scripts/bundle-wasm.ts\" \"pnpm dev-server\"",
     "dev-server": "pnpm http-server ../",
-    "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
-    "format": "prettier --write ./src ./tests",
+    "lint": "eslint ./src ./tests ./integration-tests --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src ./tests ./integration-tests",
     "typecheck": "tsc --noEmit",
-    "stylecheck": "pnpm lint && prettier --check ./src ./tests",
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests ./integration-tests",
     "prepublishOnly": "pnpm check:exports",
     "version": "echo $npm_package_version"
   },

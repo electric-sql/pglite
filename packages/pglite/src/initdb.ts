@@ -31,11 +31,21 @@ export interface PGliteForInitdb {
   callMain(args: string[]): number
 }
 
-interface ExecResult {
+export interface EmbeddedInitdbResult {
   exitCode: number
   stderr: string
   stdout: string
   dataFolder: string
+}
+
+export interface EmbeddedInitdbOptions {
+  pg: PGliteForInitdb
+  debug?: number
+  args: string[]
+  wasmModule?: WebAssembly.Module
+  stdin?: () => number | null
+  onStdout?: (text: string) => void
+  onStderr?: (text: string) => void
 }
 
 function log(debug?: number, ...args: any[]) {
@@ -44,17 +54,15 @@ function log(debug?: number, ...args: any[]) {
   }
 }
 
-async function execInitdb({
+export async function runEmbeddedInitdb({
   pg,
   debug,
   args,
   wasmModule,
-}: {
-  pg: PGliteForInitdb
-  debug?: number
-  args: string[]
-  wasmModule?: WebAssembly.Module
-}): Promise<ExecResult> {
+  stdin,
+  onStdout,
+  onStderr,
+}: EmbeddedInitdbOptions): Promise<EmbeddedInitdbResult> {
   let system_fn, popen_fn, pclose_fn
 
   let needToCallPGmain = false
@@ -90,14 +98,17 @@ async function execInitdb({
     arguments: args,
     noExitRuntime: false,
     thisProgram: INITDB_EXE_PATH,
-    // Provide a stdin that returns EOF to avoid browser prompt
-    stdin: () => null,
+    // Embedded callers default to EOF; standalone callers provide a stream
+    // adapter through this deliberately synchronous Emscripten boundary.
+    stdin: stdin ?? (() => null),
     print: (text) => {
       stdoutOutput += text
+      onStdout?.(text)
       log(debug, 'initdbout', text)
     },
     printErr: (text) => {
       stderrOutput += text
+      onStderr?.(text)
       log(debug, 'initdberr', text)
     },
     instantiateWasm: (imports, successCallback) => {
@@ -235,8 +246,8 @@ export async function initdb({
   debug,
   args,
   wasmModule,
-}: InitdbOptions): Promise<ExecResult> {
-  const execResult = await execInitdb({
+}: InitdbOptions): Promise<EmbeddedInitdbResult> {
+  const execResult = await runEmbeddedInitdb({
     pg,
     debug,
     args: [
