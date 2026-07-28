@@ -110,7 +110,6 @@
     "!dist/pglite.html",
     "!dist/pgrowlocks.tar.gz",
     "!dist/pgstattuple.tar.gz",
-    "!dist/spi.tar.gz",
     "!dist/test_decoding.tar.gz",
     "!dist/vacuumlo.tar.gz",
     "!dist/xml2.tar.gz",
