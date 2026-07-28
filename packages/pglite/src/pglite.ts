@@ -820,6 +820,10 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
+    // PGlite modifies process.exitCode when it does exit(XX)
+    // we need to restore the previous value
+    const prevExitCode = pglUtils.pgliteProc.exitCode
+
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
@@ -829,6 +833,8 @@ export class PGlite
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
+    } finally {
+      pglUtils.pgliteProc.exitCode = prevExitCode
     }
   }
 

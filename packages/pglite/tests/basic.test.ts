@@ -717,6 +717,18 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(process.exitCode).toEqual(origExitCode)
     })
 
+    it('restores process.exitCode on close', async () => {
+      const origExitCode = process.exitCode
+      process.exitCode = 42
+
+      try {
+        await db.close()
+        expect(process.exitCode).toEqual(42)
+      } finally {
+        process.exitCode = origExitCode
+      }
+    })
+
     it("arrays with NULL elements should return null, not string 'NULL'", async () => {
       const pg = await PGlite.create()
 
