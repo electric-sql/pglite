@@ -86,6 +86,8 @@ Deno.test({
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 1,
     })
 
     const updateResult = await db.query("UPDATE test SET name = 'test2';")
@@ -93,6 +95,8 @@ Deno.test({
       rows: [],
       fields: [],
       affectedRows: 1,
+      command: 'UPDATE',
+      rowCount: 1,
     })
   },
 })
@@ -238,6 +242,8 @@ Deno.test({
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 1,
     })
 
     // standardize timestamp comparison to UTC milliseconds to ensure predictable test runs on machines in different timezones.
@@ -282,6 +288,8 @@ Deno.test({
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 1,
     })
   },
 })
@@ -340,6 +348,8 @@ Deno.test({
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 2,
       })
       await tx.rollback()
     })
@@ -364,6 +374,8 @@ Deno.test({
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 1,
     })
   },
 })
@@ -422,6 +434,8 @@ Deno.test({
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 2,
     })
   },
 })

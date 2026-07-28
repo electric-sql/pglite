@@ -67,6 +67,8 @@ Deno.test({
           { name: 'name', dataTypeID: 25 },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
