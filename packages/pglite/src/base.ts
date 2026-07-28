@@ -477,6 +477,7 @@ export abstract class BasePGlite
           sqlStrings: TemplateStringsArray,
           ...params: any[]
         ): Promise<Results<T>> => {
+          checkClosed()
           const { query, params: actualParams } = queryTemplate(
             sqlStrings,
             ...params,
@@ -519,6 +520,7 @@ export abstract class BasePGlite
         return result
       } catch (e) {
         if (!closed) {
+          closed = true
           await this.#runExec('ROLLBACK')
         }
         this.#inTransaction = false
