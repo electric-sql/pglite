@@ -558,6 +558,11 @@ export class PGlite
           pgInitDbOpts.dataDir = undefined
           pgInitDbOpts.extensions = undefined
           pgInitDbOpts.loadDataDir = undefined
+          // The initdb instance must run on its own scratch filesystem: a
+          // user-provided `fs` must not leak into it, or its second `init()`
+          // collides with resources the outer instance already holds (e.g. an
+          // OPFS VFS's sync access handles, which are exclusive per file).
+          pgInitDbOpts.fs = undefined
           const pg_initDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
