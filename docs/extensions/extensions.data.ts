@@ -736,9 +736,9 @@ const baseExtensions: Extension[] = [
   {
     name: 'plpgsql_check',
     description: `
-    plpgsql_check is a linter, static code analyzer and profiler for PL/pgSQL. 
-    It can detect errors in PL/pgSQL functions - such as references to missing 
-    columns or tables, type mismatches and unused variables - without executing 
+    plpgsql_check is a linter, static code analyzer and profiler for PL/pgSQL.
+    It can detect errors in PL/pgSQL functions - such as references to missing
+    columns or tables, type mismatches and unused variables - without executing
     them.
 
     This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-plpgsql-check
@@ -748,8 +748,9 @@ const baseExtensions: Extension[] = [
     tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-plpgsql-check',
     importName: 'plpgsql_check',
-    size: 71993,
-    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-plpgsql-check',
+    size: 72887,
+    npmjsUrl:
+      'https://www.npmjs.com/package/@electric-sql/pglite-plpgsql-check',
   },
 ]
 
