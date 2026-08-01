@@ -696,8 +696,9 @@ const baseExtensions: Extension[] = [
     tags: ['postgres extension', 'external'],
     importPath: '@electric-sql/pglite-plpgsql-check',
     importName: 'plpgsql_check',
-    size: 71993,
-    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-plpgsql-check',
+    size: 72887,
+    npmjsUrl:
+      'https://www.npmjs.com/package/@electric-sql/pglite-plpgsql-check',
   },
 ]
 
