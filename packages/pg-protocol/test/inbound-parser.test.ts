@@ -341,6 +341,23 @@ describe('PgPacketStream', () => {
         length: oneFieldBuf.byteLength - 1,
       })
     })
+
+    it('recovers after a malformed data row throws', () => {
+      const malformedDataRow = new Uint8Array(11)
+      const view = new DataView(malformedDataRow.buffer)
+      malformedDataRow[0] = 0x44
+      view.setUint32(1, 10, false)
+      view.setInt16(5, 2, false)
+      view.setInt32(7, 0x40000000, false)
+
+      const parser = new Parser()
+      expect(() => parser.parse(malformedDataRow, () => {})).toThrow(RangeError)
+
+      const messages: BackendMessage[] = []
+      parser.parse(readyForQueryBuffer, (message) => messages.push(message))
+
+      expect(messages).toEqual([expectedReadyForQueryMessage])
+    })
   })
 
   describe('notice message', () => {

@@ -99,12 +99,18 @@ export class Parser {
       const length = this.#bufferView.getUint32(offset + CODE_LENGTH, false)
       const fullMessageLength = CODE_LENGTH + length
       if (fullMessageLength + offset <= bufferFullLength && length > 0) {
-        const message = this.#handlePacket(
-          offset + HEADER_LENGTH,
-          code,
-          length,
-          this.#bufferView.buffer,
-        )
+        let message: BackendMessage
+        try {
+          message = this.#handlePacket(
+            offset + HEADER_LENGTH,
+            code,
+            length,
+            this.#bufferView.buffer,
+          )
+        } catch (error) {
+          this.#resetBuffer()
+          throw error
+        }
         callback(message)
         offset += fullMessageLength
       } else {
@@ -113,14 +119,18 @@ export class Parser {
     }
     if (offset === bufferFullLength) {
       // No more use for the buffer
-      this.#bufferView = new DataView(emptyBuffer)
-      this.#bufferRemainingLength = 0
-      this.#bufferOffset = 0
+      this.#resetBuffer()
     } else {
       // Adjust the cursors of remainingBuffer
       this.#bufferRemainingLength = bufferFullLength - offset
       this.#bufferOffset = offset
     }
+  }
+
+  #resetBuffer(): void {
+    this.#bufferView = new DataView(emptyBuffer)
+    this.#bufferRemainingLength = 0
+    this.#bufferOffset = 0
   }
 
   #mergeBuffer(buffer: ArrayBuffer): void {
