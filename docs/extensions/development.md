@@ -112,8 +112,6 @@ PGlite's frontend code is in the main [PGlite repo](https://github.com/electric-
 
 You will need to create a new package for your extension. The easiest way is to just copy the files from an existing extension package such as `packages/pglite-pgvector`. Obviously, you will need to adapt all the references to the previous extension.
 
-```
-
 To make it available in our online [REPL](https://pglite.dev/repl/), add the extension to `docs/repl/allExtensions.ts`:
 
 ```
