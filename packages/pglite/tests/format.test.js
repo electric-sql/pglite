@@ -52,6 +52,38 @@ describe('format', () => {
     expect(ret3).toBe("SELECT * FROM test3 WHERE value = 'test';")
   })
 
+  it('params out of textual order', async () => {
+    await pg.exec(`
+      CREATE TABLE test5 (
+        id SERIAL PRIMARY KEY,
+        value VARCHAR
+      );
+    `)
+    const ret5 = await formatQuery(
+      pg,
+      'SELECT * FROM test5 WHERE value = $2 AND id = $1;',
+      [1, 'test'],
+    )
+    expect(ret5).toBe("SELECT * FROM test5 WHERE value = 'test' AND id = '1';")
+  })
+
+  it('repeated param', async () => {
+    await pg.exec(`
+      CREATE TABLE test6 (
+        id SERIAL PRIMARY KEY,
+        value VARCHAR
+      );
+    `)
+    const ret6 = await formatQuery(
+      pg,
+      'SELECT * FROM test6 WHERE value = $1 OR value = $1;',
+      ['test'],
+    )
+    expect(ret6).toBe(
+      "SELECT * FROM test6 WHERE value = 'test' OR value = 'test';",
+    )
+  })
+
   it('json', async () => {
     await pg.exec(`
       CREATE TABLE test4 (
