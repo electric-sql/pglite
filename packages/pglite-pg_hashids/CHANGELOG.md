@@ -1,5 +1,17 @@
 # @electric-sql/pglite-pg_hashids
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [a290741]
+- Updated dependencies [6b6f28d]
+- Updated dependencies [354f4ae]
+- Updated dependencies [219af1e]
+- Updated dependencies [20839a7]
+- Updated dependencies [7e784a4]
+  - @electric-sql/pglite@0.5.5
+
 ## 0.0.5
 
 ### Patch Changes

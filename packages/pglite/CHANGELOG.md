@@ -1,5 +1,16 @@
 # @electric-sql/pglite
 
+## 0.5.5
+
+### Patch Changes
+
+- a290741: Reset retained protocol parser state after a malformed backend message so later queries can recover.
+- 6b6f28d: Fix `PGlite.create({ fs })` on a fresh database calling the provided filesystem's `init()` twice: the inner initdb instance no longer inherits the user-provided `fs` and always runs on its own scratch filesystem. Previously any VFS holding exclusive resources (e.g. OPFS sync access handles) failed with a contention error on first create.
+- 354f4ae: Fix `formatQuery` (used by `live.query`/`live.incrementalQuery` to inline parameters) emitting `%NL` instead of the positional `%N$L` format specifier. A bare `%NL` is "min width N" and consumes `format()` arguments sequentially, so placeholders that are out of textual order silently bound the wrong values, and repeated placeholders failed with `too few arguments for format()`.
+- 219af1e: Expose the fields node-postgres derives from the CommandComplete command tag on `Results`: `command` (e.g. `SELECT`, `INSERT`, `CREATE`), and `rowCount` (the per-statement count from the tag). The tag was already received and parsed internally to compute `affectedRows`, but these values were not surfaced. Matching node-postgres' `command`/`rowCount` result fields lets pg-compatible adapters report them without re-parsing SQL.
+- 20839a7: Preserve the host `process.exitCode` when closing a PGlite instance. `close()` calls `_emscripten_force_exit(0)`, whose Emscripten runtime sets `process.exitCode = 0`, clobbering any exit code the host process had already set. This mirrors the existing save/restore guards in `#init()` and `execProtocolRaw()`, so closing a database no longer silently resets the host process's exit code.
+- 7e784a4: Reject operations performed through transaction handles after the transaction has closed.
+
 ## 0.5.4
 
 ### Patch Changes
