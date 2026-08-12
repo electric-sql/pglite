@@ -98,6 +98,8 @@ WHERE ST_Within(c.location, s.geom);`)
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
@@ -133,6 +135,8 @@ WHERE ST_Within(c.location, s.geom);`)
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
@@ -172,6 +176,8 @@ WHERE ST_Within(c.location, s.geom);`)
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
   })
@@ -208,6 +214,8 @@ WHERE ST_Within(c.location, s.geom);`)
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
   })
