@@ -1,6 +1,7 @@
 import { BaseFilesystem, ERRNO_CODES, type FsStats } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
+import { isOpfsAhpSupported } from './opfs-ahp-support.js'
 
 export interface OpfsAhpOptions {
   initialPoolSize?: number
@@ -129,6 +130,12 @@ export class OpfsAhpFS extends BaseFilesystem {
   }
 
   async #init() {
+    if (!isOpfsAhpSupported()) {
+      throw new Error(
+        'OPFS-AHP is only supported in a Dedicated Web Worker because FileSystemFileHandle.createSyncAccessHandle() is not available in this context.',
+      )
+    }
+
     this.#opfsRootAh = await navigator.storage.getDirectory()
     this.#rootAh = await this.#resolveOpfsDirectory(this.dataDir!, {
       create: true,
