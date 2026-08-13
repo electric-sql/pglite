@@ -91,7 +91,7 @@ Path to the directory for storing the Postgres database. You can provide a URI s
   ```
 
 - `startParams?: string[]` <br />
-  An array of strings that will be passed to the Postgres process as start parameters. This is the set of parameters one would pass to a native PostgreSQL instance.
+  An array of strings that will be passed to the Postgres process as start parameters. This is the set of parameters one would pass to a native PostgreSQL instance. When not provided, `PGlite.defaultStartParams` is used, which starts Postgres with `wal_level=logical` so that logical replication slots (e.g. `pg_create_logical_replication_slot` with the `pgoutput` plugin) work out of the box.
 
   ```ts
   import { PGlite } from '@electric-sql/pglite'
