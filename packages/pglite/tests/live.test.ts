@@ -128,6 +128,123 @@ await testEsmCjsAndDTC(async (importType) => {
       ])
     })
 
+    it('applies query options to initial and updated live query results', async () => {
+      await db.exec(`
+        CREATE TABLE live_query_options_test (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+        INSERT INTO live_query_options_test (number) VALUES (10), (20);
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+      const { initialResults, unsubscribe } = await db.live.query<
+        [number, number]
+      >({
+        query: 'SELECT * FROM live_query_options_test ORDER BY number',
+        offset: 0,
+        limit: 2,
+        rowMode: 'array',
+        paramTypes: [23],
+        callback: (results) => {
+          updatedResults = results
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      })
+
+      expect(initialResults.rows).toEqual([
+        [1, 10],
+        [2, 20],
+      ])
+      expect(initialResults.totalCount).toBe(2)
+
+      const updated = new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+      await db.exec('INSERT INTO live_query_options_test (number) VALUES (15)')
+      await updated
+
+      expect(updatedResults.rows).toEqual([
+        [1, 10],
+        [3, 15],
+      ])
+
+      await unsubscribe()
+    })
+
+    it('uses query option serializers for live query params', async () => {
+      const value = { text: 'serialized' }
+      const { initialResults, unsubscribe } = await db.live.query<{
+        value: string
+      }>({
+        query: 'SELECT $1::text AS value',
+        params: [value],
+        serializers: {
+          25: (param: typeof value) => param.text,
+        },
+      })
+
+      expect(initialResults.rows).toEqual([{ value: 'serialized' }])
+
+      await unsubscribe()
+    })
+
+    it('lets query option serializers override default serializers', async () => {
+      const serializerDb = await PGlite.create({
+        extensions: { live },
+        serializers: {
+          1700: (param) => String(Number(param) + 1),
+        },
+      })
+
+      try {
+        const { initialResults, unsubscribe } = await serializerDb.live.query<{
+          value: string
+        }>({
+          query: 'SELECT ($1::numeric)::text AS value',
+          params: [3],
+          serializers: {
+            1700: (param) => String(Number(param) * 2),
+          },
+        })
+
+        expect(initialResults.rows).toEqual([{ value: '6' }])
+
+        await unsubscribe()
+      } finally {
+        await serializerDb.close()
+      }
+    })
+
+    it('uses explicit param types when formatting live query params', async () => {
+      const { initialResults, unsubscribe } = await db.live.query<{
+        type: string
+        value: number
+      }>({
+        query: 'SELECT pg_typeof($1)::text AS type, $1 AS value',
+        params: [42],
+        paramTypes: [23],
+      })
+
+      expect(initialResults.rows).toEqual([{ type: 'integer', value: 42 }])
+
+      await unsubscribe()
+    })
+
+    it('attaches a query option blob to live query execution', async () => {
+      const { initialResults, unsubscribe } = await db.live.query<{
+        value: string
+      }>({
+        query: "SELECT pg_read_file('/dev/blob') AS value",
+        blob: new Blob(['blob value']),
+      })
+
+      expect(initialResults.rows).toEqual([{ value: 'blob value' }])
+
+      await unsubscribe()
+    })
+
     it('live query on view', async () => {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
