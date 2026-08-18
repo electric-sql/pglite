@@ -820,7 +820,7 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    let exitCode = process.exitCode    
+    const exitCode = process.exitCode
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
