@@ -955,7 +955,13 @@ export class PGlite
             // that we call whenever the exception longjmp is executed
             // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
-          } else {
+          } else if (
+            e.name === 'ExitStatus' ||
+            e instanceof WebAssembly.RuntimeError
+          ) {
+            // Emscripten throws these when the backend exits or crashes.
+            // Other exceptions are left with their previous handling because
+            // extensions can throw after the protocol message was processed.
             throw e
           }
           // even if there is an exception caused by one of the batched queries,
