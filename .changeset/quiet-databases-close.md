@@ -2,4 +2,6 @@
 '@electric-sql/pglite': patch
 ---
 
-Wait for in-flight queries and transactions to finish before closing PGlite.
+Prevent `close()` from hanging when called while a query or transaction is in
+flight. Work started before `close()` is allowed to finish, while later
+operations are rejected.
