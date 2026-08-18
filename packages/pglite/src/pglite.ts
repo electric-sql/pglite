@@ -77,6 +77,7 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
+  private readonly PGLITE_EXIT_ALIVE = 99
   #onData: ((bytes: Uint8Array) => number) | undefined
 
   get ENV(): any {
@@ -293,10 +294,6 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
-    // PGlite modifies process.exitCode when it does exit(XX)
-    // we need to restore the previous value
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     if (options.fs) {
       this.fs = options.fs
     } else {
@@ -619,8 +616,6 @@ export class PGlite
         await initFn()
       }
     }
-
-    pglUtils.pgliteProc.exitCode = prevExitCode
   }
 
   #handlePostgresqlConf(
@@ -825,21 +820,25 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    // PGlite modifies process.exitCode when it does exit(XX)
-    // we need to restore the previous value
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
+    let exitCode = process.exitCode    
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
-      this.mod!._emscripten_force_exit(/* exit code */ 0)
+      // this sets process.exitCode to 0
+      this.mod!._emscripten_force_exit(0)
+      // clear mod to release memory
+      this.mod = undefined
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
     } finally {
-      pglUtils.pgliteProc.exitCode = prevExitCode
+      try {
+        process.exitCode = exitCode
+      } catch {
+        // some envs do not allow setting the exitCode, swallow
+      }
     }
   }
 
@@ -929,8 +928,6 @@ export class PGlite
       return result
     }
 
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     // execute the message
     try {
       // a single message might contain multiple batched queries
@@ -943,7 +940,9 @@ export class PGlite
           mod._PostgresMainLoopOnce()
         } catch (e: any) {
           // we catch here only the "known" exceptions
-          if (e.status === this.POSTGRES_MAIN_LONGJMP) {
+          const pgliteExitStatus = this.mod!._pgl_setPGliteExitStatus(-2)
+          // if (e.status === this.POSTGRES_MAIN_LONGJMP) {
+          if (pgliteExitStatus === this.POSTGRES_MAIN_LONGJMP) {
             // this is the siglongjmp call that a Database exception has occured
             // the original Postgres code makes a longjmp into main, handles the exception,
             // then re-enters the processing loop
@@ -961,7 +960,6 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
-      pglUtils.pgliteProc.exitCode = prevExitCode
     }
 
     this.#outputData = []
@@ -1330,8 +1328,10 @@ export class PGlite
       opts.pgDataFolder,
       this.mod!.ENV.PGDATABASE,
     ]
-    const result = this.mod!.callMain(singleModeArgs)
-    if (result !== 99) {
+    this.mod!.callMain(singleModeArgs)
+    const pgliteExitStatus = this.mod!._pgl_setPGliteExitStatus(-3)
+
+    if (pgliteExitStatus !== this.PGLITE_EXIT_ALIVE) {
       throw new Error('PGlite failed to initialize properly')
     }
   }
