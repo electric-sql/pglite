@@ -89,6 +89,7 @@ export class PGlite
   #ready = false
   #closing = false
   #closed = false
+  #closePromise?: Promise<void>
   #relaxedDurability = false
 
   readonly waitReady: Promise<void>
@@ -784,62 +785,82 @@ export class PGlite
    * Close the database
    * @returns A promise that resolves when the database is closed
    */
-  async close() {
-    await this._checkReady()
-    this.#closing = true
+  close() {
+    if (!this.#closePromise) {
+      // Claim the lifecycle transition synchronously so operations started in
+      // the same tick cannot pass _checkReady() and queue behind close().
+      this.#closing = true
+      this.#closePromise = this.#close()
+    }
+    return this.#closePromise
+  }
 
-    // Close all extensions
-    for (const closeFn of this.#extensionsClose) {
-      await closeFn()
+  async #close() {
+    if (!this.#ready) {
+      await this.waitReady
     }
 
-    // Close the database
-    try {
-      this.mod!._pgl_setPGliteActive(0)
-      await this.execProtocol(serialize.end())
-      this.mod!._pgl_run_atexit_funcs()
-    } catch (e: any) {
-      const err = e as { name: string; status: number }
-      if (err.name === 'ExitStatus' && err.status === 0) {
-        // Database closed successfully
-        // An earlier build of PGlite would throw an error here when closing
-        // leaving this here for now. I believe it was a bug in Emscripten.
-      } else {
-        this.#log(`An error occured while closing the db`, e.toString())
-      }
-    } finally {
-      this.mod!.removeFunction(this.#pglite_socket_read)
-      this.mod!.removeFunction(this.#pglite_socket_write)
-    }
+    // Let operations that passed _checkReady() before close() was called
+    // enqueue on the mutexes. Operations started after close() are rejected
+    // synchronously by the #closing flag set above.
+    await Promise.resolve()
 
-    // Close the filesystem
-    await this.fs!.closeFs()
+    await this._runExclusiveTransaction(() =>
+      this._runExclusiveQuery(async () => {
+        // Close all extensions
+        for (const closeFn of this.#extensionsClose) {
+          await closeFn()
+        }
 
-    this.#closed = true
-    this.#closing = false
-    this.#ready = false
-    this.#running = false
+        // Close the database
+        try {
+          this.mod!._pgl_setPGliteActive(0)
+          await this.execProtocol(serialize.end())
+          this.mod!._pgl_run_atexit_funcs()
+        } catch (e: any) {
+          const err = e as { name: string; status: number }
+          if (err.name === 'ExitStatus' && err.status === 0) {
+            // Database closed successfully
+            // An earlier build of PGlite would throw an error here when closing
+            // leaving this here for now. I believe it was a bug in Emscripten.
+          } else {
+            this.#log(`An error occured while closing the db`, e.toString())
+          }
+        } finally {
+          this.mod!.removeFunction(this.#pglite_socket_read)
+          this.mod!.removeFunction(this.#pglite_socket_write)
+        }
 
-    const exitCode = pglUtils.pgliteProc.exitCode
-    try {
-      // exit the runtime. since we're using `noExitRuntime: true` on our module,
-      // we need to do this explicitly
-      // this sets process.exitCode to 0
-      this.mod!._emscripten_force_exit(0)
-      // clear mod to release memory
-      this.mod = undefined
-    } catch (e: any) {
-      this.#log(e)
-      if (e.status !== 0) {
-        this.#log('Error when exiting', e.toString())
-      }
-    } finally {
-      try {
-        pglUtils.pgliteProc.exitCode = exitCode
-      } catch {
-        // some envs do not allow setting the exitCode, swallow
-      }
-    }
+        // Close the filesystem
+        await this.fs!.closeFs()
+
+        this.#closed = true
+        this.#closing = false
+        this.#ready = false
+        this.#running = false
+
+        const exitCode = pglUtils.pgliteProc.exitCode
+        try {
+          // exit the runtime. since we're using `noExitRuntime: true` on our module,
+          // we need to do this explicitly
+          // this sets process.exitCode to 0
+          this.mod!._emscripten_force_exit(0)
+          // clear mod to release memory
+          this.mod = undefined
+        } catch (e: any) {
+          this.#log(e)
+          if (e.status !== 0) {
+            this.#log('Error when exiting', e.toString())
+          }
+        } finally {
+          try {
+            pglUtils.pgliteProc.exitCode = exitCode
+          } catch {
+            // some envs do not allow setting the exitCode, swallow
+          }
+        }
+      }),
+    )
   }
 
   /**
