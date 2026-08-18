@@ -72,7 +72,23 @@ export class PGlite
   implements PGliteInterface, AsyncDisposable
 {
   fs?: Filesystem
-  protected mod?: PostgresMod
+  protected _mod?: PostgresMod
+
+  /**
+   * The Postgres Emscripten Module.
+   * Throws if the module is not yet loaded, or has been released by `close()` -
+   * the Emscripten runtime is force-exited on close and cannot be revived.
+   */
+  protected get mod(): PostgresMod {
+    if (!this._mod) {
+      throw new Error(
+        this.#closed
+          ? 'PGlite is closed'
+          : 'PGlite is not ready, await .waitReady before use',
+      )
+    }
+    return this._mod
+  }
 
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
@@ -80,7 +96,7 @@ export class PGlite
   #onData: ((bytes: Uint8Array) => number) | undefined
 
   get ENV(): any {
-    return this.mod?.ENV
+    return this._mod?.ENV
   }
 
   readonly dataDir?: string
@@ -281,9 +297,9 @@ export class PGlite
 
   handleExternalCmd(cmd: string, mode: string) {
     if (cmd.startsWith('locale -a') && mode === 'r') {
-      const filePath = this.mod!.stringToUTF8OnStack('/pglite/locale-a')
-      const smode = this.mod!.stringToUTF8OnStack(mode)
-      return this.mod!._fopen(filePath, smode)
+      const filePath = this.mod.stringToUTF8OnStack('/pglite/locale-a')
+      const smode = this.mod.stringToUTF8OnStack(mode)
+      return this.mod._fopen(filePath, smode)
     }
     throw new Error('Unhandled cmd')
   }
@@ -527,7 +543,7 @@ export class PGlite
     await fsBundleBufferPromise
 
     // Load the database engine
-    this.mod = await PostgresModFactory(emscriptenOpts)
+    this._mod = await PostgresModFactory(emscriptenOpts)
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
@@ -595,7 +611,7 @@ export class PGlite
 
       this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
-      this.mod!._pgl_setPGliteActive(1)
+      this.mod._pgl_setPGliteActive(1)
       this.#startInSingleMode({
         pgDataFolder: PGDATA,
         startParams: [
@@ -650,7 +666,7 @@ export class PGlite
         }
       }
       copyToFS(
-        this.mod!.FS,
+        this.mod.FS,
         `${PGDATA}/postgresql.conf`,
         new TextEncoder().encode(conf),
       )
@@ -661,10 +677,10 @@ export class PGlite
     this.#log(
       `pglite: icuDataDir specified, removing default icu data dir at ${ICU_DATA_PATH}`,
     )
-    pglUtils.rmdirRecursive(this.mod!.FS, ICU_DATA_PATH)
+    pglUtils.rmdirRecursive(this.mod.FS, ICU_DATA_PATH)
     this.#log(`pglite: loading icu data from tarball ${icuDataDir}`)
-    this.mod!.FS.mkdirTree(ICU_DATA_PATH)
-    await loadTar(this.mod!.FS, icuDataDir, ICU_DATA_PATH)
+    this.mod.FS.mkdirTree(ICU_DATA_PATH)
+    await loadTar(this.mod.FS, icuDataDir, ICU_DATA_PATH)
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
@@ -689,7 +705,7 @@ export class PGlite
 
     this.#pclose_fn = mod.addFunction((stream: number) => {
       if (stream === this.externalCommandStreamFd) {
-        this.mod!._fclose(this.externalCommandStreamFd!)
+        this.mod._fclose(this.externalCommandStreamFd!)
         this.externalCommandStreamFd = null
       } else {
         throw `Unhandled pclose ${stream}`
@@ -703,7 +719,7 @@ export class PGlite
     this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
       let bytes
       try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        bytes = this.mod.HEAPU8.subarray(ptr, ptr + length)
       } catch (e: any) {
         console.error('error', e)
         throw e
@@ -719,7 +735,7 @@ export class PGlite
         if (length > max_length) {
           length = max_length
         }
-        this.mod!.HEAP8.set(
+        this.mod.HEAP8.set(
           (this.#outputData as Uint8Array).subarray(
             this.#readOffset,
             this.#readOffset + length,
@@ -768,7 +784,7 @@ export class PGlite
    * The Postgres Emscripten Module
    */
   get Module() {
-    return this.mod!
+    return this.mod
   }
 
   /**
@@ -800,9 +816,9 @@ export class PGlite
 
     // Close the database
     try {
-      this.mod!._pgl_setPGliteActive(0)
+      this.mod._pgl_setPGliteActive(0)
       await this.execProtocol(serialize.end())
-      this.mod!._pgl_run_atexit_funcs()
+      this.mod._pgl_run_atexit_funcs()
     } catch (e: any) {
       const err = e as { name: string; status: number }
       if (err.name === 'ExitStatus' && err.status === 0) {
@@ -813,8 +829,8 @@ export class PGlite
         this.#log(`An error occured while closing the db`, e.toString())
       }
     } finally {
-      this.mod!.removeFunction(this.#pglite_socket_read)
-      this.mod!.removeFunction(this.#pglite_socket_write)
+      this.mod.removeFunction(this.#pglite_socket_read)
+      this.mod.removeFunction(this.#pglite_socket_write)
     }
 
     // Close the filesystem
@@ -832,7 +848,7 @@ export class PGlite
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
-      this.mod!._emscripten_force_exit(/* exit code */ 0)
+      this.mod._emscripten_force_exit(/* exit code */ 0)
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
@@ -840,6 +856,12 @@ export class PGlite
       }
     } finally {
       pglUtils.pgliteProc.exitCode = prevExitCode
+
+      // Drop our reference to the Emscripten module. The runtime has been
+      // force-exited above and cannot be revived, so holding on to it only
+      // pins its heap (which can be hundreds of MB) for as long as this
+      // instance is referenced. Any later access throws via the `mod` getter.
+      this._mod = undefined
     }
   }
 
@@ -903,7 +925,7 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
-    const mod = this.mod!
+    const mod = this.mod
 
     this.#readOffset = 0
     this.#writeOffset = 0
@@ -1132,7 +1154,7 @@ export class PGlite
    * @returns True if the database is in a transaction, false otherwise
    */
   isInTransaction() {
-    const result = this.mod!._IsTransactionBlock()
+    const result = this.mod._IsTransactionBlock()
     return result !== 0
   }
 
@@ -1308,7 +1330,7 @@ export class PGlite
   }
 
   callMain(args: string[]): number {
-    return this.mod!.callMain(args)
+    return this.mod.callMain(args)
   }
 
   #setPGliteActive(): void {
@@ -1316,7 +1338,7 @@ export class PGlite
       throw new Error('PGlite single mode already running')
     }
 
-    this.mod!._pgl_startPGlite()
+    this.mod._pgl_startPGlite()
     this.#running = true
   }
 
@@ -1328,9 +1350,9 @@ export class PGlite
       ...opts.startParams,
       '-D',
       opts.pgDataFolder,
-      this.mod!.ENV.PGDATABASE,
+      this.mod.ENV.PGDATABASE,
     ]
-    const result = this.mod!.callMain(singleModeArgs)
+    const result = this.mod.callMain(singleModeArgs)
     if (result !== 99) {
       throw new Error('PGlite failed to initialize properly')
     }
@@ -1340,15 +1362,15 @@ export class PGlite
     this.#readOffset = 0
     this.#writeOffset = 0
     this.#outputData = message
-    const myProcPort = this.mod!._pgl_getMyProcPort()
-    const result = this.mod!._ProcessStartupPacket(myProcPort, true, true)
+    const myProcPort = this.mod._pgl_getMyProcPort()
+    const result = this.mod._ProcessStartupPacket(myProcPort, true, true)
     if (result !== 0) {
       throw new Error(`Cannot process startup packet + ${message.toString()}`)
     }
 
-    this.mod!._pgl_sendConnData()
+    this.mod._pgl_sendConnData()
 
-    this.mod!._pgl_pq_flush()
+    this.mod._pgl_pq_flush()
     this.#outputData = []
 
     if (this.#writeOffset) return this.#inputData.subarray(0, this.#writeOffset)
@@ -1356,6 +1378,6 @@ export class PGlite
   }
 
   copyToFS(filePath: string, data: Uint8Array, mode?: number) {
-    copyToFS(this.mod!.FS, filePath, data, mode)
+    copyToFS(this.mod.FS, filePath, data, mode)
   }
 }
