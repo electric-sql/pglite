@@ -260,7 +260,7 @@ export class PGlite
             dataDir: dataDirOrPGliteOptions,
             ...(options ?? {}),
           }
-        : (dataDirOrPGliteOptions ?? {})
+        : (dataDirOrPGliteOptions ?? options ?? {})
 
     const pg = new PGlite(resolvedOpts)
     await pg.waitReady
