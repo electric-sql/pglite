@@ -1,6 +1,7 @@
 import { PGlite } from '../../dist/index.js'
 
 const RESULT_PREFIX = 'PGLITE_BACKEND_EXIT_RESULT:'
+const READY_PREFIX = 'PGLITE_BACKEND_EXIT_READY'
 const ORIGINAL_EXIT_CODE = 42
 
 function serializeError(error) {
@@ -25,10 +26,24 @@ function reportResultAndExit(result, exitCode = 0) {
   })
 }
 
+function reportReady() {
+  return new Promise((resolve, reject) => {
+    process.stdout.write(`${READY_PREFIX}\n`, (error) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
 const mode = process.argv[2]
+const startupDelayMs = Number(process.argv[3] ?? 0)
 process.exitCode = ORIGINAL_EXIT_CODE
 
 try {
+  await new Promise((resolve) => setTimeout(resolve, startupDelayMs))
   const db = await PGlite.create()
 
   if (mode.startsWith('runtime-error')) {
@@ -49,6 +64,8 @@ try {
       await db.exec('BEGIN')
     }
   }
+
+  await reportReady()
 
   try {
     if (mode.startsWith('runtime-error')) {
