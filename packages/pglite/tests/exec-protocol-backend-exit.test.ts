@@ -14,6 +14,7 @@ type ReproMode =
   | 'no-transaction'
   | 'transaction'
   | 'runtime-error'
+  | 'runtime-error-after-message'
   | 'runtime-error-with-cleanup-error'
 
 interface ReproResult {
@@ -144,6 +145,16 @@ describe('execProtocolRawSync backend exits', () => {
         name: 'RuntimeError',
         message: 'synthetic runtime failure',
       },
+      processExitCode: 42,
+    })
+    expectChildExited(result)
+  })
+
+  it('preserves recoverable RuntimeError after processing the message', async () => {
+    const result = await runBackendExitRepro('runtime-error-after-message')
+
+    expect(result).toMatchObject({
+      outcome: 'resolved',
       processExitCode: 42,
     })
     expectChildExited(result)

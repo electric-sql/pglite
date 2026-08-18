@@ -46,7 +46,16 @@ try {
   await new Promise((resolve) => setTimeout(resolve, startupDelayMs))
   const db = await PGlite.create()
 
-  if (mode.startsWith('runtime-error')) {
+  if (mode === 'runtime-error-after-message') {
+    await db.exec('CREATE TABLE t(a int)')
+    const postgresMainLoopOnce = db.Module._PostgresMainLoopOnce
+    db.Module._PostgresMainLoopOnce = () => {
+      postgresMainLoopOnce()
+      throw new WebAssembly.RuntimeError(
+        'synthetic runtime failure after message',
+      )
+    }
+  } else if (mode.startsWith('runtime-error')) {
     db.Module._PostgresMainLoopOnce = () => {
       if (mode === 'runtime-error-with-cleanup-error') {
         process.exitCode = 1
@@ -68,7 +77,9 @@ try {
   await reportReady()
 
   try {
-    if (mode.startsWith('runtime-error')) {
+    if (mode === 'runtime-error-after-message') {
+      await db.exec('SELECT 1')
+    } else if (mode.startsWith('runtime-error')) {
       db.execProtocolRawSync(Uint8Array.of('Q'.charCodeAt(0)))
     } else {
       await db.exec('COPY t FROM STDIN')
@@ -79,7 +90,7 @@ try {
         outcome: 'resolved',
         processExitCode: process.exitCode,
       },
-      2,
+      mode === 'runtime-error-after-message' ? 0 : 2,
     )
   } catch (error) {
     await reportResultAndExit({

@@ -957,9 +957,10 @@ export class PGlite
             mod._PostgresMainLongJmp()
           } else if (
             e.name === 'ExitStatus' ||
-            e instanceof WebAssembly.RuntimeError
+            (e instanceof WebAssembly.RuntimeError &&
+              this.#readOffset < message.length)
           ) {
-            // Emscripten throws these when the backend exits or crashes.
+            // Emscripten throws these when the backend exits mid-message.
             // Other exceptions are left with their previous handling because
             // extensions can throw after the protocol message was processed.
             throw e
