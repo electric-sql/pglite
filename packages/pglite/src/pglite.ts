@@ -40,6 +40,21 @@ import {
 
 import { pglUtils } from '@electric-sql/pglite-utils'
 
+/**
+ * Restore a `process.exitCode` captured before an engine call that may run
+ * `proc_exit(XX)`.
+ *
+ * A saved `undefined` must be restored as an explicit `0`: under bun,
+ * `process.exitCode = undefined` is a no-op that leaves the current value in
+ * place, so restoring `undefined` over the engine's `proc_exit(99)` boot
+ * sentinel does nothing and bun force-exits an otherwise successful host
+ * process with code 99. Assigning `0` is equivalent for exit status on every
+ * runtime.
+ */
+function restoreExitCode(previous: string | number | undefined): void {
+  pglUtils.pgliteProc.exitCode = previous ?? 0
+}
+
 class CurrentQuery {
   results: BackendMessage[] = []
   throwOnError: boolean = false
@@ -620,7 +635,7 @@ export class PGlite
       }
     }
 
-    pglUtils.pgliteProc.exitCode = prevExitCode
+    restoreExitCode(prevExitCode)
   }
 
   #handlePostgresqlConf(
@@ -839,7 +854,7 @@ export class PGlite
         this.#log('Error when exiting', e.toString())
       }
     } finally {
-      pglUtils.pgliteProc.exitCode = prevExitCode
+      restoreExitCode(prevExitCode)
     }
   }
 
@@ -961,7 +976,7 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
-      pglUtils.pgliteProc.exitCode = prevExitCode
+      restoreExitCode(prevExitCode)
     }
 
     this.#outputData = []
