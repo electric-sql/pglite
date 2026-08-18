@@ -14,6 +14,11 @@ export const IN_NODE =
 
 export const WASM_PREFIX = '/pglite'
 
+export const pgliteProc =
+  globalThis && typeof globalThis.process !== 'undefined'
+    ? globalThis.process
+    : { exitCode: undefined }
+
 const artifactDownloadPromises = new Map<string, Promise<Response>>()
 
 export async function startArtifactDownload(url: URL) {

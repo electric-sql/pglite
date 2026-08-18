@@ -820,7 +820,7 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    const exitCode = process?.exitCode
+    const exitCode = pglUtils.pgliteProc.exitCode
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
@@ -835,9 +835,7 @@ export class PGlite
       }
     } finally {
       try {
-        if (process) {
-          process.exitCode = exitCode
-        }
+        pglUtils.pgliteProc.exitCode = exitCode
       } catch {
         // some envs do not allow setting the exitCode, swallow
       }
