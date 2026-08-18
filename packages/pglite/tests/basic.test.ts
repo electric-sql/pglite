@@ -812,6 +812,20 @@ await testEsmCjsAndDTC(async (importType) => {
       }
     })
 
+    it('does not leave the wasm boot exit code on process.exitCode', async () => {
+      // Postgres' single-user boot signals success with proc_exit(99). The
+      // saved host exitCode is usually `undefined`, and under bun assigning
+      // `undefined` to process.exitCode is a no-op, so a restore of the saved
+      // value must write an explicit 0 — otherwise the sentinel survives and
+      // bun force-exits an otherwise successful process with code 99.
+      const before = process.exitCode
+      const pg = await PGlite.create()
+      await pg.exec('SELECT 1')
+      await pg.close()
+      expect([before, 0]).toContain(process.exitCode)
+      expect(process.exitCode).not.toEqual(99)
+    })
+
     it("arrays with NULL elements should return null, not string 'NULL'", async () => {
       const pg = await PGlite.create()
 
