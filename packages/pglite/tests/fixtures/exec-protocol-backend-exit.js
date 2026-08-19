@@ -40,11 +40,11 @@ function reportReady() {
 
 const mode = process.argv[2]
 const startupDelayMs = Number(process.argv[3] ?? 0)
-process.exitCode = ORIGINAL_EXIT_CODE
 
 try {
   await new Promise((resolve) => setTimeout(resolve, startupDelayMs))
   const db = await PGlite.create()
+  process.exitCode = ORIGINAL_EXIT_CODE
 
   if (mode === 'runtime-error-after-message') {
     await db.exec('CREATE TABLE t(a int)')
