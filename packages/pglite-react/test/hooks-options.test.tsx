@@ -68,4 +68,27 @@ describe('useLiveQuery query options', () => {
       [2, 'updated'],
     ])
   })
+
+  it('reports query initialization errors through onError', async () => {
+    const queryError = new Error('syntax error at or near "table"')
+    const onError = vi.fn()
+    const query = vi.fn(() => Promise.reject(queryError))
+    usePGliteMock.mockReturnValue({ live: { query } })
+
+    const { unmount } = renderHook(() =>
+      useLiveQuery('SELECT FROM table', [], { onError }),
+    )
+
+    await waitFor(() => expect(onError).toHaveBeenCalledOnce())
+    expect(onError).toHaveBeenCalledWith(queryError)
+    expect(query).toHaveBeenCalledWith(
+      'SELECT FROM table',
+      [],
+      expect.any(Function),
+    )
+
+    unmount()
+    await Promise.resolve()
+    expect(onError).toHaveBeenCalledOnce()
+  })
 })

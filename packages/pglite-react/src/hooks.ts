@@ -4,6 +4,11 @@ import { query as buildQuery } from '@electric-sql/pglite/template'
 import { useEffect, useRef, useState } from 'react'
 import { usePGlite } from './provider'
 
+export interface UseLiveQueryOptions extends QueryOptions {
+  /** Called when the initial live query setup rejects. */
+  onError?: (error: Error) => void
+}
+
 function paramsEqual(
   a1: unknown[] | undefined | null,
   a2: unknown[] | undefined | null,
@@ -47,15 +52,27 @@ function queryOptionsEqual(
   )
 }
 
+function getQueryOptions(
+  options: UseLiveQueryOptions | undefined,
+): QueryOptions | undefined {
+  if (!options) return undefined
+  const queryOptions = { ...options }
+  delete queryOptions.onError
+  return Reflect.ownKeys(queryOptions).length > 0 ? queryOptions : undefined
+}
+
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
   query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
   params: unknown[] | undefined | null,
   key?: string,
-  options?: QueryOptions,
+  options?: UseLiveQueryOptions,
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const paramsRef = useRef(params)
-  const optionsRef = useRef(options)
+  const queryOptions = getQueryOptions(options)
+  const optionsRef = useRef(queryOptions)
+  const onErrorRef = useRef(options?.onError)
+  onErrorRef.current = options?.onError
   const liveQueryRef = useRef<LiveQuery<T> | undefined>(undefined)
   let liveQuery: LiveQuery<T> | undefined
   let liveQueryChanged = false
@@ -75,9 +92,9 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
   }
 
   let currentOptions = optionsRef.current
-  if (!queryOptionsEqual(optionsRef.current, options)) {
-    optionsRef.current = options
-    currentOptions = options
+  if (!queryOptionsEqual(optionsRef.current, queryOptions)) {
+    optionsRef.current = queryOptions
+    currentOptions = queryOptions
   }
 
   /* eslint-disable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
@@ -88,6 +105,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       setResults(results)
     }
     if (typeof query === 'string') {
+      let unsubscribe: (() => Promise<void>) | undefined
       const ret =
         key !== undefined
           ? db.live.incrementalQuery<T>(query, currentParams, key, cb)
@@ -95,9 +113,28 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
             ? db.live.query<T>(query, currentParams, currentOptions, cb)
             : db.live.query<T>(query, currentParams, cb)
 
+      void ret.then(
+        ({ unsubscribe: resolvedUnsubscribe }) => {
+          if (cancelled) {
+            void resolvedUnsubscribe()
+            return
+          }
+          unsubscribe = resolvedUnsubscribe
+        },
+        (error: Error) => {
+          if (cancelled) return
+          const onError = onErrorRef.current
+          if (onError) {
+            onError(error)
+          } else {
+            throw error
+          }
+        },
+      )
+
       return () => {
         cancelled = true
-        ret.then(({ unsubscribe }) => unsubscribe())
+        void unsubscribe?.()
       }
     } else if (query instanceof Promise) {
       query.then((liveQuery) => {
@@ -141,7 +178,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string,
   params?: unknown[] | null,
-  options?: QueryOptions,
+  options?: UseLiveQueryOptions,
 ): LiveQueryResults<T> | undefined
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
@@ -155,7 +192,7 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
   params?: unknown[] | null,
-  options?: QueryOptions,
+  options?: UseLiveQueryOptions,
 ): LiveQueryResults<T> | undefined {
   return useLiveQueryImpl<T>(query, params, undefined, options)
 }

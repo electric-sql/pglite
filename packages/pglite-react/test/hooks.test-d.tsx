@@ -18,5 +18,9 @@ describe('useLiveQuery types', () => {
         [],
         queryOptions,
       )
+    ;() =>
+      useLiveQuery('SELECT FROM table', [], {
+        onError: (error) => expectTypeOf(error).toEqualTypeOf<Error>(),
+      })
   })
 })
