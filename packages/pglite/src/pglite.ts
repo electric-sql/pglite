@@ -1108,7 +1108,16 @@ export class PGlite
         }
       } else if (msg instanceof NotificationResponseMessage) {
         // We've received a notification, call the listeners
-        const listeners = this.#notifyListeners.get(msg.channel)
+        // Listeners are stored with their original channel name. Use the
+        // normalized form (lowercased for unquoted identifiers) as a fallback
+        // so that pg.listen('TinyBase') + pg_notify('TinyBase') match.
+        let listeners = this.#notifyListeners.get(msg.channel)
+        if (!listeners) {
+          const pgChannel = pglUtils.toPostgresName(msg.channel)
+          if (pgChannel !== msg.channel) {
+            listeners = this.#notifyListeners.get(pgChannel)
+          }
+        }
         if (listeners) {
           listeners.forEach((cb) => {
             // We use queueMicrotask so that the callback is called after any
@@ -1192,7 +1201,7 @@ export class PGlite
     }
     this.#notifyListeners.get(pgChannel)!.add(callback)
     try {
-      await pg.exec(`LISTEN ${channel}`)
+      await pg.exec(`LISTEN ${pgChannel}`)
     } catch (e) {
       this.#notifyListeners.get(pgChannel)!.delete(callback)
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
@@ -1201,7 +1210,7 @@ export class PGlite
       throw e
     }
     return async (tx?: Transaction) => {
-      await this.unlisten(pgChannel, callback, tx)
+      await this.unlisten(channel, callback, tx)
     }
   }
 
@@ -1226,7 +1235,7 @@ export class PGlite
     const pgChannel = pglUtils.toPostgresName(channel)
     const pg = tx ?? this
     const cleanUp = async () => {
-      await pg.exec(`UNLISTEN ${channel}`)
+      await pg.exec(`UNLISTEN ${pgChannel}`)
       // While that query was running, another query might have subscribed
       // so we need to check again
       if (this.#notifyListeners.get(pgChannel)?.size === 0) {
