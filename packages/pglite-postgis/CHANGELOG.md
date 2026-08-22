@@ -1,5 +1,13 @@
 # @electric-sql/pglite-postgis
 
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies [69b7d87]
+- Updated dependencies [6c14380]
+  - @electric-sql/pglite@0.5.6
+
 ## 0.2.5
 
 ### Patch Changes

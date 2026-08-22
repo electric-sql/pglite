@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.0.4
+
+### Patch Changes
+
+- 6c14380: fixes for process.exitCode
+
 ## 0.0.3
 
 ### Patch Changes

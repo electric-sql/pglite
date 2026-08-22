@@ -1,5 +1,12 @@
 # @electric-sql/pglite
 
+## 0.5.6
+
+### Patch Changes
+
+- 69b7d87: Apply the second options argument when calling `PGlite.create(undefined, options)`.
+- 6c14380: fixes for process.exitCode
+
 ## 0.5.5
 
 ### Patch Changes
