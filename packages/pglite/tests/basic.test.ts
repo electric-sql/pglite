@@ -932,7 +932,7 @@ await testEsmCjsAndDTC(async (importType) => {
         rowCount: 1,
       })
     })
-    it('serialize with no concrete type', async () => {
+    it('convert_to', async () => {
       const res0 = await db.exec(`SELECT 1`)
 
       const res1 = await db.exec(`SELECT convert_to('abc', 'LATIN1')`)
@@ -959,6 +959,27 @@ await testEsmCjsAndDTC(async (importType) => {
       const res2 = await db.exec(`SELECT 1`)
 
       expect(res2).toEqual(res0)
+
+      const resTo = await db.exec(`SELECT convert_from('\xe4', 'LATIN1');`)
+
+      expect(resTo).toEqual([
+        {
+          rows: [
+            {
+              convert_from: 'Ã¤',
+            },
+          ],
+          fields: [
+            {
+              name: 'convert_from',
+              dataTypeID: 25,
+            },
+          ],
+          command: 'SELECT',
+          affectedRows: 0,
+          rowCount: 1,
+        },
+      ])
     })
   })
 })
