@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.5.7
+
+### Patch Changes
+
+- 2f9cf75: Fix convert_to
+
 ## 0.5.6
 
 ### Patch Changes
