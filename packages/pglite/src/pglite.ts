@@ -950,6 +950,12 @@ export class PGlite
             // that we call whenever the exception longjmp is executed
             // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
+          } else {
+            // anything else (e.g. an ExitStatus from the backend terminating,
+            // or a WASM RuntimeError) means the backend is gone — swallowing
+            // the exception here would leave the loop spinning forever, as
+            // no more input is consumed. Rethrow so the caller sees the error.
+            throw e
           }
           // even if there is an exception caused by one of the batched queries,
           // we need to continue processing the rest without throwing.
@@ -958,8 +964,13 @@ export class PGlite
         }
       }
     } finally {
-      mod._PostgresSendReadyForQueryIfNecessary()
-      mod._pgl_pq_flush()
+      try {
+        mod._PostgresSendReadyForQueryIfNecessary()
+        mod._pgl_pq_flush()
+      } catch {
+        // if the backend terminated, the runtime may already be dead;
+        // don't let these calls mask the original error thrown above
+      }
     }
 
     this.#outputData = []
