@@ -22,8 +22,10 @@ if (mode === 'sandboxed') {
   })
   globalThis.process = sandboxedProcess
   expectedProcess = sandboxedProcess
-} else if (mode === 'node') {
-  realProcess.exitCode = 23
+} else if (mode === 'node' || mode === 'close') {
+  if (mode === 'node') {
+    realProcess.exitCode = 23
+  }
 } else {
   throw new Error(`Unknown fixture mode: ${mode}`)
 }
@@ -32,11 +34,18 @@ try {
   const { PGlite } = await import('../../dist/index.js')
   pg = await PGlite.create()
   const queryResult = await pg.query('SELECT 1 AS one')
+  const moduleLoaded = pg.ENV !== undefined
+
+  if (mode === 'close') {
+    await pg.close()
+  }
 
   result = {
     ok: true,
     row: queryResult.rows[0]?.one,
     exitCode: globalThis.process.exitCode,
+    moduleLoaded,
+    moduleCleared: mode === 'close' ? pg.ENV === undefined : undefined,
     processRestored: globalThis.process === expectedProcess,
     setterCalls,
   }
@@ -53,7 +62,7 @@ try {
   }
 } finally {
   globalThis.process = realProcess
-  if (pg) {
+  if (pg && !pg.closed) {
     await pg.close()
   }
   realProcess.exitCode = originalExitCode

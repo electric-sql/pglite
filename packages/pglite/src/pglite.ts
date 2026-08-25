@@ -826,14 +826,14 @@ export class PGlite
       // we need to do this explicitly
       // this sets process.exitCode to 0
       this.mod!._emscripten_force_exit(0)
-      // clear mod to release memory
-      this.mod = undefined
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
     } finally {
+      // clear mod to release memory, including when force_exit throws ExitStatus
+      this.mod = undefined
       try {
         pglUtils.pgliteProc.exitCode = exitCode
       } catch {

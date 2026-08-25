@@ -74,7 +74,11 @@ function callWithWritableProcessExitCode<T>(callback: () => T): T {
     }
   }
 
-  return callback()
+  try {
+    return callback()
+  } finally {
+    processObject.exitCode = exitCode
+  }
 }
 
 async function execInitdb({

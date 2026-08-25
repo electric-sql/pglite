@@ -6,6 +6,8 @@ interface FixtureResult {
   ok: boolean
   row?: number
   exitCode?: number
+  moduleLoaded?: boolean
+  moduleCleared?: boolean
   processRestored: boolean
   setterCalls: number
   error?: {
@@ -19,7 +21,9 @@ const fixturePath = fileURLToPath(
   new URL('./fixtures/sandboxed-exit-code.js', import.meta.url),
 )
 
-function runFixture(mode: 'sandboxed' | 'node'): Promise<FixtureResult> {
+function runFixture(
+  mode: 'sandboxed' | 'node' | 'close',
+): Promise<FixtureResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [fixturePath, mode], {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -77,7 +81,7 @@ function runFixture(mode: 'sandboxed' | 'node'): Promise<FixtureResult> {
   })
 }
 
-describe('process.exitCode handling during initdb', () => {
+describe('process exit handling', () => {
   it('boots when a Node-shaped process has a throwing exitCode setter', async () => {
     const result = await runFixture('sandboxed')
 
@@ -94,9 +98,21 @@ describe('process.exitCode handling during initdb', () => {
     expect(result).toMatchObject({
       ok: true,
       row: 1,
-      exitCode: 0,
+      exitCode: 23,
       processRestored: true,
       setterCalls: 0,
+    })
+  })
+
+  it('releases the Postgres module after the expected force exit', async () => {
+    const result = await runFixture('close')
+
+    expect(result).toMatchObject({
+      ok: true,
+      row: 1,
+      moduleLoaded: true,
+      moduleCleared: true,
+      processRestored: true,
     })
   })
 })
