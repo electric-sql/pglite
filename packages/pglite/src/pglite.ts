@@ -820,25 +820,18 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    const exitCode = pglUtils.pgliteProc.exitCode
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
-      // this sets process.exitCode to 0
       this.mod!._emscripten_force_exit(0)
-      // clear mod to release memory
-      this.mod = undefined
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
     } finally {
-      try {
-        pglUtils.pgliteProc.exitCode = exitCode
-      } catch {
-        // some envs do not allow setting the exitCode, swallow
-      }
+      // clear mod to release memory
+      this.mod = undefined
     }
   }
 

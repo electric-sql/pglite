@@ -800,18 +800,6 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(process.exitCode).toEqual(origExitCode)
     })
 
-    it('restores process.exitCode on close', async () => {
-      const origExitCode = process.exitCode
-      process.exitCode = 42
-
-      try {
-        await db.close()
-        expect(process.exitCode).toEqual(42)
-      } finally {
-        process.exitCode = origExitCode
-      }
-    })
-
     it('restores undefined process.exitCode on close', async () => {
       const origExitCode = process.exitCode
       process.exitCode = undefined
@@ -819,6 +807,18 @@ await testEsmCjsAndDTC(async (importType) => {
       try {
         await db.close()
         expect(process.exitCode).toEqual(undefined)
+      } finally {
+        process.exitCode = origExitCode
+      }
+    })
+
+    it('restores process.exitCode on close', async () => {
+      const origExitCode = process.exitCode
+      process.exitCode = 42
+
+      try {
+        await db.close()
+        expect(process.exitCode).toEqual(42)
       } finally {
         process.exitCode = origExitCode
       }
