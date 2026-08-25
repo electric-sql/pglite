@@ -44,6 +44,39 @@ function log(debug?: number, ...args: any[]) {
   }
 }
 
+function callWithWritableProcessExitCode<T>(callback: () => T): T {
+  const processObject = globalThis.process
+  if (!processObject) {
+    return callback()
+  }
+
+  let exitCode: typeof processObject.exitCode
+  try {
+    exitCode = processObject.exitCode
+    processObject.exitCode = exitCode
+  } catch {
+    // Emscripten's Node quit handler writes process.exitCode during a normal
+    // initdb exit. Some Node-shaped sandbox runtimes expose a setter that
+    // rejects that host operation, so give only the synchronous callMain a
+    // delegating process object with a writable exitCode.
+    const processShim = Object.create(processObject)
+    Object.defineProperty(processShim, 'exitCode', {
+      configurable: true,
+      enumerable: true,
+      value: exitCode,
+      writable: true,
+    })
+    globalThis.process = processShim
+    try {
+      return callback()
+    } finally {
+      globalThis.process = processObject
+    }
+  }
+
+  return callback()
+}
+
 async function execInitdb({
   pg,
   debug,
@@ -199,7 +232,7 @@ async function execInitdb({
   const initDbMod = await InitdbModFactory(emscriptenOpts)
 
   log(debug, 'calling initdb.main with', args)
-  const result = initDbMod.callMain(args)
+  const result = callWithWritableProcessExitCode(() => initDbMod.callMain(args))
 
   return {
     exitCode: result,
