@@ -1,5 +1,12 @@
 # @electric-sql/pglite-pgmq
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [c771db3]
+  - @electric-sql/pglite@0.5.8
+
 ## 0.0.5
 
 ### Patch Changes

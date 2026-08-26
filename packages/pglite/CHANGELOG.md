@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.5.8
+
+### Patch Changes
+
+- c771db3: Do not set process.exitCode at all
+
 ## 0.5.7
 
 ### Patch Changes
