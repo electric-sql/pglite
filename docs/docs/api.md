@@ -289,18 +289,19 @@ Close the database, ensuring it is shut down cleanly.
 
 Subscribe to a [pg_notify](https://www.postgresql.org/docs/current/sql-notify.html) channel. The callback will receive the payload from the notification.
 
-Returns an unsubscribe function to unsubscribe from the channel.
+Returns an unsubscribe function to unsubscribe from the channel. When an identifier requires double quotes, keep the quoted string and pass it directly to `unlisten()` for cleanup, as shown below.
 
 ##### Example
 
 ```ts
-const unsub = await pg.listen('"name-with-hyphen"', (payload) => {
+await pg.listen('"name-with-hyphen"', (payload) => {
   console.log('Received:', payload)
 })
 await pg.query(`NOTIFY "name-with-hyphen", 'Hello, world!'`)
+await pg.unlisten('"name-with-hyphen"')
 ```
 
-Channel names follow PostgreSQL identifier rules. Unquoted identifiers are folded to lowercase, so `pg.listen('TeStiNG')` listens on the same channel as `pg.listen('testing')`. Double-quoted identifiers preserve case and allow special characters such as hyphens, spaces, and `&`. Include the double quotes in the string passed to `listen()`, as shown above, and use the matching quoted identifier in the `NOTIFY` statement.
+Channel names follow PostgreSQL identifier rules. Unquoted identifiers are folded to lowercase, so `pg.listen('TeStiNG')` listens on the same channel as `pg.listen('testing')`. Double-quoted identifiers preserve case and allow special characters such as hyphens, spaces, and `&`. Include the double quotes in the strings passed to `listen()` and `unlisten()`, as shown above, and use the matching quoted identifier in the `NOTIFY` statement.
 
 ### unlisten
 
