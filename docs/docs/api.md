@@ -294,13 +294,13 @@ Returns an unsubscribe function to unsubscribe from the channel.
 ##### Example
 
 ```ts
-const unsub = await pg.listen('test', (payload) => {
+const unsub = await pg.listen('"name-with-hyphen"', (payload) => {
   console.log('Received:', payload)
 })
-await pg.query("NOTIFY test, 'Hello, world!'")
+await pg.query(`NOTIFY "name-with-hyphen", 'Hello, world!'`)
 ```
 
-Channel names are case sensitive if double-quoted (`pg.listen('"TeST"')`). Otherwise channel name will be lower cased (`pg.listen('TeStiNG')` == `pg.listen('testing')`).
+Channel names follow PostgreSQL identifier rules. Unquoted identifiers are folded to lowercase, so `pg.listen('TeStiNG')` listens on the same channel as `pg.listen('testing')`. Double-quoted identifiers preserve case and allow special characters such as hyphens, spaces, and `&`. Include the double quotes in the string passed to `listen()`, as shown above, and use the matching quoted identifier in the `NOTIFY` statement.
 
 ### unlisten
 
