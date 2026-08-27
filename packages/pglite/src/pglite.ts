@@ -921,6 +921,12 @@ export class PGlite
       return result
     }
 
+    const prevExitCode = pglUtils.pgliteProc.exitCode
+    let protocolError: unknown
+    let cleanupError: unknown
+    let hasProtocolError = false
+    let hasCleanupError = false
+
     // execute the message
     try {
       // a single message might contain multiple batched queries
@@ -943,6 +949,15 @@ export class PGlite
             // that we call whenever the exception longjmp is executed
             // like this we also just need to setjmp only once, in a similar fashion to the original code.
             mod._PostgresMainLongJmp()
+          } else if (
+            e.name === 'ExitStatus' ||
+            (e instanceof WebAssembly.RuntimeError &&
+              this.#readOffset < message.length)
+          ) {
+            // Emscripten throws these when the backend exits mid-message.
+            // Other exceptions are left with their previous handling because
+            // extensions can throw after the protocol message was processed.
+            throw e
           }
           // even if there is an exception caused by one of the batched queries,
           // we need to continue processing the rest without throwing.
@@ -950,9 +965,26 @@ export class PGlite
           // and returned to the caller for handling
         }
       }
+    } catch (e) {
+      protocolError = e
+      hasProtocolError = true
     } finally {
-      mod._PostgresSendReadyForQueryIfNecessary()
-      mod._pgl_pq_flush()
+      try {
+        mod._PostgresSendReadyForQueryIfNecessary()
+        mod._pgl_pq_flush()
+      } catch (e) {
+        cleanupError = e
+        hasCleanupError = true
+      } finally {
+        pglUtils.pgliteProc.exitCode = prevExitCode
+      }
+    }
+
+    if (hasProtocolError) {
+      throw protocolError
+    }
+    if (hasCleanupError) {
+      throw cleanupError
     }
 
     this.#outputData = []
