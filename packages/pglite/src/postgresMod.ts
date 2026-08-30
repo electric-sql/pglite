@@ -64,6 +64,8 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
+  _pgl_getPGliteExitStatus: () => number
+  _pgl_setPGliteExitStatus: (status: number) => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

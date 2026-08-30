@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
-import { PGlite } from '../dist/index.js'
+import { PGlite, type Transaction } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
@@ -49,11 +49,15 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(multiStatementResult).toEqual([
         {
           affectedRows: 1,
+          command: 'INSERT',
+          rowCount: 1,
           rows: [],
           fields: [],
         },
         {
           affectedRows: 2,
+          command: 'UPDATE',
+          rowCount: 1,
           rows: [],
           fields: [],
         },
@@ -64,6 +68,8 @@ await testEsmCjsAndDTC(async (importType) => {
             { name: 'name', dataTypeID: 25 },
           ],
           affectedRows: 2,
+          command: 'SELECT',
+          rowCount: 1,
         },
       ])
     })
@@ -98,6 +104,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
 
       const updateResult = await db.query("UPDATE test SET name = 'test2';")
@@ -105,6 +113,8 @@ await testEsmCjsAndDTC(async (importType) => {
         rows: [],
         fields: [],
         affectedRows: 1,
+        command: 'UPDATE',
+        rowCount: 1,
       })
     })
 
@@ -137,6 +147,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
 
       const updateResult =
@@ -145,6 +157,8 @@ await testEsmCjsAndDTC(async (importType) => {
         rows: [],
         fields: [],
         affectedRows: 1,
+        command: 'UPDATE',
+        rowCount: 1,
       })
     })
 
@@ -343,6 +357,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -376,6 +392,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -428,6 +446,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
 
@@ -472,6 +492,8 @@ await testEsmCjsAndDTC(async (importType) => {
             },
           ],
           affectedRows: 0,
+          command: 'SELECT',
+          rowCount: 2,
         })
         await tx.rollback()
       })
@@ -496,8 +518,65 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
+
+    it('rejects sql on closed transaction handles', async () => {
+      await db.exec('CREATE TABLE closed_transaction_test (id INT PRIMARY KEY)')
+
+      let committedTx: Transaction | undefined
+      await db.transaction(async (tx) => {
+        committedTx = tx
+      })
+
+      expect(committedTx?.closed).toBe(true)
+      await expect(
+        committedTx!.sql`INSERT INTO closed_transaction_test VALUES (1)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      let rolledBackTx: Transaction | undefined
+      await db.transaction(async (tx) => {
+        rolledBackTx = tx
+        await tx.rollback()
+      })
+
+      expect(rolledBackTx?.closed).toBe(true)
+      await expect(
+        rolledBackTx!.sql`INSERT INTO closed_transaction_test VALUES (2)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      const result = await db.query('SELECT id FROM closed_transaction_test')
+      expect(result.rows).toEqual([])
+    })
+
+    it('closes the transaction handle when the callback rejects', async () => {
+      await db.exec('CREATE TABLE closed_transaction_test (id INT PRIMARY KEY)')
+
+      let failedTx: Transaction | undefined
+      await expect(
+        db.transaction(async (tx) => {
+          failedTx = tx
+          throw new Error('boom')
+        }),
+      ).rejects.toThrow('boom')
+
+      expect(failedTx?.closed).toBe(true)
+      await expect(
+        failedTx!.query('INSERT INTO closed_transaction_test VALUES (1)'),
+      ).rejects.toThrow('Transaction is closed')
+      await expect(
+        failedTx!.exec('INSERT INTO closed_transaction_test VALUES (2)'),
+      ).rejects.toThrow('Transaction is closed')
+      await expect(
+        failedTx!.sql`INSERT INTO closed_transaction_test VALUES (3)`,
+      ).rejects.toThrow('Transaction is closed')
+
+      const result = await db.query('SELECT id FROM closed_transaction_test')
+      expect(result.rows).toEqual([])
+    })
+
     it('merge delete', async () => {
       await db.exec(`
       CREATE TABLE employees (
@@ -594,6 +673,8 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 2,
       })
     })
 
@@ -634,6 +715,8 @@ await testEsmCjsAndDTC(async (importType) => {
           { name: 'last_name', dataTypeID: 25 },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
     })
     it('timezone', async () => {
@@ -715,6 +798,24 @@ await testEsmCjsAndDTC(async (importType) => {
       );`)
 
       expect(process.exitCode).toEqual(origExitCode)
+    })
+
+    it('restores undefined process.exitCode on close', async () => {
+      expect(process.exitCode).toBeUndefined()
+      await db.close()
+      expect(process.exitCode).toBeUndefined()
+    })
+
+    it('restores process.exitCode on close', async () => {
+      const origExitCode = process.exitCode
+      process.exitCode = 42
+
+      try {
+        await db.close()
+        expect(process.exitCode).toEqual(42)
+      } finally {
+        process.exitCode = origExitCode
+      }
     })
 
     it("arrays with NULL elements should return null, not string 'NULL'", async () => {
@@ -821,7 +922,37 @@ await testEsmCjsAndDTC(async (importType) => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       })
+    })
+    it('serialize with no concrete type', async () => {
+      const res0 = await db.exec(`SELECT 1`)
+
+      const res1 = await db.exec(`SELECT convert_to('abc', 'LATIN1')`)
+
+      expect(res1).toEqual([
+        {
+          rows: [
+            {
+              convert_to: new Uint8Array([97, 98, 99]),
+            },
+          ],
+          fields: [
+            {
+              name: 'convert_to',
+              dataTypeID: 17,
+            },
+          ],
+          command: 'SELECT',
+          affectedRows: 0,
+          rowCount: 1,
+        },
+      ])
+
+      const res2 = await db.exec(`SELECT 1`)
+
+      expect(res2).toEqual(res0)
     })
   })
 })

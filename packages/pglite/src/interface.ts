@@ -173,6 +173,16 @@ export type Row<T = { [key: string]: any }> = T
 export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[]
   affectedRows?: number
+  /**
+   * The command of the query that was run, e.g. "SELECT", "INSERT", "CREATE".
+   */
+  command?: string
+  /**
+   * The number of rows reported by the command tag, e.g. the rows returned
+   * by a SELECT or changed by an UPDATE. Unlike `affectedRows` this is per statement
+   * and not cumulative across a multi-statement query.
+   */
+  rowCount?: number
   fields: { name: string; dataTypeID: number }[]
   blob?: Blob // Only set when a file is returned, such as from a COPY command
 }

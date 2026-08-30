@@ -56,6 +56,8 @@ describe(`pgmq`, () => {
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
@@ -79,6 +81,8 @@ SELECT * from pgmq.send(
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 

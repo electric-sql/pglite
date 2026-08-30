@@ -61,13 +61,39 @@ export function parseResults(
       }
       case 'commandComplete': {
         const msg = message as CommandCompleteMessage
-        affectedRows += retrieveRowCount(msg)
 
-        resultSets.push({
+        // A command tag that carries a row count ends in it ("SELECT 2",
+        // "UPDATE 3", "INSERT 0 5"); all other tags end in a word
+        // ("CREATE TABLE").
+        const parts = msg.text.split(' ')
+        const command = parts[0]
+        const rowCount = parseInt(parts[parts.length - 1], 10)
+
+        switch (command) {
+          case 'INSERT':
+          case 'UPDATE':
+          case 'DELETE':
+          case 'COPY':
+          case 'MERGE':
+            affectedRows += rowCount
+            break
+        }
+
+        const result = {
           ...currentResultSet,
+          command,
           affectedRows,
-          ...(blob ? { blob } : {}),
-        })
+        }
+
+        if (!Number.isNaN(rowCount)) {
+          result.rowCount = rowCount
+        }
+
+        if (blob) {
+          result.blob = blob
+        }
+
+        resultSets.push(result)
 
         currentResultSet = { rows: [], fields: [] }
         break
@@ -84,21 +110,6 @@ export function parseResults(
   }
 
   return resultSets
-}
-
-function retrieveRowCount(msg: CommandCompleteMessage): number {
-  const parts = msg.text.split(' ')
-  switch (parts[0]) {
-    case 'INSERT':
-      return parseInt(parts[2], 10)
-    case 'UPDATE':
-    case 'DELETE':
-    case 'COPY':
-    case 'MERGE':
-      return parseInt(parts[1], 10)
-    default:
-      return 0
-  }
 }
 
 /** Get the dataTypeIDs from a list of messages, if it's available. */
