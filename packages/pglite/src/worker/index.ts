@@ -196,7 +196,10 @@ export class PGliteWorker
   }
 
   async #leaderNotifyLoop() {
-    if (!this.#connected) {
+    // Announce this tab until a leader connects, and stop once this instance is
+    // closed. `close()` closes the broadcast channel, and a post to a closed
+    // channel throws `InvalidStateError`.
+    if (!this.#connected && !this.#closed) {
       this.#broadcastChannel!.postMessage({
         type: 'tab-here',
         id: this.#tabId,
