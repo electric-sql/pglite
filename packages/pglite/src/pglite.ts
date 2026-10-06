@@ -89,6 +89,7 @@ export class PGlite
   #ready = false
   #closing = false
   #closed = false
+  #closePromise?: Promise<void>
   #relaxedDurability = false
 
   readonly waitReady: Promise<void>
@@ -784,10 +785,32 @@ export class PGlite
    * Close the database
    * @returns A promise that resolves when the database is closed
    */
-  async close() {
-    await this._checkReady()
+  close() {
+    if (!this.#closePromise) {
+      this.#closePromise = this.#close()
+    }
+    return this.#closePromise
+  }
+
+  async #close() {
+    if (!this.#ready) {
+      await this.waitReady
+    }
+    // Claim the lifecycle transition synchronously once initialization is
+    // complete so later operations cannot queue behind close().
     this.#closing = true
 
+    // Let operations that passed _checkReady() before close() was called
+    // enqueue on the mutexes. Operations started after close() are rejected
+    // synchronously by the #closing flag set above.
+    await Promise.resolve()
+
+    await this._runExclusiveTransaction(() =>
+      this._runExclusiveQuery(() => this.#closeExclusive()),
+    )
+  }
+
+  async #closeExclusive() {
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
       await closeFn()
@@ -886,6 +909,12 @@ export class PGlite
       // Starting the database can take a while and it might not be ready yet
       // We'll wait for it to be ready before continuing
       await this.waitReady
+      if (this.#closing) {
+        throw new Error('PGlite is closing')
+      }
+      if (this.#closed) {
+        throw new Error('PGlite is closed')
+      }
     }
   }
 
