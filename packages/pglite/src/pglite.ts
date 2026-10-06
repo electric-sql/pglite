@@ -465,7 +465,7 @@ export class PGlite
           if (mod.PGLITE_ENV) {
             Object.assign(mod.ENV, mod.PGLITE_ENV)
           }
-        }
+        },
       ],
     }
 
@@ -1323,7 +1323,7 @@ export class PGlite
       this.mod!.ENV.PGDATABASE,
     ]
     let mainReturnValue = -1
-    
+
     mainReturnValue = this.mod!.callMain(singleModeArgs)
 
     if (mainReturnValue !== this.PGLITE_EXIT_ALIVE) {
