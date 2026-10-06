@@ -1151,6 +1151,190 @@ await testEsmCjsAndDTC(async (importType) => {
       await unsubscribe()
     })
 
+    it('deallocates all prepared statements for a windowed query on unsubscribe', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      const { unsubscribe } = await db.live.query({
+        query: 'SELECT * FROM testTable ORDER BY number',
+        offset: 1,
+        limit: 2,
+        callback: () => {},
+      })
+
+      const subscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      // A windowed query prepares both the windowed select and the total count
+      expect(subscribed.rows.length).toBe(2)
+
+      await unsubscribe()
+
+      const unsubscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      // Both must be deallocated
+      expect(unsubscribed.rows).toEqual([])
+    })
+
+    it('deallocates prepared statements for a non-windowed query on unsubscribe', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      const { unsubscribe } = await db.live.query({
+        query: 'SELECT * FROM testTable ORDER BY number',
+        callback: () => {},
+      })
+
+      const subscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      // A non-windowed query only prepares the select, there is no total count
+      expect(subscribed.rows.length).toBe(1)
+
+      // Must not throw trying to deallocate a total count that was never prepared
+      await unsubscribe()
+
+      const unsubscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      expect(unsubscribed.rows).toEqual([])
+    })
+
+    it('deallocates prepared statements for a windowed query with an offset and limit of 0', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      // 0 is falsy but both are provided, so the query is still windowed
+      const { initialResults, unsubscribe } = await db.live.query({
+        query: 'SELECT * FROM testTable ORDER BY number',
+        offset: 0,
+        limit: 0,
+        callback: () => {},
+      })
+
+      expect(initialResults.rows).toEqual([])
+      expect(initialResults.totalCount).toBe(5)
+
+      const subscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      expect(subscribed.rows.length).toBe(2)
+
+      await unsubscribe()
+
+      const unsubscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      expect(unsubscribed.rows).toEqual([])
+    })
+
+    it('does not accumulate prepared statements over repeated windowed subscribe/unsubscribe cycles', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      for (let i = 0; i < 3; i++) {
+        const { unsubscribe } = await db.live.query({
+          query: 'SELECT * FROM testTable ORDER BY number',
+          offset: 1,
+          limit: 2,
+          callback: () => {},
+        })
+        await unsubscribe()
+
+        const remaining = await db.query<{ name: string }>(
+          `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+        )
+        expect(remaining.rows).toEqual([])
+      }
+    })
+
+    it('only deallocates the prepared statements of the unsubscribed windowed query', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          number INT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (number)
+        SELECT i*10 FROM generate_series(1, 5) i;
+      `)
+
+      const windowed = await db.live.query({
+        query: 'SELECT * FROM testTable ORDER BY number',
+        offset: 1,
+        limit: 2,
+        callback: () => {},
+      })
+
+      const other = await db.live.query({
+        query: 'SELECT * FROM testTable WHERE number > 20 ORDER BY number',
+        offset: 0,
+        limit: 1,
+        callback: () => {},
+      })
+
+      const subscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      expect(subscribed.rows.length).toBe(4)
+
+      await windowed.unsubscribe()
+
+      // Two statements remain, and the other query still refreshes
+      const remaining = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%' ORDER BY name;`,
+      )
+      expect(remaining.rows.length).toBe(2)
+
+      await other.refresh()
+
+      await other.unsubscribe()
+
+      const unsubscribed = await db.query<{ name: string }>(
+        `SELECT name FROM pg_prepared_statements WHERE name LIKE 'live_query_%';`,
+      )
+      expect(unsubscribed.rows).toEqual([])
+    })
+
     it('throws error when only one of offset/limit is provided', async () => {
       await expect(
         db.live.query({
