@@ -681,6 +681,24 @@ const baseExtensions: Extension[] = [
     size: 41908,
     npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgmq',
   },
+  {
+    name: 'pg_partman',
+    description: `
+    Automated creation and maintenance of time-based and serial-based table
+    partition sets. The background worker is not included; call
+    run_maintenance() from your application instead.
+
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_partman
+    `,
+    shortDescription:
+      'Automated creation and maintenance of table partition sets.',
+    docs: 'https://github.com/pgpartman/pg_partman',
+    tags: ['postgres extension', 'external'],
+    importPath: '@electric-sql/pglite-pg_partman',
+    importName: 'pg_partman',
+    size: 1270062,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_partman',
+  },
 ]
 
 const tags = [
