@@ -1,7 +1,13 @@
 import type { LiveQuery, LiveQueryResults } from '@electric-sql/pglite/live'
+import type { QueryOptions } from '@electric-sql/pglite'
 import { query as buildQuery } from '@electric-sql/pglite/template'
 import { useEffect, useRef, useState } from 'react'
 import { usePGlite } from './provider'
+
+export interface UseLiveQueryOptions extends QueryOptions {
+  /** Called when the initial live query setup rejects. */
+  onError?: (error: Error) => void
+}
 
 function paramsEqual(
   a1: unknown[] | undefined | null,
@@ -17,13 +23,56 @@ function paramsEqual(
   return true
 }
 
+function shallowRecordsEqual(a: object | undefined, b: object | undefined) {
+  if (!a && !b) return true
+  if (!a || !b) return false
+  const aRecord = a as Record<PropertyKey, unknown>
+  const bRecord = b as Record<PropertyKey, unknown>
+  const aKeys = Reflect.ownKeys(a)
+  const bKeys = Reflect.ownKeys(b)
+  return (
+    aKeys.length === bKeys.length &&
+    aKeys.every((key) => Object.is(aRecord[key], bRecord[key]))
+  )
+}
+
+function queryOptionsEqual(
+  a: QueryOptions | undefined,
+  b: QueryOptions | undefined,
+) {
+  if (!a && !b) return true
+  if (!a || !b) return false
+  return (
+    a.rowMode === b.rowMode &&
+    shallowRecordsEqual(a.parsers, b.parsers) &&
+    shallowRecordsEqual(a.serializers, b.serializers) &&
+    Object.is(a.blob, b.blob) &&
+    Object.is(a.onNotice, b.onNotice) &&
+    paramsEqual(a.paramTypes, b.paramTypes)
+  )
+}
+
+function getQueryOptions(
+  options: UseLiveQueryOptions | undefined,
+): QueryOptions | undefined {
+  if (!options) return undefined
+  const queryOptions = { ...options }
+  delete queryOptions.onError
+  return Reflect.ownKeys(queryOptions).length > 0 ? queryOptions : undefined
+}
+
 function useLiveQueryImpl<T = { [key: string]: unknown }>(
   query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
   params: unknown[] | undefined | null,
   key?: string,
+  options?: UseLiveQueryOptions,
 ): Omit<LiveQueryResults<T>, 'affectedRows'> | undefined {
   const db = usePGlite()
   const paramsRef = useRef(params)
+  const queryOptions = getQueryOptions(options)
+  const optionsRef = useRef(queryOptions)
+  const onErrorRef = useRef(options?.onError)
+  onErrorRef.current = options?.onError
   const liveQueryRef = useRef<LiveQuery<T> | undefined>(undefined)
   let liveQuery: LiveQuery<T> | undefined
   let liveQueryChanged = false
@@ -42,6 +91,12 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     currentParams = params
   }
 
+  let currentOptions = optionsRef.current
+  if (!queryOptionsEqual(optionsRef.current, queryOptions)) {
+    optionsRef.current = queryOptions
+    currentOptions = queryOptions
+  }
+
   /* eslint-disable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
   useEffect(() => {
     let cancelled = false
@@ -50,14 +105,36 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       setResults(results)
     }
     if (typeof query === 'string') {
+      let unsubscribe: (() => Promise<void>) | undefined
       const ret =
         key !== undefined
           ? db.live.incrementalQuery<T>(query, currentParams, key, cb)
-          : db.live.query<T>(query, currentParams, cb)
+          : currentOptions
+            ? db.live.query<T>(query, currentParams, currentOptions, cb)
+            : db.live.query<T>(query, currentParams, cb)
+
+      void ret.then(
+        ({ unsubscribe: resolvedUnsubscribe }) => {
+          if (cancelled) {
+            void resolvedUnsubscribe()
+            return
+          }
+          unsubscribe = resolvedUnsubscribe
+        },
+        (error: Error) => {
+          if (cancelled) return
+          const onError = onErrorRef.current
+          if (onError) {
+            onError(error)
+          } else {
+            throw error
+          }
+        },
+      )
 
       return () => {
         cancelled = true
-        ret.then(({ unsubscribe }) => unsubscribe())
+        void unsubscribe?.()
       }
     } else if (query instanceof Promise) {
       query.then((liveQuery) => {
@@ -80,7 +157,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
     } else {
       throw new Error('Should never happen')
     }
-  }, [db, key, query, currentParams, liveQuery])
+  }, [db, key, query, currentParams, currentOptions, liveQuery])
   /* eslint-enable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
 
   if (liveQueryChanged && liveQuery) {
@@ -101,6 +178,7 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string,
   params?: unknown[] | null,
+  options?: UseLiveQueryOptions,
 ): LiveQueryResults<T> | undefined
 
 export function useLiveQuery<T = { [key: string]: unknown }>(
@@ -114,8 +192,9 @@ export function useLiveQuery<T = { [key: string]: unknown }>(
 export function useLiveQuery<T = { [key: string]: unknown }>(
   query: string | LiveQuery<T> | Promise<LiveQuery<T>>,
   params?: unknown[] | null,
+  options?: UseLiveQueryOptions,
 ): LiveQueryResults<T> | undefined {
-  return useLiveQueryImpl<T>(query, params)
+  return useLiveQueryImpl<T>(query, params, undefined, options)
 }
 
 useLiveQuery.sql = function <T = { [key: string]: unknown }>(

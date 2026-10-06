@@ -3,6 +3,7 @@ import type {
   PGliteInterface,
   Results,
   Transaction,
+  QueryOptions,
 } from '../interface'
 import type {
   LiveQueryOptions,
@@ -23,6 +24,7 @@ export type {
   LiveChanges,
   Change,
   LiveQueryResults,
+  LiveQueryOptions,
 } from './interface.js'
 
 const MAX_RETRIES = 5
@@ -36,18 +38,44 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
     async query<T>(
       query: string | LiveQueryOptions<T>,
       params?: any[] | null,
+      optionsOrCallback?: QueryOptions | ((results: Results<T>) => void),
       callback?: (results: Results<T>) => void,
     ) {
       let signal: AbortSignal | undefined
       let offset: number | undefined
       let limit: number | undefined
+      let options: QueryOptions | undefined
       if (typeof query !== 'string') {
-        signal = query.signal
-        params = query.params
-        callback = query.callback
-        offset = query.offset
-        limit = query.limit
-        query = query.query
+        const {
+          signal: querySignal,
+          params: queryParams,
+          callback: queryCallback,
+          offset: queryOffset,
+          limit: queryLimit,
+          query: queryString,
+          ...queryOptions
+        } = query
+        signal = querySignal
+        params = queryParams
+        callback = queryCallback
+        offset = queryOffset
+        limit = queryLimit
+        options = queryOptions
+        query = queryString
+      } else if (typeof optionsOrCallback === 'function') {
+        callback = optionsOrCallback
+      } else {
+        options = optionsOrCallback
+      }
+
+      // The prepared EXECUTE has no bind parameters, and live-query metadata
+      // queries rely on object rows. Only pass options that apply to the user's
+      // result rows or notices.
+      const resultOptions: QueryOptions | undefined = options && {
+        rowMode: options.rowMode,
+        parsers: options.parsers,
+        blob: options.blob,
+        onNotice: options.onNotice,
       }
 
       // Offset and limit must be provided together
@@ -82,7 +110,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           // Create a temporary view with the query
           const formattedQuery =
             params && params.length > 0
-              ? await formatQuery(pg, query, params, tx)
+              ? await formatQuery(pg, query, params, tx, options)
               : query
           await tx.exec(
             `CREATE OR REPLACE TEMP VIEW live_query_${id}_view AS ${formattedQuery}`,
@@ -110,6 +138,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             results = {
               ...(await tx.query<T>(
                 `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
+                undefined,
+                resultOptions,
               )),
               offset,
               limit,
@@ -120,7 +150,11 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               PREPARE live_query_${id}_get AS
               SELECT * FROM live_query_${id}_view;
             `)
-            results = await tx.query<T>(`EXECUTE live_query_${id}_get;`)
+            results = await tx.query<T>(
+              `EXECUTE live_query_${id}_get;`,
+              undefined,
+              resultOptions,
+            )
           }
           // Setup the listeners
           unsubList = await Promise.all(
@@ -178,13 +212,19 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 results = {
                   ...(await pg.query<T>(
                     `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
+                    undefined,
+                    resultOptions,
                   )),
                   offset,
                   limit,
                   totalCount, // This is the old total count
                 }
               } else {
-                results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
+                results = await pg.query<T>(
+                  `EXECUTE live_query_${id}_get;`,
+                  undefined,
+                  resultOptions,
+                )
               }
             } catch (e) {
               const msg = (e as Error).message

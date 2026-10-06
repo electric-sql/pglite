@@ -1,4 +1,4 @@
-import type { PGliteInterface, Transaction } from './interface.js'
+import type { PGliteInterface, QueryOptions, Transaction } from './interface.js'
 import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
 import { parseDescribeStatementResults } from './parse.js'
 import { TEXT } from './types.js'
@@ -19,6 +19,7 @@ export async function formatQuery(
   query: string,
   params?: any[] | null,
   tx?: Transaction | PGliteInterface,
+  options?: Pick<QueryOptions, 'paramTypes' | 'serializers'>,
 ) {
   if (!params || params.length === 0) {
     // no params so no formatting needed
@@ -30,9 +31,10 @@ export async function formatQuery(
   // Get the types of the parameters
   const messages = []
   try {
-    await pg.execProtocol(serializeProtocol.parse({ text: query }), {
-      syncToFs: false,
-    })
+    await pg.execProtocol(
+      serializeProtocol.parse({ text: query, types: options?.paramTypes }),
+      { syncToFs: false },
+    )
 
     messages.push(
       ...(
@@ -50,20 +52,55 @@ export async function formatQuery(
 
   const dataTypeIDs = parseDescribeStatementResults(messages)
 
+  let parameterTypeNames: string[] | undefined
+  if (options?.paramTypes?.length) {
+    const typeNameResult = await tx.query<Record<string, string>>(
+      `SELECT ${dataTypeIDs
+        .map(
+          (_, index) => `format_type($${index + 1}::oid, NULL) AS "${index}"`,
+        )
+        .join(', ')}`,
+      dataTypeIDs,
+    )
+    parameterTypeNames = dataTypeIDs.map(
+      (_, index) => typeNameResult.rows[0][index],
+    )
+  }
+
   // replace $1, $2, etc with %1$L, %2$L, etc
   // The `$` in `%n$L` is required for positional arguments; a bare `%nL` is
   // "min width n" and makes format() consume arguments sequentially, binding
   // the wrong values when placeholders are out of order or repeated.
   const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
-    return '%' + num + '$L'
+    const typeName = parameterTypeNames?.[Number(num) - 1]
+    const placeholder = '%' + num + '$L'
+    return typeName ? `(${placeholder})::${typeName}` : placeholder
   })
+
+  const serializedParams = params.map((param, index) => {
+    const serialize = options?.serializers?.[dataTypeIDs[index]]
+    return serialize && param !== null && param !== undefined
+      ? serialize(param)
+      : param
+  })
+  const passthroughSerializers = options?.serializers
+    ? Object.fromEntries(
+        Object.keys(options.serializers).map((oid) => [
+          oid,
+          (param: any) => String(param),
+        ]),
+      )
+    : undefined
 
   const ret = await tx.query<{
     query: string
   }>(
     `SELECT format($1, ${params.map((_, i) => `$${i + 2}`).join(', ')}) as query`,
-    [subbedQuery, ...params],
-    { paramTypes: [TEXT, ...dataTypeIDs] },
+    [subbedQuery, ...serializedParams],
+    {
+      paramTypes: [TEXT, ...dataTypeIDs],
+      serializers: passthroughSerializers,
+    },
   )
   return ret.rows[0].query
 }
