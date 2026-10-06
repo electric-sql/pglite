@@ -61,6 +61,8 @@ describe('user', () => {
     await expectToThrowAsync(async () => {
       await db2.query('SET ROLE no_such_user;')
     })
+
+    await db2.close()
   })
 
   it('switch to user created after initial run', async () => {
@@ -118,6 +120,8 @@ describe('user', () => {
     await expectToThrowAsync(async () => {
       await db2.query('SET ROLE no_such_user;')
     })
+
+    await db2.close()
   })
 
   it('create database and switch to it', async () => {
@@ -141,5 +145,7 @@ describe('user', () => {
     expect(currentUsername.rows).toEqual([{ current_user: 'test_user' }])
     const currentDatabase = await db2.query('SELECT current_database();')
     expect(currentDatabase.rows).toEqual([{ current_database: 'test_db' }])
+
+    await db2.close()
   })
 })
