@@ -929,9 +929,12 @@ export class PGlite
         this.#readOffset < message.length ||
         mod._pq_buffer_remaining_data() > 0
       ) {
+        let sp: number
         try {
+          sp = mod.stackSave();
           mod._PostgresMainLoopOnce()
         } catch (e: any) {
+          mod.stackRestore(sp!);
           // we catch here only the "known" exceptions
           const pgliteExitStatus = this.mod!._pgl_setPGliteExitStatus(-2)
           // if (e.status === this.POSTGRES_MAIN_LONGJMP) {
