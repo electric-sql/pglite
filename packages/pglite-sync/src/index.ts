@@ -29,6 +29,7 @@ import {
   applyMessagesToTableWithCopy,
   applyMessagesToTableWithJson,
 } from './apply'
+import { normalizeShapeStreamOptions } from './shapeStreamOptions'
 
 export * from './types'
 
@@ -154,10 +155,13 @@ async function createPlugin(
         shapes: Object.fromEntries(
           Object.entries(shapes).map(([key, shapeOptions]) => {
             const shapeMetadata = subState?.shape_metadata[key]
+            const shapeStreamOptions = normalizeShapeStreamOptions(
+              shapeOptions.shape,
+            )
             return [
               key,
               {
-                ...shapeOptions.shape,
+                ...shapeStreamOptions,
                 ...(shapeMetadata
                   ? {
                       offset: shapeMetadata.offset,
