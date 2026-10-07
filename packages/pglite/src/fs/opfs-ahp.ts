@@ -212,25 +212,14 @@ export class OpfsAhpFS extends BaseFilesystem {
     }
     await walk(this.state.root)
 
-    // Open all pool file handles
-    const poolPromises: Promise<void>[] = []
-    for (const filename of this.state.pool) {
-      poolPromises.push(
-        // eslint-disable-next-line no-async-promise-executor
-        new Promise<void>(async (resolve) => {
-          if (this.#fh.has(filename)) {
-            console.warn('File handle already exists for pool file', filename)
-          }
-          const fh = await this.#dataDirAh.getFileHandle(filename)
-          const sh: FileSystemSyncAccessHandle = await (
-            fh as any
-          ).createSyncAccessHandle()
-          this.#fh.set(filename, fh)
-          this.#sh.set(filename, sh)
-          resolve()
-        }),
-      )
-    }
+    // Open all pool file handles. Errors must propagate as a rejection of
+    // #init — with the previous async promise executors, any getFileHandle or
+    // createSyncAccessHandle throw became an unhandled rejection whose
+    // Promise.all never settled, so a broken pool wedged initialization
+    // forever instead of surfacing a catchable error.
+    const poolPromises = this.state.pool.map((filename) =>
+      this.#openPoolHandle(filename),
+    )
 
     await Promise.all([...walkPromises, ...poolPromises])
 
@@ -244,48 +233,97 @@ export class OpfsAhpFS extends BaseFilesystem {
     const change = size - this.state.pool.length
     const promises: Promise<void>[] = []
     for (let i = 0; i < change; i++) {
-      promises.push(
-        // eslint-disable-next-line no-async-promise-executor
-        new Promise<void>(async (resolve) => {
-          ++this.poolCounter
-          const filename = `${(Date.now() - 1704063600).toString(16).padStart(8, '0')}-${this.poolCounter.toString(16).padStart(8, '0')}`
-          const fh = await this.#dataDirAh.getFileHandle(filename, {
-            create: true,
-          })
-          const sh: FileSystemSyncAccessHandle = await (
-            fh as any
-          ).createSyncAccessHandle()
-          this.#fh.set(filename, fh)
-          this.#sh.set(filename, sh)
-          this.#logWAL({
-            opp: 'createPoolFile',
-            args: [filename],
-          })
-          this.state.pool.push(filename)
-          resolve()
-        }),
-      )
+      promises.push(this.#createPoolFile())
     }
     for (let i = 0; i > change; i--) {
-      promises.push(
-        // eslint-disable-next-line no-async-promise-executor
-        new Promise<void>(async (resolve) => {
-          const filename = this.state.pool.pop()!
-          this.#logWAL({
-            opp: 'deletePoolFile',
-            args: [filename],
-          })
-          const fh = this.#fh.get(filename)!
-          const sh = this.#sh.get(filename)
-          sh?.close()
-          await this.#dataDirAh.removeEntry(fh.name)
-          this.#fh.delete(filename)
-          this.#sh.delete(filename)
-          resolve()
-        }),
-      )
+      promises.push(this.#deletePoolFile())
     }
     await Promise.all(promises)
+  }
+
+  /**
+   * Open a single pool file's handle during #init. Errors propagate with a
+   * message naming the operation and filename so a failure surfaces as a
+   * real, catchable error instead of an unhandled rejection that wedges
+   * Promise.all.
+   */
+  async #openPoolHandle(filename: string): Promise<void> {
+    if (this.#fh.has(filename)) {
+      console.warn('File handle already exists for pool file', filename)
+    }
+    try {
+      const fh = await this.#dataDirAh.getFileHandle(filename)
+      const sh: FileSystemSyncAccessHandle = await (
+        fh as any
+      ).createSyncAccessHandle()
+      this.#fh.set(filename, fh)
+      this.#sh.set(filename, sh)
+    } catch (e) {
+      throw this.#wrapError(
+        `opfs-ahp: failed to open pool handle "${filename}"`,
+        e,
+      )
+    }
+  }
+
+  async #createPoolFile(): Promise<void> {
+    ++this.poolCounter
+    const filename = `${(Date.now() - 1704063600).toString(16).padStart(8, '0')}-${this.poolCounter.toString(16).padStart(8, '0')}`
+    try {
+      const fh = await this.#dataDirAh.getFileHandle(filename, {
+        create: true,
+      })
+      const sh: FileSystemSyncAccessHandle = await (
+        fh as any
+      ).createSyncAccessHandle()
+      this.#fh.set(filename, fh)
+      this.#sh.set(filename, sh)
+    } catch (e) {
+      throw this.#wrapError(
+        `opfs-ahp: failed to create pool file "${filename}"`,
+        e,
+      )
+    }
+    this.#logWAL({
+      opp: 'createPoolFile',
+      args: [filename],
+    })
+    this.state.pool.push(filename)
+  }
+
+  async #deletePoolFile(): Promise<void> {
+    const filename = this.state.pool.pop()!
+    this.#logWAL({
+      opp: 'deletePoolFile',
+      args: [filename],
+    })
+    const fh = this.#fh.get(filename)!
+    const sh = this.#sh.get(filename)
+    sh?.close()
+    try {
+      await this.#dataDirAh.removeEntry(fh.name)
+    } catch (e) {
+      throw this.#wrapError(
+        `opfs-ahp: failed to delete pool file "${filename}"`,
+        e,
+      )
+    } finally {
+      this.#fh.delete(filename)
+      this.#sh.delete(filename)
+    }
+  }
+
+  /**
+   * Wrap an underlying error into a catchable Error whose message names the
+   * failing operation, preserving the original as `cause` (the build target
+   * predates the `cause` constructor option, so it is attached manually).
+   */
+  #wrapError(message: string, cause: unknown): Error {
+    const err = new Error(
+      `${message}: ${(cause as Error)?.message ?? cause}`,
+    ) as Error & { cause?: unknown }
+    err.cause = cause
+    return err
   }
 
   _createPoolFileState(filename: string) {
