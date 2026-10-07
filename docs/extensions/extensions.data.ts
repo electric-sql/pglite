@@ -681,6 +681,58 @@ const baseExtensions: Extension[] = [
     size: 41908,
     npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgmq',
   },
+  {
+    name: 'pgaudit',
+    description: `
+    The PostgreSQL Audit Extension (pgAudit) provides detailed session and/or object audit logging via the standard PostgreSQL logging facility.
+
+    The goal of pgAudit is to provide PostgreSQL users with capability to produce audit logs often required to comply with government, financial, or ISO certifications.
+
+    An audit is an official inspection of an individual's or organization's accounts, typically by an independent body. The information gathered by pgAudit is properly called an audit trail or audit log. The term audit log is used in this documentation.
+
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pgaudit
+    `,
+    shortDescription:
+      'Detailed session and/or object audit logging via the standard PostgreSQL logging facility.',
+    docs: 'https://github.com/pgaudit/pgaudit',
+    tags: ['postgres extension', 'external'],
+    importPath: '@electric-sql/pglite-pgaudit',
+    importName: 'pgaudit',
+    size: 8276,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pgaudit',
+  },
+  {
+    name: 'pg_repack',
+    description: `
+    pg_repack is a PostgreSQL extension which lets you remove bloat from tables and indexes, and optionally restore the physical order of clustered indexes. Unlike CLUSTER and VACUUM FULL it works online, without holding an exclusive lock on the processed tables during processing. pg_repack is efficient to boot, with performance comparable to using CLUSTER directly.
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-pg_repack
+    `,
+    shortDescription:
+      'Remove bloat from tables and indexes, and optionally restore the physical order of clustered indexes',
+    docs: 'https://github.com/reorg/pg_repack',
+    tags: ['postgres extension', 'external'],
+    importPath: '@electric-sql/pglite-pg_repack',
+    importName: 'pg_repack',
+    size: 42523,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_repack',
+  },
+  {
+    name: 'hypopg',
+    description: `
+    HypoPG is a PostgreSQL extension adding support for hypothetical indexes.
+
+    A hypothetical -- or virtual -- index is an index that doesn't really exist, and thus doesn't cost CPU, disk or any resource to create. They're useful to know if specific indexes can increase performance for problematic queries, since you can know if PostgreSQL will use these indexes or not without having to spend resources to create them.    
+    
+    This is an **external** extension, distributed as a separate package at https://www.npmjs.com/package/@electric-sql/pglite-hypopg
+    `,
+    shortDescription: 'Create hypothetical (virtual) indexes.',
+    docs: 'https://github.com/reorg/hypopg',
+    tags: ['postgres extension', 'external'],
+    importPath: '@electric-sql/pglite-hypopg',
+    importName: 'hypopg',
+    size: 1,
+    npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-hypopg',
+  },
 ]
 
 const tags = [
