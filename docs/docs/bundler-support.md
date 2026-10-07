@@ -84,6 +84,23 @@ const db = await PGlite.create({
 
 Alternatively, you can use an esbuild plugin like [`@chialab/esbuild-plugin-meta-url`](https://chialab.github.io/rna/guide/esbuild-plugin-meta-url) to handle `new URL()` imports automatically.
 
+## Nitro and unwasm
+
+PGlite provides an `unwasm` [export condition](https://nodejs.org/api/packages.html#conditional-exports) for bundlers using [unwasm](https://github.com/unjs/unwasm), such as [Nitro](https://nitro.build) 3. With this condition, `pglite.wasm`, `initdb.wasm` and the `pglite.data` FS bundle are imported as Wasm modules, so the bundler includes them in its output and no extra configuration is needed.
+
+When using unwasm's Rollup plugin directly, add `unwasm` to the export conditions of your resolver:
+
+```js
+import { nodeResolve } from '@rollup/plugin-node-resolve'
+import { unwasm } from 'unwasm/plugin'
+
+export default {
+  plugins: [nodeResolve({ exportConditions: ['unwasm'] }), unwasm({})],
+}
+```
+
+PGlite contrib extensions are still loaded at runtime from files next to the bundle.
+
 ## Next.js
 
 When using [Next.js](https://nextjs.org/), make sure to add `@electric-sql/pglite` to the `transpilePackages` array in `next.config.js`:

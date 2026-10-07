@@ -34,18 +34,26 @@ for (const file of contribFiles) {
   }
 }
 
+// Entry for the `unwasm` export condition, it shares its types with `src/index.ts`
+const unwasmEntryPoint = 'src/unwasm.ts'
+
 const minify = process.env.DEBUG === 'true' ? false : true
 
 export default defineConfig([
   {
-    entry: entryPoints,
+    entry: [...entryPoints, unwasmEntryPoint],
     sourcemap: true,
     dts: {
       entry: entryPoints,
       resolve: true,
     },
     clean: true,
-    external: ['../release/pglite.js', '../release/pglite.cjs'],
+    external: [
+      '../release/pglite.js',
+      '../release/pglite.cjs',
+      // Resolved by unwasm in the consuming bundler
+      /\.wasm\?module$/,
+    ],
     esbuildPlugins: [replaceAssertPlugin],
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS

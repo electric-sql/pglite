@@ -21,6 +21,10 @@
   "module": "dist/index.js",
   "exports": {
     ".": {
+      "unwasm": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/unwasm.js"
+      },
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
@@ -100,6 +104,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/unwasm.cjs",
+    "!dist/unwasm.cjs.map",
     "!dist/auth_delay.tar.gz",
     "!dist/basebackup_to_shell.tar.gz",
     "!dist/basic_archive.tar.gz",
