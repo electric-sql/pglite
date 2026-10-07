@@ -27,6 +27,30 @@ export type {
 
 const MAX_RETRIES = 5
 
+// Some errors are expected to happen when using the multi-tab worker, as the
+// expected prepared statements or views may not exist yet. Retry `fn` up to
+// MAX_RETRIES times as long as the thrown error matches `message`.
+const retry = async (
+  fn: () => Promise<void>,
+  isRetryableMessage: (message: string) => boolean,
+  onRetry?: () => Promise<void>,
+) => {
+  for (let count = 0; ; count++) {
+    try {
+      if (count > 0 && onRetry) {
+        await onRetry()
+      }
+      await fn()
+      return
+    } catch (e) {
+      const msg = (e as Error).message
+      if (count >= MAX_RETRIES || !isRetryableMessage(msg)) {
+        throw e
+      }
+    }
+  }
+}
+
 const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
   // The notify triggers are only ever added and never removed
   // Keep track of which triggers have been added to avoid adding them multiple times
@@ -135,7 +159,12 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           )
         })
       }
-      await init()
+
+      const isRetryableMessage = (message: string) =>
+        message.startsWith(`prepared statement "live_query_${id}`) &&
+        message.endsWith('does not exist')
+
+      await retry(init, isRetryableMessage)
 
       // Function to refresh the query
       const refresh = debounceMutex(
@@ -165,43 +194,25 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
           offset = newOffset ?? offset
           limit = newLimit ?? limit
 
-          const run = async (count = 0) => {
+          const run = async () => {
             if (callbacks.length === 0) {
               return
             }
-            try {
-              if (isWindowed) {
-                // For a windowed query we defer the refresh of the total count until
-                // after we have returned the results with the old total count. This
-                // is due to a count(*) being a fairly slow query and we want to update
-                // the rows on screen as quickly as possible.
-                results = {
-                  ...(await pg.query<T>(
-                    `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
-                  )),
-                  offset,
-                  limit,
-                  totalCount, // This is the old total count
-                }
-              } else {
-                results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
+            if (isWindowed) {
+              // For a windowed query we defer the refresh of the total count until
+              // after we have returned the results with the old total count. This
+              // is due to a count(*) being a fairly slow query and we want to update
+              // the rows on screen as quickly as possible.
+              results = {
+                ...(await pg.query<T>(
+                  `EXECUTE live_query_${id}_get(${limit}, ${offset});`,
+                )),
+                offset,
+                limit,
+                totalCount, // This is the old total count
               }
-            } catch (e) {
-              const msg = (e as Error).message
-              if (
-                msg.startsWith(`prepared statement "live_query_${id}`) &&
-                msg.endsWith('does not exist')
-              ) {
-                // If the prepared statement does not exist, reset and try again
-                // This can happen if using the multi-tab worker
-                if (count > MAX_RETRIES) {
-                  throw e
-                }
-                await init()
-                run(count + 1)
-              } else {
-                throw e
-              }
+            } else {
+              results = await pg.query<T>(`EXECUTE live_query_${id}_get;`)
             }
 
             runResultCallbacks(callbacks, results)
@@ -221,7 +232,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
               }
             }
           }
-          await run()
+          await retry(run, isRetryableMessage, init)
         },
       )
 
@@ -429,20 +440,25 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
         })
       }
 
-      await init()
+      const isRetryableMessage = (message: string) =>
+        message ===
+        `relation "live_query_${id}_state${stateSwitch}" does not exist`
+
+      await retry(init, isRetryableMessage)
 
       const refresh = debounceMutex(async () => {
         if (callbacks.length === 0 && changes) {
           return
         }
         let reset = false
-        for (let i = 0; i < 5; i++) {
-          try {
+
+        await retry(
+          async () => {
             await pg.transaction(async (tx) => {
               // Populate the state table
               await tx.exec(`
                 INSERT INTO live_query_${id}_state${stateSwitch} 
-                  SELECT * FROM live_query_${id}_view;
+                SELECT * FROM live_query_${id}_view;
               `)
 
               // Get the changes
@@ -458,23 +474,13 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                 TRUNCATE live_query_${id}_state${stateSwitch};
               `)
             })
-            break
-          } catch (e) {
-            const msg = (e as Error).message
-            if (
-              msg ===
-              `relation "live_query_${id}_state${stateSwitch}" does not exist`
-            ) {
-              // If the state table does not exist, reset and try again
-              // This can happen if using the multi-tab worker
-              reset = true
-              await init()
-              continue
-            } else {
-              throw e
-            }
-          }
-        }
+          },
+          isRetryableMessage,
+          async () => {
+            await init()
+            reset = true
+          },
+        )
 
         runChangeCallbacks(callbacks, [
           ...(reset
