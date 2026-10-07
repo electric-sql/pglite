@@ -78,6 +78,10 @@ jobs:
             packages/pglite-postgis/release
             packages/pglite-pgvector/release
             packages/pglite-pgmq/release
+            packages/pglite-plpgsql-check/release
+            packages/pglite-hypopg/release
+            packages/pglite-pg_repack/release
+            packages/pglite-pgaudit/release
           key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}-pglite-${{ steps.pglite-version.outputs.version }}
 
       - name: Build all if necessary
@@ -186,6 +190,38 @@ jobs:
           name: pglite-pgmq-release-files-node-v20.x
           path: ./packages/pglite-pgmq/release/**
           retention-days: 60
+
+      - name: Upload pglite-plpgsql-check build artifacts to Github artifacts
+        id: upload-pglite-plpgsql-check-release-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-plpgsql-check-release-files-node-v20.x
+          path: ./packages/pglite-plpgsql-check/release/**
+          retention-days: 60
+
+      - name: Upload pglite-hypopg build artifacts to Github artifacts
+        id: upload-pglite-hypopg-release-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-hypopg-release-files-node-v20.x
+          path: ./packages/pglite-hypopg/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pg_repack build artifacts to Github artifacts
+        id: upload-pglite-pg_repack-release-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pg_repack-release-files-node-v20.x
+          path: ./packages/pglite-pg_repack/release/**
+          retention-days: 60
+
+      - name: Upload pglite-pgaudit build artifacts to Github artifacts
+        id: upload-pglite-pgaudit-release-files
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pgaudit-release-files-node-v20.x
+          path: ./packages/pglite-pgaudit/release/**
+          retention-days: 60          
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
@@ -394,6 +430,30 @@ jobs:
         with:
           name: pglite-pgmq-release-files-node-v20.x
           path: ./packages/pglite-pgmq/release/
+
+      - name: Download pglite-plpgsql-check build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-plpgsql-check-release-files-node-v20.x
+          path: ./packages/pglite-plpgsql-check/release/
+      
+      - name: Download pglite-hypopg build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-hypopg-release-files-node-v20.x
+          path: ./packages/pglite-hypopg/release/
+
+      - name: Download pglite-pg_repack build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg_repack-release-files-node-v20.x
+          path: ./packages/pglite-pg_repack/release/
+
+      - name: Download pglite-pgaudit build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pgaudit-release-files-node-v20.x
+          path: ./packages/pglite-pgaudit/release/              
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -482,6 +542,33 @@ jobs:
         with:
           name: pglite-pgmq-dist-node-v${{ matrix.node }}
           path: ./packages/pglite-pgmq/dist/*
+
+      - name: Upload pglite-plpgsql-check distribution artifact
+        id: upload-pglite-plpgsql-check-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-plpgsql-check-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-plpgsql-check/dist/*
+      - name: Upload pglite-hypopg distribution artifact
+        id: upload-pglite-hypopg-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-hypopg-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-hypopg/dist/*
+
+      - name: Upload pglite-pg_repack distribution artifact
+        id: upload-pglite-pg_repack-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pg_repack-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pg_repack/dist/* 
+
+      - name: Upload pglite-pgaudit distribution artifact
+        id: upload-pglite-pgaudit-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-pgaudit-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-pgaudit/dist/*                  
 
   publish-website-with-demos:
     name: Publish website with demos
@@ -575,6 +662,29 @@ jobs:
         with:
           name: pglite-pgmq-dist-node-v20.x
           path: ./packages/pglite-pgmq/dist/
+
+      - name: Download pglite-plpgsql-check dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-plpgsql-check-dist-node-v20.x
+          path: ./packages/pglite-plpgsql-check/dist/
+      - name: Download pglite-hypopg dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-hypopg-dist-node-v20.x
+          path: ./packages/pglite-hypopg/dist/    
+
+      - name: Download pglite-pg_repack dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg_repack-dist-node-v20.x
+          path: ./packages/pglite-pg_repack/dist/
+
+      - name: Download pglite-pgaudit dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pgaudit-dist-node-v20.x
+          path: ./packages/pglite-pgaudit/dist/                     
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -732,11 +842,35 @@ jobs:
           name: pglite-pgmq-release-files-node-v20.x
           path: ./packages/pglite-pgmq/release/
 
+      - name: Download pglite-plpgsql-check build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-plpgsql-check-release-files-node-v20.x
+          path: ./packages/pglite-plpgsql-check/release/
+
       - name: Download pglite-age build artifacts
         uses: actions/download-artifact@v8
         with:
           name: pglite-age-release-files-node-v20.x
           path: ./packages/pglite-age/release/
+
+      - name: Download pglite-hypopg build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-hypopg-release-files-node-v20.x
+          path: ./packages/pglite-hypopg/release/
+
+      - name: Download pglite-pg_repack build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pg_repack-release-files-node-v20.x
+          path: ./packages/pglite-pg_repack/release/              
+
+      - name: Download pglite-pgaudit build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-pgaudit-release-files-node-v20.x
+          path: ./packages/pglite-pgaudit/release/  
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "./packages/**" build

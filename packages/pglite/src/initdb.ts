@@ -110,6 +110,12 @@ async function execInitdb({
         })
       return {}
     },
+    locateFile: (path, prefix) => {
+      if (path.endsWith('.so')) {
+        return '/pglite/lib/' + path
+      }
+      return prefix + path
+    },
     preRun: [
       (mod: InitdbMod) => {
         mod.ENV.PGDATA = PGDATA
