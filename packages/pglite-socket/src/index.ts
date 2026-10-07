@@ -76,59 +76,63 @@ class QueryQueueManager {
 
     this.processing = true
 
-    while (this.queue.length > 0) {
-      let query
+    try {
+      while (this.queue.length > 0) {
+        let query
 
-      if (this.db.isInTransaction() && this.lastHandlerId) {
-        const i = this.queue.findIndex(
-          (q) => q.handlerId === this.lastHandlerId,
-        )
-        if (i === -1) {
-          // we didn't find any other query from the same client!
-          this.log(
-            `transaction started, but no query from the same handler id found in queue`,
-            this.lastHandlerId,
+        if (this.db.isInTransaction() && this.lastHandlerId) {
+          const i = this.queue.findIndex(
+            (q) => q.handlerId === this.lastHandlerId,
           )
-          query = null
+          if (i === -1) {
+            // we didn't find any other query from the same client!
+            this.log(
+              `transaction started, but no query from the same handler id found in queue`,
+              this.lastHandlerId,
+            )
+            query = null
+          } else {
+            query = this.queue.splice(i, 1)[0]
+          }
         } else {
-          query = this.queue.splice(i, 1)[0]
+          query = this.queue.shift()
         }
-      } else {
-        query = this.queue.shift()
-      }
-      if (!query) break
+        if (!query) break
 
-      const waitTime = Date.now() - query.timestamp
-      this.log(
-        `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
-      )
+        const waitTime = Date.now() - query.timestamp
+        this.log(
+          `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
+        )
 
-      let result = 0
-      try {
-        // Execute the query with exclusive access to PGlite
-        await this.db.runExclusive(async () => {
-          return await this.db.execProtocolRawStream(query.message, {
-            onRawData: (data) => {
-              result += data.length
-              query.onData(data)
-            },
+        let result = 0
+        try {
+          // Execute the query with exclusive access to PGlite
+          await this.db.runExclusive(async () => {
+            return await this.db.execProtocolRawStream(query.message, {
+              onRawData: (data) => {
+                result += data.length
+                query.onData(data)
+              },
+            })
           })
-        })
-      } catch (error) {
-        this.log(`query from handler #${query.handlerId} failed:`, error)
-        query.reject(error as Error)
-        return
+        } catch (error) {
+          this.log(`query from handler #${query.handlerId} failed:`, error)
+          query.reject(error as Error)
+          // continue processing the remaining queued queries so a single
+          // failed execution does not deadlock the queue
+          continue
+        }
+
+        this.log(
+          `query from handler #${query.handlerId} completed, ${result} bytes`,
+        )
+        this.lastHandlerId = query.handlerId
+        query.resolve(result)
       }
-
-      this.log(
-        `query from handler #${query.handlerId} completed, ${result} bytes`,
-      )
-      this.lastHandlerId = query.handlerId
-      query.resolve(result)
+    } finally {
+      this.processing = false
+      this.log(`queue processing complete, queue length is`, this.queue.length)
     }
-
-    this.processing = false
-    this.log(`queue processing complete, queue length is`, this.queue.length)
   }
 
   getQueueLength(): number {
