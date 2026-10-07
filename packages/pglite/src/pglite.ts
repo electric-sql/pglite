@@ -1,5 +1,6 @@
 import { Mutex } from 'async-mutex'
 import { BasePGlite } from './base.js'
+import { getDefaultOptions } from './defaultOptions.js'
 import {
   copyToFS,
   loadExtensionBundle,
@@ -294,6 +295,8 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
+    options = { ...getDefaultOptions(), ...options }
+
     if (options.fs) {
       this.fs = options.fs
     } else {
