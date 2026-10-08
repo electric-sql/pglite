@@ -168,11 +168,11 @@ const bind = (config: BindOpts = {}): Uint8Array => {
   const len = values.length
 
   writer.addCString(portal).addCString(statement)
-  writer.addInt16(len)
+  writer.addUint16(len)
 
   writeValues(values, config.valueMapper)
 
-  writer.addInt16(len)
+  writer.addUint16(len)
   writer.add(paramWriter.flush())
 
   // format code
