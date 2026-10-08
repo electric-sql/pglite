@@ -298,7 +298,6 @@ jobs:
         env:
           TEST_TIMEOUT: 180000
         run: |
-          rm tests/targets/web/*-opfs-ahp.test.web.js
           pnpm test:web
 
       - name: Test Deno

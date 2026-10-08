@@ -355,9 +355,19 @@ export class PGlite
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
+        if (options.onStdout) {
+          if (options.onStdout(text)) {
+            return this.#print(text)
+          }
+        }
         this.#print(text)
       },
       printErr: (text: string) => {
+        if (options.onStderr) {
+          if (options.onStderr(text)) {
+            return this.#printErr(text)
+          }
+        }
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {

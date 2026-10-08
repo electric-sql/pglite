@@ -103,6 +103,8 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   startParams?: string[]
   initDbStartParams?: string[]
   postgresqlconf?: string[] | string
+  onStdout?: (text: string) => boolean
+  onStderr?: (text: string) => boolean  
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
