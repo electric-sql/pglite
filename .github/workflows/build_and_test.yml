@@ -85,11 +85,11 @@ jobs:
           key: wasm-build-${{ steps.postgres-pglite-commit-id.outputs.hash }}-pglite-${{ steps.pglite-version.outputs.version }}
 
       - name: Build all if necessary
-        # if: steps.postgres-pglite-cache.outputs.cache-hit != 'true'
+        if: steps.postgres-pglite-cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         env:
           PGSRC: ${{ github.workspace }}/postgres-pglite
-        run: pnpm build:all:debug
+        run: pnpm build:all
 
       - name: Build TS only packages if postgres-pglite artifacts already available
         if: steps.postgres-pglite-cache.outputs.cache-hit == 'true'
