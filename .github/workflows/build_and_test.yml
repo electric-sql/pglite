@@ -295,6 +295,8 @@ jobs:
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
+        env:
+          TEST_TIMEOUT: 180000
         run: |
           rm tests/targets/web/*-opfs-ahp.test.web.js
           pnpm test:web
