@@ -295,7 +295,7 @@ jobs:
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
-        run: 
+        run: |
           rm tests/targets/web/*-opfs-ahp.test.web.js
           pnpm test:web
 
