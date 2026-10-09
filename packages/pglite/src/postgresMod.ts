@@ -28,6 +28,8 @@ export interface PostgresMod
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
   stringToUTF8OnStack: (s: string) => number
+  stackSave: () => number
+  stackRestore: (sp: number) => number
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
@@ -64,8 +66,6 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
-  _pgl_getPGliteExitStatus: () => number
-  _pgl_setPGliteExitStatus: (status: number) => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

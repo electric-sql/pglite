@@ -102,7 +102,7 @@ export abstract class BaseFilesystem implements Filesystem {
         ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
           const EMFS = createEmscriptenFS(mod, this)
-          mod.FS.mkdir(PGDATA)
+          mod.FS.mkdirTree(PGDATA)
           mod.FS.mount(EMFS, {}, PGDATA)
         },
       ],
