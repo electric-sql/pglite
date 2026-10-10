@@ -510,7 +510,7 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
 
         EMFS.stream_ops.read(
           stream,
-          Module.HEAP8 as unknown as Uint8Array,
+          Module.HEAPU8 as unknown as Uint8Array,
           ptr,
           length,
           position,
