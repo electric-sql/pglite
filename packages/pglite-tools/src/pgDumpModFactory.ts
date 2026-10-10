@@ -33,6 +33,7 @@ export interface PgDumpMod
   print: (test: string) => void
   printErr: (text: string) => void
   callMain: (args?: string[]) => number
+  PROXYFS: Emscripten.FileSystemType
 }
 
 type PgDumpFactory<T extends PgDumpMod = PgDumpMod> = (

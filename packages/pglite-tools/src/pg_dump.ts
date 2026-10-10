@@ -25,6 +25,8 @@ interface ExecResult {
   stdout: string
 }
 
+export const PG_ROOT = '/pglite'
+
 /**
  * Inner function to execute pg_dump
  */
@@ -60,7 +62,7 @@ async function execPgDump({
         mod.onRuntimeInitialized = () => {
           let bufferedBytes: Uint8Array = new Uint8Array()
 
-          pgdump_write = mod.addFunction((ptr: any, length: number) => {
+          pgdump_write = mod.addFunction((ptr: number, length: number) => {
             let bytes
             try {
               bytes = mod.HEAPU8.subarray(ptr, ptr + length)
@@ -75,27 +77,46 @@ async function execPgDump({
             })
 
             return length
-          }, 'iii')
+          }, 'ipi')
 
-          pgdump_read = mod.addFunction((ptr: any, max_length: number) => {
+          pgdump_read = mod.addFunction((ptr: number, max_length: number) => {
             let length = bufferedBytes.length
             if (length > max_length) {
               length = max_length
             }
             try {
-              mod.HEAP8.set(bufferedBytes.subarray(0, length), ptr)
+              mod.HEAPU8.set(bufferedBytes.subarray(0, length), ptr)
             } catch (e) {
               console.error(e)
             }
             bufferedBytes = bufferedBytes.subarray(length, bufferedBytes.length)
             return length
-          }, 'iii')
+          }, 'ipi')
 
           mod._pgl_set_rw_cbs(pgdump_read, pgdump_write)
-
-          // default $HOME in emscripten is /home/postgres
-          // mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
         }
+      },
+      (mod: PgDumpMod) => {
+        mod.FS.mkdirTree(PG_ROOT)
+        mod.FS.mount(
+          mod.PROXYFS,
+          {
+            root: PG_ROOT,
+            fs: pg.Module.FS,
+          },
+          PG_ROOT,
+        )
+        mod.FS.mkdirTree('/home')
+        mod.FS.mount(
+          mod.PROXYFS,
+          {
+            root: '/home',
+            fs: pg.Module.FS,
+          },
+          '/home',
+        )        
+        // default $HOME in emscripten is /home/postgres
+        mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html        
       },
     ],
   }
@@ -105,6 +126,7 @@ async function execPgDump({
   let fileContents = ''
   if (!exitCode) {
     fileContents = mod.FS.readFile(dumpFilePath, { encoding: 'utf8' })
+    mod.FS.unlink(dumpFilePath)
   }
 
   return {
