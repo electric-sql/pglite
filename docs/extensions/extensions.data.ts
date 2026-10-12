@@ -699,6 +699,7 @@ const baseExtensions: Extension[] = [
     size: 1270062,
     npmjsUrl: 'https://www.npmjs.com/package/@electric-sql/pglite-pg_partman',
   },
+  {
     name: 'pgaudit',
     description: `
     The PostgreSQL Audit Extension (pgAudit) provides detailed session and/or object audit logging via the standard PostgreSQL logging facility.
