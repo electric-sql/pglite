@@ -1,6 +1,6 @@
 # @electric-sql/pglite-plpgsql-check
 
-## 0.0.2
+## 0.0.1
 
 ### Patch Changes
 
