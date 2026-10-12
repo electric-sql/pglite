@@ -62,13 +62,12 @@ export async function loadTar(
 
   for (const file of files) {
     const filePath = `${pgDataDir}/${file.name}`
-
     // Ensure the directory structure exists
     const dirPath = filePath.split('/').slice(0, -1)
     for (let i = 1; i <= dirPath.length; i++) {
       const dir = dirPath.slice(0, i).join('/')
-      if (!FS.analyzePath(dir).exists) {
-        FS.mkdir(dir)
+      if (dir.length && !FS.analyzePath(dir).exists) {
+        FS.mkdirTree(dir)
       }
     }
 

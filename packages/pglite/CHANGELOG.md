@@ -1,5 +1,31 @@
 # @electric-sql/pglite
 
+## 0.5.9
+
+### Patch Changes
+
+- 389b731: upgrade to PostgreSQL 18.6
+- 389b731: Export additional core symbols from the main WASM module required by the plpgsql_check extension
+
+## 0.5.8
+
+### Patch Changes
+
+- c771db3: Do not set process.exitCode at all
+
+## 0.5.7
+
+### Patch Changes
+
+- 2f9cf75: Fix convert_to
+
+## 0.5.6
+
+### Patch Changes
+
+- 69b7d87: Apply the second options argument when calling `PGlite.create(undefined, options)`.
+- 6c14380: fixes for process.exitCode
+
 ## 0.5.5
 
 ### Patch Changes

@@ -339,7 +339,7 @@ export class Parser {
     bytes: ArrayBuffer,
   ) {
     this.#reader.setBuffer(offset, bytes)
-    const parameterCount = this.#reader.int16()
+    const parameterCount = this.#reader.uint16()
     const message = new ParameterDescriptionMessage(length, parameterCount)
     for (let i = 0; i < parameterCount; i++) {
       message.dataTypeIDs[i] = this.#reader.int32()

@@ -140,6 +140,17 @@ describe('serializer', () => {
         .join(true, 'B')
       expect(actual).toEqual(expectedBuffer)
     })
+
+    it('builds bind message with more than 32767 parameters', () => {
+      const actual = serialize.bind({ values: new Array(32768).fill('x') })
+      // Layout after the 5-byte header: two empty CStrings (portal + statement)
+      // then the parameter format-code count, encoded as an unsigned 16-bit int.
+      expect(actual[7]).toBe(0x80)
+      expect(actual[8]).toBe(0x00)
+      // After 32768 format codes (2 bytes each), the parameter value count.
+      expect(actual[65545]).toBe(0x80)
+      expect(actual[65546]).toBe(0x00)
+    })
   })
 
   it('with custom valueMapper', () => {

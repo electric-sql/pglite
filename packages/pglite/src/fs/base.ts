@@ -102,7 +102,7 @@ export abstract class BaseFilesystem implements Filesystem {
         ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
           const EMFS = createEmscriptenFS(mod, this)
-          mod.FS.mkdir(PGDATA)
+          mod.FS.mkdirTree(PGDATA)
           mod.FS.mount(EMFS, {}, PGDATA)
         },
       ],
@@ -510,7 +510,7 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
 
         EMFS.stream_ops.read(
           stream,
-          Module.HEAP8 as unknown as Uint8Array,
+          Module.HEAPU8 as unknown as Uint8Array,
           ptr,
           length,
           position,
