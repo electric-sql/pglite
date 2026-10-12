@@ -63,6 +63,11 @@ export interface DirectoryNode extends BaseNode {
 
 export type Node = FileNode | DirectoryNode
 
+interface FileSystemHandles {
+  fh: FileSystemFileHandle
+  sh: FileSystemSyncAccessHandle
+}
+
 /**
  * PGlite OPFS access handle pool filesystem.
  * Opens a pool of sync access handles and then allocates them as needed.
@@ -79,8 +84,7 @@ export class OpfsAhpFS extends BaseFilesystem {
   #stateFH!: FileSystemFileHandle
   #stateSH!: FileSystemSyncAccessHandle
 
-  #fh: Map<string, FileSystemFileHandle> = new Map()
-  #sh: Map<string, FileSystemSyncAccessHandle> = new Map()
+  #fssh: Map<string, FileSystemHandles> = new Map()
 
   #handleIdCounter = 0
   #openHandlePaths: Map<number, string> = new Map()
@@ -120,8 +124,8 @@ export class OpfsAhpFS extends BaseFilesystem {
   }
 
   async closeFs(): Promise<void> {
-    for (const sh of this.#sh.values()) {
-      sh.close()
+    for (const entry of this.#fssh.values()) {
+      entry.sh.close()
     }
     this.#stateSH.flush()
     this.#stateSH.close()
@@ -198,9 +202,7 @@ export class OpfsAhpFS extends BaseFilesystem {
           const sh: FileSystemSyncAccessHandle = await (
             fh as any
           ).createSyncAccessHandle()
-          this.#fh.set(node.backingFilename, fh)
-
-          this.#sh.set(node.backingFilename, sh)
+          this.#fssh.set(node.backingFilename, { sh, fh })
         } catch (e) {
           console.error('Error opening file handle for node', node, e)
         }
@@ -218,15 +220,14 @@ export class OpfsAhpFS extends BaseFilesystem {
       poolPromises.push(
         // eslint-disable-next-line no-async-promise-executor
         new Promise<void>(async (resolve) => {
-          if (this.#fh.has(filename)) {
+          if (this.#fssh.has(filename)) {
             console.warn('File handle already exists for pool file', filename)
           }
           const fh = await this.#dataDirAh.getFileHandle(filename)
           const sh: FileSystemSyncAccessHandle = await (
             fh as any
           ).createSyncAccessHandle()
-          this.#fh.set(filename, fh)
-          this.#sh.set(filename, sh)
+          this.#fssh.set(filename, { fh, sh })
           resolve()
         }),
       )
@@ -255,8 +256,7 @@ export class OpfsAhpFS extends BaseFilesystem {
           const sh: FileSystemSyncAccessHandle = await (
             fh as any
           ).createSyncAccessHandle()
-          this.#fh.set(filename, fh)
-          this.#sh.set(filename, sh)
+          this.#fssh.set(filename, { fh, sh })
           this.#logWAL({
             opp: 'createPoolFile',
             args: [filename],
@@ -275,12 +275,10 @@ export class OpfsAhpFS extends BaseFilesystem {
             opp: 'deletePoolFile',
             args: [filename],
           })
-          const fh = this.#fh.get(filename)!
-          const sh = this.#sh.get(filename)
-          sh?.close()
-          await this.#dataDirAh.removeEntry(fh.name)
-          this.#fh.delete(filename)
-          this.#sh.delete(filename)
+          const fhsh = this.#fssh.get(filename)
+          fhsh?.sh?.close()
+          await this.#dataDirAh.removeEntry(fhsh!.fh.name)
+          this.#fssh.delete(filename)
           resolve()
         }),
       )
@@ -351,7 +349,7 @@ export class OpfsAhpFS extends BaseFilesystem {
   lstat(path: string): FsStats {
     const node = this.#resolvePath(path)
     const size =
-      node.type === 'file' ? this.#sh.get(node.backingFilename)!.getSize() : 0
+      node.type === 'file' ? this.#fssh.get(node.backingFilename)!.sh.getSize() : 0
     const blksize = 4096
     return {
       dev: 0,
@@ -441,7 +439,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     if (node.type !== 'file') {
       throw new FsError('EISDIR', 'Is a directory')
     }
-    const sh = this.#sh.get(node.backingFilename)!
+    const sh = this.#fssh.get(node.backingFilename)!.sh
     return sh.read(new Uint8Array(buffer.buffer, offset, length), {
       at: position,
     })
@@ -471,7 +469,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     ) {
       // Overwrite, so return the underlying file to the pool
       const node = newParent.children[newFilename]! as FileNode
-      const sh = this.#sh.get(node.backingFilename)!
+      const sh = this.#fssh.get(node.backingFilename)!.sh
       sh.truncate(0)
       this.state.pool.push(node.backingFilename)
     }
@@ -507,7 +505,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     if (node.type !== 'file') {
       throw new FsError('EISDIR', 'Is a directory')
     }
-    const sh = this.#sh.get(node.backingFilename)
+    const sh = this.#fssh.get(node.backingFilename)?.sh
     if (!sh) {
       throw new FsError('ENOENT', 'No such file or directory')
     }
@@ -534,7 +532,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     }
     delete dir.children[filename]
     if (doFileOps) {
-      const sh = this.#sh.get(node.backingFilename)!
+      const sh = this.#fssh.get(node.backingFilename)!.sh
       // We don't delete the file, it's truncated and returned to the pool
       sh?.truncate(0)
       this.#unsyncedSH.add(sh)
@@ -590,7 +588,7 @@ export class OpfsAhpFS extends BaseFilesystem {
       })
     }
     const node = parent.children[filename] as FileNode
-    const sh = this.#sh.get(node.backingFilename)!
+    const sh = this.#fssh.get(node.backingFilename)!.sh
     // Files in pool are empty, only write if data is provided
     if (data.length > 0) {
       sh.write(
@@ -635,7 +633,7 @@ export class OpfsAhpFS extends BaseFilesystem {
     if (node.type !== 'file') {
       throw new FsError('EISDIR', 'Is a directory')
     }
-    const sh = this.#sh.get(node.backingFilename)
+    const sh = this.#fssh.get(node.backingFilename)?.sh
     if (!sh) {
       throw new FsError('EBADF', 'Bad file descriptor')
     }
