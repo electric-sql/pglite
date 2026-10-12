@@ -954,5 +954,14 @@ await testEsmCjsAndDTC(async (importType) => {
 
       expect(res2).toEqual(res0)
     })
+
+    it('failed statements do not leak shadow stack', async () => {
+      const base = db.Module.stackSave()
+      for (let i = 0; i < 100; i++) {
+        await db.query('SELECT 1/0').catch(() => {})
+        expect(db.Module.stackSave()).toBe(base)
+      }
+      await db.query('SELECT 1')
+    })
   })
 })
