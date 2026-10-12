@@ -1,5 +1,63 @@
 # @electric-sql/pglite-socket
 
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies [389b731]
+- Updated dependencies [389b731]
+  - @electric-sql/pglite@0.5.9
+  - @electric-sql/pglite-age@0.0.10
+  - @electric-sql/pglite-pg_hashids@0.0.10
+  - @electric-sql/pglite-pg_ivm@0.0.10
+  - @electric-sql/pglite-pg_textsearch@0.0.11
+  - @electric-sql/pglite-pg_uuidv7@0.0.10
+  - @electric-sql/pglite-pgtap@0.0.10
+  - @electric-sql/pglite-pgvector@0.0.10
+
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [c771db3]
+  - @electric-sql/pglite@0.5.8
+  - @electric-sql/pglite-age@0.0.9
+  - @electric-sql/pglite-pg_hashids@0.0.9
+  - @electric-sql/pglite-pg_ivm@0.0.9
+  - @electric-sql/pglite-pg_textsearch@0.0.10
+  - @electric-sql/pglite-pg_uuidv7@0.0.9
+  - @electric-sql/pglite-pgtap@0.0.9
+  - @electric-sql/pglite-pgvector@0.0.9
+
+## 0.2.10
+
+### Patch Changes
+
+- Updated dependencies [2f9cf75]
+  - @electric-sql/pglite@0.5.7
+  - @electric-sql/pglite-age@0.0.8
+  - @electric-sql/pglite-pg_hashids@0.0.8
+  - @electric-sql/pglite-pg_ivm@0.0.8
+  - @electric-sql/pglite-pg_textsearch@0.0.9
+  - @electric-sql/pglite-pg_uuidv7@0.0.8
+  - @electric-sql/pglite-pgtap@0.0.8
+  - @electric-sql/pglite-pgvector@0.0.8
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [69b7d87]
+- Updated dependencies [6c14380]
+  - @electric-sql/pglite@0.5.6
+  - @electric-sql/pglite-age@0.0.7
+  - @electric-sql/pglite-pg_hashids@0.0.7
+  - @electric-sql/pglite-pg_ivm@0.0.7
+  - @electric-sql/pglite-pg_textsearch@0.0.8
+  - @electric-sql/pglite-pg_uuidv7@0.0.7
+  - @electric-sql/pglite-pgtap@0.0.7
+  - @electric-sql/pglite-pgvector@0.0.7
+
 ## 0.2.8
 
 ### Patch Changes

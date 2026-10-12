@@ -1,10 +1,10 @@
 {
   "name": "@electric-sql/pglite-postgis",
-  "version": "0.2.5",
+  "version": "0.2.9",
   "description": "PostGIS extension for PGlite",
   "author": "Electric DB Limited",
   "homepage": "https://pglite.dev",
-  "license": "Apache-2.0",
+  "license": "Apache-2.0 AND GPL-2.0-or-later",
   "keywords": [
     "postgres",
     "sql",

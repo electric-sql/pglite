@@ -800,6 +800,12 @@ await testEsmCjsAndDTC(async (importType) => {
       expect(process.exitCode).toEqual(origExitCode)
     })
 
+    it('restores undefined process.exitCode on close', async () => {
+      expect(process.exitCode).toBeUndefined()
+      await db.close()
+      expect(process.exitCode).toBeUndefined()
+    })
+
     it('restores process.exitCode on close', async () => {
       const origExitCode = process.exitCode
       process.exitCode = 42
@@ -919,6 +925,43 @@ await testEsmCjsAndDTC(async (importType) => {
         command: 'SELECT',
         rowCount: 1,
       })
+    })
+    it('serialize with no concrete type', async () => {
+      const res0 = await db.exec(`SELECT 1`)
+
+      const res1 = await db.exec(`SELECT convert_to('abc', 'LATIN1')`)
+
+      expect(res1).toEqual([
+        {
+          rows: [
+            {
+              convert_to: new Uint8Array([97, 98, 99]),
+            },
+          ],
+          fields: [
+            {
+              name: 'convert_to',
+              dataTypeID: 17,
+            },
+          ],
+          command: 'SELECT',
+          affectedRows: 0,
+          rowCount: 1,
+        },
+      ])
+
+      const res2 = await db.exec(`SELECT 1`)
+
+      expect(res2).toEqual(res0)
+    })
+
+    it('failed statements do not leak shadow stack', async () => {
+      const base = db.Module.stackSave()
+      for (let i = 0; i < 100; i++) {
+        await db.query('SELECT 1/0').catch(() => {})
+        expect(db.Module.stackSave()).toBe(base)
+      }
+      await db.query('SELECT 1')
     })
   })
 })

@@ -15,14 +15,9 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
           // Mount the idbfs to the users dataDir then symlink the PGDATA to the
           // idbfs mount point.
           // We specifically use /pglite as the root directory for the idbfs
-          // as the fs will ber persisted in the indexeddb as a database with
+          // as the fs will be persisted in the indexeddb as a database with
           // the path as the name.
-          if (!mod.FS.analyzePath(PG_ROOT).exists) {
-            mod.FS.mkdir(PG_ROOT)
-          }
-          if (!mod.FS.analyzePath(`${PG_ROOT}/${this.dataDir}`).exists) {
-            mod.FS.mkdir(`${PG_ROOT}/${this.dataDir}`)
-          }
+          mod.FS.mkdirTree(`${PG_ROOT}/${this.dataDir}`)
           mod.FS.mount(idbfs, {}, `${PG_ROOT}/${this.dataDir}`)
           mod.FS.symlink(`${PG_ROOT}/${this.dataDir}`, PGDATA)
         },

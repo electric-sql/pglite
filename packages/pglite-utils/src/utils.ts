@@ -14,6 +14,11 @@ export const IN_NODE =
 
 export const WASM_PREFIX = '/pglite'
 
+export const pgliteProc =
+  globalThis && typeof globalThis.process !== 'undefined'
+    ? globalThis.process
+    : { exitCode: undefined }
+
 const artifactDownloadPromises = new Map<string, Promise<Response>>()
 
 export async function startArtifactDownload(url: URL) {
@@ -26,11 +31,6 @@ export async function startArtifactDownload(url: URL) {
 // This is a global cache of the Wasm modules to avoid having to re-download or
 // compile them on subsequent calls.
 const cachedWasmModules = new Map<string, WebAssembly.Module>()
-
-export const pgliteProc =
-  globalThis && typeof globalThis.process !== 'undefined'
-    ? globalThis.process
-    : { exitCode: undefined }
 
 export async function instantiateWasm(
   imports: WebAssembly.Imports,

@@ -1,5 +1,35 @@
 # @electric-sql/pglite-age
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies [389b731]
+- Updated dependencies [389b731]
+  - @electric-sql/pglite@0.5.9
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [c771db3]
+  - @electric-sql/pglite@0.5.8
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [2f9cf75]
+  - @electric-sql/pglite@0.5.7
+
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [69b7d87]
+- Updated dependencies [6c14380]
+  - @electric-sql/pglite@0.5.6
+
 ## 0.0.6
 
 ### Patch Changes
