@@ -29,6 +29,9 @@
     "@electric-sql/pglite-pg_uuidv7": "workspace:*",
     "@electric-sql/pglite-pgtap": "workspace:*",
     "@electric-sql/pglite-pgmq": "workspace:*",
+    "@electric-sql/pglite-pgaudit": "workspace:*",
+    "@electric-sql/pglite-hypopg": "workspace:*",
+    "@electric-sql/pglite-pg_repack": "workspace:*",
     "@electric-sql/pglite-plpgsql-check": "workspace:*",
     "@uiw/codemirror-theme-github": "^4.23.0",
     "dedent": "^1.5.3"

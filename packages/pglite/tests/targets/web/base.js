@@ -12,6 +12,39 @@ const WORKER_PATH = '/tests/targets/web/worker.js'
 
 const useWorkerForBbFilename = ['opfs-ahp://base']
 
+// Forward everything the page reports, so a failure in CI can be diagnosed
+// from the log alone.
+function attachDiagnostics(page, label) {
+  page.on('console', (msg) => {
+    const { url, lineNumber } = msg.location()
+    console.log(
+      `[${label}] ${msg.type()}: ${msg.text()} (${url}:${lineNumber})`,
+    )
+  })
+  page.on('pageerror', (e) => {
+    console.error(`[${label}] pageerror: ${e.message}\n${e.stack}`)
+  })
+  page.on('crash', () => {
+    console.error(`[${label}] page crashed`)
+  })
+}
+
+// Like page.evaluate(fn), but an error thrown in the page carries the in-page
+// stack in its message. Playwright only forwards the message for some
+// browsers, which hides the wasm-function[N] frames of a wasm trap.
+function evaluateWithStack(page, fn) {
+  return page.evaluate(async (src) => {
+    try {
+      return await (0, eval)(`(${src})`)()
+    } catch (e) {
+      if (e instanceof Error && e.stack && !e.message.includes(e.stack)) {
+        e.message += `\n--- in-page stack ---\n${e.stack}`
+      }
+      throw e
+    }
+  }, fn.toString())
+}
+
 export function tests(env, dbFilename, target) {
   describe(`targets ${target}`, () => {
     let browser
@@ -45,13 +78,13 @@ export function tests(env, dbFilename, target) {
       await page.goto(BASE_URL)
       await populateGlobals(page)
 
-      page.on('console', (msg) => {
-        console.log(msg)
-      })
+      attachDiagnostics(page, target)
 
       evaluate = async (fn) => {
         try {
-          const resultPromise = evaluationQueue.then(() => page.evaluate(fn))
+          const resultPromise = evaluationQueue.then(() =>
+            evaluateWithStack(page, fn),
+          )
           evaluationQueue = resultPromise
           return await resultPromise
         } catch (e) {
@@ -242,11 +275,9 @@ export function tests(env, dbFilename, target) {
       const page2 = await context.newPage()
       await page2.goto(BASE_URL)
       await populateGlobals(page2)
-      page.on('console', (msg) => {
-        console.log(msg)
-      })
+      attachDiagnostics(page2, `${target} page2`)
 
-      const res2Prom = page2.evaluate(async () => {
+      const res2Prom = evaluateWithStack(page2, async () => {
         const { live } = await import(PGLITE_LIVE_PATH)
         const { PGliteWorker } = await import(PGLITE_WORKER_PATH)
 
@@ -349,11 +380,9 @@ export function tests(env, dbFilename, target) {
       const page2 = await context.newPage()
       await page2.goto(BASE_URL)
       await populateGlobals(page2)
-      page.on('console', (msg) => {
-        console.log(msg)
-      })
+      attachDiagnostics(page2, `${target} page2`)
 
-      const res2Prom = page2.evaluate(async () => {
+      const res2Prom = evaluateWithStack(page2, async () => {
         const { live } = await import(PGLITE_LIVE_PATH)
         const { PGliteWorker } = await import(PGLITE_WORKER_PATH)
 

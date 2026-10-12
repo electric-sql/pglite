@@ -295,7 +295,10 @@ jobs:
 
       - name: Test web integrations
         # retry on failure as web tests can be flaky
-        run: pnpm test:web || pnpm test:web || pnpm test:web
+        env:
+          TEST_TIMEOUT: 180000
+        run: |
+          pnpm test:web || pnpm test:web || pnpm test:web
 
       - name: Test Deno
         run: pnpm test:deno
