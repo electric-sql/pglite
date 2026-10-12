@@ -29,6 +29,7 @@
     "@electric-sql/pglite-pg_uuidv7": "workspace:*",
     "@electric-sql/pglite-pgtap": "workspace:*",
     "@electric-sql/pglite-pgmq": "workspace:*",
+    "@electric-sql/pglite-pg_partman": "workspace:*",
     "@electric-sql/pglite-pgaudit": "workspace:*",
     "@electric-sql/pglite-hypopg": "workspace:*",
     "@electric-sql/pglite-pg_repack": "workspace:*",

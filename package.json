@@ -12,6 +12,7 @@
     "ci:publish": "pnpm changeset publish",
     "ts:build": "pnpm -r --filter \"./packages/**\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
+    "wasm:cp-ext:pg_partman": "mkdir -p ./packages/pglite-pg_partman/release && cp ./postgres-pglite/dist/extensions/other/pg_partman.tar.gz ./packages/pglite-pg_partman/release",
     "wasm:cp-ext:hypopg": "mkdir -p ./packages/pglite-hypopg/release && cp ./postgres-pglite/dist/extensions/other/hypopg.tar.gz ./packages/pglite-hypopg/release/hypopg.tar.gz",    
     "wasm:cp-ext:pg_repack": "mkdir -p ./packages/pglite-pg_repack/release && cp ./postgres-pglite/dist/extensions/other/pg_repack.tar.gz ./packages/pglite-pg_repack/release/pg_repack.tar.gz",
     "wasm:cp-ext:pgaudit": "mkdir -p ./packages/pglite-pgaudit/release && cp ./postgres-pglite/dist/extensions/other/pgaudit.tar.gz ./packages/pglite-pgaudit/release/pgaudit.tar.gz",
