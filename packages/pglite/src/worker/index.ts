@@ -506,6 +506,10 @@ export class PGliteWorker
       await this.#rpc('_releaseTransactionLock')
     }
   }
+
+  async isInTransaction(): Promise<boolean> {
+    return await this.#rpc('isInTransaction')
+  }
 }
 
 export interface WorkerOptions {
@@ -733,6 +737,11 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       transactionLockRelease?.()
       transactionLockRelease = null
     },
+    async isInTransaction() {    
+      return new Promise<boolean>((resolve) => {
+        resolve(db.isInTransaction())
+      })
+    }
   }
 }
 

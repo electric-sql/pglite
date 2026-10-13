@@ -79,7 +79,7 @@ class QueryQueueManager {
     while (this.queue.length > 0) {
       let query
 
-      if (this.db.isInTransaction() && this.lastHandlerId) {
+      if (this.db.inTransaction && this.lastHandlerId) {
         const i = this.queue.findIndex(
           (q) => q.handlerId === this.lastHandlerId,
         )
@@ -151,7 +151,7 @@ class QueryQueueManager {
   }
 
   async clearTransactionIfNeeded(handlerId: number): Promise<void> {
-    if (this.db.isInTransaction() && this.lastHandlerId === handlerId) {
+    if (this.db.inTransaction && this.lastHandlerId === handlerId) {
       await this.db.exec('ROLLBACK')
       this.lastHandlerId = null
       await this.processQueue()

@@ -1110,9 +1110,14 @@ export class PGlite
    * Check if the database is in a transaction
    * @returns True if the database is in a transaction, false otherwise
    */
-  isInTransaction() {
-    const result = this.mod!._IsTransactionBlock()
-    return result !== 0
+  public override isInTransaction(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      resolve(this.inTransaction)
+    })
+  }
+
+  public get inTransaction(): boolean {
+    return this.mod!._IsTransactionBlock() !== 0
   }
 
   /**

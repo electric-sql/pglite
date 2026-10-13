@@ -156,6 +156,7 @@ export type PGliteInterface<T extends Extensions = Extensions> =
     offNotification(callback: (channel: string, payload: string) => void): void
     dumpDataDir(compression?: DumpTarCompressionOptions): Promise<File | Blob>
     refreshArrayTypes(): Promise<void>
+    isInTransaction(): Promise<boolean>
   }
 
 export type PGliteInterfaceExtensions<E> = E extends Extensions

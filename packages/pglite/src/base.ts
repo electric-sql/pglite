@@ -39,9 +39,6 @@ export abstract class BasePGlite
   // # Abstract properties:
   abstract debug: DebugLevel
 
-  // # Private properties:
-  #inTransaction = false
-
   // # Abstract methods:
 
   /**
@@ -322,7 +319,7 @@ export abstract class BasePGlite
       }
 
       await this._cleanupBlob()
-      if (!this.#inTransaction) {
+      if (await !this.isInTransaction()) {
         await this.syncToFs()
       }
       const blob = await this._getWrittenBlob()
@@ -371,7 +368,7 @@ export abstract class BasePGlite
         )
       }
       this._cleanupBlob()
-      if (!this.#inTransaction) {
+      if (await !this.isInTransaction()) {
         await this.syncToFs()
       }
       const blob = await this._getWrittenBlob()
@@ -454,7 +451,6 @@ export abstract class BasePGlite
     await this._checkReady()
     return await this._runExclusiveTransaction(async () => {
       await this.#runExec('BEGIN')
-      this.#inTransaction = true
 
       // Once a transaction is closed, we throw an error if it's used again
       let closed = false
@@ -515,15 +511,16 @@ export abstract class BasePGlite
         if (!closed) {
           closed = true
           await this.#runExec('COMMIT')
+        } else {
+          await this.syncToFs()
         }
-        this.#inTransaction = false
         return result
       } catch (e) {
         if (!closed) {
           closed = true
           await this.#runExec('ROLLBACK')
+          await this.syncToFs()
         }
-        this.#inTransaction = false
         throw e
       }
     })
@@ -549,4 +546,10 @@ export abstract class BasePGlite
       console.log(...args)
     }
   }
+
+  /**
+   * Check if the database is in a transaction
+   * @returns True if the database is in a transaction, false otherwise
+   */
+  abstract isInTransaction(): Promise<boolean>
 }
