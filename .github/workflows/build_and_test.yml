@@ -27,7 +27,7 @@ jobs:
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -48,7 +48,7 @@ jobs:
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Install
         working-directory: ${{ github.workspace }}
@@ -101,136 +101,136 @@ jobs:
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v22.x
           path: ./packages/pglite/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-tools build artifacts to Github artifacts
         id: upload-pglite-tools-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-tools-release-files-node-v20.x
+          name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-postgis build artifacts to Github artifacts
         id: upload-pglite-postgis-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-postgis-release-files-node-v20.x
+          name: pglite-postgis-release-files-node-v22.x
           path: ./packages/pglite-postgis/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_hashids build artifacts to Github artifacts
         id: upload-pglite-pg-hashids-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg-hashids-release-files-node-v20.x
+          name: pglite-pg-hashids-release-files-node-v22.x
           path: ./packages/pglite-pg_hashids/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_ivm build artifacts to Github artifacts
         id: upload-pglite-pg-ivm-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg-ivm-release-files-node-v20.x
+          name: pglite-pg-ivm-release-files-node-v22.x
           path: ./packages/pglite-pg_ivm/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pgtap build artifacts to Github artifacts
         id: upload-pglite-pgtap-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pgtap-release-files-node-v20.x
+          name: pglite-pgtap-release-files-node-v22.x
           path: ./packages/pglite-pgtap/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_textsearch build artifacts to Github artifacts
         id: upload-pglite-pg-textsearch-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg-textsearch-release-files-node-v20.x
+          name: pglite-pg-textsearch-release-files-node-v22.x
           path: ./packages/pglite-pg_textsearch/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_uuidv7 build artifacts to Github artifacts
         id: upload-pglite-pg-uuidv7-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg-uuidv7-release-files-node-v20.x
+          name: pglite-pg-uuidv7-release-files-node-v22.x
           path: ./packages/pglite-pg_uuidv7/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pgvector build artifacts to Github artifacts
         id: upload-pglite-pgvector-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pgvector-release-files-node-v20.x
+          name: pglite-pgvector-release-files-node-v22.x
           path: ./packages/pglite-pgvector/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pgvector dist artifacts to Github artifacts
         id: upload-pglite-pgvector-dist-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pgvector-dist-files-node-v20.x
+          name: pglite-pgvector-dist-files-node-v22.x
           path: ./packages/pglite-pgvector/dist/**
 
       - name: Upload pglite-age build artifacts to Github artifacts
         id: upload-pglite-age-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-age-release-files-node-v20.x
+          name: pglite-age-release-files-node-v22.x
           path: ./packages/pglite-age/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pgmq build artifacts to Github artifacts
         id: upload-pglite-pgmq-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pgmq-release-files-node-v20.x
+          name: pglite-pgmq-release-files-node-v22.x
           path: ./packages/pglite-pgmq/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_partman build artifacts to Github artifacts
         id: upload-pglite-pg-partman-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg-partman-release-files-node-v20.x
+          name: pglite-pg-partman-release-files-node-v22.x
           path: ./packages/pglite-pg_partman/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-plpgsql-check build artifacts to Github artifacts
         id: upload-pglite-plpgsql-check-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-plpgsql-check-release-files-node-v20.x
+          name: pglite-plpgsql-check-release-files-node-v22.x
           path: ./packages/pglite-plpgsql-check/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-hypopg build artifacts to Github artifacts
         id: upload-pglite-hypopg-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-hypopg-release-files-node-v20.x
+          name: pglite-hypopg-release-files-node-v22.x
           path: ./packages/pglite-hypopg/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pg_repack build artifacts to Github artifacts
         id: upload-pglite-pg_repack-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pg_repack-release-files-node-v20.x
+          name: pglite-pg_repack-release-files-node-v22.x
           path: ./packages/pglite-pg_repack/release/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Upload pglite-pgaudit build artifacts to Github artifacts
         id: upload-pglite-pgaudit-release-files
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-pgaudit-release-files-node-v20.x
+          name: pglite-pgaudit-release-files-node-v22.x
           path: ./packages/pglite-pgaudit/release/**
-          retention-days: 60          
+          retention-days: 30          
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
@@ -245,7 +245,7 @@ jobs:
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]
+        node: [22.x, 23.x, 24.x, 25.x, 26.x]
       fail-fast: false # allow the build to continue even if some tests fail
     defaults:
       run:
@@ -267,25 +267,25 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v22.x
           path: ./packages/pglite/release
 
       - name: Download pglite-tools WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-tools-release-files-node-v20.x
+          name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release
 
       - name: Download pglite-postgis build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-postgis-release-files-node-v20.x
+          name: pglite-postgis-release-files-node-v22.x
           path: ./packages/pglite-postgis/release
 
       - name: Download pglite-pgvector build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgvector-dist-files-node-v20.x
+          name: pglite-pgvector-dist-files-node-v22.x
           path: ./packages/pglite-pgvector/dist
 
       - name: Install dependencies
@@ -305,7 +305,7 @@ jobs:
       - name: Test web integrations
         # retry on failure as web tests can be flaky
         env:
-          TEST_TIMEOUT: 180000
+          TEST_TIMEOUT: 30000
         run: |
           pnpm test:web || pnpm test:web || pnpm test:web
 
@@ -328,7 +328,7 @@ jobs:
         with:
           name: pglite-package-node-v${{ matrix.node }}
           path: ./packages/pglite/electric-sql-pglite-*.tgz
-          retention-days: 60
+          retention-days: 30
 
       - name: Find Comment
         uses: peter-evans/find-comment@v4
@@ -366,7 +366,7 @@ jobs:
     runs-on: blacksmith-32vcpu-ubuntu-2204
     strategy:
       matrix:
-        node: [20.x, 21.x, 22.x, 23.x, 24.x]    
+        node: [22.x, 23.x, 24.x, 25.x, 26.x]
       fail-fast: false # allow the build to continue even if some tests fail
     needs: [build-and-test-pglite]
     steps:
@@ -386,91 +386,91 @@ jobs:
       - name: Download pglite-tools WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-tools-release-files-node-v20.x
+          name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release/
 
       - name: Download pglite-postgis build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-postgis-release-files-node-v20.x
+          name: pglite-postgis-release-files-node-v22.x
           path: ./packages/pglite-postgis/release/
 
       - name: Download pglite-pg_hashids build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-hashids-release-files-node-v20.x
+          name: pglite-pg-hashids-release-files-node-v22.x
           path: ./packages/pglite-pg_hashids/release/
 
       - name: Download pglite-pg_ivm build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-ivm-release-files-node-v20.x
+          name: pglite-pg-ivm-release-files-node-v22.x
           path: ./packages/pglite-pg_ivm/release/
 
       - name: Download pglite-pgtap build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgtap-release-files-node-v20.x
+          name: pglite-pgtap-release-files-node-v22.x
           path: ./packages/pglite-pgtap/release/
 
       - name: Download pglite-pg_textsearch build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-textsearch-release-files-node-v20.x
+          name: pglite-pg-textsearch-release-files-node-v22.x
           path: ./packages/pglite-pg_textsearch/release/
 
       - name: Download pglite-pg_uuidv7 build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-uuidv7-release-files-node-v20.x
+          name: pglite-pg-uuidv7-release-files-node-v22.x
           path: ./packages/pglite-pg_uuidv7/release/
 
       - name: Download pglite-pgvector build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgvector-release-files-node-v20.x
+          name: pglite-pgvector-release-files-node-v22.x
           path: ./packages/pglite-pgvector/release/
 
       - name: Download pglite-age build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-age-release-files-node-v20.x
+          name: pglite-age-release-files-node-v22.x
           path: ./packages/pglite-age/release/
 
       - name: Download pglite-pgmq build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgmq-release-files-node-v20.x
+          name: pglite-pgmq-release-files-node-v22.x
           path: ./packages/pglite-pgmq/release/
 
       - name: Download pglite-pg_partman build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-partman-release-files-node-v20.x
+          name: pglite-pg-partman-release-files-node-v22.x
           path: ./packages/pglite-pg_partman/release/
           
       - name: Download pglite-plpgsql-check build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-plpgsql-check-release-files-node-v20.x
+          name: pglite-plpgsql-check-release-files-node-v22.x
           path: ./packages/pglite-plpgsql-check/release/
       
       - name: Download pglite-hypopg build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-hypopg-release-files-node-v20.x
+          name: pglite-hypopg-release-files-node-v22.x
           path: ./packages/pglite-hypopg/release/
 
       - name: Download pglite-pg_repack build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg_repack-release-files-node-v20.x
+          name: pglite-pg_repack-release-files-node-v22.x
           path: ./packages/pglite-pg_repack/release/
 
       - name: Download pglite-pgaudit build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgaudit-release-files-node-v20.x
+          name: pglite-pgaudit-release-files-node-v22.x
           path: ./packages/pglite-pgaudit/release/              
       
       - name: Install dependencies
@@ -607,114 +607,114 @@ jobs:
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v22.x
           path: ./packages/pglite/release
 
       - name: Download pglite-tools WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-tools-release-files-node-v20.x
+          name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release
 
       - name: Download pglite-postgis build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-postgis-release-files-node-v20.x
+          name: pglite-postgis-release-files-node-v22.x
           path: ./packages/pglite-postgis/release/  
 
       - name: Download PGlite build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-dist-node-v20.x
+          name: pglite-dist-node-v22.x
           path: ./packages/pglite/dist/
 
       - name: Download pglite-postgis dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-postgis-dist-node-v20.x
+          name: pglite-postgis-dist-node-v22.x
           path: ./packages/pglite-postgis/dist/
 
       - name: Download pglite-age dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-age-dist-node-v20.x
+          name: pglite-age-dist-node-v22.x
           path: ./packages/pglite-age/dist/
 
       - name: Download pglite-pg_hashids dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-hashids-dist-node-v20.x
+          name: pglite-pg-hashids-dist-node-v22.x
           path: ./packages/pglite-pg_hashids/dist/
 
       - name: Download pglite-pg_ivm dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-ivm-dist-node-v20.x
+          name: pglite-pg-ivm-dist-node-v22.x
           path: ./packages/pglite-pg_ivm/dist/
 
       - name: Download pglite-pgtap dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgtap-dist-node-v20.x
+          name: pglite-pgtap-dist-node-v22.x
           path: ./packages/pglite-pgtap/dist/
 
       - name: Download pglite-pg_textsearch dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-textsearch-dist-node-v20.x
+          name: pglite-pg-textsearch-dist-node-v22.x
           path: ./packages/pglite-pg_textsearch/dist/
 
       - name: Download pglite-pg_uuidv7 dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-uuidv7-dist-node-v20.x
+          name: pglite-pg-uuidv7-dist-node-v22.x
           path: ./packages/pglite-pg_uuidv7/dist/
 
       - name: Download pglite-pgvector dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgvector-dist-node-v20.x
+          name: pglite-pgvector-dist-node-v22.x
           path: ./packages/pglite-pgvector/dist/
 
       - name: Download pglite-pgmq dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgmq-dist-node-v20.x
+          name: pglite-pgmq-dist-node-v22.x
           path: ./packages/pglite-pgmq/dist/
 
       - name: Download pglite-pg_partman dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-partman-dist-node-v20.x
+          name: pglite-pg-partman-dist-node-v22.x
           path: ./packages/pglite-pg_partman/dist/
           
       - name: Download pglite-plpgsql-check dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-plpgsql-check-dist-node-v20.x
+          name: pglite-plpgsql-check-dist-node-v22.x
           path: ./packages/pglite-plpgsql-check/dist/
       - name: Download pglite-hypopg dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-hypopg-dist-node-v20.x
+          name: pglite-hypopg-dist-node-v22.x
           path: ./packages/pglite-hypopg/dist/    
 
       - name: Download pglite-pg_repack dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg_repack-dist-node-v20.x
+          name: pglite-pg_repack-dist-node-v22.x
           path: ./packages/pglite-pg_repack/dist/
 
       - name: Download pglite-pgaudit dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgaudit-dist-node-v20.x
+          name: pglite-pgaudit-dist-node-v22.x
           path: ./packages/pglite-pgaudit/dist/                     
 
       - name: Install dependencies
@@ -726,13 +726,13 @@ jobs:
       - name: Download PGlite web build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v22.x
           path: /tmp/web
 
       - name: Download pglite-tools dist artifacts to tmp
         uses: actions/download-artifact@v8
         with:
-          name: pglite-tools-dist-node-v20.x
+          name: pglite-tools-dist-node-v22.x
           path: /tmp/pglite-tools
 
       - name: Build demo site
@@ -761,7 +761,7 @@ jobs:
         with:
           name: pglite-demos
           path: /tmp/web/**
-          retention-days: 60
+          retention-days: 30
 
       - name: Find Comment
         uses: peter-evans/find-comment@v4
@@ -816,97 +816,97 @@ jobs:
       - name: Download PGlite WASM build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-interim-build-files-node-v20.x
+          name: pglite-interim-build-files-node-v22.x
           path: ./packages/pglite/release
 
       - name: Download pglite-tools build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-tools-release-files-node-v20.x
+          name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release/
 
       - name: Download pglite-postgis build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-postgis-release-files-node-v20.x
+          name: pglite-postgis-release-files-node-v22.x
           path: ./packages/pglite-postgis/release/
 
       - name: Download pglite-pg_hashids build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-hashids-release-files-node-v20.x
+          name: pglite-pg-hashids-release-files-node-v22.x
           path: ./packages/pglite-pg_hashids/release/
 
       - name: Download pglite-pg_ivm build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-ivm-release-files-node-v20.x
+          name: pglite-pg-ivm-release-files-node-v22.x
           path: ./packages/pglite-pg_ivm/release/
 
       - name: Download pglite-pgtap build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgtap-release-files-node-v20.x
+          name: pglite-pgtap-release-files-node-v22.x
           path: ./packages/pglite-pgtap/release/
 
       - name: Download pglite-pg_textsearch build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-textsearch-release-files-node-v20.x
+          name: pglite-pg-textsearch-release-files-node-v22.x
           path: ./packages/pglite-pg_textsearch/release/
 
       - name: Download pglite-pg_uuidv7 build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-uuidv7-release-files-node-v20.x
+          name: pglite-pg-uuidv7-release-files-node-v22.x
           path: ./packages/pglite-pg_uuidv7/release/
 
       - name: Download pglite-pgvector build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgvector-release-files-node-v20.x
+          name: pglite-pgvector-release-files-node-v22.x
           path: ./packages/pglite-pgvector/release/
 
       - name: Download pglite-pgmq build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgmq-release-files-node-v20.x
+          name: pglite-pgmq-release-files-node-v22.x
           path: ./packages/pglite-pgmq/release/
 
       - name: Download pglite-pg_partman build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg-partman-release-files-node-v20.x
+          name: pglite-pg-partman-release-files-node-v22.x
           path: ./packages/pglite-pg_partman/release/
           
       - name: Download pglite-plpgsql-check build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-plpgsql-check-release-files-node-v20.x
+          name: pglite-plpgsql-check-release-files-node-v22.x
           path: ./packages/pglite-plpgsql-check/release/
 
       - name: Download pglite-age build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-age-release-files-node-v20.x
+          name: pglite-age-release-files-node-v22.x
           path: ./packages/pglite-age/release/
 
       - name: Download pglite-hypopg build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-hypopg-release-files-node-v20.x
+          name: pglite-hypopg-release-files-node-v22.x
           path: ./packages/pglite-hypopg/release/
 
       - name: Download pglite-pg_repack build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pg_repack-release-files-node-v20.x
+          name: pglite-pg_repack-release-files-node-v22.x
           path: ./packages/pglite-pg_repack/release/              
 
       - name: Download pglite-pgaudit build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-pgaudit-release-files-node-v20.x
+          name: pglite-pgaudit-release-files-node-v22.x
           path: ./packages/pglite-pgaudit/release/  
 
       - run: pnpm install --frozen-lockfile
