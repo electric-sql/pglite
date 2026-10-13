@@ -349,7 +349,9 @@ export class OpfsAhpFS extends BaseFilesystem {
   lstat(path: string): FsStats {
     const node = this.#resolvePath(path)
     const size =
-      node.type === 'file' ? this.#fssh.get(node.backingFilename)!.sh.getSize() : 0
+      node.type === 'file'
+        ? this.#fssh.get(node.backingFilename)!.sh.getSize()
+        : 0
     const blksize = 4096
     return {
       dev: 0,
