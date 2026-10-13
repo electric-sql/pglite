@@ -737,11 +737,11 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       transactionLockRelease?.()
       transactionLockRelease = null
     },
-    async isInTransaction() {    
+    async isInTransaction() {
       return new Promise<boolean>((resolve) => {
         resolve(db.isInTransaction())
       })
-    }
+    },
   }
 }
 
