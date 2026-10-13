@@ -705,16 +705,19 @@ export class PGlite
     mod._pgl_set_pclose_fn(this.#pclose_fn)
 
     // set the write callback
-    this.#pglite_socket_write = mod.addFunction((ptr: number, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      return this.#onData!(bytes)
-    }, 'ipi')
+    this.#pglite_socket_write = mod.addFunction(
+      (ptr: number, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        return this.#onData!(bytes)
+      },
+      'ipi',
+    )
 
     // set the read callback
     this.#pglite_socket_read = mod.addFunction(
