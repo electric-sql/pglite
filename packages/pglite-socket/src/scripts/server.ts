@@ -43,7 +43,7 @@ const args = parseArgs({
       type: 'string',
       short: 'e',
       default: undefined,
-      help: 'Comma-separated list of extensions to load (e.g., vector,pgcrypto,postgis etc.)',
+      help: 'Comma-separated list of extensions to load (e.g. @electric-sql/pglite-pgvector:vector, amcheck, @electric-sql/pglite-postgis)',
     },
     run: {
       type: 'string',
