@@ -796,7 +796,11 @@ export class PGlite
    */
   async close() {
     await this._checkReady()
-    this.#closing = true
+
+    // wait for pending queries to finish
+    await this.#queryMutex.runExclusive(async () => {
+      this.#closing = true
+    })
 
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
