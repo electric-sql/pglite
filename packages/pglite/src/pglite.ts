@@ -795,8 +795,11 @@ export class PGlite
    * @returns A promise that resolves when the database is closed
    */
   async close() {
-    await this._checkReady()
-    this.#closing = true
+    // wait for pending queries to finish
+    await this.#queryMutex.runExclusive(async () => {
+      await this._checkReady() // a concurrent close() may have run first
+      this.#closing = true
+    })
 
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
