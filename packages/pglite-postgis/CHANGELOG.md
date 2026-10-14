@@ -1,5 +1,15 @@
 # @electric-sql/pglite-postgis
 
+## 0.2.10
+
+### Patch Changes
+
+- 65996e8: Declare the license as `Apache-2.0 AND GPL-2.0-or-later`, as the bundled PostGIS is GPL-licensed
+- Updated dependencies [367ee2f]
+- Updated dependencies [cb06c21]
+- Updated dependencies [78012ca]
+  - @electric-sql/pglite@0.5.10
+
 ## 0.2.9
 
 ### Patch Changes

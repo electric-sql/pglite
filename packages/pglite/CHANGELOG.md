@@ -1,5 +1,13 @@
 # @electric-sql/pglite
 
+## 0.5.10
+
+### Patch Changes
+
+- 367ee2f: Bug fix: wait for running queries to finish before doing a data dir dump
+- cb06c21: Wait for queries to finish before closing PGlite instance. See #1128
+- 78012ca: Fix a windowed `live.query` (one given `offset` and `limit`) leaking its `live_query_<id>_get_total_count` prepared statement on `unsubscribe`. Only `live_query_<id>_get` was deallocated, so the count statement survived every teardown while its backing view was dropped, accumulating dangling prepared statements for the lifetime of the database.
+
 ## 0.5.9
 
 ### Patch Changes
