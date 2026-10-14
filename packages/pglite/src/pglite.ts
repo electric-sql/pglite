@@ -1279,9 +1279,13 @@ export class PGlite
   async dumpDataDir(
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob> {
-    await this._checkReady()
-    const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
-    return this.fs!.dumpTar(dbname, compression)
+    const data = await this.#queryMutex.runExclusive(async () => {
+      await this._checkReady() // a concurrent close() may have run first
+      const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
+      return this.fs!.dumpTar(dbname, compression)
+    })
+
+    return data
   }
 
   /**
