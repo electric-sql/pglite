@@ -705,20 +705,23 @@ export class PGlite
     mod._pgl_set_pclose_fn(this.#pclose_fn)
 
     // set the write callback
-    this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      return this.#onData!(bytes)
-    }, 'iii')
+    this.#pglite_socket_write = mod.addFunction(
+      (ptr: number, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        return this.#onData!(bytes)
+      },
+      'ipi',
+    )
 
     // set the read callback
     this.#pglite_socket_read = mod.addFunction(
-      (ptr: any, max_length: number) => {
+      (ptr: number, max_length: number) => {
         // copy current data to wasm buffer
         let length = this.#outputData.length - this.#readOffset
         if (length > max_length) {
@@ -735,7 +738,7 @@ export class PGlite
 
         return length
       },
-      'iii',
+      'ipi',
     )
 
     mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
