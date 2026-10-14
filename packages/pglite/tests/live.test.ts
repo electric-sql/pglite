@@ -1557,4 +1557,29 @@ await testEsmCjsAndDTC(async (importType) => {
       { id: 5, number: 50 },
     ])
   })
+
+  it('multiple subscribers to same live query', async () => {
+
+    const db = await PGlite.create({ extensions: { live } })
+    await db.exec(`CREATE TABLE t (id int primary key, v text);`)
+    
+    let aCalls = 0, bCalls = 0
+    const cbA = () => { aCalls++ }
+    const cbB = () => { bCalls++ }
+    
+    const sub = await db.live.query('SELECT * FROM t ORDER BY id', [], cbA)
+    sub.subscribe(cbB)
+    await new Promise((r) => setTimeout(r, 100))
+    
+    // remove only cbA; cbB is still a subscriber
+    await sub.unsubscribe(cbA)
+    const bBefore = bCalls
+    
+    await db.exec(`INSERT INTO t VALUES (1, 'a');`)
+    await new Promise((r) => setTimeout(r, 100))
+    expect(bCalls - bBefore).toEqual(1)
+    // console.log(`cbB fired ${bCalls - bBefore} time(s) after the INSERT; expected 1`)
+    
+    await db.close()
+  })
 })
