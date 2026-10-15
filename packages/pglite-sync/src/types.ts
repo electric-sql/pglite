@@ -1,11 +1,11 @@
 import type {
-  ShapeStreamOptions,
   ShapeStreamInterface,
   Row,
   ChangeMessage,
   FetchError,
 } from '@electric-sql/client'
 import { Transaction } from '@electric-sql/pglite'
+import type { PGliteSyncShapeStreamOptions } from './shapeStreamOptions'
 
 export type Lsn = bigint
 
@@ -16,7 +16,7 @@ export type SubscriptionKey = string
 export type InitialInsertMethod = 'insert' | 'csv' | 'json' | 'useCopy'
 
 export interface ShapeToTableOptions {
-  shape: ShapeStreamOptions
+  shape: PGliteSyncShapeStreamOptions
   table: string
   schema?: string
   mapColumns?: MapColumns
@@ -40,7 +40,7 @@ export interface SyncShapesToTablesResult {
 }
 
 export interface SyncShapeToTableOptions {
-  shape: ShapeStreamOptions
+  shape: PGliteSyncShapeStreamOptions
   table: string
   schema?: string
   mapColumns?: MapColumns
