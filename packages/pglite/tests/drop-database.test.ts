@@ -79,6 +79,11 @@ describe('drop database', () => {
     // pause for a bit for GC...
     await new Promise((resolve) => setTimeout(resolve, 10))
 
+    // The abandoned instance still holds the data dir lock; deleting the
+    // lock file is the explicit override that allows reuse after an
+    // unclean shutdown.
+    await fs.rm('./pgdata-test-drop-db2.lock', { force: true })
+
     const pg2 = await PGlite.create('./pgdata-test-drop-db2', {
       database: 'postgres',
     })
