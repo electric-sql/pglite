@@ -58,13 +58,13 @@ describe('node-postgres + PGlite = love', () => {
       const pool = new Pool(connConfig)
       const client = await pool.connect()
 
-      await client.query(`SELECT version()`)
+      await client.query(`SELECT version();`)
 
       await client.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL
-      )
+      );
     `)
 
       const values = new Array<string>()
@@ -74,14 +74,12 @@ describe('node-postgres + PGlite = love', () => {
         values.push(`item-${i}`)
       }
 
-      // await client.query(
-      //   `INSERT INTO items (name) VALUES ${params.join(', ')}`,
-      //   values
-      // )
+      await client.query(
+        `INSERT INTO items (name) VALUES ${params.join(', ')};`,
+        values
+      )
 
-      await client.query("INSERT INTO test (name) VALUES ('test');")
-
-      const cursor = client.query(new Cursor('SELECT * FROM items'))
+      const cursor = client.query(new Cursor('SELECT * FROM items;'))
 
       while (true) {
         const rows = await cursor.read(10)

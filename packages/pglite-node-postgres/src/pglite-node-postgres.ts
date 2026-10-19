@@ -97,11 +97,11 @@ export class Connection extends EventEmitter {
   }
 
   flush() {
-    // dummy
+    this.#send(serialize.flush())
   }
 
   sync() {
-    // dummy
+    this.#send(serialize.sync())
   }
 
   async end() {
@@ -129,5 +129,13 @@ export class Connection extends EventEmitter {
 
   sendCopyFail(msg: any) {
     this.#send(serialize.copyFail(msg))
+  }
+
+  ref() {
+    // dummy
+  }
+
+  unref() {
+    // dummy
   }
 }
