@@ -795,6 +795,9 @@ export class PGlite
    * @returns A promise that resolves when the database is closed
    */
   async close() {
+    // make sure the initialization has finished by awaiting ready
+    // do not acquire the mutex, since init might need it
+    await this._checkReady()
     // wait for pending queries to finish
     await this.#queryMutex.runExclusive(async () => {
       await this._checkReady() // a concurrent close() may have run first
