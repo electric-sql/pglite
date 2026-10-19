@@ -76,7 +76,7 @@ describe('node-postgres + PGlite = love', () => {
 
       await client.query(
         `INSERT INTO items (name) VALUES ${params.join(', ')};`,
-        values
+        values,
       )
 
       const cursor = client.query(new Cursor('SELECT * FROM items;'))
