@@ -23,16 +23,25 @@ export class PGlitePgConfig {
 export class Connection extends EventEmitter {
   #pglite: PGlite
   #emitMessage: boolean = false
+  #queue: Promise<void> = Promise.resolve()
 
   #send(buffer: any) {
-    this.#pglite.execProtocolStream(buffer).then((messages) => {
-      messages.forEach((m) => {
-        if (this.#emitMessage) {
-          this.emit('message', m)
-        }
-        this.emit(m.name, m)
+    this.#queue = this.#queue
+      .then(() =>
+        this.#pglite.execProtocolStream(buffer, { throwOnError: false }),
+      )
+      .then((messages) => {
+        messages.forEach((m) => {
+          if (this.#emitMessage) {
+            this.emit('message', m)
+          }
+          // node-postgres expects ErrorResponse as 'errorMessage'
+          this.emit(m.name === 'error' ? 'errorMessage' : m.name, m)
+        })
       })
-    })
+      .catch((err) => {
+        this.emit('error', err)
+      })
   }
 
   public parsedStatements = {}
@@ -109,10 +118,8 @@ export class Connection extends EventEmitter {
     await this.#pglite.close()
   }
 
-  async close(_msg: any) {
-    if (!this.#pglite.closed) {
-      await this.#pglite.close()
-    }
+  close(msg: any) {
+    this.#send(serialize.close(msg))
   }
 
   describe(msg: any) {
