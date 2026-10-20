@@ -1,6 +1,7 @@
-import type { Results } from '../interface'
+import type { QueryOptions, Results } from '../interface'
 
-export interface LiveQueryOptions<T = { [key: string]: any }> {
+export interface LiveQueryOptions<T = { [key: string]: any }>
+  extends QueryOptions {
   query: string
   params?: any[] | null
   offset?: number
@@ -37,6 +38,22 @@ export interface LiveNamespace {
   query<T = { [key: string]: any }>(
     query: string,
     params?: any[] | null,
+    callback?: (results: Results<T>) => void,
+  ): Promise<LiveQuery<T>>
+
+  /**
+   * Create a live query with query options
+   * @param query - The query to run
+   * @param params - The parameters to pass to the query
+   * @param options - The options to apply to the query results
+   * @param callback - A callback to run when the query is updated
+   * @returns A promise that resolves to an object with the initial results,
+   * an unsubscribe function, and a refresh function
+   */
+  query<T = { [key: string]: any }>(
+    query: string,
+    params: any[] | undefined | null,
+    options: QueryOptions,
     callback?: (results: Results<T>) => void,
   ): Promise<LiveQuery<T>>
 
