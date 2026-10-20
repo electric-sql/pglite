@@ -148,4 +148,44 @@ describe('node-postgres + PGlite = love', () => {
         expect(rows.length).toEqual(10)
       }
     })
+
+  it('recovers from query errors', async () => {
+    const pglite = await PGlite.create()
+    const pool = new Pool(new PGlitePgConfig({ pglite }))
+    const client = await pool.connect()
+
+    // simple query protocol
+    await expect(client.query('SELECT * FROM nope')).rejects.toMatchObject({
+      code: '42P01',
+    })
+    expect((await client.query('SELECT 1 AS x')).rows).toEqual([{ x: 1 }])
+
+    // extended query protocol: the server skips messages until Sync
+    await expect(
+      client.query('SELECT * FROM nope WHERE id = $1', [1]),
+    ).rejects.toMatchObject({ code: '42P01' })
+    expect((await client.query('SELECT $1::int AS x', [2])).rows).toEqual([
+      { x: 2 },
+    ])
+
+    // aborted transaction
+    await client.query('BEGIN')
+    await expect(client.query('SELECT 1/0')).rejects.toMatchObject({
+      code: '22012',
+    })
+    await expect(client.query('SELECT 1')).rejects.toMatchObject({
+      code: '25P02',
+    })
+    await client.query('ROLLBACK')
+    expect((await client.query('SELECT 3 AS x')).rows).toEqual([{ x: 3 }])
+
+    client.release()
+
+    // a failed pool.query must not break the pool
+    await expect(pool.query('SELECT 1/0')).rejects.toMatchObject({
+      code: '22012',
+    })
+    expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
+  })
+
 })

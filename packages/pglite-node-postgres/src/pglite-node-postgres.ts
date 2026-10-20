@@ -25,6 +25,12 @@ export class Connection extends EventEmitter {
   #emitMessage: boolean = false
   #queue: Promise<void> = Promise.resolve()
 
+  // checked by pg's Client.end(), which skips connection.end() without it
+  public _connecting = false
+
+  // pg's Client.end() destroys the stream when a query is still active
+  public readonly stream = { destroy: () => this.end() }
+
   #send(buffer: any) {
     this.#queue = this.#queue
       .then(() =>
@@ -58,7 +64,7 @@ export class Connection extends EventEmitter {
   }
 
   connect(_port: number, _host: string) {
-    // dummy
+    this._connecting = true
     process.nextTick(() => this.emit('readyForQuery'))
   }
 
@@ -113,9 +119,12 @@ export class Connection extends EventEmitter {
     this.#send(serialize.sync())
   }
 
-  async end() {
-    // 0x58 = 'X'
-    await this.#pglite.close()
+  end() {
+    // like a socket closing: pg waits for 'end'. The PGlite instance is
+    // shared and owned by the caller, so it stays open.
+    this.#queue = this.#queue.then(() => {
+      this.emit('end')
+    })
   }
 
   close(msg: any) {
