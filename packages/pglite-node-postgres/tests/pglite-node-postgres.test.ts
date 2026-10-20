@@ -187,5 +187,4 @@ describe('node-postgres + PGlite = love', () => {
     })
     expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
   })
-
 })
