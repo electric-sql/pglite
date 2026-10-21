@@ -49,46 +49,46 @@ importers:
         version: link:../packages/pglite
       '@electric-sql/pglite-age':
         specifier: workspace:*
-        version: link:../packages/pglite-age
+        version: link:../packages/pglite-extensions/pglite-age
       '@electric-sql/pglite-hypopg':
         specifier: workspace:*
-        version: link:../packages/pglite-hypopg
+        version: link:../packages/pglite-extensions/pglite-hypopg
       '@electric-sql/pglite-pg_hashids':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_hashids
+        version: link:../packages/pglite-extensions/pglite-pg_hashids
       '@electric-sql/pglite-pg_ivm':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_ivm
+        version: link:../packages/pglite-extensions/pglite-pg_ivm
       '@electric-sql/pglite-pg_partman':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_partman
+        version: link:../packages/pglite-extensions/pglite-pg_partman
       '@electric-sql/pglite-pg_repack':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_repack
+        version: link:../packages/pglite-extensions/pglite-pg_repack
       '@electric-sql/pglite-pg_textsearch':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_textsearch
+        version: link:../packages/pglite-extensions/pglite-pg_textsearch
       '@electric-sql/pglite-pg_uuidv7':
         specifier: workspace:*
-        version: link:../packages/pglite-pg_uuidv7
+        version: link:../packages/pglite-extensions/pglite-pg_uuidv7
       '@electric-sql/pglite-pgaudit':
         specifier: workspace:*
-        version: link:../packages/pglite-pgaudit
+        version: link:../packages/pglite-extensions/pglite-pgaudit
       '@electric-sql/pglite-pgmq':
         specifier: workspace:*
-        version: link:../packages/pglite-pgmq
+        version: link:../packages/pglite-extensions/pglite-pgmq
       '@electric-sql/pglite-pgtap':
         specifier: workspace:*
-        version: link:../packages/pglite-pgtap
+        version: link:../packages/pglite-extensions/pglite-pgtap
       '@electric-sql/pglite-pgvector':
         specifier: workspace:*
-        version: link:../packages/pglite-pgvector
+        version: link:../packages/pglite-extensions/pglite-pgvector
       '@electric-sql/pglite-plpgsql-check':
         specifier: workspace:*
-        version: link:../packages/pglite-plpgsql-check
+        version: link:../packages/pglite-extensions/pglite-plpgsql-check
       '@electric-sql/pglite-postgis':
         specifier: workspace:*
-        version: link:../packages/pglite-postgis
+        version: link:../packages/pglite-extensions/pglite-postgis
       '@electric-sql/pglite-repl':
         specifier: workspace:*
         version: link:../packages/pglite-repl
@@ -253,17 +253,17 @@ importers:
         specifier: ^2.1.2
         version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
 
-  packages/pglite-age:
+  packages/pglite-extensions/pglite-age:
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.1
         version: 0.18.1
       '@electric-sql/pglite':
         specifier: workspace:*
-        version: link:../pglite
+        version: link:../../pglite
       '@electric-sql/pglite-utils':
         specifier: workspace:*
-        version: link:../pglite-utils
+        version: link:../../pglite-utils
       '@types/node':
         specifier: ^20.16.11
         version: 20.16.11
@@ -271,17 +271,233 @@ importers:
         specifier: ^2.1.2
         version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
 
-  packages/pglite-hypopg:
+  packages/pglite-extensions/pglite-hypopg:
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.1
         version: 0.18.1
       '@electric-sql/pglite':
         specifier: workspace:*
-        version: link:../pglite
+        version: link:../../pglite
       '@electric-sql/pglite-utils':
         specifier: workspace:*
-        version: link:../pglite-utils
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_hashids:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_ivm:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_partman:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_repack:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_textsearch:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pg_uuidv7:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pgaudit:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pgmq:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pgtap:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-pgvector:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-plpgsql-check:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
+      '@types/node':
+        specifier: ^20.16.11
+        version: 20.16.11
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
+
+  packages/pglite-extensions/pglite-postgis:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@electric-sql/pglite':
+        specifier: workspace:*
+        version: link:../../pglite
+      '@electric-sql/pglite-utils':
+        specifier: workspace:*
+        version: link:../../pglite-utils
       '@types/node':
         specifier: ^20.16.11
         version: 20.16.11
@@ -343,222 +559,6 @@ importers:
         specifier: ^1.3.1
         version: 1.6.0(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
 
-  packages/pglite-pg_hashids:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pg_ivm:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pg_partman:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pg_repack:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pg_textsearch:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pg_uuidv7:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pgaudit:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pgmq:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pgtap:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-pgvector:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-plpgsql-check:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
-  packages/pglite-postgis:
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@electric-sql/pglite':
-        specifier: workspace:*
-        version: link:../pglite
-      '@electric-sql/pglite-utils':
-        specifier: workspace:*
-        version: link:../pglite-utils
-      '@types/node':
-        specifier: ^20.16.11
-        version: 20.16.11
-      vitest:
-        specifier: ^2.1.2
-        version: 2.1.2(@types/node@20.16.11)(jsdom@24.1.3)(terser@5.34.1)
-
   packages/pglite-prepopulatedfs:
     devDependencies:
       '@arethetypeswrong/cli':
@@ -593,7 +593,7 @@ importers:
         version: link:../pglite
       '@electric-sql/pglite-pgvector':
         specifier: workspace:*
-        version: link:../pglite-pgvector
+        version: link:../pglite-extensions/pglite-pgvector
       '@eslint-react/eslint-plugin':
         specifier: ^1.14.3
         version: 1.14.3(eslint@8.57.1)(typescript@5.6.3)
@@ -726,25 +726,25 @@ importers:
         version: link:../pglite
       '@electric-sql/pglite-age':
         specifier: workspace:*
-        version: link:../pglite-age
+        version: link:../pglite-extensions/pglite-age
       '@electric-sql/pglite-pg_hashids':
         specifier: workspace:*
-        version: link:../pglite-pg_hashids
+        version: link:../pglite-extensions/pglite-pg_hashids
       '@electric-sql/pglite-pg_ivm':
         specifier: workspace:*
-        version: link:../pglite-pg_ivm
+        version: link:../pglite-extensions/pglite-pg_ivm
       '@electric-sql/pglite-pg_textsearch':
         specifier: workspace:*
-        version: link:../pglite-pg_textsearch
+        version: link:../pglite-extensions/pglite-pg_textsearch
       '@electric-sql/pglite-pg_uuidv7':
         specifier: workspace:*
-        version: link:../pglite-pg_uuidv7
+        version: link:../pglite-extensions/pglite-pg_uuidv7
       '@electric-sql/pglite-pgtap':
         specifier: workspace:*
-        version: link:../pglite-pgtap
+        version: link:../pglite-extensions/pglite-pgtap
       '@electric-sql/pglite-pgvector':
         specifier: workspace:*
-        version: link:../pglite-pgvector
+        version: link:../pglite-extensions/pglite-pgvector
       '@types/emscripten':
         specifier: ^1.41.1
         version: 1.41.1
@@ -845,7 +845,7 @@ importers:
         version: link:../pglite
       '@electric-sql/pglite-pgvector':
         specifier: workspace:*
-        version: link:../pglite-pgvector
+        version: link:../pglite-extensions/pglite-pgvector
       '@eslint-react/eslint-plugin':
         specifier: ^1.14.3
         version: 1.14.3(eslint@8.57.1)(typescript@5.6.3)
