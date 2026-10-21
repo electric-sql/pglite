@@ -290,11 +290,11 @@ jobs:
           name: pglite-tools-dist-node-v${{ matrix.node }}
           path: ./packages/pglite-tools/dist/*
 
-      - name: Upload pglite-extensions distribution artifact
+      - name: Upload pglite-extensions dist files folder as artifact
         id: upload-pglite-extensions-dist
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-extensions-dist-node-v${{ matrix.node }}
+          name: pglite-extensions-dist-files-node-v${{ matrix.node }}
           path: ./packages/pglite-extensions/pglite-*/dist/*
 
   publish-website-with-demos:
@@ -339,7 +339,7 @@ jobs:
       - name: Download pglite-extensions dist artifacts
         uses: actions/download-artifact@v8
         with:
-          name: pglite-extensions-dist-node-v22.x
+          name: pglite-extensions-dist-files-node-v22.x
           path: ./packages/pglite-extensions/
 
       - name: Install dependencies

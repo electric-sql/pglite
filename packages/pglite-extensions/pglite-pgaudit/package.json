@@ -39,7 +39,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/electric-sql/pglite.git",
-    "directory": "packages/pglite-pgaudit"
+    "directory": "packages/pglite-extensions/pglite-pgaudit"
   },
   "scripts": {
     "build": "tsup && tsx scripts/bundle-wasm.ts",
