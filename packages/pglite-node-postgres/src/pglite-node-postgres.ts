@@ -51,6 +51,7 @@ export class Connection extends EventEmitter {
   }
 
   public parsedStatements = {}
+  public submittedNamedStatements = {}
 
   constructor(config: Config) {
     super()
