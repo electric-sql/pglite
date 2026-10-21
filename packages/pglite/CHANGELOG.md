@@ -1,5 +1,13 @@
 # @electric-sql/pglite
 
+## 0.5.11
+
+### Patch Changes
+
+- 5573bb0: bug fix: check ready before close
+- 2372f39: Update submodule
+- 4321a41: Fix premature ReadyForQuery responses after extended-query errors, preventing PostgreSQL clients from desynchronizing before Sync.
+
 ## 0.5.10
 
 ### Patch Changes
