@@ -18,5 +18,5 @@ for dir in "$root_dir"/pglite-*; do
   # Skip if it doesn't actually start with pglite-
   [[ "$suffix" != "$folder_name" ]] || continue
 
-  echo "mkdir -p "$root_dir"/"$folder_name"/release && cp "$postgrespglite_dir"/dist/extensions/other/"$suffix".tar.gz "$root_dir"/"$folder_name"/release"
+  mkdir -p "$root_dir"/"$folder_name"/release && cp "$postgrespglite_dir"/dist/extensions/other/"$suffix"*.tar.gz "$root_dir"/"$folder_name"/release/"$suffix".tar.gz
 done

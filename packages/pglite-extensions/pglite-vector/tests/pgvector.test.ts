@@ -1,8 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll, beforeAll } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import { vector } from '../src/index.js'
+import * as fs from 'fs/promises'
+
+const testDataFolder = './pgdata-test-vector-oid'
+async function cleanDataFolder() {
+  await fs.rm(testDataFolder, { force: true, recursive: true })
+}
 
 describe(`pgvector`, () => {
+  beforeAll(async () => {
+    await cleanDataFolder()
+  })
+  afterAll(async () => {
+    await cleanDataFolder()
+  })
   it('basic', async () => {
     const pg = new PGlite({
       extensions: {
@@ -96,7 +108,7 @@ describe(`pgvector`, () => {
 
   it('has correct oid after restart', async () => {
     let pg = await PGlite.create({
-      dataDir: './pgdata-test-vector-oid',
+      dataDir: testDataFolder,
       extensions: {
         vector,
       },
@@ -105,7 +117,7 @@ describe(`pgvector`, () => {
     await pg.close()
 
     pg = await PGlite.create({
-      dataDir: './pgdata-test-vector-oid',
+      dataDir: testDataFolder,
       extensions: {
         vector,
       },
