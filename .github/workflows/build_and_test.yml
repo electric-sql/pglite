@@ -100,6 +100,13 @@ jobs:
           path: ./packages/pglite-tools/release/**
           retention-days: 30
 
+      - name: Upload pglite-tools distribution artifact
+        id: upload-pglite-tools-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-tools-dist-node-v${{ matrix.node }}
+          path: ./packages/pglite-tools/dist/**
+
       - name: Upload pglite-extensions build artifacts to Github artifacts
         id: upload-pglite-extensions-release-files
         uses: actions/upload-artifact@v7
@@ -107,6 +114,13 @@ jobs:
           name: pglite-extensions-release-files-node-v22.x
           path: ./packages/pglite-extensions/pglite-*/release/**
           retention-days: 30
+
+      - name: Upload pglite-extensions dist files folder as artifact
+        id: upload-pglite-extensions-dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: pglite-extensions-dist-files-node-v${{ matrix.node }}
+          path: ./packages/pglite-extensions/pglite-*/dist/**        
 
       - name: Typecheck pglite
         working-directory: ${{ github.workspace }}/packages/pglite
@@ -152,17 +166,11 @@ jobs:
           name: pglite-tools-release-files-node-v22.x
           path: ./packages/pglite-tools/release
 
-      - name: Download pglite-extensions build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: pglite-extensions-release-files-node-v22.x
-          path: ./packages/pglite-extensions/
-
-      - name: Download pglite-extensions dist artifacts
+      - name: Download pglite-extensions dist files
         uses: actions/download-artifact@v8
         with:
           name: pglite-extensions-dist-files-node-v22.x
-          path: ./packages/pglite-extensions/          
+          path: ./packages/pglite-extensions/
 
       - name: Install dependencies
         run: |
@@ -235,7 +243,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pglite-icu-full-node-v${{ matrix.node }}
-          path: ./packages/pglite-icu-full/electric-sql-pglite-icu-full-*.tgz          
+          path: ./packages/pglite-icu-full/electric-sql-pglite-icu-full-*.tgz
 
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
@@ -288,20 +296,6 @@ jobs:
 
       - name: Test packages
         run: pnpm --filter="...^pglite" test
-
-      - name: Upload pglite-tools distribution artifact
-        id: upload-pglite-tools-dist
-        uses: actions/upload-artifact@v7
-        with:
-          name: pglite-tools-dist-node-v${{ matrix.node }}
-          path: ./packages/pglite-tools/dist/*
-
-      - name: Upload pglite-extensions dist files folder as artifact
-        id: upload-pglite-extensions-dist
-        uses: actions/upload-artifact@v7
-        with:
-          name: pglite-extensions-dist-files-node-v${{ matrix.node }}
-          path: ./packages/pglite-extensions/pglite-*/dist/*
 
   publish-website-with-demos:
     name: Publish website with demos
