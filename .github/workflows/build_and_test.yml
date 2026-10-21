@@ -158,6 +158,12 @@ jobs:
           name: pglite-extensions-release-files-node-v22.x
           path: ./packages/pglite-extensions/
 
+      - name: Download pglite-extensions dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-extensions-dist-files-node-v22.x
+          path: ./packages/pglite-extensions/          
+
       - name: Install dependencies
         run: |
           pnpm install --frozen-lockfile
