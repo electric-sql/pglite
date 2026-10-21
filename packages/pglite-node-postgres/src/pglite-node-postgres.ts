@@ -126,6 +126,12 @@ export class Connection extends EventEmitter {
     this.#queue = this.#queue.then(() => {
       this.emit('end')
     })
+    // the pool reuses this connection for its next client: drop the
+    // ended client's listeners so they don't receive its messages
+    this.eventNames()
+      .filter((e) => e !== 'newListener')
+      .forEach((e) => this.removeAllListeners(e))
+    this.#emitMessage = false
   }
 
   close(msg: any) {

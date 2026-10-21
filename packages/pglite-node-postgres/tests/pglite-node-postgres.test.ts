@@ -185,6 +185,6 @@ describe('node-postgres + PGlite = love', () => {
     await expect(pool.query('SELECT 1/0')).rejects.toMatchObject({
       code: '22012',
     })
-    // expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
+    expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
   })
 })
