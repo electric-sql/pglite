@@ -119,7 +119,7 @@ jobs:
         id: upload-pglite-extensions-dist
         uses: actions/upload-artifact@v7
         with:
-          name: pglite-extensions-dist-files-node-v${{ matrix.node }}
+          name: pglite-extensions-dist-files-node-v22.x
           path: ./packages/pglite-extensions/pglite-*/dist/**        
 
       - name: Typecheck pglite
