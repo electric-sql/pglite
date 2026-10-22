@@ -153,7 +153,13 @@ export const types = {
         throw new Error('Invalid input for date type')
       }
     },
-    parse: (x: string | number) => new Date(x),
+    parse: (x: string | number) => {
+      if (typeof x === 'string') {
+        const iso = x.replace(' ', 'T')
+        return new Date(iso === x ? x : iso.replace(/([+-]\d{2})$/, '$1:00'))
+      }
+      return new Date(x)
+    },
   },
   bytea: {
     to: BYTEA,

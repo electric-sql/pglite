@@ -66,6 +66,12 @@ describe('parse', () => {
     ).toEqual(new Date('2021-01-01T12:00:00.000Z').getUTCMilliseconds())
   })
 
+  it('timestamptz 1184 before year 100', () => {
+    expect(types.parseType('0050-06-15 12:30:00+00', 1184)).toEqual(
+      new Date('0050-06-15T12:30:00.000Z'),
+    )
+  })
+
   it('bytea 17', () => {
     expect(types.parseType('\\x010203', 17)).toEqual(Uint8Array.from([1, 2, 3]))
   })
