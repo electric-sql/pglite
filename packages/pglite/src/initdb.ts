@@ -123,6 +123,9 @@ async function execInitdb({
         mod.ENV.USER = 'postgres'
         mod.ENV.LOGNAME = 'postgres'
         mod.ENV.ICU_DATA = ICU_DATA_PATH
+        // Match the backend (see pglite.ts). Without this, initdb writes the
+        // host's zone to postgresql.conf as a fixed offset such as 'Etc/GMT+5'.
+        mod.ENV.TZ = 'UTC'
       },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
