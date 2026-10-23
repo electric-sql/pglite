@@ -1,5 +1,12 @@
 # @electric-sql/pglite-plpgsql-check
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [e752dbe]
+  - @electric-sql/pglite@0.5.12
+
 ## 0.0.3
 
 ### Patch Changes

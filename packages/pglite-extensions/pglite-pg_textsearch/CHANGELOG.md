@@ -1,5 +1,12 @@
 # @electric-sql/pglite-pg_textsearch
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [e752dbe]
+  - @electric-sql/pglite@0.5.12
+
 ## 0.0.13
 
 ### Patch Changes
