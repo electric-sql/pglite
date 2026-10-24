@@ -21,7 +21,12 @@ export function parseResults(
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
   let affectedRows = 0
-  const parsers = { ...defaultParsers, ...options?.parsers }
+  // parseType reads parsers[typeId], so layering the query's parsers over the
+  // defaults by prototype gives the same lookups without copying every
+  // default parser on each query.
+  const parsers = options?.parsers
+    ? Object.assign(Object.create(defaultParsers), options.parsers)
+    : defaultParsers
 
   messages.forEach((message) => {
     switch (message.name) {
