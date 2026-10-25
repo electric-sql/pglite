@@ -783,6 +783,10 @@ export class PGLiteSocketServer extends EventTarget {
     handler.addEventListener('error', (event) => {
       const error = (event as CustomEvent<Error>).detail
 
+      // A handler that errors detaches itself without emitting 'close', so
+      // release its connection slot here as well.
+      this.handlers.delete(handler)
+
       if (error?.message?.includes('ECONNRESET')) {
         this.log(
           `handler #${handler.handlerId}: client disconnected (ECONNRESET)`,
