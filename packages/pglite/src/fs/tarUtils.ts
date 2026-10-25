@@ -74,11 +74,8 @@ export async function loadTar(
     // Write the file or directory
     if (file.type === REGTYPE) {
       FS.writeFile(filePath, file.data)
-      FS.utime(
-        filePath,
-        dateToUnixTimestamp(file.modifyTime),
-        dateToUnixTimestamp(file.modifyTime),
-      )
+      const modifyTime = dateToMilliseconds(file.modifyTime)
+      FS.utime(filePath, modifyTime, modifyTime)
     } else if (file.type === DIRTYPE) {
       if (!FS.analyzePath(filePath).exists) {
         FS.mkdir(filePath)
@@ -230,10 +227,10 @@ export async function unzipNode(file: Uint8Array): Promise<Uint8Array> {
   return await gunzipPromise(file)
 }
 
-function dateToUnixTimestamp(date: Date | number | undefined): number {
+function dateToMilliseconds(date: Date | number | undefined): number {
   if (!date) {
-    return Math.floor(Date.now() / 1000)
+    return Date.now()
   } else {
-    return typeof date === 'number' ? date : Math.floor(date.getTime() / 1000)
+    return typeof date === 'number' ? date * 1000 : date.getTime()
   }
 }
