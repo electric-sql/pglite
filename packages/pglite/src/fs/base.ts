@@ -324,6 +324,11 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
           if (attr.timestamp !== undefined) {
             baseFS.utimes(path, attr.timestamp, attr.timestamp)
           }
+          if (attr.atime || attr.mtime) {
+            const atime = new Date(attr.atime || attr.mtime).getTime()
+            const mtime = new Date(attr.mtime || attr.atime).getTime()
+            baseFS.utimes(path, atime, mtime)
+          }
           if (attr.size !== undefined) {
             baseFS.truncate(path, attr.size)
           }
