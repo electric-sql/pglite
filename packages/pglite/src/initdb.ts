@@ -128,6 +128,17 @@ async function execInitdb({
         mod.ENV.TZ = 'UTC'
       },
       (mod: InitdbMod) => {
+        mod.FS.mkdirTree(PG_ROOT)
+        mod.FS.mount(
+          mod.PROXYFS,
+          {
+            root: PG_ROOT,
+            fs: pg.Module.FS,
+          },
+          PG_ROOT,
+        )
+      },
+      (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
           system_fn = mod.addFunction((cmd_ptr: number) => {
             postgresArgs = getArgs(mod.UTF8ToString(cmd_ptr))
@@ -190,17 +201,6 @@ async function execInitdb({
             initdb_stdout_fd = mod._fopen(path, wmode)
           }
         }
-      },
-      (mod: InitdbMod) => {
-        mod.FS.mkdirTree(PG_ROOT)
-        mod.FS.mount(
-          mod.PROXYFS,
-          {
-            root: PG_ROOT,
-            fs: pg.Module.FS,
-          },
-          PG_ROOT,
-        )
       },
     ],
   }

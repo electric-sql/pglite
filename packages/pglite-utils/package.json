@@ -42,6 +42,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
     "@electric-sql/pg-protocol": "workspace:*",
+    "@types/emscripten": "^1.41.1",
     "@types/node": "^20.16.11"
   }
 }

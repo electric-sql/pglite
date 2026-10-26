@@ -174,3 +174,17 @@ export function rmdirRecursive(fs: MinimalFS, path: string) {
     }
   }
 }
+
+type IDBFS = Emscripten.FileSystemType & {
+  quit: () => void
+  dbs: Record<string, IDBDatabase>
+}
+
+export type FS = typeof FS & {
+  filesystems: {
+    MEMFS: Emscripten.FileSystemType
+    NODEFS: Emscripten.FileSystemType
+    IDBFS: IDBFS
+  }
+  quit: () => void
+}

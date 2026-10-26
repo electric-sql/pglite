@@ -476,6 +476,19 @@ export class PGlite
             Object.assign(mod.ENV, mod.PGLITE_ENV)
           }
         },
+        (mod: PostgresMod) => {
+          mod.FS.mkdirTree(PGDATA)
+          if (options.pgDataProxyFs) {
+            mod.FS.mount(
+              mod.PROXYFS,
+              {
+                root: PGDATA,
+                fs: options.pgDataProxyFs,
+              },
+              PGDATA,
+            )
+          }
+        },
       ],
     }
 
@@ -570,28 +583,26 @@ export class PGlite
           // collides with resources the outer instance already holds (e.g. an
           // OPFS VFS's sync access handles, which are exclusive per file).
           pgInitDbOpts.fs = undefined
-          const pg_initDb = await PGlite.create(pgInitDbOpts)
+          // we want to proxy the PGDATA folder to the one on which initDb will operate
+          pgInitDbOpts.pgDataProxyFs = this.mod!.FS
+
+          const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
 
           // Initialize the database
-          const initdbResult = await initdb({
-            pg: pg_initDb,
+          const initDbResult = await initdb({
+            pg: pgliteForInitDb,
             debug: options.debug,
             wasmModule: options.initdbWasmModule,
             args: options.initDbStartParams,
           })
 
-          if (initdbResult.exitCode !== 0) {
-            if (!initdbResult.stderr.includes('exists but is not empty')) {
+          if (initDbResult.exitCode !== 0) {
+            if (!initDbResult.stderr.includes('exists but is not empty')) {
               throw new Error(
-                'INITDB failed to initialize: ' + initdbResult.stderr,
+                'INITDB failed to initialize: ' + initDbResult.stderr,
               )
             }
           }
-
-          const pgdatatar = await pg_initDb.dumpDataDir('none')
-          pg_initDb.close()
-          await loadTar(this.mod.FS, pgdatatar, PGDATA)
-
           // Sync any changes back to the persisted store (if there is one)
           // TODO: only sync here if initdb did init db.
           await this.syncToFs()
