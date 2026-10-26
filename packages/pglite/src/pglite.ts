@@ -477,7 +477,7 @@ export class PGlite
           }
         },
         (mod: PostgresMod) => {
-          mod.FS.mkdirTree(PGDATA)
+          mod.FS.mkdirTree(PGDATA, 0o776)
           if (options.pgDataProxyFs) {
             mod.FS.mount(
               mod.PROXYFS,
