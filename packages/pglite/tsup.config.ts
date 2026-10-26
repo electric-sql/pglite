@@ -16,6 +16,26 @@ const replaceAssertPlugin = {
   },
 }
 
+// Emscripten's NODEFS reads the fs open flags via `process.binding('constants')`,
+// which Node.js always denies under its permission model (`node --permission`).
+// `require('fs').constants` holds the same values, so swap it in at bundle time.
+// Wrapping it as `{ fs: ... }` keeps the `['fs']` lookup emscripten does next working.
+const replaceProcessBindingPlugin = {
+  name: 'replace-process-binding',
+  setup(build: any) {
+    build.onLoad({ filter: /release[\\/]pglite\.js$/ }, async (args: any) => {
+      const contents = await fs.promises.readFile(args.path, 'utf8')
+      return {
+        contents: contents.replace(
+          /process\.binding\((["'])constants\1\)/g,
+          '{ fs: require("fs").constants }',
+        ),
+        loader: 'js',
+      }
+    })
+  },
+}
+
 const entryPoints = [
   'src/index.ts',
   'src/fs/nodefs.ts',
@@ -46,7 +66,7 @@ export default defineConfig([
     },
     clean: true,
     external: ['../release/pglite.js', '../release/pglite.cjs'],
-    esbuildPlugins: [replaceAssertPlugin],
+    esbuildPlugins: [replaceAssertPlugin, replaceProcessBindingPlugin],
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
     format: ['esm', 'cjs'],
@@ -58,5 +78,6 @@ export default defineConfig([
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
     keepNames: true,
+    esbuildPlugins: [replaceProcessBindingPlugin],
   },
 ])
