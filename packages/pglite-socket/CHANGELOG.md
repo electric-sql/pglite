@@ -1,5 +1,23 @@
 # @electric-sql/pglite-socket
 
+## 0.2.15
+
+### Patch Changes
+
+- e0585be: Release a connection slot when its handler ends in an error (for example `ECONNRESET` or an idle timeout). Previously only a clean `close` removed the handler, so `maxConnections` filled up and new connections were refused until the server restarted.
+- Updated dependencies [0641b37]
+- Updated dependencies [e752dbe]
+- Updated dependencies [c31130c]
+- Updated dependencies [0641b37]
+  - @electric-sql/pglite@0.5.12
+  - @electric-sql/pglite-age@0.0.13
+  - @electric-sql/pglite-pg_hashids@0.0.13
+  - @electric-sql/pglite-pg_ivm@0.0.13
+  - @electric-sql/pglite-pg_textsearch@0.0.14
+  - @electric-sql/pglite-pg_uuidv7@0.0.13
+  - @electric-sql/pglite-pgtap@0.0.13
+  - @electric-sql/pglite-pgvector@0.0.13
+
 ## 0.2.14
 
 ### Patch Changes

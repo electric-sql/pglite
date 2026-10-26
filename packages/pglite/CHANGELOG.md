@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.5.12
+
+### Patch Changes
+
+- 0641b37: Fix custom filesystems not receiving times set with `FS.utime`. Emscripten's `FS.utime` calls `setattr` with `atime` and `mtime`, but the `BaseFilesystem` bridge only handled the older `timestamp` field, so `utimes` was never called on OPFS AHP or any other `BaseFilesystem`. Files restored from a tarball kept the time they were written instead of the time stored in the tarball.
+- e752dbe: Run initdb with `TZ=UTC`, like the backend, so a new database gets `timezone = 'UTC'` in `postgresql.conf`. Before, initdb wrote the host's zone as a fixed offset without daylight saving (e.g. `Etc/GMT+5` for America/New_York), so `timestamptz` input without an offset was stored at a different instant on each non-UTC machine.
+- c31130c: Start under the Node.js permission model (`node --permission`). Emscripten's NODEFS read the fs open flags with `process.binding('constants')`, which Node always denies in that mode, so `new PGlite()` threw `ERR_ACCESS_DENIED` even for `memory://`. The bundled build now reads them from `require('fs').constants`, which holds the same values.
+- 0641b37: Fix files restored from a tarball getting a January 1970 modification time. `loadTar` passed the tar header's time to Emscripten's `FS.utime` in seconds, but `FS.utime` takes milliseconds. This affected every new database (initdb's data dir is restored from a tarball) and every `loadDataDir`. With the Node filesystem the files on disk got those dates too.
+
 ## 0.5.11
 
 ### Patch Changes
