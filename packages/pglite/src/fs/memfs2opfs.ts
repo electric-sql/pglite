@@ -66,13 +66,19 @@ interface Snapshot {
 // postgres writes many scattered pages between two flushes.
 const MERGE_RANGES_THRESHOLD = 1024
 
+// Postgres writes to one WAL segment at a time, keep the handles of the most
+// recently written segments open as nearly every query appends to them.
+const MAX_OPEN_WAL_HANDLES = 2
+const WAL_SEGMENT_RE = /^\/pg_wal\/[0-9A-F]{24}$/
+
 /**
  * PGlite MEMFS to OPFS filesystem.
  * All operations act on an emscripten MEMFS mounted at PGDATA, so the database
  * behaves exactly as with the in-memory filesystem. The node and stream ops of
  * that mount are wrapped to record which files and directories were touched,
  * and these changes are flushed to OPFS in `syncToFs`, ie. after each query.
- * Unlike OPFS-AHP, no OPFS file handles are kept open between flushes.
+ * Unlike OPFS-AHP, no OPFS file handles are kept open between flushes, except
+ * for the sync access handles of the current WAL segments.
  */
 export class Memfs2OpfsFS extends EmscriptenBuiltinFilesystem {
   declare readonly dataDir: string
@@ -88,6 +94,8 @@ export class Memfs2OpfsFS extends EmscriptenBuiltinFilesystem {
   #journal: JournalEntry[] = []
   #dirty = new Map<MemNode, DirtyFile>()
   #flushing: Promise<void> = Promise.resolve()
+  // Open WAL segment handles by path, in least recently written order
+  #walHandles = new Map<string, FileSystemSyncAccessHandle>()
   #warnedSymlink = false
 
   constructor(
@@ -140,6 +148,7 @@ export class Memfs2OpfsFS extends EmscriptenBuiltinFilesystem {
 
   async closeFs(): Promise<void> {
     await this.syncToFs()
+    this.#closeWalHandles()
     this.pg!.Module.FS.quit()
   }
 
@@ -427,6 +436,8 @@ export class Memfs2OpfsFS extends EmscriptenBuiltinFilesystem {
         await getDir(parts)
         continue
       }
+      // An open sync access handle locks the file, release it before removing
+      this.#closeWalHandles(op.path)
       const key = parts.join('/')
       for (const cached of [...dirCache.keys()]) {
         if (cached === key || cached.startsWith(key + '/')) {
@@ -452,21 +463,63 @@ export class Memfs2OpfsFS extends EmscriptenBuiltinFilesystem {
       else if (file.path === '/global/pg_control') control.push(file)
       else data.push(file)
     }
-    const write = async (file: FileWrite) => {
-      const parts = pathParts(file.path)
+    const getFile = async (path: string) => {
+      const parts = pathParts(path)
       const dir = await getDir(parts.slice(0, -1))
-      const fh = await dir.getFileHandle(parts[parts.length - 1], {
-        create: true,
-      })
-      await writeOpfsFile(fh, file, relaxedDurability)
+      return dir.getFileHandle(parts[parts.length - 1], { create: true })
     }
-    for (const group of [wal, data, control]) {
+    const write = async (file: FileWrite) => {
+      await writeOpfsFile(await getFile(file.path), file, relaxedDurability)
+    }
+    const writeWal = async (file: FileWrite) => {
+      if (!WAL_SEGMENT_RE.test(file.path)) return write(file)
+      let sh = this.#walHandles.get(file.path)
+      if (!sh) {
+        const fh = await getFile(file.path)
+        if (!('createSyncAccessHandle' in fh)) {
+          return writeOpfsFile(fh, file, relaxedDurability)
+        }
+        sh = (await (
+          fh as any
+        ).createSyncAccessHandle()) as FileSystemSyncAccessHandle
+      }
+      this.#walHandles.delete(file.path)
+      this.#walHandles.set(file.path, sh)
+      try {
+        writeSyncHandle(sh, file, relaxedDurability)
+      } catch (e) {
+        this.#closeWalHandles(file.path)
+        throw e
+      }
+    }
+    await runWithConcurrency(wal, this.maxConcurrentWrites, writeWal)
+    // Trimmed only once the WAL writes are done, so that a handle is never
+    // closed while another write of this flush is about to use it
+    this.#trimWalHandles()
+    for (const group of [data, control]) {
       await runWithConcurrency(group, this.maxConcurrentWrites, write)
     }
     if (this.debug) {
       console.log(
         `MEMFS2OPFS: flushed ${snapshot.ops.length} ops, ${snapshot.files.length} files`,
       )
+    }
+  }
+
+  #trimWalHandles() {
+    for (const [path, sh] of this.#walHandles) {
+      if (this.#walHandles.size <= MAX_OPEN_WAL_HANDLES) break
+      this.#walHandles.delete(path)
+      closeQuietly(sh)
+    }
+  }
+
+  // Close the open WAL handles at or below path, or all of them
+  #closeWalHandles(path?: string) {
+    for (const [walPath, sh] of this.#walHandles) {
+      if (path && walPath !== path && !walPath.startsWith(path + '/')) continue
+      this.#walHandles.delete(walPath)
+      closeQuietly(sh)
     }
   }
 
@@ -563,11 +616,7 @@ async function writeOpfsFile(
       fh as any
     ).createSyncAccessHandle()
     try {
-      if (file.truncate) sh.truncate(file.size)
-      for (const chunk of file.chunks) {
-        sh.write(chunk.data, { at: chunk.at })
-      }
-      if (!relaxedDurability) sh.flush()
+      writeSyncHandle(sh, file, relaxedDurability)
     } finally {
       sh.close()
     }
@@ -591,6 +640,26 @@ async function writeOpfsFile(
       await writable.abort().catch(() => {})
       throw e
     }
+  }
+}
+
+function writeSyncHandle(
+  sh: FileSystemSyncAccessHandle,
+  file: FileWrite,
+  relaxedDurability: boolean,
+) {
+  if (file.truncate) sh.truncate(file.size)
+  for (const chunk of file.chunks) {
+    sh.write(chunk.data, { at: chunk.at })
+  }
+  if (!relaxedDurability) sh.flush()
+}
+
+function closeQuietly(sh: FileSystemSyncAccessHandle) {
+  try {
+    sh.close()
+  } catch (e) {
+    // Already closed
   }
 }
 
