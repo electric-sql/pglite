@@ -80,6 +80,16 @@
         "default": "./dist/fs/opfs-ahp.cjs"
       }
     },
+    "./memfs2opfs": {
+      "import": {
+        "types": "./dist/fs/memfs2opfs.d.ts",
+        "default": "./dist/fs/memfs2opfs.js"
+      },
+      "require": {
+        "types": "./dist/fs/memfs2opfs.d.cts",
+        "default": "./dist/fs/memfs2opfs.cjs"
+      }
+    },
     "./basefs": {
       "import": {
         "types": "./dist/fs/base.d.ts",
