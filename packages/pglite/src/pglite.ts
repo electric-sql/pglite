@@ -584,6 +584,7 @@ export class PGlite
           // OPFS VFS's sync access handles, which are exclusive per file).
           pgInitDbOpts.fs = undefined
           // we want to proxy the PGDATA folder to the one on which initDb will operate
+          this.mod.FS.chmod(PGDATA, 0o700)
           pgInitDbOpts.pgDataProxyFs = this.mod!.FS
 
           const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
