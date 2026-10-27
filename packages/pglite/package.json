@@ -90,6 +90,16 @@
         "default": "./dist/fs/memfs2opfs.cjs"
       }
     },
+    "./memfs-frontend": {
+      "import": {
+        "types": "./dist/fs/memfs-frontend.d.ts",
+        "default": "./dist/fs/memfs-frontend.js"
+      },
+      "require": {
+        "types": "./dist/fs/memfs-frontend.d.cts",
+        "default": "./dist/fs/memfs-frontend.cjs"
+      }
+    },
     "./basefs": {
       "import": {
         "types": "./dist/fs/base.d.ts",

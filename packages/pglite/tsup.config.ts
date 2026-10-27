@@ -41,6 +41,7 @@ const entryPoints = [
   'src/fs/nodefs.ts',
   'src/fs/opfs-ahp.ts',
   'src/fs/memfs2opfs.ts',
+  'src/fs/memfs-frontend.ts',
   'src/fs/base.ts',
   'src/templating.ts',
   'src/live/index.ts',
