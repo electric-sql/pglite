@@ -926,7 +926,7 @@ await testEsmCjsAndDTC(async (importType) => {
         rowCount: 1,
       })
     })
-    it('serialize with no concrete type', async () => {
+    it('convert_to', async () => {
       const res0 = await db.exec(`SELECT 1`)
 
       const res1 = await db.exec(`SELECT convert_to('abc', 'LATIN1')`)
