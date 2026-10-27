@@ -94,7 +94,10 @@
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
-    }
+    },
+    "./pglite.wasm": "./dist/pglite.wasm",
+    "./initdb.wasm": "./dist/initdb.wasm",
+    "./pglite.data": "./dist/pglite.data"
   },
   "type": "module",
   "types": "dist/index.d.ts",
