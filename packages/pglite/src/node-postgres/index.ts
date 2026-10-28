@@ -8,19 +8,23 @@ export interface Config {
 }
 
 /**
- * Create a new PGlitePgConfig instance backed by a new PGlite instance.
+ * Create a new PGlitePgConfig instance.
  * This object can then be used with node-postgres clients such as Pool,
  * e.g.:
  * const pgConfig = createPgConfig()
  * const pool = new Pool(pgConfig)
  * const client = await pool.connect()
  *
+ * @param pglite An existing PGlite instance to use instead of creating a new
+ *               one. It is owned by the caller and is not closed by node-postgres.
  * @param dataDir The directory to store the database files
  *                Use memory:// to use in-memory filesystem
  * @param options PGlite options
  * @returns The PGlitePgConfig instance. node-postgres waits for PGlite to be
  *          ready when connecting.
  */
+export function createPgConfig(pglite: PGlite): PGlitePgConfig
+
 export function createPgConfig<O extends PGliteOptions>(
   options?: O,
 ): PGlitePgConfig
@@ -31,19 +35,33 @@ export function createPgConfig<O extends PGliteOptions>(
 ): PGlitePgConfig
 
 export function createPgConfig<TExtensions extends Extensions = Extensions>(
-  dataDirOrPGliteOptions?: string | PGliteOptions<TExtensions>,
+  pgliteOrDataDirOrPGliteOptions?: PGlite | string | PGliteOptions<TExtensions>,
   options?: PGliteOptions<TExtensions>,
 ): PGlitePgConfig {
+  if (isPGlite(pgliteOrDataDirOrPGliteOptions)) {
+    return new PGlitePgConfig({ pglite: pgliteOrDataDirOrPGliteOptions })
+  }
+
   const resolvedOpts: PGliteOptions =
-    typeof dataDirOrPGliteOptions === 'string'
+    typeof pgliteOrDataDirOrPGliteOptions === 'string'
       ? {
-          dataDir: dataDirOrPGliteOptions,
+          dataDir: pgliteOrDataDirOrPGliteOptions,
           ...(options ?? {}),
         }
-      : (dataDirOrPGliteOptions ?? options ?? {})
+      : (pgliteOrDataDirOrPGliteOptions ?? options ?? {})
 
   const pglite = new PGlite(resolvedOpts)
   return new PGlitePgConfig({ pglite })
+}
+
+// duck-typed rather than instanceof: the CJS build of this entry bundles its
+// own copy of the PGlite class, distinct from the one in the main entry
+function isPGlite(value: unknown): value is PGlite {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as PGlite).execProtocolStream === 'function'
+  )
 }
 
 export class PGlitePgConfig {

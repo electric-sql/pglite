@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { PGlite } from '@electric-sql/pglite'
 import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 import Cursor from 'pg-cursor'
 import { Pool, Client } from 'pg'
@@ -213,5 +214,30 @@ describe('node-postgres + PGlite = 🔥', () => {
       code: '22012',
     })
     expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
+  })
+
+  it('query an existing PGlite instance with node-postgres', async () => {
+    const pglite = new PGlite()
+    await pglite.exec(`
+      CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT);
+      INSERT INTO test (name) VALUES ('from pglite');
+    `)
+
+    const client = new Client(createPgConfig(pglite))
+    await client.connect()
+
+    expect((await client.query('SELECT name FROM test')).rows).toEqual([
+      { name: 'from pglite' },
+    ])
+    await client.query("INSERT INTO test (name) VALUES ('from pg')")
+
+    await client.end()
+
+    // the instance belongs to the caller and stays open
+    expect(pglite.closed).toBe(false)
+    expect(
+      (await pglite.query('SELECT name FROM test ORDER BY id')).rows,
+    ).toEqual([{ name: 'from pglite' }, { name: 'from pg' }])
+    await pglite.close()
   })
 })

@@ -266,6 +266,18 @@ await client.query(`
   `)
 ```
 
+To use an existing PGlite instance, for example to share it with other code, pass it to `createPgConfig()`. node-postgres doesn't close it; you do that yourself when you're done:
+
+```javascript
+import { Client } from 'pg'
+import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
+
+const pglite = new PGlite()
+const client = new Client(createPgConfig(pglite))
+await client.connect()
+```
+
 Or use it with Pool
 
 ```javascript
