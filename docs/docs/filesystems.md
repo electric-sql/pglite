@@ -117,3 +117,51 @@ The Origin Private Filesystem API provides both asynchronous and synchronous met
 To overcome these limitations, and to provide a fully synchronous file system to PGlite on top of OPFS, we use something called an "access handle pool". When you first start PGlite we open a pool of OPFS access handles with randomised file names; these are then allocated to files as needed. After each query, a pool maintenance job is scheduled that maintains its size. When you inspect the OPFS directory where the database is stored, you will not see the normal Postgres directory layout, but rather a pool of files and a state file containing the directory tree mapping along with file metadata.
 
 The PGlite OPFS AHP FS is inspired by the [wa-sqlite](https://github.com/rhashimoto/wa-sqlite) access handle pool file system by [Roy Hashimoto](https://github.com/rhashimoto).
+
+
+## MemfsFrontendFS - Virtual FS - experimental
+
+This VFS is experimental, use at your own risk!
+
+This experimental filesystem lets you plugin your own storage backing system. As the name suggests, it stores all data in memory but it also stores data in a `StorageBackend`. The `StorageBackend` is expected to implement the following interface:
+
+```typescript
+/**
+ * Where a MemfsFrontendFS persists its files.
+ */
+export interface StorageBackend {
+  /**
+   * Called once, before the emscripten module starts.
+   */
+  init(): Promise<void>
+  /**
+   * List the persisted entries, parents before their children.
+   */
+  load(): AsyncIterable<StorageEntry>
+  /**
+   * Persist the changes of one flush. Never called concurrently, if it throws
+   * the changes stay pending and are passed again with the next flush.
+   */
+  apply(
+    changes: ChangeSet,
+    options: { relaxedDurability: boolean },
+  ): Promise<void>
+  /**
+   * Called once, after the final flush.
+   */
+  close(): Promise<void>
+}
+```
+
+The `MemfsFrontendFS` works by initially loading all the data from the `StorageBackend` (`load()`). Any reads will return directly from the memory FS. All the writes will be queued and executed at the end of each query (through `apply()`).
+
+If you want to implement your own FS, all you need to do is implement `StorageBackend` and pass it to `MemfsFrontendFS`. See for example `OpfsBackend` filesystem in `packages/pglite/src/fs/memfs2opfs.ts`.
+
+## Memfs2OpfsFS - experimental
+
+This filesystem is experimental, use at your own risk!
+
+The `Memfs2OpfsFS` filesystem is built on top of `MemfsFrontendFS` in `packages/pglite/src/fs/memfs2opfs.ts`. The backing filesystem is, as the name suggests, [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system).
+
+You can use it as a replacement for the above `OPFS-AHP`, the entire fs will be kept in memory but flushed to OPFS after each query. See a usage example in `packages/pglite/examples/memfs2opfs.html`.
+
