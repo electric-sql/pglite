@@ -1,17 +1,75 @@
 import { EventEmitter } from 'events'
-import { PGlite } from '@electric-sql/pglite'
+import { PGlite } from '../pglite.js'
+import type { Extensions, PGliteOptions } from '../interface.js'
 import { serialize } from '@electric-sql/pg-protocol'
 
 export interface Config {
   pglite: PGlite
 }
 
-export class PGlitePgConfig {
-  constructor(config: Config) {
-    this.connection = new Connection({ pglite: config.pglite })
+/**
+ * Create a new PGlitePgConfig instance.
+ * This object can then be used with node-postgres clients such as Pool,
+ * e.g.:
+ * const pgConfig = createPgConfig()
+ * const pool = new Pool(pgConfig)
+ * const client = await pool.connect()
+ *
+ * @param pglite An existing PGlite instance to use instead of creating a new
+ *               one. It is owned by the caller and is not closed by node-postgres.
+ * @param dataDir The directory to store the database files
+ *                Use memory:// to use in-memory filesystem
+ * @param options PGlite options
+ * @returns The PGlitePgConfig instance. node-postgres waits for PGlite to be
+ *          ready when connecting.
+ */
+export function createPgConfig(pglite: PGlite): PGlitePgConfig
+
+export function createPgConfig<O extends PGliteOptions>(
+  options?: O,
+): PGlitePgConfig
+
+export function createPgConfig<O extends PGliteOptions>(
+  dataDir?: string,
+  options?: O,
+): PGlitePgConfig
+
+export function createPgConfig<TExtensions extends Extensions = Extensions>(
+  pgliteOrDataDirOrPGliteOptions?: PGlite | string | PGliteOptions<TExtensions>,
+  options?: PGliteOptions<TExtensions>,
+): PGlitePgConfig {
+  if (isPGlite(pgliteOrDataDirOrPGliteOptions)) {
+    return new PGlitePgConfig({ pglite: pgliteOrDataDirOrPGliteOptions })
   }
 
-  public readonly connection: Connection
+  const resolvedOpts: PGliteOptions =
+    typeof pgliteOrDataDirOrPGliteOptions === 'string'
+      ? {
+          dataDir: pgliteOrDataDirOrPGliteOptions,
+          ...(options ?? {}),
+        }
+      : (pgliteOrDataDirOrPGliteOptions ?? options ?? {})
+
+  const pglite = new PGlite(resolvedOpts)
+  return new PGlitePgConfig({ pglite })
+}
+
+// duck-typed rather than instanceof: the CJS build of this entry bundles its
+// own copy of the PGlite class, distinct from the one in the main entry
+function isPGlite(value: unknown): value is PGlite {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as PGlite).execProtocolStream === 'function'
+  )
+}
+
+export class PGlitePgConfig {
+  constructor(config: Config) {
+    this.connection = new PglitePgConnection({ pglite: config.pglite })
+  }
+
+  public readonly connection: PglitePgConnection
   public readonly poolSize = 1 // PGlite is single connection at the moment
   public readonly password = 'dummy' // PGlite accepts any password
   public readonly user = 'postgres' // dummy
@@ -20,10 +78,10 @@ export class PGlitePgConfig {
   public readonly host = 'localhost' // dummy
 }
 
-export class Connection extends EventEmitter {
+export class PglitePgConnection extends EventEmitter {
   #pglite: PGlite
   #emitMessage: boolean = false
-  #queue: Promise<void> = Promise.resolve()
+  #queue: Promise<void>
 
   // checked by pg's Client.end(), which skips connection.end() without it
   public _connecting = false
@@ -62,10 +120,13 @@ export class Connection extends EventEmitter {
         this.#emitMessage = true
       }
     })
+
+    this.#queue = config.pglite.waitReady
   }
 
-  connect(_port: number, _host: string) {
+  async connect(_port: number, _host: string) {
     this._connecting = true
+    await this.#pglite.waitReady
     process.nextTick(() => this.emit('readyForQuery'))
   }
 

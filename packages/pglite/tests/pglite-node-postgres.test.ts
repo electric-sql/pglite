@@ -1,44 +1,26 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 import Cursor from 'pg-cursor'
-import { PGlitePgConfig } from '../dist/pglite-node-postgres.js'
-import { Pool } from 'pg'
+import { Pool, Client } from 'pg'
 
-describe('node-postgres + PGlite = love', () => {
-  let db: PGlite
-  let dataDirArchive: File | Blob
+describe('node-postgres + PGlite = 🔥', () => {
+  it('query PGlite with node-postgres Client', async () => {
+    const pgConfig = createPgConfig()
+    const client = new Client(pgConfig)
+    await client.connect()
 
-  beforeEach(async () => {
-    if (!dataDirArchive) {
-      db = await PGlite.create()
-      dataDirArchive = await db.dumpDataDir('gzip')
-    } else {
-      db = await PGlite.create({
-        loadDataDir: dataDirArchive,
-      })
-    }
-  })
-
-  afterAll(async () => {
-    await db.close()
-  })
-
-  it('query PGlite with node-postgres reuse connection', async () => {
-    const connConfig = new PGlitePgConfig({ pglite: db })
-    const pool = new Pool(connConfig)
-    const conn = await pool.connect()
-
-    await conn.query(`
+    await client.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
       name TEXT
     );
   `)
 
-    await conn.query("INSERT INTO test (name) VALUES ('test');")
+    await client.query("INSERT INTO test (name) VALUES ('test');")
 
     for (let i = 0; i < 10; i++) {
-      const res1 = await conn.query('SELECT * from test')
+      const res1 = await client.query('SELECT * from test')
 
       expect(res1.fields).toEqual([
         {
@@ -69,9 +51,55 @@ describe('node-postgres + PGlite = love', () => {
       ])
     }
   }),
+    it('query PGlite with node-postgres reuse connection', async () => {
+      const pgConfig = createPgConfig()
+      const pool = new Pool(pgConfig)
+      const conn = await pool.connect()
+
+      await conn.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `)
+
+      await conn.query("INSERT INTO test (name) VALUES ('test');")
+
+      for (let i = 0; i < 10; i++) {
+        const res1 = await conn.query('SELECT * from test')
+
+        expect(res1.fields).toEqual([
+          {
+            name: 'id',
+            tableID: 16385,
+            columnID: 1,
+            dataTypeID: 23,
+            dataTypeSize: 4,
+            dataTypeModifier: -1,
+            format: 0,
+          },
+          {
+            name: 'name',
+            tableID: 16385,
+            columnID: 2,
+            dataTypeID: 25,
+            dataTypeSize: -1,
+            dataTypeModifier: -1,
+            format: 0,
+          },
+        ])
+
+        expect(res1.rows).toEqual([
+          {
+            id: 1,
+            name: 'test',
+          },
+        ])
+      }
+    }),
     it('query PGlite with node-postgres using Pool', async () => {
-      const connConfig = new PGlitePgConfig({ pglite: db })
-      const pool = new Pool(connConfig)
+      const pgConfig = createPgConfig()
+      const pool = new Pool(pgConfig)
 
       await pool.query(`
     CREATE TABLE IF NOT EXISTS test (
@@ -115,8 +143,8 @@ describe('node-postgres + PGlite = love', () => {
       }
     }),
     it('query PGlite with node-postgres pg-cursor', async () => {
-      const connConfig = new PGlitePgConfig({ pglite: db })
-      const pool = new Pool(connConfig)
+      const pgConfig = createPgConfig()
+      const pool = new Pool(pgConfig)
       const client = await pool.connect()
 
       await client.query(`SELECT version();`)
@@ -150,8 +178,8 @@ describe('node-postgres + PGlite = love', () => {
     })
 
   it('recovers from query errors', async () => {
-    const pglite = await PGlite.create()
-    const pool = new Pool(new PGlitePgConfig({ pglite }))
+    const pgConfig = createPgConfig()
+    const pool = new Pool(pgConfig)
     const client = await pool.connect()
 
     // simple query protocol
@@ -186,5 +214,30 @@ describe('node-postgres + PGlite = love', () => {
       code: '22012',
     })
     expect((await pool.query('SELECT 4 AS x')).rows).toEqual([{ x: 4 }])
+  })
+
+  it('query an existing PGlite instance with node-postgres', async () => {
+    const pglite = new PGlite()
+    await pglite.exec(`
+      CREATE TABLE test (id SERIAL PRIMARY KEY, name TEXT);
+      INSERT INTO test (name) VALUES ('from pglite');
+    `)
+
+    const client = new Client(createPgConfig(pglite))
+    await client.connect()
+
+    expect((await client.query('SELECT name FROM test')).rows).toEqual([
+      { name: 'from pglite' },
+    ])
+    await client.query("INSERT INTO test (name) VALUES ('from pg')")
+
+    await client.end()
+
+    // the instance belongs to the caller and stays open
+    expect(pglite.closed).toBe(false)
+    expect(
+      (await pglite.query('SELECT name FROM test ORDER BY id')).rows,
+    ).toEqual([{ name: 'from pglite' }, { name: 'from pg' }])
+    await pglite.close()
   })
 })
