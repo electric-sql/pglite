@@ -94,6 +94,11 @@
       "types": "./dist/contrib/*.d.ts",
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
+    },
+    "./node-postgres/*": {
+      "types": "./dist/pglitePgConfig.ts",
+      "import": "./dist/pglitePgConfig.js",
+      "require": "./dist/pglitePgConfig.cjs"
     }
   },
   "type": "module",
@@ -155,6 +160,8 @@
     "concurrently": "^8.2.2",
     "http-server": "^14.1.1",
     "openpgp": "^6.3.0",
+    "pg": "^8.14.0",
+    "pg-cursor": "^2.22.1",
     "playwright": "^1.64.0",
     "tinytar": "^0.1.0",
     "vitest": "^2.1.2"
