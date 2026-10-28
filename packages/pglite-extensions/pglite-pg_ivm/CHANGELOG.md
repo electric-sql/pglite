@@ -1,5 +1,15 @@
 # @electric-sql/pglite-pg_ivm
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [c7dc39e]
+- Updated dependencies [8364675]
+- Updated dependencies [a4cfd4d]
+- Updated dependencies [2db5d2d]
+  - @electric-sql/pglite@0.5.13
+
 ## 0.0.13
 
 ### Patch Changes

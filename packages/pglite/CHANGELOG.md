@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.5.13
+
+### Patch Changes
+
+- c7dc39e: `close()` now waits for queries, execs and transactions that were issued before it, so they complete instead of failing with `Cannot read properties of undefined` after teardown.
+- 8364675: Added support for node-postgres through createPgConfig()
+- a4cfd4d: Added MemfsFrontendFS which allows other filesystems be implemented on top of a MEMFS. Example: added Memfs2OpfsFS which is backed by an OPFS fs.
+- 2db5d2d: Upgrade emsdk to 6.0.5
+
 ## 0.5.12
 
 ### Patch Changes
