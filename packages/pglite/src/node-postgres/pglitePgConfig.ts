@@ -23,7 +23,7 @@ export class PGlitePgConfig {
 export class PglitePgConnection extends EventEmitter {
   #pglite: PGlite
   #emitMessage: boolean = false
-  #queue: Promise<void> = Promise.resolve()
+  #queue: Promise<void>
 
   // checked by pg's Client.end(), which skips connection.end() without it
   public _connecting = false
@@ -62,6 +62,8 @@ export class PglitePgConnection extends EventEmitter {
         this.#emitMessage = true
       }
     })
+
+    this.#queue = config.pglite.waitReady
   }
 
   async connect(_port: number, _host: string) {
