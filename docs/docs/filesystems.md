@@ -118,7 +118,6 @@ To overcome these limitations, and to provide a fully synchronous file system to
 
 The PGlite OPFS AHP FS is inspired by the [wa-sqlite](https://github.com/rhashimoto/wa-sqlite) access handle pool file system by [Roy Hashimoto](https://github.com/rhashimoto).
 
-
 ## MemfsFrontendFS - Virtual FS - experimental
 
 This VFS is experimental, use at your own risk!
@@ -164,4 +163,3 @@ This filesystem is experimental, use at your own risk!
 The `Memfs2OpfsFS` filesystem is built on top of `MemfsFrontendFS` in `packages/pglite/src/fs/memfs2opfs.ts`. The backing filesystem is, as the name suggests, [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system).
 
 You can use it as a replacement for the above `OPFS-AHP`, the entire fs will be kept in memory but flushed to OPFS after each query. See a usage example in `packages/pglite/examples/memfs2opfs.html`.
-
