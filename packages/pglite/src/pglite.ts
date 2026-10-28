@@ -801,10 +801,15 @@ export class PGlite
     // make sure the initialization has finished by awaiting ready
     // do not acquire the mutex, since init might need it
     await this._checkReady()
-    // wait for pending queries to finish
-    await this.#queryMutex.runExclusive(async () => {
-      await this._checkReady() // a concurrent close() may have run first
-      this.#closing = true
+    // wait for pending queries and transactions to finish. Public query(),
+    // exec() and transaction() calls take the transaction mutex before the
+    // query mutex, so taking only the query mutex here would let a call that
+    // was issued before close() reach the query mutex after teardown.
+    await this.#transactionMutex.runExclusive(async () => {
+      await this.#queryMutex.runExclusive(async () => {
+        await this._checkReady() // a concurrent close() may have run first
+        this.#closing = true
+      })
     })
 
     // Close all extensions

@@ -963,5 +963,18 @@ await testEsmCjsAndDTC(async (importType) => {
       }
       await db.query('SELECT 1')
     })
+
+    it('close waits for queries issued before it', async () => {
+      const query = db.query<{ answered: number }>('SELECT 1 AS answered')
+      const exec = db.exec('SELECT 2 AS answered')
+      const transaction = db.transaction(async (tx) => {
+        return (await tx.query<{ n: number }>('SELECT 3 AS n')).rows[0].n
+      })
+      await db.close()
+      expect((await query).rows).toEqual([{ answered: 1 }])
+      expect((await exec)[0].rows).toEqual([{ answered: 2 }])
+      expect(await transaction).toBe(3)
+      expect(db.closed).toBe(true)
+    })
   })
 })
