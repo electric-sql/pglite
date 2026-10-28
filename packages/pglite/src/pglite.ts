@@ -1386,7 +1386,7 @@ export class PGlite
    * const pgConfig = await PGlite.createPgConfig()
    * const pool = new Pool(pgConfig)
    * const client = await pool.connect()
-   * 
+   *
    * @param dataDir The directory to store the database files
    *                Prefix with idb:// to use indexeddb filesystem in the browser
    *                Use memory:// to use in-memory filesystem
@@ -1412,6 +1412,6 @@ export class PGlite
 
     const pglite = new PGlite(resolvedOpts)
     await pglite.waitReady
-    return new PGlitePgConfig({pglite})
-  }  
+    return new PGlitePgConfig({ pglite })
+  }
 }

@@ -4,7 +4,6 @@ import Cursor from 'pg-cursor'
 import { Pool } from 'pg'
 
 describe('node-postgres + PGlite = 🔥', () => {
-
   it('query PGlite with node-postgres reuse connection', async () => {
     const pgConfig = await PGlite.createPgConfig()
     const pool = new Pool(pgConfig)
@@ -52,8 +51,8 @@ describe('node-postgres + PGlite = 🔥', () => {
     }
   }),
     it('query PGlite with node-postgres using Pool', async () => {
-    const pgConfig = await PGlite.createPgConfig()
-    const pool = new Pool(pgConfig)
+      const pgConfig = await PGlite.createPgConfig()
+      const pool = new Pool(pgConfig)
 
       await pool.query(`
     CREATE TABLE IF NOT EXISTS test (
@@ -97,8 +96,8 @@ describe('node-postgres + PGlite = 🔥', () => {
       }
     }),
     it('query PGlite with node-postgres pg-cursor', async () => {
-        const pgConfig = await PGlite.createPgConfig()
-        const pool = new Pool(pgConfig)
+      const pgConfig = await PGlite.createPgConfig()
+      const pool = new Pool(pgConfig)
       const client = await pool.connect()
 
       await client.query(`SELECT version();`)
