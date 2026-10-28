@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import playwright from 'playwright'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 
 const wsPort = process.env.WS_PORT || 3334
 
@@ -10,7 +13,12 @@ const PGLITE_WORKER_PATH = '../../../dist/worker/index.js'
 const PGLITE_LIVE_PATH = '../../../dist/live/index.js'
 const WORKER_PATH = '/tests/targets/web/worker.js'
 
-const useWorkerForBbFilename = ['opfs-ahp://base']
+const useWorkerForBbFilename = ['opfs-ahp://base', 'memfs2opfs://worker']
+
+// WebKit rejects navigator.storage.getDirectory() with an UnknownError in an
+// ephemeral context, OPFS needs a context backed by a profile directory.
+const needsPersistentContext = (env, dbFilename) =>
+  env === 'webkit' && /^(opfs-ahp|memfs2opfs):\/\//.test(dbFilename)
 
 // Forward everything the page reports, so a failure in CI can be diagnosed
 // from the log alone.
@@ -50,6 +58,7 @@ export function tests(env, dbFilename, target) {
     let browser
     let evaluate
     let context
+    let profileDir
     let page
     let db
     let evaluationQueue = Promise.resolve()
@@ -68,12 +77,22 @@ export function tests(env, dbFilename, target) {
     afterAll(async () => {
       if (browser) {
         await browser.close()
+      } else if (context) {
+        await context.close()
+      }
+      if (profileDir) {
+        fs.rmSync(profileDir, { recursive: true, force: true })
       }
     })
 
     beforeAll(async () => {
-      browser = await playwright[env].launch()
-      context = await browser.newContext()
+      if (needsPersistentContext(env, dbFilename)) {
+        profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pglite-web-'))
+        context = await playwright[env].launchPersistentContext(profileDir)
+      } else {
+        browser = await playwright[env].launch()
+        context = await browser.newContext()
+      }
       page = await context.newPage()
       await page.goto(BASE_URL)
       await populateGlobals(page)
