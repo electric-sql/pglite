@@ -1375,9 +1375,7 @@ export class PGlite
     copyToFS(this.mod!.FS, filePath, data, mode)
   }
 
-  static async createPgConfig<O extends PGliteOptions>(
-    options?: O,
-  ): Promise<PGlitePgConfig>
+  static createPgConfig<O extends PGliteOptions>(options?: O): PGlitePgConfig
 
   /**
    * Create a new PGlitePgConfig instance with extensions on the Typescript interface
@@ -1393,15 +1391,15 @@ export class PGlite
    * @param options PGlite options
    * @returns A promise that resolves to the PGlitePgConfig instance when it's ready.
    */
-  static async createPgConfig<O extends PGliteOptions>(
+  static createPgConfig<O extends PGliteOptions>(
     dataDir?: string,
     options?: O,
-  ): Promise<PGlitePgConfig>
+  ): PGlitePgConfig
 
-  static async createPgConfig<TExtensions extends Extensions = Extensions>(
+  static createPgConfig<TExtensions extends Extensions = Extensions>(
     dataDirOrPGliteOptions?: string | PGliteOptions<TExtensions>,
     options?: PGliteOptions<TExtensions>,
-  ): Promise<PGlitePgConfig> {
+  ): PGlitePgConfig {
     const resolvedOpts: PGliteOptions =
       typeof dataDirOrPGliteOptions === 'string'
         ? {
@@ -1411,7 +1409,6 @@ export class PGlite
         : (dataDirOrPGliteOptions ?? options ?? {})
 
     const pglite = new PGlite(resolvedOpts)
-    await pglite.waitReady
     return new PGlitePgConfig({ pglite })
   }
 }

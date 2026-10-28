@@ -64,8 +64,9 @@ export class PglitePgConnection extends EventEmitter {
     })
   }
 
-  connect(_port: number, _host: string) {
+  async connect(_port: number, _host: string) {
     this._connecting = true
+    await this.#pglite.waitReady
     process.nextTick(() => this.emit('readyForQuery'))
   }
 

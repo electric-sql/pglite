@@ -1,6 +1,6 @@
 # ORM and Query Builder Support
 
-The following ORMs and Query Builders are known to work properly with
+The following ORMs, Query Builders and Clients are known to work properly with
 PGlite:
 
 ## Prisma
@@ -243,3 +243,57 @@ const pgliteDb = await getPGliteInstance()
 Check [TypeORM documentation](https://typeorm.io/data-source)
 and [typeorm-pglite](https://github.com/muraliprajapati/typeorm-pglite) documentation for
 more details.
+
+## node-postgres 'pg'
+
+[node-postgres] node-postgres is a collection of node.js modules for interfacing with your PostgreSQL database. It has support for callbacks, promises, async/await, connection pooling, prepared statements, cursors, streaming results, C/C++ bindings, rich type parsing, and more!
+
+You can use node-postgres with PGlite by creating a `PGlitePgConfig` object and passing it to the node-postgres interfaces such as `Client`, `Pool`, `pg-cursor` etc.:
+
+```javascript
+import { Client } from 'pg'
+import { PGlite } from '@electric-sql/pglite'
+
+const pgliteConfig = PGlite.createPgConfig()
+const client = new Client(pgliteConfig)
+await client.connect()
+
+await client.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `)
+```
+
+Or use it with Pool
+
+```javascript
+import { Pool } from 'pg'
+import { PGlite } from '@electric-sql/pglite'
+
+const pgliteConfig = PGlite.createPgConfig()
+const pool = new Pool(pgliteConfig)
+const poolConn = await pool.connect()
+
+await poolConn.query(`
+    CREATE TABLE IF NOT EXISTS test (
+      id SERIAL PRIMARY KEY,
+      name TEXT
+    );
+  `)
+```
+
+Or with `pg-cursor`
+
+```javascript
+import { Pool } from 'pg'
+import Cursor from 'pg-cursor'
+import { PGlite } from '@electric-sql/pglite'
+
+const pgliteConfig = PGlite.createPgConfig()
+const pool = new Pool(pgliteConfig)
+const poolConn = await pool.connect()
+
+const cursor = poolConn.query(new Cursor('SELECT * FROM items;'))
+```
