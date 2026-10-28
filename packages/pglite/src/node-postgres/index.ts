@@ -1,9 +1,49 @@
 import { EventEmitter } from 'events'
-import type { PGlite } from '../pglite'
+import { PGlite } from '../pglite.js'
+import type { Extensions, PGliteOptions } from '../interface.js'
 import { serialize } from '@electric-sql/pg-protocol'
 
 export interface Config {
   pglite: PGlite
+}
+
+/**
+ * Create a new PGlitePgConfig instance backed by a new PGlite instance.
+ * This object can then be used with node-postgres clients such as Pool,
+ * e.g.:
+ * const pgConfig = createPgConfig()
+ * const pool = new Pool(pgConfig)
+ * const client = await pool.connect()
+ *
+ * @param dataDir The directory to store the database files
+ *                Use memory:// to use in-memory filesystem
+ * @param options PGlite options
+ * @returns The PGlitePgConfig instance. node-postgres waits for PGlite to be
+ *          ready when connecting.
+ */
+export function createPgConfig<O extends PGliteOptions>(
+  options?: O,
+): PGlitePgConfig
+
+export function createPgConfig<O extends PGliteOptions>(
+  dataDir?: string,
+  options?: O,
+): PGlitePgConfig
+
+export function createPgConfig<TExtensions extends Extensions = Extensions>(
+  dataDirOrPGliteOptions?: string | PGliteOptions<TExtensions>,
+  options?: PGliteOptions<TExtensions>,
+): PGlitePgConfig {
+  const resolvedOpts: PGliteOptions =
+    typeof dataDirOrPGliteOptions === 'string'
+      ? {
+          dataDir: dataDirOrPGliteOptions,
+          ...(options ?? {}),
+        }
+      : (dataDirOrPGliteOptions ?? options ?? {})
+
+  const pglite = new PGlite(resolvedOpts)
+  return new PGlitePgConfig({ pglite })
 }
 
 export class PGlitePgConfig {

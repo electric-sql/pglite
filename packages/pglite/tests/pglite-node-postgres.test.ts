@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 import Cursor from 'pg-cursor'
 import { Pool, Client } from 'pg'
 
 describe('node-postgres + PGlite = 🔥', () => {
   it('query PGlite with node-postgres Client', async () => {
-    const pgConfig = PGlite.createPgConfig()
+    const pgConfig = createPgConfig()
     const client = new Client(pgConfig)
     await client.connect()
 
@@ -51,7 +51,7 @@ describe('node-postgres + PGlite = 🔥', () => {
     }
   }),
     it('query PGlite with node-postgres reuse connection', async () => {
-      const pgConfig = PGlite.createPgConfig()
+      const pgConfig = createPgConfig()
       const pool = new Pool(pgConfig)
       const conn = await pool.connect()
 
@@ -97,7 +97,7 @@ describe('node-postgres + PGlite = 🔥', () => {
       }
     }),
     it('query PGlite with node-postgres using Pool', async () => {
-      const pgConfig = PGlite.createPgConfig()
+      const pgConfig = createPgConfig()
       const pool = new Pool(pgConfig)
 
       await pool.query(`
@@ -142,7 +142,7 @@ describe('node-postgres + PGlite = 🔥', () => {
       }
     }),
     it('query PGlite with node-postgres pg-cursor', async () => {
-      const pgConfig = PGlite.createPgConfig()
+      const pgConfig = createPgConfig()
       const pool = new Pool(pgConfig)
       const client = await pool.connect()
 
@@ -177,7 +177,7 @@ describe('node-postgres + PGlite = 🔥', () => {
     })
 
   it('recovers from query errors', async () => {
-    const pgConfig = PGlite.createPgConfig()
+    const pgConfig = createPgConfig()
     const pool = new Pool(pgConfig)
     const client = await pool.connect()
 

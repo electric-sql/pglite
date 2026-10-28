@@ -39,7 +39,6 @@ import {
 } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import { PGlitePgConfig } from './node-postgres/pglitePgConfig'
 
 class CurrentQuery {
   results: BackendMessage[] = []
@@ -1373,42 +1372,5 @@ export class PGlite
 
   copyToFS(filePath: string, data: Uint8Array, mode?: number) {
     copyToFS(this.mod!.FS, filePath, data, mode)
-  }
-
-  static createPgConfig<O extends PGliteOptions>(options?: O): PGlitePgConfig
-
-  /**
-   * Create a new PGlitePgConfig instance with extensions on the Typescript interface
-   * This object can then be used with node-postgres clients such as Pool,
-   * e.g.:
-   * const pgConfig = await PGlite.createPgConfig()
-   * const pool = new Pool(pgConfig)
-   * const client = await pool.connect()
-   *
-   * @param dataDir The directory to store the database files
-   *                Prefix with idb:// to use indexeddb filesystem in the browser
-   *                Use memory:// to use in-memory filesystem
-   * @param options PGlite options
-   * @returns A promise that resolves to the PGlitePgConfig instance when it's ready.
-   */
-  static createPgConfig<O extends PGliteOptions>(
-    dataDir?: string,
-    options?: O,
-  ): PGlitePgConfig
-
-  static createPgConfig<TExtensions extends Extensions = Extensions>(
-    dataDirOrPGliteOptions?: string | PGliteOptions<TExtensions>,
-    options?: PGliteOptions<TExtensions>,
-  ): PGlitePgConfig {
-    const resolvedOpts: PGliteOptions =
-      typeof dataDirOrPGliteOptions === 'string'
-        ? {
-            dataDir: dataDirOrPGliteOptions,
-            ...(options ?? {}),
-          }
-        : (dataDirOrPGliteOptions ?? options ?? {})
-
-    const pglite = new PGlite(resolvedOpts)
-    return new PGlitePgConfig({ pglite })
   }
 }

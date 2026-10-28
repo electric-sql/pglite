@@ -95,10 +95,15 @@
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
     },
-    "./node-postgres/*": {
-      "types": "./dist/pglitePgConfig.ts",
-      "import": "./dist/pglitePgConfig.js",
-      "require": "./dist/pglitePgConfig.cjs"
+    "./node-postgres": {
+      "import": {
+        "types": "./dist/node-postgres/index.d.ts",
+        "default": "./dist/node-postgres/index.js"
+      },
+      "require": {
+        "types": "./dist/node-postgres/index.d.cts",
+        "default": "./dist/node-postgres/index.cjs"
+      }
     }
   },
   "type": "module",

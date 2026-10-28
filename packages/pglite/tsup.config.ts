@@ -44,7 +44,7 @@ const entryPoints = [
   'src/templating.ts',
   'src/live/index.ts',
   'src/worker/index.ts',
-  'src/node-postgres/pglitePgConfig.ts'
+  'src/node-postgres/index.ts',
 ]
 
 const contribDir = path.join(root, 'src', 'contrib')

@@ -248,13 +248,13 @@ more details.
 
 [node-postgres] node-postgres is a collection of node.js modules for interfacing with your PostgreSQL database. It has support for callbacks, promises, async/await, connection pooling, prepared statements, cursors, streaming results, C/C++ bindings, rich type parsing, and more!
 
-You can use node-postgres with PGlite by creating a `PGlitePgConfig` object and passing it to the node-postgres interfaces such as `Client`, `Pool`, `pg-cursor` etc.:
+You can use node-postgres with PGlite in Node.js by creating a `PGlitePgConfig` object with `createPgConfig()` from `@electric-sql/pglite/node-postgres` and passing it to the node-postgres interfaces such as `Client`, `Pool`, `pg-cursor` etc.:
 
 ```javascript
 import { Client } from 'pg'
-import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 
-const pgliteConfig = PGlite.createPgConfig()
+const pgliteConfig = createPgConfig()
 const client = new Client(pgliteConfig)
 await client.connect()
 
@@ -270,9 +270,9 @@ Or use it with Pool
 
 ```javascript
 import { Pool } from 'pg'
-import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 
-const pgliteConfig = PGlite.createPgConfig()
+const pgliteConfig = createPgConfig()
 const pool = new Pool(pgliteConfig)
 const poolConn = await pool.connect()
 
@@ -289,9 +289,9 @@ Or with `pg-cursor`
 ```javascript
 import { Pool } from 'pg'
 import Cursor from 'pg-cursor'
-import { PGlite } from '@electric-sql/pglite'
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
 
-const pgliteConfig = PGlite.createPgConfig()
+const pgliteConfig = createPgConfig()
 const pool = new Pool(pgliteConfig)
 const poolConn = await pool.connect()
 
