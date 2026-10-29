@@ -237,6 +237,9 @@ importers:
       concurrently:
         specifier: ^8.2.2
         version: 8.2.2
+      esbuild:
+        specifier: ^0.23.1
+        version: 0.23.1
       http-server:
         specifier: ^14.1.1
         version: 14.1.1

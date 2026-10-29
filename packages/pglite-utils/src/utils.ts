@@ -32,16 +32,26 @@ export async function startArtifactDownload(url: URL) {
 // compile them on subsequent calls.
 const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
+// `getModuleUrl` is only called when no `module` is passed. Callers that pass
+// a precompiled module may run where `import.meta.url` is not a valid base URL
+// (for example an IIFE or CJS bundle), so the URL must not be built eagerly.
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
-  moduleUrl: URL,
+  getModuleUrl: () => URL,
   module?: WebAssembly.Module,
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModules.has(moduleUrl.toString())) {
-    const mod = module || cachedWasmModules.get(moduleUrl.toString())!
+  if (module) {
+    return {
+      instance: await WebAssembly.instantiate(module, imports),
+      module,
+    }
+  }
+  const moduleUrl = getModuleUrl()
+  if (cachedWasmModules.has(moduleUrl.toString())) {
+    const mod = cachedWasmModules.get(moduleUrl.toString())!
     return {
       instance: await WebAssembly.instantiate(mod, imports),
       module: mod,

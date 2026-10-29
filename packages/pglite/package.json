@@ -183,6 +183,7 @@
     "buffer": "^6.0.3",
     "bun": "^1.1.30",
     "concurrently": "^8.2.2",
+    "esbuild": "^0.23.1",
     "http-server": "^14.1.1",
     "openpgp": "^6.3.0",
     "pg": "^8.14.0",

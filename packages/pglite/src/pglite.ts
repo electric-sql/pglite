@@ -329,10 +329,9 @@ export class PGlite
     // It's resolved value `fsBundleBuffer` is set and used in `getPreloadedPackage`
     // which is called via `PostgresModFactory` after we have awaited
     // `fsBundleBufferPromise` below.
-    const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
     const fsBundleBufferPromise = options.fsBundle
       ? options.fsBundle.arrayBuffer()
-      : pglUtils.getFsBundle(fsBundleUrl)
+      : pglUtils.getFsBundle(new URL('../release/pglite.data', import.meta.url))
     let fsBundleBuffer: ArrayBuffer
     fsBundleBufferPromise.then((buffer) => {
       fsBundleBuffer = buffer
@@ -371,10 +370,12 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
-
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .instantiateWasm(
+            imports,
+            () => new URL('../release/pglite.wasm', import.meta.url),
+            options.pgliteWasmModule,
+          )
           .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
