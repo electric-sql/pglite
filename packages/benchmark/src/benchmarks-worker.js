@@ -11,7 +11,10 @@ import { PGlite } from './pglite/index.js'
    * @returns {Promise<Function>}
    */
   async function open(config) {
-    if (config.dataDir.startsWith('opfs-') || config.dataDir.startsWith('memfs2opfs')) {
+    if (
+      config.dataDir.startsWith('opfs-') ||
+      config.dataDir.startsWith('memfs2opfs')
+    ) {
       // delete the existing database
       const root = await navigator.storage.getDirectory()
       const dirName = config.dataDir.slice(config.dataDir.indexOf('://') + 3)
