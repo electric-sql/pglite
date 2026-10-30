@@ -12,14 +12,21 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
         ...(opts.preRun || []),
         (mod: any) => {
           const idbfs = mod.FS.filesystems.IDBFS
-          // Mount the idbfs to the users dataDir then symlink the PGDATA to the
+          // Mount the idbfs to the users dataDir then proxy the PGDATA to the
           // idbfs mount point.
           // We specifically use /pglite as the root directory for the idbfs
           // as the fs will be persisted in the indexeddb as a database with
           // the path as the name.
+          // PGDATA must be a real directory rather than a symlink, as initdb
+          // reaches it through its own PROXYFS mount, which can't follow a
+          // symlink whose target is outside of its filesystem.
           mod.FS.mkdirTree(`${PG_ROOT}/${this.dataDir}`)
           mod.FS.mount(idbfs, {}, `${PG_ROOT}/${this.dataDir}`)
-          mod.FS.symlink(`${PG_ROOT}/${this.dataDir}`, PGDATA)
+          mod.FS.mount(
+            mod.PROXYFS,
+            { root: `${PG_ROOT}/${this.dataDir}`, fs: mod.FS },
+            PGDATA,
+          )
         },
       ],
     }
