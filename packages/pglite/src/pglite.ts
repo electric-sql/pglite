@@ -482,7 +482,7 @@ export class PGlite
             mod.FS.mount(
               mod.PROXYFS,
               {
-                root: PGDATA,
+                root: options.pgDataProxyFs.lookupPath(PGDATA, { follow: true }).path,
                 fs: options.pgDataProxyFs,
               },
               PGDATA,
