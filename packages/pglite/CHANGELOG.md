@@ -1,5 +1,13 @@
 # @electric-sql/pglite
 
+## 0.5.14
+
+### Patch Changes
+
+- 1cf7e86: Only build the `pglite.wasm`, `initdb.wasm` and `pglite.data` URLs when PGlite has to load them. Passing `pgliteWasmModule`, `initdbWasmModule` and `fsBundle` now works in bundles where `import.meta.url` is undefined, such as an esbuild IIFE build.
+- 48dd3fb: Use PROXYFS instead of dumping the data dir from the scratch PGlite used for initdb when the data dir is in memory.
+- 268929b: do not copy parsers on each query
+
 ## 0.5.13
 
 ### Patch Changes
