@@ -411,6 +411,10 @@ jobs:
       - name: Get artifacts sizes
         id: artifact_size
         shell: bash
+        env:
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
+          PGLITE: ${{ github.workspace }}/packages/pglite
         run: |
           size_pglite_wasm=$(ls -lh -- $POSTGRES_PGLITE_OUT/pglite.wasm | awk 'NR == 1 {print $5}')
           size_pglite_data=$(ls -lh -- $POSTGRES_PGLITE_OUT/pglite.data | awk 'NR == 1 {print $5}')
