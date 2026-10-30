@@ -6,6 +6,7 @@ import {
   loadExtensions,
 } from './extensionUtils.js'
 import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
+import { MemoryFS } from './fs/memoryfs.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -477,8 +478,8 @@ export class PGlite
           }
         },
         (mod: PostgresMod) => {
-          mod.FS.mkdirTree(PGDATA, 0o776)
           if (options.pgDataProxyFs) {
+            mod.FS.mkdirTree(PGDATA)
             mod.FS.mount(
               mod.PROXYFS,
               {
@@ -583,26 +584,41 @@ export class PGlite
           // collides with resources the outer instance already holds (e.g. an
           // OPFS VFS's sync access handles, which are exclusive per file).
           pgInitDbOpts.fs = undefined
-          // we want to proxy the PGDATA folder to the one on which initDb will operate
-          this.mod.FS.chmod(PGDATA, 0o700)
-          pgInitDbOpts.pgDataProxyFs = this.mod!.FS
+          // An in-memory PGDATA can be proxied so initdb operates on it directly.
+          // Other filesystems get the result copied over once initdb is done:
+          // it is faster for them, and an interrupted initdb can't leave a
+          // partial database in persistent storage.
+          const proxyPgData = this.fs instanceof MemoryFS
+          if (proxyPgData) {
+            this.mod.FS.mkdirTree(PGDATA, 0o700)
+            pgInitDbOpts.pgDataProxyFs = this.mod.FS
+          }
 
           const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
 
-          // Initialize the database
-          const initDbResult = await initdb({
-            pg: pgliteForInitDb,
-            debug: options.debug,
-            wasmModule: options.initdbWasmModule,
-            args: options.initDbStartParams,
-          })
+          try {
+            // Initialize the database
+            const initDbResult = await initdb({
+              pg: pgliteForInitDb,
+              debug: options.debug,
+              wasmModule: options.initdbWasmModule,
+              args: options.initDbStartParams,
+            })
 
-          if (initDbResult.exitCode !== 0) {
-            if (!initDbResult.stderr.includes('exists but is not empty')) {
-              throw new Error(
-                'INITDB failed to initialize: ' + initDbResult.stderr,
-              )
+            if (initDbResult.exitCode !== 0) {
+              if (!initDbResult.stderr.includes('exists but is not empty')) {
+                throw new Error(
+                  'INITDB failed to initialize: ' + initDbResult.stderr,
+                )
+              }
             }
+
+            if (!proxyPgData) {
+              const pgdatatar = await pgliteForInitDb.dumpDataDir('none')
+              await loadTar(this.mod.FS, pgdatatar, PGDATA)
+            }
+          } finally {
+            await pgliteForInitDb.close()
           }
           // Sync any changes back to the persisted store (if there is one)
           // TODO: only sync here if initdb did init db.
