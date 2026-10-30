@@ -399,7 +399,8 @@ export class OpfsAhpFS extends BaseFilesystem {
       node = node.children[part] as DirectoryNode
     }
     if (Object.prototype.hasOwnProperty.call(node.children, newDirName)) {
-      throw new FsError('EEXIST', 'File exists')
+      return
+      // throw new FsError('EEXIST', 'File exists')
     }
     const newDir: DirectoryNode = {
       type: 'directory',
