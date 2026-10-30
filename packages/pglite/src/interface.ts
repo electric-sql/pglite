@@ -5,6 +5,7 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -89,6 +90,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   username?: string
   database?: string
   fs?: Filesystem
+  pgDataProxyFs?: pglUtils.FS
   debug?: DebugLevel
   relaxedDurability?: boolean
   extensions?: TExtensions

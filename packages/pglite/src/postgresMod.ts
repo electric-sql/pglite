@@ -1,18 +1,5 @@
 import PostgresModFactory from '../release/pglite'
-
-type IDBFS = Emscripten.FileSystemType & {
-  quit: () => void
-  dbs: Record<string, IDBDatabase>
-}
-
-export type FS = typeof FS & {
-  filesystems: {
-    MEMFS: Emscripten.FileSystemType
-    NODEFS: Emscripten.FileSystemType
-    IDBFS: IDBFS
-  }
-  quit: () => void
-}
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export interface PostgresMod
   extends Omit<EmscriptenModule, 'preInit' | 'preRun' | 'postRun'> {
@@ -21,7 +8,7 @@ export interface PostgresMod
   postRun: Array<{ (mod: PostgresMod): void }>
   thisProgram: string
   stdin: (() => number | null) | null
-  FS: FS
+  FS: pglUtils.FS
   wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
