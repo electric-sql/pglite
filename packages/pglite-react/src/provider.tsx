@@ -16,11 +16,12 @@ interface PGliteProviderSet<T extends PGliteWithLive> {
   usePGlite: UsePGlite<T>
 }
 
-/**
- * Create a typed set of {@link PGliteProvider} and {@link usePGlite}.
- */
-function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
-  const ctx = createContext<T | undefined>(undefined)
+const defaultContext = createContext<PGliteWithLive | undefined>(undefined)
+
+function makePGliteProviderSet<T extends PGliteWithLive>(
+  ctx: React.Context<T | undefined>,
+  bridgeDefaultContext: boolean,
+): PGliteProviderSet<T> {
   return {
     usePGlite: ((db?: T) => {
       const dbProvided = useContext(ctx)
@@ -36,11 +37,28 @@ function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
       return dbProvided
     }) as UsePGlite<T>,
     PGliteProvider: ({ children, db }: Props<T>) => {
-      return <ctx.Provider value={db}>{children}</ctx.Provider>
+      const provider = <ctx.Provider value={db}>{children}</ctx.Provider>
+
+      return bridgeDefaultContext ? (
+        <defaultContext.Provider value={db}>{provider}</defaultContext.Provider>
+      ) : (
+        provider
+      )
     },
   }
 }
 
-const { PGliteProvider, usePGlite } = makePGliteProvider<PGliteWithLive>()
+/**
+ * Create a typed set of {@link PGliteProvider} and {@link usePGlite}.
+ */
+function makePGliteProvider<T extends PGliteWithLive>(): PGliteProviderSet<T> {
+  const ctx = createContext<T | undefined>(undefined)
+  return makePGliteProviderSet(ctx, true)
+}
+
+const { PGliteProvider, usePGlite } = makePGliteProviderSet(
+  defaultContext,
+  false,
+)
 
 export { makePGliteProvider, PGliteProvider, usePGlite }
