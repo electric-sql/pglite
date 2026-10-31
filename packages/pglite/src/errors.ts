@@ -3,8 +3,6 @@ import { QueryOptions } from './interface'
 
 /** Thrown when COMMIT rolls back an aborted transaction. */
 export class TransactionAbortedError extends Error {
-  override name = 'TransactionAbortedError'
-
   constructor() {
     super('Transaction was rolled back instead of committed')
   }
