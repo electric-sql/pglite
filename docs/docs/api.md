@@ -254,6 +254,8 @@ To start an interactive transaction, pass a callback to the transaction method. 
 
 The transaction will be committed when the promise returned from your callback resolves, and automatically rolled back if the promise is rejected.
 
+If a statement error is caught inside the callback without recovering through a savepoint, the transaction remains aborted. If `COMMIT` rolls it back, `.transaction()` rejects with `TransactionAbortedError`.
+
 ##### `Transaction` objects
 
 - `tx.query<T>(query: string, params?: any[], options?: QueryOptions): Promise<Results<T>>`<br />

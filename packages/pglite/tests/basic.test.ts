@@ -4,7 +4,7 @@ import { identifier } from '../dist/templating.js'
 import { PGlite, type Transaction } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
+  const { PGlite, TransactionAbortedError } =
     importType === 'esm'
       ? await import('../dist/index.js')
       : ((await import(
@@ -521,6 +521,84 @@ await testEsmCjsAndDTC(async (importType) => {
         command: 'SELECT',
         rowCount: 1,
       })
+    })
+
+    it('rejects when commit rolls back an aborted transaction', async () => {
+      await db.exec('CREATE TABLE test (id INT PRIMARY KEY)')
+      let failedTx: Transaction | undefined
+
+      await expect(
+        db.transaction(async (tx) => {
+          failedTx = tx
+          await tx.query('INSERT INTO test VALUES (1)')
+          await expect(
+            tx.query('INSERT INTO test VALUES (1)'),
+          ).rejects.toMatchObject({
+            code: '23505',
+          })
+          return 'not committed'
+        }),
+      ).rejects.toThrow(TransactionAbortedError)
+
+      expect(failedTx!.closed).toBe(true)
+      await expect(failedTx!.query('SELECT 1')).rejects.toThrow(
+        'Transaction is closed',
+      )
+      expect((await db.query('SELECT * FROM test')).rows).toEqual([])
+
+      const result = await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO test VALUES (2)')
+        return 'committed'
+      })
+      expect(result).toBe('committed')
+      expect((await db.query('SELECT * FROM test')).rows).toEqual([{ id: 2 }])
+    })
+
+    it('commits after recovering from a statement error using a savepoint', async () => {
+      await db.exec('CREATE TABLE test (id INT PRIMARY KEY)')
+
+      const result = await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO test VALUES (1)')
+        await tx.exec('SAVEPOINT recover')
+        await expect(
+          tx.query('INSERT INTO test VALUES (1)'),
+        ).rejects.toMatchObject({
+          code: '23505',
+        })
+        await tx.exec('ROLLBACK TO SAVEPOINT recover')
+        await tx.query('INSERT INTO test VALUES (2)')
+        return 'committed'
+      })
+
+      expect(result).toBe('committed')
+      expect((await db.query('SELECT * FROM test ORDER BY id')).rows).toEqual([
+        { id: 1 },
+        { id: 2 },
+      ])
+    })
+
+    it('preserves constraint errors raised at commit', async () => {
+      await db.exec(`
+        CREATE TABLE parent (id INT PRIMARY KEY);
+        CREATE TABLE child (
+          parent_id INT REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED
+        );
+      `)
+
+      await expect(
+        db.transaction(async (tx) => {
+          await tx.query('INSERT INTO child VALUES (1)')
+        }),
+      ).rejects.toMatchObject({ code: '23503' })
+
+      expect((await db.query('SELECT * FROM child')).rows).toEqual([])
+      await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO parent VALUES (1)')
+        await tx.query('INSERT INTO child VALUES (1)')
+      })
+      expect((await db.query('SELECT * FROM child')).rows).toEqual([
+        { parent_id: 1 },
+      ])
     })
 
     it('rejects sql on closed transaction handles', async () => {
