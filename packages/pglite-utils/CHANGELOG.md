@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.0.5
+
+### Patch Changes
+
+- 48dd3fb: Use PROXYFS instead of dumping the data dir from the scratch PGlite used for initdb when the data dir is in memory.
+
 ## 0.0.4
 
 ### Patch Changes
