@@ -1,6 +1,15 @@
 import { DatabaseError } from '@electric-sql/pg-protocol/messages'
 import { QueryOptions } from './interface'
 
+/** Thrown when COMMIT rolls back an aborted transaction. */
+export class TransactionAbortedError extends Error {
+  override name = 'TransactionAbortedError'
+
+  constructor() {
+    super('Transaction was rolled back instead of committed')
+  }
+}
+
 export interface PGliteError extends DatabaseError {
   query: string | undefined
   params: any[] | undefined
