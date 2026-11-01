@@ -37,19 +37,20 @@ const cachedWasmModules = new Map<string, WebAssembly.Module>()
 // (for example an IIFE or CJS bundle), so the URL must not be built eagerly.
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
-  getModuleUrl: () => URL,
-  module?: WebAssembly.Module,
+  moduleSource: WebAssembly.Module | (() => URL),
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module) {
+
+  if (moduleSource instanceof WebAssembly.Module) {
     return {
       instance: await WebAssembly.instantiate(module, imports),
       module,
     }
   }
-  const moduleUrl = getModuleUrl()
+
+  const moduleUrl = moduleSource()
   if (cachedWasmModules.has(moduleUrl.toString())) {
     const mod = cachedWasmModules.get(moduleUrl.toString())!
     return {
