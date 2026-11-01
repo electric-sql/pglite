@@ -500,45 +500,6 @@ export class PGlite
     )
     emscriptenOpts = amendedEmscriptenOpts
 
-    // # Setup extensions
-    // This is the first step of loading PGlite extensions
-    // We loop through each extension and call the setup function
-    // This amends the emscriptenOpts and can return:
-    // - emscriptenOpts: The updated emscripten options
-    // - namespaceObj: The namespace object to attach to the PGlite instance
-    // - init: A function to initialize the extension/plugin after the database is ready
-    // - close: A function to close/tidy-up the extension/plugin when the database is closed
-    const extSharedPreloadLibraries: string[] = []
-    for (const [extName, ext] of Object.entries(this.#extensions)) {
-      if (ext instanceof URL) {
-        // Extension with only a URL to a bundle
-        extensionBundlePromises[extName] = loadExtensionBundle(ext)
-      } else {
-        // Extension with JS setup function
-        const extRet = await ext.setup(this, emscriptenOpts)
-        if (extRet.emscriptenOpts) {
-          emscriptenOpts = extRet.emscriptenOpts
-        }
-        if (extRet.namespaceObj) {
-          const instance = this as any
-          instance[extName] = extRet.namespaceObj
-        }
-        if (extRet.bundlePath) {
-          extensionBundlePromises[extName] = loadExtensionBundle(
-            extRet.bundlePath,
-          ) // Don't await here, this is parallel
-        }
-        if (extRet.init) {
-          extensionInitFns.push(extRet.init)
-        }
-        if (extRet.close) {
-          this.#extensionsClose.push(extRet.close)
-        }
-        extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
-      }
-    }
-    emscriptenOpts['pg_extensions'] = extensionBundlePromises
-
     // Await the fs bundle - we do this just before calling PostgresModFactory
     // as it needs the fs bundle to be ready.
     await fsBundleBufferPromise
@@ -553,10 +514,6 @@ export class PGlite
 
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
-
-    if (options.icuDataDir) {
-      await this.#fillIcuDataDir(options.icuDataDir)
-    }
 
     if (!options.noInitDb) {
       // If the user has provided a tarball to load the database from, do that now.
@@ -626,6 +583,50 @@ export class PGlite
           await this.syncToFs()
         }
       }
+
+      // # Setup extensions
+      // This is the first step of loading PGlite extensions
+      // We loop through each extension and call the setup function
+      // This amends the emscriptenOpts and can return:
+      // - emscriptenOpts: The updated emscripten options
+      // - namespaceObj: The namespace object to attach to the PGlite instance
+      // - init: A function to initialize the extension/plugin after the database is ready
+      // - close: A function to close/tidy-up the extension/plugin when the database is closed
+      const extSharedPreloadLibraries: string[] = []
+      for (const [extName, ext] of Object.entries(this.#extensions)) {
+        if (ext instanceof URL) {
+          // Extension with only a URL to a bundle
+          extensionBundlePromises[extName] = loadExtensionBundle(ext)
+        } else {
+          // Extension with JS setup function
+          const extRet = await ext.setup(this, emscriptenOpts)
+          if (extRet.emscriptenOpts) {
+            emscriptenOpts = extRet.emscriptenOpts
+          }
+          if (extRet.namespaceObj) {
+            const instance = this as any
+            instance[extName] = extRet.namespaceObj
+          }
+          if (extRet.bundlePath) {
+            extensionBundlePromises[extName] = loadExtensionBundle(
+              extRet.bundlePath,
+            ) // Don't await here, this is parallel
+          }
+          if (extRet.init) {
+            extensionInitFns.push(extRet.init)
+          }
+          if (extRet.close) {
+            this.#extensionsClose.push(extRet.close)
+          }
+          extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
+        }
+      }
+      emscriptenOpts['pg_extensions'] = extensionBundlePromises
+
+      if (options.icuDataDir) {
+        await this.#fillIcuDataDir(options.icuDataDir)
+      }
+
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
 
