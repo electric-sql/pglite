@@ -104,7 +104,8 @@ async function execInitdb({
       pglUtils
         .instantiateWasm(
           imports,
-          wasmModule ?? (() => new URL('../release/initdb.wasm', import.meta.url)),
+          wasmModule ??
+            (() => new URL('../release/initdb.wasm', import.meta.url)),
         )
         .then(({ instance, module }) => {
           // @ts-ignore wrong type in Emscripten typings

@@ -374,7 +374,8 @@ export class PGlite
         pglUtils
           .instantiateWasm(
             imports,
-            options.pgliteWasmModule ?? (() => new URL("../release/pglite.wasm", import.meta.url))
+            options.pgliteWasmModule ??
+              (() => new URL('../release/pglite.wasm', import.meta.url)),
           )
           .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings

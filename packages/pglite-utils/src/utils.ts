@@ -42,7 +42,6 @@ export async function instantiateWasm(
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-
   if (moduleSource instanceof WebAssembly.Module) {
     return {
       instance: await WebAssembly.instantiate(module, imports),
