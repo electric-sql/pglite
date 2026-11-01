@@ -512,7 +512,6 @@ export class PGlite
     this.mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
     this.mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
 
-
     if (options.icuDataDir) {
       await this.#fillIcuDataDir(options.icuDataDir)
     }
