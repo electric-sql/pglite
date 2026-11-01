@@ -512,6 +512,11 @@ export class PGlite
     this.mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
     this.mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
 
+
+    if (options.icuDataDir) {
+      await this.#fillIcuDataDir(options.icuDataDir)
+    }
+
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
@@ -624,10 +629,6 @@ export class PGlite
         }
       }
       emscriptenOpts['pg_extensions'] = extensionBundlePromises
-
-      if (options.icuDataDir) {
-        await this.#fillIcuDataDir(options.icuDataDir)
-      }
 
       // Start compiling dynamic extensions present in FS.
       await loadExtensions(this.mod, (...args) => this.#log(...args))
