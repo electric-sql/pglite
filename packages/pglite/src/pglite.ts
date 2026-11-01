@@ -618,7 +618,9 @@ export class PGlite
           if (extRet.close) {
             this.#extensionsClose.push(extRet.close)
           }
-          extSharedPreloadLibraries.push(...(extRet.sharedPreloadLibraries ?? []))
+          extSharedPreloadLibraries.push(
+            ...(extRet.sharedPreloadLibraries ?? []),
+          )
         }
       }
       emscriptenOpts['pg_extensions'] = extensionBundlePromises
