@@ -72,6 +72,10 @@ export default defineConfig([
     esbuildPlugins: [replaceAssertPlugin, replaceProcessBindingPlugin],
     minify: minify,
     shims: true, // Convert import.meta.url to a shim for CJS
+    // tsup's ESM shim imports `node:path` and `node:url`. If tsup strips the
+    // prefix, esbuild keeps those imports in the output even though they are
+    // unused, and the bundle no longer loads in browsers.
+    removeNodeProtocol: false,
     format: ['esm', 'cjs'],
   },
   {
