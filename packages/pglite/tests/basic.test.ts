@@ -538,7 +538,15 @@ await testEsmCjsAndDTC(async (importType) => {
           })
           return 'not committed'
         }),
-      ).rejects.toThrow(TransactionAbortedError)
+      ).rejects.toSatisfy((error: unknown) => {
+        expect(error).toBeInstanceOf(TransactionAbortedError)
+        expect(error).toMatchObject({
+          severity: 'ERROR',
+          code: '25P02',
+          query: 'COMMIT',
+        })
+        return true
+      })
 
       expect(failedTx!.closed).toBe(true)
       await expect(failedTx!.query('SELECT 1')).rejects.toThrow(

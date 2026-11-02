@@ -517,7 +517,12 @@ export abstract class BasePGlite
           closed = true
           const [result] = await this.#runExec('COMMIT')
           if (result.command === 'ROLLBACK') {
-            throw new TransactionAbortedError()
+            throw makePGliteError({
+              e: new TransactionAbortedError(),
+              query: 'COMMIT',
+              params: undefined,
+              options: undefined,
+            })
           }
         }
         this.#inTransaction = false
