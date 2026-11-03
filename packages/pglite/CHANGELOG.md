@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.5.15
+
+### Patch Changes
+
+- 649dc0e: Reject with `TransactionAbortedError` when committing an aborted transaction rolls it back instead of silently resolving.
+- fe8bdc2: Reduce initdb memory usage by passing a smaller WebAssembly.Memory object during initialization'
+- 7c62782: Upgrade tsup to 8.5.1
+- 84ce5ae: Upgrade emsdk to 6.0.13
+
 ## 0.5.14
 
 ### Patch Changes
