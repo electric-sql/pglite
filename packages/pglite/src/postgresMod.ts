@@ -11,6 +11,9 @@ export interface PostgresMod
   FS: pglUtils.FS
   wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
+  MEMFS: Emscripten.FileSystemType
+  IDBFS: Emscripten.FileSystemType
+  NODEFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string

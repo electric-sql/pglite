@@ -186,7 +186,7 @@ export function rmdirRecursive(fs: MinimalFS, path: string) {
   }
 }
 
-type IDBFS = Emscripten.FileSystemType & {
+export type IDBFS = Emscripten.FileSystemType & {
   quit: () => void
   dbs: Record<string, IDBDatabase>
 }
