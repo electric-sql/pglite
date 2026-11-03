@@ -7,6 +7,15 @@ export interface PGliteError extends DatabaseError {
   queryOptions: QueryOptions | undefined
 }
 
+/** Thrown when COMMIT rolls back an aborted transaction. */
+export class TransactionAbortedError extends DatabaseError {
+  constructor() {
+    super('Transaction was rolled back instead of committed', 0, 'error')
+    this.severity = 'ERROR'
+    this.code = '25P02'
+  }
+}
+
 export function makePGliteError(data: {
   e: DatabaseError
   query: string
