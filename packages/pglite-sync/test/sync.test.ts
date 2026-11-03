@@ -1694,6 +1694,199 @@ describe('pglite-sync', () => {
     syncResult.unsubscribe()
   })
 
+  describe('commits around must-refetch', () => {
+    let feedMessages: (messages: MultiShapeMessage[]) => Promise<void>
+    let unsubscribeAll: Mock
+
+    const mockStream = (shapeNames: string[]) => {
+      unsubscribeAll = vi.fn()
+      MockMultiShapeStream.mockImplementation(() => ({
+        subscribe: vi.fn(
+          (cb: (messages: MultiShapeMessage[]) => Promise<void>) => {
+            feedMessages = cb
+          },
+        ),
+        unsubscribeAll,
+        isUpToDate: true,
+        shapes: Object.fromEntries(
+          shapeNames.map((name) => [
+            name,
+            { subscribe: vi.fn(), unsubscribeAll: vi.fn() },
+          ]),
+        ),
+      }))
+    }
+
+    const insert = (
+      shape: string,
+      lsn: number,
+      value: Record<string, unknown>,
+      last = true,
+    ) =>
+      ({
+        shape,
+        key: `id${value.id}`,
+        value,
+        headers: { operation: 'insert', lsn: lsn.toString(), last },
+      }) as MultiShapeMessage
+
+    const upToDate = (shape: string, lsn: number) =>
+      ({
+        shape,
+        headers: {
+          control: 'up-to-date',
+          global_last_seen_lsn: lsn.toString(),
+        },
+      }) as MultiShapeMessage
+
+    const mustRefetch = (shape: string) =>
+      ({ shape, headers: { control: 'must-refetch' } }) as MultiShapeMessage
+
+    // Transactions are serialised: this resolves once every queued commit has run
+    const commitsSettled = () => pg.transaction(async () => {})
+
+    const todoRows = async () =>
+      (await pg.sql`SELECT * FROM todo ORDER BY id;`).rows
+
+    it('keeps a refetched table populated until every shape has caught up', async () => {
+      await pg.exec(`
+        CREATE TABLE IF NOT EXISTS project (
+          id SERIAL PRIMARY KEY,
+          name TEXT,
+          active BOOLEAN
+        );
+      `)
+      await pg.exec(`TRUNCATE project;`)
+      mockStream(['todo_shape', 'project_shape'])
+
+      const sub = await pg.electric.syncShapesToTables({
+        key: null,
+        shapes: {
+          todo_shape: {
+            shape: { url: 'http://localhost:3000/v1/shape' },
+            table: 'todo',
+            primaryKey: ['id'],
+          },
+          project_shape: {
+            shape: { url: 'http://localhost:3000/v1/shape' },
+            table: 'project',
+            primaryKey: ['id'],
+          },
+        },
+      })
+
+      await feedMessages([
+        insert('todo_shape', 1, { id: 1, task: 'old', done: false }),
+        insert('project_shape', 1, { id: 1, name: 'old', active: true }),
+        upToDate('todo_shape', 1),
+        upToDate('project_shape', 1),
+      ])
+      await commitsSettled()
+
+      // Both shapes are invalidated, only one of them has refetched so far
+      await feedMessages([
+        mustRefetch('todo_shape'),
+        mustRefetch('project_shape'),
+        insert('todo_shape', 2, { id: 2, task: 'new', done: true }),
+        upToDate('todo_shape', 2),
+      ])
+      await commitsSettled()
+
+      expect(await todoRows()).toEqual([{ id: 1, task: 'old', done: false }])
+      expect((await pg.sql`SELECT * FROM project;`).rows).toEqual([
+        { id: 1, name: 'old', active: true },
+      ])
+
+      // Once the second shape has refetched, truncation and new rows commit together
+      await feedMessages([
+        insert('project_shape', 2, { id: 2, name: 'new', active: false }),
+        upToDate('project_shape', 2),
+      ])
+      await commitsSettled()
+
+      expect(await todoRows()).toEqual([{ id: 2, task: 'new', done: true }])
+      expect((await pg.sql`SELECT * FROM project;`).rows).toEqual([
+        { id: 2, name: 'new', active: false },
+      ])
+
+      sub.unsubscribe()
+    })
+
+    it('does not truncate under a commit that was queued before a must-refetch', async () => {
+      mockStream(['shape'])
+      const onError = vi.fn()
+      const sub = await pg.electric.syncShapeToTable({
+        shape: { url: 'http://localhost:3000/v1/shape' },
+        table: 'todo',
+        primaryKey: ['id'],
+        shapeKey: null,
+        onError,
+      })
+
+      // Hold the database so that the next commits queue up behind this transaction
+      let release!: () => void
+      let held!: () => void
+      const isHeld = new Promise<void>((resolve) => (held = resolve))
+      const blocker = pg.transaction(async () => {
+        held()
+        await new Promise<void>((resolve) => (release = resolve))
+      })
+      await isHeld
+
+      await feedMessages([
+        insert('shape', 1, { id: 1, task: 'old', done: false }),
+        upToDate('shape', 1),
+      ])
+      await feedMessages([
+        mustRefetch('shape'),
+        insert('shape', 2, { id: 1, task: 'new', done: false }, false),
+        insert('shape', 2, { id: 2, task: 'new', done: false }),
+        upToDate('shape', 2),
+      ])
+
+      release()
+      await blocker
+      await commitsSettled()
+
+      expect(await todoRows()).toEqual([
+        { id: 1, task: 'new', done: false },
+        { id: 2, task: 'new', done: false },
+      ])
+      expect(onError).not.toHaveBeenCalled()
+
+      sub.unsubscribe()
+    })
+
+    it('reports a failed commit through onError and stops syncing', async () => {
+      mockStream(['shape'])
+      const onError = vi.fn()
+      await pg.electric.syncShapeToTable({
+        shape: { url: 'http://localhost:3000/v1/shape' },
+        table: 'todo',
+        primaryKey: ['id'],
+        shapeKey: null,
+        onError,
+      })
+
+      // `id` is an integer column: the commit's INSERT fails
+      await feedMessages([
+        insert('shape', 1, { id: 'not-a-number', task: 'bad', done: false }),
+        upToDate('shape', 1),
+      ])
+      await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(Error)
+      expect(unsubscribeAll).toHaveBeenCalled()
+
+      // Messages delivered after the failure are not applied
+      await feedMessages([
+        insert('shape', 2, { id: 2, task: 'later', done: false }),
+        upToDate('shape', 2),
+      ])
+      await commitsSettled()
+      expect(await todoRows()).toEqual([])
+    })
+  })
+
   it('case sensitivity: handles inserts/updates/deletes on case sensitive table names', async () => {
     let feedMessage: (
       lsn: number,
