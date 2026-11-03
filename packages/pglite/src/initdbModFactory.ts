@@ -23,6 +23,7 @@ export interface InitdbMod
   stdin: (() => number | null) | null
   ENV: Record<string, string>
   FS: FS
+  wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   INITIAL_MEMORY: number
