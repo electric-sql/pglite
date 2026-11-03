@@ -86,9 +86,15 @@ async function execInitdb({
 
   const origHEAPU8 = pg.Module.HEAPU8.slice()
 
+  const wasmMemory = new WebAssembly.Memory({
+    initial: 8, // pages of 64kib
+    maximum: 100, // pages of 64kib
+  })
+
   const emscriptenOpts: Partial<InitdbMod> = {
     arguments: args,
     noExitRuntime: false,
+    wasmMemory,
     thisProgram: INITDB_EXE_PATH,
     // Provide a stdin that returns EOF to avoid browser prompt
     stdin: () => null,
