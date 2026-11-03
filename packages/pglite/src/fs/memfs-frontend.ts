@@ -184,7 +184,7 @@ export class MemfsFrontendFS extends EmscriptenBuiltinFilesystem {
   // Emscripten filesystem:
 
   #createFsType(mod: PostgresMod) {
-    const MEMFS = mod.FS.filesystems.MEMFS as any
+    const MEMFS = mod.MEMFS as any
     return {
       mount: (mount: any): MemNode => {
         const root = MEMFS.mount(mount) as MemNode
