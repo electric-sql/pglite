@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.0.6
+
+### Patch Changes
+
+- 84ce5ae: Upgrade emsdk to 6.0.13
+
 ## 0.0.5
 
 ### Patch Changes
