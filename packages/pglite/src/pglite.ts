@@ -962,6 +962,11 @@ export class PGlite
 
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
+          
+          // nuke shared wasm memory
+          // PGliteOS.resetWasmMemory()
+          // this.mod.wasmMemory = PGliteOS.wasmMemory
+
           await loadTar(this.mod.FS, pgdatatar, pglUtils.PGDATA)
           // const x = this.mod.FS.readFile('/pglite/data/global/1262')
 
@@ -1006,7 +1011,7 @@ export class PGlite
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
-      wasmMemory: PGliteOS.wasmMemory,
+      wasmMemory: options.noInitDb === true ? undefined : PGliteOS.wasmMemory,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {

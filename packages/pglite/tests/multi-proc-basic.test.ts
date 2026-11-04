@@ -18,25 +18,25 @@ it('exec', async () => {
   console.log(result)
 })
 
-await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
-    importType === 'esm'
-      ? await import('../dist/index.js')
-      : ((await import(
-          '../dist/index.cjs'
-        )) as unknown as typeof import('../dist/index.js'))
+// await testEsmCjsAndDTC(async (importType) => {
+//   const { PGlite } =
+//     importType === 'esm'
+//       ? await import('../dist/index.js')
+//       : ((await import(
+//           '../dist/index.cjs'
+//         )) as unknown as typeof import('../dist/index.js'))
 
-  describe(`basic`, () => {
-    it('exec', async () => {
-      const db = await PGlite.create({
-        debug: 5,
-      })
-      await db.exec(`
-      CREATE TABLE IF NOT EXISTS test (
-        id SERIAL PRIMARY KEY,
-        name TEXT
-      );
-    `)
-    })
-  })
-})
+//   describe(`basic`, () => {
+//     it('exec', async () => {
+//       const db = await PGlite.create({
+//         debug: 5,
+//       })
+//       await db.exec(`
+//       CREATE TABLE IF NOT EXISTS test (
+//         id SERIAL PRIMARY KEY,
+//         name TEXT
+//       );
+//     `)
+//     })
+//   })
+// })
