@@ -962,7 +962,7 @@ export class PGlite
 
           const pgdatatar = await pg_initDb.dumpDataDir('none')
           pg_initDb.close()
-          
+
           // nuke shared wasm memory
           // PGliteOS.resetWasmMemory()
           // this.mod.wasmMemory = PGliteOS.wasmMemory
