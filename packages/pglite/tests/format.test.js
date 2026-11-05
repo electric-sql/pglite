@@ -84,6 +84,40 @@ describe('format', () => {
     )
   })
 
+  it('literal percent signs alongside params', async () => {
+    await pg.exec(`
+      CREATE TABLE test7 (
+        id SERIAL PRIMARY KEY,
+        value VARCHAR
+      );
+    `)
+    const ret7 = await formatQuery(
+      pg,
+      "SELECT * FROM test7 WHERE value LIKE $1 || '%' AND value <> '100%';",
+      ['te'],
+    )
+    expect(ret7).toBe(
+      "SELECT * FROM test7 WHERE value LIKE 'te' || '%' AND value <> '100%';",
+    )
+  })
+
+  it('does not treat literal text as format() specifiers', async () => {
+    await pg.exec(`
+      CREATE TABLE test8 (
+        id SERIAL PRIMARY KEY,
+        value VARCHAR
+      );
+    `)
+    const ret8 = await formatQuery(
+      pg,
+      "SELECT 'a%sb' AS label, '%1$I' AS label2, * FROM test8 WHERE id = $1;",
+      [1],
+    )
+    expect(ret8).toBe(
+      "SELECT 'a%sb' AS label, '%1$I' AS label2, * FROM test8 WHERE id = '1';",
+    )
+  })
+
   it('json', async () => {
     await pg.exec(`
       CREATE TABLE test4 (
