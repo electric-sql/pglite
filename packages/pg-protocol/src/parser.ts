@@ -82,14 +82,7 @@ export class Parser {
   #reader = new BufferReader()
 
   public parse(buffer: BufferParameter, callback: MessageCallback) {
-    this.#mergeBuffer(
-      ArrayBuffer.isView(buffer)
-        ? buffer.buffer.slice(
-            buffer.byteOffset,
-            buffer.byteOffset + buffer.byteLength,
-          )
-        : buffer,
-    )
+    this.#mergeBuffer(buffer)
     const bufferFullLength = this.#bufferOffset + this.#bufferRemainingLength
     let offset = this.#bufferOffset
     while (offset + HEADER_LENGTH <= bufferFullLength) {
@@ -133,8 +126,21 @@ export class Parser {
     this.#bufferOffset = 0
   }
 
-  #mergeBuffer(buffer: ArrayBuffer): void {
+  #mergeBuffer(buffer: BufferParameter): void {
     if (this.#bufferRemainingLength > 0) {
+      // Compaction can overwrite input that aliases our current buffer.
+      const bytes = ArrayBuffer.isView(buffer)
+        ? new Uint8Array(
+            buffer.buffer === this.#bufferView.buffer
+              ? buffer.buffer.slice(
+                  buffer.byteOffset,
+                  buffer.byteOffset + buffer.byteLength,
+                )
+              : buffer.buffer,
+            buffer.buffer === this.#bufferView.buffer ? 0 : buffer.byteOffset,
+            buffer.byteLength,
+          )
+        : new Uint8Array(buffer)
       const newLength = this.#bufferRemainingLength + buffer.byteLength
       const newFullLength = newLength + this.#bufferOffset
       if (newFullLength > this.#bufferView.byteLength) {
@@ -168,12 +174,20 @@ export class Parser {
 
       // Concat the new buffer with the remaining one
       new Uint8Array(this.#bufferView.buffer).set(
-        new Uint8Array(buffer),
+        bytes,
         this.#bufferOffset + this.#bufferRemainingLength,
       )
       this.#bufferRemainingLength = newLength
     } else {
-      this.#bufferView = new DataView(buffer)
+      // Without a pending fragment, retain an owning snapshot of view inputs.
+      this.#bufferView = new DataView(
+        ArrayBuffer.isView(buffer)
+          ? buffer.buffer.slice(
+              buffer.byteOffset,
+              buffer.byteOffset + buffer.byteLength,
+            )
+          : buffer,
+      )
       this.#bufferOffset = 0
       this.#bufferRemainingLength = buffer.byteLength
     }

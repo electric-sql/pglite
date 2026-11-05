@@ -34,3 +34,7 @@ Compare identical commands in separate baseline and candidate checkouts. Process
 CPU includes runtime background threads; elapsed time is reported separately.
 There is no forced collection or heap limit. Short runs can vary substantially,
 and these query results do not establish application throughput or capacity.
+
+Large text results also exercise protocol fragment assembly. When comparing multiple
+optimizations, pin both commits and report the incremental comparison separately;
+do not add percentages measured against different baselines.
