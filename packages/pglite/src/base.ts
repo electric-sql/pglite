@@ -393,6 +393,16 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<DescribeQueryResult> {
+    await this._checkReady()
+    return await this._runExclusiveTransaction(() =>
+      this._runExclusiveQuery(() => this.#runDescribeQuery(query, options)),
+    )
+  }
+
+  async #runDescribeQuery(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<DescribeQueryResult> {
     let messages = []
     try {
       await this.#execProtocolNoSync(
