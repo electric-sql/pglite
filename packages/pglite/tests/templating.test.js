@@ -76,6 +76,14 @@ describe('templating', () => {
     })
   })
 
+  it('should double quotes inside identifiers', () => {
+    const name = 'a"b'
+    expect(query`SELECT * FROM ${identifier`${name}`};`).toEqual({
+      query: 'SELECT * FROM "a""b";',
+      params: [],
+    })
+  })
+
   it('should correctly escape raw sql', () => {
     expect(
       query`SELECT * FROM test ${raw`WHERE value = ${"'foo'"} AND num = ${3}`};`,
