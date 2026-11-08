@@ -66,6 +66,45 @@ describe('parse', () => {
     ).toEqual(new Date('2021-01-01T12:00:00.000Z').getUTCMilliseconds())
   })
 
+  it('infinity for date 1082, timestamp 1114 and timestamptz 1184', () => {
+    for (const type of [1082, 1114, 1184]) {
+      expect(types.parseType('infinity', type)).toEqual(Infinity)
+      expect(types.parseType('-infinity', type)).toEqual(-Infinity)
+    }
+  })
+
+  it('timestamptz 1184 BC', () => {
+    expect(
+      types.parseType('0044-03-15 12:30:00.5+00 BC', 1184).toISOString(),
+    ).toEqual('-000043-03-15T12:30:00.500Z')
+  })
+
+  it('date 1082 BC', () => {
+    expect(types.parseType('0044-03-15 BC', 1082).toISOString()).toEqual(
+      '-000043-03-15T00:00:00.000Z',
+    )
+  })
+
+  it('timestamp 1114 BC is local time', () => {
+    const date = types.parseType('0044-03-15 12:30:00 BC', 1114)
+    expect([
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+    ]).toEqual([-43, 2, 15, 12, 30])
+  })
+
+  it('timestamptz 1184 with an offset in seconds', () => {
+    expect(
+      types.parseType('1900-01-01 00:00:00+00:53:28', 1184).toISOString(),
+    ).toEqual('1899-12-31T23:06:32.000Z')
+    expect(
+      types.parseType('1900-01-01 00:00:00-04:56:02', 1184).toISOString(),
+    ).toEqual('1900-01-01T04:56:02.000Z')
+  })
+
   it('bytea 17', () => {
     expect(types.parseType('\\x010203', 17)).toEqual(Uint8Array.from([1, 2, 3]))
   })
@@ -160,6 +199,11 @@ describe('serialize', () => {
     expect(types.serializers[1184]('2021-01-01T00:00:00.000Z')).toEqual(
       '2021-01-01T00:00:00.000Z',
     )
+  })
+
+  it('date from infinity', () => {
+    expect(types.serializers[1184](Infinity)).toEqual('infinity')
+    expect(types.serializers[1184](-Infinity)).toEqual('-infinity')
   })
 
   it('not date', () => {

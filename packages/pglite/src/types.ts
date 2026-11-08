@@ -145,6 +145,10 @@ export const types = {
     serialize: (x: Date | string | number) => {
       if (typeof x === 'string') {
         return x
+      } else if (x === Infinity) {
+        return 'infinity'
+      } else if (x === -Infinity) {
+        return '-infinity'
       } else if (typeof x === 'number') {
         return new Date(x).toISOString()
       } else if (x instanceof Date) {
@@ -153,7 +157,17 @@ export const types = {
         throw new Error('Invalid input for date type')
       }
     },
-    parse: (x: string | number) => new Date(x),
+    parse: (x: string | number) => {
+      if (typeof x !== 'string') return new Date(x)
+      if (x === 'infinity') return Infinity
+      if (x === '-infinity') return -Infinity
+      // `new Date` cannot read a BC year or an offset with seconds (a zone's
+      // local mean time before it adopted standard time, e.g. +00:53:28).
+      if (x.endsWith(' BC') || /[+-]\d\d:\d\d:\d\d$/.test(x)) {
+        return parseDateParts(x) ?? new Date(x)
+      }
+      return new Date(x)
+    },
   },
   bytea: {
     to: BYTEA,
@@ -177,6 +191,35 @@ export const types = {
     },
   },
 } satisfies TypeHandlers
+
+const dateParts =
+  /^(\d{4,})-(\d\d)-(\d\d)(?: (\d\d):(\d\d):(\d\d)(?:\.(\d+))?)?(?:([+-])(\d\d)(?::(\d\d))?(?::(\d\d))?)?( BC)?$/
+
+function parseDateParts(x: string): Date | null {
+  const m = dateParts.exec(x)
+  if (!m) return null
+  const year = m[12] ? 1 - +m[1] : +m[1]
+  const month = +m[2] - 1
+  const day = +m[3]
+  const [hour, minute, second] = [+(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)]
+  const ms = m[7] ? +(m[7] + '00').slice(0, 3) : 0
+
+  // A timestamp without time zone is local time, like `new Date` reads it.
+  if (m[4] !== undefined && m[8] === undefined) {
+    const date = new Date(2000, 0, 1)
+    date.setFullYear(year, month, day)
+    date.setHours(hour, minute, second, ms)
+    return date
+  }
+
+  const date = new Date(Date.UTC(2000, month, day, hour, minute, second, ms))
+  date.setUTCFullYear(year)
+  if (m[8]) {
+    const offset = (+m[9] * 60 + +(m[10] ?? 0)) * 60 + +(m[11] ?? 0)
+    date.setTime(date.getTime() - (m[8] === '-' ? -offset : offset) * 1000)
+  }
+  return date
+}
 
 export type Parser = (x: string, typeId?: number) => any
 export type Serializer = (x: any) => string
