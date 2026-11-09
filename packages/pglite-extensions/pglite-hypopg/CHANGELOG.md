@@ -1,5 +1,15 @@
 # @electric-sql/pglite-hypopg
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [4f9737a]
+- Updated dependencies [26a6e21]
+- Updated dependencies [10378a7]
+- Updated dependencies [1cb5ca1]
+  - @electric-sql/pglite@0.5.16
+
 ## 0.0.7
 
 ### Patch Changes
