@@ -1,5 +1,19 @@
 # @electric-sql/pglite-socket
 
+## 0.2.20
+
+### Patch Changes
+
+- Updated dependencies [3e94d9e]
+  - @electric-sql/pglite@0.5.17
+  - @electric-sql/pglite-age@0.0.18
+  - @electric-sql/pglite-pg_hashids@0.0.18
+  - @electric-sql/pglite-pg_ivm@0.0.18
+  - @electric-sql/pglite-pg_textsearch@0.0.19
+  - @electric-sql/pglite-pg_uuidv7@0.0.18
+  - @electric-sql/pglite-pgtap@0.0.18
+  - @electric-sql/pglite-pgvector@0.0.18
+
 ## 0.2.19
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @electric-sql/pglite-pgaudit
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [3e94d9e]
+  - @electric-sql/pglite@0.5.17
+
 ## 0.0.8
 
 ### Patch Changes

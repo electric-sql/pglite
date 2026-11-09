@@ -1,5 +1,11 @@
 # @electric-sql/pglite
 
+## 0.5.17
+
+### Patch Changes
+
+- 3e94d9e: reset the stream callback after execProtocolRawStream so later execProtocolRaw/execProtocolRawSync calls are not routed to it
+
 ## 0.5.16
 
 ### Patch Changes
