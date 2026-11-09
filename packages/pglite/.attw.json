@@ -1,0 +1,4 @@
+{
+  "profile": "node16",
+  "excludeEntrypoints": ["pglite.wasm", "initdb.wasm", "pglite.data"]
+}

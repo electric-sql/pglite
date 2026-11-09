@@ -29,6 +29,7 @@
     },
     "./webcomponent": {
       "import": {
+        "types": "./dist-webcomponent/src-webcomponent/main.d.ts",
         "default": "./dist-webcomponent/Repl.js"
       }
     }

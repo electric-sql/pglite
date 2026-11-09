@@ -154,7 +154,7 @@
     "directory": "packages/pglite"
   },
   "scripts": {
-    "check:exports": "attw . --pack --profile node16",
+    "check:exports": "attw . --pack",
     "test": "pnpm test:basic && pnpm test:node",
     "test:basic": "pnpm test:clean && vitest tests/*.test.js tests/*.test.ts tests/**/*.test.js tests/**/*.test.ts",
     "test:web": "pnpm test:clean && concurrently -s first --hide 1 --prefix none -k \"sleep 2 && vitest --fileParallelism false tests/targets/web/*.test.web.*\" \"npx http-server --port 3334 ./\"",
