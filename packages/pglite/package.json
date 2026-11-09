@@ -124,7 +124,10 @@
         "types": "./dist/node-postgres/index.d.cts",
         "default": "./dist/node-postgres/index.cjs"
       }
-    }
+    },    
+    "./pglite.wasm": "./dist/pglite.wasm",
+    "./initdb.wasm": "./dist/initdb.wasm",
+    "./pglite.data": "./dist/pglite.data"
   },
   "type": "module",
   "types": "dist/index.d.ts",
