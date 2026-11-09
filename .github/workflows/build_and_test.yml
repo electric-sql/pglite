@@ -84,6 +84,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: pnpm ts:build
 
+      - name: Check package exports
+        working-directory: ${{ github.workspace }}
+        run: pnpm check:exports
+
       - name: Upload PGlite Interim to Github artifacts
         id: upload-pglite-interim-build-files
         uses: actions/upload-artifact@v7
