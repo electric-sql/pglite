@@ -1060,7 +1060,12 @@ export class PGlite
       onRawData(bytes)
       return bytes.length
     }
-    this.execProtocolRawSync(message)
+    try {
+      this.execProtocolRawSync(message)
+    } finally {
+      // don't leave the streaming callback installed for later raw/sync calls
+      this.#onData = undefined
+    }
     if (syncToFs) {
       await this.syncToFs()
     }
