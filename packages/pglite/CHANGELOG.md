@@ -1,5 +1,14 @@
 # @electric-sql/pglite
 
+## 0.5.16
+
+### Patch Changes
+
+- 4f9737a: Export `pglite.wasm`, `initdb.wasm` and `pglite.data` so they can be imported by package path (e.g. `@electric-sql/pglite/pglite.wasm`), and document Nitro/Nuxt support.
+- 26a6e21: Parse `infinity` and `-infinity` in `date`, `timestamp` and `timestamptz` values as `Infinity` and `-Infinity` instead of `Invalid Date`, and serialize them back to `infinity` and `-infinity`.
+- 10378a7: Escape embedded double quotes in `identifier` template helper so identifiers containing `"` produce valid SQL
+- 1cb5ca1: Serialize query descriptions and wait for database initialization so concurrent operations return the correct parameter and result metadata.
+
 ## 0.5.15
 
 ### Patch Changes

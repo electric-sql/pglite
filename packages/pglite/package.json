@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.5.15",
+  "version": "0.5.16",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -124,7 +124,7 @@
         "types": "./dist/node-postgres/index.d.cts",
         "default": "./dist/node-postgres/index.cjs"
       }
-    },    
+    },
     "./pglite.wasm": "./dist/pglite.wasm",
     "./initdb.wasm": "./dist/initdb.wasm",
     "./pglite.data": "./dist/pglite.data"
