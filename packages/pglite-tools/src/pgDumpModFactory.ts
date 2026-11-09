@@ -34,6 +34,7 @@ export interface PgDumpMod
   printErr: (text: string) => void
   callMain: (args?: string[]) => number
   PROXYFS: Emscripten.FileSystemType
+  wasmMemory: WebAssembly.Memory
 }
 
 type PgDumpFactory<T extends PgDumpMod = PgDumpMod> = (
