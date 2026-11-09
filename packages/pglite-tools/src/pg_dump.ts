@@ -41,7 +41,14 @@ async function execPgDump({
   let exitCode = 0
   let stderrOutput: string = ''
   let stdoutOutput: string = ''
+
+  const wasmMemory = new WebAssembly.Memory({
+    initial: 8, // pages of 64kib
+    maximum: 100, // pages of 64kib
+  })
+
   const emscriptenOpts: Partial<PgDumpMod> = {
+    wasmMemory,
     noExitRuntime: false,
     print: (text) => {
       stdoutOutput += text
