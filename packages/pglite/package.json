@@ -1,6 +1,6 @@
 {
   "name": "@electric-sql/pglite",
-  "version": "0.5.11",
+  "version": "0.5.15",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -80,6 +80,26 @@
         "default": "./dist/fs/opfs-ahp.cjs"
       }
     },
+    "./memfs2opfs": {
+      "import": {
+        "types": "./dist/fs/memfs2opfs.d.ts",
+        "default": "./dist/fs/memfs2opfs.js"
+      },
+      "require": {
+        "types": "./dist/fs/memfs2opfs.d.cts",
+        "default": "./dist/fs/memfs2opfs.cjs"
+      }
+    },
+    "./memfs-frontend": {
+      "import": {
+        "types": "./dist/fs/memfs-frontend.d.ts",
+        "default": "./dist/fs/memfs-frontend.js"
+      },
+      "require": {
+        "types": "./dist/fs/memfs-frontend.d.cts",
+        "default": "./dist/fs/memfs-frontend.cjs"
+      }
+    },
     "./basefs": {
       "import": {
         "types": "./dist/fs/base.d.ts",
@@ -95,6 +115,16 @@
       "import": "./dist/contrib/*.js",
       "require": "./dist/contrib/*.cjs"
     },
+    "./node-postgres": {
+      "import": {
+        "types": "./dist/node-postgres/index.d.ts",
+        "default": "./dist/node-postgres/index.js"
+      },
+      "require": {
+        "types": "./dist/node-postgres/index.d.cts",
+        "default": "./dist/node-postgres/index.cjs"
+      }
+    },    
     "./pglite.wasm": "./dist/pglite.wasm",
     "./initdb.wasm": "./dist/initdb.wasm",
     "./pglite.data": "./dist/pglite.data"
@@ -156,8 +186,11 @@
     "buffer": "^6.0.3",
     "bun": "^1.1.30",
     "concurrently": "^8.2.2",
+    "esbuild": "^0.23.1",
     "http-server": "^14.1.1",
     "openpgp": "^6.3.0",
+    "pg": "^8.14.0",
+    "pg-cursor": "^2.22.1",
     "playwright": "^1.64.0",
     "tinytar": "^0.1.0",
     "vitest": "^2.1.2"

@@ -21,7 +21,10 @@ export function parseResults(
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
   let affectedRows = 0
-  const parsers = { ...defaultParsers, ...options?.parsers }
+
+  const parsers = options?.parsers
+    ? { ...defaultParsers, ...options.parsers }
+    : defaultParsers
 
   messages.forEach((message) => {
     switch (message.name) {

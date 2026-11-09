@@ -4,7 +4,7 @@ import { identifier } from '../dist/templating.js'
 import { PGlite, type Transaction } from '../dist/index.js'
 
 await testEsmCjsAndDTC(async (importType) => {
-  const { PGlite } =
+  const { PGlite, TransactionAbortedError } =
     importType === 'esm'
       ? await import('../dist/index.js')
       : ((await import(
@@ -523,6 +523,92 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
 
+    it('rejects when commit rolls back an aborted transaction', async () => {
+      await db.exec('CREATE TABLE test (id INT PRIMARY KEY)')
+      let failedTx: Transaction | undefined
+
+      await expect(
+        db.transaction(async (tx) => {
+          failedTx = tx
+          await tx.query('INSERT INTO test VALUES (1)')
+          await expect(
+            tx.query('INSERT INTO test VALUES (1)'),
+          ).rejects.toMatchObject({
+            code: '23505',
+          })
+          return 'not committed'
+        }),
+      ).rejects.toSatisfy((error: unknown) => {
+        expect(error).toBeInstanceOf(TransactionAbortedError)
+        expect(error).toMatchObject({
+          severity: 'ERROR',
+          code: '25P02',
+          query: 'COMMIT',
+        })
+        return true
+      })
+
+      expect(failedTx!.closed).toBe(true)
+      await expect(failedTx!.query('SELECT 1')).rejects.toThrow(
+        'Transaction is closed',
+      )
+      expect((await db.query('SELECT * FROM test')).rows).toEqual([])
+
+      const result = await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO test VALUES (2)')
+        return 'committed'
+      })
+      expect(result).toBe('committed')
+      expect((await db.query('SELECT * FROM test')).rows).toEqual([{ id: 2 }])
+    })
+
+    it('commits after recovering from a statement error using a savepoint', async () => {
+      await db.exec('CREATE TABLE test (id INT PRIMARY KEY)')
+
+      const result = await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO test VALUES (1)')
+        await tx.exec('SAVEPOINT recover')
+        await expect(
+          tx.query('INSERT INTO test VALUES (1)'),
+        ).rejects.toMatchObject({
+          code: '23505',
+        })
+        await tx.exec('ROLLBACK TO SAVEPOINT recover')
+        await tx.query('INSERT INTO test VALUES (2)')
+        return 'committed'
+      })
+
+      expect(result).toBe('committed')
+      expect((await db.query('SELECT * FROM test ORDER BY id')).rows).toEqual([
+        { id: 1 },
+        { id: 2 },
+      ])
+    })
+
+    it('preserves constraint errors raised at commit', async () => {
+      await db.exec(`
+        CREATE TABLE parent (id INT PRIMARY KEY);
+        CREATE TABLE child (
+          parent_id INT REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED
+        );
+      `)
+
+      await expect(
+        db.transaction(async (tx) => {
+          await tx.query('INSERT INTO child VALUES (1)')
+        }),
+      ).rejects.toMatchObject({ code: '23503' })
+
+      expect((await db.query('SELECT * FROM child')).rows).toEqual([])
+      await db.transaction(async (tx) => {
+        await tx.query('INSERT INTO parent VALUES (1)')
+        await tx.query('INSERT INTO child VALUES (1)')
+      })
+      expect((await db.query('SELECT * FROM child')).rows).toEqual([
+        { parent_id: 1 },
+      ])
+    })
+
     it('rejects sql on closed transaction handles', async () => {
       await db.exec('CREATE TABLE closed_transaction_test (id INT PRIMARY KEY)')
 
@@ -926,7 +1012,7 @@ await testEsmCjsAndDTC(async (importType) => {
         rowCount: 1,
       })
     })
-    it('serialize with no concrete type', async () => {
+    it('convert_to', async () => {
       const res0 = await db.exec(`SELECT 1`)
 
       const res1 = await db.exec(`SELECT convert_to('abc', 'LATIN1')`)
@@ -962,6 +1048,19 @@ await testEsmCjsAndDTC(async (importType) => {
         expect(db.Module.stackSave()).toBe(base)
       }
       await db.query('SELECT 1')
+    })
+
+    it('close waits for queries issued before it', async () => {
+      const query = db.query<{ answered: number }>('SELECT 1 AS answered')
+      const exec = db.exec('SELECT 2 AS answered')
+      const transaction = db.transaction(async (tx) => {
+        return (await tx.query<{ n: number }>('SELECT 3 AS n')).rows[0].n
+      })
+      await db.close()
+      expect((await query).rows).toEqual([{ answered: 1 }])
+      expect((await exec)[0].rows).toEqual([{ answered: 2 }])
+      expect(await transaction).toBe(3)
+      expect(db.closed).toBe(true)
     })
   })
 })

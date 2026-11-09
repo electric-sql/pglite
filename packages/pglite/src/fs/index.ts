@@ -27,6 +27,10 @@ export function parseDataDir(dataDir?: string) {
     // Remove the opfsahp:// prefix, and use opfs access handle pool filesystem
     dataDir = dataDir.slice(11)
     fsType = 'opfs-ahp'
+  } else if (dataDir?.startsWith('memfs2opfs://')) {
+    // Remove the memfs2opfs:// prefix, and use the memfs flushed to opfs filesystem
+    dataDir = dataDir.slice(13)
+    fsType = 'memfs2opfs'
   } else if (!dataDir || dataDir?.startsWith('memory://')) {
     // Use in-memory filesystem
     fsType = 'memoryfs'
@@ -49,6 +53,10 @@ export async function loadFs(dataDir?: string, fsType?: FsType) {
     // Lazy load the opfs-ahp to so that it's optional in the bundle
     const { OpfsAhpFS } = await import('./opfs-ahp.js')
     fs = new OpfsAhpFS(dataDir)
+  } else if (dataDir && fsType === 'memfs2opfs') {
+    // Lazy load the memfs2opfs to so that it's optional in the bundle
+    const { Memfs2OpfsFS } = await import('./memfs2opfs.js')
+    fs = new Memfs2OpfsFS(dataDir)
   } else {
     fs = new MemoryFS()
   }

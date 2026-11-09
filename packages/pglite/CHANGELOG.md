@@ -1,5 +1,40 @@
 # @electric-sql/pglite
 
+## 0.5.15
+
+### Patch Changes
+
+- 649dc0e: Reject with `TransactionAbortedError` when committing an aborted transaction rolls it back instead of silently resolving.
+- fe8bdc2: Reduce initdb memory usage by passing a smaller WebAssembly.Memory object during initialization'
+- 7c62782: Upgrade tsup to 8.5.1
+- 84ce5ae: Upgrade emsdk to 6.0.13
+
+## 0.5.14
+
+### Patch Changes
+
+- 1cf7e86: Only build the `pglite.wasm`, `initdb.wasm` and `pglite.data` URLs when PGlite has to load them. Passing `pgliteWasmModule`, `initdbWasmModule` and `fsBundle` now works in bundles where `import.meta.url` is undefined, such as an esbuild IIFE build.
+- 48dd3fb: Use PROXYFS instead of dumping the data dir from the scratch PGlite used for initdb when the data dir is in memory.
+- 268929b: do not copy parsers on each query
+
+## 0.5.13
+
+### Patch Changes
+
+- c7dc39e: `close()` now waits for queries, execs and transactions that were issued before it, so they complete instead of failing with `Cannot read properties of undefined` after teardown.
+- 8364675: Added support for node-postgres through createPgConfig()
+- a4cfd4d: Added MemfsFrontendFS which allows other filesystems be implemented on top of a MEMFS. Example: added Memfs2OpfsFS which is backed by an OPFS fs.
+- 2db5d2d: Upgrade emsdk to 6.0.5
+
+## 0.5.12
+
+### Patch Changes
+
+- 0641b37: Fix custom filesystems not receiving times set with `FS.utime`. Emscripten's `FS.utime` calls `setattr` with `atime` and `mtime`, but the `BaseFilesystem` bridge only handled the older `timestamp` field, so `utimes` was never called on OPFS AHP or any other `BaseFilesystem`. Files restored from a tarball kept the time they were written instead of the time stored in the tarball.
+- e752dbe: Run initdb with `TZ=UTC`, like the backend, so a new database gets `timezone = 'UTC'` in `postgresql.conf`. Before, initdb wrote the host's zone as a fixed offset without daylight saving (e.g. `Etc/GMT+5` for America/New_York), so `timestamptz` input without an offset was stored at a different instant on each non-UTC machine.
+- c31130c: Start under the Node.js permission model (`node --permission`). Emscripten's NODEFS read the fs open flags with `process.binding('constants')`, which Node always denies in that mode, so `new PGlite()` threw `ERR_ACCESS_DENIED` even for `memory://`. The bundled build now reads them from `require('fs').constants`, which holds the same values.
+- 0641b37: Fix files restored from a tarball getting a January 1970 modification time. `loadTar` passed the tar header's time to Emscripten's `FS.utime` in seconds, but `FS.utime` takes milliseconds. This affected every new database (initdb's data dir is restored from a tarball) and every `loadDataDir`. With the Node filesystem the files on disk got those dates too.
+
 ## 0.5.11
 
 ### Patch Changes

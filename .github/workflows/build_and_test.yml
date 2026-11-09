@@ -408,6 +408,44 @@ jobs:
             - Demos: ${{ steps.upload-demos.outputs.artifact-url }}
           edit-mode: append
 
+      - name: Get artifacts sizes
+        id: artifact_size
+        shell: bash
+        env:
+          PGSRC: ${{ github.workspace }}/postgres-pglite
+          POSTGRES_PGLITE_OUT: ${{ github.workspace }}/packages/pglite/release
+          PGLITE: ${{ github.workspace }}/packages/pglite
+        run: |
+          size_pglite_wasm=$(ls -lh -- $POSTGRES_PGLITE_OUT/pglite.wasm | awk 'NR == 1 {print $5}')
+          size_pglite_data=$(ls -lh -- $POSTGRES_PGLITE_OUT/pglite.data | awk 'NR == 1 {print $5}')
+          size_pglite_js=$(ls -lh -- $POSTGRES_PGLITE_OUT/pglite.js | awk 'NR == 1 {print $5}')
+          echo "size_pglite_wasm=$size_pglite_wasm" >> "$GITHUB_OUTPUT"
+          echo "size_pglite_data=$size_pglite_data" >> "$GITHUB_OUTPUT"
+          echo "size_pglite_js=$size_pglite_js" >> "$GITHUB_OUTPUT"
+
+      - name: Find Comment for artifacts sizes
+        uses: peter-evans/find-comment@v4
+        id: sizes
+        if: github.event_name == 'pull_request'
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: "- Artifacts sizes:"
+
+      - name: Create or update build sizes comment
+        uses: peter-evans/create-or-update-comment@v5
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        with:
+          comment-id: ${{ steps.sizes.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            - Artifacts sizes: 
+              pglite.wasm: ${{ steps.artifact_size.outputs.size_pglite_wasm }}
+              pglite.data: ${{ steps.artifact_size.outputs.size_pglite_data }}
+              pglite.js: ${{ steps.artifact_size.outputs.size_pglite_js }}
+          edit-mode: append
+
       - name: Deploy website to Netlify
         uses: nwtgck/actions-netlify@v4.0
         with:

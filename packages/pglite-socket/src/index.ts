@@ -289,13 +289,21 @@ export class PGLiteSocketHandler extends EventTarget {
       this.idleTimer = undefined
     }
 
+    // A handler can be detached twice, for example by stop() and then by a
+    // socket close event that was already queued. The second detach must not
+    // touch the database, which the caller may have closed by then.
+    if (!this.socket) {
+      this.log(`detach: no socket attached, nothing to do`)
+      return this
+    }
+
     // Clear any pending queries for this handler
     this.queryQueue.clearQueueForHandler(this.id)
 
     await this.queryQueue.clearTransactionIfNeeded(this.id)
 
+    // Another detach may have finished while this one waited
     if (!this.socket) {
-      this.log(`detach: no socket attached, nothing to do`)
       return this
     }
 
@@ -782,6 +790,10 @@ export class PGLiteSocketServer extends EventTarget {
     // Handle errors
     handler.addEventListener('error', (event) => {
       const error = (event as CustomEvent<Error>).detail
+
+      // A handler that errors detaches itself without emitting 'close', so
+      // release its connection slot here as well.
+      this.handlers.delete(handler)
 
       if (error?.message?.includes('ECONNRESET')) {
         this.log(

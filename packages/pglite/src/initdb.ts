@@ -86,9 +86,15 @@ async function execInitdb({
 
   const origHEAPU8 = pg.Module.HEAPU8.slice()
 
+  const wasmMemory = new WebAssembly.Memory({
+    initial: 8, // pages of 64kib
+    maximum: 100, // pages of 64kib
+  })
+
   const emscriptenOpts: Partial<InitdbMod> = {
     arguments: args,
     noExitRuntime: false,
+    wasmMemory,
     thisProgram: INITDB_EXE_PATH,
     // Provide a stdin that returns EOF to avoid browser prompt
     stdin: () => null,
@@ -101,9 +107,12 @@ async function execInitdb({
       log(debug, 'initdberr', text)
     },
     instantiateWasm: (imports, successCallback) => {
-      const moduleUrl = new URL('../release/initdb.wasm', import.meta.url)
       pglUtils
-        .instantiateWasm(imports, moduleUrl, wasmModule)
+        .instantiateWasm(
+          imports,
+          wasmModule ??
+            (() => new URL('../release/initdb.wasm', import.meta.url)),
+        )
         .then(({ instance, module }) => {
           // @ts-ignore wrong type in Emscripten typings
           successCallback(instance, module)
@@ -126,6 +135,17 @@ async function execInitdb({
         // Match the backend (see pglite.ts). Without this, initdb writes the
         // host's zone to postgresql.conf as a fixed offset such as 'Etc/GMT+5'.
         mod.ENV.TZ = 'UTC'
+      },
+      (mod: InitdbMod) => {
+        mod.FS.mkdirTree(PG_ROOT)
+        mod.FS.mount(
+          mod.PROXYFS,
+          {
+            root: PG_ROOT,
+            fs: pg.Module.FS,
+          },
+          PG_ROOT,
+        )
       },
       (mod: InitdbMod) => {
         mod.onRuntimeInitialized = () => {
@@ -190,17 +210,6 @@ async function execInitdb({
             initdb_stdout_fd = mod._fopen(path, wmode)
           }
         }
-      },
-      (mod: InitdbMod) => {
-        mod.FS.mkdirTree(PG_ROOT)
-        mod.FS.mount(
-          mod.PROXYFS,
-          {
-            root: PG_ROOT,
-            fs: pg.Module.FS,
-          },
-          PG_ROOT,
-        )
       },
     ],
   }

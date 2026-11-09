@@ -3,7 +3,7 @@ import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 import { PGDATA } from '../initdb.js'
 
-export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
+export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp' | 'memfs2opfs'
 
 /**
  * Filesystem interface.
@@ -323,6 +323,11 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
           }
           if (attr.timestamp !== undefined) {
             baseFS.utimes(path, attr.timestamp, attr.timestamp)
+          }
+          if (attr.atime || attr.mtime) {
+            const atime = new Date(attr.atime || attr.mtime).getTime()
+            const mtime = new Date(attr.mtime || attr.atime).getTime()
+            baseFS.utimes(path, atime, mtime)
           }
           if (attr.size !== undefined) {
             baseFS.truncate(path, attr.size)

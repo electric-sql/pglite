@@ -1,5 +1,74 @@
 # @electric-sql/pglite-socket
 
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies [649dc0e]
+- Updated dependencies [fe8bdc2]
+- Updated dependencies [7c62782]
+- Updated dependencies [84ce5ae]
+  - @electric-sql/pglite@0.5.15
+  - @electric-sql/pglite-age@0.0.16
+  - @electric-sql/pglite-pg_hashids@0.0.16
+  - @electric-sql/pglite-pg_ivm@0.0.16
+  - @electric-sql/pglite-pg_textsearch@0.0.17
+  - @electric-sql/pglite-pg_uuidv7@0.0.16
+  - @electric-sql/pglite-pgtap@0.0.16
+  - @electric-sql/pglite-pgvector@0.0.16
+
+## 0.2.17
+
+### Patch Changes
+
+- c6ee288: Stop a handler that `stop()` already detached from touching the database again. A client socket that closed in the same event-loop turn as `stop()` queued its own detach, which ran after `db.close()` and failed with an unhandled `TypeError: Cannot read properties of undefined (reading '_IsTransactionBlock')`.
+- Updated dependencies [1cf7e86]
+- Updated dependencies [48dd3fb]
+- Updated dependencies [268929b]
+  - @electric-sql/pglite@0.5.14
+  - @electric-sql/pglite-age@0.0.15
+  - @electric-sql/pglite-pg_hashids@0.0.15
+  - @electric-sql/pglite-pg_ivm@0.0.15
+  - @electric-sql/pglite-pg_textsearch@0.0.16
+  - @electric-sql/pglite-pg_uuidv7@0.0.15
+  - @electric-sql/pglite-pgtap@0.0.15
+  - @electric-sql/pglite-pgvector@0.0.15
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [c7dc39e]
+- Updated dependencies [8364675]
+- Updated dependencies [a4cfd4d]
+- Updated dependencies [2db5d2d]
+  - @electric-sql/pglite@0.5.13
+  - @electric-sql/pglite-age@0.0.14
+  - @electric-sql/pglite-pg_hashids@0.0.14
+  - @electric-sql/pglite-pg_ivm@0.0.14
+  - @electric-sql/pglite-pg_textsearch@0.0.15
+  - @electric-sql/pglite-pg_uuidv7@0.0.14
+  - @electric-sql/pglite-pgtap@0.0.14
+  - @electric-sql/pglite-pgvector@0.0.14
+
+## 0.2.15
+
+### Patch Changes
+
+- e0585be: Release a connection slot when its handler ends in an error (for example `ECONNRESET` or an idle timeout). Previously only a clean `close` removed the handler, so `maxConnections` filled up and new connections were refused until the server restarted.
+- Updated dependencies [0641b37]
+- Updated dependencies [e752dbe]
+- Updated dependencies [c31130c]
+- Updated dependencies [0641b37]
+  - @electric-sql/pglite@0.5.12
+  - @electric-sql/pglite-age@0.0.13
+  - @electric-sql/pglite-pg_hashids@0.0.13
+  - @electric-sql/pglite-pg_ivm@0.0.13
+  - @electric-sql/pglite-pg_textsearch@0.0.14
+  - @electric-sql/pglite-pg_uuidv7@0.0.13
+  - @electric-sql/pglite-pgtap@0.0.13
+  - @electric-sql/pglite-pgvector@0.0.13
+
 ## 0.2.14
 
 ### Patch Changes

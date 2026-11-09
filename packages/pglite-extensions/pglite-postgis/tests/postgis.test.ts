@@ -310,20 +310,20 @@ SELECT 1 AS rid,
          3, '8BUI', 30, 0
        ) AS rast;
 
--- 2) export raster to a GDAL-supported format (PNG) as bytea
+-- 2) export raster to a GDAL-supported format (GTiff) as bytea
 WITH exported AS (
-  SELECT ST_AsGDALRaster(rast, 'PNG') AS png
+  SELECT ST_AsGDALRaster(rast, 'GTiff') AS gtiff
   FROM gdal_test
 )
-SELECT octet_length(png) AS png_bytes FROM exported;
+SELECT octet_length(gtiff) AS png_bytes FROM exported;
 
--- 3) import that PNG back into a raster and inspect metadata & stats
+-- 3) import that GTiff back into a raster and inspect metadata & stats
 WITH exported AS (
-  SELECT ST_AsGDALRaster(rast, 'PNG') AS png
+  SELECT ST_AsGDALRaster(rast, 'GTiff') AS gtiff
   FROM gdal_test
 ),
 imported AS (
-  SELECT ST_FromGDALRaster(png) AS rast2 FROM exported
+  SELECT ST_FromGDALRaster(gtiff) AS rast2 FROM exported
 )
 SELECT
   ST_Metadata(rast2)       AS meta,
@@ -337,9 +337,9 @@ WITH src AS (
   SELECT ST_SummaryStats(rast,1) AS s1, ST_SummaryStats(rast,2) AS s2, ST_SummaryStats(rast,3) AS s3 FROM gdal_test
 ),
 roundtrip AS (
-  SELECT (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),1)).* AS r1,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),2)).* AS r2,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),3)).* AS r3
+  SELECT (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'GTiff')),1)).* AS r1,
+         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'GTiff')),2)).* AS r2,
+         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'GTiff')),3)).* AS r3
   FROM gdal_test
 )
 SELECT

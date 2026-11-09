@@ -27,7 +27,7 @@ import {
   DatabaseError,
   BackendMessage,
 } from '@electric-sql/pg-protocol/messages'
-import { makePGliteError } from './errors.js'
+import { makePGliteError, TransactionAbortedError } from './errors.js'
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -393,6 +393,16 @@ export abstract class BasePGlite
     query: string,
     options?: QueryOptions,
   ): Promise<DescribeQueryResult> {
+    await this._checkReady()
+    return await this._runExclusiveTransaction(() =>
+      this._runExclusiveQuery(() => this.#runDescribeQuery(query, options)),
+    )
+  }
+
+  async #runDescribeQuery(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<DescribeQueryResult> {
     let messages = []
     try {
       await this.#execProtocolNoSync(
@@ -447,6 +457,7 @@ export abstract class BasePGlite
 
   /**
    * Execute a transaction
+   * @throws {TransactionAbortedError} If COMMIT rolls back an aborted transaction.
    * @param callback A callback function that takes a transaction object
    * @returns The result of the transaction
    */
@@ -514,7 +525,15 @@ export abstract class BasePGlite
         const result = await callback(tx)
         if (!closed) {
           closed = true
-          await this.#runExec('COMMIT')
+          const [result] = await this.#runExec('COMMIT')
+          if (result.command === 'ROLLBACK') {
+            throw makePGliteError({
+              e: new TransactionAbortedError(),
+              query: 'COMMIT',
+              params: undefined,
+              options: undefined,
+            })
+          }
         }
         this.#inTransaction = false
         return result
