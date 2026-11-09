@@ -8,6 +8,7 @@
 - 26a6e21: Parse `infinity` and `-infinity` in `date`, `timestamp` and `timestamptz` values as `Infinity` and `-Infinity` instead of `Invalid Date`, and serialize them back to `infinity` and `-infinity`.
 - 10378a7: Escape embedded double quotes in `identifier` template helper so identifiers containing `"` produce valid SQL
 - 1cb5ca1: Serialize query descriptions and wait for database initialization so concurrent operations return the correct parameter and result metadata.
+- 3e94d9e: reset the stream callback after execProtocolRawStream so later execProtocolRaw/execProtocolRawSync calls are not routed to it
 
 ## 0.5.15
 
