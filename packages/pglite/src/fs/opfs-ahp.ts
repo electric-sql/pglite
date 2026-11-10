@@ -1,4 +1,9 @@
-import { BaseFilesystem, ERRNO_CODES, type FsStats } from './base.js'
+import {
+  BaseFilesystem,
+  ERRNO_CODES,
+  normalizePgDataPath,
+  type FsStats,
+} from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 
@@ -175,23 +180,7 @@ export class OpfsAhpFS extends BaseFilesystem {
       isNewState = true
     }
     this.state = state
-
-    // Apply WAL entries
-    const wal = stateLines
-      .slice(1)
-      .filter(Boolean)
-      .map((line) => JSON.parse(line))
-    for (const entry of wal) {
-      const methodName = `_${entry.opp}State`
-      if (typeof this[methodName as keyof this] === 'function') {
-        try {
-          const method = this[methodName as keyof this] as any
-          method.bind(this)(...entry.args)
-        } catch (e) {
-          console.warn('Error applying OPFS AHP WAL entry', entry, e)
-        }
-      }
-    }
+    this.#applyWAL(stateLines)
 
     // Open all file handles for dir tree
     const walkPromises: Promise<void>[] = []
@@ -238,6 +227,66 @@ export class OpfsAhpFS extends BaseFilesystem {
     await this.maintainPool(
       isNewState ? this.initialPoolSize : this.maintainedPoolSize,
     )
+  }
+
+  // Apply the WAL entries of the state file (lines 1+n) to this.state
+  #applyWAL(stateLines: string[]) {
+    const wal = stateLines
+      .slice(1)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+    for (const entry of wal) {
+      const methodName = `_${entry.opp}State`
+      if (typeof this[methodName as keyof this] === 'function') {
+        try {
+          const method = this[methodName as keyof this] as any
+          method.bind(this)(...entry.args)
+        } catch (e) {
+          console.warn('Error applying OPFS AHP WAL entry', entry, e)
+        }
+      }
+    }
+  }
+
+  async existsInPgData(relPath: string): Promise<boolean> {
+    if (this.state) return super.existsInPgData(relPath)
+
+    // Not initialized: read the state file without taking a sync access
+    // handle, as those are exclusive and needed by init()
+    let text: string
+    try {
+      const rootAh = await this.#resolveOpfsDirectory(this.dataDir, {
+        from: await navigator.storage.getDirectory(),
+      })
+      const stateFH = await rootAh.getFileHandle(STATE_FILE)
+      text = await (await stateFH.getFile()).text()
+    } catch (e: any) {
+      if (e?.name === 'NotFoundError' || e?.name === 'TypeMismatchError') {
+        return false
+      }
+      throw e
+    }
+    const stateLines = text.split('\n')
+    let state: State
+    try {
+      state = JSON.parse(stateLines[0])
+    } catch (e) {
+      // No valid state yet, init() would start from an empty tree
+      return false
+    }
+    // The WAL replay operates on this.state, which is only set by init().
+    // This block is synchronous so that a concurrent init() can't interleave.
+    this.state = state
+    try {
+      this.#applyWAL(stateLines)
+      this.#resolvePath(normalizePgDataPath(relPath))
+      return true
+    } catch (e) {
+      if (e instanceof FsError) return false
+      throw e
+    } finally {
+      this.state = undefined as unknown as State
+    }
   }
 
   async maintainPool(size?: number) {
