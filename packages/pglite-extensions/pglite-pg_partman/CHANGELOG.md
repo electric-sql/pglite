@@ -1,5 +1,11 @@
 # @electric-sql/pglite-pg_partman
 
+## 0.0.9
+
+### Patch Changes
+
+- 51aa2a0: Bump version of newest extensions
+
 ## 0.0.8
 
 ### Patch Changes
