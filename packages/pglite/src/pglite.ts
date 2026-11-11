@@ -1204,10 +1204,9 @@ export class PGlite
       })
     }
 
-    const scheduled = doSync()
-    this.#fsSyncScheduledPromise = scheduled
+    this.#fsSyncScheduledPromise = doSync()
     if (!this.#relaxedDurability) {
-      await scheduled
+      await this.#fsSyncScheduledPromise
     }
   }
 
