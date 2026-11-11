@@ -196,7 +196,7 @@ export class PGliteWorker
   }
 
   async #leaderNotifyLoop() {
-    if (!this.#connected) {
+    if (!this.#connected && !this.#closed) {
       this.#broadcastChannel!.postMessage({
         type: 'tab-here',
         id: this.#tabId,
