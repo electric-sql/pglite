@@ -86,7 +86,7 @@ The IndexedDB filesystem works at the file level, storing whole files (Postgres 
 
 ## OPFS AHP FS
 
-The OPFS AHP filesystem is built on top of the [Origin Private Filesystem](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) in the browser and uses an "access handle pool". It is only available when PGlite is run in a Web Worker, this could be any worker you configure. We provide a [Multi Tab Worker](./multi-tab-worker.md) to aid in using PGlite from multiple tabs in the browser.
+The OPFS AHP filesystem is built on top of the [Origin Private Filesystem](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) in the browser and uses an "access handle pool". It is only available when PGlite is run in a Dedicated Web Worker. We provide a [Multi Tab Worker](./multi-tab-worker.md) to aid in using PGlite from multiple tabs in the browser.
 
 To use the OPFS AHP FS you can use one of these methods:
 
