@@ -46,15 +46,13 @@ export class BufferReader {
   }
 
   public string(length: number): string {
-    // const result = this.#bufferView.toString(
-    //   this.#encoding,
-    //   this.#offset,
-    //   this.#offset + length,
-    // )
-    // this.#offset += length
-
-    const result = this.#decoder.decode(this.bytes(length))
-    return result
+    // TextDecoder consumes the view synchronously; bytes() retains its owning copy.
+    const bytes = new Uint8Array(this.#bufferView.buffer).subarray(
+      this.#offset,
+      this.#offset + length,
+    )
+    this.#offset += length
+    return this.#decoder.decode(bytes)
   }
 
   public cstring(): string {
