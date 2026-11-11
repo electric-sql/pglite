@@ -57,6 +57,16 @@ export class PGliteWorker
     this.#tabId = pglUtils.uuid()
     this.#extensions = options?.extensions ?? {}
 
+    // Override default parsers and serializers if requested
+    // `BasePGlite` serializes parameters and parses result rows on this thread,
+    // so these belong here rather than on the leader worker
+    if (options?.parsers !== undefined) {
+      this.parsers = { ...this.parsers, ...options.parsers }
+    }
+    if (options?.serializers !== undefined) {
+      this.serializers = { ...this.serializers, ...options.serializers }
+    }
+
     this.#workerHerePromise = new Promise<void>((resolve) => {
       this.#workerProcess.addEventListener(
         'message',
@@ -139,7 +149,15 @@ export class PGliteWorker
     await this.#workerHerePromise
 
     // Send the worker the options
-    const { extensions: _, ...workerOptions } = options
+    // `extensions`, `parsers` and `serializers` hold functions, which the
+    // structured clone algorithm cannot copy. The worker needs none of them:
+    // extensions are set up above, and rows are parsed on this thread.
+    const {
+      extensions: _extensions,
+      parsers: _parsers,
+      serializers: _serializers,
+      ...workerOptions
+    } = options
     this.#workerProcess.postMessage({
       type: 'init',
       options: workerOptions,
