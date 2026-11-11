@@ -315,6 +315,76 @@ await testEsmCjsAndDTC(async (importType) => {
       ])
     })
 
+    it('live query with params and a literal percent sign', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (name) VALUES ('apple'), ('avocado'), ('banana');
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.query(
+        "SELECT * FROM testTable WHERE name LIKE $1 || '%' ORDER BY id;",
+        ['a'],
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, name: 'apple' },
+        { id: 2, name: 'avocado' },
+      ])
+
+      await db.exec("INSERT INTO testTable (name) VALUES ('apricot');")
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { id: 1, name: 'apple' },
+        { id: 2, name: 'avocado' },
+        { id: 4, name: 'apricot' },
+      ])
+
+      await unsubscribe()
+    })
+
+    it('live incremental query with params and a literal percent sign', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS testTable (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO testTable (name) VALUES ('apple'), ('avocado'), ('banana');
+      `)
+
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        "SELECT * FROM testTable WHERE name LIKE $1 || '%' ORDER BY id;",
+        ['a'],
+        'id',
+      )
+
+      expect(initialResults.rows).toEqual([
+        { id: 1, name: 'apple' },
+        { id: 2, name: 'avocado' },
+      ])
+
+      await unsubscribe()
+    })
+
     it('incremental query unordered', async () => {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
