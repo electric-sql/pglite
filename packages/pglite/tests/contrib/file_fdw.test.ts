@@ -21,7 +21,7 @@ it('file_fdw', async () => {
   const contents = await pg.query(`SELECT * FROM file_contents;`)
   expect(contents.rows).toEqual([
     {
-      line: 'PGlite is the best!',
+      line: 'PGlite is the best of the best!',
     },
   ])
 })
