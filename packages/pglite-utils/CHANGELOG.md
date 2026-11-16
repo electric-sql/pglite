@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.0.7
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+
 ## 0.0.6
 
 ### Patch Changes

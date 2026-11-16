@@ -1,5 +1,14 @@
 # @electric-sql/pglite-repl
 
+## 0.4.17
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+- Updated dependencies [0239150]
+  - @electric-sql/pglite@0.5.17
+  - @electric-sql/pglite-react@0.4.17
+
 ## 0.4.16
 
 ### Patch Changes
