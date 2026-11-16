@@ -1,5 +1,13 @@
 # @electric-sql/pglite-plpgsql-check
 
+## 0.0.10
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+- Updated dependencies [0239150]
+  - @electric-sql/pglite@0.5.17
+
 ## 0.0.9
 
 ### Patch Changes
