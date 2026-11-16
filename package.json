@@ -10,7 +10,7 @@
   "scripts": {
     "ci:version": "pnpm exec changeset version",
     "ci:publish": "pnpm changeset publish",
-    "ts:build": "pnpm -r --filter \"./packages/**\" build",
+    "ts:build": "pnpm -r --filter \"./packages/**\" --filter \"!@electric-sql/pglite-pg_textsearch\" build",
     "ts:build:debug": "DEBUG=true pnpm ts:build",
     "wasm:copy-pglite-extensions": "./scripts/pglite-extensions-cp-wasm.sh $(pwd)/packages/pglite-extensions $(pwd)/postgres-pglite",
     "wasm:copy-initdb": "mkdir -p ./packages/pglite/release && cp ./postgres-pglite/dist/bin/initdb.* ./packages/pglite/release",
