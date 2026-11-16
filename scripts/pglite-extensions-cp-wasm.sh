@@ -11,6 +11,7 @@ fi
 
 for dir in "$root_dir"/pglite-*; do
   [[ -d "$dir" ]] || continue
+  [[ $(basename "$dir") == pglite-pg_textsearch ]] && continue
 
   folder_name="$(basename "$dir")"
   suffix="${folder_name#pglite-}"

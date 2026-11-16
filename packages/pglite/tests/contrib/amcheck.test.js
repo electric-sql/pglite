@@ -33,7 +33,7 @@ it('amcheck', async () => {
     {
       bt_index_check: '',
       relname: 'pg_proc_proname_args_nsp_index',
-      relpages: 33,
+      relpages: 34,
     },
     {
       bt_index_check: '',
