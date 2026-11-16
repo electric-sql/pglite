@@ -1,5 +1,13 @@
 # @electric-sql/pglite-postgis
 
+## 0.2.17
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+- Updated dependencies [0239150]
+  - @electric-sql/pglite@0.5.17
+
 ## 0.2.16
 
 ### Patch Changes

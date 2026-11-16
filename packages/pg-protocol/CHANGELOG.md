@@ -1,5 +1,11 @@
 # @electric-sql/pg-protocol
 
+## 0.0.5
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+
 ## 0.0.4
 
 ### Patch Changes
