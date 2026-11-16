@@ -362,6 +362,43 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
 
+    it('query parsers over instance parsers', async () => {
+      const db = new PGlite({
+        loadDataDir: dataDirArchive,
+        parsers: { 1700: (x) => BigInt(x) },
+      })
+      const sql = `SELECT 1::numeric AS n, 'a'::text AS t, 2::int4 AS i`
+
+      const res = await db.query(sql, [], {
+        parsers: { 25: (x) => x.toUpperCase() },
+      })
+      expect(res.rows).toEqual([{ n: 1n, t: 'A', i: 2 }])
+
+      const arrayRes = await db.query(sql, [], {
+        rowMode: 'array',
+        parsers: { 1700: (x) => `numeric ${x}` },
+      })
+      expect(arrayRes.rows).toEqual([['numeric 1', 'a', 2]])
+
+      const plain = await db.query(sql)
+      expect(plain.rows).toEqual([{ n: 1n, t: 'a', i: 2 }])
+    })
+
+    it('query parsers from a Proxy', async () => {
+      const parsers = new Proxy(
+        {},
+        { get: (_, typeId) => (x: string) => `${String(typeId)}:${x}` },
+      )
+      const res = await db.query(
+        `SELECT 1::int4 AS i, 'a'::text AS t, '{1,2}'::int4[] AS a, NULL::int4 AS z`,
+        [],
+        { parsers },
+      )
+      expect(res.rows).toEqual([
+        { i: '23:1', t: '25:a', a: '1007:{1,2}', z: null },
+      ])
+    })
+
     it('params', async () => {
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
