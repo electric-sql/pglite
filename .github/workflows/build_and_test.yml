@@ -293,13 +293,13 @@ jobs:
         run: pnpm --filter "@electric-sql/pg-protocol" build
 
       - name: Build packages
-        run: pnpm --filter="...^pglite" --filter "!@electric-sql/pglite-pg_textsearch" build
+        run: pnpm --filter="...^pglite" build
 
       - name: Typecheck packages
-        run: pnpm --filter="...^pglite" --filter "!@electric-sql/pglite-pg_textsearch" typecheck
+        run: pnpm --filter="...^pglite" typecheck
 
       - name: Test packages
-        run: pnpm --filter="...^pglite" --filter "!@electric-sql/pglite-pg_textsearch" test
+        run: pnpm --filter="...^pglite" test
 
   publish-website-with-demos:
     name: Publish website with demos
