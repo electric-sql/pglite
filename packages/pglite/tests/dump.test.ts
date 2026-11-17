@@ -116,4 +116,3 @@ describe('dump', () => {
     expect(ret1).toEqual(ret2)
   })
 })
-
