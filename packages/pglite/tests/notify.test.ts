@@ -58,6 +58,14 @@ describe('notify API', () => {
     await pg.listen('postgresdefaultlower', allLower1)
     await pg.exec(`NOTIFY postgresdefaultlower, 'payload1'`)
 
+    // TinyBase: mixed-case channel names with pg_notify should match
+    // Regression test for https://github.com/electric-sql/pglite/issues/642
+    const tinyBaseListener = vi.fn()
+    await pg.listen('TinyBase', tinyBaseListener)
+    // pg_notify sends the string as-is; LISTEN uses the normalized (lowercased) name.
+    // The notification lookup now falls back to the normalized key, so TinyBase works.
+    await pg.exec(`SELECT pg_notify('TinyBase', 'hello-tinybase')`)
+
     const autoLowerTest1 = vi.fn()
     await pg.listen('PostgresDefaultLower', autoLowerTest1)
     await pg.exec(`NOTIFY PostgresDefaultLower, 'payload1'`)
@@ -116,6 +124,9 @@ describe('notify API', () => {
     expect(otherCharsWithQuotes).toHaveBeenCalledOnce()
     expect(quotedWithSpaces).toHaveBeenCalledOnce()
     expect(unquotedWithSpaces).not.toHaveBeenCalled()
+    // TinyBase regression test: pg_notify('TinyBase') must reach pg.listen('TinyBase')
+    expect(tinyBaseListener).toHaveBeenCalledTimes(1)
+    expect(tinyBaseListener).toHaveBeenCalledWith('hello-tinybase')
   })
 
   it('check unlisten case sensitivity + special chars as Postgresql', async () => {
