@@ -1,9 +1,13 @@
-import { tests } from './base.js'
+import { tests } from './base.ts'
 import { describe, it, expect, beforeEach, afterAll } from 'vitest'
 import * as fs from 'fs/promises'
 import { PGlite } from '../../../dist/index.js'
 
 tests('node', './pgdata-test', 'node.fs')
+
+afterAll(async () => {
+  await fs.rm('./pgdata-test', { force: true, recursive: true })
+})
 
 describe('NODEFS', () => {
   const folderPath = './pgdata-persisted'

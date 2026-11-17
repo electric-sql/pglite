@@ -3,6 +3,10 @@ import { PGlite } from '../dist/index.js'
 import * as fs from 'fs/promises'
 
 describe('XML functionality', () => {
+  afterAll(async () => {
+    await fs.rm('./pgdata-test-xml', { force: true, recursive: true })
+  })
+
   let db
 
   beforeAll(async () => {

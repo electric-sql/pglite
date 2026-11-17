@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { PGlite } from '../../../dist/index.js'
 
 export function tests(env, dbFilename, target) {
