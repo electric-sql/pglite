@@ -1,6 +1,6 @@
 # PGlite React.js Hooks
 
-This package implements React hooks for [PGLite](https://pglite.dev/) on top of the [live query plugin](https://pglite.dev/docs/live-queries). Full documentation is available at [pglite.dev/docs/framework-hooks](https://pglite.dev/docs/framework-hooks#react).
+This package implements React hooks for [PGLite](https://pglite.dev/) on top of the [live query plugin](https://pglite.dev/docs/live-queries). Full documentation is available at [pglite.dev/docs/framework-hooks/react](https://pglite.dev/docs/framework-hooks/react).
 
 To install:
 
