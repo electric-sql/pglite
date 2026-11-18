@@ -6,7 +6,7 @@ import {
   ParameterDescriptionMessage,
 } from '@electric-sql/pg-protocol/messages'
 import type { Results, QueryOptions } from './interface.js'
-import { parseType, type Parser } from './types.js'
+import { parsers as builtinParsers, type Parser } from './types.js'
 
 /**
  * This function is used to parse the results of either a simple or extended query.
@@ -21,10 +21,15 @@ export function parseResults(
   const resultSets: Results[] = []
   let currentResultSet: Results = { rows: [], fields: [] }
   let affectedRows = 0
+  // One parser per column, resolved when the row description arrives, so
+  // the parser tables are read once per column rather than once per value.
+  let fieldParsers: Array<Parser | undefined> = []
 
-  const parsers = options?.parsers
-    ? { ...defaultParsers, ...options.parsers }
-    : defaultParsers
+  const parseField = (value: string | null, i: number) => {
+    if (value === null) return null
+    const parser = fieldParsers[i]
+    return parser ? parser(value, currentResultSet.fields[i].dataTypeID) : value
+  }
 
   messages.forEach((message) => {
     switch (message.name) {
@@ -34,28 +39,26 @@ export function parseResults(
           name: field.name,
           dataTypeID: field.dataTypeID,
         }))
+        fieldParsers = msg.fields.map(
+          ({ dataTypeID }) =>
+            options?.parsers?.[dataTypeID] ??
+            defaultParsers[dataTypeID] ??
+            builtinParsers[dataTypeID],
+        )
         break
       }
       case 'dataRow': {
         if (!currentResultSet) break
         const msg = message as DataRowMessage
         if (options?.rowMode === 'array') {
-          currentResultSet.rows.push(
-            msg.fields.map((field, i) =>
-              parseType(field, currentResultSet!.fields[i].dataTypeID, parsers),
-            ),
-          )
+          currentResultSet.rows.push(msg.fields.map(parseField))
         } else {
           // rowMode === "object"
           currentResultSet.rows.push(
             Object.fromEntries(
               msg.fields.map((field, i) => [
-                currentResultSet!.fields[i].name,
-                parseType(
-                  field,
-                  currentResultSet!.fields[i].dataTypeID,
-                  parsers,
-                ),
+                currentResultSet.fields[i].name,
+                parseField(field, i),
               ]),
             ),
           )

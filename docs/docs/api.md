@@ -170,7 +170,7 @@ The `query` and `exec` methods take an optional `options` objects with the follo
 - `rowMode: "object" | "array"` <br />
   The returned row object type, either an object of `fieldName: value` mappings or an array of positional values. Defaults to `"object"`.
 - `parsers: ParserOptions` <br />
-  An object mapping Postgres data type IDs to parser functions. This option overrides any parsers set at the instance level.
+  An object mapping Postgres data type IDs to parser functions. This option overrides any parsers set at the instance level. Only the entries for the result's column types are read, so the object can be a `Proxy` that returns a parser for any type ID.
   ```ts
   import { types } from '@electric-sql/pglite'
   await pg.query(`SELECT * FROM test WHERE name = $1;`, ['test'], {
