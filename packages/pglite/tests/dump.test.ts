@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { PGlite } from '../dist/index.js'
 import * as fs from 'fs/promises'
 
 describe('dump', () => {
+  afterAll(async () => {
+    await fs.rm('./pgdata-test-dump', { force: true, recursive: true })
+  })
   it('dump data dir and load it', async () => {
     const pg1 = new PGlite()
     await pg1.exec(`
