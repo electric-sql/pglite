@@ -121,7 +121,7 @@ WHERE ST_Within(c.location, s.geom);`)
         rows: [
           {
             sqft: 928.625,
-            sqm: 86.27243061926092,
+            sqm: 86.2724306192609,
           },
         ],
         fields: [
