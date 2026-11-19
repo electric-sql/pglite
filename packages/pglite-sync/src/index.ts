@@ -130,8 +130,8 @@ async function createPlugin(
     const truncateNeeded = new Set<string>()
 
     // We also have to track the last lsn that we have committed
-    // This is across all shapes
-    const lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
+    // This is across all shapes, and advanced when a commit collects its messages
+    let lastCommittedLsn: Lsn = subState?.last_lsn ?? BigInt(-1)
 
     // We need our own aborter to be able to abort the streams but still accept the
     // signals from the user for each shape, and so we monitor the user provided signal
@@ -195,6 +195,11 @@ async function createPlugin(
           }
         }
       }
+      // The truncations belong to the messages collected above: a must-refetch
+      // arriving while this commit is queued is applied by a later commit
+      const shapesToTruncate = new Set(truncateNeeded)
+      truncateNeeded.clear()
+      lastCommittedLsn = targetLsn
 
       await pg.transaction(async (tx) => {
         if (debug) {
@@ -211,7 +216,7 @@ async function createPlugin(
           let messages = initialMessages
 
           // If we need to truncate the table, do so
-          if (truncateNeeded.has(shapeName)) {
+          if (shapesToTruncate.has(shapeName)) {
             if (debug) {
               console.log('truncating table', shape.table)
             }
@@ -221,7 +226,6 @@ async function createPlugin(
               const schema = shape.schema || 'public'
               await tx.exec(`DELETE FROM "${schema}"."${shape.table}";`)
             }
-            truncateNeeded.delete(shapeName)
           }
 
           // Apply the changes to the table
@@ -416,13 +420,20 @@ async function createPlugin(
 
       // Normal commit needed
       const isCommitNeeded = lowestCommittedLsn > lastCommittedLsn
-      // We've had a must-refetch and are catching up on one of the shape
-      const isMustRefetchAndCatchingUp =
-        lowestCommittedLsn >= lastCommittedLsn && truncateNeeded.size > 0
+      // We've had a must-refetch and every shape has caught up again, so the
+      // truncation commits together with the refetched rows
+      const isMustRefetchAndCaughtUp =
+        truncateNeeded.size > 0 && lowestCommittedLsn > BigInt(-1)
 
-      if (isCommitNeeded || isMustRefetchAndCatchingUp) {
-        // We have new changes to commit
-        commitUpToLsn(lowestCommittedLsn)
+      if (isCommitNeeded || isMustRefetchAndCaughtUp) {
+        // We have new changes to commit. The collected messages are gone from
+        // the buffer, so a failed commit stops the subscription and is reported
+        commitUpToLsn(lowestCommittedLsn).catch((error) => {
+          if (unsubscribed) return
+          unsubscribe()
+          if (!onError) throw error
+          onError(error)
+        })
         // Await a timeout to start a new task and allow other connections to do work
         await new Promise((resolve) => setTimeout(resolve))
       }
