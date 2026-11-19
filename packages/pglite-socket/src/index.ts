@@ -188,6 +188,12 @@ export class PGLiteSocketHandler extends EventTarget {
   private debug: boolean
   private readonly id: number
   private messageBuffer: Buffer = Buffer.alloc(0)
+  // Chunks of an incomplete message. They join once the message has fully
+  // arrived, so a large message is copied once instead of once per chunk.
+  private pendingChunks: Buffer[] = []
+  private pendingBytes = 0
+  // Full length of the message in messageBuffer; 0 when it is not known yet.
+  private neededBytes = 0
   private idleTimer?: NodeJS.Timeout
   private idleTimeout: number
   private lastActivityTime: number = Date.now()
@@ -328,6 +334,9 @@ export class PGLiteSocketHandler extends EventTarget {
     this.socket = null
     this.active = false
     this.messageBuffer = Buffer.alloc(0)
+    this.pendingChunks = []
+    this.pendingBytes = 0
+    this.neededBytes = 0
 
     this.log(`detach: handler cleaned up`)
     return this
@@ -384,11 +393,29 @@ export class PGLiteSocketHandler extends EventTarget {
 
     this.log(`handleData: received ${data.length} bytes`)
 
-    // Append to buffer for message reassembly
-    this.messageBuffer = Buffer.concat([this.messageBuffer, data])
-
     // Print the incoming data to the console
     this.inspectData('incoming', data)
+
+    this.pendingChunks.push(data)
+    this.pendingBytes += data.length
+
+    if (this.messageBuffer.length + this.pendingBytes < this.neededBytes) {
+      this.dispatchEvent(
+        new CustomEvent('data', {
+          detail: { incoming: data.length, outgoing: 0 },
+        }),
+      )
+      return 0
+    }
+
+    // Append to buffer for message reassembly
+    this.messageBuffer = Buffer.concat([
+      this.messageBuffer,
+      ...this.pendingChunks,
+    ])
+    this.pendingChunks = []
+    this.pendingBytes = 0
+    this.neededBytes = 0
 
     try {
       let totalProcessed = 0
@@ -428,6 +455,12 @@ export class PGLiteSocketHandler extends EventTarget {
         }
 
         if (!isComplete || messageLength === 0) {
+          // Startup, SSL and cancel messages have no type byte: they start with
+          // the high 0x00 byte of their length, so messageLength above is wrong
+          // for them and they must keep being parsed on every chunk.
+          if (this.messageBuffer[0] !== 0) {
+            this.neededBytes = messageLength
+          }
           this.log(
             `handleData: incomplete message, buffering ${this.messageBuffer.length} bytes`,
           )
