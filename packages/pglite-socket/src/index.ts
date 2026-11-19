@@ -20,12 +20,19 @@ interface QueuedQuery {
   onData: (data: Uint8Array) => void
 }
 
+interface QueuedTask {
+  handlerId: 0
+  timestamp: number
+  run: () => Promise<void>
+  reject: (error: Error) => void
+}
+
 /**
  * Global query queue manager
  * Ensures only one query executes at a time in PGlite
  */
 class QueryQueueManager {
-  private queue: QueuedQuery[] = []
+  private queue: (QueuedQuery | QueuedTask)[] = []
   private processing = false
   private db: PGlite
   private debug: boolean
@@ -69,6 +76,24 @@ class QueryQueueManager {
     })
   }
 
+  enqueueTask<T>(work: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        handlerId: 0,
+        timestamp: Date.now(),
+        reject,
+        run: async () => {
+          try {
+            resolve(await work())
+          } catch (error) {
+            reject(error)
+          }
+        },
+      })
+      void this.processQueue()
+    })
+  }
+
   private async processQueue(): Promise<void> {
     if (this.processing || this.queue.length === 0) {
       return
@@ -76,59 +101,65 @@ class QueryQueueManager {
 
     this.processing = true
 
-    while (this.queue.length > 0) {
-      let query
+    try {
+      while (this.queue.length > 0) {
+        let query
 
-      if (this.db.isInTransaction() && this.lastHandlerId) {
-        const i = this.queue.findIndex(
-          (q) => q.handlerId === this.lastHandlerId,
-        )
-        if (i === -1) {
-          // we didn't find any other query from the same client!
-          this.log(
-            `transaction started, but no query from the same handler id found in queue`,
-            this.lastHandlerId,
+        if (this.db.isInTransaction() && this.lastHandlerId) {
+          const i = this.queue.findIndex(
+            (q) => q.handlerId === this.lastHandlerId,
           )
-          query = null
+          if (i === -1) {
+            // we didn't find any other query from the same client!
+            this.log(
+              `transaction started, but no query from the same handler id found in queue`,
+              this.lastHandlerId,
+            )
+            query = null
+          } else {
+            query = this.queue.splice(i, 1)[0]
+          }
         } else {
-          query = this.queue.splice(i, 1)[0]
+          query = this.queue.shift()
         }
-      } else {
-        query = this.queue.shift()
-      }
-      if (!query) break
+        if (!query) break
+        if ('run' in query) {
+          await query.run()
+          continue
+        }
 
-      const waitTime = Date.now() - query.timestamp
-      this.log(
-        `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
-      )
+        const waitTime = Date.now() - query.timestamp
+        this.log(
+          `processing query from handler #${query.handlerId} (waited ${waitTime}ms)`,
+        )
 
-      let result = 0
-      try {
-        // Execute the query with exclusive access to PGlite
-        await this.db.runExclusive(async () => {
-          return await this.db.execProtocolRawStream(query.message, {
-            onRawData: (data) => {
-              result += data.length
-              query.onData(data)
-            },
+        let result = 0
+        try {
+          // Execute the query with exclusive access to PGlite
+          await this.db.runExclusive(async () => {
+            return await this.db.execProtocolRawStream(query.message, {
+              onRawData: (data) => {
+                result += data.length
+                query.onData(data)
+              },
+            })
           })
-        })
-      } catch (error) {
-        this.log(`query from handler #${query.handlerId} failed:`, error)
-        query.reject(error as Error)
-        return
+        } catch (error) {
+          this.log(`query from handler #${query.handlerId} failed:`, error)
+          query.reject(error as Error)
+          continue
+        }
+
+        this.log(
+          `query from handler #${query.handlerId} completed, ${result} bytes`,
+        )
+        this.lastHandlerId = query.handlerId
+        query.resolve(result)
       }
-
-      this.log(
-        `query from handler #${query.handlerId} completed, ${result} bytes`,
-      )
-      this.lastHandlerId = query.handlerId
-      query.resolve(result)
+    } finally {
+      this.processing = false
+      this.log(`queue processing complete, queue length is`, this.queue.length)
     }
-
-    this.processing = false
-    this.log(`queue processing complete, queue length is`, this.queue.length)
   }
 
   getQueueLength(): number {
@@ -710,6 +741,15 @@ export class PGLiteSocketServer extends EventTarget {
     })
   }
 
+  /**
+   * Run internal queries after the current socket transaction commits or rolls back.
+   * The callback must finish its own transactions before returning and must not
+   * await socket queries, which share this queue.
+   */
+  public runOutsideTransaction<T>(work: () => Promise<T>): Promise<T> {
+    return this.queryQueue.enqueueTask(work)
+  }
+
   public getServerConn(): string {
     if (this.path) return this.path
     return `${this.host}:${this.port}`
@@ -723,7 +763,7 @@ export class PGLiteSocketServer extends EventTarget {
     // Detach all handlers
     this.log(`stop: detaching ${this.handlers.size} handlers`)
     for (const handler of this.handlers) {
-      handler.detach(true)
+      await handler.detach(true)
     }
     this.handlers.clear()
 
