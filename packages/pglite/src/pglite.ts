@@ -731,6 +731,7 @@ export class PGlite
           preparedExtensions.sideModuleOrder,
           sideModulePaths,
           (...args) => this.#log(...args),
+          preparedExtensions.sideModulePreloadOrder,
         )
       }
 

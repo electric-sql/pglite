@@ -47,6 +47,42 @@ describe('deterministic extension packaging', () => {
     )
   })
 
+  it.each([false, true])(
+    'checks classic memory compatibility (shared=%s)',
+    async (shared) => {
+      const root = await fixture()
+      const modulePath = 'lib/postgresql/test.so'
+      await mkdir(join(root, 'input/lib/postgresql'), { recursive: true })
+      await writeFile(
+        join(root, 'memory.wat'),
+        `(module (import "env" "memory" (memory 1 2 ${shared ? 'shared' : ''})))`,
+      )
+      await execute('wasm-as', [
+        '--enable-threads',
+        join(root, 'memory.wat'),
+        '-o',
+        join(root, 'input', modulePath),
+      ])
+      const configuration = JSON.parse(
+        await readFile(join(root, 'config.json'), 'utf8'),
+      )
+      configuration.sideModules = [{ path: modulePath }]
+      await writeFile(join(root, 'config.json'), JSON.stringify(configuration))
+
+      if (shared) {
+        await expect(packageFixture(root, 'classic')).rejects.toThrow(
+          /classic side module imports shared memory: lib\/postgresql\/test.so/,
+        )
+      } else {
+        await packageFixture(root, 'classic')
+        const descriptor = JSON.parse(
+          await readFile(join(root, 'classic.json'), 'utf8'),
+        )
+        expect(descriptor.extensionManifest.sideModules).toHaveLength(1)
+      }
+    },
+  )
+
   it('treats an explicit empty side-module list as authoritative', async () => {
     const root = await fixture()
     await mkdir(join(root, 'input/lib/postgresql'), { recursive: true })

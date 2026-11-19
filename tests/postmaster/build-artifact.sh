@@ -100,6 +100,7 @@ if [[ -n "${PACKAGE_OUT}" ]]; then
   cp "${CANDIDATE}" "${PACKAGE_OUT}/postmaster.wasm"
   cp "${GLUE}" "${PACKAGE_OUT}/postmaster.js"
   cp "${DATA}" "${PACKAGE_OUT}/postmaster.data"
+  node22 "${MM_ROOT}/generate-artifact-metadata.mjs"
 fi
 
 pnpm -C "${REPO_ROOT}/packages/pglite" typecheck

@@ -1607,11 +1607,9 @@ async function preparePostmasterExtensions(
       [...files].map(([path, bytes]) => Object.freeze({ path, bytes })),
     ),
     sideModuleOrder: Object.freeze([...prepared.sideModuleOrder]),
-    // Registration materializes immutable bytes, but compiling every root
-    // side module in every PostgreSQL process makes unused extensions impose
-    // a large per-backend cost. PostgreSQL's synchronous dlopen path compiles
-    // and relocates a module only when the extension is actually used.
-    sideModulePreloadOrder: Object.freeze([]),
+    // Load providers before PostgreSQL can dlopen their dependent modules.
+    // Independent modules remain lazy to limit per-backend linking costs.
+    sideModulePreloadOrder: Object.freeze([...prepared.sideModulePreloadOrder]),
     sideModulePaths: Object.freeze([...sideModulePaths]),
     pgliteEnv: Object.freeze(
       Object.fromEntries(

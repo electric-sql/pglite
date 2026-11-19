@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gzipSync } from 'node:zlib'
+import { memoryImportTypes } from '../wasm-memory-imports.mjs'
 
 const [configPath, inputPath, archivePath, descriptorPath] =
   process.argv.slice(2)
@@ -47,36 +48,38 @@ const sideModuleFiles =
   config.sideModules === undefined
     ? files.filter(({ kind }) => kind === 'side-module')
     : [...configuredModules.keys()].map((path) => byPath.get(path))
-const sideModules = sideModuleFiles
-  .map((file) => {
-    const configured = configuredModules.get(file.path) ?? {}
-    const module = new WebAssembly.Module(file.bytes)
-    return {
-      logicalName:
-        configured.logicalName ??
-        file.path.split('/').pop().replace(/\.so$/, ''),
-      path: file.path,
-      sha256: file.sha256,
-      wasmAbiSection:
-        config.target.topology === 'multi-memory'
-          ? 'pglite.multi-memory.abi'
-          : 'classic',
-      importsHash: sha256(
-        new TextEncoder().encode(
-          canonicalJson(
-            WebAssembly.Module.imports(module).map(
-              ({ module, name, kind }) => ({
-                module,
-                name,
-                kind,
-              }),
-            ),
-          ),
+const sideModules = sideModuleFiles.map((file) => {
+  const configured = configuredModules.get(file.path) ?? {}
+  const module = new WebAssembly.Module(file.bytes)
+  if (
+    config.target.topology === 'classic' &&
+    [...memoryImportTypes(file.bytes).values()].some(({ shared }) => shared)
+  ) {
+    throw new Error(`classic side module imports shared memory: ${file.path}`)
+  }
+  return {
+    logicalName:
+      configured.logicalName ?? file.path.split('/').pop().replace(/\.so$/, ''),
+    path: file.path,
+    sha256: file.sha256,
+    wasmAbiSection:
+      config.target.topology === 'multi-memory'
+        ? 'pglite.multi-memory.abi'
+        : 'classic',
+    importsHash: sha256(
+      new TextEncoder().encode(
+        canonicalJson(
+          WebAssembly.Module.imports(module).map(({ module, name, kind }) => ({
+            module,
+            name,
+            kind,
+          })),
         ),
       ),
-      loadAfter: configured.loadAfter ?? [],
-    }
-  })
+    ),
+    loadAfter: configured.loadAfter ?? [],
+  }
+})
 
 const manifest = {
   formatVersion: 1,

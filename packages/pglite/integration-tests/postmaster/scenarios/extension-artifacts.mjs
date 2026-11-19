@@ -52,6 +52,11 @@ try {
       ])
       assert.ok(vectorRows[0].distance > 0)
       assert.match(postgisRows[0].point, /^POINT\(/)
+      await sessionA.exec('CREATE EXTENSION postgis_raster')
+      await Promise.all([
+        assertRasterRoundtrip(sessionA),
+        assertRasterRoundtrip(sessionB),
+      ])
     } finally {
       await Promise.all([sessionA.close(), sessionB.close()])
     }
@@ -61,13 +66,18 @@ try {
     const session = await postmaster.createSession()
     try {
       const { rows } = await session.query(
-        "SELECT extname FROM pg_extension WHERE extname IN ('vector', 'postgis') ORDER BY extname",
+        "SELECT extname FROM pg_extension WHERE extname IN ('vector', 'postgis', 'postgis_raster') ORDER BY extname",
       )
-      assert.deepEqual(rows, [{ extname: 'postgis' }, { extname: 'vector' }])
+      assert.deepEqual(rows, [
+        { extname: 'postgis' },
+        { extname: 'postgis_raster' },
+        { extname: 'vector' },
+      ])
       const query = await session.query(
         "SELECT '[1,0,0]'::vector <-> '[0,1,0]'::vector AS distance",
       )
       assert.ok(query.rows[0].distance > 0)
+      await assertRasterRoundtrip(session)
     } finally {
       await session.close()
     }
@@ -76,6 +86,24 @@ try {
   console.log('wasm32-initial postmaster extensions: PASS')
 } finally {
   await rm(dataDirectory, { recursive: true, force: true })
+}
+
+async function assertRasterRoundtrip(session) {
+  await session.exec("SET postgis.gdal_enabled_drivers = 'ENABLE_ALL'")
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const png = await session.query(`
+      WITH encoded AS MATERIALIZED (
+        SELECT ST_AsGDALRaster(ST_AddBand(
+          ST_MakeEmptyRaster(1, 1, 0, 0, 1, -1, 0, 0, 4326),
+          1, '8BUI', 7, 0
+        ), 'PNG') AS data
+      )
+      SELECT encode(substring(data FOR 8), 'hex') AS signature,
+        (ST_SummaryStats(ST_FromGDALRaster(data), 1)).mean AS mean
+      FROM encoded
+    `)
+    assert.deepEqual(png.rows, [{ signature: '89504e470d0a1a0a', mean: 7 }])
+  }
 }
 
 async function withPostmaster(run) {

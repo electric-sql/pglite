@@ -33,6 +33,21 @@ test and side-module tools used below. The builder Dockerfile chooses the
 native Emscripten base for Docker's `BUILDARCH`; the WebAssembly target is
 unchanged.
 
+The image build produces classic and shared dependency profiles. The classic
+build uses `pglite-multi-memory-classic-tools`; shared dependencies contain
+native Wasm thread-local storage and cannot be reused by classic side modules.
+Packaging rejects shared-memory imports in classic side modules.
+Set `PGLITE_CLASSIC_IMAGE` or `PGLITE_MULTI_MEMORY_IMAGE` to override the
+corresponding tools image. The image build and packed CLI test honor the npm
+registry configured on the host (`PGLITE_NPM_REGISTRY` can override image builds).
+
+For a fresh recursive checkout, `pnpm build:all` builds classic artifacts first,
+then the postmaster and extension profiles, then the TypeScript workspace.
+`./tools/wasm-multi-memory/build-all.sh --workspace` runs the same build without
+requiring a host pnpm installation.
+Set `PGLITE_NODE_MODULES_VOLUME` to a new Docker volume name to validate with
+an empty dependency installation independently of other checkouts.
+
 Do not substitute host Emscripten, Binaryen, Node, package-manager, or native
 PostgreSQL build tools. PostgreSQL fork changes should remain small and
 compile-time fenced. Platform behavior belongs behind the PGlite libc

@@ -617,6 +617,9 @@ if (
 }
 
 async function assertNpxTarball() {
+  const registryConfig = await run('npm', ['config', 'get', 'registry'])
+  assert.equal(registryConfig.code, 0, registryConfig.stderr)
+  const upstreamRegistry = `${registryConfig.stdout.trim().replace(/\/$/, '')}/`
   const packages = await Promise.all(
     [
       ['@electric-sql/pglite', '0.5.4'],
@@ -652,7 +655,7 @@ async function assertNpxTarball() {
     const entry = packages.find(({ name }) => name === requestedName)
     if (!entry) {
       response.writeHead(302, {
-        location: `https://registry.npmjs.org${request.url ?? '/'}`,
+        location: new URL((request.url ?? '/').slice(1), upstreamRegistry).href,
       })
       response.end()
       return

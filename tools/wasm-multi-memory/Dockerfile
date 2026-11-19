@@ -51,6 +51,9 @@ RUN patch --directory=/emsdk/upstream/emscripten --strip=1 \
       < /tmp/pglite-library-dylink.patch \
     && rm /tmp/pglite-library-dylink.patch
 
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+ENV NPM_CONFIG_REGISTRY=${NPM_CONFIG_REGISTRY}
+
 RUN case "${TARGETARCH}" in \
       amd64) node_arch=x64 ;; \
       arm64) node_arch=arm64 ;; \
@@ -88,6 +91,7 @@ RUN patch --directory=/emsdk/upstream/emscripten --strip=1 \
 # SIDE_MODULE; Binaryen, Node, and the ABI validator remain image-owned.
 COPY side-modules/audit-side-module.mjs \
   /opt/pglite-multi-memory/bin/audit-side-module.mjs
+COPY wasm-memory-imports.mjs /opt/pglite-multi-memory/wasm-memory-imports.mjs
 COPY side-modules/transform-side-module.sh \
   /opt/pglite-multi-memory/bin/pglite-transform-side-module
 COPY side-modules/transform-runtime-modules.sh \

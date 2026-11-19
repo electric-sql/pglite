@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd -- "${SCRIPT_DIR}/../.." && pwd)
 IMAGE=${PGLITE_MULTI_MEMORY_IMAGE:-$("${SCRIPT_DIR}/build-image.sh")}
+NODE_MODULES_VOLUME=${PGLITE_NODE_MODULES_VOLUME:-pglite-postmaster-node-modules}
 POSTMASTER_BUILD_OUT=${PGLITE_POSTMASTER_BUILD_OUT:-${SCRIPT_DIR}/.out/postmaster-build}
 POSTMASTER_TEST_OUT=${PGLITE_POSTMASTER_TEST_OUT:-${SCRIPT_DIR}/.out/postmaster-test}
 
@@ -21,7 +22,7 @@ docker run --rm \
   --volume "${REPO_ROOT}:/work:rw" \
   --volume "${POSTMASTER_BUILD_OUT}:/postmaster-build:rw" \
   --volume "${POSTMASTER_TEST_OUT}:/postmaster-test:rw" \
-  --volume pglite-postmaster-node-modules:/work/node_modules \
+  --volume "${NODE_MODULES_VOLUME}:/work/node_modules" \
   --volume pglite-multi-memory-pnpm-store:/tmp/pnpm-store \
   --workdir /work \
   "${IMAGE}" \

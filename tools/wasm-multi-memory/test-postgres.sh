@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd -- "${SCRIPT_DIR}/../.." && pwd)
 IMAGE=${PGLITE_MULTI_MEMORY_IMAGE:-$("${SCRIPT_DIR}/build-image.sh")}
+NODE_MODULES_VOLUME=${PGLITE_NODE_MODULES_VOLUME:-pglite-postmaster-node-modules}
 POSTMASTER_TEST_OUT=${PGLITE_POSTMASTER_TEST_OUT:-${SCRIPT_DIR}/.out/postmaster-test}
 POSTGRES_TEST_OUT=${PGLITE_POSTGRES_TEST_OUT:-${SCRIPT_DIR}/.out/postgres-test}
 POSTGRES_TEST_NATIVE_VOLUME=${PGLITE_POSTGRES_TEST_NATIVE_VOLUME:-pglite-multi-memory-postgres-test-native}
@@ -34,7 +35,7 @@ docker run --rm \
 # filesystem permission checks run with native Linux semantics.
 docker run --rm \
   --volume "${REPO_ROOT}:/work:rw" \
-  --volume pglite-postmaster-node-modules:/work/node_modules \
+  --volume "${NODE_MODULES_VOLUME}:/work/node_modules" \
   --volume pglite-multi-memory-pnpm-store:/tmp/pnpm-store \
   --workdir /work \
   "${IMAGE}" \
@@ -59,7 +60,7 @@ docker run --rm \
   --volume "${POSTMASTER_TEST_OUT}:/postmaster-test:rw" \
   --volume "${POSTGRES_TEST_OUT}:/postgres-test:rw" \
   --volume "${POSTGRES_TEST_NATIVE_VOLUME}:/postgres-test/native:rw" \
-  --volume pglite-postmaster-node-modules:/work/node_modules \
+  --volume "${NODE_MODULES_VOLUME}:/work/node_modules" \
   --volume pglite-multi-memory-pnpm-store:/tmp/pnpm-store \
   --workdir /work \
   "${IMAGE}" \

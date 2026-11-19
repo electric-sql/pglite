@@ -1,0 +1,8 @@
+ARG PGLITE_TOOLS_IMAGE
+ARG PGLITE_CLASSIC_BUILDER_IMAGE
+FROM ${PGLITE_CLASSIC_BUILDER_IMAGE} AS classic-dependencies
+FROM ${PGLITE_TOOLS_IMAGE}
+
+# Native Wasm TLS in shared dependencies is incompatible with classic dylink.
+COPY --from=classic-dependencies /install /install
+ENV EMCC_CFLAGS=""

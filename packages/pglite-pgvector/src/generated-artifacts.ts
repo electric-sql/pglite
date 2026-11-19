@@ -18,11 +18,11 @@ export const generatedExtensionBackend = {
         memoryAbi: 'pglite-classic-memory-v1',
         hostAbi: 'pglite-host-abi-v1',
       },
-      archiveBytes: 49657,
+      archiveBytes: 49584,
       archiveSha256:
-        'e5110423a925f63f75f2063c38e1604bfc530522c3f314c995425f75ef7d8b84',
+        'd3522d53fb6cdb55c7fc82431c26c58058c105d2dd602af58b9684c29a10d816',
       manifestSha256:
-        '70825714c678291ab386cb1dfef68bca1e23e19b3aef0f50266eec10b0c57556',
+        '6b806021dff53677ea5875b638be0b28f20445fd139ecddfac53f44fb32b69c9',
       manifest: {
         formatVersion: 1,
         extensionName: 'vector',
@@ -69,9 +69,9 @@ export const generatedExtensionBackend = {
           },
           {
             path: 'lib/postgresql/vector.so',
-            size: 100191,
+            size: 99929,
             sha256:
-              'b96fce0b884ca5bcb85b7a2b759c2debebce760f996c3c014097c5755d96e4a2',
+              'a56170fc4336f51589ad0698f030826ab2bb5d9a251a24ab70713c178076892c',
             kind: 'side-module',
           },
           {
@@ -339,10 +339,10 @@ export const generatedExtensionBackend = {
             logicalName: 'vector',
             path: 'lib/postgresql/vector.so',
             sha256:
-              'b96fce0b884ca5bcb85b7a2b759c2debebce760f996c3c014097c5755d96e4a2',
+              'a56170fc4336f51589ad0698f030826ab2bb5d9a251a24ab70713c178076892c',
             wasmAbiSection: 'classic',
             importsHash:
-              '16fe53d0611a8a69c087ae055b9100fd649f907599ffe82702311a2df6b9323d',
+              'c25df4359b4372a2af33860443841554bb055b1769e2c5ee0776a78fef3d963c',
             loadAfter: [],
           },
         ],

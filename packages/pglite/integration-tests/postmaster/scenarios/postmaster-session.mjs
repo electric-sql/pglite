@@ -82,6 +82,11 @@ async function main() {
       'normal session B startup',
     )
     console.log('normal sessions ready')
+    await sessionA.exec('CREATE EXTENSION test_dsa; SELECT test_dsa_basic()')
+    const moduleFile = await sessionA.query(
+      "SELECT (pg_stat_file('/pglite/lib/postgresql/test_aio.so')).size > 0 AS available",
+    )
+    assert.deepEqual(moduleFile.rows, [{ available: true }])
     const normalQuery = await sessionA.query('SELECT 40 + $1::int AS answer', [
       2,
     ])

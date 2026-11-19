@@ -1,6 +1,7 @@
 import tinyTar from 'tinytar'
 import type { PostgresMod, FS } from './postgresMod.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
+import { linkExtensionProvider } from './extension-linker.js'
 
 export async function loadExtensionBundle(
   bundlePath: URL,
@@ -143,7 +144,9 @@ export async function loadExtensionFiles(
   sideModulePreloadOrder: readonly string[],
   sideModulePaths: ReadonlyMap<string, string>,
   log: (...args: any[]) => void,
+  providersToLink: readonly string[] = [],
 ): Promise<void> {
+  const providerModules = new Set(providersToLink)
   const preloadPaths = new Set(
     sideModulePreloadOrder.map((identity) => sideModulePaths.get(identity)),
   )
@@ -184,6 +187,9 @@ export async function loadExtensionFiles(
         false,
       )
     })
+    if (providerModules.has(identity)) {
+      linkExtensionProvider(mod, filePath)
+    }
   }
 }
 

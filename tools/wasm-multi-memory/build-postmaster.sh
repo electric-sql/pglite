@@ -4,13 +4,21 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd -- "${SCRIPT_DIR}/../.." && pwd)
 IMAGE=${PGLITE_MULTI_MEMORY_IMAGE:-$("${SCRIPT_DIR}/build-image.sh")}
+NODE_MODULES_VOLUME=${PGLITE_NODE_MODULES_VOLUME:-pglite-postmaster-node-modules}
 POSTMASTER_BUILD_OUT=${PGLITE_POSTMASTER_BUILD_OUT:-${SCRIPT_DIR}/.out/postmaster-build}
+
+if [ ! -f "${REPO_ROOT}/packages/pglite/release/pglite.wasm" ] ||
+   [ ! -f "${REPO_ROOT}/packages/pglite-tools/release/reindexdb.wasm" ] ||
+   [ ! -f "${REPO_ROOT}/packages/pglite-pgvector/release/vector.tar.gz" ] ||
+   [ ! -f "${REPO_ROOT}/packages/pglite-postgis/release/postgis.tar.gz" ]; then
+  PGLITE_MULTI_MEMORY_IMAGE="${IMAGE}" "${SCRIPT_DIR}/build-classic.sh"
+fi
 
 docker run --rm \
   --env PGLITE_POSTMASTER_INCREMENTAL="${PGLITE_POSTMASTER_INCREMENTAL:-false}" \
   --volume "${REPO_ROOT}:/work:rw" \
   --volume "${POSTMASTER_BUILD_OUT}:/postmaster-build:rw" \
-  --volume /work/node_modules \
+  --volume "${NODE_MODULES_VOLUME}:/work/node_modules" \
   --volume pglite-multi-memory-pnpm-store:/tmp/pnpm-store \
   --workdir /work \
   "${IMAGE}" \
@@ -35,6 +43,7 @@ docker run --rm \
     # Keep the configure prefix free of "postgres". The PostgreSQL install
     # makefiles use that substring to append their normal namespace.
     DEBUG=false \
+    PGLITE_VERSION=$(node -p "require(\"/work/packages/pglite/package.json\").version") \
     PGLITE_INCREMENTAL="${PGLITE_POSTMASTER_INCREMENTAL}" \
     PGLITE_SHARED_MEMORY=true \
     PGLITE_MULTI_MEMORY_PROVENANCE=true \
@@ -47,6 +56,7 @@ docker run --rm \
     INSTALL_FOLDER=/postmaster-build/source-build \
       ./build-pglite.sh
     cd /work
+    pnpm --filter @electric-sql/pglite-utils --filter @electric-sql/pg-protocol build
     PGLITE_POSTMASTER_PACKAGE_OUT=/work/packages/pglite/release \
       ./tests/postmaster/build-artifact.sh /work
     /work/tools/wasm-multi-memory/extensions/build-initial.sh \

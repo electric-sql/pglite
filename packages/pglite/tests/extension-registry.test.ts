@@ -144,12 +144,15 @@ describe('prepareExtensionSet', () => {
     const result = prepare({
       b: extension('b', b, ['a']),
       a: extension('a', a),
+      c: extension('c'),
     })
     expect(result.extensions.map(({ extension }) => extension.name)).toEqual([
       'a',
       'b',
+      'c',
     ])
-    expect(result.sideModuleOrder).toEqual(['a:a', 'b:b'])
+    expect(result.sideModuleOrder).toEqual(['a:a', 'b:b', 'c:c'])
+    expect(result.sideModulePreloadOrder).toEqual(['a:a'])
     expect(result.requiredSharedPreloadLibraries).toEqual(['a', 'b'])
     expect(result.pgliteEnv).toEqual({
       SHARED: 'same',

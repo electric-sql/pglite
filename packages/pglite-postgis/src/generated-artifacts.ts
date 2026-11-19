@@ -18,11 +18,11 @@ export const generatedExtensionBackend = {
         memoryAbi: 'pglite-classic-memory-v1',
         hostAbi: 'pglite-host-abi-v1',
       },
-      archiveBytes: 19659422,
+      archiveBytes: 13435900,
       archiveSha256:
-        'bb322f1d2dfeebdd706fec4051d09267f16a86b90150f6a3c832c5aa89a9315e',
+        '84c399e037abeac808966decee38b05107019174a80f6702011b1620f24ab27c',
       manifestSha256:
-        'eb7af252c05f263d052792b6b94275b64b04313a8a32840a0bbd6c6486964817',
+        '5c58e0db3ee774fd0789126ab4c3bae38fbe683a4d336116217e5a98acec7532',
       manifest: {
         formatVersion: 1,
         extensionName: 'postgis',
@@ -36,3926 +36,6 @@ export const generatedExtensionBackend = {
             'postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32',
           pgliteExtensionAbi: 'pglite-extension-abi-v1',
           memoryAbi: 'pglite-classic-memory-v1',
-          hostAbi: 'pglite-host-abi-v1',
-        },
-        artifactDependencies: [],
-        postgresExtensions: [
-          {
-            name: 'postgis',
-            requires: [],
-          },
-          {
-            name: 'postgis_raster',
-            requires: [],
-          },
-          {
-            name: 'postgis_tiger_geocoder',
-            requires: ['postgis', 'fuzzystrmatch'],
-          },
-          {
-            name: 'postgis_topology',
-            requires: [],
-          },
-        ],
-        files: [
-          {
-            path: 'lib/postgresql/postgis-3.so',
-            size: 16887380,
-            sha256:
-              'e22fde84a28e930f9efe3885b2fcfd62fc31829f1556d155a821bde43c195e21',
-            kind: 'side-module',
-          },
-          {
-            path: 'lib/postgresql/postgis_raster-3.so',
-            size: 16036747,
-            sha256:
-              'd39fb078da4bdbb5178bf46ce4a7ed7f2278d09ed322020f6f399d097aa7416c',
-            kind: 'side-module',
-          },
-          {
-            path: 'lib/postgresql/postgis_topology-3.so',
-            size: 15352346,
-            sha256:
-              '9a1aa4ef6e52c0dd270458c5a86b07cc464b3321f473ad142366d609d0d12a08',
-            kind: 'side-module',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/legacy.sql',
-            size: 60270,
-            sha256:
-              'ad2a5680a9c29f111151de33518cbefd2570f273c5d322a6c81128a752081a1e',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/legacy_gist.sql',
-            size: 1225,
-            sha256:
-              '2ad65406179a7a753e6306f0b23a65adcead77f166fb4ebe9b30c59ff73a7e70',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/legacy_minimal.sql',
-            size: 2462,
-            sha256:
-              '2b68afc330ac170888aeb8b3c0f03e9765864ef2e5db853f11e8b65de8106ad5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/postgis.sql',
-            size: 293864,
-            sha256:
-              'bcb13794a154581c22091fe698a28bfccc5e67b53c5a83bea08ec3ae5842db5c',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/postgis_upgrade.sql',
-            size: 373862,
-            sha256:
-              '0aea644965d4871d236bfc1145eff668e6f4f9598affabfefa2499e693a61ebf',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis.sql',
-            size: 290785,
-            sha256:
-              '1a1078e3f710086405204b958644963aa6d687a1ed96c1cd52a66a023fbfc355',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis_legacy.sql',
-            size: 5714,
-            sha256:
-              '19976c4b54a5611848bd6179ac5988aff28272962ceb27fc9ca9aa597fbc8eb2',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis_upgrade.sql',
-            size: 356658,
-            sha256:
-              'd1e9b73a9d8a754784c5a988a2af6ac7542f385b1a9e451607156bf1d6afe51d',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/spatial_ref_sys.sql',
-            size: 7166554,
-            sha256:
-              '5b41d27b27ee8b4d895fb91c824c4d983c19b6fe51047c1063097b2feb4fd6cf',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/topology.sql',
-            size: 257125,
-            sha256:
-              'dee2aac8d6c256f790384bea58dc0c6be20125f4532a661a23dc1a6844840cd7',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/topology_upgrade.sql',
-            size: 294277,
-            sha256:
-              'ea0637a29c530c912e32aea72f9e8fd786551eeb0b8d239cd25ff0710c0666f4',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/uninstall_legacy.sql',
-            size: 16493,
-            sha256:
-              '6a395839e2c0686550cb1439acbd0be9e1ea16071ca4fb817db512bcbf79260b',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/uninstall_postgis.sql',
-            size: 66343,
-            sha256:
-              '0c4c0c770c7649254f3e10ecca977287eb6d5496552426ac45581252f475ebd3',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/uninstall_rtpostgis.sql',
-            size: 69837,
-            sha256:
-              'e7318402b3608e0eb53120564f677f0e4be6fde7b649277a2acf3edac8e8aaf5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/contrib/postgis-3.6/uninstall_topology.sql',
-            size: 18038,
-            sha256:
-              '403764b5f51a5862787fc32c671cd9ab9a8982c04e609125f5d4812c74f5945e',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.0.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.1.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.2.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.10--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.11--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.3.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.10--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.4.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--2.5.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.10--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.11--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.12--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.0.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.10--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.11--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.12--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.13--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.1.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.2.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.6--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.7--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.8--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.3.9--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.4.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.3--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.4--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.5.5--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.6.0--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.6.1--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.6.2--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--3.6.2.sql',
-            size: 7478090,
-            sha256:
-              '36eeda54db2e31d9b9631be347693e9a60e86ca81e81b559ccce3454ed9811ca',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--ANY--3.6.2.sql',
-            size: 7853876,
-            sha256:
-              'a12f08d52d1d66918b62f7b66d7d2b957b2b3973afee55754d82bd4a2e7750ac',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--TEMPLATED--TO--ANY.sql',
-            size: 109,
-            sha256:
-              'dd001662c03f98a62ebf95e08c8230cabcac1cc1a229e882cb6477cbd35d6b60',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--unpackaged--3.6.2.sql',
-            size: 7934298,
-            sha256:
-              '60fd8c7c937f60497010dd192ac36481c9963a8c9980465ab00326bdb93b2e92',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis--unpackaged.sql',
-            size: 22,
-            sha256:
-              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis.control',
-            size: 175,
-            sha256:
-              '2802c2bb571cf648daafb834a452a7dc884ef359116a1b17ab4c4acd6155e699',
-            kind: 'control',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.0.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.1.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.2.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.10--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.11--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.3.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.10--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.4.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--2.5.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.10--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.11--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.12--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.0.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.10--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.11--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.12--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.13--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.1.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.2.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.6--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.7--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.8--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.3.9--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.4.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.3--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.4--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.5.5--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.6.0--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.6.1--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.6.2--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--3.6.2.sql',
-            size: 299133,
-            sha256:
-              '975fed30918bd73e692d1325912b6ad66bb45996e250ffb0908ac184d09ebca7',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--ANY--3.6.2.sql',
-            size: 371987,
-            sha256:
-              'f27e482e5f02643257c618d41455e0cd494d028cec952d89d7d40c69ea9a9706',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--TEMPLATED--TO--ANY.sql',
-            size: 123,
-            sha256:
-              '40cbba9535808acf603d28f86a4b8d13b380bada7f3a33c2587baa39a678eb4f',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--unpackaged--3.6.2.sql',
-            size: 448802,
-            sha256:
-              'd6a5039775f1e25ea1780e5eb8542cde53dbd49eafc53b186c09a54191261c09',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster--unpackaged.sql',
-            size: 22,
-            sha256:
-              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_raster.control',
-            size: 184,
-            sha256:
-              '9eceded433f1c00e4ed30f81753341e6c1784daf48eb669dd6206841b86439e6',
-            kind: 'control',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.10--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.11--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.10--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.10--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.11--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.12--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.10--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.11--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.12--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.13--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.6--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.7--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.8--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.9--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.3--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.4--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.5--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.0--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.1--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.2--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.2.sql',
-            size: 1071027,
-            sha256:
-              'b5b0d2a149e8c76dba2088f46542632dd520ada200e392368ca21e6f4d6c80ad',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--ANY--3.6.2.sql',
-            size: 993724,
-            sha256:
-              '12e39fe0e34a6b887a2b64547bc9e5d3da82d1e5619faab06bd721305a25549b',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--TEMPLATED--TO--ANY.sql',
-            size: 139,
-            sha256:
-              'fe702e8cf0d8e74acff25532d425fdd619d1cc9d51dee86620028ba09e260ea5',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder--unpackaged--3.6.2.sql',
-            size: 8024,
-            sha256:
-              '47c920d2761bb801195d0b2e8d8271f8452a0ac2025406ccbea0e3bef2156a98',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_tiger_geocoder.control',
-            size: 242,
-            sha256:
-              '06de017001724d948e8fcd786bcfb7b557e2015d64b5c35964f52bf3aa108455',
-            kind: 'control',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.0.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.1.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.2.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.10--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.11--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.3.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.10--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.4.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--2.5.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.10--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.11--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.12--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.0.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.10--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.11--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.12--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.13--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.1.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.2.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.6--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.7--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.8--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.3.9--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.4.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.3--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.4--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.5.5--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.6.0--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.6.1--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.6.2--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--3.6.2.sql',
-            size: 257445,
-            sha256:
-              'd00188119044999e76be4786a360adcaccd3a67d965a0304938df2332b41b90d',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--ANY--3.6.2.sql',
-            size: 298349,
-            sha256:
-              '4a90644c7a562ce7f773338a10d30f4746edab7bf325c84771d57225da8a62b7',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--TEMPLATED--TO--ANY.sql',
-            size: 127,
-            sha256:
-              '5ba2a843f78269627af8ac8efcfe503ccfa6cbf386e309e3ae2bb3dd34e8eb66',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--unpackaged--3.6.2.sql',
-            size: 311242,
-            sha256:
-              'dd584f85cf7507582e804f9e1038e1da7708598a1ce381bbef4b68883f66d750',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology--unpackaged.sql',
-            size: 22,
-            sha256:
-              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
-            kind: 'sql',
-          },
-          {
-            path: 'share/postgresql/extension/postgis_topology.control',
-            size: 169,
-            sha256:
-              '20b2dbe09b5ae8fa3eb5130173c6e4af5873f1de464ab84d5aca4babef6e6c86',
-            kind: 'control',
-          },
-          {
-            path: 'share/proj/CH',
-            size: 1097,
-            sha256:
-              '6c53ea40a2c60325ba6c6b9a2b9c143bd165671c38820ecd8f23caab4a264ab5',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/GL27',
-            size: 728,
-            sha256:
-              '85375e6315d6f644e4577dadf3c5f157528ad15b715c99b287bddab23d44193d',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/ITRF2000',
-            size: 2099,
-            sha256:
-              '5225c3b3367a37021e639cfd5bd1521d2bd5d00cbc474cd6b3b3827615a4fe72',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/ITRF2008',
-            size: 5682,
-            sha256:
-              'dc6985d5721e2e1d18fac996dee5dec90244ef3e20c38f72205e32d8842af2e2',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/ITRF2014',
-            size: 3490,
-            sha256:
-              '5fa17d6b66928ee6cb01ae4174ff8bf32458468bf817089df119779dfd382efa',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/ITRF2020',
-            size: 5711,
-            sha256:
-              'fb2fd52951adb9b32334757ed412fe5cdb9c8533af28421fa191dba7b4d73dcb',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/deformation_model.schema.json',
-            size: 17671,
-            sha256:
-              'ba0c5911117207a936fc738c1e31da001b45b51193773ce0c6742143f372b99d',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/nad.lst',
-            size: 6385,
-            sha256:
-              '1a28ed872fd1550f5bf7b5a5e5bfc5e7500b5f94c9745b84a1d156b32039928c',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/nad27',
-            size: 19535,
-            sha256:
-              '0bc231922461ac758922c6a7251e96d7e53e656608b1b4f06b7848fa8fc25520',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/nad83',
-            size: 16593,
-            sha256:
-              '9a6260c8680abe5216ca8fe985998fababc121b0032879a821d75cae3411dc96',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/other.extra',
-            size: 3915,
-            sha256:
-              'c1ef74c0a9b3e1f42a576c15bc43666c135b7e9361db5727a353204da279ccbb',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/proj.db',
-            size: 9564160,
-            sha256:
-              'a1fccd0ca4835fffaea5cc2e5cff9afdaf36d5ba0cdb811a2ff7b7c1d8951054',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/proj.ini',
-            size: 2435,
-            sha256:
-              'b95ebf0d007339244483d65d571cd887a51806e2bd2c1ab7f47b897d25320d65',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/projjson.schema.json',
-            size: 38418,
-            sha256:
-              '67f090556bae996522edad482597c0f9e1b919ca4c9288ac9f8f7cd4180f49b6',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/triangulation.schema.json',
-            size: 8403,
-            sha256:
-              'b1528266667d4f3e87072c74e370b27135101515a9012a25287fcf312cea179a',
-            kind: 'data',
-          },
-          {
-            path: 'share/proj/world',
-            size: 7079,
-            sha256:
-              'f271cd3e56c7759d2fcfbbbd39870264eb81064155713c04fc92eadd30adeb48',
-            kind: 'data',
-          },
-        ],
-        sideModules: [
-          {
-            logicalName: 'postgis',
-            path: 'lib/postgresql/postgis-3.so',
-            sha256:
-              'e22fde84a28e930f9efe3885b2fcfd62fc31829f1556d155a821bde43c195e21',
-            wasmAbiSection: 'classic',
-            importsHash:
-              'f91fc49ab6e4a1d5f4e54f91bf87c92a2e9fa05ac759c15851a0e203f60f3a0c',
-            loadAfter: [],
-          },
-          {
-            logicalName: 'postgis_raster',
-            path: 'lib/postgresql/postgis_raster-3.so',
-            sha256:
-              'd39fb078da4bdbb5178bf46ce4a7ed7f2278d09ed322020f6f399d097aa7416c',
-            wasmAbiSection: 'classic',
-            importsHash:
-              'cabee260a462bbf987f2dac1d95796962a377d413e4ea4cd207ee2f959211269',
-            loadAfter: ['postgis:postgis'],
-          },
-          {
-            logicalName: 'postgis_topology',
-            path: 'lib/postgresql/postgis_topology-3.so',
-            sha256:
-              '9a1aa4ef6e52c0dd270458c5a86b07cc464b3321f473ad142366d609d0d12a08',
-            wasmAbiSection: 'classic',
-            importsHash:
-              'a66bae4da4182544a528853e4c46b89e214fde54c5867f7872a9a47a8b5841f7',
-            loadAfter: ['postgis:postgis'],
-          },
-        ],
-        requiredSharedPreloadLibraries: [],
-        processConfig: {
-          pgliteEnv: {
-            POSTGIS_GDAL_ENABLED_DRIVERS: 'ENABLE_ALL',
-            POSTGIS_ENABLE_OUTDB_RASTERS: 1,
-            PROJ_DATA: {
-              artifactPath: 'share/proj',
-            },
-          },
-          requiredHostCapabilities: [],
-        },
-        capabilities: {
-          directSharedMemory: false,
-          backgroundWorkers: false,
-          parallelWorkers: false,
-        },
-      },
-      url: new URL('../release/postgis.wasm32-classic.tar.gz', import.meta.url),
-    },
-    'wasm32-multi-memory': {
-      targetKey: 'wasm32-multi-memory',
-      target: {
-        pointerWidth: 32,
-        memoryAddressWidth: 32,
-        topology: 'multi-memory',
-        postgresMajor: 18,
-        postgresAbi:
-          'postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32',
-        pgliteExtensionAbi: 'pglite-extension-abi-v1',
-        memoryAbi: 'pglite-tagged-i32-v1',
-        hostAbi: 'pglite-host-abi-v1',
-      },
-      archiveBytes: 23635262,
-      archiveSha256:
-        'b3eb8eb8a6823892cc1763e1beea8ac4714313b92ae3bd76ba59fc1d4859df6d',
-      manifestSha256:
-        '08cbbddc1eda8551e7fc5c7ad9ae0debe95521118347d41078fe2682c0378bd7',
-      manifest: {
-        formatVersion: 1,
-        extensionName: 'postgis',
-        extensionVersion: '0.2.4',
-        target: {
-          pointerWidth: 32,
-          memoryAddressWidth: 32,
-          topology: 'multi-memory',
-          postgresMajor: 18,
-          postgresAbi:
-            'postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32',
-          pgliteExtensionAbi: 'pglite-extension-abi-v1',
-          memoryAbi: 'pglite-tagged-i32-v1',
           hostAbi: 'pglite-host-abi-v1',
         },
         artifactDependencies: [],
@@ -4001,23 +81,23 @@ export const generatedExtensionBackend = {
           },
           {
             path: 'lib/postgresql/postgis-3.so',
-            size: 26033423,
+            size: 17980901,
             sha256:
-              '154507231b00fb5cb1748c8bce366c2f03fc6be64060dba73e7246810b857b69',
+              '2462430f2c230fed5502759f891154b356217981a5c054a294a3d7284e993c53',
             kind: 'side-module',
           },
           {
             path: 'lib/postgresql/postgis_raster-3.so',
-            size: 25357435,
+            size: 5897913,
             sha256:
-              'f9a181da4b7069856f17dd866d8e0f1013a609be2f51c59068f611446a50dcad',
+              'eca3a2247bdc136738337f3dcae8898c00377530809ea538f8ea60a18c5f386d',
             kind: 'side-module',
           },
           {
             path: 'lib/postgresql/postgis_topology-3.so',
-            size: 24359324,
+            size: 5717656,
             sha256:
-              'a181b3537678864a8799054e4e59503773b9c5acecfb6e3f3cc6aed076dcbc3d',
+              'a4aafe477c091e82a79bd21b5788c6559527c87ea99bd3a81dbc37e85d856fff',
             kind: 'side-module',
           },
           {
@@ -4085,23 +165,23 @@ export const generatedExtensionBackend = {
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/postgis.sql',
-            size: 293868,
+            size: 293870,
             sha256:
-              'dacdccc5230880685102deefd64d6cfe3a18d3f50895e804b88b6085beafe776',
+              '3d9e251869581d4772371fe253ec9fe60ae0bbfa0fbf2b38e48d160698479134',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/postgis_upgrade.sql',
-            size: 373866,
+            size: 373868,
             sha256:
-              '340b0093750b6a33860e76c8b08fb23f0cb2c63d80a72dff6decfb363e5b4a42',
+              'da7b413e606015bbec2af9bcff6636a609086b4892982cc9e9e2365071b72ed3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/rtpostgis.sql',
-            size: 290789,
+            size: 290791,
             sha256:
-              'a11cdf9194b7a5f423cb8a245cd0b0899b49a4a6c51278346e96e4862ba7aa7f',
+              'e0dda1ab717c06e4d3c90a9c733b021f0b4da3cfc0761c1b8fdd04979c822a66',
             kind: 'sql',
           },
           {
@@ -4113,9 +193,9 @@ export const generatedExtensionBackend = {
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/rtpostgis_upgrade.sql',
-            size: 356662,
+            size: 356664,
             sha256:
-              '9374f1b583f96ea72013ceeb6870969c62706aaab094e7325646351099236493',
+              '724c3db610af4f3a9632c1c22f354bb547f46d0c358328150ecd0bd671b3b5e6',
             kind: 'sql',
           },
           {
@@ -4127,926 +207,926 @@ export const generatedExtensionBackend = {
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/topology.sql',
-            size: 257129,
+            size: 257131,
             sha256:
-              'ae368aff2f6bf2893a67a7bd2d1851b71d902104afd545a32a6e4e6b1d2a13c0',
+              'd91ce02ff5bae2d3b039b145d7c7b438744b2f9d0f6b226d79031e386fab51fc',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/topology_upgrade.sql',
-            size: 294281,
+            size: 294283,
             sha256:
-              'c26aece3f5583bd006d9911a03582b4d3ed0d35f35b40cb23967f1e98f08bb15',
+              '3fd8e3f57fb065e677a2edff3c4bd3c5e77e585318da12c998d8b487ee609374',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/uninstall_legacy.sql',
             size: 16493,
             sha256:
-              '8af35a77a59a05a433298dd357d79798681419d0e2b6f1819fe46dd3cc81188e',
+              'e46a72b5dcf3067b58bf176656f3e35dd106a19cf6791b66fa55279ae1aa8616',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/uninstall_postgis.sql',
             size: 66343,
             sha256:
-              'cf502d6c74b557a5c35d8f009165ba01bec43202a1c323532c0745d956d7a17a',
+              '8d62e6a996d760ceb12fcf9749d2c96fb398ac9458a26cbe47f559205bcbc2ae',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/uninstall_rtpostgis.sql',
             size: 69837,
             sha256:
-              '161a5c218a27391a2c88911cf0d94566c2c483fd8bf0685f39509408a8f746ef',
+              '20b8782eb51d58b01f005bfae60d3da278798f8a8ed43261785aaeeab5c88f22',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/contrib/postgis-3.6/uninstall_topology.sql',
             size: 18038,
             sha256:
-              '2160ade18488a999d2fbd90e2f6a7dcf58dae301b6ad4ad345d54a4d277a92c1',
+              'd4094736a0bec022e73185aa79aee049414a917f4c9b209193e80fe32aa60ead',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.0.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.1.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.2.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.10--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.11--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.3.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.10--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.4.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--2.5.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.10--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.11--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.12--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.0.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.10--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.11--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.12--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.13--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.1.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.2.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.6--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.7--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.8--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.3.9--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.4.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.3--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.4--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.5.5--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.6.0--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.6.1--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.6.2--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--3.6.2.sql',
-            size: 7478094,
+            size: 7478096,
             sha256:
-              'fcd63c149da39bdb977577de6669f7e7df8b7609a7b51ad4a1dc88faca10dbbb',
+              '1264636a98fd775f95e906a23e75ac59b5f9f675f39352a380e40a39ad258d29',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--ANY--3.6.2.sql',
-            size: 7853880,
+            size: 7853882,
             sha256:
-              'b3139343e4c8ba85bd68916a4479f248cc4fa5bcc3803526808ff4bfdc9d120d',
+              '30a60df1f70cc9b05d3ded889bcf81de1ecdc68008df40cdbdeaf58c0d616d5d',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--TEMPLATED--TO--ANY.sql',
             size: 109,
             sha256:
-              'bc0a6a55368738a97ae40a011dd8788c5c35842dd593bb5a32490ab757651d42',
+              '41de9740501c5ac93c8543fb49d124b55cd39f0f98d17683454fcc4bf12c0b15',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis--unpackaged--3.6.2.sql',
-            size: 7934302,
+            size: 7934304,
             sha256:
-              '12e3140f19db332fd5c24c53f2797fd8d3f253a9f19a731be83eed79bbd8c69b',
+              'a7651da716392bbd1fb80b4fb8c51ca8c3c2844380309e8172d0e0c681fdbfac',
             kind: 'sql',
           },
           {
@@ -5067,882 +1147,882 @@ export const generatedExtensionBackend = {
             path: 'share/postgresql/extension/postgis_raster--2.0.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.0.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.1.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.2.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.10--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.11--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.3.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.10--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.4.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--2.5.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.10--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.11--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.12--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.0.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.10--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.11--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.12--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.13--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.1.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.2.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.6--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.7--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.8--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.3.9--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.4.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.3--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.4--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.5.5--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.6.0--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.6.1--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.6.2--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--3.6.2.sql',
-            size: 299137,
+            size: 299139,
             sha256:
-              'ce99833dae6c38f3d77f8f62cb25787e3b00ba1c2b2a5b2ade24cca6683cf344',
+              '39b84f39a7ace9625e23871a8cdd4d5fca28cd366823ed8b592ccac4e7a8ef44',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--ANY--3.6.2.sql',
-            size: 371991,
+            size: 371993,
             sha256:
-              '5c2539ea61c8c475669e6aea4b5c8669b2d16919f6f7a24c0c9f92b80992a6db',
+              '636bcfbb3bb9ee88f70899bdf170298ea600ba69d4c2e75b386485a61c84baf3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--TEMPLATED--TO--ANY.sql',
             size: 123,
             sha256:
-              '9953e532a5d0f5e89f4e3b4550c131e60a5c62ec0cb19f64afd47a1230800f3c',
+              'a8ecf8c8b24d8d8306e45754d7c85821b77a197cfce547778f042206357fd7c3',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_raster--unpackaged--3.6.2.sql',
-            size: 448806,
+            size: 448808,
             sha256:
-              'd4e5e990350539826c1d9570ce675e244a10f72dc859caa0d1507b75b979116c',
+              'f285b9ecfdba88e5307985a4e3e2d7e28b92c72c996a8375eb45a179045b190b',
             kind: 'sql',
           },
           {
@@ -5963,854 +2043,854 @@ export const generatedExtensionBackend = {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.10--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.11--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.10--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.10--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.11--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.12--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.10--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.11--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.12--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.13--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.6--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.7--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.8--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.9--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.3--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.4--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.5--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.0--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.1--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.2--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
@@ -6831,7 +2911,7 @@ export const generatedExtensionBackend = {
             path: 'share/postgresql/extension/postgis_tiger_geocoder--TEMPLATED--TO--ANY.sql',
             size: 139,
             sha256:
-              '0a929a7f2069115a8d0d4520daf0b76d7f1b2afe649e5261d93a0f7699cb5895',
+              '5042af78b9fd7c14b0e23bf6872b86311f52e704d01fa019efa86715dee2fd7e',
             kind: 'sql',
           },
           {
@@ -6852,882 +2932,882 @@ export const generatedExtensionBackend = {
             path: 'share/postgresql/extension/postgis_topology--2.0.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.0.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.1.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.2.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.10--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.11--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.3.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.10--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.4.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--2.5.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.10--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.11--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.12--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.0.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.10--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.11--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.12--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.13--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.1.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.2.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.6--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.7--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.8--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.3.9--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.4.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.3--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.4--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.5.5--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.6.0--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.6.1--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.6.2--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--3.6.2.sql',
-            size: 257449,
+            size: 257451,
             sha256:
-              '101aa3798ab9b438626d697dc873a45b4b307e5c3f111212e0194df0a2c715f9',
+              'b25dec795e33f0963c71fa5ebf0211cd7b6315dfc2ab1af2b9b7d882889342d0',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--ANY--3.6.2.sql',
-            size: 298353,
+            size: 298355,
             sha256:
-              'b92af3f86a64f9f4237b6a53ce7746f7035023502513a1101ae52ffb6b82e76b',
+              'cb7343f9871aeb1ac5c7dbc66d7af19d4fd84b499007e58a0e1f2d962c9bc389',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--TEMPLATED--TO--ANY.sql',
             size: 127,
             sha256:
-              '549f9d0833ff38de27cf844b0a7b1ddeef0e10527bd8cf88542a219d073436d6',
+              'fc24c621841af1dff42a0238247173276663911666b5dbae826a66ec9f73fc66',
             kind: 'sql',
           },
           {
             path: 'share/postgresql/extension/postgis_topology--unpackaged--3.6.2.sql',
-            size: 311246,
+            size: 311248,
             sha256:
-              '08f88e8a14583845dd2a5e6e37a5b634b006a0784d173e85db9f2db1eb33a254',
+              '7be7a5a9a1e887f1c0b808b5b4bcd2eb5a410d7bf9d34a83f01c320aaf1768f2',
             kind: 'sql',
           },
           {
@@ -7862,30 +3942,4013 @@ export const generatedExtensionBackend = {
             logicalName: 'postgis',
             path: 'lib/postgresql/postgis-3.so',
             sha256:
-              '154507231b00fb5cb1748c8bce366c2f03fc6be64060dba73e7246810b857b69',
-            wasmAbiSection: 'pglite.multi-memory.abi',
+              '2462430f2c230fed5502759f891154b356217981a5c054a294a3d7284e993c53',
+            wasmAbiSection: 'classic',
             importsHash:
-              'b5250b344c64eb661252d729ac300c7b024c5c2c97e59b1e34cca10b4df1c751',
+              'c500cadc2f65f4e6c5d22b5253478e7350a33930634c8af3348c1489d018f38c',
             loadAfter: [],
           },
           {
             logicalName: 'postgis_raster',
             path: 'lib/postgresql/postgis_raster-3.so',
             sha256:
-              'f9a181da4b7069856f17dd866d8e0f1013a609be2f51c59068f611446a50dcad',
-            wasmAbiSection: 'pglite.multi-memory.abi',
+              'eca3a2247bdc136738337f3dcae8898c00377530809ea538f8ea60a18c5f386d',
+            wasmAbiSection: 'classic',
             importsHash:
-              '4ea29aec8716cd9e528fb6063c62252af97218ea83153a5a7e248664cc39555a',
+              '56c0b3c5ca8c713a40513969182bc7c8808edc68d2c30b767fc461b2b18fe409',
             loadAfter: ['postgis:postgis'],
           },
           {
             logicalName: 'postgis_topology',
             path: 'lib/postgresql/postgis_topology-3.so',
             sha256:
-              'a181b3537678864a8799054e4e59503773b9c5acecfb6e3f3cc6aed076dcbc3d',
+              'a4aafe477c091e82a79bd21b5788c6559527c87ea99bd3a81dbc37e85d856fff',
+            wasmAbiSection: 'classic',
+            importsHash:
+              'f4de7285068bd36a64043d6d8931ffa2aa2ee73f07a070b50242f208849d41fd',
+            loadAfter: ['postgis:postgis'],
+          },
+        ],
+        requiredSharedPreloadLibraries: [],
+        processConfig: {
+          pgliteEnv: {
+            POSTGIS_GDAL_ENABLED_DRIVERS: 'ENABLE_ALL',
+            POSTGIS_ENABLE_OUTDB_RASTERS: 1,
+            PROJ_DATA: {
+              artifactPath: 'share/proj',
+            },
+          },
+          requiredHostCapabilities: [],
+        },
+        capabilities: {
+          directSharedMemory: false,
+          backgroundWorkers: false,
+          parallelWorkers: false,
+        },
+      },
+      url: new URL('../release/postgis.wasm32-classic.tar.gz', import.meta.url),
+    },
+    'wasm32-multi-memory': {
+      targetKey: 'wasm32-multi-memory',
+      target: {
+        pointerWidth: 32,
+        memoryAddressWidth: 32,
+        topology: 'multi-memory',
+        postgresMajor: 18,
+        postgresAbi:
+          'postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32',
+        pgliteExtensionAbi: 'pglite-extension-abi-v1',
+        memoryAbi: 'pglite-tagged-i32-v1',
+        hostAbi: 'pglite-host-abi-v1',
+      },
+      archiveBytes: 15735697,
+      archiveSha256:
+        'b750b410513a75973842c6f6be1c82e1e9c325da57e4c8cc7a3084d421482b17',
+      manifestSha256:
+        '422c17760e995b7695814ce26d3312d346b620c46eebd8473b45e3a90907a836',
+      manifest: {
+        formatVersion: 1,
+        extensionName: 'postgis',
+        extensionVersion: '0.2.4',
+        target: {
+          pointerWidth: 32,
+          memoryAddressWidth: 32,
+          topology: 'multi-memory',
+          postgresMajor: 18,
+          postgresAbi:
+            'postgres-180003-catalog-202506291-block-8192-wal-8192-wasm32',
+          pgliteExtensionAbi: 'pglite-extension-abi-v1',
+          memoryAbi: 'pglite-tagged-i32-v1',
+          hostAbi: 'pglite-host-abi-v1',
+        },
+        artifactDependencies: [],
+        postgresExtensions: [
+          {
+            name: 'postgis',
+            requires: [],
+          },
+          {
+            name: 'postgis_raster',
+            requires: [],
+          },
+          {
+            name: 'postgis_tiger_geocoder',
+            requires: ['postgis', 'fuzzystrmatch'],
+          },
+          {
+            name: 'postgis_topology',
+            requires: [],
+          },
+        ],
+        files: [
+          {
+            path: 'bin/pgtopo_export',
+            size: 4347,
+            sha256:
+              'd68e5f28e600f0f0340c2dec05de14448e1f88c404ca8a3c1ba678cd3f091e8e',
+            kind: 'other',
+          },
+          {
+            path: 'bin/pgtopo_import',
+            size: 7376,
+            sha256:
+              '412d4f311237e4534ab3c3e3dd7c38c81d8228bf60fa16a30efcfa8ea076e6ae',
+            kind: 'other',
+          },
+          {
+            path: 'bin/postgis_restore',
+            size: 139652,
+            sha256:
+              '0450f8b9008feb98c97f27cd064e1b1031f91bd192a80a4fec86aa6477fbf654',
+            kind: 'other',
+          },
+          {
+            path: 'lib/postgresql/postgis-3.so',
+            size: 27649397,
+            sha256:
+              'dfcbebd04bd359e6fa7153d4cf4f5dfa000b27060743ffa0d506254481234c0a',
+            kind: 'side-module',
+          },
+          {
+            path: 'lib/postgresql/postgis_raster-3.so',
+            size: 9153447,
+            sha256:
+              '6a24227004f8c29bb78fd637cf3fc737d8b2eb0832473a375a4226d04a2ecd91',
+            kind: 'side-module',
+          },
+          {
+            path: 'lib/postgresql/postgis_topology-3.so',
+            size: 8787550,
+            sha256:
+              '0c385decf466410c8ac4a65218e14afac894d0a06909b5290e6c4dee15f57077',
+            kind: 'side-module',
+          },
+          {
+            path: 'share/man/man1/pgsql2shp.1',
+            size: 3327,
+            sha256:
+              'bd4c77d12c16abdca6a35b7ad6030e3b4a3848267163fa7bd04a78cadb50952b',
+            kind: 'data',
+          },
+          {
+            path: 'share/man/man1/pgtopo_export.1',
+            size: 1119,
+            sha256:
+              '21588727c7aaea43812372917981b44cb9dd5e0fbd17e1931a5de3816bb29625',
+            kind: 'data',
+          },
+          {
+            path: 'share/man/man1/pgtopo_import.1',
+            size: 1375,
+            sha256:
+              '45fe9dd67502dd7ce7519ebe5c53935e53fca8b06847560e5ebdd0f4ee670c48',
+            kind: 'data',
+          },
+          {
+            path: 'share/man/man1/postgis.1',
+            size: 670,
+            sha256:
+              '0d1992f79673c63a60ca4701fde3890d291b9934ec9cdc9524bf04c6574b4f69',
+            kind: 'data',
+          },
+          {
+            path: 'share/man/man1/postgis_restore.1',
+            size: 1350,
+            sha256:
+              '04529897ca5d55f2980f052155be2553938e55fe13e3a2a3080f547cb7f72fb1',
+            kind: 'data',
+          },
+          {
+            path: 'share/man/man1/shp2pgsql.1',
+            size: 5465,
+            sha256:
+              '1302e4979b3f0ed0a241a7047e2e0fc5c2423c305cb86df7db0080c13dd71fbb',
+            kind: 'data',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/legacy.sql',
+            size: 60270,
+            sha256:
+              'ad2a5680a9c29f111151de33518cbefd2570f273c5d322a6c81128a752081a1e',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/legacy_gist.sql',
+            size: 1225,
+            sha256:
+              '2ad65406179a7a753e6306f0b23a65adcead77f166fb4ebe9b30c59ff73a7e70',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/legacy_minimal.sql',
+            size: 2462,
+            sha256:
+              '2b68afc330ac170888aeb8b3c0f03e9765864ef2e5db853f11e8b65de8106ad5',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/postgis.sql',
+            size: 293870,
+            sha256:
+              'f949eeb66fad58eb60e1ff653437f4d959ca42d31fe143ebade1cfb7ac815f0a',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/postgis_upgrade.sql',
+            size: 373868,
+            sha256:
+              '56ff6e4efc9a6f2f2a474e032cdc5c4eab55a3e252a35e52c923881cc5d6dcab',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis.sql',
+            size: 290791,
+            sha256:
+              'e0dda1ab717c06e4d3c90a9c733b021f0b4da3cfc0761c1b8fdd04979c822a66',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis_legacy.sql',
+            size: 5714,
+            sha256:
+              '19976c4b54a5611848bd6179ac5988aff28272962ceb27fc9ca9aa597fbc8eb2',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/rtpostgis_upgrade.sql',
+            size: 356664,
+            sha256:
+              '724c3db610af4f3a9632c1c22f354bb547f46d0c358328150ecd0bd671b3b5e6',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/spatial_ref_sys.sql',
+            size: 7166554,
+            sha256:
+              '5b41d27b27ee8b4d895fb91c824c4d983c19b6fe51047c1063097b2feb4fd6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/topology.sql',
+            size: 257131,
+            sha256:
+              'd91ce02ff5bae2d3b039b145d7c7b438744b2f9d0f6b226d79031e386fab51fc',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/topology_upgrade.sql',
+            size: 294283,
+            sha256:
+              '3fd8e3f57fb065e677a2edff3c4bd3c5e77e585318da12c998d8b487ee609374',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/uninstall_legacy.sql',
+            size: 16493,
+            sha256:
+              'b8f052f309c97024a069baea208c92dcd2a91707ec445df35dcc82e3535db6a3',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/uninstall_postgis.sql',
+            size: 66343,
+            sha256:
+              '710bf56bb3856d52d08ceb9dd43daaa691c756f04e68055ebffc0fed15004e49',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/uninstall_rtpostgis.sql',
+            size: 69837,
+            sha256:
+              '2269ae62430695ad65584bb70ea88df4f3cdb3be8fa1dd5c01aa2353ab8bc86f',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/contrib/postgis-3.6/uninstall_topology.sql',
+            size: 18038,
+            sha256:
+              '9638d0c6891c407361f677bf80c0b8c8e89d14057032da7bcfbf2dee5cece812',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.0.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.1.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.2.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.10--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.11--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.3.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.10--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.4.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--2.5.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.10--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.11--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.12--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.0.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.10--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.11--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.12--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.13--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.1.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.2.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.6--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.7--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.8--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.3.9--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.4.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.3--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.4--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.5.5--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.6.0--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.6.1--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.6.2--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--3.6.2.sql',
+            size: 7478096,
+            sha256:
+              '79a5e3a7b53ec8236be863d029f73cb70d51868af8945a663228e26765db2000',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--ANY--3.6.2.sql',
+            size: 7853882,
+            sha256:
+              '5096844359bdc00b1e6e7932971f7f96a48276ecfac4d3388e0bd994878d72cc',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--TEMPLATED--TO--ANY.sql',
+            size: 109,
+            sha256:
+              '317a2cc5192392d0b90b30b8ee6baacdce4fbb49ee9b25d03621e54809e655a4',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--unpackaged--3.6.2.sql',
+            size: 7934304,
+            sha256:
+              'b9e068c9880dad0d95d6856cb30a124183965f95b6144c1f12fa3a96cd2e615b',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis--unpackaged.sql',
+            size: 22,
+            sha256:
+              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis.control',
+            size: 175,
+            sha256:
+              '2802c2bb571cf648daafb834a452a7dc884ef359116a1b17ab4c4acd6155e699',
+            kind: 'control',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.0.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.1.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.2.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.10--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.11--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.3.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.10--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.4.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--2.5.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.10--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.11--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.12--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.0.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.10--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.11--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.12--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.13--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.1.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.2.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.6--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.7--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.8--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.3.9--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.4.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.3--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.4--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.5.5--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.6.0--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.6.1--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.6.2--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--3.6.2.sql',
+            size: 299139,
+            sha256:
+              '39b84f39a7ace9625e23871a8cdd4d5fca28cd366823ed8b592ccac4e7a8ef44',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--ANY--3.6.2.sql',
+            size: 371993,
+            sha256:
+              '636bcfbb3bb9ee88f70899bdf170298ea600ba69d4c2e75b386485a61c84baf3',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--TEMPLATED--TO--ANY.sql',
+            size: 123,
+            sha256:
+              'db7ecdd815ae0bf75fee320eb2081e9a008dbe5c018baf960fb93ca1b37238eb',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--unpackaged--3.6.2.sql',
+            size: 448808,
+            sha256:
+              '65bf121352d709840334a80a90475b1e02c0d9d88ae14c13eea5032def16331a',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster--unpackaged.sql',
+            size: 22,
+            sha256:
+              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_raster.control',
+            size: 184,
+            sha256:
+              '9eceded433f1c00e4ed30f81753341e6c1784daf48eb669dd6206841b86439e6',
+            kind: 'control',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.0.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.1.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.2.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.10--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.11--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.3.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.10--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.4.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--2.5.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.10--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.11--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.12--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.0.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.10--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.11--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.12--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.13--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.1.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.2.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.6--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.7--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.8--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.3.9--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.4.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.3--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.4--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.5.5--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.0--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.1--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.2--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--3.6.2.sql',
+            size: 1071027,
+            sha256:
+              'b5b0d2a149e8c76dba2088f46542632dd520ada200e392368ca21e6f4d6c80ad',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--ANY--3.6.2.sql',
+            size: 993724,
+            sha256:
+              '12e39fe0e34a6b887a2b64547bc9e5d3da82d1e5619faab06bd721305a25549b',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--TEMPLATED--TO--ANY.sql',
+            size: 139,
+            sha256:
+              '4c51b3537e35ec28f59585ff353c7d9fba9049836c9489f770764ea6878bf6cf',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder--unpackaged--3.6.2.sql',
+            size: 8024,
+            sha256:
+              '47c920d2761bb801195d0b2e8d8271f8452a0ac2025406ccbea0e3bef2156a98',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_tiger_geocoder.control',
+            size: 242,
+            sha256:
+              '06de017001724d948e8fcd786bcfb7b557e2015d64b5c35964f52bf3aa108455',
+            kind: 'control',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.0.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.1.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.2.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.10--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.11--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.3.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.10--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.4.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--2.5.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.10--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.11--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.12--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.0.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.10--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.11--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.12--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.13--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.1.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.2.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.6--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.7--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.8--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.3.9--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.4.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.3--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.4--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.5.5--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.6.0--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.6.1--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.6.2--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--3.6.2.sql',
+            size: 257451,
+            sha256:
+              'b25dec795e33f0963c71fa5ebf0211cd7b6315dfc2ab1af2b9b7d882889342d0',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--ANY--3.6.2.sql',
+            size: 298355,
+            sha256:
+              'cb7343f9871aeb1ac5c7dbc66d7af19d4fd84b499007e58a0e1f2d962c9bc389',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--TEMPLATED--TO--ANY.sql',
+            size: 127,
+            sha256:
+              '6930f4b2a84dcebe2030d2ffb6302dd0a24aff748a8c853deba5c18b43a87626',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--unpackaged--3.6.2.sql',
+            size: 311248,
+            sha256:
+              '0a01135773cfe0b3f9f5906b5b960e892246dfdaddc1c3c5d7bd53c5688e2281',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology--unpackaged.sql',
+            size: 22,
+            sha256:
+              'b087a58822eb6a999cdfcd2d4849fa1d976533ca5e60039a7c3bb6c9a02e9b68',
+            kind: 'sql',
+          },
+          {
+            path: 'share/postgresql/extension/postgis_topology.control',
+            size: 169,
+            sha256:
+              '20b2dbe09b5ae8fa3eb5130173c6e4af5873f1de464ab84d5aca4babef6e6c86',
+            kind: 'control',
+          },
+          {
+            path: 'share/proj/CH',
+            size: 1097,
+            sha256:
+              '6c53ea40a2c60325ba6c6b9a2b9c143bd165671c38820ecd8f23caab4a264ab5',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/GL27',
+            size: 728,
+            sha256:
+              '85375e6315d6f644e4577dadf3c5f157528ad15b715c99b287bddab23d44193d',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/ITRF2000',
+            size: 2099,
+            sha256:
+              '5225c3b3367a37021e639cfd5bd1521d2bd5d00cbc474cd6b3b3827615a4fe72',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/ITRF2008',
+            size: 5682,
+            sha256:
+              'dc6985d5721e2e1d18fac996dee5dec90244ef3e20c38f72205e32d8842af2e2',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/ITRF2014',
+            size: 3490,
+            sha256:
+              '5fa17d6b66928ee6cb01ae4174ff8bf32458468bf817089df119779dfd382efa',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/ITRF2020',
+            size: 5711,
+            sha256:
+              'fb2fd52951adb9b32334757ed412fe5cdb9c8533af28421fa191dba7b4d73dcb',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/deformation_model.schema.json',
+            size: 17671,
+            sha256:
+              'ba0c5911117207a936fc738c1e31da001b45b51193773ce0c6742143f372b99d',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/nad.lst',
+            size: 6385,
+            sha256:
+              '1a28ed872fd1550f5bf7b5a5e5bfc5e7500b5f94c9745b84a1d156b32039928c',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/nad27',
+            size: 19535,
+            sha256:
+              '0bc231922461ac758922c6a7251e96d7e53e656608b1b4f06b7848fa8fc25520',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/nad83',
+            size: 16593,
+            sha256:
+              '9a6260c8680abe5216ca8fe985998fababc121b0032879a821d75cae3411dc96',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/other.extra',
+            size: 3915,
+            sha256:
+              'c1ef74c0a9b3e1f42a576c15bc43666c135b7e9361db5727a353204da279ccbb',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/proj.db',
+            size: 9564160,
+            sha256:
+              'a1fccd0ca4835fffaea5cc2e5cff9afdaf36d5ba0cdb811a2ff7b7c1d8951054',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/proj.ini',
+            size: 2435,
+            sha256:
+              'b95ebf0d007339244483d65d571cd887a51806e2bd2c1ab7f47b897d25320d65',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/projjson.schema.json',
+            size: 38418,
+            sha256:
+              '67f090556bae996522edad482597c0f9e1b919ca4c9288ac9f8f7cd4180f49b6',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/triangulation.schema.json',
+            size: 8403,
+            sha256:
+              'b1528266667d4f3e87072c74e370b27135101515a9012a25287fcf312cea179a',
+            kind: 'data',
+          },
+          {
+            path: 'share/proj/world',
+            size: 7079,
+            sha256:
+              'f271cd3e56c7759d2fcfbbbd39870264eb81064155713c04fc92eadd30adeb48',
+            kind: 'data',
+          },
+        ],
+        sideModules: [
+          {
+            logicalName: 'postgis',
+            path: 'lib/postgresql/postgis-3.so',
+            sha256:
+              'dfcbebd04bd359e6fa7153d4cf4f5dfa000b27060743ffa0d506254481234c0a',
             wasmAbiSection: 'pglite.multi-memory.abi',
             importsHash:
-              'c186cbff6648aab97766b2f0746642fd6ab960a850782147500dd691c46eac96',
+              'b6d9003968baa9924762b85d9ea917165d11ad4a6dc0ef2e6da48b4e9a0f5a3f',
+            loadAfter: [],
+          },
+          {
+            logicalName: 'postgis_raster',
+            path: 'lib/postgresql/postgis_raster-3.so',
+            sha256:
+              '6a24227004f8c29bb78fd637cf3fc737d8b2eb0832473a375a4226d04a2ecd91',
+            wasmAbiSection: 'pglite.multi-memory.abi',
+            importsHash:
+              'fb72a15078799a85a97c4a18b5d1573016f4ffd3400e0d7aacedc920eea22b19',
+            loadAfter: ['postgis:postgis'],
+          },
+          {
+            logicalName: 'postgis_topology',
+            path: 'lib/postgresql/postgis_topology-3.so',
+            sha256:
+              '0c385decf466410c8ac4a65218e14afac894d0a06909b5290e6c4dee15f57077',
+            wasmAbiSection: 'pglite.multi-memory.abi',
+            importsHash:
+              'b328b7b861820591170980f23ef6a25d5db61165150550c020f23e3d02ce7349',
             loadAfter: ['postgis:postgis'],
           },
         ],

@@ -34,6 +34,8 @@ describe(`postgis`, () => {
   })
 
   it('basic', async () => {
+    const point = await pg.query('SELECT ST_AsText(ST_Point(1, 2)) AS point')
+    expect(point.rows).toEqual([{ point: 'POINT(1 2)' }])
     await pg.exec(`
     CREATE TABLE vehicle_location (
     time TIMESTAMPTZ NOT NULL,
@@ -292,12 +294,12 @@ WHERE ST_Within(c.location, s.geom);`)
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_raster;')
     await pg.exec('CREATE EXTENSION IF NOT EXISTS postgis_topology;')
 
-    await pg.exec(`
+    const results = await pg.exec(`
   -- enable GDAL drivers (session or DB-level)
 SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';
 
--- 1) create a temp table with a tiny 2x2 raster (3 bands)
-CREATE TEMP TABLE gdal_test AS
+-- 1) create a table with a tiny 2x2 raster (3 bands)
+CREATE TABLE gdal_test AS
 SELECT 1 AS rid,
        ST_AddBand(
          ST_AddBand(
@@ -337,16 +339,43 @@ WITH src AS (
   SELECT ST_SummaryStats(rast,1) AS s1, ST_SummaryStats(rast,2) AS s2, ST_SummaryStats(rast,3) AS s3 FROM gdal_test
 ),
 roundtrip AS (
-  SELECT (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),1)).* AS r1,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),2)).* AS r2,
-         (ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),3)).* AS r3
+  SELECT ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),1) AS r1,
+         ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),2) AS r2,
+         ST_SummaryStats(ST_FromGDALRaster(ST_AsGDALRaster(rast,'PNG')),3) AS r3
   FROM gdal_test
 )
 SELECT
-  abs(src.s1.mean - roundtrip.r1.mean) < 1e-6 AS band1_mean_equal,
-  abs(src.s2.mean - roundtrip.r2.mean) < 1e-6 AS band2_mean_equal,
-  abs(src.s3.mean - roundtrip.r3.mean) < 1e-6 AS band3_mean_equal
+  abs((src.s1).mean - (roundtrip.r1).mean) < 1e-6 AS band1_mean_equal,
+  abs((src.s2).mean - (roundtrip.r2).mean) < 1e-6 AS band2_mean_equal,
+  abs((src.s3).mean - (roundtrip.r3).mean) < 1e-6 AS band3_mean_equal
 FROM src, roundtrip;
 `)
+    expect(results.at(-1)?.rows).toEqual([
+      {
+        band1_mean_equal: true,
+        band2_mean_equal: true,
+        band3_mean_equal: true,
+      },
+    ])
+    const savedData = await pg.dumpDataDir('gzip')
+    await pg.close()
+    pg = await PGlite.create({
+      extensions: { postgis },
+      loadDataDir: savedData,
+    })
+    await pg.exec("SET postgis.gdal_enabled_drivers = 'ENABLE_ALL'")
+    const restored = await pg.query(`
+      WITH decoded AS MATERIALIZED (
+        SELECT ST_FromGDALRaster(ST_AsGDALRaster(rast, 'PNG')) AS rast
+        FROM gdal_test
+      )
+      SELECT (ST_SummaryStats(rast, 1)).mean AS band1_mean,
+        (ST_SummaryStats(rast, 2)).mean AS band2_mean,
+        (ST_SummaryStats(rast, 3)).mean AS band3_mean
+      FROM decoded
+    `)
+    expect(restored.rows).toEqual([
+      { band1_mean: 10, band2_mean: 20, band3_mean: 30 },
+    ])
   })
 })

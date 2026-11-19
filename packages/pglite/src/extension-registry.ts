@@ -28,6 +28,7 @@ export interface PreparedExtensionSet {
   readonly requiredSharedPreloadLibraries: readonly string[]
   readonly fileOwners: ReadonlyMap<string, readonly string[]>
   readonly sideModuleOrder: readonly string[]
+  readonly sideModulePreloadOrder: readonly string[]
 }
 
 export interface PrepareExtensionSetOptions {
@@ -113,6 +114,11 @@ export function prepareExtensionSet(
   validateArtifactDependencies(prepared)
   const fileOwners = collectFileOwners(prepared)
   const sideModuleOrder = orderSideModules(prepared)
+  const sideModuleDependencies = new Set(
+    prepared.flatMap(({ descriptor }) =>
+      descriptor.manifest.sideModules.flatMap(({ loadAfter }) => loadAfter),
+    ),
+  )
   const process = mergeProcessConfiguration(
     prepared,
     options.coreProcessConfigKeys ?? new Set(),
@@ -124,6 +130,9 @@ export function prepareExtensionSet(
     requiredSharedPreloadLibraries: collectPreloads(prepared),
     fileOwners,
     sideModuleOrder,
+    sideModulePreloadOrder: sideModuleOrder.filter((identity) =>
+      sideModuleDependencies.has(identity),
+    ),
   }
 }
 

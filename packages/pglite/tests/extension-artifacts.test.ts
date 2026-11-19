@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+import { linkExtensionProvider } from '../src/extension-linker.js'
 import {
   PGLITE_EXTENSION_ABI,
   PGLITE_EXTENSION_ARTIFACT_FORMAT_VERSION,
@@ -281,5 +282,26 @@ describe('extension host capabilities', () => {
         new Set(['node', 'worker-threads']),
       ),
     ).not.toThrow()
+  })
+})
+
+describe('extension provider linking', () => {
+  test.each([1, 0])('links a provider with handle=%s', (handle) => {
+    const mod = {
+      stringToNewUTF8: vi.fn(() => 64),
+      _dlopen: vi.fn(() => handle),
+      _dlerror: vi.fn(() => 128),
+      UTF8ToString: vi.fn(() => 'provider relocation failed'),
+      _free: vi.fn(),
+    }
+    const link = () => linkExtensionProvider(mod, '/pglite/lib/provider.so')
+    if (handle === 0) {
+      expect(link).toThrow(/provider relocation failed/)
+    } else {
+      link()
+    }
+    expect(mod.stringToNewUTF8).toHaveBeenCalledWith('/pglite/lib/provider.so')
+    expect(mod._dlopen).toHaveBeenCalledWith(64, 258)
+    expect(mod._free).toHaveBeenCalledWith(64)
   })
 })

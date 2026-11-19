@@ -8,7 +8,25 @@ source "${SCRIPT_DIR}/toolchain.env"
 IMAGE_TAG="${PGLITE_EMSDK_VERSION}-${PGLITE_MULTI_MEMORY_IMAGE_REVISION}"
 SHARED_BUILDER_IMAGE=${PGLITE_MULTI_MEMORY_SHARED_BUILDER_IMAGE:-pglite-multi-memory-shared-builder:${IMAGE_TAG}}
 SHARED_TOOLS_IMAGE=${PGLITE_MULTI_MEMORY_IMAGE:-pglite-multi-memory-shared-tools:${IMAGE_TAG}}
+CLASSIC_BUILDER_IMAGE=pglite-multi-memory-classic-builder:${IMAGE_TAG}
+CLASSIC_TOOLS_IMAGE=${PGLITE_CLASSIC_IMAGE:-pglite-multi-memory-classic-tools:${IMAGE_TAG}}
 BUILDER_DIR="${REPO_ROOT}/postgres-pglite/pglite/builder"
+NPM_REGISTRY=${PGLITE_NPM_REGISTRY:-${NPM_CONFIG_REGISTRY:-${npm_config_registry:-}}}
+if [ -z "${NPM_REGISTRY}" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    NPM_REGISTRY=$(npm config get registry)
+  else
+    NPM_REGISTRY=https://registry.npmjs.org/
+  fi
+fi
+
+docker build \
+  --progress=plain \
+  --tag "${CLASSIC_BUILDER_IMAGE}" \
+  --build-arg "EMSDK_VER=${PGLITE_EMSDK_VERSION}" \
+  --build-arg 'PGLITE_WASM_FEATURE_FLAGS=' \
+  --file "${BUILDER_DIR}/Dockerfile" \
+  "${BUILDER_DIR}" >/dev/null
 
 docker build \
   --progress=plain \
@@ -27,7 +45,15 @@ docker build \
   --build-arg "NODE24_VERSION=${PGLITE_NODE24_VERSION}" \
   --build-arg "PNPM_VERSION=${PGLITE_PNPM_VERSION}" \
   --build-arg "VITEST_VERSION=${PGLITE_VITEST_VERSION}" \
+  --build-arg "NPM_CONFIG_REGISTRY=${NPM_REGISTRY}" \
   --file "${SCRIPT_DIR}/Dockerfile" \
+  "${SCRIPT_DIR}" >/dev/null
+
+docker build \
+  --tag "${CLASSIC_TOOLS_IMAGE}" \
+  --build-arg "PGLITE_TOOLS_IMAGE=${SHARED_TOOLS_IMAGE}" \
+  --build-arg "PGLITE_CLASSIC_BUILDER_IMAGE=${CLASSIC_BUILDER_IMAGE}" \
+  --file "${SCRIPT_DIR}/Dockerfile.classic" \
   "${SCRIPT_DIR}" >/dev/null
 
 printf '%s\n' "${SHARED_TOOLS_IMAGE}"
