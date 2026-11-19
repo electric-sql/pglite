@@ -31,12 +31,14 @@ function testInstatiationMethod(
       const pg = await instantiateDb()
       const res = await pg.query(`SELECT 1 as one;`)
       expect(res.rows[0]?.['one']).toBe(1)
+      await pg.close()
     })
 
     it('should instantiate with data dir argument', async () => {
       const pg = await instantiateDb('./pgdata-test')
       const res = await pg.query(`SELECT 1 as one;`)
       expect(res.rows[0]?.['one']).toBe(1)
+      await pg.close()
     })
 
     it('should instantiate with options', async () => {
@@ -45,6 +47,7 @@ function testInstatiationMethod(
       })
       const res = await pg.query(`SELECT 1 as one;`)
       expect(res.rows[0]?.['one']).toBe(1)
+      await pg.close()
     })
   })
 }
