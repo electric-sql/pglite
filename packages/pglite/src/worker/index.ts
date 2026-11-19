@@ -35,6 +35,7 @@ export class PGliteWorker
   #tabId: string
 
   #connected = false
+  #initError?: Error
 
   #workerProcess: Worker
   #workerID?: string
@@ -177,6 +178,12 @@ export class PGliteWorker
         this.#eventTarget.dispatchEvent(new Event('connected'))
         this.#debug = await this.#rpc('getDebugLevel')
         this.#ready = true
+      } else if (event.data.type === 'init-error') {
+        // The worker's `init()` rejected, so this tab will never be connected
+        const error = new Error(event.data.error.message)
+        Object.assign(error, event.data.error)
+        this.#initError = error
+        this.#eventTarget.dispatchEvent(new Event('init-error'))
       }
     })
 
@@ -192,11 +199,15 @@ export class PGliteWorker
     // Init array types
     // We don't await this as it will result in a deadlock
     // It immediately takes out the transaction lock as so another query
-    this._initArrayTypes()
+    this._initArrayTypes().catch((error) => {
+      // If the worker's `init()` failed this rejects with the same error that
+      // `waitReady` reports, so don't also raise it as an unhandled rejection
+      if (error !== this.#initError) throw error
+    })
   }
 
   async #leaderNotifyLoop() {
-    if (!this.#connected) {
+    if (!this.#connected && !this.#initError) {
       this.#broadcastChannel!.postMessage({
         type: 'tab-here',
         id: this.#tabId,
@@ -255,20 +266,31 @@ export class PGliteWorker
   }
 
   get waitReady() {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       this.#initPromise.then(() => {
-        if (!this.#connected) {
-          resolve(
-            new Promise<void>((resolve) => {
-              this.#eventTarget.addEventListener('connected', () => {
-                resolve()
-              })
-            }),
-          )
-        } else {
+        if (this.#initError) {
+          reject(this.#initError)
+        } else if (this.#connected) {
           resolve()
+        } else {
+          // Settle on whichever comes first: connected to the leader, or the
+          // leader reporting that its `init()` failed
+          const cleanup = () => {
+            this.#eventTarget.removeEventListener('connected', onConnected)
+            this.#eventTarget.removeEventListener('init-error', onInitError)
+          }
+          const onConnected = () => {
+            cleanup()
+            resolve()
+          }
+          const onInitError = () => {
+            cleanup()
+            reject(this.#initError)
+          }
+          this.#eventTarget.addEventListener('connected', onConnected)
+          this.#eventTarget.addEventListener('init-error', onInitError)
         }
-      })
+      }, reject)
     })
   }
 
@@ -553,14 +575,27 @@ export async function worker({ init }: WorkerOptions) {
   // Now we are the leader, start the worker
   const dbPromise = init(options)
 
+  // Tabs that have already been told that `init()` failed
+  const failedTabs = new Set<string>()
+
   // Start listening for messages from tabs
   broadcastChannel.onmessage = async (event) => {
     const msg = event.data
     switch (msg.type) {
-      case 'tab-here':
+      case 'tab-here': {
         // A new tab has joined,
-        connectTab(msg.id, await dbPromise, connectedTabs)
+        let pg: PGlite
+        try {
+          pg = await dbPromise
+        } catch (error) {
+          // `init()` rejected: tell the tab once, rather than re-throwing the
+          // same rejection for every retry it sends
+          failTab(msg.id, error, failedTabs)
+          break
+        }
+        connectTab(msg.id, pg, connectedTabs)
         break
+      }
     }
   }
 
@@ -570,12 +605,34 @@ export async function worker({ init }: WorkerOptions) {
   // Let the main thread know we are the leader
   postMessage({ type: 'leader-now' })
 
-  const db = await dbPromise
+  let db: PGlite
+  try {
+    db = await dbPromise
+  } catch {
+    // The failure is reported to each tab as it connects (see `failTab`)
+    return
+  }
 
   // Listen for notifications and broadcast them to all tabs
   db.onNotification((channel, payload) => {
     broadcastChannel.postMessage({ type: 'notify', channel, payload })
   })
+}
+
+function failTab(tabId: string, error: unknown, failedTabs: Set<string>) {
+  if (failedTabs.has(tabId)) {
+    return
+  }
+  failedTabs.add(tabId)
+  const tabChannel = new BroadcastChannel(`pglite-tab:${tabId}`)
+  tabChannel.postMessage({
+    type: 'init-error',
+    error: {
+      name: (error as Error)?.name ?? 'Error',
+      message: (error as Error)?.message ?? String(error),
+    },
+  })
+  tabChannel.close()
 }
 
 function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
