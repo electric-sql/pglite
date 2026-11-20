@@ -1,5 +1,7 @@
 import type {
   DebugLevel,
+  ExecProtocolOptions,
+  ExecProtocolOptionsStream,
   ExecProtocolResult,
   Extensions,
   PGliteInterface,
@@ -10,7 +12,10 @@ import type {
 import type { PGlite } from '../pglite.js'
 import { BasePGlite } from '../base.js'
 import { DumpTarCompressionOptions } from '../fs/tarUtils.js'
-import { BackendMessage } from '@electric-sql/pg-protocol/messages'
+import type {
+  BackendMessage,
+  NoticeMessage,
+} from '@electric-sql/pg-protocol/messages'
 import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type PGliteWorkerOptions<E extends Extensions = Extensions> =
@@ -332,26 +337,55 @@ export class PGliteWorker
    * @param message The postgres wire protocol message to execute
    * @returns The direct message data response produced by Postgres
    */
-  async execProtocolRaw(message: Uint8Array): Promise<Uint8Array> {
-    return (await this.#rpc('execProtocolRaw', message)) as Uint8Array
+  async execProtocolRaw(
+    message: Uint8Array,
+    options: ExecProtocolOptions = {},
+  ): Promise<Uint8Array> {
+    return (await this.#rpc(
+      'execProtocolRaw',
+      message,
+      cloneableOptions(options),
+    )) as Uint8Array
   }
 
   /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
+   * @param options.onNotice Called with each notice of the result, once the
+   * worker has answered
    * @returns The result of the query
    */
-  async execProtocol(message: Uint8Array): Promise<ExecProtocolResult> {
-    return await this.#rpc('execProtocol', message)
+  async execProtocol(
+    message: Uint8Array,
+    options: ExecProtocolOptions = {},
+  ): Promise<ExecProtocolResult> {
+    const result = await this.#rpc(
+      'execProtocol',
+      message,
+      cloneableOptions(options),
+    )
+    notify(result.messages, options.onNotice)
+    return result
   }
 
   /**
    * Execute a postgres wire protocol message
    * @param message The postgres wire protocol message to execute
+   * @param options.onNotice Called with each notice of the result, once the
+   * worker has answered
    * @returns The result of the query
    */
-  async execProtocolStream(message: Uint8Array): Promise<BackendMessage[]> {
-    return await this.#rpc('execProtocolStream', message)
+  async execProtocolStream(
+    message: Uint8Array,
+    options: ExecProtocolOptions = {},
+  ): Promise<BackendMessage[]> {
+    const messages = await this.#rpc(
+      'execProtocolStream',
+      message,
+      cloneableOptions(options),
+    )
+    notify(messages, options.onNotice)
+    return messages
   }
 
   /**
@@ -363,13 +397,21 @@ export class PGliteWorker
    * don't intend to use the above features.
    *
    * @param message The postgres wire protocol message to execute
-   * @returns The direct message data response produced by Postgres
+   * @param options.onRawData Callback to receive the data. The worker collects
+   * it and the callback is called with each chunk once the worker has answered.
    */
   async execProtocolRawStream(
     message: Uint8Array,
-    options: { onRawData: (data: Uint8Array) => void },
+    options: ExecProtocolOptionsStream,
   ): Promise<void> {
-    await this.#rpc('execProtocolRawStream', message, options)
+    const chunks = await this.#rpc(
+      'execProtocolRawStream',
+      message,
+      cloneableOptions(options),
+    )
+    for (const chunk of chunks) {
+      options.onRawData(chunk)
+    }
   }
 
   /**
@@ -655,8 +697,8 @@ function makeWorkerApi(tabId: string, db: PGlite) {
     async close() {
       await db.close()
     },
-    async execProtocol(message: Uint8Array) {
-      const { messages, data } = await db.execProtocol(message)
+    async execProtocol(message: Uint8Array, options?: CloneableOptions) {
+      const { messages, data } = await db.execProtocol(message, options)
       if (data.byteLength !== data.buffer.byteLength) {
         const buffer = new ArrayBuffer(data.byteLength)
         const dataCopy = new Uint8Array(buffer)
@@ -666,16 +708,26 @@ function makeWorkerApi(tabId: string, db: PGlite) {
         return { messages, data }
       }
     },
-    async execProtocolStream(message: Uint8Array) {
-      const messages = await db.execProtocolStream(message)
+    async execProtocolStream(message: Uint8Array, options?: CloneableOptions) {
+      const messages = await db.execProtocolStream(message, options)
       return messages
     },
-    async execProtocolRawStream(message: Uint8Array, options: any) {
-      const messages = await db.execProtocolRawStream(message, options)
-      return messages
+    async execProtocolRawStream(
+      message: Uint8Array,
+      options?: Pick<CloneableOptions, 'syncToFs'>,
+    ) {
+      // A callback cannot be sent to the tab, so the chunks are collected and
+      // sent back. The data is a view of the memory of the WASM module, so each
+      // chunk is copied.
+      const chunks: Uint8Array[] = []
+      await db.execProtocolRawStream(message, {
+        syncToFs: options?.syncToFs,
+        onRawData: (data) => chunks.push(data.slice()),
+      })
+      return chunks
     },
-    async execProtocolRaw(message: Uint8Array) {
-      const result = await db.execProtocolRaw(message)
+    async execProtocolRaw(message: Uint8Array, options?: CloneableOptions) {
+      const result = await db.execProtocolRaw(message, options)
       if (result.byteLength !== result.buffer.byteLength) {
         // The data is a slice of a larger buffer, this is potentially the whole
         // memory of the WASM module. We copy it to a new Uint8Array and return that.
@@ -753,6 +805,33 @@ async function acquireLock(lockId: string) {
     })
   })
   return release
+}
+
+/**
+ * The options of the `execProtocol*` methods that can be sent to the worker.
+ * Options are sent with `postMessage`, which cannot clone a function, so
+ * `onNotice` and `onRawData` stay on the tab (see `notify()` and
+ * `PGliteWorker.execProtocolRawStream()`).
+ */
+type CloneableOptions = Pick<ExecProtocolOptions, 'syncToFs' | 'throwOnError'>
+
+function cloneableOptions(
+  options: Partial<ExecProtocolOptions>,
+): CloneableOptions {
+  return { syncToFs: options.syncToFs, throwOnError: options.throwOnError }
+}
+
+/** Call `onNotice` with the notices among the messages of a result */
+function notify(
+  messages: BackendMessage[],
+  onNotice: ExecProtocolOptions['onNotice'],
+) {
+  if (!onNotice) return
+  for (const message of messages) {
+    if (message.name === 'notice') {
+      onNotice(message as NoticeMessage)
+    }
+  }
 }
 
 type WorkerApi = ReturnType<typeof makeWorkerApi>

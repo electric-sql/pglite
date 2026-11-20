@@ -521,12 +521,13 @@ export abstract class BasePGlite
         },
       }
 
+      let result: T
       try {
-        const result = await callback(tx)
+        result = await callback(tx)
         if (!closed) {
           closed = true
-          const [result] = await this.#runExec('COMMIT')
-          if (result.command === 'ROLLBACK') {
+          const [commitResult] = await this.#runExec('COMMIT')
+          if (commitResult.command === 'ROLLBACK') {
             throw makePGliteError({
               e: new TransactionAbortedError(),
               query: 'COMMIT',
@@ -535,16 +536,28 @@ export abstract class BasePGlite
             })
           }
         }
-        this.#inTransaction = false
-        return result
       } catch (e) {
-        if (!closed) {
-          closed = true
-          await this.#runExec('ROLLBACK')
+        try {
+          if (!closed) {
+            closed = true
+            await this.#runExec('ROLLBACK')
+          }
+        } finally {
+          this.#inTransaction = false
         }
-        this.#inTransaction = false
+        // The statements of a transaction do not sync, as that would be once
+        // per protocol message, so a transaction ends with one sync, like any
+        // other top level query. It must not hide the error that ended the
+        // transaction, a failing filesystem reports again on the next sync.
+        await this.syncToFs().catch(() => {})
         throw e
       }
+      // The COMMIT, like the other statements of a transaction, did not sync
+      // as `#inTransaction` was still set, so the transaction is only durable
+      // once it has synced here.
+      this.#inTransaction = false
+      await this.syncToFs()
+      return result
     })
   }
 
