@@ -81,10 +81,10 @@ const SHM_ALLOCATION_GENERATION_WORD_OFFSET = 5
 const GLOBAL_SHM_ALLOCATION_GENERATION_WORD =
   (0x1_0000 >>> 2) + SHM_ALLOCATION_GENERATION_WORD_OFFSET
 const SCOPED_SHM_MAGIC_READY = 0x5047_4c53
-const SCOPED_SHM_REGISTRY_VERSION = 4
-const SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS = 18_464 >>> 2
-const SCOPED_SHM_SCOPE_WORDS = 64 >>> 2
-const SCOPED_SHM_MAX_SCOPES = 640
+const SCOPED_SHM_REGISTRY_VERSION = 5
+const SCOPED_SHM_SEGMENT_DIRECTORY_OFFSET_WORDS = 32 >>> 2
+const SCOPED_SHM_SEGMENT_WORDS = 56 >>> 2
+const SCOPED_SHM_MAX_SEGMENTS = 256
 // Reconnecting clients retire a complete Worker and its private Wasm memory.
 // Ask V8 to collect those unreachable backing stores often enough to keep the
 // process RSS bounded under sustained session churn.
@@ -191,18 +191,10 @@ export interface PGliteScopedLifetimeDiagnostics {
   readonly readyRoots: number
   /** Sum of allocation/release events across all currently ready roots. */
   readonly allocationGeneration: number
-  readonly activeRootScopes: number
-  readonly activeSessionScopes: number
-  readonly activeTransactionScopes: number
-  readonly activeSubtransactionScopes: number
-  readonly activePortalScopes: number
-  readonly activeQueryScopes: number
-  readonly activeParallelContextScopes: number
-  readonly closingScopes: number
-  readonly deadScopes: number
+  readonly liveSegments: number
   readonly attachments: number
   readonly activeWorkers: number
-  /** Logically owned/reusable bytes, not the Wasm backing-store byteLength. */
+  /** Bytes in live or attached removed segments, excluding reusable free blocks. */
   readonly allocatedBytes: number
 }
 
@@ -1169,15 +1161,7 @@ function readScopedLifetimeDiagnostics(
 ): PGliteScopedLifetimeDiagnostics {
   let readyRoots = 0
   let allocationGeneration = 0
-  let activeRootScopes = 0
-  let activeSessionScopes = 0
-  let activeTransactionScopes = 0
-  let activeSubtransactionScopes = 0
-  let activePortalScopes = 0
-  let activeQueryScopes = 0
-  let activeParallelContextScopes = 0
-  let closingScopes = 0
-  let deadScopes = 0
+  let liveSegments = 0
   let attachments = 0
   let activeWorkers = 0
   let allocatedBytes = 0
@@ -1187,8 +1171,8 @@ function readScopedLifetimeDiagnostics(
     const registryWord = root.registryOffset >>> 2
     if (
       registryWord +
-        SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS +
-        SCOPED_SHM_MAX_SCOPES * SCOPED_SHM_SCOPE_WORDS >
+        SCOPED_SHM_SEGMENT_DIRECTORY_OFFSET_WORDS +
+        SCOPED_SHM_MAX_SEGMENTS * SCOPED_SHM_SEGMENT_WORDS >
         words.length ||
       Atomics.load(words, registryWord) !== SCOPED_SHM_MAGIC_READY ||
       Atomics.load(words, registryWord + 1) !== SCOPED_SHM_REGISTRY_VERSION
@@ -1200,47 +1184,24 @@ function readScopedLifetimeDiagnostics(
       words,
       registryWord + SHM_ALLOCATION_GENERATION_WORD_OFFSET,
     )
-    for (let slot = 0; slot < SCOPED_SHM_MAX_SCOPES; slot++) {
+    for (let slot = 0; slot < SCOPED_SHM_MAX_SEGMENTS; slot++) {
       const offset =
         registryWord +
-        SCOPED_SHM_SCOPE_DIRECTORY_OFFSET_WORDS +
-        slot * SCOPED_SHM_SCOPE_WORDS
+        SCOPED_SHM_SEGMENT_DIRECTORY_OFFSET_WORDS +
+        slot * SCOPED_SHM_SEGMENT_WORDS
       const state = Atomics.load(words, offset)
-      const kind = Atomics.load(words, offset + 1)
-      if (state === 1) {
-        if (kind === 1) activeRootScopes++
-        else if (kind === 2) activeSessionScopes++
-        else if (kind === 3) activeTransactionScopes++
-        else if (kind === 4) activeSubtransactionScopes++
-        else if (kind === 5) activePortalScopes++
-        else if (kind === 6) activeQueryScopes++
-        else if (kind === 7) activeParallelContextScopes++
-      } else if (state === 2) {
-        closingScopes++
-      } else if (state === 3) {
-        deadScopes++
-      }
       if (state !== 1 && state !== 2) continue
+      liveSegments++
       attachments += Atomics.load(words, offset + 6)
-      activeWorkers += Atomics.load(words, offset + 7)
-      allocatedBytes +=
-        Atomics.load(words, offset + 10) +
-        Atomics.load(words, offset + 11) * 0x1_0000_0000
+      allocatedBytes += Atomics.load(words, offset + 4)
     }
+    activeWorkers += root.members.size - (root.exited ? 0 : 1)
   }
 
   return {
     readyRoots,
     allocationGeneration,
-    activeRootScopes,
-    activeSessionScopes,
-    activeTransactionScopes,
-    activeSubtransactionScopes,
-    activePortalScopes,
-    activeQueryScopes,
-    activeParallelContextScopes,
-    closingScopes,
-    deadScopes,
+    liveSegments,
     attachments,
     activeWorkers,
     allocatedBytes,

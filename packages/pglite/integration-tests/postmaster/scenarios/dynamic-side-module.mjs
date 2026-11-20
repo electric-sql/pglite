@@ -46,7 +46,7 @@ try {
   sessions.push(first, second)
 
   await expectError(
-    first.exec(`
+    first.query(`
       CREATE FUNCTION pglite_dynamic_probe_raw(integer) RETURNS text
       AS '/pglite/data/${rawName}', 'pglite_dynamic_probe'
       LANGUAGE C STRICT
@@ -54,7 +54,7 @@ try {
     /memory ABI sections; expected exactly one/,
   )
   await expectError(
-    first.exec(`
+    first.query(`
       CREATE FUNCTION pglite_dynamic_probe_incompatible(integer) RETURNS text
       AS '/pglite/data/${incompatibleName}', 'pglite_dynamic_probe'
       LANGUAGE C STRICT
@@ -67,6 +67,26 @@ try {
     AS '/pglite/data/${transformedName}', 'pglite_dynamic_probe'
     LANGUAGE C STRICT
   `)
+  await first.query(`CREATE FUNCTION pglite_semaphore_probe(integer) RETURNS integer
+    AS '/pglite/data/${transformedName}', 'pglite_semaphore_probe' LANGUAGE C STRICT`)
+  await first.query(`CREATE FUNCTION pglite_interrupt_probe() RETURNS void
+    AS '/pglite/data/${transformedName}', 'pglite_interrupt_probe' LANGUAGE C STRICT`)
+  await first.exec("SET statement_timeout='100ms'")
+  await assert.rejects(
+    first.query('SELECT pglite_interrupt_probe()'),
+    /statement timeout/,
+  )
+  await first.exec('SET statement_timeout=0')
+  for (const [mode, tag] of [
+    [0, 0],
+    [1, 2],
+    [2, 3],
+  ]) {
+    assert.deepEqual(
+      (await first.query(`SELECT pglite_semaphore_probe(${mode}) AS tag`)).rows,
+      [{ tag }],
+    )
+  }
   const before = postmaster.diagnostics()
   const firstCall = parseProbe(
     (await first.query('SELECT pglite_dynamic_probe(7) AS value')).rows[0]
@@ -94,10 +114,46 @@ try {
   assert.equal(firstCall.value, (7 ^ 0x51a7_c0de) >>> 0)
   assert.equal(secondCall.value, (9 ^ 0x51a7_c0de) >>> 0)
   assert.equal(otherBackend.value, (11 ^ 0x51a7_c0de) >>> 0)
-  assert.equal(after.scopedLifetime.activeQueryScopes, 0)
-  assert.equal(after.scopedLifetime.activeParallelContextScopes, 0)
   assert.equal(
     after.scopedLifetime.allocatedBytes,
+    before.scopedLifetime.allocatedBytes,
+  )
+
+  // PostgreSQL's normal cleanup must reclaim root DSM on every error path.
+  for (let iteration = 0; iteration < 8; iteration++) {
+    await first.exec('BEGIN; SAVEPOINT probe_savepoint')
+    await expectError(
+      first.query('SELECT pglite_dynamic_probe(-1)'),
+      /dynamic probe requested failure/,
+    )
+    await first.exec('ROLLBACK TO SAVEPOINT probe_savepoint')
+    assert.equal(
+      postmaster.diagnostics().scopedLifetime.allocatedBytes,
+      before.scopedLifetime.allocatedBytes,
+    )
+    await first.query('SELECT pglite_dynamic_probe(1)')
+    await first.exec('RELEASE SAVEPOINT probe_savepoint; COMMIT')
+    assert.equal(
+      postmaster.diagnostics().scopedMemoryBytes,
+      after.scopedMemoryBytes,
+      'root DSM/DSA churn grew memory after its warm high-water mark',
+    )
+  }
+  await expectError(
+    first.query('SELECT pglite_dynamic_probe(-2147483648)'),
+    /could not get shared memory segment: Out of memory/,
+  )
+  const defaultCall = parseProbe(
+    (await first.query('SELECT pglite_dynamic_probe(0) AS value')).rows[0]
+      .value,
+  )
+  assert.equal(
+    defaultCall.scopedTag,
+    2,
+    'failed root allocation changed default placement',
+  )
+  assert.equal(
+    postmaster.diagnostics().scopedLifetime.allocatedBytes,
     before.scopedLifetime.allocatedBytes,
   )
 

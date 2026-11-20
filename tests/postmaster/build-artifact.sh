@@ -115,11 +115,13 @@ pnpm -C "${REPO_ROOT}/packages/pglite" exec eslint \
   tests/postmaster-exports.test.ts \
   --max-warnings=0
 
-grep -q '__PGLITE_POSTMASTER__' \
-  "${REPO_ROOT}/postgres-pglite/src/backend/port/posix_sema.c"
+test "$(readlink "${REPO_ROOT}/postgres-pglite/src/backend/port/pg_sema.c")" = \
+  "${REPO_ROOT}/postgres-pglite/pglite/src/pglitec/semaphore.c"
 grep -q 'pgl_futex_wait' \
-  "${REPO_ROOT}/postgres-pglite/src/backend/port/posix_sema.c"
-grep -q 'pgl_spawn_backend' \
+  "${REPO_ROOT}/postgres-pglite/pglite/src/pglitec/semaphore.c"
+grep -q 'pgl_launch_backend' \
   "${REPO_ROOT}/postgres-pglite/src/backend/postmaster/launch_backend.c"
+grep -q 'pgl_spawn_backend' \
+  "${REPO_ROOT}/postgres-pglite/pglite/src/pglitec/pglite_backend_launch.h"
 
 echo 'PGlite postmaster build and artifact tests: PASS'

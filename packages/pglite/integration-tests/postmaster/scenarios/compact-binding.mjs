@@ -16,19 +16,14 @@ const rootPrivate = sharedMemory(512)
 const childPrivate = sharedMemory(512)
 const globalMemory = sharedMemory(512)
 const root = await instantiate(rootPrivate, rootPrivate, 2)
-const rootScope = root.module._pgl_shm_scope_root()
 const registryOffset = root.module._pgl_shm_registry_offset() >>> 0
 
-assert.notEqual(rootScope, 0n)
 assert.ok(registryOffset > 0x20_000)
 assert.notEqual(registryOffset, 0x1_0000)
 const frontierAfterRegistry = root.module._pgl_shm_compact_frontier() >>> 0
 assert.ok(frontierAfterRegistry > registryOffset)
 
-const session = root.module._pgl_shm_scope_create(2, rootScope)
-const previousSession = root.module._pgl_shm_scope_enter(session)
-const query = root.module._pgl_shm_scope_create(6, session)
-const previousQuery = root.module._pgl_shm_scope_enter(query)
+const previousDomain = root.module._pgl_shm_domain_push(1)
 const shmid = root.module._pgl_shmget(0, 6 * 1024 * 1024, 0o1000)
 assert.ok(shmid > 0)
 const address = root.module._pgl_shmat(shmid, 0, 0) >>> 0
@@ -54,9 +49,8 @@ root.module._free(privateAllocation)
 // A parallel-style child has its own memory 0 but reaches the leader's exact
 // compact registry, sbrk frontier, and segment through inherited memory 2.
 const child = await instantiate(childPrivate, rootPrivate, 2)
-assert.equal(child.module._pgl_shm_scope_root(), rootScope)
 assert.equal(child.module._pgl_shm_registry_offset() >>> 0, registryOffset)
-const childPreviousQuery = child.module._pgl_shm_scope_enter(query)
+const childPreviousDomain = child.module._pgl_shm_domain_push(1)
 const childAddress = child.module._pgl_shmat(shmid, 0, 0) >>> 0
 assert.equal(childAddress, address)
 new Uint32Array(rootPrivate.buffer)[segmentOffset >>> 2] = 0x51a7_c0de
@@ -69,14 +63,11 @@ assert.ok(childShmid > 0)
 assert.ok(root.module._pgl_shm_compact_frontier() >>> 0 > frontierAfterScoped)
 
 assert.equal(child.module._pgl_shmctl(childShmid, 0, 0), 0)
-child.module._pgl_shm_scope_leave(childPreviousQuery)
+child.module._pgl_shm_domain_pop(childPreviousDomain)
 assert.equal(child.module._pgl_shmdt(childAddress), 0)
 assert.equal(root.module._pgl_shmctl(shmid, 0, 0), 0)
 assert.equal(root.module._pgl_shmdt(address), 0)
-root.module._pgl_shm_scope_leave(previousQuery)
-assert.equal(root.module._pgl_shm_scope_close(query), 0)
-root.module._pgl_shm_scope_leave(previousSession)
-assert.equal(root.module._pgl_shm_scope_close(session), 0)
+root.module._pgl_shm_domain_pop(previousDomain)
 
 // Repeat the same 8 MiB scoped plus 24 MiB private demand with a dedicated
 // memory 2. This is deliberately a value measurement, not a requirement that
@@ -85,19 +76,7 @@ assert.equal(root.module._pgl_shm_scope_close(session), 0)
 const dedicatedPrivate = sharedMemory(512)
 const dedicatedScoped = sharedMemory(2)
 const dedicated = await instantiate(dedicatedPrivate, dedicatedScoped, 1)
-const dedicatedRootScope = dedicated.module._pgl_shm_scope_root()
-const dedicatedSession = dedicated.module._pgl_shm_scope_create(
-  2,
-  dedicatedRootScope,
-)
-const dedicatedPreviousSession =
-  dedicated.module._pgl_shm_scope_enter(dedicatedSession)
-const dedicatedQuery = dedicated.module._pgl_shm_scope_create(
-  6,
-  dedicatedSession,
-)
-const dedicatedPreviousQuery =
-  dedicated.module._pgl_shm_scope_enter(dedicatedQuery)
+const dedicatedPreviousDomain = dedicated.module._pgl_shm_domain_push(1)
 const dedicatedShmidA = dedicated.module._pgl_shmget(0, 6 * 1024 * 1024, 0o1000)
 const dedicatedShmidB = dedicated.module._pgl_shmget(0, 2 * 1024 * 1024, 0o1000)
 assert.ok(dedicatedShmidA > 0)
@@ -108,10 +87,7 @@ assert.ok(dedicatedPrivateAllocation > 0)
 dedicated.module._free(dedicatedPrivateAllocation)
 assert.equal(dedicated.module._pgl_shmctl(dedicatedShmidB, 0, 0), 0)
 assert.equal(dedicated.module._pgl_shmctl(dedicatedShmidA, 0, 0), 0)
-dedicated.module._pgl_shm_scope_leave(dedicatedPreviousQuery)
-assert.equal(dedicated.module._pgl_shm_scope_close(dedicatedQuery), 0)
-dedicated.module._pgl_shm_scope_leave(dedicatedPreviousSession)
-assert.equal(dedicated.module._pgl_shm_scope_close(dedicatedSession), 0)
+dedicated.module._pgl_shm_domain_pop(dedicatedPreviousDomain)
 
 root.dispose()
 child.dispose()

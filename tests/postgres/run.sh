@@ -6,7 +6,7 @@ POSTMASTER_TEST_ROOT="${REPO_ROOT}/tests/postmaster"
 POSTGRES_TEST_ROOT="${REPO_ROOT}/tests/postgres"
 POSTMASTER_TEST=/postmaster-test
 OUT=/postgres-test
-NATIVE="${OUT}/native"
+NATIVE=${PGLITE_NATIVE_TEST_ROOT:-${OUT}/native}
 TARGET=${PGLITE_POSTGRES_TEST_TARGET:-check}
 JOBS=${PGLITE_POSTGRES_TEST_JOBS:-2}
 MAX_CONNECTIONS=${PGLITE_POSTGRES_TEST_MAX_CONNECTIONS:-4}
@@ -56,6 +56,7 @@ PROVIDER=$(node22 "${POSTGRES_TEST_ROOT}/prepare-test-provider.mjs" \
   "${PGLITE_CLI}")
 test "${PROVIDER}" = "${OUT}/provider"
 export PGLITE_TEST_PROVIDER="${PROVIDER}"
+export MAKEFILES="${POSTMASTER_TEST_ROOT}/native-build.mk"
 export PATH="${PROVIDER}/bin:${NATIVE}/build/src/bin/psql:${PATH}"
 export LD_LIBRARY_PATH="${NATIVE}/build/src/interfaces/libpq${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 export PGCTLTIMEOUT=${PGCTLTIMEOUT:-120}

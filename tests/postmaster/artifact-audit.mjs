@@ -23,6 +23,9 @@ const [source, candidate] = await Promise.all([
 ])
 
 const requiredExports = [
+  'dsm_create_in_domain',
+  'dsa_create_ext',
+  'pgl_root_dsa_create_ext',
   'pgl_dispatch_pending_signals',
   'pgl_futex_wait',
   'pgl_futex_wake',

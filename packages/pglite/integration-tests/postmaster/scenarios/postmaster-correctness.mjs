@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -30,6 +30,8 @@ try {
     artifact: { wasm, glue, data },
     startParams: [
       '-c',
+      'min_dynamic_shared_memory=8MB',
+      '-c',
       'deadlock_timeout=50ms',
       '-c',
       'max_worker_processes=16',
@@ -44,20 +46,13 @@ try {
   const b = await open(postmaster)
   const control = await open(postmaster)
   const startup = postmaster.diagnostics()
+  const lockPath = join(dataDirectory, 'postmaster.pid')
+  const lockOwner = readFileSync(lockPath, 'utf8').split('\n')[0]
   const startupPhysical = physicalMemory()
   assert.ok(startup.liveProcesses >= 4, 'auxiliary processes did not start')
   assert.ok(
     startup.scopedLifetime.readyRoots >= 3,
-    'backend scope directories did not initialize',
-  )
-  assert.equal(
-    startup.scopedLifetime.activeRootScopes,
-    startup.scopedLifetime.readyRoots,
-  )
-  assert.equal(
-    startup.scopedLifetime.activeSessionScopes,
-    sessions.size,
-    'client sessions did not each create a session scope',
+    'backend memory registries did not initialize',
   )
   const processKinds = countProcessKinds(postmaster, PostgresProcessKind)
   assert.ok(processKinds.postmaster >= 1, 'postmaster Worker did not start')
@@ -124,33 +119,6 @@ try {
     { value: 3 },
   ])
   await a.exec('COMMIT')
-
-  const scopeBaseline = postmaster.diagnostics().scopedLifetime
-  await a.exec('BEGIN')
-  const transactionScope = postmaster.diagnostics().scopedLifetime
-  assert.equal(
-    transactionScope.activeTransactionScopes,
-    scopeBaseline.activeTransactionScopes + 1,
-  )
-  await a.exec('SAVEPOINT memory_scope')
-  const subtransactionScope = postmaster.diagnostics().scopedLifetime
-  assert.equal(
-    subtransactionScope.activeSubtransactionScopes,
-    scopeBaseline.activeSubtransactionScopes + 1,
-  )
-  await a.exec('RELEASE SAVEPOINT memory_scope')
-  const promotedScope = postmaster.diagnostics().scopedLifetime
-  assert.equal(
-    promotedScope.activeSubtransactionScopes,
-    scopeBaseline.activeSubtransactionScopes,
-  )
-  await a.exec('ROLLBACK')
-  const closedTransactionScope = postmaster.diagnostics().scopedLifetime
-  assert.equal(
-    closedTransactionScope.activeTransactionScopes,
-    scopeBaseline.activeTransactionScopes,
-  )
-  assert.equal(closedTransactionScope.closingScopes, 0)
 
   await a.exec('BEGIN; UPDATE mvcc_test SET value = 11 WHERE id = 1')
   assert.deepEqual(
@@ -248,6 +216,11 @@ try {
   )
   await terminated.close().catch(() => undefined)
   sessions.delete(terminated)
+  assert.equal(
+    readFileSync(lockPath, 'utf8').split('\n')[0],
+    lockOwner,
+    'backend termination removed the postmaster lock',
+  )
 
   await a.exec('BEGIN; UPDATE mvcc_test SET value = 99 WHERE id = 1; ROLLBACK')
   assert.deepEqual(
@@ -297,6 +270,41 @@ try {
       .rows,
     [{ total: 31_250_125_000 }],
   )
+  const parallelAllocationBaseline = postmaster.diagnostics().scopedLifetime
+  for (let iteration = 0; iteration < 4; iteration++) {
+    await a.exec('BEGIN; SAVEPOINT parallel_cleanup')
+    await assert.rejects(
+      a.query('SELECT sum(100 / (value - value)) FROM parallel_test'),
+      /division by zero/,
+    )
+    await a.exec('ROLLBACK TO SAVEPOINT parallel_cleanup')
+    assert.deepEqual(
+      (await a.query('SELECT sum(value)::bigint AS total FROM parallel_test'))
+        .rows,
+      [{ total: 31_250_125_000 }],
+    )
+    await a.exec(
+      iteration % 2 === 0
+        ? 'RELEASE SAVEPOINT parallel_cleanup; COMMIT'
+        : 'ROLLBACK',
+    )
+    await waitFor(
+      () => postmaster.diagnostics().scopedLifetime.activeWorkers === 0,
+      10_000,
+      'parallel worker cleanup',
+    )
+    const afterCleanup = postmaster.diagnostics().scopedLifetime
+    assert.equal(
+      afterCleanup.allocatedBytes,
+      parallelAllocationBaseline.allocatedBytes,
+      'parallel failure or rollback retained root DSM/DSA allocations',
+    )
+    assert.equal(
+      afterCleanup.liveSegments,
+      parallelAllocationBaseline.liveSegments,
+      'parallel failure or rollback retained root DSM/DSA segments',
+    )
+  }
   await a.query('SELECT pg_stat_force_next_flush()')
   let workersAfter = workersBefore
   const workerStatsDeadline = Date.now() + 5_000
@@ -333,37 +341,28 @@ try {
     memoryBeforeParallel.globalMemoryBytes,
     'parallel-context DSM inflated cluster-global memory',
   )
-  assert.equal(
-    memoryAfterParallel.scopedLifetime.activeParallelContextScopes,
-    memoryBeforeParallel.scopedLifetime.activeParallelContextScopes,
-    'parallel-context scope survived query cleanup',
-  )
-  assert.equal(
-    memoryAfterParallel.scopedLifetime.activeQueryScopes,
-    memoryBeforeParallel.scopedLifetime.activeQueryScopes,
-    'query scope survived executor cleanup',
-  )
   assert.equal(memoryAfterParallel.scopedLifetime.activeWorkers, 0)
-  assert.equal(memoryAfterParallel.scopedLifetime.closingScopes, 0)
-  assert.equal(
-    memoryAfterParallel.scopedLifetime.activeSessionScopes,
-    sessions.size,
-    'an idle client lost or leaked its session scope',
-  )
-  assert.equal(memoryAfterParallel.scopedLifetime.activeTransactionScopes, 0)
-  assert.equal(memoryAfterParallel.scopedLifetime.activeSubtransactionScopes, 0)
-  assert.equal(memoryAfterParallel.scopedLifetime.activeQueryScopes, 0)
 
   const beforeClose = postmaster.diagnostics()
   const beforeClosePhysical = physicalMemory()
   await Promise.all([...sessions].map((session) => session.close()))
   sessions.clear()
+  assert.equal(
+    readFileSync(lockPath, 'utf8').split('\n')[0],
+    lockOwner,
+    'backend shutdown removed the postmaster lock',
+  )
   await waitFor(
     () => postmaster.diagnostics().liveProcesses < beforeClose.liveProcesses,
     10_000,
     'backend cleanup',
   )
   await postmaster.close()
+  assert.equal(
+    existsSync(lockPath),
+    false,
+    'postmaster shutdown retained its lock',
+  )
   const shutdown = postmaster.diagnostics()
   const shutdownPhysical = physicalMemory()
   assert.equal(shutdown.livePrivateMemories, 0)
@@ -397,7 +396,6 @@ try {
           'terminate',
           'rollback',
           'cumulative-statistics',
-          'hierarchical-scope-lifetimes',
           'parallel-query-root-scope',
         ],
         startup,

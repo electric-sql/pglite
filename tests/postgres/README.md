@@ -32,6 +32,13 @@ CLI while preserving native client programs and arguments. `prove` and the
 capability runner wrap exact-revision TAP and make suites so every executed or
 skipped area is recorded.
 
+The native-tool builder overlays tracked working-tree source edits onto its clean
+archive and fingerprints that snapshot together with the native adapters. The
+external `tests/postmaster/native-build.mk` supplies the wasm32 WAL decoder layout
+and test-provider make rules; PostgreSQL Makefiles remain unchanged. The provider
+mounts the configured native-tool directory explicitly, including when it is
+outside the test output directory.
+
 The provider uses compact scoped memory, 256 MiB growth ceilings, and a 16 MiB
 `shared_buffers` baseline. Individual PostgreSQL tests can still override the
 database setting. These values keep supported single-cluster suites inside the

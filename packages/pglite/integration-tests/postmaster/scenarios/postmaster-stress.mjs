@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -101,6 +101,10 @@ try {
   await probe.close()
   await waitForBackendCount(postmaster, 0)
   const baseline = postmaster.diagnostics()
+  const lockOwner = readFileSync(
+    join(dataDirectory, 'postmaster.pid'),
+    'utf8',
+  ).split('\n')[0]
 
   const pgbenchEnvironment = {
     ...process.env,
@@ -210,9 +214,15 @@ try {
   assert.ok(
     dsaAfter.scopedLifetime.allocationGeneration >
       dsaWarm.scopedLifetime.allocationGeneration,
-    'scoped DSM/DSA segments were not released and reused',
+    'reviewed root DSM/DSA segments were not released and reused',
   )
   await dsa.close()
+  await waitForIdle(postmaster, baseline.livePrivateMemories, 120_000)
+  const dsaClosed = postmaster.diagnostics()
+  assert.ok(
+    dsaClosed.scopedMemoryBytes < dsaWarm.scopedMemoryBytes,
+    'backend exit retained the reviewed DSA backing store',
+  )
 
   const crashSession = await createSessionWhenReady(postmaster)
   const crashedPid = (
@@ -237,6 +247,11 @@ try {
   )
   await recovered.close()
   const recoveredDiagnostics = postmaster.diagnostics()
+  assert.equal(
+    readFileSync(join(dataDirectory, 'postmaster.pid'), 'utf8').split('\n')[0],
+    lockOwner,
+    'crash recovery removed the live postmaster lock',
+  )
   assert.ok(
     recoveredDiagnostics.globalShmAllocationGeneration > crashGeneration,
     'crash recovery did not replace the primary shared-memory generation',
@@ -254,6 +269,11 @@ try {
   await socket.close()
   await postmaster.close()
   const shutdown = postmaster.diagnostics()
+  assert.equal(
+    existsSync(join(dataDirectory, 'postmaster.pid')),
+    false,
+    'postmaster shutdown retained its data-directory lock',
+  )
   assert.equal(shutdown.livePrivateMemories, 0)
   assert.equal(
     shutdown.privateMemoriesStarted,
@@ -310,7 +330,7 @@ try {
           before: beforeChurn,
           after: afterChurn,
         },
-        dsmDsa: { warm: dsaWarm, after: dsaAfter },
+        dsmDsa: { warm: dsaWarm, after: dsaAfter, closed: dsaClosed },
         crashRecovery: {
           policy: 'postgres-in-place-reset',
           crashedPid,

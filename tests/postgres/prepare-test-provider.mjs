@@ -10,7 +10,7 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
 const [repoRootArg, postmasterTestArg, postgresTestArg, nativeArg, cliArg] =
@@ -104,6 +104,7 @@ const config = {
   mounts: [
     { root: join(postmasterTest, 'icu'), path: '/pglite/icu' },
     { root: postgresTest, path: postgresTest },
+    { root: native, path: native },
     { root: repoRoot, path: repoRoot },
     { root: '/tmp', path: '/tmp' },
   ],

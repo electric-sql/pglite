@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { describe, test } from 'vitest'
 import { integrationConfig, runScenario } from './scenario-runner.js'
 
@@ -7,9 +7,9 @@ const artifact = [config.wasm, config.glue, config.data] as const
 const output = (name: string) => join(config.outputRoot, `${name}.json`)
 
 describe.sequential('Worker-backed PGlite postmaster integration', () => {
-  test('implements hierarchical scoped memory', async () => {
+  test('reuses shared segments after the final attachment closes', async () => {
     await runScenario(
-      new URL('./scenarios/scope-hierarchy.mjs', import.meta.url),
+      new URL('./scenarios/shared-memory-lifetime.mjs', import.meta.url),
       [...artifact],
     )
   })
@@ -65,6 +65,19 @@ describe.sequential('Worker-backed PGlite postmaster integration', () => {
         config.dynamic.raw,
         config.dynamic.transformed,
         config.dynamic.audit,
+      ],
+    )
+  })
+
+  test('routes reviewed allocations without changing extension source', async () => {
+    await runScenario(
+      new URL('./scenarios/memory-placement.mjs', import.meta.url),
+      [
+        config.repoRoot,
+        ...artifact,
+        join(dirname(config.dynamic.raw), 'placement_global.so'),
+        join(dirname(config.dynamic.raw), 'placement_root.so'),
+        output('memory-placement'),
       ],
     )
   })

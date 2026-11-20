@@ -25,6 +25,24 @@ test -f /.dockerenv || {
 }
 
 REVISION=$(git -C "${PG_ROOT}" rev-parse HEAD)
+ADAPTER_DIRECTORY="${REPO_ROOT}/tests/postmaster"
+NATIVE_COMPAT_HEADERS=(pglite_provenance.h pglite_exec_expr.h pglite_tuple_deform.h pglite_tuple_access.h)
+SOURCE_FINGERPRINT=$(node22 - "${PG_ROOT}" "${ADAPTER_DIRECTORY}" "${NATIVE_COMPAT_HEADERS[@]}" <<'NODE'
+const { execFileSync } = require('node:child_process')
+const { readFileSync } = require('node:fs')
+const { createHash } = require('node:crypto')
+const [root, adapters, ...headers] = process.argv.slice(2)
+const hash = createHash('sha256')
+hash.update(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root }))
+hash.update(execFileSync('git', ['diff', '--binary', 'HEAD', '--', 'src'], { cwd: root }))
+for (const file of ['native-build.mk', 'wasm32-wal.h', 'build-native-regress-tools.sh'])
+  hash.update(readFileSync(`${adapters}/${file}`))
+for (const file of headers)
+  hash.update(readFileSync(`${root}/pglite/src/pglitec/${file}`))
+process.stdout.write(hash.digest('hex'))
+NODE
+)
+export MAKEFILES="${ADAPTER_DIRECTORY}/native-build.mk"
 if [[ -f "${OUT}/manifest.json" && \
       -x "${BUILD}/src/test/regress/pg_regress" && \
       -x "${BUILD}/src/test/isolation/pg_isolation_regress" && \
@@ -40,15 +58,16 @@ if [[ -f "${OUT}/manifest.json" && \
       -f "${BUILD}/contrib/dist.mk" && \
       -f "${SOURCE}/src/test/regress/parallel_schedule" ]] && \
    node22 - "${OUT}/manifest.json" "${REVISION}" \
-     "${HOST_PLATFORM}" "${ARCHITECTURE}" <<'NODE'
+     "${HOST_PLATFORM}" "${ARCHITECTURE}" "${SOURCE_FINGERPRINT}" <<'NODE'
 const fs = require('node:fs')
-const [manifestPath, revision, host, architecture] = process.argv.slice(2)
+const [manifestPath, revision, host, architecture, sourceFingerprint] = process.argv.slice(2)
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
 process.exit(
   manifest.status === 'pass' &&
     manifest.revision === revision &&
     manifest.host === host &&
     manifest.architecture === architecture &&
+    manifest.sourceFingerprint === sourceFingerprint &&
     manifest.execBackendCompatibility === true &&
     manifest.wasm32WalCompatibility === true
     ? 0
@@ -82,9 +101,23 @@ mkdir -p "${SOURCE}" "${BUILD}" "${INSTALL}"
 git -C "${PG_ROOT}" archive --format=tar "${REVISION}" \
   | tar -xf - -C "${SOURCE}"
 
+# Overlay tracked source edits so an uncommitted experiment is actually tested.
+while IFS= read -r -d '' path; do
+  if [[ -f "${PG_ROOT}/${path}" ]]; then
+    mkdir -p "$(dirname "${SOURCE}/${path}")"
+    cp "${PG_ROOT}/${path}" "${SOURCE}/${path}"
+  else
+    rm -f "${SOURCE}/${path}"
+  fi
+done < <(git -C "${PG_ROOT}" diff --name-only -z HEAD -- src)
+
+for header in "${NATIVE_COMPAT_HEADERS[@]}"; do
+  cp "${PG_ROOT}/pglite/src/pglitec/${header}" "${SOURCE}/pglite/src/pglitec/${header}"
+done
+
 (
   cd "${BUILD}"
-  CPPFLAGS='-DEXEC_BACKEND -DPGLITE_WASM32_WAL' "${SOURCE}/configure" \
+  CPPFLAGS="-DEXEC_BACKEND -I${SOURCE}/pglite/src/pglitec" "${SOURCE}/configure" \
     --prefix="${INSTALL}" \
     --without-icu \
     --without-readline \
@@ -113,13 +146,14 @@ test "$("${BUILD}/src/bin/pgbench/pgbench" --version)" = \
 test "$(uname -m)" = "${ARCHITECTURE}"
 
 node22 - "${OUT}/manifest.json" "${REVISION}" \
-  "${HOST_PLATFORM}" "${ARCHITECTURE}" <<'NODE'
+  "${HOST_PLATFORM}" "${ARCHITECTURE}" "${SOURCE_FINGERPRINT}" <<'NODE'
 const fs = require('node:fs')
-const [output, revision, host, architecture] = process.argv.slice(2)
+const [output, revision, host, architecture, sourceFingerprint] = process.argv.slice(2)
 fs.writeFileSync(output, `${JSON.stringify({
   schema: 1,
   status: 'pass',
   revision,
+  sourceFingerprint,
   postgresql: '18.3',
   host,
   architecture,

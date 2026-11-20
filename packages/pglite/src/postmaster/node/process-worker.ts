@@ -298,7 +298,7 @@ async function main(): Promise<void> {
     processHost.install()
 
     if (data.scopePolicy === ProcessScopePolicy.NewRoot) {
-      if (!data.scopeRoot || postgres._pgl_shm_scope_root() === 0n) {
+      if (!data.scopeRoot) {
         throw new Error('could not initialize the Worker scoped-memory root')
       }
       const registryOffset = postgres._pgl_shm_registry_offset() >>> 0

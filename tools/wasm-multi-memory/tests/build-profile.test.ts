@@ -75,6 +75,72 @@ describe('PostgreSQL build profiles', () => {
       'make clean',
     )
   })
+
+  it('reconfigures when the embedded package version changes', async () => {
+    const workspace = await fixture()
+    await runBuild(workspace, '/first-install', '', '1.0.0')
+    await runBuild(workspace, '/first-install', '', '1.0.1')
+    expect(
+      (await readFile(join(workspace, 'configure.log'), 'utf8'))
+        .trim()
+        .split('\n'),
+    ).toHaveLength(2)
+  })
+})
+
+it('keeps the native provider policy external and preserves recursive suite paths', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'pglite-native-make-'))
+  workspaces.push(workspace)
+  const adapter = resolve(
+    import.meta.dirname,
+    '../../../tests/postmaster/native-build.mk',
+  )
+  const makefile = join(workspace, 'Makefile')
+  await writeFile(
+    makefile,
+    `abs_top_builddir := ${workspace}
+top_builddir = .
+srcdir = .
+bindir = /bin
+libdir = /lib
+with_temp_install = WRONG
+pg_regress_check = WRONG
+pg_isolation_regress_check = WRONG
+_create_recursive_target = WRONG
+.PHONY: submake-generated-headers temp-install print
+submake-generated-headers temp-install: ; @:
+$(eval $(call _create_recursive_target,check,child,check))
+print:
+\t$(file >${workspace}/commands.txt,$(pg_regress_check) $(pg_isolation_regress_check))
+\t@:
+`,
+  )
+  for (const suffix of ['', 'src/test']) {
+    const cwd = join(workspace, suffix)
+    await mkdir(cwd, { recursive: true })
+    const options = {
+      cwd,
+      env: {
+        ...process.env,
+        MAKEFILES: adapter,
+        PGLITE_TEST_PROVIDER: '/provider',
+        PGLITE_TEST_CAPABILITY_RUNNER: '/bin/echo',
+      },
+    }
+    const { stdout } = await execute(
+      'make',
+      ['-s', '-f', makefile, 'check', 'MAKE=/bin/echo'],
+      options,
+    )
+    expect(stdout).toContain(
+      `--suite ${suffix ? `${suffix}/` : ''}child --target check -- /bin/echo -C child check`,
+    )
+    await execute('make', ['-s', '-f', makefile, 'print'], options)
+    const commands = await readFile(join(workspace, 'commands.txt'), 'utf8')
+    expect(commands).not.toContain('WRONG')
+    expect(commands).toContain('--bindir=/provider/bin')
+    expect(commands).toContain('PATH="/provider/bin:')
+  }
 })
 
 async function fixture(): Promise<string> {
@@ -83,6 +149,13 @@ async function fixture(): Promise<string> {
   const commands = join(workspace, 'commands')
   await mkdir(commands)
   await mkdir(join(workspace, 'pglite/src/pglitec'), { recursive: true })
+  await mkdir(join(workspace, 'pglite/tools/memory-placement'), {
+    recursive: true,
+  })
+  await writeFile(
+    join(workspace, 'pglite/tools/memory-placement/cc.mjs'),
+    'if (process.argv[2] === "--pglite-fingerprint") console.log("fixture-policy")\n',
+  )
   await writeFile(join(workspace, 'Makefile'), 'clean:\n\t@false\n')
   await writeFile(join(workspace, 'pglite/src/pglitec/pglitec.c'), '')
   await writeFile(join(workspace, 'pglite/src/pglitec/pglitec.h'), '')
@@ -94,7 +167,7 @@ async function fixture(): Promise<string> {
   })
   await writeFile(
     join(commands, 'emmake'),
-    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$BUILD_TEST_MAKE_LOG"\nif [ "$*" = "make clean" ]; then exit 0; fi\nexit 1\n',
+    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$BUILD_TEST_MAKE_LOG"\ncase "$*" in\n  "make clean" | "make PORTNAME=emscripten -C src/backend generated-headers") exit 0 ;;\nesac\nexit 1\n',
     { mode: 0o755 },
   )
   await writeFile(
@@ -109,6 +182,7 @@ async function runBuild(
   workspace: string,
   installationDirectory: string,
   compilerFlags = '',
+  packageVersion = '',
 ): Promise<void> {
   // Stop at compilation: this suite exercises configure and profile transitions.
   await expect(
@@ -119,6 +193,7 @@ async function runBuild(
         PATH: `${join(workspace, 'commands')}:${process.env.PATH}`,
         DEBUG: 'false',
         EMCC_CFLAGS: compilerFlags,
+        PGLITE_VERSION: packageVersion,
         PGLITE_INCREMENTAL: 'true',
         PGLITE_POSTMASTER: 'false',
         PGLITE_MULTI_MEMORY_PROVENANCE: 'false',

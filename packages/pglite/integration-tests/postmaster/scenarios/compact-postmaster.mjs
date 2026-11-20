@@ -50,8 +50,6 @@ try {
   assert.equal(startup.scopedMemoriesStarted, 0)
   assert.equal(startup.scopedMemoryBytes, 0)
   assert.equal(startup.compactRootBindings, startup.scopedLifetime.readyRoots)
-  assert.equal(startup.scopedLifetime.activeSessionScopes, sessions.length)
-  assert.equal(startup.scopedLifetime.closingScopes, 0)
   const dedicatedBindingBytes = bindingBytes(dedicated.startup)
   const compactBindingBytes = bindingBytes(startup)
   const dedicatedBindingBytesPerRoot =
@@ -100,10 +98,7 @@ try {
     'parallel query created a new compact root instead of inheriting its leader',
   )
   assert.equal(afterParallel.scopedMemoriesStarted, 0)
-  assert.equal(afterParallel.scopedLifetime.activeParallelContextScopes, 0)
-  assert.equal(afterParallel.scopedLifetime.activeQueryScopes, 0)
   assert.equal(afterParallel.scopedLifetime.activeWorkers, 0)
-  assert.equal(afterParallel.scopedLifetime.closingScopes, 0)
 
   await Promise.all(sessions.map((session) => session.close()))
   sessions.length = 0

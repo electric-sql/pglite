@@ -9,7 +9,7 @@ OUT=/postmaster-test
 POSTMASTER_BUILD=/postmaster-build
 SOURCE_OUT="${OUT}/source-build"
 ARTIFACT_OUT="${OUT}/artifact"
-NATIVE="${OUT}/native"
+NATIVE=${PGLITE_NATIVE_TEST_ROOT:-${OUT}/native}
 TESTLIB="${OUT}/testlib"
 DYNAMIC="${OUT}/dynamic"
 WORKER_SPI="${OUT}/worker-spi-extension"
@@ -79,26 +79,8 @@ test -f "${SOURCE_OUT}/bin/pglite.js"
 test -f "${SOURCE_OUT}/bin/pglite.data"
 test -f "${SOURCE_OUT}/lib/postgresql/regress.so"
 
-rm -rf "${DYNAMIC}"
-mkdir -p "${DYNAMIC}"
-emcc -O2 -Wall -Wextra -Werror -Wno-unused-function \
-  -fPIC -m32 -sWASM_BIGINT -sSIDE_MODULE=1 \
-  -sSHARED_MEMORY=1 -sSUPPORT_LONGJMP=emscripten \
-  -matomics -mbulk-memory \
-  -D__PGLITE__ -D__PGLITE_MULTI_MEMORY__ -D__PGLITE_POSTMASTER__ \
-  -I"${SOURCE_OUT}/include/postgresql/server" \
-  -I"${REPO_ROOT}/postgres-pglite/pglite/src/pglitec" \
-  -include "${REPO_ROOT}/postgres-pglite/pglite/src/pglitec/pglitec.h" \
-  -Dshmget=pgl_shmget -Dshmat=pgl_shmat \
-  -Dshmdt=pgl_shmdt -Dshmctl=pgl_shmctl \
-  "${PGLITE_INTEGRATION}/fixtures/dynamic-probe.c" \
-  -o "${DYNAMIC}/pglite_dynamic_probe.raw.so"
-command -v pglite-transform-side-module >/dev/null
-pglite-transform-side-module \
-  "${DYNAMIC}/pglite_dynamic_probe.raw.so" \
-  "${DYNAMIC}/pglite_dynamic_probe.so" \
-  "${DYNAMIC}/pglite_dynamic_probe.report.json" \
-  "${DYNAMIC}/pglite_dynamic_probe.audit.json"
+"${REPO_ROOT}/tests/postmaster/build-dynamic-fixtures.sh" \
+  "${REPO_ROOT}" "${SOURCE_OUT}" "${DYNAMIC}"
 
 # The regression artifact statically registers worker_spi. Package its normal
 # control/SQL layout behind an extension descriptor so this gate exercises the
