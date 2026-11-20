@@ -191,6 +191,22 @@ The `query` and `exec` methods take an optional `options` objects with the follo
   ```
 - `blob: Blob | File` <br />
   Attach a `Blob` or `File` object to the query that can used with a `COPY FROM` command by using the virtual `/dev/blob` device, see [importing and exporting](#dev-blob).
+- `paramTypes: number[]` <br />
+  Postgres data type IDs for the query parameters, in order (`query` only). Without them, Postgres infers each parameter's type from the query, and a parameter it can't infer, such as in `SELECT $1`, is sent and returned as `text`. The serializer for each parameter is chosen by the resulting type.
+  ```ts
+  import { types } from '@electric-sql/pglite'
+  const res = await pg.query('SELECT $1 AS value;', [42], {
+    paramTypes: [types.INT4],
+  })
+  // res.rows[0].value === 42 (a number, not the string '42')
+  ```
+- `onNotice: (notice: NoticeMessage) => void` <br />
+  A callback for each notice the server sends while running this query, such as from `RAISE NOTICE` in a function or a `DO` block.
+  ```ts
+  await pg.exec(`DO $$ BEGIN RAISE NOTICE 'hello'; END $$;`, {
+    onNotice: (notice) => console.log(notice.message), // 'hello'
+  })
+  ```
 
 ### sql
 
