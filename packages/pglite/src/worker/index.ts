@@ -604,18 +604,21 @@ function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
     switch (msg.type) {
       case 'rpc-call': {
         await pg.waitReady
+        if (!connectedTabs.has(tabId)) return
         const { callId, method, args } = msg as WorkerRpcCall<WorkerRpcMethod>
         try {
           // @ts-ignore no apparent reason why it fails
           const result = (await api[method](...args)) as WorkerRpcResult<
             typeof method
           >['result']
+          if (!connectedTabs.has(tabId)) return
           tabChannel.postMessage({
             type: 'rpc-return',
             callId,
             result,
           } satisfies WorkerRpcResult<typeof method>)
         } catch (error) {
+          if (!connectedTabs.has(tabId)) return
           console.error(error)
           tabChannel.postMessage({
             type: 'rpc-error',
@@ -635,11 +638,13 @@ function connectTab(tabId: string, pg: PGlite, connectedTabs: Set<string>) {
 function makeWorkerApi(tabId: string, db: PGlite) {
   let queryLockRelease: (() => void) | null = null
   let transactionLockRelease: (() => void) | null = null
+  let tabClosed = false
 
   // If the tab is closed and it is holding a lock, release the the locks
   // and rollback any pending transactions
   const tabCloseLockId = `pglite-tab-close:${tabId}`
   acquireLock(tabCloseLockId).then(() => {
+    tabClosed = true
     if (transactionLockRelease) {
       // rollback any pending transactions
       db.exec('ROLLBACK')
@@ -709,6 +714,11 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       return new Promise<void>((resolve) => {
         db._runExclusiveQuery(() => {
           return new Promise<void>((release) => {
+            if (tabClosed) {
+              release()
+              resolve()
+              return
+            }
             queryLockRelease = release
             resolve()
           })
@@ -723,6 +733,11 @@ function makeWorkerApi(tabId: string, db: PGlite) {
       return new Promise<void>((resolve) => {
         db._runExclusiveTransaction(() => {
           return new Promise<void>((release) => {
+            if (tabClosed) {
+              release()
+              resolve()
+              return
+            }
             transactionLockRelease = release
             resolve()
           })
