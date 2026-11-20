@@ -50,13 +50,19 @@ export async function formatQuery(
 
   const dataTypeIDs = parseDescribeStatementResults(messages)
 
-  // replace $1, $2, etc with %1$L, %2$L, etc
+  // Escape every literal `%` as `%%` first: format() reads any `%` in the
+  // query (e.g. `LIKE 'a%'`) as the start of a format specifier, which either
+  // fails ("unrecognized format() type specifier") or silently substitutes a
+  // parameter into the query text.
+  // Then replace $1, $2, etc with %1$L, %2$L, etc
   // The `$` in `%n$L` is required for positional arguments; a bare `%nL` is
   // "min width n" and makes format() consume arguments sequentially, binding
   // the wrong values when placeholders are out of order or repeated.
-  const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
-    return '%' + num + '$L'
-  })
+  const subbedQuery = query
+    .replace(/%/g, '%%')
+    .replace(/\$([0-9]+)/g, (_, num) => {
+      return '%' + num + '$L'
+    })
 
   const ret = await tx.query<{
     query: string
