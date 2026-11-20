@@ -99,6 +99,7 @@ export class PGlite
   #listenMutex = new Mutex()
   #fsSyncMutex = new Mutex()
   #fsSyncScheduled = false
+  #fsSyncScheduledPromise?: Promise<void>
 
   readonly debug: DebugLevel = 0
 
@@ -1192,6 +1193,11 @@ export class PGlite
    */
   async syncToFs() {
     if (this.#fsSyncScheduled) {
+      // A sync has been requested but has not started yet, so it will also
+      // persist this caller's writes. Wait for it rather than resolving early.
+      if (!this.#relaxedDurability) {
+        await this.#fsSyncScheduledPromise
+      }
       return
     }
     this.#fsSyncScheduled = true
@@ -1203,10 +1209,9 @@ export class PGlite
       })
     }
 
-    if (this.#relaxedDurability) {
-      doSync()
-    } else {
-      await doSync()
+    this.#fsSyncScheduledPromise = doSync()
+    if (!this.#relaxedDurability) {
+      await this.#fsSyncScheduledPromise
     }
   }
 
