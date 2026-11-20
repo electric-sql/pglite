@@ -1,4 +1,4 @@
-import { EmscriptenBuiltinFilesystem } from './base.js'
+import { EmscriptenBuiltinFilesystem, normalizePgDataPath } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import type { PGlite } from '../pglite.js'
 import { PGDATA } from '../initdb.js'
@@ -55,6 +55,11 @@ export interface StorageBackend {
    * Called once, after the final flush.
    */
   close(): Promise<void>
+  /**
+   * Whether `relPath` (relative to PGDATA, `''` for PGDATA itself) is
+   * persisted. Can be called before `init()`.
+   */
+  existsInPgData(relPath: string): Promise<boolean>
 }
 
 export interface MemfsFrontendOptions {
@@ -119,6 +124,8 @@ export class MemfsFrontendFS extends EmscriptenBuiltinFilesystem {
   #dirty = new Map<MemNode, DirtyFile>()
   #flushing: Promise<void> = Promise.resolve()
   #warnedSymlink = false
+  // Set once initialSyncFs has loaded the backend into MEMFS
+  #loaded = false
 
   constructor(
     backend: StorageBackend,
@@ -163,9 +170,19 @@ export class MemfsFrontendFS extends EmscriptenBuiltinFilesystem {
           }
         }
       }
+      this.#loaded = true
     } finally {
       this.#tracking = true
     }
+  }
+
+  async existsInPgData(relPath: string): Promise<boolean> {
+    if (this.#loaded) {
+      // MEMFS is the source of truth, the backend lags behind until the next
+      // flush
+      return super.existsInPgData(relPath)
+    }
+    return this.backend.existsInPgData(normalizePgDataPath(relPath))
   }
 
   async syncToFs(relaxedDurability = false) {

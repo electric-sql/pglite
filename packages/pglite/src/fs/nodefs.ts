@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { EmscriptenBuiltinFilesystem } from './base.js'
+import { EmscriptenBuiltinFilesystem, normalizePgDataPath } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 import { PGDATA } from '../initdb.js'
@@ -30,6 +30,11 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
       ],
     }
     return { emscriptenOpts: options }
+  }
+
+  async existsInPgData(relPath: string): Promise<boolean> {
+    // NODEFS passes straight through to the host directory
+    return fs.existsSync(path.join(this.rootDir, normalizePgDataPath(relPath)))
   }
 
   async closeFs(): Promise<void> {

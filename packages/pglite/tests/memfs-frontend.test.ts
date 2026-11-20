@@ -16,6 +16,10 @@ class MemoryBackend implements StorageBackend {
 
   async init() {}
 
+  async existsInPgData(relPath: string) {
+    return relPath === '' || this.entries.has(relPath)
+  }
+
   async *load(): AsyncIterable<StorageEntry> {
     // Sorting by path puts parents before their children
     for (const path of [...this.entries.keys()].sort()) {
@@ -115,6 +119,20 @@ function diffEntries(
 }
 
 describe('MEMFS frontend with a custom storage backend', () => {
+  it('existsInPgData() queries the backend before init, MEMFS after', async () => {
+    const backend = new MemoryBackend()
+    const memfs = new MemfsFrontendFS(backend)
+    expect(await memfs.existsInPgData('PG_VERSION')).toBe(false)
+    const pg = await PGlite.create({ fs: memfs })
+    expect(await memfs.existsInPgData('PG_VERSION')).toBe(true)
+    await pg.close()
+
+    const reopened = new MemfsFrontendFS(backend)
+    expect(await reopened.existsInPgData('PG_VERSION')).toBe(true)
+    expect(await reopened.existsInPgData('/base')).toBe(true)
+    expect(await reopened.existsInPgData('nope')).toBe(false)
+  })
+
   it('persists the data directory and loads it back', async () => {
     const backend = new MemoryBackend()
     let pg = await PGlite.create({ fs: new MemfsFrontendFS(backend) })

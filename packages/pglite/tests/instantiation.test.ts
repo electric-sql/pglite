@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { PGlite } from '../dist/index.js'
+import * as fs from 'fs/promises'
 
 describe('instantiation', () => {
   testInstatiationMethod('constructor')
@@ -27,6 +28,10 @@ function testInstatiationMethod(
   }
 
   describe(`${method}`, () => {
+    const folderPath = './pgdata-test'
+    afterAll(async () => {
+      await fs.rm(folderPath, { force: true, recursive: true })
+    })
     it('should instantiate with defaults', async () => {
       const pg = await instantiateDb()
       const res = await pg.query(`SELECT 1 as one;`)
@@ -34,14 +39,14 @@ function testInstatiationMethod(
     })
 
     it('should instantiate with data dir argument', async () => {
-      const pg = await instantiateDb('./pgdata-test')
+      const pg = await instantiateDb(folderPath)
       const res = await pg.query(`SELECT 1 as one;`)
       expect(res.rows[0]?.['one']).toBe(1)
     })
 
     it('should instantiate with options', async () => {
       const pg = await instantiateDb({
-        dataDir: './pgdata-test',
+        dataDir: folderPath,
       })
       const res = await pg.query(`SELECT 1 as one;`)
       expect(res.rows[0]?.['one']).toBe(1)

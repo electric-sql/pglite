@@ -41,6 +41,28 @@ export interface Filesystem {
    * Close the filesystem.
    */
   closeFs(): Promise<void>
+
+  /**
+   * Check whether a file or directory exists in the data directory.
+   * `relPath` is relative to PGDATA, eg. `PG_VERSION` or `/base/1`; an empty
+   * path is the data directory itself.
+   * It can be called at any time, including before `init()`, in which case
+   * the underlying storage is queried directly without taking any resource
+   * that `init()` needs.
+   */
+  existsInPgData(relPath: string): Promise<boolean>
+}
+
+/**
+ * Normalize a path relative to PGDATA to the form `/a/b`, or `''` for PGDATA
+ * itself.
+ */
+export function normalizePgDataPath(path: string): string {
+  const parts = path.split('/').filter((p) => p && p !== '.')
+  if (parts.includes('..')) {
+    throw new Error(`Invalid path, '..' is not allowed: ${path}`)
+  }
+  return parts.map((p) => '/' + p).join('')
 }
 
 /**
@@ -68,6 +90,28 @@ export class EmscriptenBuiltinFilesystem implements Filesystem {
   async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
     return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
   }
+
+  /**
+   * Looks the path up in the emscripten FS. Before the module is created
+   * nothing exists, which is right for in-memory filesystems; filesystems with
+   * persistent storage override this to query it.
+   */
+  async existsInPgData(relPath: string): Promise<boolean> {
+    const normalized = normalizePgDataPath(relPath)
+    const FS = this.pg?.Module?.FS
+    if (!FS) return false
+    return FS.analyzePath(PGDATA + normalized).exists
+  }
+}
+
+function isNotFoundError(e: any): boolean {
+  const code = e?.code ?? e?.errno
+  return (
+    code === 'ENOENT' ||
+    code === 'ENOTDIR' ||
+    code === ERRNO_CODES.ENOENT ||
+    code === ERRNO_CODES.ENOTDIR
+  )
 }
 
 /**
@@ -92,6 +136,20 @@ export abstract class BaseFilesystem implements Filesystem {
 
   async dumpTar(dbname: string, compression?: DumpTarCompressionOptions) {
     return dumpTar(this.pg!.Module.FS, PGDATA, dbname, compression)
+  }
+
+  /**
+   * Uses `lstat`, which receives paths relative to PGDATA. Subclasses whose
+   * `lstat` only works after `init()` should override this.
+   */
+  async existsInPgData(relPath: string): Promise<boolean> {
+    try {
+      this.lstat(normalizePgDataPath(relPath) || '/')
+      return true
+    } catch (e: any) {
+      if (isNotFoundError(e)) return false
+      throw e
+    }
   }
 
   async init(pg: PGlite, emscriptenOptions: Partial<PostgresMod>) {

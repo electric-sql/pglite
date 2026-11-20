@@ -57,6 +57,31 @@ export class OpfsBackend implements StorageBackend {
     })
   }
 
+  async existsInPgData(relPath: string): Promise<boolean> {
+    // Resolved from the OPFS root, as this can run before init()
+    const parts = [...pathParts(this.dataDir), ...pathParts(relPath)]
+    try {
+      let dh = await navigator.storage.getDirectory()
+      for (const part of parts.slice(0, -1)) {
+        dh = await dh.getDirectoryHandle(part)
+      }
+      const name = parts[parts.length - 1]
+      if (name === undefined) return true
+      try {
+        await dh.getFileHandle(name)
+      } catch (e: any) {
+        if (e?.name !== 'TypeMismatchError') throw e
+        // It's a directory
+      }
+      return true
+    } catch (e: any) {
+      if (e?.name === 'NotFoundError' || e?.name === 'TypeMismatchError') {
+        return false
+      }
+      throw e
+    }
+  }
+
   load(): AsyncIterable<StorageEntry> {
     return loadDir(this.#dataDirDh, '')
   }
