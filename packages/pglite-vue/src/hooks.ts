@@ -56,6 +56,9 @@ function useLiveQueryImpl<T = { [key: string]: unknown }>(
       ? [querySource, keySource, ...paramsSources]
       : [querySource, ...paramsSources],
     () => {
+      // stop the live query of the previous query or params before starting a new one
+      unsubscribeRef.value?.()
+
       let cancelled = false
       const cb = (results: Results<T>) => {
         if (cancelled) return
