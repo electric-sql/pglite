@@ -254,6 +254,29 @@ int main(int argc, char **argv) {
         return 0;
       std::cout << input << " linked accesses: " << lower.routed << std::endl;
     }
+    // A multi-value result transports eight words without widening the shared
+    // reads.
+    Builder ops(provider);
+    auto pair = [&](Index first) {
+      auto word = [&](Index index) {
+        return ops.makeUnary(ExtendUInt32,
+                             ops.makeLoad(4, false, 4 * (index ^ 1), 4,
+                                          ops.makeLocalGet(0, Type::i32),
+                                          Type::i32, heap));
+      };
+      return ops.makeBinary(OrInt64, word(first),
+                            ops.makeBinary(ShlInt64, word(first + 1),
+                                           ops.makeConst(int64_t(32))));
+    };
+    provider.features.setMultivalue(true);
+    Name orderedReads("load_f32x8_ordered_v1");
+    provider.addFunction(Builder::makeFunction(
+        orderedReads,
+        Signature(Type::i32, Type(std::vector<Type>(4, Type::i64))), {},
+        ops.makeTupleMake(
+            std::vector<Expression *>{pair(0), pair(2), pair(4), pair(6)})));
+    provider.addExport(Builder::makeExport(orderedReads, orderedReads,
+                                           ExternalKind::Function));
     write(provider, argv[2]);
     provider.memories[0]->shared = false;
     write(provider, argv[3]);

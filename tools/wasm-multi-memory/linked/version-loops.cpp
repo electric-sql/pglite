@@ -3,6 +3,7 @@
 #include "ir/find_all.h"
 #include "ir/label-utils.h"
 #include "ir/utils.h"
+#include "ordered-loads.h"
 #include "pair-loads.h"
 #include "pass.h"
 #include "wasm-builder.h"
@@ -199,12 +200,14 @@ struct Versioner : PostWalker<Versioner> {
   LabelUtils::LabelManager labels;
   const std::set<Name> &readers;
   Function *function;
-  bool pairLoads;
+  bool pairLoads, orderedLoads;
+  size_t groups = 0;
   size_t loops = 0, loads = 0, mixedLoops = 0, pairs = 0;
   Versioner(Module &module, Function *f, const std::set<Name> &readers,
-            bool pairLoads)
+            bool pairLoads, bool orderedLoads)
       : ir(module), module(module), memory(module.memories[0]->name), labels(f),
-        readers(readers), function(f), pairLoads(pairLoads) {}
+        readers(readers), function(f), pairLoads(pairLoads),
+        orderedLoads(orderedLoads) {}
 
   void visitLoop(Loop *loop) {
     auto *body = loop->body->dynCast<Block>();
@@ -326,6 +329,19 @@ struct Versioner : PostWalker<Versioner> {
           ++pairs;
         nameLoop(mixed, "mixed_loop");
         fallback = ir.makeIf(guardFor(other, paired), mixed, loop);
+        if (orderedLoads) {
+          if (auto *wide =
+                  ordered::unroll(module, function, mixed, index, step)) {
+            nameLoop(wide, "eight_read_loop");
+            auto *wholeGroups = ir.makeUnary(
+                EqZInt32, ir.makeBinary(AndInt32, local(end->index),
+                                        ir.makeConst(4 * step - 1)));
+            fallback = ir.makeIf(
+                ir.makeBinary(AndInt32, guardFor(other, true), wholeGroups),
+                wide, fallback);
+            ++groups;
+          }
+        }
         ++mixedLoops;
       }
     }
@@ -339,10 +355,12 @@ struct Versioner : PostWalker<Versioner> {
 int main(int argc, char **argv) {
   try {
     bool pairLoads = argc == 4 && std::string(argv[3]) == "--pair-linked";
-    bool mixed = pairLoads || (argc == 4 && std::string(argv[3]) == "--mixed");
+    bool orderedLoads = argc == 4 && std::string(argv[3]) == "--ordered-linked";
+    bool mixed = orderedLoads || pairLoads ||
+                 (argc == 4 && std::string(argv[3]) == "--mixed");
     if (argc != 3 && !mixed)
-      throw std::runtime_error(
-          "usage: version-loops DOMAIN_IR OUTPUT [--mixed|--pair-linked]");
+      throw std::runtime_error("usage: version-loops DOMAIN_IR OUTPUT "
+                               "[--mixed|--pair-linked|--ordered-linked]");
     Module module;
     ModuleReader().read(argv[1], module);
     if (module.memories.size() != 3 || module.memories[0]->base != "memory" ||
@@ -362,13 +380,25 @@ int main(int argc, char **argv) {
       fn->base = paired::symbol;
       module.addFunction(std::move(fn));
     }
-    size_t allPairs = 0;
+    if (orderedLoads) {
+      if (module.getFunctionOrNull(ordered::symbol))
+        throw std::runtime_error("ordered symbol collision");
+      module.features.setMultivalue(true);
+      auto fn = Builder::makeFunction(ordered::symbol,
+                                      Signature(Type::i32, ordered::result()),
+                                      {}, nullptr);
+      fn->module = "pgl_global";
+      fn->base = ordered::symbol;
+      module.addFunction(std::move(fn));
+    }
+    size_t allPairs = 0, allGroups = 0;
     for (auto &f : module.functions) {
       if (f->imported())
         continue;
-      Versioner pass(module, f.get(), readers, pairLoads);
+      Versioner pass(module, f.get(), readers, pairLoads, orderedLoads);
       pass.walkFunction(f.get());
       allPairs += pass.pairs;
+      allGroups += pass.groups;
       if (pass.loops) {
         std::cout << f->name << " " << pass.loops << " loops " << pass.loads
                   << " guarded loads";
@@ -377,11 +407,15 @@ int main(int argc, char **argv) {
             std::cout << " " << ex->name;
         if (mixed)
           std::cout << " mixed=" << pass.mixedLoops;
+        if (orderedLoads)
+          std::cout << " groups=" << pass.groups;
         if (pairLoads)
           std::cout << " pairs=" << pass.pairs;
         std::cout << '\n';
       }
     }
+    if (orderedLoads && !allGroups)
+      module.removeFunction(ordered::symbol);
     if (pairLoads && !allPairs)
       module.removeFunction(paired::symbol);
     if (!WasmValidator().validate(module))

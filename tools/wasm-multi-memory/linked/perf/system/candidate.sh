@@ -5,7 +5,7 @@ export PATH="/build/workspace/node_modules/.bin:/opt/node22/bin:$PATH"
 root=/work/tools/wasm-multi-memory/linked
 src=/bench/compiler
 mkdir -p "$src/tools/wasm-multi-memory/linked/perf/system" /out/packages/candidate /bench/trial/packages
-cp "$root"/{compile.sh,version-loops.cpp,pair-loads.h} "$src/tools/wasm-multi-memory/linked/"
+cp "$root"/{compile.sh,version-loops.cpp,pair-loads.h,ordered-loads.h} "$src/tools/wasm-multi-memory/linked/"
 cp "$root/perf/system/provider-immediates.cpp" "$src/tools/wasm-multi-memory/linked/perf/system/"
 (cd "$src" && bash tools/wasm-multi-memory/linked/compile.sh version-loops perf/system/provider-immediates)
 cp /work/tsconfig.json /bench/trial

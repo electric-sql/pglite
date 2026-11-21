@@ -83,6 +83,12 @@ function instantiate(path, fullGlobal = false, trace) {
         lane.setUint32(0, read((ptr >>> 0) + (offset >>> 0)), true)
         return lane.getFloat32(0, true)
       },
+      load_f32x8_ordered_v1(base) {
+        trace.groups++
+        const pair = (lo, hi) =>
+          BigInt(read(lo >>> 0)) | (BigInt(read(hi >>> 0)) << 32n)
+        return [0, 8, 16, 24].map(offset => pair(base + offset + 4, base + offset))
+      },
       load_f32_pair_ordered(a, b) {
         trace.pairs++
         return BigInt(read(a >>> 0)) | (BigInt(read(b >>> 0)) << 32n)
@@ -217,17 +223,25 @@ if (workload === '--bench') {
   }
 }
 
-if (workload === '--check-pairs') {
-  for (const size of [2, 3, 8, 9, 255]) {
+if (workload === '--check-pairs' || workload === '--check-ordered') {
+  const grouped = workload === '--check-ordered'
+  for (const size of [2, 3, 4, 5, 8, 9, 12, 255, 768]) {
     const observations = [stockModule, optimizedModule].map((path) => {
       const trace = []
-      trace.pairs = 0
+      trace.pairs = trace.groups = 0
       const result = instantiate(path, false, trace)(
         size,
         0,
         1,
       ).vector_l2_squared_distance()
-      if (path === optimizedModule) assert.ok(trace.pairs > 0)
+      if (path === optimizedModule) {
+        if (grouped)
+          assert.equal(
+            trace.groups,
+            (size & ~1) % 8 === 0 ? Math.floor(size / 8) : 0,
+          )
+        else assert.ok(trace.pairs > 0)
+      }
       return { trace: [...trace], result }
     })
     assert.equal(observations[0].trace.length, size)
@@ -235,18 +249,18 @@ if (workload === '--check-pairs') {
   }
   const prior = [stockModule, optimizedModule].map((path) => {
     const trace = []
-    trace.pairs = 0
-    const operators = instantiate(path, false, trace)(4, 0, 1, 4, 2)
+    trace.pairs = trace.groups = 0
+    const operators = instantiate(path, false, trace)(8, 0, 1, 8, 2)
     assert.throws(
       operators.vector_l2_squared_distance,
       WebAssembly.RuntimeError,
     )
-    assert.equal(trace.pairs, 0)
+    assert.equal(trace.pairs + trace.groups, 0)
     return [...trace]
   })
   assert.equal(prior[0].length, 2)
   assert.deepEqual(prior[1], prior[0])
   console.log(
-    'Paired and scalar kernels observe identical shared-read order and values during simulated changes.',
+    'Grouped and scalar kernels observe identical shared-read order and values during simulated changes.',
   )
 }
