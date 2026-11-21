@@ -17,6 +17,34 @@
 +        return flags.loadAsync ? Promise.resolve(bytes) : bytes;
 +      }
        var libFile = locateFile(libName);
+@@ -1184,1 +1194,6 @@
+-  $dlopenInternal__deps: ['$ENV', '$dlSetError', '$PATH'],
++  $dlopenInternal__deps: ['$ENV', '$dlSetError', '$PATH',
++#if !PTHREADS && !SHARED_MEMORY
++    'free',
++#endif
++  ],
++
+@@ -1224,3 +1239,18 @@
+     try {
+-      return loadDynamicLibrary(filename, combinedFlags, localScope, handle)
++#if !PTHREADS && !SHARED_MEMORY
++      var loaded = loadDynamicLibrary(filename, combinedFlags, localScope, handle);
++      // Classic has no pthread that could replay this DSO from file_data.
++      if (loaded && Module['pgliteSideModuleDependencies']?.has(filename)) {
++        var fileData = {{{ makeGetValue('handle', C_STRUCTS.dso.file_data, '*') }}};
++        var size = {{{ makeGetValue('handle', C_STRUCTS.dso.file_data_size, '*') }}};
++        if (fileData && size) {
++          {{{ makeSetValue('handle', C_STRUCTS.dso.file_data, '0', '*') }}};
++          {{{ makeSetValue('handle', C_STRUCTS.dso.file_data_size, '0', '*') }}};
++          _free(fileData);
++        }
++      }
++      return loaded;
++#else
++      return loadDynamicLibrary(filename, combinedFlags, localScope, handle)
++#endif
+     } catch (e) {
 diff --git a/src/library_syscall.js b/src/library_syscall.js
 --- a/src/library_syscall.js
 +++ b/src/library_syscall.js
