@@ -1,5 +1,7 @@
 # Should PGlite use linked single-memory extensions?
 
+The current release comparison includes compiler-generated ordered reads, Node bulk copies and on-demand extension linking. The measurements below record the earlier scalar and paired-read SDK experiments. [Installed release comparison](release-decision.md)
+
 **Continue with the portable extension format. Keep native multi-memory as the postmaster performance reference.** The qualified linked build gives both constructors the same extension archive and keeps classic query performance close to stock. The cost shows up when a postmaster backend repeatedly reads or copies data from another heap. Linked and native postmaster built the HNSW index in 2.22–2.23 seconds.
 
 | Public package workload | Stock classic | Linked classic | Native postmaster | Linked postmaster |
@@ -43,7 +45,7 @@ The stock pgvector npm tarball was 172 KiB, the linked tarball 75 KiB. For PostG
 
 ## Reproduce with OrbStack
 
-From the linked checkout, use the built native checkout from the same PostgreSQL revision and the output directory of the step 3 SDK build. The harness reads both and builds the benchmark packages in temporary volumes. To prepare the two inputs from source, run the [SDK build](../../README.md#build-and-verify-from-source-with-orbstack) in the linked checkout and `DOCKER_CONTEXT=orbstack pnpm wasm:build` in a native checkout at `b788fb7c7bca051ee0f9802f04f6792d0226c25d` with its source submodules initialized.
+For this historical scalar/paired comparison, use the linked checkout at `5dc2122`, the built native checkout from the same PostgreSQL revision, and the output directory of that revision’s SDK build. The harness reads both and builds the benchmark packages in temporary volumes. To prepare the two inputs from source, run the [SDK build](../../README.md#build-and-verify-from-source-with-orbstack) in the linked checkout and `DOCKER_CONTEXT=orbstack pnpm wasm:build` in a native checkout at `b788fb7c7bca051ee0f9802f04f6792d0226c25d` with its source submodules initialized.
 
 ```sh
 bench=tools/wasm-multi-memory/linked/perf/system

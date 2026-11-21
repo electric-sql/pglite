@@ -5,7 +5,7 @@ standalone extension packages. For example, both use `extensions: { vector, post
 with the public pgvector and PostGIS imports. pgvector ships one side module.
 PostGIS ships three, together with their dependency order, SQL and PROJ database.
 The packaged bytes run on Node 20.18, which supports one memory per Wasm module.
-[Catalog and PostgreSQL qualification](qualification/README.md) · [Four-runtime performance and adoption decision](perf/system/README.md)
+[Catalog and PostgreSQL qualification](qualification/README.md) · [Installed release comparison](perf/system/release-decision.md)
 
 | Module | Memory it imports | How it reaches another heap |
 | --- | --- | --- |
@@ -17,14 +17,14 @@ The pointer analysis in the PGlite SDK keeps proven private loads and stores
 direct. For a pointer of unknown provenance the generated code reads the pointer
 tag, then uses a private instruction or calls the corresponding provider. Each
 provider uses Wasm loads, stores and atomics on its single memory. Cross-heap
-bulk copies currently use a bounds-checked JS typed-array copy.
+bulk copies check both ranges and use a Node Buffer copy or a typed-array copy.
 
 Classic binds both providers to its one unshared heap. Postmaster gives each
 backend an unshared heap, shares the cluster heap across backends, and shares a
 dedicated scoped heap (memory 2) between a session and its parallel workers.
-Compact mode requires a shareable private heap and is disabled. There are two
-6.7 KiB provider binaries for the two Wasm memory import types. They ship once
-in the PGlite package and serve all loaded extensions.
+Compact mode requires a shareable private heap and is disabled. The PGlite package ships two
+provider binaries of about 7 KiB each, one for each Wasm memory import type.
+All loaded extensions use these providers.
 
 ## Build and verify from source with OrbStack
 
@@ -80,6 +80,25 @@ fill, size and growth use ordinary Wasm semantics. The six cross-domain copies
 in `pgl_bulk` take destination, source and length in bytes. They check both
 ranges before writing, handle overlap when domains alias, and read the current
 buffers after growth. [Operation list](sdk/provider-v1.py) · [Emitter](lower.cpp)
+
+The SDK can also emit `pgl_global.load_f32x8_ordered_v1`. Its wasm32 base
+address identifies eight float words. The provider reads the high word of each
+pair first and returns four packed i64 values. The compiler proves the entire
+private range in bounds before grouping these reads. The packager adds
+`wasm-linked-f32x8-v1` to the extension's required host capabilities when the
+finished module imports the operation. Previously published v1 extensions
+continue to use their original functions. [Compiler rule](ordered-loads.h) ·
+[Cross-version package checks](sdk/compatibility.sh)
+
+With only packaged linked extensions registered, the runtime installs their
+files during setup. Each PostgreSQL process links a library when it first needs
+it, loading its manifest `loadAfter` dependencies first. Aliased library paths
+retain the validated eager load order.
+PostgreSQL still loads libraries requested through `shared_preload_libraries`
+during server initialization. The same PostGIS base module supplies symbols
+when raster is the first spatial library used in a new backend. After a
+synchronous load, the single-threaded classic loader releases its temporary
+linear-heap copy of the verified library.
 
 ## Reproduce the earlier prototype benchmarks
 
