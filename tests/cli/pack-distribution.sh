@@ -13,7 +13,13 @@ test -f /.dockerenv || {
 
 rm -rf "${OUT}"
 mkdir -p "${PACKS}" "${PROJECT}"
-for PACKAGE in pglite pglite-server pglite-tools pglite-cli; do
+PACKAGES=(pglite-server pglite-tools pglite-cli)
+if [[ -n ${3:-} ]]; then
+  cp "$3" "${PACKS}/"
+else
+  PACKAGES+=(pglite)
+fi
+for PACKAGE in "${PACKAGES[@]}"; do
   pnpm -C "${REPO_ROOT}/packages/${PACKAGE}" pack \
     --pack-destination "${PACKS}" >/dev/null
 done

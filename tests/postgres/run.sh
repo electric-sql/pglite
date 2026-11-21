@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_ROOT=${1:?main PGlite repository root is required}
 POSTMASTER_TEST_ROOT="${REPO_ROOT}/tests/postmaster"
 POSTGRES_TEST_ROOT="${REPO_ROOT}/tests/postgres"
-POSTMASTER_TEST=/postmaster-test
+POSTMASTER_TEST=${PGLITE_POSTMASTER_TEST_ROOT:-/postmaster-test}
 OUT=/postgres-test
 NATIVE=${PGLITE_NATIVE_TEST_ROOT:-${OUT}/native}
 TARGET=${PGLITE_POSTGRES_TEST_TARGET:-check}
@@ -33,22 +33,25 @@ test -f "${POSTMASTER_TEST}/source-build/bin/pglite.js"
 test -f "${POSTMASTER_TEST}/source-build/bin/pglite.data"
 test -d "${POSTMASTER_TEST}/icu"
 
-PGLITE_BUILD_JOBS="${JOBS}" \
+PGLITE_BUILD_JOBS="${PGLITE_BUILD_JOBS:-${JOBS}}" \
   "${POSTMASTER_TEST_ROOT}/build-native-regress-tools.sh" \
   "${REPO_ROOT}" "${NATIVE}"
-pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-pgvector" build \
-  >/tmp/pglite-pgvector-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-postgis" build \
-  >/tmp/pglite-postgis-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-server" build \
-  >/tmp/pglite-server-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-tools" build \
-  >/tmp/pglite-tools-postgres-test-build.log
-pnpm -C "${REPO_ROOT}/packages/pglite-cli" build \
-  >/tmp/pglite-cli-postgres-test-build.log
-PGLITE_CLI=$("${REPO_ROOT}/tests/cli/pack-distribution.sh" \
-  "${REPO_ROOT}" "${OUT}/distribution" | tail -n 1)
+PGLITE_CLI=${2:-}
+if [ -z "${PGLITE_CLI}" ]; then
+  pnpm -C "${REPO_ROOT}/packages/pglite" build >/tmp/pglite-postgres-test-build.log
+  pnpm -C "${REPO_ROOT}/packages/pglite-pgvector" build \
+    >/tmp/pglite-pgvector-postgres-test-build.log
+  pnpm -C "${REPO_ROOT}/packages/pglite-postgis" build \
+    >/tmp/pglite-postgis-postgres-test-build.log
+  pnpm -C "${REPO_ROOT}/packages/pglite-server" build \
+    >/tmp/pglite-server-postgres-test-build.log
+  pnpm -C "${REPO_ROOT}/packages/pglite-tools" build \
+    >/tmp/pglite-tools-postgres-test-build.log
+  pnpm -C "${REPO_ROOT}/packages/pglite-cli" build \
+    >/tmp/pglite-cli-postgres-test-build.log
+  PGLITE_CLI=$("${REPO_ROOT}/tests/cli/pack-distribution.sh" \
+    "${REPO_ROOT}" "${OUT}/distribution" | tail -n 1)
+fi
 test -x "${PGLITE_CLI}"
 
 PROVIDER=$(node22 "${POSTGRES_TEST_ROOT}/prepare-test-provider.mjs" \
