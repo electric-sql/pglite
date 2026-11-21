@@ -76,6 +76,30 @@ try {
     { role: 'test_role' },
   ])
 
+  // Parse, Bind and client-side serializer errors must each leave the wire in sync.
+  await expectSqlState(a.query('SELEC 1'), '42601')
+  await expectSqlState(a.query('SELECT $1::integer', []), '08P01')
+  await expectSqlState(a.query('SELECT $1::integer', ['bad']), '22P02')
+  await assert.rejects(
+    a.query('SELECT $1::integer', [1], {
+      serializers: {
+        23: () => {
+          throw new Error('serializer stopped')
+        },
+      },
+    }),
+    /serializer stopped/,
+  )
+  assert.deepEqual(
+    (
+      await a.query('SELECT $1::integer, $2::text', [3, null], {
+        rowMode: 'array',
+        serializers: { 23: (value) => String(value * 2) },
+      })
+    ).rows,
+    [[6, null]],
+  )
+
   await a.exec("SET application_name='session-a'; SET work_mem='1MB'")
   await b.exec("SET application_name='session-b'; SET work_mem='2MB'")
   const gucs = await Promise.all([

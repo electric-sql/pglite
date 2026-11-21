@@ -174,6 +174,17 @@ export abstract class BasePGlite
     return results
   }
 
+  protected async _execProtocolBatch(
+    messages: Uint8Array[],
+    options?: ExecProtocolOptions,
+  ): Promise<BackendMessage[]> {
+    const replies: BackendMessage[][] = []
+    for (const message of messages) {
+      replies.push(await this.#execProtocolNoSync(message, options))
+    }
+    return ([] as BackendMessage[]).concat(...replies)
+  }
+
   /**
    * Re-syncs the array types from the database
    * This is useful if you add a new type to the database and want to use it, otherwise pglite won't recognize it.
@@ -264,17 +275,17 @@ export abstract class BasePGlite
       let results = []
 
       try {
-        const parseResults = await this.#execProtocolNoSync(
+        const prepare = [
           serializeProtocol.parse({ text: query, types: options?.paramTypes }),
-          options,
-        )
-
-        const dataTypeIDs = parseDescribeStatementResults(
-          await this.#execProtocolNoSync(
-            serializeProtocol.describe({ type: 'S' }),
-            options,
-          ),
-        )
+          serializeProtocol.describe({ type: 'S' }),
+        ]
+        // Parameter serializers need PostgreSQL's inferred types before Bind.
+        const needsParameterTypes = params.length > 0
+        const dataTypeIDs = needsParameterTypes
+          ? parseDescribeStatementResults(
+              await this._execProtocolBatch(prepare, options),
+            )
+          : []
 
         const values = params.map((param, i) => {
           const oid = dataTypeIDs[i]
@@ -289,23 +300,15 @@ export abstract class BasePGlite
           }
         })
 
-        results = [
-          ...parseResults,
-          ...(await this.#execProtocolNoSync(
-            serializeProtocol.bind({
-              values,
-            }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
+        results = await this._execProtocolBatch(
+          [
+            ...(needsParameterTypes ? [] : prepare),
+            serializeProtocol.bind({ values }),
             serializeProtocol.describe({ type: 'P' }),
-            options,
-          )),
-          ...(await this.#execProtocolNoSync(
             serializeProtocol.execute({}),
-            options,
-          )),
-        ]
+          ],
+          options,
+        )
       } catch (e) {
         if (e instanceof DatabaseError) {
           const pgError = makePGliteError({ e, options, params, query })

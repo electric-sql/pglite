@@ -184,6 +184,18 @@ export class PGlitePostmasterSession
     return result.messages
   }
 
+  protected override _execProtocolBatch(
+    messages: Uint8Array[],
+    options?: ExecProtocolOptions,
+  ): Promise<BackendMessage[]> {
+    // A throwing notice callback can interrupt the query between messages.
+    if (options?.onNotice) return super._execProtocolBatch(messages, options)
+    return this.execProtocolStream(concatBytes(messages), {
+      ...options,
+      syncToFs: false,
+    })
+  }
+
   async syncToFs(): Promise<void> {
     // NODEFS writes are direct. PostgreSQL owns fsync/checkpoint durability.
   }
