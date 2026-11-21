@@ -1,0 +1,142 @@
+{
+  "postgres": "174b8fcb355e62daa4f265cf4a51d99c8a06a422",
+  "catalog": {
+    "entries": 45,
+    "runs": 180,
+    "bundled": 36,
+    "archiveDigests": {
+      "amcheck": "66053958ae8fb5ee3431505b46bc5b4fc5a0d7201e04fab83ceeea5a3bc8b04f",
+      "auto_explain": "9e97d0695f24cc781670e02dc36ccb4630034e5fde6b9d3b7ac9c87ee0b6a69e",
+      "bloom": "f6e7979041b0249bc7dad7302bcf01146567329cfde515186459aa8b8a218bc9",
+      "btree_gin": "ec52f638ddd9158b6ea18db79d6bf4f12098757af622aed3aabf107eba4c73e1",
+      "btree_gist": "b41c0e816a9b26b07222a41195ebe1010bd328030b7a267c85fd99098a9e31f0",
+      "citext": "418f9ee674527e440bc601755d73a2d4c9a608dea2a8641d7e77c7b72be5c08d",
+      "cube": "391ca39dffbefa9cb3df756cae4d4674410e901c990210381c1ee0d7fa9ba7fa",
+      "dict_int": "87964bb3319706a37c1518838af199582145ff4253e111e46be42ca5c2737fd6",
+      "dict_xsyn": "231e2568cc14c8284505be06c27cd4ec318f107cd203979a4c5586439382dadf",
+      "earthdistance": "46725fb706cfc2c6b08030cb9fdae536e7c4738a714977ca217d55e1a6b9a4af",
+      "file_fdw": "9e981fb0e0db187bd844d2bab40cade53c63b76e73722f79a69b3eda26e9d06e",
+      "fuzzystrmatch": "92bf5ed424265759947272bfbafb6962dcb8a01df4cad407e796093ed6e88ff9",
+      "hstore": "28d26d70defd19dfcd764f44e0fdea3f83cb3371a4044f7a8f7b8454f5005e14",
+      "intarray": "e346934c0ff65d545edb43ade627f1dccf18df7a217f8c2be17f4f9f8b7f0e4a",
+      "isn": "60202bbfe13dd7df49fb873a0f0da5691ad936e12144ef2f860cb3355dad2e77",
+      "lo": "dfd1f21ff20747ddb7caad802b7767eaf485cfcb0eeea6afa71b1fdae9949426",
+      "ltree": "e8b7a6df7dfde8fa84c2422d90ba32f7473a2459506cbf1486e21de28ed1e9eb",
+      "pageinspect": "830f823b0c4ea34160ae5c6f6ccac7d7e8c85d3c5f5faebc27b8b357f01e61d8",
+      "passwordcheck": "096e3d22b9403d45a871f473ff4b8fbfe2ba77171bc95dd6dc8adbfe27105c29",
+      "pg_buffercache": "2434cc1319ee6cd6e4cfca51140c11895a82734d1e6cfba9ea46584bcf63d3fb",
+      "pg_freespacemap": "4040c013680ced0891df80d4d575ff28b2364a02d0221b790741d22284cad91f",
+      "pg_logicalinspect": "37728a9a7903111ed28b6e40a0609ed7d65cc2d55a2e921269e77dbb32df82ee",
+      "pg_overexplain": "8b2286c296642918d60d2a1ce3cfa1ebb4285b447b16b2d32e4c093102f47d8c",
+      "pg_stat_statements": "4c657681700d8a312c0fd692fe419018ead819eb797fc80614be21dc45ab5e69",
+      "pg_surgery": "949f4f805ad75a5edffb7dc722990cd397e13c42712185a2606452ecf5f400d7",
+      "pg_trgm": "214513f7a812fa35fcb9edd90e9b0b2c2aee3f42e3a6773012c1037de6799ca1",
+      "pg_visibility": "27ca62a7da2c64f23dd44c5cb11006d1a24c7325e61f1bd3fc2a3a34e2d57344",
+      "pg_walinspect": "c477272d879ec174e77794813a80d5faeca5205df7cd5ea71b76edb90ab89d20",
+      "pgcrypto": "e9c7e785ad7811dd46190a7af71cdca2f9ea60c491ab0d680969e913a00f8695",
+      "seg": "64a309bd47f5c946930b58cf39cb52c6f6209d109b23480f2264c0697d683a5e",
+      "tablefunc": "2a4163d41cc71f50c287b6bc106fb9b21a481aa28fbcaec18168144c8fb56b08",
+      "tcn": "7279e2a80a0ff71d990ed62b9f1e408451490f57f02b982263e8bb5197976240",
+      "tsm_system_rows": "e8f243e0f0b0d24318462f00610e8745eb6b0be82aeae9714eb2c8ee36e94b30",
+      "tsm_system_time": "4e34ace9b2b60acce710c5baa13d8217881b4f64950d89f178c2860ef375f97d",
+      "unaccent": "7e6b4e4016686a74c20c8f25ea4f6d5f194b6548ad47b3a77d115e313ea721fc",
+      "uuid-ossp": "f572fe6a31a2c8baa5cc7fb40a169c4566bdd408f2670f872a861c72fb179973",
+      "age": "4207eedef108b7b1525104a821d0dd5e581394086a535bb857a61e0575a2fb2e",
+      "pg_hashids": "756592f20de484f5e504cf52c9aacaa5097adf90ba4e671ed99da3321c2d7ed8",
+      "pg_ivm": "cddc90040622e193813b5275eede3ede3abaa9481fbc5ece3a3b037a19caf391",
+      "pg_textsearch": "ed80a4fb703a41697dcb0cad6b0e1b0daecf78a85347a723405cf6efb3cca6c6",
+      "pg_uuidv7": "85f0fd9fc8139db134477c736f2053fe09bc12c63e5f3b77b925254e89a09f85",
+      "pgmq": "f3a766cb187a926f94f085d93c72603902afd0db79d6ac9a5c86221d1056eebe",
+      "pgtap": "665b027044e68a5c09897dd52314e0b825ccc8bd8140b02b1e68da9710d58534",
+      "postgis": "78140d2613792d4aef755bd85699e6de00610c61d04ab84597c9312bd8582c45",
+      "vector": "d95a05d4ce2975032445e375fb0f32ba9f01d153bf849442b68d90ccf6ffaae0"
+    }
+  },
+  "audit": {
+    "node": "v20.18.0",
+    "supportsNativeMultiMemory": false,
+    "modules": 107,
+    "counts": {
+      "standalone": 5,
+      "pglite.data": 28,
+      "postmaster.data": 28,
+      "archives": 46
+    },
+    "vectorSha256": "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec"
+  },
+  "orderedReadConsumers": [
+    "vector"
+  ],
+  "independentProbe": "864ebdd002a4c58bcf592cc783065135dc15dbb9b3ca22d49a89539b3e33a64a",
+  "observedHashes": {
+    "node20-classic": [
+      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
+      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
+      "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+    ],
+    "node20-postmaster": [
+      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
+      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
+      "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+    ],
+    "node22-classic": [
+      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
+      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
+      "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+    ],
+    "node22-postmaster": [
+      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
+      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
+      "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+    ]
+  },
+  "compatibility": [
+    "previous host with independently built ordered-read probe passed on v20.18.0",
+    "previous host with independently built ordered-read probe passed on v22.13.0",
+    "current host with independently built v1 probe passed on v20.18.0",
+    "current host with independently built v1 probe passed on v22.13.0"
+  ],
+  "postmasters": {
+    "native": {
+      "schedules": {
+        "core": 230,
+        "isolation": 119
+      },
+      "stress": {
+        "reconnects": 10000,
+        "concurrency": 4,
+        "peakRssBytes": 2100719616,
+        "shutdownLivePrivateHeaps": 0,
+        "generationBeforeCrash": 3,
+        "recoveredGeneration": 6
+      },
+      "firstChurnRun": {
+        "completed": 7851,
+        "requested": 10000,
+        "error": "pgbench client 1 aborted in command 0; connection lost"
+      }
+    },
+    "linked": {
+      "schedules": {
+        "core": 230,
+        "isolation": 119
+      },
+      "stress": {
+        "reconnects": 10000,
+        "concurrency": 4,
+        "peakRssBytes": 2145079296,
+        "shutdownLivePrivateHeaps": 0,
+        "generationBeforeCrash": 3,
+        "recoveredGeneration": 6
+      }
+    }
+  }
+}
