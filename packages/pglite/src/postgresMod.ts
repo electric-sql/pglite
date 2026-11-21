@@ -28,6 +28,7 @@ export interface PostgresMod
     readonly globalMemory: WebAssembly.Memory
     readonly scopedMemory: WebAssembly.Memory
   }
+  pgliteSideModuleDependencies?: ReadonlyMap<string, readonly string[]>
   pgliteLinkSideModule?: (
     binary: BufferSource | WebAssembly.Module,
     imports: WebAssembly.Imports,

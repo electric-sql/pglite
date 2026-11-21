@@ -1,10 +1,22 @@
 --- a/src/library_dylink.js
 +++ b/src/library_dylink.js
-@@ -740,1 +740,4 @@
+@@ -620,2 +620,5 @@
+     var metadata = getDylinkMetadata(binary);
++    for (var dep of Module['pgliteSideModuleDependencies']?.get(libName) || []) {
++      loadDynamicLibrary(dep, {global: true, nodelete: true}, localScope);
++    }
+     currentModuleWeakSymbols = metadata.weakImports;
+@@ -740,1 +743,4 @@
 +      if (Module['pgliteLinkSideModule']) {
 +        binary = Module['pgliteLinkSideModule'](binary, info);
 +      }
        // PGlite's postmaster artifact uses a tagged three-memory ABI.  A side
+@@ -1090,1 +1096,5 @@
++      if (Module['pgliteSideModuleDependencies']?.has(libName)) {
++        var bytes = FS.readFile(libName);
++        return flags.loadAsync ? Promise.resolve(bytes) : bytes;
++      }
+       var libFile = locateFile(libName);
 diff --git a/src/library_syscall.js b/src/library_syscall.js
 --- a/src/library_syscall.js
 +++ b/src/library_syscall.js

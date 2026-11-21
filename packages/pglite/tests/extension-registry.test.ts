@@ -153,6 +153,8 @@ describe('prepareExtensionSet', () => {
     ])
     expect(result.sideModuleOrder).toEqual(['a:a', 'b:b', 'c:c'])
     expect(result.sideModulePreloadOrder).toEqual(['a:a'])
+    expect(result.sideModuleDependencies?.get('lib/b.so')).toEqual(['lib/a.so'])
+    expect(result.sideModuleDependencies?.get('lib/a.so')).toEqual([])
     expect(result.requiredSharedPreloadLibraries).toEqual(['a', 'b'])
     expect(result.pgliteEnv).toEqual({
       SHARED: 'same',

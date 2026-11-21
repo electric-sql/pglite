@@ -28,6 +28,8 @@ export interface PreparedExtensionSet {
   readonly requiredHostCapabilities: readonly string[]
   readonly requiredSharedPreloadLibraries: readonly string[]
   readonly fileOwners: ReadonlyMap<string, readonly string[]>
+  readonly sideModulePaths: ReadonlyMap<string, string>
+  readonly sideModuleDependencies?: ReadonlyMap<string, readonly string[]>
   readonly sideModuleOrder: readonly string[]
   readonly sideModulePreloadOrder: readonly string[]
 }
@@ -127,11 +129,27 @@ export function prepareExtensionSet(
   validateArtifactDependencies(prepared)
   const fileOwners = collectFileOwners(prepared)
   const sideModuleOrder = orderSideModules(prepared)
-  const sideModuleDependencies = new Set(
-    prepared.flatMap(({ descriptor }) =>
-      descriptor.manifest.sideModules.flatMap(({ loadAfter }) => loadAfter),
-    ),
+  const modules = prepared.flatMap(({ extension, descriptor }) =>
+    descriptor.manifest.sideModules.map((module) => ({
+      ...module,
+      identity: `${extension.name}:${module.logicalName}`,
+    })),
   )
+  const sideModulePaths = new Map(
+    modules.map(({ identity, path }) => [identity, path]),
+  )
+  const providers = new Set(modules.flatMap(({ loadAfter }) => loadAfter))
+  // Aliased filenames can have different declared dependencies. Preserve their
+  // validated identity order in the eager linker.
+  const sideModuleDependencies =
+    new Set(sideModulePaths.values()).size === modules.length
+      ? new Map(
+          modules.map(({ path, loadAfter }) => [
+            path,
+            loadAfter.map((dependency) => sideModulePaths.get(dependency)!),
+          ]),
+        )
+      : undefined
   const process = mergeProcessConfiguration(
     prepared,
     options.coreProcessConfigKeys ?? new Set(),
@@ -142,9 +160,11 @@ export function prepareExtensionSet(
     requiredHostCapabilities: process.requiredHostCapabilities,
     requiredSharedPreloadLibraries: collectPreloads(prepared),
     fileOwners,
+    sideModulePaths,
+    sideModuleDependencies,
     sideModuleOrder,
     sideModulePreloadOrder: sideModuleOrder.filter((identity) =>
-      sideModuleDependencies.has(identity),
+      providers.has(identity),
     ),
   }
 }

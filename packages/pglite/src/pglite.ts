@@ -720,25 +720,25 @@ export class PGlite
       if (preparedExtensions) {
         const artifacts = await validatedArtifactsPromise
         const files = new Map<string, Uint8Array>()
-        const sideModulePaths = new Map<string, string>()
         for (const artifact of artifacts) {
           for (const [path, bytes] of artifact.files) {
             if (!files.has(path)) files.set(path, bytes)
-          }
-          for (const module of artifact.descriptor.manifest.sideModules) {
-            sideModulePaths.set(
-              `${artifact.descriptor.manifest.extensionName}:${module.logicalName}`,
-              module.path,
-            )
           }
         }
         await loadExtensionFiles(
           this.mod,
           files,
           preparedExtensions.sideModuleOrder,
-          sideModulePaths,
+          preparedExtensions.sideModulePaths,
           (...args) => this.#log(...args),
           preparedExtensions.sideModulePreloadOrder,
+          Object.keys(this.#extensions).length ===
+            preparedExtensions.extensions.length &&
+            preparedExtensions.extensions.every(
+              ({ descriptor }) => descriptor.target.topology === 'faceted',
+            )
+            ? preparedExtensions.sideModuleDependencies
+            : undefined,
         )
       }
 

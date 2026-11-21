@@ -23,6 +23,9 @@ export async function checkExtraExtensions(writer, reader = writer) {
   await writer.exec(
     'CREATE EXTENSION linked_probe; CREATE EXTENSION postgis; CREATE EXTENSION postgis_raster; CREATE EXTENSION postgis_topology;',
   )
+  // The reader's first PostGIS call resolves the base library through the raster dependency.
+  const version = await reader.query('SELECT postgis_raster_lib_version() AS v')
+  assert.match(version.rows[0].v, /^\d+\./)
   const coordinate = await reader.query(
     `SELECT ST_X(p) AS x, ST_Y(p) AS y FROM (SELECT ST_Transform(ST_SetSRID(ST_Point(-0.1,51.5),4326),3857) AS p) s`,
   )

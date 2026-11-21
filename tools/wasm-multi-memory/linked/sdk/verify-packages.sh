@@ -43,6 +43,7 @@ if [[ ${2:-all} != catalog ]]; then
   ln -s "$(realpath "$workspace/packages/pglite-pgvector/node_modules/vitest")" node_modules/vitest
   "$workspace/packages/pglite-pgvector/node_modules/.bin/vitest" run tests --testTimeout 30000
 
+  export PGLITE_VERIFY_LAZY_EXTENSIONS=1
   export PGLITE_OBSERVE_MANIFEST="$app/sizes.json"
   for node in node20 node22; do
     for mode in classic postmaster; do

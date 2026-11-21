@@ -145,7 +145,19 @@ export async function loadExtensionFiles(
   sideModulePaths: ReadonlyMap<string, string>,
   log: (...args: any[]) => void,
   providersToLink: readonly string[] = [],
+  dependencies?: ReadonlyMap<string, readonly string[]>,
 ): Promise<void> {
+  if (dependencies) {
+    const absolute = (path: string) => `${mod.WASM_PREFIX}/${path}`
+    for (const [path, data] of files) copyToFS(mod.FS, absolute(path), data)
+    mod.pgliteSideModuleDependencies = new Map(
+      [...dependencies].map(([path, deps]) => [
+        absolute(path),
+        deps.map(absolute),
+      ]),
+    )
+    return
+  }
   const providerModules = new Set(providersToLink)
   const preloadPaths = new Set(
     sideModulePreloadOrder.map((identity) => sideModulePaths.get(identity)),

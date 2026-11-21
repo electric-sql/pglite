@@ -1557,13 +1557,7 @@ async function preparePostmasterExtensions(
       files.set(path, shared)
     }
   }
-  const sideModulePaths = new Map<string, string>()
-  for (const entry of prepared.extensions) {
-    for (const sideModule of entry.descriptor.manifest.sideModules) {
-      const identity = `${entry.extension.name}:${sideModule.logicalName}`
-      sideModulePaths.set(identity, sideModule.path)
-    }
-  }
+  const { sideModulePaths, sideModuleDependencies } = prepared
   const sideModulePathSet = new Set(sideModulePaths.values())
   return Object.freeze({
     namespaceOrder: Object.freeze(
@@ -1580,6 +1574,7 @@ async function preparePostmasterExtensions(
     // Independent modules remain lazy to limit per-backend linking costs.
     sideModulePreloadOrder: Object.freeze([...prepared.sideModulePreloadOrder]),
     sideModulePaths: Object.freeze([...sideModulePaths]),
+    sideModuleDependencies,
     pgliteEnv: Object.freeze(
       Object.fromEntries(
         Object.entries(prepared.pgliteEnv).map(([key, value]) => [

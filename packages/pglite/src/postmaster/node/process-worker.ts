@@ -279,6 +279,7 @@ async function main(): Promise<void> {
       new Map(data.extensions.sideModulePaths),
       debug,
       data.extensions.sideModulePreloadOrder,
+      linked ? data.extensions.sideModuleDependencies : undefined,
     )
     const extensionLinkedDataBytes = Math.max(
       0,

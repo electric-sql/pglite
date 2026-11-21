@@ -178,7 +178,13 @@ async function storage() {
                 )[0].n,
               )
       globalThis.pglMeasurePhase?.(key)
-      await latency(key, sql, [], assertN(expected))
+      await latency(
+        key,
+        sql,
+        [],
+        assertN(expected),
+        process.env.PGLITE_PROFILE_SCAN === key ? 600 : 9,
+      )
       globalThis.pglMeasurePhase?.('')
       result.checks[key] = expected
     }
@@ -187,13 +193,31 @@ async function storage() {
 async function run() {
   const start = now(),
     baseRss = process.memoryUsage.rss()
+  if (globalThis.pglStartupEvent) {
+    const create = PGlite.create.bind(PGlite)
+    PGlite.create = async (...args) => {
+      const begin = now()
+      try {
+        return await create(...args)
+      } finally {
+        globalThis.pglStartupEvent('classic initialization', begin)
+      }
+    }
+  }
   if (postmaster) {
     cluster = await PGlitePostmaster.create({
       ...common,
       maxConnections: 12,
       scopedMemoryMode: 'dedicated',
     })
+    globalThis.pglStartupEvent?.(
+      'cluster ready',
+      start,
+      cluster.diagnostics().extensionPreparationMilliseconds,
+    )
+    const connecting = now()
     db = await connect()
+    globalThis.pglStartupEvent?.('first connection', connecting)
   } else
     db = await PGlite.create({
       ...common,
@@ -201,6 +225,7 @@ async function run() {
     })
   await db.query('SELECT 1')
   result.startupMs = now() - start
+  globalThis.pglStartupEvent?.('first query complete', start)
   result.baseRss = baseRss
   const effective = Object.fromEntries(
     (
@@ -211,7 +236,17 @@ async function run() {
     ).map((r) => [r.name, r.value]),
   )
   assert.deepEqual(effective, settings)
+  const extensionStart = now()
   await db.exec('CREATE EXTENSION vector; CREATE EXTENSION postgis')
+  result.createExtensionsMs = now() - extensionStart
+  if (stage === 'startup') {
+    result.memory[1] = memory()
+    return
+  }
+  if (stage === 'storage') {
+    await storage()
+    return
+  }
   const sessions = [db]
   result.memory[1] = memory()
   if (postmaster)

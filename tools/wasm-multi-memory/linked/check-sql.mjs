@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -101,6 +101,12 @@ async function open(postmaster) {
   }
 }
 
+async function checkLazyStartup(db) {
+  if (!process.env.PGLITE_VERIFY_LAZY_EXTENSIONS) return
+  assert.deepEqual((await db.query('SELECT 1 AS n')).rows, [{ n: 1 }])
+  assert.equal(await readFile(process.env.PGLITE_OBSERVE_LOG, 'utf8'), '')
+}
+
 const [mode, profile] = process.argv.slice(2)
 const sdk =
   profile === 'sdk' ? await import('./check-extensions.mjs') : undefined
@@ -110,6 +116,7 @@ assert.deepEqual(vector.backend.targetKeys, ['wasm32-faceted'])
 if (mode === 'classic') {
   const db = await PGlite.create({ extensions })
   try {
+    await checkLazyStartup(db)
     await checkIndex(db)
     await sdk?.checkExtraExtensions(db)
   } finally {
@@ -128,6 +135,7 @@ if (mode === 'classic') {
     const writer = await open(postmaster)
     const reader = await open(postmaster)
     try {
+      await checkLazyStartup(reader)
       await checkIndex(writer)
       await sdk?.checkExtraExtensions(writer, reader)
       await writer.exec('BEGIN; DELETE FROM points WHERE id = 999')

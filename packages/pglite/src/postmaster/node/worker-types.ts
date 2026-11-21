@@ -27,6 +27,7 @@ export interface PostmasterExtensionSet {
   readonly sideModuleOrder: readonly string[]
   /** Dependency-free modules safe for Emscripten's eager preload plugin. */
   readonly sideModulePreloadOrder: readonly string[]
+  readonly sideModuleDependencies?: ReadonlyMap<string, readonly string[]>
   readonly sideModulePaths: readonly (readonly [string, string])[]
   readonly pgliteEnv: Readonly<Record<string, string>>
   readonly artifactBytes: number
