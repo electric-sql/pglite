@@ -12,6 +12,8 @@ source "$here/../../toolchain.env"
 image=${PGLITE_LINKED_IMAGE:-pglite-linked-sdk:$PGLITE_EMSDK_VERSION-$PGLITE_MULTI_MEMORY_IMAGE_REVISION}
 gitdir=$(git -C "$root/postgres-pglite" rev-parse --path-format=absolute --git-common-dir)
 test "$(git -C "$root" rev-parse HEAD:postgres-pglite)" = "$(git -C "$root/postgres-pglite" rev-parse HEAD)"
+# A failed preparation must not leave the previous run looking current.
+rm -f "$out/results/check-world.json"
 workspace=$(docker volume create)
 native=$(docker volume create)
 # Retain the native build on failures, including upstream regression.diffs and TAP logs.
