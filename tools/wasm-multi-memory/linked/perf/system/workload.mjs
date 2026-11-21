@@ -136,6 +136,8 @@ const agg = 'SELECT sum(id::bigint*id)::text AS n FROM items'
 const expectedSum = ((32768n * 32769n * 65537n) / 6n).toString()
 const assertN = (n) => (data) => assert.equal(data[0].n, n)
 async function storage() {
+  const samples = Number(process.env.PGLITE_STORAGE_SAMPLES ?? 9)
+  assert.ok(Number.isSafeInteger(samples) && samples > 0)
   // PLAIN and EXTERNAL guarantee that the same byte string is inline or out of line.
   for (const table of ['inline_payload', 'external_payload']) {
     await db.exec(
@@ -183,7 +185,7 @@ async function storage() {
         sql,
         [],
         assertN(expected),
-        process.env.PGLITE_PROFILE_SCAN === key ? 600 : 9,
+        process.env.PGLITE_PROFILE_SCAN === key ? 600 : samples,
       )
       globalThis.pglMeasurePhase?.('')
       result.checks[key] = expected
