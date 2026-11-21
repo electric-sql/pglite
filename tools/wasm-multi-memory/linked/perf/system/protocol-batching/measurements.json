@@ -1,0 +1,1662 @@
+{
+ "node": "v22.13.0",
+ "settings": {
+  "shared_buffers": "16MB",
+  "fsync": "off",
+  "synchronous_commit": "off",
+  "full_page_writes": "off",
+  "autovacuum": "off",
+  "io_method": "sync",
+  "jit": "off",
+  "max_parallel_workers_per_gather": "0",
+  "max_parallel_maintenance_workers": "0",
+  "maintenance_work_mem": "32MB"
+ },
+ "plans": {
+  "point": {
+   "Node Type": "Index Only Scan",
+   "Index Name": "items_pkey",
+   "Relation Name": "items",
+   "Parallel Aware": false
+  },
+  "indexed_update": {
+   "Node Type": "ModifyTable",
+   "Relation Name": "items",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "items_pkey",
+     "Relation Name": "items",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "join": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Hash Join",
+     "Join Type": "Inner",
+     "Parallel Aware": false,
+     "Plans": [
+      {
+       "Node Type": "Seq Scan",
+       "Relation Name": "items",
+       "Parallel Aware": false
+      },
+      {
+       "Node Type": "Hash",
+       "Parallel Aware": false,
+       "Plans": [
+        {
+         "Node Type": "Seq Scan",
+         "Relation Name": "groups",
+         "Parallel Aware": false
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "spatial": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Bitmap Heap Scan",
+     "Relation Name": "places",
+     "Parallel Aware": false,
+     "Plans": [
+      {
+       "Node Type": "Bitmap Index Scan",
+       "Index Name": "places_gist",
+       "Parallel Aware": false
+      }
+     ]
+    }
+   ]
+  },
+  "inline_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "hnsw_search": {
+   "Node Type": "Limit",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "points_pkey",
+     "Relation Name": "points",
+     "Parallel Aware": false
+    },
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "points_hnsw",
+     "Relation Name": "points",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "serial_aggregate": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "items",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "parallel_aggregate": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Gather",
+     "Parallel Aware": false,
+     "Workers Planned": 2,
+     "Plans": [
+      {
+       "Node Type": "Aggregate",
+       "Strategy": "Plain",
+       "Parallel Aware": false,
+       "Plans": [
+        {
+         "Node Type": "Seq Scan",
+         "Relation Name": "items",
+         "Parallel Aware": true
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "sqlChecks": {
+  "inline_payload_heap": 524800,
+  "inline_payload_detoast": 131855,
+  "inline_payload_copy": 43008,
+  "external_payload_heap": 524800,
+  "external_payload_detoast": 131855,
+  "external_payload_copy": 43008,
+  "vectors": 23280.725224067763
+ },
+ "packages": {
+  "batchedNative": [
+   "6f79ef4be6046996f24d57e5056ec701497e5f0180a3e602b9e95b90d69a48d2  electric-sql-pglite-0.5.4.tgz",
+   "a8b9b4596250d7000aa74837b4c9133ab0bc983f7fdb74185571c85c74a70e61  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "81869dfb4aad16a70b174b0f5133f959c606c07e63180c7f9c619b757f9ace03  electric-sql-pglite-postgis-0.2.4.tgz"
+  ],
+  "previousLinked": [
+   "ea32039e5e514c62a75200c62a09dd299aa11f6e2253aea54a91eec4f5777920  electric-sql-pglite-0.5.4.tgz",
+   "81c9329e5511f62a1511c9a4c79b233c31734a9fd158dca03aad3b6643a0ecb9  electric-sql-pglite-age-0.0.5.tgz",
+   "0a67a2fe5494dd17ce744b138f94148ec0195952e36d5b58f7b6dc18a46c201a  electric-sql-pglite-pg_hashids-0.0.5.tgz",
+   "603a4f427648386d2f02883d615d8a66384db70d6280e8fcf588e91010cdba89  electric-sql-pglite-pg_ivm-0.0.5.tgz",
+   "194aff692223d3a0f8f58dcfd74c33c03a87c363cc75da1c6f03ff78db179fcc  electric-sql-pglite-pg_textsearch-0.0.6.tgz",
+   "cea7794ee9fed035235a6fbb77e7d48095641f839fef7ccd6b138e608dd44cb9  electric-sql-pglite-pg_uuidv7-0.0.5.tgz",
+   "b5066bd9ee8dc74e17aa9952d2b0a0ef26ffd0d039eb372910a4b3137b6fe981  electric-sql-pglite-pgmq-0.0.2.tgz",
+   "5ab00d4f3cad3d9891639cde5f0791619c1c46b402dcef2eeeb222827ed15b5d  electric-sql-pglite-pgtap-0.0.5.tgz",
+   "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78  electric-sql-pglite-postgis-0.2.4.tgz"
+  ],
+  "batchedLinked": [
+   "e29a2ddde811da23ce5a5460cdef7f197a1df5f75a9e14475d1153dd0299b6a3  electric-sql-pglite-0.5.4.tgz",
+   "81c9329e5511f62a1511c9a4c79b233c31734a9fd158dca03aad3b6643a0ecb9  electric-sql-pglite-age-0.0.5.tgz",
+   "0a67a2fe5494dd17ce744b138f94148ec0195952e36d5b58f7b6dc18a46c201a  electric-sql-pglite-pg_hashids-0.0.5.tgz",
+   "603a4f427648386d2f02883d615d8a66384db70d6280e8fcf588e91010cdba89  electric-sql-pglite-pg_ivm-0.0.5.tgz",
+   "194aff692223d3a0f8f58dcfd74c33c03a87c363cc75da1c6f03ff78db179fcc  electric-sql-pglite-pg_textsearch-0.0.6.tgz",
+   "cea7794ee9fed035235a6fbb77e7d48095641f839fef7ccd6b138e608dd44cb9  electric-sql-pglite-pg_uuidv7-0.0.5.tgz",
+   "b5066bd9ee8dc74e17aa9952d2b0a0ef26ffd0d039eb372910a4b3137b6fe981  electric-sql-pglite-pgmq-0.0.2.tgz",
+   "5ab00d4f3cad3d9891639cde5f0791619c1c46b402dcef2eeeb222827ed15b5d  electric-sql-pglite-pgtap-0.0.5.tgz",
+   "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78  electric-sql-pglite-postgis-0.2.4.tgz"
+  ]
+ },
+ "nativeVsLinked": [
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.1396260000001348,
+    "indexed_update": 0.1637510000000475,
+    "join": 6.138234000000011,
+    "spatial": 0.2625429999998232,
+    "inline_payload_heap": 0.30958499999997,
+    "inline_payload_detoast": 0.33158499999990454,
+    "inline_payload_copy": 0.4861270000001241,
+    "external_payload_heap": 0.2367100000001301,
+    "external_payload_detoast": 2.1540090000007694,
+    "external_payload_copy": 2.2012180000001536,
+    "hnsw_build": 2115.258938,
+    "hnsw_search": 0.8652275781250012,
+    "serial_aggregate": 3.971349999999802
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7483.3801726667225
+    },
+    "hnsw_search": {
+     "1": 1155.7652868243736
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.1315840000006574,
+    "indexed_update": 0.15250000000014552,
+    "join": 5.774981999999909,
+    "spatial": 0.25725099999999657,
+    "inline_payload_heap": 0.30745999999999185,
+    "inline_payload_detoast": 0.31591800000023795,
+    "inline_payload_copy": 0.41983499999969354,
+    "external_payload_heap": 0.20958499999960623,
+    "external_payload_detoast": 2.0620920000001206,
+    "external_payload_copy": 2.0509250000004613,
+    "hnsw_build": 2185.004272,
+    "hnsw_search": 0.8511409374999914,
+    "serial_aggregate": 4.017142000000604
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 5857.719293332137
+    },
+    "hnsw_search": {
+     "1": 1174.8935528083562
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.14420900000004622,
+    "indexed_update": 0.14579299999968498,
+    "join": 5.6548979999997755,
+    "spatial": 0.2518760000002658,
+    "inline_payload_heap": 0.3081270000002405,
+    "inline_payload_detoast": 0.3152089999994132,
+    "inline_payload_copy": 0.41845999999986816,
+    "external_payload_heap": 0.21487600000000384,
+    "external_payload_detoast": 1.9782169999998587,
+    "external_payload_copy": 1.931257999999616,
+    "hnsw_build": 2175.6273650000003,
+    "hnsw_search": 0.8865753124999998,
+    "serial_aggregate": 3.9657250000000204
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8238.805908665425
+    },
+    "hnsw_search": {
+     "1": 1127.9357612385584
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.13387499999998909,
+    "indexed_update": 0.14141699999981938,
+    "join": 5.702274000000216,
+    "spatial": 0.25791800000024523,
+    "inline_payload_heap": 0.30820999999923515,
+    "inline_payload_detoast": 0.31729299999915384,
+    "inline_payload_copy": 0.4277929999998378,
+    "external_payload_heap": 0.2212100000006103,
+    "external_payload_detoast": 1.9592169999996258,
+    "external_payload_copy": 1.894467000000077,
+    "hnsw_build": 2143.13598,
+    "hnsw_search": 0.8496246249999899,
+    "serial_aggregate": 3.9963499999994383
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8292.044780670036
+    },
+    "hnsw_search": {
+     "1": 1176.990367952214
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.12945900000067923,
+    "indexed_update": 0.1433340000003227,
+    "join": 5.678981999999451,
+    "spatial": 0.26950099999976374,
+    "inline_payload_heap": 0.3168759999998656,
+    "inline_payload_detoast": 0.3183760000001712,
+    "inline_payload_copy": 0.41316899999947054,
+    "external_payload_heap": 0.20671000000038475,
+    "external_payload_detoast": 1.975507999999536,
+    "external_payload_copy": 1.9380499999997483,
+    "hnsw_build": 2136.026608,
+    "hnsw_search": 0.8666449062500021,
+    "serial_aggregate": 4.378851999999824
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7952.0876777311
+    },
+    "hnsw_search": {
+     "1": 1153.8751255425123
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.13129200000003038,
+    "indexed_update": 0.1415420000002996,
+    "join": 5.8973580000001675,
+    "spatial": 0.2674170000000231,
+    "inline_payload_heap": 0.319126000000324,
+    "inline_payload_detoast": 0.3149599999997008,
+    "inline_payload_copy": 0.43812700000034965,
+    "external_payload_heap": 0.20716799999991053,
+    "external_payload_detoast": 1.9525079999993977,
+    "external_payload_copy": 1.925717000000077,
+    "hnsw_build": 2158.5263699999996,
+    "hnsw_search": 0.9094308906250035,
+    "serial_aggregate": 3.892891999999847
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7549.73476248228
+    },
+    "hnsw_search": {
+     "1": 1099.588776133119
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.1305010000000948,
+    "indexed_update": 0.14066700000012133,
+    "join": 5.69814899999983,
+    "spatial": 0.2781679999998232,
+    "inline_payload_heap": 0.30804299999999785,
+    "inline_payload_detoast": 0.3194180000000415,
+    "inline_payload_copy": 0.41533500000059576,
+    "external_payload_heap": 0.2080839999998716,
+    "external_payload_detoast": 1.962840999999571,
+    "external_payload_copy": 1.9293830000005983,
+    "hnsw_build": 2193.4084809999995,
+    "hnsw_search": 0.8418420624999925,
+    "serial_aggregate": 3.985225000000355
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8306.485431268145
+    },
+    "hnsw_search": {
+     "1": 1187.8712700935027
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.12629199999992125,
+    "indexed_update": 0.13962599999968006,
+    "join": 5.725106999999753,
+    "spatial": 0.2654170000000704,
+    "inline_payload_heap": 0.30625099999997474,
+    "inline_payload_detoast": 0.34787599999981467,
+    "inline_payload_copy": 0.42041900000003807,
+    "external_payload_heap": 0.21070899999995163,
+    "external_payload_detoast": 2.0014250000003813,
+    "external_payload_copy": 2.1171339999991687,
+    "hnsw_build": 2137.803541,
+    "hnsw_search": 0.8565107343750071,
+    "serial_aggregate": 3.944641000000047
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8407.926309781013
+    },
+    "hnsw_search": {
+     "1": 1167.5276909748206
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.2764180000003762,
+    "indexed_update": 0.32996000000002823,
+    "join": 10.519210999999814,
+    "spatial": 0.44575199999962933,
+    "inline_payload_heap": 0.6332110000003013,
+    "inline_payload_detoast": 0.6367529999997714,
+    "inline_payload_copy": 0.7376279999998587,
+    "external_payload_heap": 0.3536259999991671,
+    "external_payload_detoast": 3.723974000000453,
+    "external_payload_copy": 3.6576399999994464,
+    "hnsw_build": 2214.2596440000007,
+    "hnsw_search": 1.1235470156250074,
+    "serial_aggregate": 7.182197000000087,
+    "parallel_aggregate": 183.4360179999985
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2644.421244239093,
+     "2": 5025.778711036664,
+     "4": 6341.44688433762,
+     "8": 6887.554855607241
+    },
+    "hnsw_search": {
+     "1": 890.0384105810823,
+     "2": 1559.5980662348725,
+     "4": 2588.645537332866,
+     "8": 2740.3304016366383
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.2780430000002525,
+    "indexed_update": 0.3853349999999409,
+    "join": 10.1635839999999,
+    "spatial": 0.40404400000079477,
+    "inline_payload_heap": 0.5498360000001412,
+    "inline_payload_detoast": 0.5588349999998172,
+    "inline_payload_copy": 0.6761280000000625,
+    "external_payload_heap": 0.45037699999920733,
+    "external_payload_detoast": 3.6448069999996733,
+    "external_payload_copy": 3.620932000000721,
+    "hnsw_build": 2226.6892789999993,
+    "hnsw_search": 1.0863326718749988,
+    "serial_aggregate": 6.429485000000568,
+    "parallel_aggregate": 180.03062900000077
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2978.01295807883,
+     "2": 5149.312357609434,
+     "4": 6803.958500530528,
+     "8": 6355.721594368668
+    },
+    "hnsw_search": {
+     "1": 920.5283297555716,
+     "2": 1448.2963520288529,
+     "4": 2433.816264593205,
+     "8": 4012.7318967168694
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.31087599999955273,
+    "indexed_update": 0.30521000000044296,
+    "join": 10.394626999999673,
+    "spatial": 0.5339610000000903,
+    "inline_payload_heap": 0.6405020000001969,
+    "inline_payload_detoast": 0.5956690000002709,
+    "inline_payload_copy": 0.6958779999995386,
+    "external_payload_heap": 0.45200199999999313,
+    "external_payload_detoast": 3.711182000000008,
+    "external_payload_copy": 3.745847999999569,
+    "hnsw_build": 2233.955817000001,
+    "hnsw_search": 1.1372430312499944,
+    "serial_aggregate": 6.479401999999027,
+    "parallel_aggregate": 179.66166499999963
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2429.289457126697,
+     "2": 5024.4474697547275,
+     "4": 6753.104291249161,
+     "8": 5471.83598992414
+    },
+    "hnsw_search": {
+     "1": 879.3195231988852,
+     "2": 1303.2047331581687,
+     "4": 2350.939852489572,
+     "8": 2917.1617675138036
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.29479300000002695,
+    "indexed_update": 0.2929180000000997,
+    "join": 10.89212899999984,
+    "spatial": 0.5095439999995506,
+    "inline_payload_heap": 0.6452950000002602,
+    "inline_payload_detoast": 0.6626699999997072,
+    "inline_payload_copy": 0.7723779999996623,
+    "external_payload_heap": 0.3706270000002405,
+    "external_payload_detoast": 3.6978070000004664,
+    "external_payload_copy": 3.6008899999997084,
+    "hnsw_build": 2217.009663,
+    "hnsw_search": 1.0927753906250075,
+    "serial_aggregate": 6.530194000000847,
+    "parallel_aggregate": 181.77480000000105
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 3256.0655413431327,
+     "2": 4551.8607722345805,
+     "4": 6709.446376323279,
+     "8": 6990.813197607337
+    },
+    "hnsw_search": {
+     "1": 915.1011347611469,
+     "2": 1521.725882529079,
+     "4": 2135.2757937229067,
+     "8": 2645.432441814336
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.27454300000044896,
+    "indexed_update": 0.41000199999962206,
+    "join": 13.10247100000015,
+    "spatial": 0.532626999999593,
+    "inline_payload_heap": 0.6982109999999011,
+    "inline_payload_detoast": 0.7470859999993991,
+    "inline_payload_copy": 0.9123790000003282,
+    "external_payload_heap": 0.5074189999995724,
+    "external_payload_detoast": 5.179396999999881,
+    "external_payload_copy": 5.120770999999877,
+    "hnsw_build": 2218.552495,
+    "hnsw_search": 1.3285635156250066,
+    "serial_aggregate": 7.444115000000238,
+    "parallel_aggregate": 89.434831999999
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2548.694297937616,
+     "2": 4765.016558804954,
+     "4": 6567.527108494553,
+     "8": 6159.373006624787
+    },
+    "hnsw_search": {
+     "1": 752.692655066297,
+     "2": 1324.7445178449789,
+     "4": 1862.9077999774906,
+     "8": 2618.2006097216895
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.32425100000000384,
+    "indexed_update": 0.3640429999995831,
+    "join": 11.244462999999996,
+    "spatial": 0.5319609999996828,
+    "inline_payload_heap": 0.7125029999997423,
+    "inline_payload_detoast": 0.760920000000624,
+    "inline_payload_copy": 0.8512529999998151,
+    "external_payload_heap": 0.442960000000312,
+    "external_payload_detoast": 4.981312999999318,
+    "external_payload_copy": 4.91052099999979,
+    "hnsw_build": 2297.0489909999997,
+    "hnsw_search": 1.356277171875007,
+    "serial_aggregate": 7.885532999998759,
+    "parallel_aggregate": 94.14447699999982
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2040.3089818417504,
+     "2": 4634.010217413781,
+     "4": 6086.613653529816,
+     "8": 6934.727097901716
+    },
+    "hnsw_search": {
+     "1": 737.3124172085961,
+     "2": 1367.515640319109,
+     "4": 1717.2607458664372,
+     "8": 2852.8271918649302
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.37591900000006717,
+    "indexed_update": 0.3971269999992728,
+    "join": 13.438014000000294,
+    "spatial": 0.5174600000000282,
+    "inline_payload_heap": 0.699877999999444,
+    "inline_payload_detoast": 0.8163779999995313,
+    "inline_payload_copy": 1.019253999999819,
+    "external_payload_heap": 0.5172529999999824,
+    "external_payload_detoast": 5.134812999999667,
+    "external_payload_copy": 4.9680200000002515,
+    "hnsw_build": 2215.858241,
+    "hnsw_search": 1.4754286718749938,
+    "serial_aggregate": 7.667406999999002,
+    "parallel_aggregate": 91.77538300000015
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 3326.591268436141,
+     "2": 4615.8228966452225,
+     "4": 5993.723821942525,
+     "8": 6435.610161707937
+    },
+    "hnsw_search": {
+     "1": 677.7691250429525,
+     "2": 1296.3864019032574,
+     "4": 1744.028263285986,
+     "8": 3260.7382606925776
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.38304299999981595,
+    "indexed_update": 0.4148350000004939,
+    "join": 13.250014000000192,
+    "spatial": 0.5607939999999871,
+    "inline_payload_heap": 0.7100030000001425,
+    "inline_payload_detoast": 0.7654199999997218,
+    "inline_payload_copy": 0.9882950000001074,
+    "external_payload_heap": 0.5732099999995626,
+    "external_payload_detoast": 5.5041479999999865,
+    "external_payload_copy": 5.479480999999396,
+    "hnsw_build": 2348.6592530000007,
+    "hnsw_search": 1.3741085937500088,
+    "serial_aggregate": 7.481197000000975,
+    "parallel_aggregate": 91.57058999999936
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2573.9099240112782,
+     "2": 4874.762031635761,
+     "4": 6254.68184925607,
+     "8": 6736.8733076226945
+    },
+    "hnsw_search": {
+     "1": 727.7445207375871,
+     "2": 1375.5790569893998,
+     "4": 1928.4942070143848,
+     "8": 2823.849918730513
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  }
+ ],
+ "linkedBeforeAfter": [
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.13037600000006933,
+    "indexed_update": 0.1403759999993781,
+    "join": 5.719733000000815,
+    "spatial": 0.27841799999987416,
+    "inline_payload_heap": 0.3110839999999371,
+    "inline_payload_detoast": 0.3115429999998014,
+    "inline_payload_copy": 0.4240429999999833,
+    "external_payload_heap": 0.2159590000001117,
+    "external_payload_detoast": 1.968633000000409,
+    "external_payload_copy": 1.9658410000001822,
+    "hnsw_build": 2169.3618800000004,
+    "hnsw_search": 0.9416797343750005,
+    "serial_aggregate": 3.9853919999995924
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7193.540290738236
+    },
+    "hnsw_search": {
+     "1": 1061.932165996656
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.13550099999974918,
+    "indexed_update": 0.1522090000003118,
+    "join": 5.73464899999999,
+    "spatial": 0.26908499999990454,
+    "inline_payload_heap": 0.30770899999970425,
+    "inline_payload_detoast": 0.316251000000193,
+    "inline_payload_copy": 0.431086000000505,
+    "external_payload_heap": 0.23495999999977357,
+    "external_payload_detoast": 1.999550999999883,
+    "external_payload_copy": 2.007050000000163,
+    "hnsw_build": 2182.328689,
+    "hnsw_search": 0.8486669531250044,
+    "serial_aggregate": 3.886808000000201
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7750.536391614195
+    },
+    "hnsw_search": {
+     "1": 1178.3185339287095
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 319
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.13570900000013353,
+    "indexed_update": 0.14466800000036528,
+    "join": 5.6939409999995405,
+    "spatial": 0.2717929999998887,
+    "inline_payload_heap": 0.31291700000019773,
+    "inline_payload_detoast": 0.31754300000011426,
+    "inline_payload_copy": 0.4468769999994038,
+    "external_payload_heap": 0.21291699999983393,
+    "external_payload_detoast": 1.9637999999995372,
+    "external_payload_copy": 1.9278409999997166,
+    "hnsw_build": 2144.727199,
+    "hnsw_search": 0.8488531406249962,
+    "serial_aggregate": 4.024057999999968
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7293.763148717434
+    },
+    "hnsw_search": {
+     "1": 1178.0600814691184
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.15633400000024267,
+    "indexed_update": 0.1466259999997419,
+    "join": 6.33506799999941,
+    "spatial": 0.27825099999972736,
+    "inline_payload_heap": 0.3327930000004926,
+    "inline_payload_detoast": 0.3319600000004357,
+    "inline_payload_copy": 0.4452109999992899,
+    "external_payload_heap": 0.21637599999939994,
+    "external_payload_detoast": 2.3665940000000774,
+    "external_payload_copy": 2.1890510000002905,
+    "hnsw_build": 2126.016979,
+    "hnsw_search": 0.8511578593749931,
+    "serial_aggregate": 3.9534330000005866
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8089.499185425513
+    },
+    "hnsw_search": {
+     "1": 1174.8701947419036
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.13283400000000256,
+    "indexed_update": 0.144959000000199,
+    "join": 5.733024000000114,
+    "spatial": 0.26521000000047934,
+    "inline_payload_heap": 0.30596000000059576,
+    "inline_payload_detoast": 0.3173349999997299,
+    "inline_payload_copy": 0.4261269999997239,
+    "external_payload_heap": 0.21208500000011554,
+    "external_payload_detoast": 1.9931329999999434,
+    "external_payload_copy": 1.971799999999348,
+    "hnsw_build": 2141.0542619999997,
+    "hnsw_search": 0.8610068750000011,
+    "serial_aggregate": 3.990392000000611
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 7886.637472963814
+    },
+    "hnsw_search": {
+     "1": 1161.430911919256
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.13979199999994307,
+    "indexed_update": 0.14275099999986196,
+    "join": 5.707606999999825,
+    "spatial": 0.26900099999966187,
+    "inline_payload_heap": 0.3006679999998596,
+    "inline_payload_detoast": 0.31104299999969953,
+    "inline_payload_copy": 0.4215020000001459,
+    "external_payload_heap": 0.21395899999970425,
+    "external_payload_detoast": 1.9732169999997495,
+    "external_payload_copy": 1.9266740000002756,
+    "hnsw_build": 2178.723424,
+    "hnsw_search": 0.8887530625000011,
+    "serial_aggregate": 3.997516999999789
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8152.573372523086
+    },
+    "hnsw_search": {
+     "1": 1125.1719315453822
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.13241700000025958,
+    "indexed_update": 0.14487599999984013,
+    "join": 5.738565000000563,
+    "spatial": 0.267626000000746,
+    "inline_payload_heap": 0.31221000000005006,
+    "inline_payload_detoast": 0.3154179999992266,
+    "inline_payload_copy": 0.4256679999998596,
+    "external_payload_heap": 0.2052510000003167,
+    "external_payload_detoast": 1.958799999999428,
+    "external_payload_copy": 1.9155080000000453,
+    "hnsw_build": 2151.9898540000004,
+    "hnsw_search": 0.8659567343750041,
+    "serial_aggregate": 3.9818500000001222
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 6957.153932683709
+    },
+    "hnsw_search": {
+     "1": 1154.7921048523751
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.1220419999999649,
+    "indexed_update": 0.13145900000017718,
+    "join": 5.7033580000002075,
+    "spatial": 0.263000999999349,
+    "inline_payload_heap": 0.30491799999981595,
+    "inline_payload_detoast": 0.31633400000009715,
+    "inline_payload_copy": 0.42766799999935756,
+    "external_payload_heap": 0.20850100000006933,
+    "external_payload_detoast": 1.9463829999995141,
+    "external_payload_copy": 1.9151329999995141,
+    "hnsw_build": 2172.213089,
+    "hnsw_search": 0.8735980468750029,
+    "serial_aggregate": 3.899515999999494
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 8644.474769142344
+    },
+    "hnsw_search": {
+     "1": 1144.6912038976698
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.5001270000002478,
+    "indexed_update": 0.5375020000001314,
+    "join": 13.66480700000011,
+    "spatial": 0.7513779999999315,
+    "inline_payload_heap": 0.9274620000005598,
+    "inline_payload_detoast": 0.9592959999999948,
+    "inline_payload_copy": 1.9976749999996173,
+    "external_payload_heap": 0.7535449999995762,
+    "external_payload_detoast": 5.54256499999974,
+    "external_payload_copy": 5.262896999999612,
+    "hnsw_build": 2224.4974899999997,
+    "hnsw_search": 1.4330268125000032,
+    "serial_aggregate": 7.6712399999996705,
+    "parallel_aggregate": 92.18613399999958
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2327.9931353302136,
+     "2": 3296.6469752104963,
+     "4": 4061.5840215761295,
+     "8": 4474.984035145407
+    },
+    "hnsw_search": {
+     "1": 697.82364940921,
+     "2": 1133.7352507465316,
+     "4": 1549.2943085462641,
+     "8": 2131.524450633681
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.6002529999996113,
+    "indexed_update": 0.5593360000002576,
+    "join": 11.33183899999949,
+    "spatial": 0.5391689999996743,
+    "inline_payload_heap": 0.7595450000007986,
+    "inline_payload_detoast": 0.7824620000001232,
+    "inline_payload_copy": 1.119713000000047,
+    "external_payload_heap": 0.5490030000000843,
+    "external_payload_detoast": 5.346897000000354,
+    "external_payload_copy": 6.318443000000116,
+    "hnsw_build": 2218.5310899999995,
+    "hnsw_search": 1.4339109218749968,
+    "serial_aggregate": 7.67424100000062,
+    "parallel_aggregate": 98.5293270000002
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2197.7741973136967,
+     "2": 3448.888522923797,
+     "4": 4433.803316484976,
+     "8": 4155.253516237107
+    },
+    "hnsw_search": {
+     "1": 697.3933908616789,
+     "2": 1171.645755322381,
+     "4": 1534.8700532247015,
+     "8": 2237.7463544576967
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.5373360000003231,
+    "indexed_update": 0.4493769999999131,
+    "join": 12.693803000000116,
+    "spatial": 0.54421099999945,
+    "inline_payload_heap": 0.7860869999994975,
+    "inline_payload_detoast": 1.0300459999998566,
+    "inline_payload_copy": 1.3631310000000667,
+    "external_payload_heap": 0.5500019999999495,
+    "external_payload_detoast": 5.377564000000348,
+    "external_payload_copy": 5.471107000000302,
+    "hnsw_build": 2227.7259620000004,
+    "hnsw_search": 1.5217277031250092,
+    "serial_aggregate": 7.725824000001012,
+    "parallel_aggregate": 89.44041499999912
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2139.877792916641,
+     "2": 3294.0736372663096,
+     "4": 4094.4654598571537,
+     "8": 4678.571193598774
+    },
+    "hnsw_search": {
+     "1": 657.1477919120531,
+     "2": 1098.8729289614967,
+     "4": 1559.382757320058,
+     "8": 2164.2704979664277
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.3715440000005401,
+    "indexed_update": 0.5620440000002418,
+    "join": 11.72309100000075,
+    "spatial": 0.5827520000002551,
+    "inline_payload_heap": 0.973587999999836,
+    "inline_payload_detoast": 1.0212119999996503,
+    "inline_payload_copy": 1.2433379999993122,
+    "external_payload_heap": 0.5510439999998198,
+    "external_payload_detoast": 5.34485500000028,
+    "external_payload_copy": 5.284896999999546,
+    "hnsw_build": 2246.514394,
+    "hnsw_search": 1.4833362812500184,
+    "serial_aggregate": 7.736241000000518,
+    "parallel_aggregate": 89.69479100000171
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2738.4299622575945,
+     "2": 3444.0322428146337,
+     "4": 4289.4183133226825,
+     "8": 4774.941346560263
+    },
+    "hnsw_search": {
+     "1": 674.1559635804854,
+     "2": 1113.7805491731654,
+     "4": 1438.2379930611803,
+     "8": 2162.472725390388
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 0,
+   "latencyMs": {
+    "point": 0.3750430000000051,
+    "indexed_update": 0.3968349999995553,
+    "join": 11.11008800000036,
+    "spatial": 0.4405860000006214,
+    "inline_payload_heap": 0.7195030000002589,
+    "inline_payload_detoast": 0.7535859999998138,
+    "inline_payload_copy": 0.9609620000001087,
+    "external_payload_heap": 0.5272519999998622,
+    "external_payload_detoast": 5.1858970000002955,
+    "external_payload_copy": 5.105395999999928,
+    "hnsw_build": 2257.923463,
+    "hnsw_search": 1.3606085312499943,
+    "serial_aggregate": 7.405781000001298,
+    "parallel_aggregate": 90.40025199999945
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2674.083571713243,
+     "2": 4892.27553265175,
+     "4": 6899.063042559193,
+     "8": 6202.801165623144
+    },
+    "hnsw_search": {
+     "1": 734.9652578477496,
+     "2": 1252.293899133297,
+     "4": 2296.805971896423,
+     "8": 2508.363039145349
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 1,
+   "latencyMs": {
+    "point": 0.4031679999998232,
+    "indexed_update": 0.3984599999994316,
+    "join": 13.23888799999986,
+    "spatial": 0.4475860000002285,
+    "inline_payload_heap": 0.7211280000001352,
+    "inline_payload_detoast": 0.7651699999996708,
+    "inline_payload_copy": 0.922628999999688,
+    "external_payload_heap": 0.42695999999978085,
+    "external_payload_detoast": 5.12085500000012,
+    "external_payload_copy": 5.119730000000345,
+    "hnsw_build": 2247.142543,
+    "hnsw_search": 1.3469125156249788,
+    "serial_aggregate": 7.35482200000115,
+    "parallel_aggregate": 90.07795900000019
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2584.151062364562,
+     "2": 4922.472594903629,
+     "4": 6425.2731694843,
+     "8": 6415.156448625618
+    },
+    "hnsw_search": {
+     "1": 742.4387169912009,
+     "2": 1322.9178085014987,
+     "4": 1954.911613100454,
+     "8": 2579.07878690776
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 2,
+   "latencyMs": {
+    "point": 0.3939599999994243,
+    "indexed_update": 0.4192940000002636,
+    "join": 13.284513000000516,
+    "spatial": 0.4616680000008273,
+    "inline_payload_heap": 0.6545859999996537,
+    "inline_payload_detoast": 0.7624200000000201,
+    "inline_payload_copy": 0.8924200000001292,
+    "external_payload_heap": 0.4437099999995553,
+    "external_payload_detoast": 5.322522999999819,
+    "external_payload_copy": 5.178520999999819,
+    "hnsw_build": 2223.3516520000003,
+    "hnsw_search": 1.2747449062499925,
+    "serial_aggregate": 7.616197999999713,
+    "parallel_aggregate": 90.7551710000007
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2929.3567315702867,
+     "2": 4749.16399872502,
+     "4": 6219.126047594906,
+     "8": 6845.3187913095335
+    },
+    "hnsw_search": {
+     "1": 784.4706773073297,
+     "2": 1199.1649390103582,
+     "4": 1751.9014152516202,
+     "8": 2757.103807198502
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "round": 3,
+   "latencyMs": {
+    "point": 0.30016799999975774,
+    "indexed_update": 0.40821000000050844,
+    "join": 13.38555599999927,
+    "spatial": 0.5490030000000843,
+    "inline_payload_heap": 0.7326699999994162,
+    "inline_payload_detoast": 0.7621699999999691,
+    "inline_payload_copy": 0.8984209999998711,
+    "external_payload_heap": 0.4660020000001168,
+    "external_payload_detoast": 5.256062999999813,
+    "external_payload_copy": 5.119604999999865,
+    "hnsw_build": 2294.968546,
+    "hnsw_search": 1.3116714999999886,
+    "serial_aggregate": 7.808450000000448,
+    "parallel_aggregate": 92.871971999999
+   },
+   "queriesPerSecond": {
+    "point": {
+     "1": 2537.175870331596,
+     "2": 4428.2429181843445,
+     "4": 5833.182111124783,
+     "8": 7063.013558336789
+    },
+    "hnsw_search": {
+     "1": 762.3860089969239,
+     "2": 1401.593383918593,
+     "4": 1936.110062048691,
+     "8": 2601.522589874423
+    }
+   },
+   "hnswSelfHits": {
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   }
+  }
+ ],
+ "lockExperiment": {
+  "columns": [
+   "round",
+   "variant",
+   "externalReadMs",
+   "externalCopyMs"
+  ],
+  "pairedTrials": {
+   "lifted": [
+    [
+     0,
+     "baseline",
+     4.66927300000043,
+     4.670772999999826
+    ],
+    [
+     0,
+     "lifted",
+     4.958943499999805,
+     4.899838500000442
+    ],
+    [
+     1,
+     "baseline",
+     4.870942499999728,
+     4.993547999999919
+    ],
+    [
+     1,
+     "lifted",
+     4.8961920000001555,
+     4.919171500000175
+    ],
+    [
+     2,
+     "baseline",
+     4.824860499999886,
+     4.854422500000055
+    ],
+    [
+     2,
+     "lifted",
+     5.155631500000254,
+     5.175110499999846
+    ],
+    [
+     3,
+     "baseline",
+     5.136214999999993,
+     5.3964029999997365
+    ],
+    [
+     3,
+     "lifted",
+     5.279465500000242,
+     5.18923599999971
+    ],
+    [
+     4,
+     "baseline",
+     5.1712985000003755,
+     5.471298999999817
+    ],
+    [
+     4,
+     "lifted",
+     5.058714499999951,
+     5.0853604999997515
+    ],
+    [
+     5,
+     "baseline",
+     5.077152500000466,
+     5.053589499999816
+    ],
+    [
+     5,
+     "lifted",
+     5.249381499999799,
+     5.186797999999726
+    ]
+   ],
+   "fast": [
+    [
+     0,
+     "baseline",
+     5.0525485000002845,
+     5.000610499999766
+    ],
+    [
+     0,
+     "fast",
+     5.298465000000306,
+     5.244735999999648
+    ],
+    [
+     1,
+     "baseline",
+     5.140902499999811,
+     5.161735000000135
+    ],
+    [
+     1,
+     "fast",
+     5.434360999999626,
+     5.1044645000001765
+    ],
+    [
+     2,
+     "baseline",
+     5.548506999999972,
+     5.282694000000447
+    ],
+    [
+     2,
+     "fast",
+     5.2781315000002,
+     5.312526999999591
+    ],
+    [
+     3,
+     "baseline",
+     5.1180685000003905,
+     5.1290689999996175
+    ],
+    [
+     3,
+     "fast",
+     5.213152499999978,
+     5.187881499999548
+    ],
+    [
+     4,
+     "baseline",
+     4.922422499999811,
+     5.004422999999861
+    ],
+    [
+     4,
+     "fast",
+     5.290826999999808,
+     5.158019999999851
+    ],
+    [
+     5,
+     "baseline",
+     5.232724999999846,
+     5.1423920000002
+    ],
+    [
+     5,
+     "fast",
+     5.358017000000473,
+     5.304871500000445
+    ]
+   ]
+  },
+  "providerCalls": {
+   "baseline": {
+    "pgl_global": 5856308,
+    "pgl_scoped": 0,
+    "pgl_private": 0,
+    "pgl_loop": 0,
+    "pgl_bulk": 24729
+   },
+   "fast": {
+    "pgl_global": 4209524,
+    "pgl_scoped": 0,
+    "pgl_private": 49156,
+    "pgl_loop": 24578,
+    "pgl_bulk": 24729
+   }
+  }
+ },
+ "focusedJoin": {
+  "warmups": 12,
+  "timedQueries": 80,
+  "explainAnalyzeExecutions": 24,
+  "runs": [
+   {
+    "round": 0,
+    "package": "baseline",
+    "endToEndMs": 11.716673999999784,
+    "executorMs": 12.987
+   },
+   {
+    "round": 0,
+    "package": "finalapp",
+    "endToEndMs": 11.157192500000292,
+    "executorMs": 12.697
+   },
+   {
+    "round": 1,
+    "package": "baseline",
+    "endToEndMs": 11.36754800000017,
+    "executorMs": 13.167
+   },
+   {
+    "round": 1,
+    "package": "finalapp",
+    "endToEndMs": 11.317297499999768,
+    "executorMs": 12.967500000000001
+   },
+   {
+    "round": 2,
+    "package": "baseline",
+    "endToEndMs": 11.35035999999991,
+    "executorMs": 13.193999999999999
+   },
+   {
+    "round": 2,
+    "package": "finalapp",
+    "endToEndMs": 10.991087999999763,
+    "executorMs": 12.6465
+   },
+   {
+    "round": 3,
+    "package": "baseline",
+    "endToEndMs": 11.497381499999392,
+    "executorMs": 13.048
+   },
+   {
+    "round": 3,
+    "package": "finalapp",
+    "endToEndMs": 11.095192000000225,
+    "executorMs": 13.069500000000001
+   },
+   {
+    "round": 4,
+    "package": "baseline",
+    "endToEndMs": 11.267401999999493,
+    "executorMs": 12.723
+   },
+   {
+    "round": 4,
+    "package": "finalapp",
+    "endToEndMs": 11.150817000000188,
+    "executorMs": 12.884
+   },
+   {
+    "round": 5,
+    "package": "baseline",
+    "endToEndMs": 11.27571349999971,
+    "executorMs": 12.586
+   },
+   {
+    "round": 5,
+    "package": "finalapp",
+    "endToEndMs": 11.49011100000007,
+    "executorMs": 13.02
+   }
+  ]
+ }
+}
