@@ -100,6 +100,24 @@ try {
     [[6, null]],
   )
 
+  // PostgreSQL emits the identifier-truncation notice during Parse.
+  await assert.rejects(
+    a.query(
+      `INSERT INTO mvcc_test AS "${'a'.repeat(80)}" VALUES (3, 30)`,
+      [],
+      {
+        onNotice() {
+          throw new Error('notice stopped execution')
+        },
+      },
+    ),
+    /notice stopped execution/,
+  )
+  assert.deepEqual(
+    (await a.query('SELECT id FROM mvcc_test WHERE id=3')).rows,
+    [],
+  )
+
   await a.exec("SET application_name='session-a'; SET work_mem='1MB'")
   await b.exec("SET application_name='session-b'; SET work_mem='2MB'")
   const gucs = await Promise.all([
