@@ -1,4 +1,5 @@
 {
+  "linkedSource": "b5474137c3c5a3bbc7f7e6a80b89f8a06145d4c9",
   "postgres": "174b8fcb355e62daa4f265cf4a51d99c8a06a422",
   "catalog": {
     "entries": 45,
@@ -48,7 +49,7 @@
       "pg_uuidv7": "85f0fd9fc8139db134477c736f2053fe09bc12c63e5f3b77b925254e89a09f85",
       "pgmq": "f3a766cb187a926f94f085d93c72603902afd0db79d6ac9a5c86221d1056eebe",
       "pgtap": "665b027044e68a5c09897dd52314e0b825ccc8bd8140b02b1e68da9710d58534",
-      "postgis": "78140d2613792d4aef755bd85699e6de00610c61d04ab84597c9312bd8582c45",
+      "postgis": "31917ac4165a9d804ee6c1aefa03c3fbf3d351a75154129cfa1dc555e1facfde",
       "vector": "d95a05d4ce2975032445e375fb0f32ba9f01d153bf849442b68d90ccf6ffaae0"
     }
   },
@@ -70,32 +71,32 @@
   "independentProbe": "864ebdd002a4c58bcf592cc783065135dc15dbb9b3ca22d49a89539b3e33a64a",
   "observedHashes": {
     "node20-classic": [
-      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "147eefb36fac16f5a133e02a0f22a83b14fb0def7b1fa82518b7967baac61fcb",
       "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
-      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
       "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
-      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253",
+      "e058e097128c386b11d5ded16c31b9c110fccf2cf4dde0593f7aa9dbf3e87ffd"
     ],
     "node20-postmaster": [
-      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "147eefb36fac16f5a133e02a0f22a83b14fb0def7b1fa82518b7967baac61fcb",
       "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
-      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
       "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
-      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253",
+      "e058e097128c386b11d5ded16c31b9c110fccf2cf4dde0593f7aa9dbf3e87ffd"
     ],
     "node22-classic": [
-      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "147eefb36fac16f5a133e02a0f22a83b14fb0def7b1fa82518b7967baac61fcb",
       "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
-      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
       "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
-      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253",
+      "e058e097128c386b11d5ded16c31b9c110fccf2cf4dde0593f7aa9dbf3e87ffd"
     ],
     "node22-postmaster": [
-      "011b0e031676568a50d1d60f1761be0b31a893b85bffd5c6a1ae0870d40ae4f0",
+      "147eefb36fac16f5a133e02a0f22a83b14fb0def7b1fa82518b7967baac61fcb",
       "686ac30d9e706c174c1923640e5a43215e9e24ce4ed3410826a322cce41077ec",
-      "6d7ed6afe16e8ca319b09efb0a3d99333760084212096ede951604947d001a3e",
       "a1d5aa7802081ba7b56980dacc5a6cabc99695e967d87088d3c699fd1ba8673b",
-      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253"
+      "cdb737196978623f2bb17dceb9eac7c676b8a0aa403339ec71f17dfb1fefd253",
+      "e058e097128c386b11d5ded16c31b9c110fccf2cf4dde0593f7aa9dbf3e87ffd"
     ]
   },
   "compatibility": [
@@ -113,15 +114,16 @@
       "stress": {
         "reconnects": 10000,
         "concurrency": 4,
-        "peakRssBytes": 2100719616,
+        "peakRssBytes": 1728401408,
         "shutdownLivePrivateHeaps": 0,
         "generationBeforeCrash": 3,
         "recoveredGeneration": 6
       },
-      "firstChurnRun": {
+      "earlierChurnRun": {
         "completed": 7851,
         "requested": 10000,
-        "error": "pgbench client 1 aborted in command 0; connection lost"
+        "error": "pgbench client 1 aborted in command 0",
+        "retryCompleted": 10000
       }
     },
     "linked": {
@@ -132,7 +134,7 @@
       "stress": {
         "reconnects": 10000,
         "concurrency": 4,
-        "peakRssBytes": 2145079296,
+        "peakRssBytes": 2125238272,
         "shutdownLivePrivateHeaps": 0,
         "generationBeforeCrash": 3,
         "recoveredGeneration": 6
