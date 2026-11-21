@@ -1,3 +1,4 @@
+import { RefreshingViews } from './multi-memory.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
 
 import { PGLITE_LINKED_MEMORY_ABI } from '../extension-artifacts.js'
@@ -25,7 +26,14 @@ export async function linkMemory(
   scoped: WebAssembly.Memory,
   getProvider = provider,
 ) {
-  const heaps = [privateHeap, global, scoped]
+  const nodeBuffers = pglUtils.IN_NODE && typeof Buffer !== 'undefined'
+  const heaps = [privateHeap, global, scoped].map(
+    (heap) =>
+      new RefreshingViews(
+        heap,
+        nodeBuffers ? (buffer) => Buffer.from(buffer) : undefined,
+      ),
+  )
   const bind = async (memory: WebAssembly.Memory) => {
     const shared =
       typeof SharedArrayBuffer !== 'undefined' &&
@@ -45,12 +53,13 @@ export async function linkMemory(
         dst >>>= 0
         src >>>= 0
         n >>>= 0
-        const source = new Uint8Array(srcHeap.buffer)
-        const destination = new Uint8Array(dstHeap.buffer)
+        const source = srcHeap.current.u8
+        const destination = dstHeap.current.u8
         if (src + n > source.length || dst + n > destination.length) {
           throw new WebAssembly.RuntimeError('out of bounds linked memory.copy')
         }
-        destination.set(source.subarray(src, src + n), dst)
+        if (nodeBuffers) (source as Buffer).copy(destination, dst, src, src + n)
+        else destination.set(source.subarray(src, src + n), dst)
       }
     }
   }

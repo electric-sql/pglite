@@ -11,20 +11,28 @@ export interface WasmViews {
   readonly u8: Uint8Array
   readonly data: DataView
 }
-function createViews(memory: WebAssembly.Memory): WasmViews {
+type ByteViewFactory = (buffer: ArrayBuffer | SharedArrayBuffer) => Uint8Array
+
+function createViews(
+  memory: WebAssembly.Memory,
+  byteView?: ByteViewFactory,
+): WasmViews {
   const buffer = memory.buffer
   return {
     buffer,
-    u8: new Uint8Array(buffer),
+    u8: byteView ? byteView(buffer) : new Uint8Array(buffer),
     data: new DataView(buffer),
   }
 }
 
-class RefreshingViews {
+export class RefreshingViews {
   #views: WasmViews
 
-  constructor(readonly memory: WebAssembly.Memory) {
-    this.#views = createViews(memory)
+  constructor(
+    readonly memory: WebAssembly.Memory,
+    private readonly byteView?: ByteViewFactory,
+  ) {
+    this.#views = createViews(memory, byteView)
   }
 
   get current(): WasmViews {
@@ -33,7 +41,7 @@ class RefreshingViews {
     // byteLength. Shared growth also makes memory.buffer return a new,
     // larger SharedArrayBuffer object.
     if (this.#views.buffer !== buffer) {
-      this.#views = createViews(this.memory)
+      this.#views = createViews(this.memory, this.byteView)
     }
     return this.#views
   }

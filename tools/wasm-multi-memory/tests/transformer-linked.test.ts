@@ -71,6 +71,20 @@ test.skipIf(!sdk)(
             [...new Uint8Array(destination.buffer, 130, 6)],
             [1, 2, 3, 4, 5, 6],
           )
+          const end = source.buffer.byteLength
+          assert.throws(
+            () => ops.bulk_copy(tags[dst] | 130, tags[src] | (end - 2), 6),
+            WebAssembly.RuntimeError,
+          )
+          assert.deepEqual(
+            [...new Uint8Array(destination.buffer, 130, 6)],
+            [1, 2, 3, 4, 5, 6],
+          )
+          ops.bulk_copy(
+            tags[dst] | destination.buffer.byteLength,
+            tags[src] | end,
+            0,
+          )
           assert.throws(
             () =>
               ops.bulk_copy(
