@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { linkMemory } from '../src/wasm/linked-memory.js'
 import { PgliteMemoryViews } from '../src/wasm/multi-memory.js'
 
 const memory = (shared = false) =>
@@ -62,4 +63,35 @@ describe('multi-memory views', () => {
     expect(views.private.u8.byteLength).toBe(2 * 65536)
     expect(views.global.u8.byteLength).toBe(2 * 65536)
   })
+})
+
+it('copies between cached heap views across shared and unshared growth', async () => {
+  const local = memory()
+  const shared = memory(true)
+  const empty = await WebAssembly.compile(
+    Uint8Array.of(0, 97, 115, 109, 1, 0, 0, 0),
+  )
+  const { pgl_bulk: bulk } = await linkMemory(
+    local,
+    shared,
+    shared,
+    async () => empty,
+  )
+  const limit = shared.buffer.byteLength
+  new Uint8Array(local.buffer).set([7, 8, 9], 1)
+  bulk.copy10(1, 1, 3)
+  local.grow(1)
+  shared.grow(1)
+  bulk.copy01(limit, 1, 3)
+  bulk.copy10(limit, limit, 3)
+  expect([...new Uint8Array(shared.buffer, limit, 3)]).toEqual([7, 8, 9])
+  new Uint8Array(shared.buffer).set([1, 2, 3], limit - 3)
+  bulk.copy21(limit - 2, limit - 3, 3)
+  expect([...new Uint8Array(shared.buffer, limit - 3, 4)]).toEqual([1, 1, 2, 3])
+
+  const end = shared.buffer.byteLength
+  bulk.copy01(end, end, 0)
+  expect(() => bulk.copy01(end, end + 1, 0)).toThrow(WebAssembly.RuntimeError)
+  expect(() => bulk.copy01(limit, end - 1, 2)).toThrow(WebAssembly.RuntimeError)
+  expect([...new Uint8Array(local.buffer, limit, 3)]).toEqual([7, 8, 9])
 })

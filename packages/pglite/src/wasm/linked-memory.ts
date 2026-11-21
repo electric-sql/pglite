@@ -49,12 +49,19 @@ export async function linkMemory(
       if (s === d) continue
       // A single-memory Wasm instruction cannot copy between different heaps.
       // Keep native memmove semantics when two domains alias the same buffer.
+      let source = srcHeap.current.u8
+      let destination = dstHeap.current.u8
       bulk['copy' + d + s] = (dst, src, n) => {
         dst >>>= 0
         src >>>= 0
         n >>>= 0
-        const source = srcHeap.current.u8
-        const destination = dstHeap.current.u8
+        // Unshared growth detaches old views. Shared views still cover their old range.
+        if (!source.length || src + n > source.length) {
+          source = srcHeap.current.u8
+        }
+        if (!destination.length || dst + n > destination.length) {
+          destination = dstHeap.current.u8
+        }
         if (src + n > source.length || dst + n > destination.length) {
           throw new WebAssembly.RuntimeError('out of bounds linked memory.copy')
         }
