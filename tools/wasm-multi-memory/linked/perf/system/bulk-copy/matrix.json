@@ -1,0 +1,1665 @@
+{
+ "packages": {
+  "stock": [
+   "177b4e3db0beaae089c7837aafc8e96fcc263df4687850ac31593c5ae1428455  electric-sql-pglite-0.5.4.tgz",
+   "a8b9b4596250d7000aa74837b4c9133ab0bc983f7fdb74185571c85c74a70e61  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "81869dfb4aad16a70b174b0f5133f959c606c07e63180c7f9c619b757f9ace03  electric-sql-pglite-postgis-0.2.4.tgz"
+  ],
+  "linked": [
+   "ea32039e5e514c62a75200c62a09dd299aa11f6e2253aea54a91eec4f5777920  electric-sql-pglite-0.5.4.tgz",
+   "81c9329e5511f62a1511c9a4c79b233c31734a9fd158dca03aad3b6643a0ecb9  electric-sql-pglite-age-0.0.5.tgz",
+   "0a67a2fe5494dd17ce744b138f94148ec0195952e36d5b58f7b6dc18a46c201a  electric-sql-pglite-pg_hashids-0.0.5.tgz",
+   "603a4f427648386d2f02883d615d8a66384db70d6280e8fcf588e91010cdba89  electric-sql-pglite-pg_ivm-0.0.5.tgz",
+   "194aff692223d3a0f8f58dcfd74c33c03a87c363cc75da1c6f03ff78db179fcc  electric-sql-pglite-pg_textsearch-0.0.6.tgz",
+   "cea7794ee9fed035235a6fbb77e7d48095641f839fef7ccd6b138e608dd44cb9  electric-sql-pglite-pg_uuidv7-0.0.5.tgz",
+   "b5066bd9ee8dc74e17aa9952d2b0a0ef26ffd0d039eb372910a4b3137b6fe981  electric-sql-pglite-pgmq-0.0.2.tgz",
+   "5ab00d4f3cad3d9891639cde5f0791619c1c46b402dcef2eeeb222827ed15b5d  electric-sql-pglite-pgtap-0.0.5.tgz",
+   "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78  electric-sql-pglite-postgis-0.2.4.tgz"
+  ]
+ },
+ "plans": {
+  "point": {
+   "Node Type": "Index Only Scan",
+   "Index Name": "items_pkey",
+   "Relation Name": "items",
+   "Parallel Aware": false
+  },
+  "indexed_update": {
+   "Node Type": "ModifyTable",
+   "Relation Name": "items",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "items_pkey",
+     "Relation Name": "items",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "join": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Hash Join",
+     "Join Type": "Inner",
+     "Parallel Aware": false,
+     "Plans": [
+      {
+       "Node Type": "Seq Scan",
+       "Relation Name": "items",
+       "Parallel Aware": false
+      },
+      {
+       "Node Type": "Hash",
+       "Parallel Aware": false,
+       "Plans": [
+        {
+         "Node Type": "Seq Scan",
+         "Relation Name": "groups",
+         "Parallel Aware": false
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "spatial": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Bitmap Heap Scan",
+     "Relation Name": "places",
+     "Parallel Aware": false,
+     "Plans": [
+      {
+       "Node Type": "Bitmap Index Scan",
+       "Index Name": "places_gist",
+       "Parallel Aware": false
+      }
+     ]
+    }
+   ]
+  },
+  "inline_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "hnsw_search": {
+   "Node Type": "Limit",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "points_pkey",
+     "Relation Name": "points",
+     "Parallel Aware": false
+    },
+    {
+     "Node Type": "Index Scan",
+     "Index Name": "points_hnsw",
+     "Relation Name": "points",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "serial_aggregate": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "items",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "parallel_aggregate": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Gather",
+     "Parallel Aware": false,
+     "Workers Planned": 2,
+     "Plans": [
+      {
+       "Node Type": "Aggregate",
+       "Strategy": "Plain",
+       "Parallel Aware": false,
+       "Plans": [
+        {
+         "Node Type": "Seq Scan",
+         "Relation Name": "items",
+         "Parallel Aware": true
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "runs": [
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "stage": "release",
+   "round": 0,
+   "latency": {
+    "point": 0.12683300000026065,
+    "indexed_update": 0.1329160000000229,
+    "join": 5.579574000000321,
+    "spatial": 0.24333299999989322,
+    "inline_payload_heap": 0.3019160000003467,
+    "inline_payload_detoast": 0.302958000000217,
+    "inline_payload_copy": 0.4032910000000811,
+    "external_payload_heap": 0.19887500000004366,
+    "external_payload_detoast": 1.9417889999999716,
+    "external_payload_copy": 1.8774549999998271,
+    "hnsw_build": 2008.3390600000002,
+    "hnsw_search": 0.8662152812499926,
+    "serial_aggregate": 4.140617999999449
+   },
+   "throughput": {
+    "point": {
+     "1": 8473.983810453745
+    },
+    "hnsw_search": {
+     "1": 1154.4474239209326
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 765468672,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1324.292802,
+   "beforeExtensionMemory": {
+    "rss": 901337088,
+    "privateBytes": 134217728
+   },
+   "baseRss": 59400192,
+   "createExtensionsMs": 2366.3078910000004,
+   "sessionSetupMs": [],
+   "peakRss": 987508736
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "stage": "release",
+   "round": 1,
+   "latency": {
+    "point": 0.1290830000002643,
+    "indexed_update": 0.14958300000034797,
+    "join": 7.879110999999739,
+    "spatial": 0.25562399999989793,
+    "inline_payload_heap": 0.3484990000001744,
+    "inline_payload_detoast": 0.35937400000057096,
+    "inline_payload_copy": 0.4629159999994954,
+    "external_payload_heap": 0.20799999999962893,
+    "external_payload_detoast": 1.9664139999995314,
+    "external_payload_copy": 1.9697470000000976,
+    "hnsw_build": 2084.273303,
+    "hnsw_search": 0.8456469531249979,
+    "serial_aggregate": 3.8831600000003164
+   },
+   "throughput": {
+    "point": {
+     "1": 7384.522226028054
+    },
+    "hnsw_search": {
+     "1": 1182.5265807493386
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 747356160,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1324.146553,
+   "beforeExtensionMemory": {
+    "rss": 898732032,
+    "privateBytes": 134217728
+   },
+   "baseRss": 58097664,
+   "createExtensionsMs": 2364.703018,
+   "sessionSetupMs": [],
+   "peakRss": 1009598464
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "stage": "release",
+   "round": 2,
+   "latency": {
+    "point": 0.13137499999993452,
+    "indexed_update": 0.13929099999995742,
+    "join": 5.7023650000001,
+    "spatial": 0.2523330000003625,
+    "inline_payload_heap": 0.3042489999997997,
+    "inline_payload_detoast": 0.3105409999998301,
+    "inline_payload_copy": 0.42129099999965547,
+    "external_payload_heap": 0.21241699999973207,
+    "external_payload_detoast": 1.9551630000005389,
+    "external_payload_copy": 1.9194550000001982,
+    "hnsw_build": 2179.250828,
+    "hnsw_search": 0.8297791406249928,
+    "serial_aggregate": 3.9137430000000677
+   },
+   "throughput": {
+    "point": {
+     "1": 8425.456040973068
+    },
+    "hnsw_search": {
+     "1": 1205.139959588278
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 706392064,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1346.340238,
+   "beforeExtensionMemory": {
+    "rss": 856367104,
+    "privateBytes": 134217728
+   },
+   "baseRss": 58863616,
+   "createExtensionsMs": 2489.369621,
+   "sessionSetupMs": [],
+   "peakRss": 940978176
+  },
+  {
+   "engine": "stock",
+   "mode": "classic",
+   "stage": "release",
+   "round": 3,
+   "latency": {
+    "point": 0.12754099999983737,
+    "indexed_update": 0.14987499999961074,
+    "join": 5.667531000000054,
+    "spatial": 0.25549899999987247,
+    "inline_payload_heap": 0.30391599999984464,
+    "inline_payload_detoast": 0.30687399999987974,
+    "inline_payload_copy": 0.4203330000000278,
+    "external_payload_heap": 0.21016699999927368,
+    "external_payload_detoast": 1.9689140000000407,
+    "external_payload_copy": 1.9433710000002975,
+    "hnsw_build": 2083.3036619999993,
+    "hnsw_search": 0.8281176874999971,
+    "serial_aggregate": 3.887576000000081
+   },
+   "throughput": {
+    "point": {
+     "1": 7554.867223208954
+    },
+    "hnsw_search": {
+     "1": 1207.5578327748294
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 724774912,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1298.326447,
+   "beforeExtensionMemory": {
+    "rss": 877031424,
+    "privateBytes": 134217728
+   },
+   "baseRss": 58085376,
+   "createExtensionsMs": 2434.501383,
+   "sessionSetupMs": [],
+   "peakRss": 987795456
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "stage": "release",
+   "round": 0,
+   "latency": {
+    "point": 0.1288750000003347,
+    "indexed_update": 0.13758300000017698,
+    "join": 5.625366000000213,
+    "spatial": 0.2760830000001988,
+    "inline_payload_heap": 0.3207500000003165,
+    "inline_payload_detoast": 0.31454100000019025,
+    "inline_payload_copy": 0.4391239999999925,
+    "external_payload_heap": 0.22599999999965803,
+    "external_payload_detoast": 1.9974550000006275,
+    "external_payload_copy": 1.9773299999997107,
+    "hnsw_build": 2135.7970449999993,
+    "hnsw_search": 0.8262055781249984,
+    "serial_aggregate": 3.945992999999362
+   },
+   "throughput": {
+    "point": {
+     "1": 6558.200855968244
+    },
+    "hnsw_search": {
+     "1": 1210.3525157375636
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 759226368,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1260.7424139999998,
+   "beforeExtensionMemory": {
+    "rss": 860758016,
+    "privateBytes": 134217728
+   },
+   "baseRss": 60301312,
+   "createExtensionsMs": 2437.834974,
+   "sessionSetupMs": [],
+   "peakRss": 1010462720
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "stage": "release",
+   "round": 1,
+   "latency": {
+    "point": 0.12845800000013696,
+    "indexed_update": 0.14108300000043528,
+    "join": 5.720072999999502,
+    "spatial": 0.25866599999972095,
+    "inline_payload_heap": 0.3052080000006754,
+    "inline_payload_detoast": 0.31437499999992724,
+    "inline_payload_copy": 0.4197490000005928,
+    "external_payload_heap": 0.21541600000000471,
+    "external_payload_detoast": 1.966247000000294,
+    "external_payload_copy": 1.9294129999998404,
+    "hnsw_build": 2222.0995189999994,
+    "hnsw_search": 0.9629605468749958,
+    "serial_aggregate": 3.8557849999997416
+   },
+   "throughput": {
+    "point": {
+     "1": 8016.088289196809
+    },
+    "hnsw_search": {
+     "1": 1038.4641439830582
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 856305664,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1237.2006629999998,
+   "beforeExtensionMemory": {
+    "rss": 935616512,
+    "privateBytes": 134217728
+   },
+   "baseRss": 58630144,
+   "createExtensionsMs": 2645.328109,
+   "sessionSetupMs": [],
+   "peakRss": 1085452288
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "stage": "release",
+   "round": 2,
+   "latency": {
+    "point": 0.12620800000013332,
+    "indexed_update": 0.14162500000020373,
+    "join": 5.697239999999965,
+    "spatial": 0.2633739999992031,
+    "inline_payload_heap": 0.3042910000003758,
+    "inline_payload_detoast": 0.30979200000001583,
+    "inline_payload_copy": 0.41724900000008347,
+    "external_payload_heap": 0.2052079999994021,
+    "external_payload_detoast": 1.9267460000000938,
+    "external_payload_copy": 1.9047890000001644,
+    "hnsw_build": 2147.0618840000006,
+    "hnsw_search": 0.8449978906249953,
+    "serial_aggregate": 3.996368000000075
+   },
+   "throughput": {
+    "point": {
+     "1": 8335.789569244189
+    },
+    "hnsw_search": {
+     "1": 1183.4349068733873
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 865890304,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1223.697451,
+   "beforeExtensionMemory": {
+    "rss": 937316352,
+    "privateBytes": 134217728
+   },
+   "baseRss": 58646528,
+   "createExtensionsMs": 2550.6790140000003,
+   "sessionSetupMs": [],
+   "peakRss": 1145323520
+  },
+  {
+   "engine": "linked",
+   "mode": "classic",
+   "stage": "release",
+   "round": 3,
+   "latency": {
+    "point": 0.13333300000022064,
+    "indexed_update": 0.14737500000001091,
+    "join": 6.048905999999533,
+    "spatial": 0.2449160000005577,
+    "inline_payload_heap": 0.3171250000004875,
+    "inline_payload_detoast": 0.3276660000001357,
+    "inline_payload_copy": 0.4240829999998823,
+    "external_payload_heap": 0.22375000000010914,
+    "external_payload_detoast": 2.157995999999912,
+    "external_payload_copy": 2.0025380000006407,
+    "hnsw_build": 2123.952050000001,
+    "hnsw_search": 0.8307921718750038,
+    "serial_aggregate": 3.926451999999699
+   },
+   "throughput": {
+    "point": {
+     "1": 6636.577392602528
+    },
+    "hnsw_search": {
+     "1": 1203.6704651936157
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 771694592,
+     "privateBytes": 161087488
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1234.9862229999999,
+   "beforeExtensionMemory": {
+    "rss": 866742272,
+    "privateBytes": 134217728
+   },
+   "baseRss": 59830272,
+   "createExtensionsMs": 2546.886104,
+   "sessionSetupMs": [],
+   "peakRss": 1016709120
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 0,
+   "latency": {
+    "point": 0.5677910000003976,
+    "indexed_update": 0.5827070000004824,
+    "join": 10.24477300000035,
+    "spatial": 0.6990820000000895,
+    "inline_payload_heap": 0.6190409999999247,
+    "inline_payload_detoast": 0.8564150000001973,
+    "inline_payload_copy": 1.7187050000002273,
+    "external_payload_heap": 0.6190819999992527,
+    "external_payload_detoast": 4.108825999999681,
+    "external_payload_copy": 3.9507430000003296,
+    "hnsw_build": 2137.917875,
+    "hnsw_search": 1.150824796875014,
+    "serial_aggregate": 7.128778999998758,
+    "parallel_aggregate": 175.40631699999904
+   },
+   "throughput": {
+    "point": {
+     "1": 2440.140680210432,
+     "2": 3527.116221510839,
+     "4": 4370.90816407766,
+     "8": 4659.891281823797
+    },
+    "hnsw_search": {
+     "1": 868.9419994385171,
+     "2": 1169.7405590376388,
+     "4": 1531.7734693723921,
+     "8": 2440.2143667315154
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 3014656000,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 3106844672,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 3429453824,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 4214763520,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 2353.3465380000002,
+   "beforeExtensionMemory": {
+    "rss": 2986446848,
+    "privateBytes": 268435456,
+    "globalBytes": 23330816,
+    "scopedBytes": 524288,
+    "privateHeaps": 8
+   },
+   "baseRss": 60227584,
+   "createExtensionsMs": 2716.1436939999994,
+   "sessionSetupMs": [
+    153.69814699999915,
+    157.97022199999992,
+    169.99395200000072,
+    162.68825599999946,
+    168.77499500000067,
+    183.85905300000013,
+    203.4172269999999
+   ],
+   "peakRss": 4945670144
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 1,
+   "latency": {
+    "point": 0.5502490000008038,
+    "indexed_update": 0.5027899999995498,
+    "join": 10.258106999999654,
+    "spatial": 0.6959160000005795,
+    "inline_payload_heap": 0.8209569999999076,
+    "inline_payload_detoast": 0.6670819999999367,
+    "inline_payload_copy": 0.7909989999998288,
+    "external_payload_heap": 0.5950830000001588,
+    "external_payload_detoast": 3.925492999999733,
+    "external_payload_copy": 3.7987849999999526,
+    "hnsw_build": 2185.5330830000003,
+    "hnsw_search": 1.205617671875018,
+    "serial_aggregate": 6.6061550000013085,
+    "parallel_aggregate": 176.08985799999937
+   },
+   "throughput": {
+    "point": {
+     "1": 2259.4189261709444,
+     "2": 3346.5424151243355,
+     "4": 4473.029901156044,
+     "8": 4846.795079473126
+    },
+    "hnsw_search": {
+     "1": 829.450350080524,
+     "2": 1321.4199342680408,
+     "4": 1661.31213651333,
+     "8": 2372.080376757444
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 2915082240,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 2984562688,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 3377455104,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 4155629568,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 2810.4992789999997,
+   "beforeExtensionMemory": {
+    "rss": 2754650112,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 59678720,
+   "createExtensionsMs": 2746.601265,
+   "sessionSetupMs": [
+    161.7136330000003,
+    177.243023,
+    187.20725500000026,
+    175.25290099999984,
+    164.57708699999966,
+    159.71771900000022,
+    182.35972200000015
+   ],
+   "peakRss": 4884897792
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 2,
+   "latency": {
+    "point": 0.7733739999994214,
+    "indexed_update": 0.5976239999999962,
+    "join": 11.960853999999927,
+    "spatial": 1.2115389999999024,
+    "inline_payload_heap": 0.9581650000000081,
+    "inline_payload_detoast": 0.7138740000000325,
+    "inline_payload_copy": 1.347538999999415,
+    "external_payload_heap": 0.7362489999995887,
+    "external_payload_detoast": 4.863658000000214,
+    "external_payload_copy": 5.119450000000143,
+    "hnsw_build": 2175.4402099999998,
+    "hnsw_search": 1.267579171874985,
+    "serial_aggregate": 6.563822000000073,
+    "parallel_aggregate": 178.31548100000145
+   },
+   "throughput": {
+    "point": {
+     "1": 2453.670484015721,
+     "2": 3360.6664033442835,
+     "4": 4576.694385225451,
+     "8": 4839.342889825512
+    },
+    "hnsw_search": {
+     "1": 788.9053576991284,
+     "2": 1300.5410047370417,
+     "4": 1842.8942977452411,
+     "8": 2605.315184924831
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 2873229312,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 2993192960,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 3380211712,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 4159266816,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 319,
+    "hnswHits2": 319,
+    "hnswHits4": 319,
+    "hnswHits8": 319
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 2198.0171969999997,
+   "beforeExtensionMemory": {
+    "rss": 2690416640,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 59641856,
+   "createExtensionsMs": 2622.4555559999994,
+   "sessionSetupMs": [
+    163.8400899999997,
+    176.83802500000002,
+    177.20627499999955,
+    170.21561999999994,
+    158.68676500000038,
+    167.07133299999987,
+    164.82871299999988
+   ],
+   "peakRss": 4944941056
+  },
+  {
+   "engine": "stock",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 3,
+   "latency": {
+    "point": 0.39170800000010786,
+    "indexed_update": 0.3478740000000471,
+    "join": 11.335313000000497,
+    "spatial": 0.5006240000002435,
+    "inline_payload_heap": 0.8457909999997355,
+    "inline_payload_detoast": 0.9031240000003891,
+    "inline_payload_copy": 1.0508319999999003,
+    "external_payload_heap": 0.5853729999998905,
+    "external_payload_detoast": 3.907492999999704,
+    "external_payload_copy": 3.86945199999991,
+    "hnsw_build": 2204.2314929999993,
+    "hnsw_search": 1.1757140937500026,
+    "serial_aggregate": 6.774322000001121,
+    "parallel_aggregate": 183.824971
+   },
+   "throughput": {
+    "point": {
+     "1": 1943.999627967049,
+     "2": 3447.972306748146,
+     "4": 4235.484465301485,
+     "8": 4947.0117073350175
+    },
+    "hnsw_search": {
+     "1": 850.5469189456145,
+     "2": 1316.2653479881703,
+     "4": 1720.0574284174365,
+     "8": 2381.229659554847
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 2970767360,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 3064455168,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 3389120512,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 4178440192,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 2187.6906879999997,
+   "beforeExtensionMemory": {
+    "rss": 2928943104,
+    "privateBytes": 268435456,
+    "globalBytes": 23330816,
+    "scopedBytes": 524288,
+    "privateHeaps": 8
+   },
+   "baseRss": 58458112,
+   "createExtensionsMs": 2652.5552540000003,
+   "sessionSetupMs": [
+    158.64130699999987,
+    161.58909399999993,
+    176.58498400000008,
+    172.24349099999927,
+    173.6589899999999,
+    162.98279900000034,
+    170.8281189999998
+   ],
+   "peakRss": 4910288896
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 0,
+   "latency": {
+    "point": 0.5562069999996311,
+    "indexed_update": 0.5429990000002363,
+    "join": 13.619101000000228,
+    "spatial": 0.7756660000004558,
+    "inline_payload_heap": 0.8680400000002919,
+    "inline_payload_detoast": 0.8842899999999645,
+    "inline_payload_copy": 1.1758730000001378,
+    "external_payload_heap": 0.7354569999997693,
+    "external_payload_detoast": 5.146698999999899,
+    "external_payload_copy": 5.104198999999426,
+    "hnsw_build": 2173.4594369999995,
+    "hnsw_search": 1.447610750000024,
+    "serial_aggregate": 7.840362000000823,
+    "parallel_aggregate": 89.86405100000047
+   },
+   "throughput": {
+    "point": {
+     "1": 2043.227869679252,
+     "2": 3328.261548105602,
+     "4": 4926.859614293499,
+     "8": 4737.269199689311
+    },
+    "hnsw_search": {
+     "1": 690.7934332485328,
+     "2": 1103.1308404530073,
+     "4": 1743.6743173828509,
+     "8": 2214.9806199577733
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 1826516992,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 1858396160,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 2113662976,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 2622234624,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 319,
+    "hnswHits2": 319,
+    "hnswHits4": 319,
+    "hnswHits8": 319
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1741.784528,
+   "beforeExtensionMemory": {
+    "rss": 1574223872,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 60260352,
+   "createExtensionsMs": 2816.533476,
+   "sessionSetupMs": [
+    81.11619100000007,
+    78.94207000000006,
+    104.50085800000033,
+    78.82431999999972,
+    79.60061000000042,
+    78.55882099999963,
+    78.72982000000047
+   ],
+   "peakRss": 3036508160
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 1,
+   "latency": {
+    "point": 0.6252899999999499,
+    "indexed_update": 0.6783740000000762,
+    "join": 12.444770000000062,
+    "spatial": 0.9380400000000009,
+    "inline_payload_heap": 0.8380399999996371,
+    "inline_payload_detoast": 0.8772060000001147,
+    "inline_payload_copy": 1.3003719999996974,
+    "external_payload_heap": 0.7441239999998288,
+    "external_payload_detoast": 5.469614999999976,
+    "external_payload_copy": 5.261657000000014,
+    "hnsw_build": 2214.8364899999997,
+    "hnsw_search": 1.3737762343750148,
+    "serial_aggregate": 7.652027999998609,
+    "parallel_aggregate": 88.56396999999924
+   },
+   "throughput": {
+    "point": {
+     "1": 1974.8778260347137,
+     "2": 3051.808454005399,
+     "4": 4187.016219715925,
+     "8": 4831.047694216739
+    },
+    "hnsw_search": {
+     "1": 727.9205848650741,
+     "2": 1166.9589290992717,
+     "4": 1725.085938255783,
+     "8": 2040.3563354817493
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 1893306368,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 1925398528,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 2177056768,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 2683248640,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1787.409448,
+   "beforeExtensionMemory": {
+    "rss": 1605955584,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 59555840,
+   "createExtensionsMs": 2903.303574,
+   "sessionSetupMs": [
+    93.34571099999994,
+    104.96877399999994,
+    108.00110200000017,
+    99.69057499999963,
+    102.78898599999957,
+    102.45661199999995,
+    98.59549400000014
+   ],
+   "peakRss": 3094544384
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 2,
+   "latency": {
+    "point": 0.35574999999971624,
+    "indexed_update": 0.5189159999999902,
+    "join": 13.531850999999733,
+    "spatial": 0.7233320000004824,
+    "inline_payload_heap": 0.8875820000002932,
+    "inline_payload_detoast": 0.9216239999996105,
+    "inline_payload_copy": 1.1852890000000116,
+    "external_payload_heap": 0.6384159999997792,
+    "external_payload_detoast": 5.410490999999638,
+    "external_payload_copy": 5.190950000000157,
+    "hnsw_build": 2211.621437999999,
+    "hnsw_search": 1.4169220156250049,
+    "serial_aggregate": 7.746653000000151,
+    "parallel_aggregate": 90.87275800000134
+   },
+   "throughput": {
+    "point": {
+     "1": 2259.192973909849,
+     "2": 3567.6188641416943,
+     "4": 4670.290958396724,
+     "8": 4670.3192455099515
+    },
+    "hnsw_search": {
+     "1": 705.7551431713055,
+     "2": 1166.5875544101473,
+     "4": 1646.5151224438996,
+     "8": 2245.2010756476843
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 1883295744,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 1920688128,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 2175369216,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 2677768192,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1714.010347,
+   "beforeExtensionMemory": {
+    "rss": 1584390144,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 58281984,
+   "createExtensionsMs": 2995.855321,
+   "sessionSetupMs": [
+    79.48411099999976,
+    86.55272400000013,
+    106.29414799999995,
+    95.53462500000023,
+    87.66730499999994,
+    87.04384800000025,
+    88.8445529999999
+   ],
+   "peakRss": 3109584896
+  },
+  {
+   "engine": "linked",
+   "mode": "postmaster",
+   "stage": "release",
+   "round": 3,
+   "latency": {
+    "point": 0.4752909999997428,
+    "indexed_update": 0.3682909999997719,
+    "join": 13.746267999999873,
+    "spatial": 0.7095819999995001,
+    "inline_payload_heap": 0.8944979999996576,
+    "inline_payload_detoast": 0.942456000000675,
+    "inline_payload_copy": 0.9492479999998977,
+    "external_payload_heap": 0.5319990000007238,
+    "external_payload_detoast": 5.308823999999731,
+    "external_payload_copy": 5.083865999999944,
+    "hnsw_build": 2236.9397690000005,
+    "hnsw_search": 1.431590593750002,
+    "serial_aggregate": 7.792862000000241,
+    "parallel_aggregate": 95.42016700000022
+   },
+   "throughput": {
+    "point": {
+     "1": 2125.058214973681,
+     "2": 3584.001576960654,
+     "4": 4044.4538562255325,
+     "8": 4421.309329307911
+    },
+    "hnsw_search": {
+     "1": 698.5237290366198,
+     "2": 1142.831918924074,
+     "4": 1609.2374655928325,
+     "8": 2030.8764942451357
+    }
+   },
+   "memory": {
+    "1": {
+     "rss": 1796116480,
+     "privateBytes": 201326592,
+     "globalBytes": 23330816,
+     "scopedBytes": 262144,
+     "privateHeaps": 6
+    },
+    "2": {
+     "rss": 1830162432,
+     "privateBytes": 234881024,
+     "globalBytes": 23330816,
+     "scopedBytes": 393216,
+     "privateHeaps": 7
+    },
+    "4": {
+     "rss": 2106441728,
+     "privateBytes": 301989888,
+     "globalBytes": 23330816,
+     "scopedBytes": 655360,
+     "privateHeaps": 9
+    },
+    "8": {
+     "rss": 2606874624,
+     "privateBytes": 436207616,
+     "globalBytes": 23330816,
+     "scopedBytes": 1179648,
+     "privateHeaps": 13
+    }
+   },
+   "checks": {
+    "inline_payload_heap": 524800,
+    "inline_payload_detoast": 131855,
+    "inline_payload_copy": 43008,
+    "external_payload_heap": 524800,
+    "external_payload_detoast": 131855,
+    "external_payload_copy": 43008,
+    "vectors": 23280.725224067763,
+    "hnswHits1": 320,
+    "hnswHits2": 320,
+    "hnswHits4": 320,
+    "hnswHits8": 320
+   },
+   "storage": {
+    "inline_payload": 0,
+    "external_payload": 2048
+   },
+   "startupMs": 1714.021014,
+   "beforeExtensionMemory": {
+    "rss": 1537019904,
+    "privateBytes": 201326592,
+    "globalBytes": 23330816,
+    "scopedBytes": 262144,
+    "privateHeaps": 6
+   },
+   "baseRss": 59097088,
+   "createExtensionsMs": 2848.080954,
+   "sessionSetupMs": [
+    80.02856900000006,
+    87.95684700000038,
+    109.03539300000011,
+    88.3639290000001,
+    85.88989200000015,
+    88.68617900000027,
+    92.73079700000017
+   ],
+   "peakRss": 3025788928
+  }
+ ],
+ "settings": {
+  "shared_buffers": "16MB",
+  "fsync": "off",
+  "synchronous_commit": "off",
+  "full_page_writes": "off",
+  "autovacuum": "off",
+  "io_method": "sync",
+  "jit": "off",
+  "max_parallel_workers_per_gather": "0",
+  "max_parallel_maintenance_workers": "0",
+  "maintenance_work_mem": "32MB"
+ },
+ "node": "v22.13.0",
+ "checks": {
+  "inline_payload_heap": 524800,
+  "inline_payload_detoast": 131855,
+  "inline_payload_copy": 43008,
+  "external_payload_heap": 524800,
+  "external_payload_detoast": 131855,
+  "external_payload_copy": 43008,
+  "vectors": 23280.725224067763
+ },
+ "parallelLeader": {
+  "stock": {
+   "engine": "stock",
+   "fresh": {
+    "workers": 2
+   },
+   "loaded": {
+    "code": "58P01",
+    "message": "could not access file \"/pglite/lib/postgresql/vector.so\": No such file or directory",
+    "where": "parallel worker"
+   }
+  },
+  "linked": {
+   "engine": "linked",
+   "fresh": {
+    "workers": 2
+   },
+   "loaded": {
+    "workers": 2
+   }
+  }
+ },
+ "startupTraces": {
+  "stock-classic": {
+   "classic initialization": [
+    25.587,
+    1401.353
+   ],
+   "worker wasm instantiation": []
+  },
+  "linked-classic": {
+   "classic initialization": [
+    27.146,
+    1231.584
+   ],
+   "worker wasm instantiation": []
+  },
+  "stock-postmaster": {
+   "classic initialization": [
+    22.654,
+    726.676
+   ],
+   "worker online": [
+    17.171,
+    11.652,
+    11.608,
+    11.41,
+    13.535,
+    11.619,
+    11.299,
+    11.826,
+    11.422
+   ],
+   "worker runtime ready": [
+    206.393,
+    202.684,
+    201.572,
+    207.493,
+    214.704,
+    172.046,
+    177.308,
+    183.034,
+    164.552
+   ],
+   "cluster ready": [
+    1969.637
+   ],
+   "extension preparation": [
+    504.877
+   ],
+   "first connection": [
+    224.833
+   ],
+   "worker wasm instantiation": [
+    23.59,
+    28.363,
+    30.369,
+    34.007,
+    30.338,
+    24.905,
+    26.376,
+    22.812,
+    22.052
+   ]
+  },
+  "linked-postmaster": {
+   "classic initialization": [
+    21.941,
+    747.155
+   ],
+   "worker online": [
+    22.075,
+    11.842,
+    11.425,
+    11.331,
+    11.434,
+    11.917,
+    11.717,
+    11.678,
+    11.291
+   ],
+   "worker runtime ready": [
+    96.762,
+    99.856,
+    99.402,
+    102.502,
+    104.242,
+    81.294,
+    82.098,
+    89.825,
+    77.119
+   ],
+   "cluster ready": [
+    1619.226
+   ],
+   "extension preparation": [
+    435.953
+   ],
+   "first connection": [
+    137.753
+   ],
+   "worker wasm instantiation": [
+    7.262,
+    6.223,
+    5.557,
+    5.295,
+    4.84,
+    4.558,
+    4.538,
+    4.677,
+    5.99
+   ]
+  }
+ }
+}

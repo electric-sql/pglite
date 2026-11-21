@@ -1,0 +1,356 @@
+{
+ "samplesPerQuery": 150,
+ "runs": [
+  {
+   "engine": "after",
+   "round": 0,
+   "latency": {
+    "inline_payload_heap": 1.0125395000000026,
+    "inline_payload_detoast": 0.9007690000003095,
+    "inline_payload_copy": 0.9312275000002046,
+    "external_payload_heap": 0.5075409999999465,
+    "external_payload_detoast": 5.478970000000118,
+    "external_payload_copy": 6.07126049999988
+   }
+  },
+  {
+   "engine": "before",
+   "round": 0,
+   "latency": {
+    "inline_payload_heap": 0.906311000000187,
+    "inline_payload_detoast": 0.8617694999998093,
+    "inline_payload_copy": 1.006123000000116,
+    "external_payload_heap": 0.4808539999999084,
+    "external_payload_detoast": 5.404949000000215,
+    "external_payload_copy": 5.402636000000257
+   }
+  },
+  {
+   "engine": "after",
+   "round": 1,
+   "latency": {
+    "inline_payload_heap": 0.9945600000000923,
+    "inline_payload_detoast": 0.888311000000158,
+    "inline_payload_copy": 0.9255819999998494,
+    "external_payload_heap": 0.6167069999996784,
+    "external_payload_detoast": 5.131011999999828,
+    "external_payload_copy": 5.127157500000067
+   }
+  },
+  {
+   "engine": "before",
+   "round": 1,
+   "latency": {
+    "inline_payload_heap": 0.9309984999995322,
+    "inline_payload_detoast": 0.8925610000001143,
+    "inline_payload_copy": 0.8918319999997948,
+    "external_payload_heap": 0.6588529999999082,
+    "external_payload_detoast": 5.265345499999967,
+    "external_payload_copy": 5.166449499999999
+   }
+  },
+  {
+   "engine": "after",
+   "round": 2,
+   "latency": {
+    "inline_payload_heap": 0.9094354999997449,
+    "inline_payload_detoast": 0.7837485000000015,
+    "inline_payload_copy": 0.9846030000003339,
+    "external_payload_heap": 0.48681200000009994,
+    "external_payload_detoast": 5.3177614999999605,
+    "external_payload_copy": 5.383761499999764
+   }
+  },
+  {
+   "engine": "before",
+   "round": 2,
+   "latency": {
+    "inline_payload_heap": 0.8539985000002162,
+    "inline_payload_detoast": 0.775499000000309,
+    "inline_payload_copy": 0.9326854999999341,
+    "external_payload_heap": 0.6130199999997785,
+    "external_payload_detoast": 5.1476159999997435,
+    "external_payload_copy": 5.101116499999989
+   }
+  },
+  {
+   "engine": "after",
+   "round": 3,
+   "latency": {
+    "inline_payload_heap": 0.9763105000001815,
+    "inline_payload_detoast": 0.8592065000002549,
+    "inline_payload_copy": 0.9756024999996953,
+    "external_payload_heap": 0.5393119999998817,
+    "external_payload_detoast": 5.154324999999972,
+    "external_payload_copy": 5.075387000000319
+   }
+  },
+  {
+   "engine": "before",
+   "round": 3,
+   "latency": {
+    "inline_payload_heap": 1.1013729999999669,
+    "inline_payload_detoast": 1.0804565000003095,
+    "inline_payload_copy": 1.1160815000002913,
+    "external_payload_heap": 0.49335350000046674,
+    "external_payload_detoast": 5.334803499999907,
+    "external_payload_copy": 5.385365500000262
+   }
+  },
+  {
+   "engine": "after",
+   "round": 4,
+   "latency": {
+    "inline_payload_heap": 0.9412899999997535,
+    "inline_payload_detoast": 0.77516549999973,
+    "inline_payload_copy": 0.80760250000003,
+    "external_payload_heap": 0.6384159999997792,
+    "external_payload_detoast": 5.10401150000007,
+    "external_payload_copy": 5.105824499999926
+   }
+  },
+  {
+   "engine": "before",
+   "round": 4,
+   "latency": {
+    "inline_payload_heap": 0.9453519999997297,
+    "inline_payload_detoast": 0.8483939999996437,
+    "inline_payload_copy": 1.1356019999998352,
+    "external_payload_heap": 0.5254369999997834,
+    "external_payload_detoast": 5.480136499999844,
+    "external_payload_copy": 5.469178499999998
+   }
+  },
+  {
+   "engine": "after",
+   "round": 5,
+   "latency": {
+    "inline_payload_heap": 0.9664980000002288,
+    "inline_payload_detoast": 0.86110299999973,
+    "inline_payload_copy": 0.9657895000000281,
+    "external_payload_heap": 0.626040500000272,
+    "external_payload_detoast": 5.1244705000003705,
+    "external_payload_copy": 5.095157999999628
+   }
+  },
+  {
+   "engine": "before",
+   "round": 5,
+   "latency": {
+    "inline_payload_heap": 0.882248499999605,
+    "inline_payload_detoast": 0.8166240000000471,
+    "inline_payload_copy": 0.9406650000000809,
+    "external_payload_heap": 0.6665820000002896,
+    "external_payload_detoast": 5.42301150000003,
+    "external_payload_copy": 5.440219500000239
+   }
+  }
+ ],
+ "settings": {
+  "shared_buffers": "16MB",
+  "fsync": "off",
+  "synchronous_commit": "off",
+  "full_page_writes": "off",
+  "autovacuum": "off",
+  "io_method": "sync",
+  "jit": "off",
+  "max_parallel_workers_per_gather": "0",
+  "max_parallel_maintenance_workers": "0",
+  "maintenance_work_mem": "32MB"
+ },
+ "node": "v22.13.0",
+ "plans": {
+  "inline_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "inline_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "inline_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_heap": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_detoast": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  },
+  "external_payload_copy": {
+   "Node Type": "Aggregate",
+   "Strategy": "Plain",
+   "Parallel Aware": false,
+   "Plans": [
+    {
+     "Node Type": "Seq Scan",
+     "Relation Name": "external_payload",
+     "Parallel Aware": false
+    }
+   ]
+  }
+ },
+ "storage": {
+  "inline_payload": 0,
+  "external_payload": 2048
+ },
+ "checks": {
+  "inline_payload_heap": 524800,
+  "inline_payload_detoast": 131855,
+  "inline_payload_copy": 43008,
+  "external_payload_heap": 524800,
+  "external_payload_detoast": 131855,
+  "external_payload_copy": 43008
+ },
+ "packages": {
+  "before": [
+   "8dde1a4c9a50b12defcf2861a226626e90b7030fa944c920f92f61b4e73e1827  electric-sql-pglite-0.5.4.tgz",
+   "81c9329e5511f62a1511c9a4c79b233c31734a9fd158dca03aad3b6643a0ecb9  electric-sql-pglite-age-0.0.5.tgz",
+   "0a67a2fe5494dd17ce744b138f94148ec0195952e36d5b58f7b6dc18a46c201a  electric-sql-pglite-pg_hashids-0.0.5.tgz",
+   "603a4f427648386d2f02883d615d8a66384db70d6280e8fcf588e91010cdba89  electric-sql-pglite-pg_ivm-0.0.5.tgz",
+   "194aff692223d3a0f8f58dcfd74c33c03a87c363cc75da1c6f03ff78db179fcc  electric-sql-pglite-pg_textsearch-0.0.6.tgz",
+   "cea7794ee9fed035235a6fbb77e7d48095641f839fef7ccd6b138e608dd44cb9  electric-sql-pglite-pg_uuidv7-0.0.5.tgz",
+   "b5066bd9ee8dc74e17aa9952d2b0a0ef26ffd0d039eb372910a4b3137b6fe981  electric-sql-pglite-pgmq-0.0.2.tgz",
+   "5ab00d4f3cad3d9891639cde5f0791619c1c46b402dcef2eeeb222827ed15b5d  electric-sql-pglite-pgtap-0.0.5.tgz",
+   "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78  electric-sql-pglite-postgis-0.2.4.tgz"
+  ],
+  "after": [
+   "ea32039e5e514c62a75200c62a09dd299aa11f6e2253aea54a91eec4f5777920  electric-sql-pglite-0.5.4.tgz",
+   "81c9329e5511f62a1511c9a4c79b233c31734a9fd158dca03aad3b6643a0ecb9  electric-sql-pglite-age-0.0.5.tgz",
+   "0a67a2fe5494dd17ce744b138f94148ec0195952e36d5b58f7b6dc18a46c201a  electric-sql-pglite-pg_hashids-0.0.5.tgz",
+   "603a4f427648386d2f02883d615d8a66384db70d6280e8fcf588e91010cdba89  electric-sql-pglite-pg_ivm-0.0.5.tgz",
+   "194aff692223d3a0f8f58dcfd74c33c03a87c363cc75da1c6f03ff78db179fcc  electric-sql-pglite-pg_textsearch-0.0.6.tgz",
+   "cea7794ee9fed035235a6fbb77e7d48095641f839fef7ccd6b138e608dd44cb9  electric-sql-pglite-pg_uuidv7-0.0.5.tgz",
+   "b5066bd9ee8dc74e17aa9952d2b0a0ef26ffd0d039eb372910a4b3137b6fe981  electric-sql-pglite-pgmq-0.0.2.tgz",
+   "5ab00d4f3cad3d9891639cde5f0791619c1c46b402dcef2eeeb222827ed15b5d  electric-sql-pglite-pgtap-0.0.5.tgz",
+   "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa  electric-sql-pglite-pgvector-0.0.5.tgz",
+   "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78  electric-sql-pglite-postgis-0.2.4.tgz"
+  ]
+ },
+ "isolatedCopyNanoseconds": [
+  {
+   "round": 0,
+   "engine": "before",
+   "ns": 138.4288225
+  },
+  {
+   "round": 0,
+   "engine": "after",
+   "ns": 83.7851675
+  },
+  {
+   "round": 1,
+   "engine": "after",
+   "ns": 89.199325
+  },
+  {
+   "round": 1,
+   "engine": "before",
+   "ns": 139.6422575
+  },
+  {
+   "round": 2,
+   "engine": "before",
+   "ns": 133.546125
+  },
+  {
+   "round": 2,
+   "engine": "after",
+   "ns": 84.5311025
+  },
+  {
+   "round": 3,
+   "engine": "after",
+   "ns": 82.4686075
+  },
+  {
+   "round": 3,
+   "engine": "before",
+   "ns": 131.99623
+  },
+  {
+   "round": 4,
+   "engine": "before",
+   "ns": 137.0229925
+  },
+  {
+   "round": 4,
+   "engine": "after",
+   "ns": 82.7635025
+  },
+  {
+   "round": 5,
+   "engine": "after",
+   "ns": 89.2157825
+  },
+  {
+   "round": 5,
+   "engine": "before",
+   "ns": 141.89569
+  },
+  {
+   "round": 6,
+   "engine": "before",
+   "ns": 140.5405925
+  },
+  {
+   "round": 6,
+   "engine": "after",
+   "ns": 86.71058
+  },
+  {
+   "round": 7,
+   "engine": "after",
+   "ns": 89.6130725
+  },
+  {
+   "round": 7,
+   "engine": "before",
+   "ns": 138.8258025
+  }
+ ]
+}
