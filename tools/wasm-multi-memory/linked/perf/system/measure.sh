@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 selection=${1:-all}
-case $selection in control|candidate|all) ;; *) exit 2;; esac
+case $selection in control|candidate|release|all) ;; *) exit 2;; esac
 root=/work/tools/wasm-multi-memory/linked/perf/system
 # Each engine occupies each position once across four fresh-process rounds.
 order=(stock-classic linked-classic stock-postmaster linked-postmaster)
 for round in 0 1 2 3; do
   phases=(control candidate)
   if ((round%2)); then phases=(candidate control); fi
+  if [[ $selection == release ]]; then phases=(release); fi
   for stage in "${phases[@]}"; do
     if [[ $selection != all && $selection != "$stage" ]]; then continue; fi
     out=/out/runs/$stage

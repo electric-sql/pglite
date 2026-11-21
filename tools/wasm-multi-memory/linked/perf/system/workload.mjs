@@ -226,6 +226,7 @@ async function run() {
   await db.query('SELECT 1')
   result.startupMs = now() - start
   globalThis.pglStartupEvent?.('first query complete', start)
+  result.beforeExtensionMemory = memory()
   result.baseRss = baseRss
   const effective = Object.fromEntries(
     (
@@ -248,11 +249,14 @@ async function run() {
     return
   }
   const sessions = [db]
+  result.sessionSetupMs = []
   result.memory[1] = memory()
   if (postmaster)
     for (let n = 2; n <= 8; n++) {
+      const connecting = now()
       const session = await connect()
       await session.query('SELECT 1')
+      result.sessionSetupMs.push(now() - connecting)
       sessions.push(session)
       if ([2, 4, 8].includes(n)) result.memory[n] = memory()
     }
@@ -377,6 +381,7 @@ async function run() {
 }
 try {
   await run()
+  result.peakRss = process.resourceUsage().maxRSS * 1024
   await writeFile(output, JSON.stringify(result, null, 2) + '\n')
 } finally {
   try {

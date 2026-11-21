@@ -41,6 +41,29 @@ test.skipIf(!sdk)(
         scoped,
         async (shared) => providers[Number(shared)],
       )
+      const ordered = imports.pgl_global.load_f32x8_ordered_v1 as (
+        address: number,
+      ) => bigint[]
+      const words = [
+        0xff800001, 0x80000000, 0x7f800001, 0, 1, 0xffffffff, 0x7fc10001, 17,
+      ]
+      for (const base of [9, global.buffer.byteLength - 32]) {
+        const view = new DataView(global.buffer)
+        words.forEach((word, i) => view.setUint32(base + 4 * i, word, true))
+        const expected = [0, 2, 4, 6].map(
+          (i) => BigInt(words[i + 1]) | (BigInt(words[i]) << 32n),
+        )
+        assert.deepEqual(
+          ordered(base).map((bits) => BigInt.asUintN(64, bits)),
+          expected,
+        )
+      }
+      assert.throws(
+        () => ordered(global.buffer.byteLength - 31),
+        WebAssembly.RuntimeError,
+      )
+      assert.throws(() => ordered(0xfffffffc), WebAssembly.RuntimeError)
+      new Uint8Array(global.buffer).fill(0, global.buffer.byteLength - 32)
       const ops = (
         await WebAssembly.instantiate(client, {
           env: { memory: local },
