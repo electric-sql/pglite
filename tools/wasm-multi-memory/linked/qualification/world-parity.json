@@ -1,0 +1,66 @@
+{
+  "matchedEvents": 263,
+  "eventListSha256": "804cf62d862c1771df7cf14c70fb7ec0b230c74b5fba1f7798190b886cd918c2",
+  "native": {
+    "postgres": "174b8fcb355e62daa4f265cf4a51d99c8a06a422",
+    "inputs": {
+      "electric-sql-pglite-0.5.4.tgz": "177b4e3db0beaae089c7837aafc8e96fcc263df4687850ac31593c5ae1428455",
+      "electric-sql-pglite-pgvector-0.0.5.tgz": "a8b9b4596250d7000aa74837b4c9133ab0bc983f7fdb74185571c85c74a70e61",
+      "electric-sql-pglite-postgis-0.2.4.tgz": "81869dfb4aad16a70b174b0f5133f959c606c07e63180c7f9c619b757f9ace03",
+      "postmaster.wasm": "9f28ba3911402f02df3b1784d5ed8dc09d55cd0bf416b87522d45c0eabdbd0f3",
+      "postmaster.js": "9353c4ce2736e8e130744f0f92f5c90ca4c6b05c22be2083a12fc90dd52da5a4",
+      "postmaster.data": "49981a805c6e52b8d942ba2201cd8a6f1b14243889678a695df459280c5ed247",
+      "postgres-test-capabilities.json": "5da45f806bbf62f8a12e630d90f66d8906607f9d8b92bdc9149f7f9a120e2ccc"
+    },
+    "events": {
+      "SUPPORTED": {
+        "pass": 225
+      },
+      "UNSUPPORTED": {
+        "unsupported": 11
+      },
+      "BLOCKED": {
+        "blocked": 27
+      }
+    },
+    "clusters": {
+      "count": 185,
+      "passed": 185,
+      "failed": 0
+    },
+    "upstreamExitStatus": 0,
+    "jobs": 1,
+    "maxConnections": 4
+  },
+  "linked": {
+    "postgres": "174b8fcb355e62daa4f265cf4a51d99c8a06a422",
+    "inputs": {
+      "electric-sql-pglite-0.5.4.tgz": "8dde1a4c9a50b12defcf2861a226626e90b7030fa944c920f92f61b4e73e1827",
+      "electric-sql-pglite-pgvector-0.0.5.tgz": "2fb14f0897c30115bbed8c511960a326ebc3704e10e724982aaf3ec0c2bc6dfa",
+      "electric-sql-pglite-postgis-0.2.4.tgz": "c2ee15589e24cba65c9a5751e54b1f98ef8cff02443563f0447b4ce7e4aeab78",
+      "postmaster.wasm": "aabd8430f5109ca1587f6c14a61bef8ec3d575b132fcc007d7d2dc1e5dc6556f",
+      "postmaster.js": "3cd63ed84719502128212332791bae796552ac7b092b63148e33c81ab577b3b4",
+      "postmaster.data": "581093d695d33b917a66b6898082c3ac9f4f8c4bbf0c7e39e1ce704dc5fe44d0",
+      "postgres-test-capabilities.json": "5da45f806bbf62f8a12e630d90f66d8906607f9d8b92bdc9149f7f9a120e2ccc"
+    },
+    "events": {
+      "SUPPORTED": {
+        "pass": 225
+      },
+      "UNSUPPORTED": {
+        "unsupported": 11
+      },
+      "BLOCKED": {
+        "blocked": 27
+      }
+    },
+    "clusters": {
+      "count": 185,
+      "passed": 185,
+      "failed": 0
+    },
+    "upstreamExitStatus": 0,
+    "jobs": 1,
+    "maxConnections": 4
+  }
+}

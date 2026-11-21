@@ -36,7 +36,7 @@ The upstream schedules use the branch's regression-enabled core and its static t
 - **PL/pgSQL exception handlers.** Installing the PostGIS Tiger geocoder intentionally raises and catches an error for a missing schema. With PL/pgSQL dynamically loaded, the backend exited. The Emscripten loader had relocated the main module's thread-local exception state by the static data base while the main module addressed it relative to zero. The SDK loader now resolves exported TLS addresses consistently in shared-memory builds with one Wasm instance per process. The catalog installs Tiger and normalizes an address. [Loader patch](../sdk/emscripten.patch)
 - **Logical decoding.** Reading changes for a local publication through `pgoutput` called an unresolved PostgreSQL function, `CacheRegisterRelSyncCallback`. The built-in output plugin uses a backend Makefile outside PGXS. The SDK collects its object imports when building the core export list. The catalog creates a slot, decodes records from a publication, and reads metadata and builder state from a checkpointed logical snapshot. [Export collection](../sdk/classic-runtime-imports.sh)
 
-The fixes ship with the linked SDK. The original native production postmaster reproduces both defects. The [upstream capability ledger](../../../../tests/postgres/postgres-test-capabilities.json) covers other PostgreSQL tests. Multi-cluster replication and backend outbound sockets retain their existing blocked status. This qualification covers the two upstream schedules, the listed scenarios and Node wasm32. Browser postmasters, wasm64, full `check-world` and the four-runtime performance comparison have separate coverage requirements.
+The fixes ship with the linked SDK. The original native production postmaster reproduces both defects. The [upstream capability ledger](../../../../tests/postgres/postgres-test-capabilities.json) covers other PostgreSQL tests. Multi-cluster replication and backend outbound sockets retain their existing blocked status. Those results cover the two upstream schedules and the listed scenarios on Node wasm32. The packaged-CLI world run below also exercises the upstream temporary-cluster, contrib, TAP and command-line suites. The performance comparison uses the ordinary release packages. [Four-runtime comparison](../perf/system/release-decision.md)
 
 ## Reproduce with OrbStack
 
@@ -53,3 +53,21 @@ bash tools/wasm-multi-memory/linked/qualification/postgres.sh build/linked/sdk
 The SDK writes `packages/`, `behavior/<node>/<constructor>/`, `catalog.md`, `catalog-results.json` and `packed-audit.json` under `build/linked/sdk/`. Each behavior result includes the SQL operation and the selected archive digest. Each adjacent `*-links.jsonl` records the module digests and thread IDs observed during that test. Empty link logs are expected for SQL-only archives.
 
 The differential runner writes `{linked,native}-{build,prepare,scenarios,schedules,stress}.log` and per-mode results under `build/linked/qualification/`. The schedules use the full upstream test lists and expected outputs. Inspect `{linked,native}/stress.json` for transaction counts, crash recovery and memory release. Both scripts accept an output directory so a subsequent run can be retained alongside the first.
+
+### Run check-world against the packaged CLI
+
+At PostgreSQL `174b8fc`, linked wasm32 and native Wasm multi-memory each passed all **225 supported suite and TAP events** and **185/185 temporary-cluster lifecycles**. Both upstream `make -j1 -k check-world` processes exited 0. The comparison matched all 263 recorded events individually, including the same 27 blocked and 11 unsupported events. Neither build needed an additional exclusion. The runs used Node 22.13.0 on OrbStack Linux/arm64, four regression connections, and separate PostgreSQL build trees. [Recorded comparison and input hashes](world-parity.json) · [Capability policy](../../../../tests/postgres/postgres-test-capabilities.json)
+
+The world runner takes the linked SDK release directory, a regression build from `postgres.sh` and a separate results directory. It installs the release core tarball in the CLI distribution, loads the pgvector and PostGIS package entry points, and selects the regression-enabled postmaster for upstream tests. It checks that the release and regression Wasm modules have the same memory ABI. The provider runs as an unprivileged Linux user with dedicated memory 2. Its capability policy, temporary-cluster lifecycle checks and upstream expected outputs are shared with the native multi-memory gate.
+
+From the checkout with the SDK and regression outputs produced above, run the following. For the comparison, the fourth argument selects the directory containing the three native reference tarballs for core, pgvector and PostGIS. The reference packages must use the same PostgreSQL revision. [Native reference preparation](../perf/system/README.md#reproduce-with-orbstack)
+
+```sh
+export DOCKER_CONTEXT=orbstack
+qual=tools/wasm-multi-memory/linked/qualification
+bash "$qual/world.sh" build/linked/sdk build/linked/qualification/linked build/linked/world/linked
+bash "$qual/world.sh" build/linked/sdk build/linked/qualification/native build/linked/world/native build/linked/system/packages/stock
+python3 "$qual/world-parity.py" build/linked/world/native build/linked/world/linked
+```
+
+Each results directory contains `results/check-world.json`, the upstream log, per-cluster reports and per-suite/TAP events. The comparison requires successful upstream exits and cluster lifecycles, identical PostgreSQL revisions and policy hashes, and matching paths, outcomes and occurrence counts for every recorded event. Packages and regression binaries are identified by SHA-256. A failing world run prints the Docker volume containing the native build tree and its upstream failure diagnostics.
