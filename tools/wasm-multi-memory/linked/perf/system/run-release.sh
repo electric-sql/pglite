@@ -10,10 +10,9 @@ out=$(cd "$3" && pwd)
 source "$here/../../../toolchain.env"
 image=${PGLITE_LINKED_IMAGE:-pglite-linked-sdk:$PGLITE_EMSDK_VERSION-$PGLITE_MULTI_MEMORY_IMAGE_REVISION}
 (cd "$release/packages" && shasum -a 256 -c "$release/core-package.sha256")
-deps=()
-if [[ -n ${PGLITE_BENCH_DEPS:-} ]]; then deps=(-v "$PGLITE_BENCH_DEPS:/deps:ro"); fi
-docker run --rm -v /bench -v "$root:/work:ro" -v "$native:/reference:ro" -v "$release:/release:ro" -v "$out:/out" \
-  "${deps[@]}" "$image" bash -lc '
+mounts=(-v /bench -v "$root:/work:ro" -v "$native:/reference:ro" -v "$release:/release:ro" -v "$out:/out")
+if [[ -n ${PGLITE_BENCH_DEPS:-} ]]; then mounts+=(-v "$PGLITE_BENCH_DEPS:/deps:ro"); fi
+docker run --rm "${mounts[@]}" "$image" bash -lc '
 set -euo pipefail
 export PATH=/opt/node22/bin:$PATH
 here=/work/tools/wasm-multi-memory/linked/perf/system
