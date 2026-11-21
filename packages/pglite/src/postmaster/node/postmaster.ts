@@ -1538,9 +1538,9 @@ async function preparePostmasterExtensions(
       'node',
       'worker-threads',
       'shared-array-buffer',
-      pglitePostmasterWasmTarget.topology === 'faceted'
-        ? 'wasm-linked-memory'
-        : 'wasm-multi-memory',
+      ...(pglitePostmasterWasmTarget.topology === 'faceted'
+        ? ['wasm-linked-memory', 'wasm-linked-f32x8-v1']
+        : ['wasm-multi-memory']),
     ]),
   )
   const artifacts = await Promise.all(

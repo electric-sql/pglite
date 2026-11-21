@@ -32,7 +32,7 @@ if ! node22 -e 'const m=new WebAssembly.Module(require("fs").readFileSync(proces
   intermediate="$scratch/domain.wasm"
 fi
 if [[ $kind == extension ]]; then
-  "$sdk/version-loops" "$intermediate" "$scratch/versioned.wasm" --mixed
+  "$sdk/version-loops" "$intermediate" "$scratch/versioned.wasm" --ordered-linked
   intermediate="$scratch/versioned.wasm"
 fi
 "$sdk/lower" --sdk "$intermediate" "$scratch/lowered.wasm"

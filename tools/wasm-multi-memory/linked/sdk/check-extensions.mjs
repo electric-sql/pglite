@@ -40,6 +40,14 @@ export async function checkExtraExtensions(writer, reader = writer) {
       ).rows,
       [{ n: 382 }],
     )
+    assert.deepEqual(
+      (
+        await session.query(
+          'SELECT linked_squared_distance(array_fill(1::real,ARRAY[768]),array_fill(3::real,ARRAY[768])) AS n',
+        )
+      ).rows,
+      [{ n: 3072 }],
+    )
     await session.exec("SET postgis.gdal_enabled_drivers='ENABLE_ALL'")
     const raster = await session.query(`WITH encoded AS MATERIALIZED (
       SELECT ST_AsGDALRaster(ST_AddBand(ST_MakeEmptyRaster(1,1,0,0,1,-1,0,0,4326),1,'8BUI',7,0),'PNG') AS data)

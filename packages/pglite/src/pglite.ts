@@ -1636,7 +1636,10 @@ function classicHostCapabilities(
   } else {
     capabilities.add('browser')
   }
-  if (supportsLinkedMemory) capabilities.add('wasm-linked-memory')
+  if (supportsLinkedMemory) {
+    capabilities.add('wasm-linked-memory')
+    capabilities.add('wasm-linked-f32x8-v1')
+  }
   if (typeof Worker !== 'undefined') capabilities.add('web-worker')
   return capabilities
 }

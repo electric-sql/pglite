@@ -302,9 +302,8 @@ async function auditSideModules(
     } catch (error) {
       archiveError(`invalid side module ${sideModule.path}: ${String(error)}`)
     }
-    const memories = WebAssembly.Module.imports(module).filter(
-      ({ kind }) => kind === 'memory',
-    )
+    const imports = WebAssembly.Module.imports(module)
+    const memories = imports.filter(({ kind }) => kind === 'memory')
     if (descriptor.target.topology === 'classic') {
       if (memories.length > 1) {
         archiveError(
@@ -312,6 +311,21 @@ async function auditSideModules(
         )
       }
     } else if (descriptor.target.topology === 'faceted') {
+      if (
+        imports.some(
+          (entry) =>
+            entry.kind === 'function' &&
+            entry.module === 'pgl_global' &&
+            entry.name === 'load_f32x8_ordered_v1',
+        ) &&
+        !descriptor.manifest.processConfig.requiredHostCapabilities.includes(
+          'wasm-linked-f32x8-v1',
+        )
+      ) {
+        archiveError(
+          `missing ordered-read host capability for ${sideModule.path}`,
+        )
+      }
       try {
         assertLinkedModule(module)
       } catch {
@@ -347,7 +361,7 @@ async function auditSideModules(
     const importsHash = await sha256Hex(
       new TextEncoder().encode(
         canonicalJson(
-          WebAssembly.Module.imports(module).map(({ module, name, kind }) => ({
+          imports.map(({ module, name, kind }) => ({
             module,
             name,
             kind,

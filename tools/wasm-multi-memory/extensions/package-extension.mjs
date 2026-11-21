@@ -48,9 +48,23 @@ const sideModuleFiles =
   config.sideModules === undefined
     ? files.filter(({ kind }) => kind === 'side-module')
     : [...configuredModules.keys()].map((path) => byPath.get(path))
+const requiredHostCapabilities = new Set(
+  config.processConfig?.requiredHostCapabilities ?? [],
+)
 const sideModules = sideModuleFiles.map((file) => {
   const configured = configuredModules.get(file.path) ?? {}
   const module = new WebAssembly.Module(file.bytes)
+  const imports = WebAssembly.Module.imports(module)
+  if (
+    config.target.topology === 'faceted' &&
+    imports.some(
+      (entry) =>
+        entry.kind === 'function' &&
+        entry.module === 'pgl_global' &&
+        entry.name === 'load_f32x8_ordered_v1',
+    )
+  )
+    requiredHostCapabilities.add('wasm-linked-f32x8-v1')
   if (
     config.target.topology === 'classic' &&
     [...memoryImportTypes(file.bytes).values()].some(({ shared }) => shared)
@@ -71,7 +85,7 @@ const sideModules = sideModuleFiles.map((file) => {
     importsHash: sha256(
       new TextEncoder().encode(
         canonicalJson(
-          WebAssembly.Module.imports(module).map(({ module, name, kind }) => ({
+          imports.map(({ module, name, kind }) => ({
             module,
             name,
             kind,
@@ -99,9 +113,10 @@ const manifest = {
   })),
   sideModules,
   requiredSharedPreloadLibraries: config.requiredSharedPreloadLibraries ?? [],
-  processConfig: config.processConfig ?? {
+  processConfig: {
     pgliteEnv: {},
-    requiredHostCapabilities: [],
+    ...config.processConfig,
+    requiredHostCapabilities: [...requiredHostCapabilities],
   },
   capabilities: config.capabilities ?? {
     directSharedMemory: config.target.topology !== 'classic',
