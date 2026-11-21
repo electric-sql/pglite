@@ -1,0 +1,86 @@
+--- a/src/vector.c
++++ b/src/vector.c
+@@ -544,10 +544,22 @@
+ 		result->x[i] = HalfToFloat4(vec->x[i]);
+ 
+ 	PG_RETURN_POINTER(result);
++}
++
++/* Read a float in this instance's ordinary Wasm memory. */
++extern float pgl_private_read_f32(const float *) __attribute__((pure));
++
++static inline int
++FitsFloatSpan(float *p, unsigned count)
++{
++    uintptr_t addr = (uintptr_t) p;
++    unsigned remaining = addr < 0x80000000u ? 0x80000000u - addr :
++        0x40000000u - (addr & 0x3fffffffu);
++    return addr != 0 && count <= remaining / sizeof(float);
+ }
+ 
+ VECTOR_TARGET_CLONES static float
+-VectorL2SquaredDistance(int dim, float *ax, float *bx)
++VectorL2Generic(int dim, float *ax, float *bx)
+ {
+ 	float		distance = 0.0;
+ 
+@@ -560,8 +572,59 @@
+ 	}
+ 
+ 	return distance;
++}
++
++VECTOR_TARGET_CLONES static inline float
++VectorL2Private(int dim, float *a, float *b, float distance)
++{
++    for (int i = 0; i < dim; i++)
++    {
++        float diff = pgl_private_read_f32(a + i) - pgl_private_read_f32(b + i);
++        distance += diff * diff;
++    }
++    return distance;
+ }
+ 
++/* SQL vector arguments are immutable for the duration of a distance call. */
++__attribute__((noinline)) static float
++VectorL2Staged(int dim, float *a, float *b)
++{
++    enum { chunk = 256 };
++    float left[chunk], right[chunk];
++    float distance = 0;
++    while (dim > 0)
++    {
++        int n = Min(dim, chunk);
++        float *ax = a, *bx = b;
++        if ((uintptr_t) a >= 0x80000000u)
++        {
++            memcpy(left, a, n * sizeof(float));
++            ax = left;
++        }
++        if ((uintptr_t) b >= 0x80000000u)
++        {
++            memcpy(right, b, n * sizeof(float));
++            bx = right;
++        }
++        distance = VectorL2Private(n, ax, bx, distance);
++        a += n;
++        b += n;
++        dim -= n;
++    }
++    return distance;
++}
++
++VECTOR_TARGET_CLONES static float
++VectorL2SquaredDistance(int dim, float *a, float *b)
++{
++    if (dim <= 0) return 0;
++    if (!FitsFloatSpan(a, dim) || !FitsFloatSpan(b, dim))
++        return VectorL2Generic(dim, a, b);
++    if (((uintptr_t) a | (uintptr_t) b) < 0x80000000u)
++        return VectorL2Private(dim, a, b, 0);
++    return VectorL2Staged(dim, a, b);
++}
++
+ /*
+  * Get the L2 distance between vectors
+  */

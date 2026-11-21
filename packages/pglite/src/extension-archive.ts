@@ -1,3 +1,4 @@
+import { assertLinkedModule } from './wasm/linked-memory.js'
 import {
   DEFAULT_PGLITE_ARTIFACT_LIMITS,
   PGliteExtensionArtifactError,
@@ -309,6 +310,12 @@ async function auditSideModules(
         archiveError(
           `classic side module ${sideModule.path} imports multiple memories`,
         )
+      }
+    } else if (descriptor.target.topology === 'faceted') {
+      try {
+        assertLinkedModule(module)
+      } catch {
+        archiveError(`invalid linked-memory side module ${sideModule.path}`)
       }
     } else if (descriptor.target.topology === 'multi-memory') {
       const sections = WebAssembly.Module.customSections(

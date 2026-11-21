@@ -95,6 +95,8 @@ wasm-opt "${INLINE}" -O3 --all-features -o "${CANDIDATE}"
 node22 "${REPO_ROOT}/tests/postmaster/artifact-audit.mjs" \
   "${INPUT}" "${CANDIDATE}" "${REPORT}" "${OUT}/artifact-audit.json"
 
+if [[ ${PGLITE_POSTMASTER_ARTIFACT_ONLY:-false} == true ]]; then exit 0; fi
+
 if [[ -n "${PACKAGE_OUT}" ]]; then
   mkdir -p "${PACKAGE_OUT}"
   cp "${CANDIDATE}" "${PACKAGE_OUT}/postmaster.wasm"

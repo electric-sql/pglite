@@ -10,6 +10,12 @@ if (!dataPath) {
 }
 
 const compiled = await WebAssembly.compile(readFileSync(wasmPath))
+const linked =
+  WebAssembly.Module.customSections(compiled, 'pglite.linked-memory.abi')
+    .length === 1
+const linker = linked
+  ? await import('../../../dist/postmaster/internal.js')
+  : undefined
 const data = readFileSync(dataPath)
 const globalMemory = sharedMemory()
 const rootMemory = sharedMemory()
@@ -70,18 +76,24 @@ console.log('Shared segment lifetime artifact test: PASS')
 
 async function instantiate() {
   const callbacks = []
+  const memory = new WebAssembly.Memory({
+    initial: 512,
+    maximum: 512,
+    shared: !linked,
+  })
+  const bindings = linked
+    ? await linker.linkMemory(memory, globalMemory, rootMemory)
+    : {
+        pglite: { global_memory: globalMemory, scoped_memory: rootMemory },
+      }
   const module = await createPostgres({
     noInitialRun: true,
     noExitRuntime: true,
-    wasmMemory: sharedMemory(),
+    wasmMemory: memory,
     getPreloadedPackage: () =>
       data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
     instantiateWasm(imports, success) {
-      imports.pglite = {
-        ...(imports.pglite ?? {}),
-        global_memory: globalMemory,
-        scoped_memory: rootMemory,
-      }
+      Object.assign(imports, bindings)
       WebAssembly.instantiate(compiled, imports).then((instance) =>
         success(instance, compiled),
       )

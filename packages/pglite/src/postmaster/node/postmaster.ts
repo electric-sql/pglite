@@ -57,6 +57,7 @@ import { loadExtensionArtifact } from '../../extension-archive.js'
 import {
   DEFAULT_PGLITE_ARTIFACT_LIMITS,
   assertExtensionHostCapabilities,
+  targetKeyFor,
   type PGliteArtifactLimits,
   type PGliteExtensionArtifactLocator,
   type PGliteProcessConfigValue,
@@ -128,11 +129,8 @@ export interface PGlitePostmasterOptions<
   readonly globalMaximumMemory?: number
   readonly scopedInitialMemory?: number
   readonly scopedMaximumMemory?: number
-  /**
-   * `compact` aliases a root backend's memories 0 and 2 and coordinates both
-   * allocators through Emscripten's atomic sbrk frontier. `dedicated` retains
-   * the stronger default isolation and independently reclaimable backing.
-   */
+  /** Native postmasters can alias the private heap in compact mode.
+   * Linked postmasters use a dedicated shared heap for each root scope. */
   readonly scopedMemoryMode?: PGliteScopedMemoryMode
   /** OS identity presented to PostgreSQL for local-socket peer authentication. */
   readonly osUser?: string
@@ -313,6 +311,14 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
       this.scopedMemoryMode !== 'compact'
     ) {
       throw new RangeError('scopedMemoryMode must be dedicated or compact')
+    }
+    if (
+      this.scopedMemoryMode === 'compact' &&
+      pglitePostmasterWasmTarget.topology === 'faceted'
+    ) {
+      throw new RangeError(
+        'The linked postmaster requires dedicated scoped memory',
+      )
     }
     this.osUser = options.osUser ?? 'postgres'
     if (this.osUser.length === 0 || this.osUser.includes('\0')) {
@@ -1515,7 +1521,7 @@ async function preparePostmasterExtensions(
   const preparationStarted = performance.now()
   const configurationStarted = performance.now()
   const prepared = prepareExtensionSet(options.extensions, {
-    targetKey: 'wasm32-multi-memory',
+    targetKey: targetKeyFor(pglitePostmasterWasmTarget),
     target: pglitePostmasterWasmTarget,
     locateExtensionArtifact: options.locateExtensionArtifact,
     reservedNamespaces: new Set(['ready', 'closed', 'debug', 'runtimeTarget']),
@@ -1532,7 +1538,9 @@ async function preparePostmasterExtensions(
       'node',
       'worker-threads',
       'shared-array-buffer',
-      'wasm-multi-memory',
+      pglitePostmasterWasmTarget.topology === 'faceted'
+        ? 'wasm-linked-memory'
+        : 'wasm-multi-memory',
     ]),
   )
   const artifacts = await Promise.all(
@@ -1601,15 +1609,16 @@ function expandProcessConfig(value: PGliteProcessConfigValue): string {
 
 function assertNodeCapabilities(): void {
   const major = Number.parseInt(process.versions.node.split('.')[0], 10)
-  if (major < 22) throw new Error('PGlitePostmaster requires Node 22 or newer')
+  const minimum = pglitePostmasterWasmTarget.topology === 'faceted' ? 20 : 22
+  if (major < minimum)
+    throw new Error(`PGlitePostmaster requires Node ${minimum} or newer`)
   if (
     typeof (Atomics as typeof Atomics & { waitAsync?: unknown }).waitAsync !==
     'function'
   ) {
     throw new Error('PGlitePostmaster requires Atomics.waitAsync')
   }
-  // Keep this explicit: a non-shared private memory would permit accidental
-  // construction but fail as soon as the transformed module instantiates.
+  // Cluster and root-scoped heaps must be shareable across workers.
   const probe = createProcessMemory()
   if (!(probe.buffer instanceof SharedArrayBuffer)) {
     throw new Error('PGlitePostmaster requires shared WebAssembly.Memory')

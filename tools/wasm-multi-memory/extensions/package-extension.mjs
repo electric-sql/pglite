@@ -65,7 +65,9 @@ const sideModules = sideModuleFiles.map((file) => {
     wasmAbiSection:
       config.target.topology === 'multi-memory'
         ? 'pglite.multi-memory.abi'
-        : 'classic',
+        : config.target.topology === 'faceted'
+          ? 'pglite.linked-memory.abi'
+          : 'classic',
     importsHash: sha256(
       new TextEncoder().encode(
         canonicalJson(

@@ -1,0 +1,37 @@
+--- a/src/library_dylink.js
++++ b/src/library_dylink.js
+@@ -740,1 +740,4 @@
++      if (Module['pgliteLinkSideModule']) {
++        binary = Module['pgliteLinkSideModule'](binary, info);
++      }
+       // PGlite's postmaster artifact uses a tagged three-memory ABI.  A side
+diff --git a/src/library_syscall.js b/src/library_syscall.js
+--- a/src/library_syscall.js
++++ b/src/library_syscall.js
+@@ -90,3 +90,6 @@
+     getStr(ptr) {
+-      var ret = UTF8ToString(ptr);
++      // Parallel workers restore shared-object filenames from scoped DSM.
++      var ret = (ptr >>> 31) && Module['pgliteReadSharedString']
++        ? Module['pgliteReadSharedString'](ptr)
++        : UTF8ToString(ptr);
+ #if SYSCALL_DEBUG
+--- a/src/preamble.js
++++ b/src/preamble.js
+@@ -935,6 +935,16 @@
+ 
+ #if MAIN_MODULE
+     var metadata = getDylinkMetadata(module);
++#if SHARED_MEMORY && !PTHREADS
++    // Each PGlite process owns one Wasm instance. LLVM addresses its
++    // main-module TLS from zero; ordinary dylink data uses GLOBAL_BASE.
++    // Side modules must see the same setjmp state as the main module.
++    for (var name of metadata.tlsExports) {
++      var address = instance.exports[name].value;
++      wasmExports[name] = address;
++      GOT[name].value = address;
++    }
++#endif
+ #if AUTOLOAD_DYLIBS
+     if (metadata.neededDynlibs) {
+       dynamicLibraries = metadata.neededDynlibs.concat(dynamicLibraries);

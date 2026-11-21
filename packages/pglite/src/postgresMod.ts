@@ -23,10 +23,15 @@ export interface PostgresMod
   stdin: (() => number | null) | null
   FS: FS
   wasmMemory: WebAssembly.Memory
+  pgliteReadSharedString?: (ptr: number) => string
   pgliteMemoryABI?: {
     readonly globalMemory: WebAssembly.Memory
     readonly scopedMemory: WebAssembly.Memory
   }
+  pgliteLinkSideModule?: (
+    binary: BufferSource | WebAssembly.Module,
+    imports: WebAssembly.Imports,
+  ) => BufferSource | WebAssembly.Module
   PROXYFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>

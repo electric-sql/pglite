@@ -4,6 +4,7 @@ import {
   PGLITE_EXTENSION_ABI,
   PGLITE_HOST_ABI,
   PGLITE_MULTI_MEMORY_ABI,
+  PGLITE_LINKED_MEMORY_ABI,
   type PGliteWasmTarget,
 } from './extension-artifacts.js'
 
@@ -14,7 +15,7 @@ export interface PGliteArtifactIdentity {
   readonly pgliteAbiVersion: number
   readonly transformerAbiVersion: number
   readonly emscriptenVersion: string
-  readonly memoryTopology: 'classic' | 'multi-memory'
+  readonly memoryTopology: 'classic' | 'multi-memory' | 'faceted'
   readonly pointerWidth: 32 | 64
   readonly artifactSha256: string
   readonly buildId: string
@@ -62,7 +63,9 @@ function targetFromIdentity(
     memoryAbi:
       artifact.memoryTopology === 'classic'
         ? PGLITE_CLASSIC_MEMORY_ABI
-        : PGLITE_MULTI_MEMORY_ABI,
+        : artifact.memoryTopology === 'faceted'
+          ? PGLITE_LINKED_MEMORY_ABI
+          : PGLITE_MULTI_MEMORY_ABI,
     hostAbi: PGLITE_HOST_ABI,
   }
 }

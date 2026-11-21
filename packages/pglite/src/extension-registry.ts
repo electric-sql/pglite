@@ -2,6 +2,7 @@ import type { Extension } from './interface.js'
 import {
   PGliteExtensionArtifactError,
   resolveArtifactUrl,
+  PGLITE_LINKED_MEMORY_ABI,
   targetsAreCompatible,
   validateArtifactDescriptor,
   type PGliteExtensionArtifactDescriptor,
@@ -32,6 +33,7 @@ export interface PreparedExtensionSet {
 }
 
 export interface PrepareExtensionSetOptions {
+  readonly allowLinkedMemory?: boolean
   readonly targetKey: PGliteWasmTargetKey
   readonly target: PGliteWasmTarget
   readonly locateExtensionArtifact?: PGliteExtensionArtifactLocator
@@ -70,7 +72,18 @@ export function prepareExtensionSet(
 
   const ordered = topologicalSort(entries, byName)
   const prepared = ordered.map((entry) => {
-    const original = entry.extension.backend?.artifacts[options.targetKey]
+    const linked =
+      options.allowLinkedMemory &&
+      entry.extension.backend?.artifacts['wasm32-faceted']
+    const targetKey = linked ? 'wasm32-faceted' : options.targetKey
+    const target = linked
+      ? {
+          ...options.target,
+          topology: 'faceted' as const,
+          memoryAbi: PGLITE_LINKED_MEMORY_ABI,
+        }
+      : options.target
+    const original = entry.extension.backend?.artifacts[targetKey]
     if (!original) {
       throw new PGliteExtensionArtifactError(
         `extension ${entry.extension.name} does not declare ${options.targetKey}`,
@@ -78,7 +91,7 @@ export function prepareExtensionSet(
       )
     }
     validateArtifactDescriptor(original)
-    if (!targetsAreCompatible(options.target, original.target)) {
+    if (!targetsAreCompatible(target, original.target)) {
       throw new PGliteExtensionArtifactError(
         `extension ${entry.extension.name} has incompatible ${options.targetKey} ABI metadata`,
         'target-mismatch',
@@ -89,7 +102,7 @@ export function prepareExtensionSet(
         extensionName: entry.extension.name,
         extensionVersion:
           entry.extension.version ?? original.manifest.extensionVersion,
-        targetKey: options.targetKey,
+        targetKey,
         descriptor: original,
       },
       getExtensionArtifactOverride(entry.extension),

@@ -30,6 +30,7 @@
     "wasm:metadata": "node ./tools/wasm-multi-memory/generate-artifact-metadata.mjs",
     "wasm:build": "./tools/wasm-multi-memory/build-all.sh",
     "wasm:build:debug": "DEBUG=true pnpm wasm:build",
+    "wasm:linked:build": "./tools/wasm-multi-memory/linked/sdk/build-all.sh",
     "wasm:multi-memory:test": "./tools/wasm-multi-memory/test-transformer.sh",
     "wasm:postmaster:build": "./tools/wasm-multi-memory/build-postmaster.sh",
     "wasm:postmaster:test": "./tools/wasm-multi-memory/test-postmaster.sh",

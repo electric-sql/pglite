@@ -1,6 +1,7 @@
 export const PGLITE_EXTENSION_ARTIFACT_FORMAT_VERSION = 1
 export const PGLITE_EXTENSION_ABI = 'pglite-extension-abi-v1'
 export const PGLITE_CLASSIC_MEMORY_ABI = 'pglite-classic-memory-v1'
+export const PGLITE_LINKED_MEMORY_ABI = 'pglite-linked-wasm32-v1'
 export const PGLITE_MULTI_MEMORY_ABI = 'pglite-tagged-i32-v1'
 export const PGLITE_HOST_ABI = 'pglite-host-abi-v1'
 
@@ -31,6 +32,7 @@ export interface PGliteWasmTarget {
 }
 
 export const PGLITE_RELEASE_PROFILES = {
+  'wasm32-linked': ['wasm32-faceted'] as const,
   'wasm32-initial': ['wasm32-classic', 'wasm32-multi-memory'] as const,
   'wasm32-complete': [
     'wasm32-classic',

@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
-import { postgis } from '../src/index.js'
+import { PGlite, pglitePostmasterWasmTarget } from '@electric-sql/pglite'
+import { postgis } from '@electric-sql/pglite-postgis'
 
 describe(`postgis`, () => {
-  it('publishes the complete wasm32-initial artifact profile', () => {
-    expect(postgis.backend?.releaseProfile).toBe('wasm32-initial')
-    expect(postgis.backend?.targetKeys).toEqual([
-      'wasm32-classic',
-      'wasm32-multi-memory',
-    ])
+  it('publishes the artifact profile for the built runtime', () => {
+    const linked = pglitePostmasterWasmTarget.topology === 'faceted'
+    expect(postgis.backend?.releaseProfile).toBe(
+      linked ? 'wasm32-linked' : 'wasm32-initial',
+    )
+    expect(postgis.backend?.targetKeys).toEqual(
+      linked ? ['wasm32-faceted'] : ['wasm32-classic', 'wasm32-multi-memory'],
+    )
   })
 
   let pg: PGlite

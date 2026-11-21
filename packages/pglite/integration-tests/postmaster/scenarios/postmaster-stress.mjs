@@ -546,9 +546,9 @@ async function extensionFromDescriptor(name, archive, descriptorPath) {
     name,
     version: descriptor.extensionManifest.extensionVersion,
     backend: {
-      targetKeys: ['wasm32-multi-memory'],
+      targetKeys: [descriptor.targetKey],
       artifacts: {
-        'wasm32-multi-memory': {
+        [descriptor.targetKey]: {
           targetKey: descriptor.targetKey,
           target: descriptor.target,
           url: pathToFileURL(archive),

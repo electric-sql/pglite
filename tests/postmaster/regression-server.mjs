@@ -84,6 +84,9 @@ const postmaster = await PGlitePostmaster.create({
       root: dataDirectory,
       mounts: [
         { root: testOutputRoot, path: testOutputRoot },
+        ...(nativeRoot.startsWith(testOutputRoot + '/')
+          ? []
+          : [{ root: nativeRoot, path: nativeRoot }]),
         { root: join(testOutputRoot, 'icu'), path: '/pglite/icu' },
       ],
     },

@@ -38,6 +38,7 @@ import {
   pgliteRuntimeIdentity,
 } from './runtime-identity.js'
 import { prepareExtensionSet } from './extension-registry.js'
+import { linkMemory, sideModuleLinker } from './wasm/linked-memory.js'
 import { loadExtensionArtifact } from './extension-archive.js'
 import {
   DEFAULT_PGLITE_ARTIFACT_LIMITS,
@@ -352,8 +353,11 @@ export class PGlite
           !(extension instanceof URL) && extension.backend !== undefined,
       ),
     )
+    const supportsLinkedMemory =
+      pgliteRuntimeIdentity.artifacts.postmaster.memoryTopology === 'faceted'
     const preparedExtensions = Object.keys(staticExtensions).length
       ? prepareExtensionSet(staticExtensions, {
+          allowLinkedMemory: supportsLinkedMemory,
           targetKey: 'wasm32-classic',
           target: pgliteClassicWasmTarget,
           locateExtensionArtifact: options.locateExtensionArtifact,
@@ -368,7 +372,7 @@ export class PGlite
     if (preparedExtensions) {
       assertExtensionHostCapabilities(
         preparedExtensions.requiredHostCapabilities,
-        classicHostCapabilities(),
+        classicHostCapabilities(supportsLinkedMemory),
       )
     }
     const validatedArtifactsPromise = preparedExtensions
@@ -427,6 +431,14 @@ export class PGlite
       arguments: args,
       noExitRuntime: true,
       wasmMemory: wasmMemory,
+      pgliteLinkSideModule: preparedExtensions?.extensions.some(
+        (e) => e.descriptor.target.topology === 'faceted',
+      )
+        ? sideModuleLinker(
+            await linkMemory(wasmMemory, wasmMemory, wasmMemory),
+            false,
+          )
+        : undefined,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
@@ -436,12 +448,7 @@ export class PGlite
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        // Transformed classic artifacts retain the ordinary Emscripten heap as
-        // memory 0 and import the two reserved pointer domains after it. In
-        // single-user mode no tagged pointers are produced, so bind both
-        // reserved indices to the exact same Memory object. Extra imports are
-        // harmless for the untransformed artifact and keep this loader shared
-        // by both artifact families.
+        // Native transformed classic modules alias both pointer domains to their heap.
         imports.pglite = {
           ...(imports.pglite ?? {}),
           global_memory: wasmMemory,
@@ -1620,13 +1627,16 @@ function resolveClassicProcessEnvironment(
   )
 }
 
-function classicHostCapabilities(): ReadonlySet<string> {
+function classicHostCapabilities(
+  supportsLinkedMemory: boolean,
+): ReadonlySet<string> {
   const capabilities = new Set<string>()
   if (typeof process !== 'undefined' && process.versions?.node) {
     capabilities.add('node')
   } else {
     capabilities.add('browser')
   }
+  if (supportsLinkedMemory) capabilities.add('wasm-linked-memory')
   if (typeof Worker !== 'undefined') capabilities.add('web-worker')
   return capabilities
 }

@@ -1,14 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { PGlite } from '@electric-sql/pglite'
-import { vector } from '../src/index.js'
+import { PGlite, pglitePostmasterWasmTarget } from '@electric-sql/pglite'
+import { vector } from '@electric-sql/pglite-pgvector'
 
 describe(`pgvector`, () => {
-  it('publishes the complete wasm32-initial artifact profile', () => {
-    expect(vector.backend?.releaseProfile).toBe('wasm32-initial')
-    expect(vector.backend?.targetKeys).toEqual([
-      'wasm32-classic',
-      'wasm32-multi-memory',
-    ])
+  it('publishes the artifact profile for the built runtime', () => {
+    const linked = pglitePostmasterWasmTarget.topology === 'faceted'
+    expect(vector.backend?.releaseProfile).toBe(
+      linked ? 'wasm32-linked' : 'wasm32-initial',
+    )
+    expect(vector.backend?.targetKeys).toEqual(
+      linked ? ['wasm32-faceted'] : ['wasm32-classic', 'wasm32-multi-memory'],
+    )
   })
 
   it('basic', async () => {

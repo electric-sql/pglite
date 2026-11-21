@@ -22,9 +22,9 @@ const workerSpi = {
   name: 'worker_spi',
   version: '1.0.0',
   backend: {
-    targetKeys: ['wasm32-multi-memory'],
+    targetKeys: [external.targetKey],
     artifacts: {
-      'wasm32-multi-memory': {
+      [external.targetKey]: {
         targetKey: external.targetKey,
         target: external.target,
         url: pathToFileURL(archive),

@@ -5,6 +5,7 @@ import type { Filesystem } from '../../fs/base.js'
 import type { PGlite } from '../../pglite.js'
 import type { PostgresMod } from '../../postgresMod.js'
 import { loadExtensionFiles } from '../../extensionUtils.js'
+import { linkMemory, sideModuleLinker } from '../../wasm/linked-memory.js'
 import { PgliteMemoryViews } from '../../wasm/multi-memory.js'
 import {
   ProcessControlRegistry,
@@ -53,15 +54,15 @@ async function main(): Promise<void> {
   let fatalError: unknown
 
   try {
-    // The private memory must be owned by this Worker isolate. Creating it in
-    // the supervisor leaves its SharedArrayBuffer backing store subject to
-    // main-isolate GC after backend exit, which makes reconnect churn retain
-    // many already-dead backend heaps. Worker-owned memory is released with
-    // the isolate when the Worker terminates.
+    const linked =
+      WebAssembly.Module.customSections(
+        data.wasmModule,
+        'pglite.linked-memory.abi',
+      ).length === 1
     const privateMemory = new WebAssembly.Memory({
       initial: data.privateInitialPages,
       maximum: data.privateMaximumPages,
-      shared: true,
+      shared: !linked,
     })
     let scopedMemory: WebAssembly.Memory
     if (data.scopePolicy === ProcessScopePolicy.SelfAlias) {
@@ -79,7 +80,8 @@ async function main(): Promise<void> {
         data.scopeRoot.pid !== data.process.pid ||
         data.scopeRoot.generation !== data.process.generation ||
         data.scopedMemory ||
-        data.scopedMemoryMode === 'disabled'
+        data.scopedMemoryMode === 'disabled' ||
+        (linked && data.scopedMemoryMode === 'compact')
       ) {
         throw new Error('NewRoot Worker received an invalid root binding')
       }
@@ -95,7 +97,8 @@ async function main(): Promise<void> {
       if (
         !data.scopeRoot ||
         !data.scopedMemory ||
-        data.scopedMemoryMode === 'disabled'
+        data.scopedMemoryMode === 'disabled' ||
+        (linked && data.scopedMemoryMode === 'compact')
       ) {
         throw new Error('inherited Worker has no scoped root memory')
       }
@@ -177,6 +180,9 @@ async function main(): Promise<void> {
         fs.mount(fs.filesystems.NODEFS, { root }, '/pglite/data')
       })
     }
+    const linkedImports = linked
+      ? await linkMemory(privateMemory, data.globalMemory, scopedMemory)
+      : undefined
     postgres = await createPostgres({
       ...filesystemOptions,
       thisProgram: '/pglite/bin/postgres',
@@ -185,10 +191,23 @@ async function main(): Promise<void> {
       noInitialRun: true,
       noExitRuntime: true,
       wasmMemory: privateMemory,
-      pgliteMemoryABI: {
-        globalMemory: data.globalMemory,
-        scopedMemory,
+      pgliteReadSharedString(ptr) {
+        const { views, offset } = memories.decodePointer(ptr, 1, {
+          allowScoped: true,
+        })!
+        const end = views.u8.indexOf(0, offset)
+        if (end < 0)
+          throw new WebAssembly.RuntimeError(
+            'unterminated shared syscall string',
+          )
+        return new TextDecoder().decode(views.u8.slice(offset, end))
       },
+      pgliteLinkSideModule: linkedImports
+        ? sideModuleLinker(linkedImports, true)
+        : undefined,
+      pgliteMemoryABI: linked
+        ? undefined
+        : { globalMemory: data.globalMemory, scopedMemory },
       stdin: () => null,
       print: (text: string) => {
         if (data.debug) send({ type: 'stdout', pid: data.process.pid, text })
@@ -201,11 +220,12 @@ async function main(): Promise<void> {
       // every PostgreSQL process Worker.
       getPreloadedPackage: () => data.artifactData as unknown as ArrayBuffer,
       instantiateWasm(imports, success) {
-        imports.pglite = {
-          ...(imports.pglite ?? {}),
-          global_memory: data.globalMemory,
-          scoped_memory: scopedMemory,
-        }
+        if (linkedImports) Object.assign(imports, linkedImports)
+        else
+          imports.pglite = {
+            global_memory: data.globalMemory,
+            scoped_memory: scopedMemory,
+          }
         installMemoryAwareWasiFdRead(imports, memories, () => postgres?.FS)
         installMemoryAwareWasiFdWrite(imports, memories, () => postgres?.FS)
         WebAssembly.instantiate(data.wasmModule, imports).then((instance) =>

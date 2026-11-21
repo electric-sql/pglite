@@ -28,7 +28,8 @@ const pglitePackage = JSON.parse(
 )
 
 const pgConfig = readFileSync(
-  resolve(postgresRoot, 'src/include/pg_config.h'),
+  process.env.PGLITE_PG_CONFIG_HEADER ??
+    resolve(postgresRoot, 'src/include/pg_config.h'),
   'utf8',
 )
 const catVersion = readFileSync(
@@ -56,20 +57,29 @@ const abiSections = WebAssembly.Module.customSections(
   postmasterModule,
   'pglite.multi-memory.abi',
 )
-if (abiSections.length !== 1) {
-  throw new Error('postmaster.wasm must contain one multi-memory ABI section')
-}
-const transformerABI = JSON.parse(new TextDecoder().decode(abiSections[0]))
+const linkedSections = WebAssembly.Module.customSections(
+  postmasterModule,
+  'pglite.linked-memory.abi',
+)
+const linked =
+  linkedSections.length === 1 &&
+  new TextDecoder().decode(linkedSections[0]) === 'pglite-linked-wasm32-v1'
 if (
-  transformerABI.schema !== 1 ||
-  transformerABI.pointerABI !== 'pglite-tagged-i32-v1'
+  linked
+    ? abiSections.length !== 0
+    : abiSections.length !== 1 || linkedSections.length !== 0
 ) {
-  throw new Error('postmaster.wasm has an unsupported transformer ABI')
+  throw new Error('postmaster.wasm has incompatible memory ABI sections')
+}
+if (!linked) {
+  const abi = JSON.parse(new TextDecoder().decode(abiSections[0]))
+  if (abi.schema !== 1 || abi.pointerABI !== 'pglite-tagged-i32-v1')
+    throw new Error('postmaster.wasm has an unsupported transformer ABI')
 }
 const postmaster = identity(
   'postmaster.wasm',
-  'multi-memory',
-  transformerABI.schema,
+  linked ? 'faceted' : 'multi-memory',
+  1,
 )
 
 writeFileSync(
