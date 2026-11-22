@@ -23,6 +23,7 @@ export interface PreparedExtension extends RegisteredExtension {
 }
 
 export interface PreparedExtensionSet {
+  readonly namespaceOrder: readonly string[]
   readonly extensions: readonly PreparedExtension[]
   readonly pgliteEnv: Readonly<Record<string, PGliteProcessConfigValue>>
   readonly requiredHostCapabilities: readonly string[]
@@ -73,7 +74,16 @@ export function prepareExtensionSet(
   }
 
   const ordered = topologicalSort(entries, byName)
-  const prepared = ordered.map((entry) => {
+  const withBackend = ordered.filter(({ extension }) => {
+    if (extension.backend !== undefined) return true
+    if (extension.sessionSetup || extension.clusterSetup || extension.setup)
+      return false
+    throw new PGliteExtensionArtifactError(
+      `extension ${extension.name} declares neither a backend nor a setup hook`,
+      'unsupported-target',
+    )
+  })
+  const prepared = withBackend.map((entry) => {
     const linked =
       options.allowLinkedMemory &&
       entry.extension.backend?.artifacts['wasm32-faceted']
@@ -155,6 +165,7 @@ export function prepareExtensionSet(
     options.coreProcessConfigKeys ?? new Set(),
   )
   return {
+    namespaceOrder: ordered.map(({ namespace }) => namespace),
     extensions: prepared,
     pgliteEnv: process.pgliteEnv,
     requiredHostCapabilities: process.requiredHostCapabilities,

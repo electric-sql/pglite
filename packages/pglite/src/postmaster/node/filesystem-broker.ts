@@ -387,7 +387,7 @@ export class BrokeredFilesystem extends BaseFilesystem {
   private sequence = 0
 
   constructor(
-    dataDir: string,
+    dataDir: string | undefined,
     private readonly channel: BrokeredFilesystemChannel,
     private readonly notify: (sequence: number) => void,
     debug = false,
@@ -626,25 +626,20 @@ export function isBrokeredFilesystemBackend(
 export function initializerFilesystem(
   backend: BrokeredFilesystemBackend,
 ): Filesystem {
-  // PGlite may recursively create a no-initdb instance with the same
-  // Filesystem while bootstrapping a fresh cluster. Calls to closeFs have no
-  // instance argument, but they are nested in LIFO order. Pop before awaiting
-  // so an intentionally un-awaited inner close cannot race the outer close.
-  const instances: PGlite[] = []
+  let instance: PGlite
   return {
-    async init(instance, options) {
-      instances.push(instance)
-      return backend.init(instance, options)
+    async init(pg, options) {
+      instance = pg
+      return backend.init(pg, options)
     },
     initialSyncFs: () => backend.initialSyncFs(),
     syncToFs: (relaxed) => backend.syncToFs(relaxed),
     dumpTar: (dbname, compression) => backend.dumpTar(dbname, compression),
     async closeFs() {
-      const instance = instances.pop()
       try {
         await backend.syncToFs()
       } finally {
-        instance?.Module.FS.quit()
+        instance.Module.FS.quit()
       }
     },
   }
@@ -755,7 +750,7 @@ function numberResult(value: unknown): number {
   return value
 }
 
-function byteView(
+export function byteView(
   value: Uint8Array | ArrayBuffer | SharedArrayBuffer,
 ): Uint8Array {
   if (ArrayBuffer.isView(value)) {

@@ -20,7 +20,7 @@
   ],
   "private": false,
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "public"

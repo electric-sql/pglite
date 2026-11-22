@@ -606,6 +606,35 @@ describe('pglite-sync', () => {
     expect(result.rows[0]).toEqual({ schema_name: metadataSchema })
   })
 
+  it('coordinates table ownership between session setups and releases it on close', async () => {
+    const shared = { database: 'postgres' }
+    const extension = electricSync()
+    const a = await extension.setup(pg, {}, true, shared)
+    const b = await extension.setup(pg, {}, true, shared)
+    const options = {
+      shape: { url: 'https://example.org/shape' },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: null,
+    }
+    await Promise.all([
+      a.namespaceObj.initMetadataTables(),
+      b.namespaceObj.initMetadataTables(),
+    ])
+    const sub = await a.namespaceObj.syncShapeToTable(options)
+    await expect(b.namespaceObj.syncShapeToTable(options)).rejects.toThrow(
+      'Already syncing shape',
+    )
+    await a.close()
+    const next = await b.namespaceObj.syncShapeToTable(options)
+    sub.unsubscribe()
+    await expect(b.namespaceObj.syncShapeToTable(options)).rejects.toThrow(
+      'Already syncing shape',
+    )
+    next.unsubscribe()
+    await b.close()
+  })
+
   it('forbids multiple subscriptions to the same table', async () => {
     MockMultiShapeStream.mockImplementation(() => ({
       subscribe: vi.fn(),

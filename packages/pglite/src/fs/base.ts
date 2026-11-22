@@ -2,6 +2,9 @@ import type { PostgresMod } from '../postgresMod.js'
 import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 import { PGDATA } from '../initdb.js'
+import { ERRNO_CODES } from './errno.js'
+
+export { ERRNO_CODES }
 
 export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
 
@@ -260,18 +263,6 @@ type EmscriptenFS = PostgresMod['FS'] & {
   ) => FSNode
 }
 
-export const ERRNO_CODES = {
-  EBADF: 8,
-  EBADFD: 127,
-  EEXIST: 20,
-  EINVAL: 28,
-  EISDIR: 31,
-  ENODEV: 43,
-  ENOENT: 44,
-  ENOTDIR: 54,
-  ENOTEMPTY: 55,
-} as const
-
 /**
  * Create an emscripten filesystem that uses the BaseFilesystem.
  * @param Module The emscripten module
@@ -287,8 +278,12 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
         return f()
       } catch (e: any) {
         if (!e.code) throw e
-        if (e.code === 'UNKNOWN') throw new FS.ErrnoError(ERRNO_CODES.EINVAL)
-        throw new FS.ErrnoError(e.code)
+        const errno =
+          typeof e.code === 'number'
+            ? e.code
+            : (ERRNO_CODES[e.code as keyof typeof ERRNO_CODES] ??
+              ERRNO_CODES.EINVAL)
+        throw new FS.ErrnoError(errno)
       }
     },
     mount(_mount: FSMount): FSNode {

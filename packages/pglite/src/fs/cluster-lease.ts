@@ -4,6 +4,32 @@ import type {
   PGliteClusterLeaseMetadata,
 } from './base.js'
 
+const inUseErrorBrand = Symbol.for('@electric-sql/pglite/cluster-in-use')
+
+export class PGliteClusterInUseError extends Error {
+  // CommonJS entry points can bundle separate copies of this constructor.
+  readonly [inUseErrorBrand] = true
+  static [Symbol.hasInstance](value: unknown): boolean {
+    if (this !== PGliteClusterInUseError) {
+      return Function.prototype[Symbol.hasInstance].call(this, value)
+    }
+    return value instanceof Error && inUseErrorBrand in value
+  }
+
+  readonly dataDir: string
+  readonly owner?: PGliteClusterLeaseMetadata
+
+  constructor(dataDir: string, owner?: PGliteClusterLeaseMetadata) {
+    const detail = owner
+      ? ` by ${owner.runtime}${owner.pid === undefined ? '' : ` process ${owner.pid}`} since ${owner.startedAt}`
+      : ''
+    super(`PGlite data directory is already open${detail}: ${dataDir}`)
+    this.name = 'PGliteClusterInUseError'
+    this.dataDir = dataDir
+    this.owner = owner
+  }
+}
+
 /** Internal hand-off used when a postmaster owns the lease during initdb. */
 export const inheritedClusterLease = Symbol('pglite.inheritedClusterLease')
 
@@ -12,7 +38,7 @@ export interface InheritedClusterLeaseOptions {
 }
 
 export async function acquireFilesystemClusterLease(
-  filesystem: Filesystem,
+  filesystem: Pick<Filesystem, 'capabilities' | 'clusterLeaseProvider'>,
   dataDir: string | undefined,
   runtime: PGliteClusterLeaseMetadata['runtime'],
   inherited?: PGliteClusterLease,

@@ -7,3 +7,4 @@ export type {
   PostmasterArtifactPaths,
   WorkerFilesystemFactory,
 } from './worker-types.js'
+export { PGliteClusterInUseError } from '../../fs/cluster-lease.js'

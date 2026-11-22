@@ -79,7 +79,7 @@ export interface PostgresProcessWorkerData {
   readonly process: ProcessHandle
   readonly postmaster: ProcessHandle
   readonly inheritedConnectionId: number
-  readonly dataDirectory: string
+  readonly dataDirectory?: string
   readonly filesystem: WorkerFilesystemDescriptor
   readonly arguments: readonly string[]
   readonly osUser: string
@@ -111,4 +111,9 @@ export type PostgresProcessWorkerMessage =
   | { readonly type: 'stdout'; readonly pid: number; readonly text: string }
   | { readonly type: 'stderr'; readonly pid: number; readonly text: string }
   | { readonly type: 'exit'; readonly pid: number; readonly code: number }
-  | { readonly type: 'fatal'; readonly pid: number; readonly error: string }
+  | {
+      readonly type: 'fatal'
+      readonly pid: number
+      readonly error: string
+      readonly incompatibleCluster?: boolean
+    }

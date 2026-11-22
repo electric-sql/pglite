@@ -824,7 +824,11 @@ async function addNotifyTriggersToTables(
     })
     .join('\n')
   if (triggers.trim() !== '') {
-    await tx.exec(triggers)
+    // Sessions subscribing concurrently can discover the same missing trigger.
+    await tx.exec(`
+      SELECT pg_advisory_xact_lock(hashtext('pglite-live'), hashtext('install-triggers'));
+      ${triggers}
+    `)
   }
   tables.map((table) =>
     tableNotifyTriggersAdded.add(`${table.schema_oid}_${table.table_oid}`),

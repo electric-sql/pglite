@@ -6,7 +6,11 @@ import {
   ShapeStreamOptions,
 } from '@electric-sql/client'
 import { MultiShapeStream } from '@electric-sql/experimental'
-import type { Extension, PGliteInterface } from '@electric-sql/pglite'
+import type {
+  Extension,
+  ExtensionSessionContext,
+  PGliteInterface,
+} from '@electric-sql/pglite'
 import {
   migrateSubscriptionMetadataTables,
   getSubscriptionState,
@@ -32,52 +36,73 @@ import {
 
 export * from './types'
 
+const databaseTableLocks = new WeakMap<ExtensionSessionContext, Set<string>>()
+
 async function createPlugin(
   pg: PGliteInterface,
   options?: ElectricSyncOptions,
+  context?: ExtensionSessionContext,
 ) {
   const debug = options?.debug ?? false
   const metadataSchema = options?.metadataSchema ?? 'electric'
-  const streams: Array<{
-    stream: MultiShapeStream<Record<string, Row<unknown>>>
-    aborter: AbortController
-  }> = []
+  const subscriptions = new Set<() => void>()
+  const tableLocks =
+    (context && databaseTableLocks.get(context)) ?? new Set<string>()
+  if (context) databaseTableLocks.set(context, tableLocks)
+  let closed = false
 
-  // We keep an in-memory lock per table such that two
-  // shapes are not synced into one table - this will be
-  // resolved by using reference counting in shadow tables
-  const shapePerTableLock = new Map<string, void>()
-
-  let initMetadataTablesDone = false
-  const initMetadataTables = async () => {
-    if (initMetadataTablesDone) return
-    initMetadataTablesDone = true
-    await migrateSubscriptionMetadataTables({
+  let metadataReady: Promise<void> | undefined
+  const initMetadataTables = () => {
+    metadataReady ??= migrateSubscriptionMetadataTables({
       pg,
       metadataSchema,
+    }).catch((error) => {
+      metadataReady = undefined
+      throw error
     })
+    return metadataReady
   }
 
-  const syncShapesToTables = async ({
-    key,
-    shapes,
-    useCopy = false, // DEPRECATED: use initialInsertMethod instead
-    initialInsertMethod = 'insert',
-    onInitialSync,
-    onError,
-  }: SyncShapesToTablesOptions): Promise<SyncShapesToTablesResult> => {
-    let unsubscribed = false
+  const syncShapesToTables = async (options: SyncShapesToTablesOptions) => {
     await initMetadataTables()
+    if (closed) throw new Error('Sync session is closed')
+    const tables = new Set<string>()
+    for (const shape of Object.values(options.shapes)) {
+      if (shape.onMustRefetch) continue
+      const table = JSON.stringify([shape.schema || 'public', shape.table])
+      if (tables.has(table) || tableLocks.has(table)) {
+        throw new Error('Already syncing shape for table ' + shape.table)
+      }
+      tables.add(table)
+    }
+    for (const table of tables) tableLocks.add(table)
+    const release = () => {
+      for (const table of tables) tableLocks.delete(table)
+      tables.clear()
+    }
+    subscriptions.add(release)
+    try {
+      return await startSubscription(options, release)
+    } catch (error) {
+      release()
+      throw error
+    } finally {
+      subscriptions.delete(release)
+    }
+  }
 
-    Object.values(shapes)
-      .filter((shape) => !shape.onMustRefetch) // Shapes with onMustRefetch bypass the lock
-      .forEach((shape) => {
-        if (shapePerTableLock.has(shape.table)) {
-          throw new Error('Already syncing shape for table ' + shape.table)
-        }
-        shapePerTableLock.set(shape.table)
-      })
-
+  const startSubscription = async (
+    {
+      key,
+      shapes,
+      useCopy = false, // DEPRECATED: use initialInsertMethod instead
+      initialInsertMethod = 'insert',
+      onInitialSync,
+      onError,
+    }: SyncShapesToTablesOptions,
+    release: () => void,
+  ): Promise<SyncShapesToTablesResult> => {
+    let unsubscribed = false
     let subState: SubscriptionState | null = null
 
     // if key is not null, ensure persistence of subscription state
@@ -92,6 +117,8 @@ async function createPlugin(
         console.log('resuming from subscription state', subState)
       }
     }
+
+    if (closed) throw new Error('Sync session is closed')
 
     // If it's a new subscription there is no state to resume from
     const isNewSubscription = subState === null
@@ -428,21 +455,19 @@ async function createPlugin(
       }
     }, onError)
 
-    streams.push({
-      stream: multiShapeStream,
-      aborter,
-    })
     const unsubscribe = () => {
-      if (debug) {
-        console.log('unsubscribing')
-      }
+      if (unsubscribed) return
+      if (debug) console.log('unsubscribing')
       unsubscribed = true
-      multiShapeStream.unsubscribeAll()
-      aborter.abort()
-      for (const shape of Object.values(shapes)) {
-        shapePerTableLock.delete(shape.table)
+      try {
+        multiShapeStream.unsubscribeAll()
+      } finally {
+        aborter.abort()
+        release()
+        subscriptions.delete(unsubscribe)
       }
     }
+    subscriptions.add(unsubscribe)
     return {
       unsubscribe,
       get isUpToDate() {
@@ -501,10 +526,8 @@ async function createPlugin(
   }
 
   const close = async () => {
-    for (const { stream, aborter } of streams) {
-      stream.unsubscribeAll()
-      aborter.abort()
-    }
+    closed = true
+    for (const unsubscribe of subscriptions) unsubscribe()
   }
 
   return {
@@ -524,8 +547,13 @@ export type PGliteWithSync = PGliteInterface & {
 export function electricSync(options?: ElectricSyncOptions) {
   return {
     name: 'Postgres Sync',
-    setup: async (pg: PGliteInterface) => {
-      const { namespaceObj, close } = await createPlugin(pg, options)
+    setup: async (
+      pg: PGliteInterface,
+      _moduleOptions?: unknown,
+      _clientOnly?: boolean,
+      context?: ExtensionSessionContext,
+    ) => {
+      const { namespaceObj, close } = await createPlugin(pg, options, context)
       return {
         namespaceObj,
         close,

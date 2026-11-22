@@ -8,6 +8,7 @@ import { createServer as createHttpServer } from 'node:http'
 import { createServer as createNetServer } from 'node:net'
 import {
   access,
+  copyFile,
   mkdir,
   readFile,
   readdir,
@@ -57,6 +58,7 @@ try {
   await assertNpxTarball()
 
   await assertProgrammaticImports()
+  await assertReleasedDatabaseUpgrade()
   await assertNativeCommandContracts(executable)
   await assertInitdbAuthentication(executable)
 
@@ -324,6 +326,7 @@ async function installPackages() {
       '--ignore-scripts',
       '--no-audit',
       '--no-fund',
+      '--engine-strict',
       '--save-exact',
       ...archives,
     ],
@@ -614,6 +617,27 @@ if (
     { cwd: projectRoot },
   )
   assert.equal(commonjs.code, 0, commonjs.stderr)
+}
+
+async function assertReleasedDatabaseUpgrade() {
+  const legacy = join(outputRoot, 'released')
+  await mkdir(legacy)
+  const installed = await run('npm', [
+    'install',
+    '--prefix',
+    legacy,
+    '--ignore-scripts',
+    '--no-audit',
+    '--no-fund',
+    '@electric-sql/pglite@0.5.4',
+  ])
+  assert.equal(installed.code, 0, installed.stderr)
+  const script = join(projectRoot, 'upgrade.mjs')
+  await copyFile(new URL('../fixtures/upgrade.mjs', import.meta.url), script)
+  const result = await run(process.execPath, [script, legacy], {
+    cwd: projectRoot,
+  })
+  assert.equal(result.code, 0, result.stdout + result.stderr)
 }
 
 async function assertNpxTarball() {

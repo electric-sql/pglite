@@ -1,5 +1,6 @@
 import type { PGliteClusterManifestV1 } from './initdb-runtime-contract.js'
 import type { PGliteArtifactIdentity } from './runtime-identity.js'
+import { ERRNO_CODES } from './fs/errno.js'
 import type { PostgresMod } from './postgresMod.js'
 
 export interface ClusterFiles {
@@ -26,13 +27,11 @@ export function validateClusterFiles(
   artifact: PGliteArtifactIdentity,
   blockSize: number,
   walBlockSize: number,
-): PGliteClusterManifestV1 {
+): PGliteClusterManifestV1 | undefined {
   const native = readNativeClusterIdentity(files, artifact)
-  if (files.manifest === undefined) {
-    throw incompatible(
-      'PGlite cluster manifest is missing; explicitly adopt the data directory before startup',
-    )
-  }
+  // Released classic databases predate the manifest. PostgreSQL also checks
+  // the control-file CRC and physical format when it opens the database.
+  if (files.manifest === undefined) return undefined
   let parsed: unknown
   try {
     parsed = JSON.parse(files.manifest)
@@ -89,6 +88,19 @@ export function encodingFromInitdbOutput(output: string): string | undefined {
   )?.[1]
 }
 
+export function readOptionalClusterManifest(
+  read: () => string,
+): string | undefined {
+  try {
+    return read()
+  } catch (error) {
+    const missing = error as { code?: string; errno?: number }
+    if (missing?.code === 'ENOENT' || missing?.errno === ERRNO_CODES.ENOENT)
+      return undefined
+    throw error
+  }
+}
+
 export function readEmscriptenClusterFiles(
   fs: PostgresMod['FS'],
   root: string,
@@ -98,9 +110,9 @@ export function readEmscriptenClusterFiles(
   return {
     pgVersion: text(`${root}/PG_VERSION`),
     control: fs.readFile(`${root}/global/pg_control`) as Uint8Array,
-    manifest: fs.analyzePath(`${root}/.pglite/cluster.json`).exists
-      ? text(`${root}/.pglite/cluster.json`)
-      : undefined,
+    manifest: readOptionalClusterManifest(() =>
+      text(`${root}/.pglite/cluster.json`),
+    ),
   }
 }
 
@@ -141,7 +153,8 @@ function readNativeClusterIdentity(
       `PostgreSQL data directory major ${pgVersion || '<empty>'} is incompatible with runtime major ${expectedMajor}`,
     )
   }
-  if (files.control.byteLength < 16)
+  // PostgreSQL pads pg_control to PG_CONTROL_FILE_SIZE on disk.
+  if (files.control.byteLength < 8192)
     throw incompatible('PostgreSQL pg_control is missing or truncated')
   const view = new DataView(
     files.control.buffer,

@@ -28,7 +28,6 @@ if (!data) {
   throw new Error('usage: brokered-filesystem.mjs REPO_ROOT WASM GLUE DATA')
 }
 
-const placeholder = await mkdtemp(join(tmpdir(), 'pglite-broker-placeholder-'))
 const backing = await mkdtemp(join(tmpdir(), 'pglite-broker-backing-'))
 let postmaster
 let sessions = []
@@ -172,7 +171,6 @@ try {
 
   const firstFilesystem = new NonCloneableNodeFilesystem(backing)
   postmaster = await PGlitePostmaster.create({
-    dataDir: `file://${placeholder}`,
     maxConnections: 6,
     sharedBuffers: '16MB',
     artifact: { wasm, glue, data },
@@ -235,7 +233,6 @@ try {
 
   const secondFilesystem = new NonCloneableNodeFilesystem(backing)
   postmaster = await PGlitePostmaster.create({
-    dataDir: `file://${placeholder}`,
     initialize: false,
     maxConnections: 4,
     sharedBuffers: '16MB',
@@ -266,7 +263,6 @@ try {
 } finally {
   await Promise.allSettled(sessions.map((session) => session.close()))
   await postmaster?.close().catch(() => undefined)
-  await rm(placeholder, { recursive: true, force: true })
   await rm(backing, { recursive: true, force: true })
 }
 

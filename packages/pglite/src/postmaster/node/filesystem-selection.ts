@@ -31,3 +31,24 @@ export function assertPostmasterFilesystemSelection(
     )
   }
 }
+
+export async function loadWorkerFilesystem(
+  factory: WorkerFilesystemFactory,
+): Promise<Filesystem> {
+  const namespace = (await import(factory.module)) as Record<string, unknown>
+  const exported = namespace[factory.export ?? 'default']
+  if (typeof exported !== 'function') {
+    throw new TypeError(
+      `Worker filesystem export ${factory.export ?? 'default'} is not a factory function`,
+    )
+  }
+  const filesystem = await (
+    exported as (options: unknown) => Filesystem | Promise<Filesystem>
+  )(factory.options)
+  if (!filesystem || typeof filesystem.init !== 'function') {
+    throw new TypeError(
+      'Worker filesystem factory did not return a PGlite Filesystem',
+    )
+  }
+  return filesystem
+}

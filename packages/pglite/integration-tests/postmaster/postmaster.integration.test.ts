@@ -101,6 +101,13 @@ describe.sequential('Worker-backed PGlite postmaster integration', () => {
     )
   })
 
+  test('inherits client extensions on sessions of an ephemeral cluster', async () => {
+    await runScenario(
+      new URL('./scenarios/client-extensions.mjs', import.meta.url),
+      [...artifact],
+    )
+  })
+
   test('supports brokered filesystems and failure cleanup', async () => {
     await runScenario(
       new URL('./scenarios/brokered-filesystem.mjs', import.meta.url),

@@ -7,22 +7,10 @@ import type {
   PGliteClusterLeaseProvider,
 } from './base.js'
 
+import { PGliteClusterInUseError } from './cluster-lease.js'
+export { PGliteClusterInUseError } from './cluster-lease.js'
+
 const LOCK_FILE_SUFFIX = '.pglite.lock'
-
-export class PGliteClusterInUseError extends Error {
-  readonly dataDir: string
-  readonly owner?: PGliteClusterLeaseMetadata
-
-  constructor(dataDir: string, owner?: PGliteClusterLeaseMetadata) {
-    const detail = owner
-      ? ` by ${owner.runtime}${owner.pid === undefined ? '' : ` process ${owner.pid}`} since ${owner.startedAt}`
-      : ''
-    super(`PGlite data directory is already open${detail}: ${dataDir}`)
-    this.name = 'PGliteClusterInUseError'
-    this.dataDir = dataDir
-    this.owner = owner
-  }
-}
 
 export class NodeClusterLeaseProvider implements PGliteClusterLeaseProvider {
   async acquireExclusiveClusterLease(

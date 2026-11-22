@@ -1,0 +1,11 @@
+export const ERRNO_CODES = {
+  EBADF: 8,
+  EBADFD: 127,
+  EEXIST: 20,
+  EINVAL: 28,
+  EISDIR: 31,
+  ENODEV: 43,
+  ENOENT: 44,
+  ENOTDIR: 54,
+  ENOTEMPTY: 55,
+} as const

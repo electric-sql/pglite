@@ -11,7 +11,7 @@ if (process.argv.length !== 7) {
 }
 
 const [, , repoRoot, wasm, glue, data] = process.argv
-const { PGlite } = await import(
+const { PGlite, PGliteClusterInUseError } = await import(
   pathToFileURL(join(repoRoot, 'packages/pglite/dist/index.js')).href
 )
 const { PGlitePostmaster } = await import(
@@ -34,7 +34,7 @@ try {
       initialize: false,
     }),
     (error) =>
-      error?.name === 'PGliteClusterInUseError' &&
+      error instanceof PGliteClusterInUseError &&
       error?.owner?.runtime === 'classic',
   )
   const versionAfter = await stat(join(dataDir, 'PG_VERSION'))
@@ -50,7 +50,7 @@ try {
   await assert.rejects(
     PGlite.create(`file://${dataDir}`),
     (error) =>
-      error?.name === 'PGliteClusterInUseError' &&
+      error instanceof PGliteClusterInUseError &&
       error?.owner?.runtime === 'postmaster',
   )
   await postmaster.close()

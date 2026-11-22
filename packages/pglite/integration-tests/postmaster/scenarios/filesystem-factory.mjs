@@ -30,7 +30,6 @@ try {
       ),
     ])
   postmaster = await PGlitePostmaster.create({
-    dataDir: `file://${dataDirectory}`,
     maxConnections: 4,
     sharedBuffers: '16MB',
     artifact: { wasm, glue, data },
@@ -45,7 +44,13 @@ try {
         persistence: 'persistent',
         clusterLease: 'exclusive',
       },
-      clusterLeaseProvider: new NodeClusterLeaseProvider(),
+      clusterLeaseProvider: {
+        acquireExclusiveClusterLease: (_, metadata) =>
+          new NodeClusterLeaseProvider().acquireExclusiveClusterLease(
+            dataDirectory,
+            metadata,
+          ),
+      },
     },
   })
   session = await createSessionWhenReady(postmaster)

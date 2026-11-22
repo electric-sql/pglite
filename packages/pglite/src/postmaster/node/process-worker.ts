@@ -1,6 +1,12 @@
 import { parentPort, workerData } from 'node:worker_threads'
 import { pathToFileURL } from 'node:url'
 import { pglUtils } from '@electric-sql/pglite-utils'
+import {
+  PGliteClusterCompatibilityError,
+  readEmscriptenClusterFiles,
+  validateClusterFiles,
+} from '../../cluster-manifest.js'
+import { pgliteRuntimeIdentity } from '../../runtime-identity.js'
 import type { Filesystem } from '../../fs/base.js'
 import type { PGlite } from '../../pglite.js'
 import type { PostgresMod } from '../../postgresMod.js'
@@ -13,6 +19,7 @@ import {
   ProcessScopePolicy,
   ProcessState,
 } from '../shared/control.js'
+import { loadWorkerFilesystem } from './filesystem-selection.js'
 import { BrokeredFilesystem } from './filesystem-broker.js'
 import { PostmasterProcessHost } from '../shared/process-host.js'
 import { VirtualSocketHost } from '../shared/socket-host.js'
@@ -126,23 +133,7 @@ async function main(): Promise<void> {
       },
     } as unknown as PGlite
     if (data.filesystem.kind === 'factory') {
-      const namespace = (await import(
-        data.filesystem.factory.module
-      )) as Record<string, unknown>
-      const exported = namespace[data.filesystem.factory.export ?? 'default']
-      if (typeof exported !== 'function') {
-        throw new TypeError(
-          `Worker filesystem export ${data.filesystem.factory.export ?? 'default'} is not a factory function`,
-        )
-      }
-      filesystem = await (
-        exported as (options: unknown) => Filesystem | Promise<Filesystem>
-      )(data.filesystem.factory.options)
-      if (!filesystem || typeof filesystem.init !== 'function') {
-        throw new TypeError(
-          'Worker filesystem factory did not return a PGlite Filesystem',
-        )
-      }
+      filesystem = await loadWorkerFilesystem(data.filesystem.factory)
       filesystemOptions = (await filesystem.init(facade, {})).emscriptenOpts
       assertFilesystemOptions(filesystemOptions)
     } else if (data.filesystem.kind === 'broker') {
@@ -271,6 +262,24 @@ async function main(): Promise<void> {
       ],
     })
 
+    if (
+      data.filesystem.kind !== 'nodefs' &&
+      data.process.pid === data.postmaster.pid
+    ) {
+      const root = '/pglite/data'
+      if (!postgres.FS.analyzePath(root + '/PG_VERSION').exists)
+        throw new Error('PGlite data directory is not initialized')
+      validateClusterFiles(
+        readEmscriptenClusterFiles(postgres.FS, root),
+        pgliteRuntimeIdentity.artifacts.postmaster,
+        pgliteRuntimeIdentity.blockSize,
+        pgliteRuntimeIdentity.walBlockSize,
+      )
+      if (postgres.FS.analyzePath(root + '/postmaster.pid').exists) {
+        throw new Error('PGlite data directory appears to be in use')
+      }
+    }
+
     const extensionHeapStart = postgres._pgl_heap_break() >>> 0
     await loadExtensionFiles(
       postgres,
@@ -372,6 +381,8 @@ async function main(): Promise<void> {
         type: 'fatal',
         pid: data.process.pid,
         error: formatWorkerError(fatalError),
+        incompatibleCluster:
+          fatalError instanceof PGliteClusterCompatibilityError,
       })
     } else {
       send({ type: 'exit', pid: data.process.pid, code: exitCode ?? 1 })

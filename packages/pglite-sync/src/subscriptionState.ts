@@ -138,6 +138,7 @@ export async function migrateSubscriptionMetadataTables({
 }: MigrateSubscriptionMetadataTablesOptions) {
   await pg.exec(
     `
+      SELECT pg_advisory_xact_lock(hashtext('pglite-sync'), hashtext('metadata-migration'));
       SET ${metadataSchema}.syncing = false;
       CREATE SCHEMA IF NOT EXISTS "${metadataSchema}";
       CREATE TABLE IF NOT EXISTS ${subscriptionMetadataTableName(metadataSchema)} (

@@ -253,10 +253,16 @@ export class PGlite
     this.#extensions = options.extensions ?? {}
 
     // Initialize the database, and store the promise so we can wait for it to be ready
-    this.waitReady = this.#init(options ?? {}).catch(async (error) => {
-      await this.#abortInitialization().catch(() => {})
-      throw error
-    })
+    const prevExitCode = pglUtils.pgliteProc.exitCode
+    this.waitReady = this.#init(options ?? {})
+      .catch(async (error) => {
+        await this.#abortInitialization().catch(() => {})
+        throw error
+      })
+      .finally(() => {
+        // Emscripten's exit status belongs to this instance, including on failed startup.
+        pglUtils.pgliteProc.exitCode = prevExitCode
+      })
   }
 
   /**
@@ -329,10 +335,6 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions & InheritedClusterLeaseOptions) {
-    // PGlite modifies process.exitCode when it does exit(XX)
-    // we need to restore the previous value
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     if (options.fs) {
       this.fs = options.fs
     } else {
@@ -673,9 +675,22 @@ export class PGlite
         } else {
           this.#log('pglite: no db in filesystem, running initdb')
 
+          if (
+            options.fs &&
+            this.mod.FS.analyzePath(PGDATA).exists &&
+            this.mod.FS.readdir(PGDATA).some(
+              (entry: string) => entry !== '.' && entry !== '..',
+            )
+          ) {
+            throw new Error(
+              'Cannot initialize a nonempty PGlite data directory without PG_VERSION',
+            )
+          }
           const pgInitDbOpts = { ...options }
           pgInitDbOpts.noInitDb = true
           pgInitDbOpts.dataDir = undefined
+          // Bootstrap privately before copying the finished cluster into the selected filesystem.
+          pgInitDbOpts.fs = undefined
           pgInitDbOpts.extensions = undefined
           pgInitDbOpts.loadDataDir = undefined
           ;(pgInitDbOpts as PGliteOptions & InheritedClusterLeaseOptions)[
@@ -814,8 +829,6 @@ export class PGlite
         }
       }
     }
-
-    pglUtils.pgliteProc.exitCode = prevExitCode
   }
 
   #handlePostgresqlConf(

@@ -4,12 +4,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { measureMemory } from 'node:vm'
 import { Worker } from 'node:worker_threads'
 import type { Filesystem, PGliteClusterLease } from '../../fs/base.js'
-import type { PGliteOptions } from '../../interface.js'
+import type {
+  ExtensionSessionContext,
+  ExtensionSetupResult,
+  PGliteOptions,
+} from '../../interface.js'
 import type {
   Extensions,
   PGliteInterfaceExtensions,
   PGlitePostmasterExtensions,
 } from '../../interface.js'
+import { PostmasterMemoryFilesystem } from './memory-filesystem.js'
 import { NodeFS } from '../../fs/nodefs.js'
 import {
   acquireFilesystemClusterLease,
@@ -32,6 +37,7 @@ import {
   BrokeredFilesystemHost,
   initializerFilesystem,
   isBrokeredFilesystemBackend,
+  type BrokeredFilesystemBackend,
   type BrokeredFilesystemDiagnostics,
 } from './filesystem-broker.js'
 import { SupervisorTimers } from '../shared/timers.js'
@@ -48,13 +54,21 @@ import type {
   WorkerFilesystemDescriptor,
   WorkerFilesystemFactory,
 } from './worker-types.js'
-import { assertPostmasterFilesystemSelection } from './filesystem-selection.js'
-import { validateClusterFiles } from '../../cluster-manifest.js'
+import {
+  assertPostmasterFilesystemSelection,
+  loadWorkerFilesystem,
+} from './filesystem-selection.js'
+import {
+  PGliteClusterCompatibilityError,
+  readOptionalClusterManifest,
+  validateClusterFiles,
+} from '../../cluster-manifest.js'
 import { pgliteRuntimeIdentity } from '../../runtime-identity.js'
 import { pglitePostmasterWasmTarget } from '../../runtime-identity.js'
 import { prepareExtensionSet } from '../../extension-registry.js'
 import { loadExtensionArtifact } from '../../extension-archive.js'
 import {
+  PGliteExtensionArtifactError,
   DEFAULT_PGLITE_ARTIFACT_LIMITS,
   assertExtensionHostCapabilities,
   targetKeyFor,
@@ -95,8 +109,8 @@ const PGLITE_PROCESS_USER_ID = 123
 export interface PGlitePostmasterOptions<
   TExtensions extends Extensions = Extensions,
 > {
-  /** Node directory, with the existing PGlite `file://` spelling supported. */
-  readonly dataDir: string
+  /** Node directory or file:// URL. Omit for an in-memory cluster or a custom fs. */
+  readonly dataDir?: string
   readonly maxConnections?: number
   readonly sharedBuffers?: string
   readonly artifact?: PostmasterArtifactPaths
@@ -226,20 +240,30 @@ type DirectWorkerFilesystemDescriptor = Exclude<
 type ResolvedWorkerFilesystem =
   | {
       readonly kind: 'direct'
+      readonly dataDir?: string
+      readonly leaseSource: Pick<
+        Filesystem,
+        'capabilities' | 'clusterLeaseProvider'
+      >
       readonly descriptor: DirectWorkerFilesystemDescriptor
     }
   | {
       readonly kind: 'broker'
+      readonly dataDir?: string
+      readonly leaseSource: BrokeredFilesystemBackend
       readonly host: BrokeredFilesystemHost
-      readonly initializer: Filesystem
     }
 
 export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
-  readonly dataDir: string
+  readonly dataDir?: string
   readonly maxConnections: number
   readonly globalMemory: WebAssembly.Memory
   readonly registry: ProcessControlRegistry
 
+  private readonly extensionContexts = new Map<
+    string,
+    ExtensionSessionContext
+  >()
   private readonly artifact: PostmasterArtifactPaths
   private readonly wasmModule: WebAssembly.Module
   private readonly workerUrl: URL
@@ -282,7 +306,6 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
 
   private constructor(
     options: PGlitePostmasterOptions<TExtensions>,
-    dataDir: string,
     artifact: PostmasterArtifactPaths,
     wasmModule: WebAssembly.Module,
     artifactData: SharedArrayBuffer,
@@ -290,7 +313,7 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
     clusterLease?: PGliteClusterLease,
     workerExtensions: PostmasterExtensionSet = EMPTY_POSTMASTER_EXTENSIONS,
   ) {
-    this.dataDir = dataDir
+    this.dataDir = filesystem.dataDir
     this.maxConnections = options.maxConnections ?? 20
     this.artifact = artifact
     this.wasmModule = wasmModule
@@ -352,37 +375,40 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
   }
 
   static async create<TExtensions extends Extensions = Extensions>(
-    options: PGlitePostmasterOptions<TExtensions>,
+    options: PGlitePostmasterOptions<TExtensions> = {},
   ): Promise<
     PGlitePostmaster<TExtensions> & PGlitePostmasterExtensions<TExtensions>
   > {
     assertNodeCapabilities()
-    const dataDir = resolveDataDirectory(options.dataDir)
-    // Exact target selection and artifact validation are pre-start gates. Do
-    // not initialize or otherwise mutate the cluster until they have passed.
     const workerExtensions = await preparePostmasterExtensions(options)
-    let filesystem: ResolvedWorkerFilesystem | undefined
-    let clusterLease: PGliteClusterLease | undefined
-    let ownsClusterLease = false
+    const filesystem = resolveWorkerFilesystem(options)
+    const { lease: clusterLease } = await acquireFilesystemClusterLease(
+      filesystem.leaseSource,
+      filesystem.dataDir,
+      'postmaster',
+    )
+    let postmaster: PGlitePostmaster<TExtensions>
     try {
-      const leaseFilesystem = resolveLeaseFilesystem(options, dataDir)
-      const acquired = await acquireFilesystemClusterLease(
-        leaseFilesystem,
-        dataDir,
-        'postmaster',
-      )
-      clusterLease = acquired.lease
-      ownsClusterLease = acquired.owned
-      filesystem = resolveWorkerFilesystem(options, dataDir)
+      const nodeDir =
+        filesystem.kind === 'direct' ? filesystem.dataDir : undefined
       if (
         options.initialize !== false &&
-        (options.fs !== undefined ||
-          !existsSync(resolve(dataDir, 'PG_VERSION')))
+        (!nodeDir || !existsSync(resolve(nodeDir, 'PG_VERSION')))
       ) {
+        let fs: Filesystem | undefined
+        if (filesystem.kind === 'broker') {
+          const backend = filesystem.leaseSource
+          fs = initializerFilesystem(
+            backend instanceof PostmasterMemoryFilesystem
+              ? backend.mountForInitialization()
+              : backend,
+          )
+        } else if (!nodeDir && filesystem.descriptor.kind === 'factory') {
+          fs = await loadWorkerFilesystem(filesystem.descriptor.factory)
+        }
         const initializerOptions = {
-          dataDir: `file://${dataDir}`,
-          fs:
-            filesystem.kind === 'broker' ? filesystem.initializer : options.fs,
+          dataDir: nodeDir ? `file://${nodeDir}` : filesystem.dataDir,
+          fs,
           icuDataDir: options.icuDataDir,
           debug: options.debug ? 1 : 0,
         } as PGliteOptions & {
@@ -392,24 +418,15 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
         const initializer = await PGlite.create(initializerOptions)
         await initializer.close()
       }
-      if (!options.fs && !existsSync(resolve(dataDir, 'PG_VERSION'))) {
-        throw new Error(`PGlite data directory is not initialized: ${dataDir}`)
-      }
-      if (!options.fs) validateNodeCluster(dataDir)
-      if (!options.fs && existsSync(resolve(dataDir, 'postmaster.pid'))) {
-        throw new Error(
-          `PGlite data directory appears to be in use: ${dataDir}`,
-        )
-      }
+      if (nodeDir) validateNodeCluster(nodeDir)
 
       const artifact = resolveArtifact(options.artifact)
       const wasmModule = await WebAssembly.compile(readFileSync(artifact.wasm))
       const artifactDataBytes = readFileSync(artifact.data)
       const artifactData = new SharedArrayBuffer(artifactDataBytes.byteLength)
       new Uint8Array(artifactData).set(artifactDataBytes)
-      const postmaster = new PGlitePostmaster(
+      postmaster = new PGlitePostmaster(
         options,
-        dataDir,
         artifact,
         wasmModule,
         artifactData,
@@ -417,23 +434,20 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
         clusterLease,
         workerExtensions,
       )
-      try {
-        await postmaster.start(options)
-        await postmaster.setupClusterExtensions()
-      } catch (error) {
-        await postmaster.shutdown('immediate').catch(() => {})
-        throw error
+    } catch (error) {
+      if (filesystem.kind === 'broker') {
+        await filesystem.host.close().catch(() => {})
       }
-      ownsClusterLease = false
+      await clusterLease?.release().catch(() => {})
+      throw error
+    }
+    try {
+      await postmaster.start(options)
+      await postmaster.setupClusterExtensions()
       return postmaster as PGlitePostmaster<TExtensions> &
         PGlitePostmasterExtensions<TExtensions>
     } catch (error) {
-      if (filesystem?.kind === 'broker') {
-        await filesystem.host.close().catch(() => {})
-      }
-      if (ownsClusterLease) {
-        await clusterLease?.release().catch(() => {})
-      }
+      await postmaster.shutdown('immediate').catch(() => {})
       throw error
     }
   }
@@ -492,8 +506,31 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
       }
       for (const namespace of this.workerExtensions.namespaceOrder) {
         const extension = this.extensions[namespace]
-        if (extension instanceof URL || !extension.sessionSetup) continue
-        const result = await extension.sessionSetup(session)
+        if (extension instanceof URL) continue
+        if (!extension.sessionSetup && (extension.backend || !extension.setup))
+          continue
+        const database = options.database ?? 'postgres'
+        let context = this.extensionContexts.get(database)
+        if (!context) {
+          context = Object.freeze({ database })
+          this.extensionContexts.set(database, context)
+        }
+        const moduleOptions = {}
+        const result: ExtensionSetupResult = extension.sessionSetup
+          ? await extension.sessionSetup(session, context)
+          : await extension.setup!(session, moduleOptions, true, context)
+        if (result.close) session.registerExtensionClose(result.close)
+        if (
+          result.bundlePath ||
+          result.sharedPreloadLibraries?.length ||
+          Object.keys(result.emscriptenOpts ?? {}).length ||
+          Object.keys(moduleOptions).length
+        ) {
+          throw new PGliteExtensionArtifactError(
+            `Extension ${extension.name} requires backend configuration. Declare a compatible backend artifact for the postmaster.`,
+            'unsupported-target',
+          )
+        }
         if (result.namespaceObj !== undefined) {
           Object.defineProperty(session, namespace, {
             value: result.namespaceObj,
@@ -502,7 +539,7 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
             writable: false,
           })
         }
-        if (result.close) session.registerExtensionClose(result.close)
+        if (result.init) await result.init()
       }
       return session as PGlitePostmasterSession &
         PGliteInterfaceExtensions<TExtensions>
@@ -1007,7 +1044,11 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
         } else if (message.type === 'fatal') {
           if (!ready) {
             clearTimeout(startupTimer)
-            rejectReady(new Error(message.error))
+            rejectReady(
+              message.incompatibleCluster
+                ? new PGliteClusterCompatibilityError(message.error)
+                : new Error(message.error),
+            )
           }
           record.reportedExitCode = 1
           record.reportedExitKind = ProcessExitKind.WorkerFailure
@@ -1147,14 +1188,20 @@ export class PGlitePostmaster<TExtensions extends Extensions = Extensions> {
 }
 
 function validateNodeCluster(dataDir: string): void {
+  if (!existsSync(resolve(dataDir, 'PG_VERSION'))) {
+    throw new Error(`PGlite data directory is not initialized: ${dataDir}`)
+  }
+  if (existsSync(resolve(dataDir, 'postmaster.pid'))) {
+    throw new Error(`PGlite data directory appears to be in use: ${dataDir}`)
+  }
   const manifestPath = resolve(dataDir, '.pglite', 'cluster.json')
   validateClusterFiles(
     {
       pgVersion: readFileSync(resolve(dataDir, 'PG_VERSION'), 'utf8'),
       control: readFileSync(resolve(dataDir, 'global', 'pg_control')),
-      manifest: existsSync(manifestPath)
-        ? readFileSync(manifestPath, 'utf8')
-        : undefined,
+      manifest: readOptionalClusterManifest(() =>
+        readFileSync(manifestPath, 'utf8'),
+      ),
     },
     pgliteRuntimeIdentity.artifacts.postmaster,
     pgliteRuntimeIdentity.blockSize,
@@ -1275,29 +1322,43 @@ function isDatabaseStartingUpError(error: unknown): boolean {
 
 function resolveWorkerFilesystem(
   options: PGlitePostmasterOptions,
-  dataDir: string,
 ): ResolvedWorkerFilesystem {
   assertPostmasterFilesystemSelection(options.fs, options.workerFilesystem)
-  if (!options.workerFilesystem) {
-    if (options.fs) {
-      if (!isBrokeredFilesystemBackend(options.fs)) {
-        throw new TypeError(
-          'A custom postmaster fs must implement the synchronous BaseFilesystem operations or provide a workerFilesystem factory',
-        )
-      }
-      const host = new BrokeredFilesystemHost(options.fs)
-      return {
-        kind: 'broker',
-        host,
-        initializer: initializerFilesystem(options.fs),
-      }
+  const inMemory =
+    options.dataDir === undefined || options.dataDir.startsWith('memory://')
+  const broker =
+    options.fs ??
+    (!options.workerFilesystem && inMemory
+      ? new PostmasterMemoryFilesystem()
+      : undefined)
+  if (broker) {
+    if (!isBrokeredFilesystemBackend(broker)) {
+      throw new TypeError(
+        'A custom postmaster fs must implement the synchronous BaseFilesystem operations or provide a workerFilesystem factory',
+      )
     }
     return {
-      kind: 'direct',
-      descriptor: { kind: 'nodefs', root: dataDir },
+      kind: 'broker',
+      dataDir:
+        options.dataDir &&
+        (!options.dataDir.includes('://') ||
+          options.dataDir.startsWith('file:'))
+          ? resolveDataDirectory(options.dataDir)
+          : options.dataDir,
+      leaseSource: broker,
+      host: new BrokeredFilesystemHost(broker),
     }
   }
   const factory = options.workerFilesystem
+  if (!factory) {
+    const dataDir = resolveDataDirectory(options.dataDir)
+    return {
+      kind: 'direct',
+      dataDir,
+      leaseSource: new NodeFS(dataDir),
+      descriptor: { kind: 'nodefs', root: dataDir },
+    }
+  }
   const { clusterLeaseProvider: _clusterLeaseProvider, ...workerFactory } =
     factory
   let module = factory.module
@@ -1311,24 +1372,16 @@ function resolveWorkerFilesystem(
   }
   return {
     kind: 'direct',
+    dataDir:
+      options.dataDir === undefined
+        ? undefined
+        : resolveDataDirectory(options.dataDir),
+    leaseSource: factory,
     descriptor: {
       kind: 'factory',
       factory: { ...workerFactory, module },
     },
   }
-}
-
-function resolveLeaseFilesystem(
-  options: PGlitePostmasterOptions,
-  dataDir: string,
-): Filesystem {
-  if (options.fs) return options.fs
-  if (!options.workerFilesystem) return new NodeFS(dataDir)
-
-  return {
-    capabilities: options.workerFilesystem.capabilities,
-    clusterLeaseProvider: options.workerFilesystem.clusterLeaseProvider,
-  } as Filesystem
 }
 
 interface ResolvedMemoryOptions {
@@ -1429,7 +1482,9 @@ function createProcessMemory(
   })
 }
 
-function resolveDataDirectory(value: string): string {
+function resolveDataDirectory(value: string | undefined): string {
+  if (!value)
+    throw new TypeError('A Node dataDir is required for this filesystem')
   if (value.startsWith('file:')) return resolve(fileURLToPath(value))
   if (value.includes('://')) {
     throw new Error('The postmaster currently requires a Node file:// VFS')
@@ -1560,9 +1615,7 @@ async function preparePostmasterExtensions(
   const { sideModulePaths, sideModuleDependencies } = prepared
   const sideModulePathSet = new Set(sideModulePaths.values())
   return Object.freeze({
-    namespaceOrder: Object.freeze(
-      prepared.extensions.map(({ namespace }) => namespace),
-    ),
+    namespaceOrder: Object.freeze(prepared.namespaceOrder),
     requiredSharedPreloadLibraries: Object.freeze([
       ...prepared.requiredSharedPreloadLibraries,
     ]),

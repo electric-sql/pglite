@@ -32,3 +32,4 @@ export {
 } from './extension-archive.js'
 export type { ValidatedExtensionArtifact } from './extension-archive.js'
 export type * as postgresMod from './postgresMod.js'
+export { PGliteClusterInUseError } from './fs/cluster-lease.js'

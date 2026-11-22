@@ -96,7 +96,7 @@ function extension(
   })
 }
 
-function prepare(extensions: Record<string, ReturnType<typeof extension>>) {
+function prepare(extensions: Parameters<typeof prepareExtensionSet>[0]) {
   return prepareExtensionSet(extensions, {
     targetKey: 'wasm32-multi-memory',
     target: runtimeTarget,
@@ -161,6 +161,28 @@ describe('prepareExtensionSet', () => {
       A_DATA: { artifactPath: 'lib/a.so' },
       B: true,
     })
+  })
+
+  test('orders client and cluster hooks alongside compiled extensions', () => {
+    const result = prepare({
+      client: { name: 'client', dependsOn: ['b'], setup: async () => ({}) },
+      b: extension('b', artifact('b'), ['cluster']),
+      bootstrap: { name: 'cluster', clusterSetup: async () => {} },
+    })
+    expect(result.namespaceOrder).toEqual(['bootstrap', 'b', 'client'])
+    expect(result.extensions.map(({ namespace }) => namespace)).toEqual(['b'])
+  })
+
+  test('requires a matching artifact for an extension declaring a backend', () => {
+    expect(() =>
+      prepare({
+        hybrid: {
+          name: 'hybrid',
+          backend: { artifacts: {} },
+          setup: async () => ({}),
+        },
+      }),
+    ).toThrow(/does not declare wasm32-multi-memory/)
   })
 
   test('allows identical co-owned files and rejects conflicting contents', () => {

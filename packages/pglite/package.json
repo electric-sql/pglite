@@ -136,7 +136,8 @@
   "type": "module",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "fs-ext-extra-prebuilt": "2.2.9"
+    "fs-ext-extra-prebuilt": "2.2.9",
+    "memfs": "4.0.0"
   },
   "files": [
     "dist",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createClusterManifestFromFiles,
-  PGliteClusterCompatibilityError,
+  readOptionalClusterManifest,
   validateClusterFiles,
 } from '../src/cluster-manifest.js'
 import { pgliteRuntimeIdentity } from '../src/runtime-identity.js'
@@ -37,7 +37,7 @@ describe('cluster manifest compatibility', () => {
     ).toEqual(manifest)
   })
 
-  it('checks native metadata before reporting a missing manifest', () => {
+  it('checks the native identity even without a manifest', () => {
     expect(() =>
       validateClusterFiles(
         { ...nativeFiles(), pgVersion: '17\n' },
@@ -48,15 +48,26 @@ describe('cluster manifest compatibility', () => {
     ).toThrow(/major 17 is incompatible/)
   })
 
-  it('fails closed for missing and inconsistent manifests', () => {
+  it('surfaces errors reading an existing manifest', () => {
+    const denied = Object.assign(new Error('Permission denied'), {
+      code: 'EACCES',
+    })
     expect(() =>
+      readOptionalClusterManifest(() => {
+        throw denied
+      }),
+    ).toThrow(denied)
+  })
+
+  it('accepts legacy clusters and rejects inconsistent manifests', () => {
+    expect(
       validateClusterFiles(
         nativeFiles(),
         artifact,
         pgliteRuntimeIdentity.blockSize,
         pgliteRuntimeIdentity.walBlockSize,
       ),
-    ).toThrow(PGliteClusterCompatibilityError)
+    ).toBeUndefined()
 
     const manifest = createClusterManifestFromFiles(nativeFiles(), {
       artifact,
@@ -80,7 +91,7 @@ describe('cluster manifest compatibility', () => {
 })
 
 function nativeFiles(): { pgVersion: string; control: Uint8Array } {
-  const control = new Uint8Array(32)
+  const control = new Uint8Array(8192)
   const view = new DataView(control.buffer)
   view.setBigUint64(0, systemIdentifier, true)
   view.setUint32(12, artifact.catalogVersion, true)

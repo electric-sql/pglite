@@ -35,3 +35,14 @@ export PGLITE_CLI_INTEGRATION_CONFIG
 pnpm -C "${REPO_ROOT}/packages/pglite-cli" exec vitest run \
   integration-tests/packed-cli.integration.test.ts \
   --config integration-tests/vitest.config.ts
+
+# Exercise the linked distribution on Node 20, including child CLIs
+# which use /usr/bin/env node rather than inheriting process.execPath.
+topology=$(node22 -p 'require(process.argv[1]).artifacts.postmaster.memoryTopology' \
+  "${REPO_ROOT}/packages/pglite/release/runtime-identity.json")
+if [[ ${topology} == faceted ]]; then
+  node20_bin=$(dirname "$(readlink -f "$(command -v node20)")")
+  PATH="${node20_bin}:${PATH}" node20 \
+    "${REPO_ROOT}/packages/pglite-cli/integration-tests/scenarios/packed-cli.mjs" \
+    "${REPO_ROOT}" "${NATIVE}" "${OUT}/node20"
+fi

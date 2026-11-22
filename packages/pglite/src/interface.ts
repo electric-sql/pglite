@@ -55,10 +55,16 @@ export interface ExtensionSetupResult<TNamespace = any> {
   close?: () => Promise<void>
 }
 
+/** Shared by the JavaScript sessions of one database on one postmaster. */
+export interface ExtensionSessionContext {
+  readonly database: string
+}
+
 export type ExtensionSetup<TNamespace = any> = (
   pg: PGliteInterface,
   emscriptenOpts: any,
   clientOnly?: boolean,
+  context?: ExtensionSessionContext,
 ) => Promise<ExtensionSetupResult<TNamespace>>
 
 export interface ExtensionLifecycleResult<TNamespace = any> {
@@ -72,6 +78,7 @@ export type ExtensionClusterSetup<TNamespace = never> = (
 
 export type ExtensionSessionSetup<TNamespace = any> = (
   session: PGliteInterface,
+  context?: ExtensionSessionContext,
 ) => Promise<ExtensionLifecycleResult<TNamespace>>
 
 export interface Extension<TNamespace = any, TClusterNamespace = never> {

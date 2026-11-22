@@ -46,3 +46,4 @@ export type PGlitePostmaster = NodePGlitePostmaster
 export const PGlitePostmasterSession =
   UnsupportedSession as unknown as typeof SharedPGlitePostmasterSession
 export type PGlitePostmasterSession = SharedPGlitePostmasterSession
+export { PGliteClusterInUseError } from '../fs/cluster-lease.js'
