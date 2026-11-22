@@ -16,7 +16,11 @@ if [[ $phase == all || $phase == prepare ]]; then
   cp /sdk/classic/extensions/*.tar.gz "$core/"
   cp /sdk/classic/bin/*.wasm packages/pglite-tools/release/
   cp /sdk/classic/include/postgresql/server/catalog/catversion.h postgres-pglite/src/include/catalog/
-  if [[ $mode == linked ]]; then cp /opt/pglite-linked/linked-*.wasm "$core/"; fi
+  if [[ $mode == linked ]]; then
+    /emsdk/upstream/bin/llvm-objcopy --add-section pglite.linked-unshared=/opt/pglite-linked/linked-unshared.wasm \
+      /sdk/classic/bin/pglite.wasm "$core/pglite.wasm"
+    cp /opt/pglite-linked/linked-*.wasm "$core/"
+  fi
   PGLITE_PG_CONFIG_HEADER=/sdk/postmaster/pg_config.h node22 tools/wasm-multi-memory/generate-artifact-metadata.mjs
   pnpm --filter @electric-sql/pglite-utils --filter @electric-sql/pg-protocol build
   pnpm -C packages/pglite build

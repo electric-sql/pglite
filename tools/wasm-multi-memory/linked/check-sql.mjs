@@ -114,7 +114,17 @@ const extensions = { vector, ...sdk?.extraExtensions }
 assert.ok(mode === 'classic' || mode === 'postmaster')
 assert.deepEqual(vector.backend.targetKeys, ['wasm32-faceted'])
 if (mode === 'classic') {
-  const db = await PGlite.create({ extensions })
+  const assets = process.env.PGLITE_CLASSIC_ASSETS
+  const manualAssets = assets && {
+    pgliteWasmModule: await WebAssembly.compile(
+      await readFile(join(assets, 'pglite.wasm')),
+    ),
+    initdbWasmModule: await WebAssembly.compile(
+      await readFile(join(assets, 'initdb.wasm')),
+    ),
+    fsBundle: new Blob([await readFile(join(assets, 'pglite.data'))]),
+  }
+  const db = await PGlite.create({ extensions, ...manualAssets })
   try {
     await checkLazyStartup(db)
     await checkIndex(db)

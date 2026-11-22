@@ -32,6 +32,24 @@ export const pgliteProc =
     ? globalThis.process
     : { exitCode: undefined }
 
+export async function compileWasm(moduleUrl: URL): Promise<WebAssembly.Module> {
+  const key = moduleUrl.toString()
+  const cached = cachedWasmModules.get(key)
+  if (cached) return cached
+
+  let module: WebAssembly.Module
+  if (IN_NODE) {
+    const fs = await import('fs/promises')
+    module = await WebAssembly.compile(await fs.readFile(moduleUrl))
+  } else {
+    await startArtifactDownload(moduleUrl)
+    const response = await artifactDownloadPromises.get(key)
+    module = await WebAssembly.compileStreaming(response!.clone())
+  }
+  cachedWasmModules.set(key, module)
+  return module
+}
+
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
   moduleUrl: URL,
@@ -40,39 +58,8 @@ export async function instantiateWasm(
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModules.has(moduleUrl.toString())) {
-    const mod = module || cachedWasmModules.get(moduleUrl.toString())!
-    return {
-      instance: await WebAssembly.instantiate(mod, imports),
-      module: mod,
-    }
-  }
-  if (IN_NODE) {
-    const fs = await import('fs/promises')
-    const buffer = await fs.readFile(moduleUrl)
-    const { module: newModule, instance } = await WebAssembly.instantiate(
-      buffer,
-      imports,
-    )
-    cachedWasmModules.set(moduleUrl.toString(), newModule)
-    return {
-      instance,
-      module: newModule,
-    }
-  } else {
-    if (!artifactDownloadPromises.has(moduleUrl.toString())) {
-      startArtifactDownload(moduleUrl)
-      // wasmDownloadPromises.set(moduleUrl, fetch(moduleUrl))
-    }
-    const response = await artifactDownloadPromises.get(moduleUrl.toString())
-    const { module: newModule, instance } =
-      await WebAssembly.instantiateStreaming(response!.clone(), imports)
-    cachedWasmModules.set(moduleUrl.toString(), newModule)
-    return {
-      instance,
-      module: newModule,
-    }
-  }
+  module ??= await compileWasm(moduleUrl)
+  return { instance: await WebAssembly.instantiate(module, imports), module }
 }
 
 export async function getFsBundle(fsBundleUrl: URL): Promise<ArrayBuffer> {

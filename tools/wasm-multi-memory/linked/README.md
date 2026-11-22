@@ -19,12 +19,18 @@ tag, then uses a private instruction or calls the corresponding provider. Each
 provider uses Wasm loads, stores and atomics on its single memory. Cross-heap
 bulk copies check both ranges and use a Node Buffer copy or a typed-array copy.
 
-Classic binds both providers to its one unshared heap. Postmaster gives each
-backend an unshared heap, shares the cluster heap across backends, and shares a
-dedicated scoped heap (memory 2) between a session and its parallel workers.
-Compact mode requires a shareable private heap and is disabled. The PGlite package ships two
-provider binaries of about 7 KiB each, one for each Wasm memory import type.
-All loaded extensions use these providers.
+Classic carries the unshared provider in a `pglite.linked-unshared` custom
+section of `pglite.wasm`. A Wasm engine skips this section when validating
+PostgreSQL. Classic instantiates it against the private heap when a registered
+extension contains linked Wasm code. Bundlers can supply `pgliteWasmModule`,
+`initdbWasmModule` and `fsBundle` directly. Preserve the custom section if
+post-processing the classic Wasm for use with linked extensions.
+
+Postmaster gives each backend an unshared heap, shares the cluster heap across
+backends, and shares a dedicated scoped heap (memory 2) between a session and
+its parallel workers. Its loader uses the shared sidecar for shared heaps and
+the unshared sidecar for workers whose scoped heap aliases their private heap.
+Compact mode requires a shareable private heap and is disabled.
 
 ## Build and verify from source with OrbStack
 

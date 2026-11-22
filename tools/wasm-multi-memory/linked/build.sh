@@ -15,7 +15,7 @@ bash tools/wasm-multi-memory/linked/compile.sh
 python3 tools/wasm-multi-memory/linked/build.py "$source_release" \
   "$stock_root/tools/wasm-multi-memory/.out/postmaster-build/source-build/extensions/other/vector.tar.gz" "$output" "${@:2}"
 cp -a "$source_release/." "$destination/"
-cp "$output"/{postmaster.wasm,postmaster.js,postmaster.data,pglite.js,linked-shared.wasm,linked-unshared.wasm,runtime-identity.json} "$destination/"
+cp "$output"/{postmaster.wasm,postmaster.js,postmaster.data,pglite.js,pglite.wasm,linked-shared.wasm,linked-unshared.wasm,runtime-identity.json} "$destination/"
 node22 tools/wasm-multi-memory/linked/pack-vector.mjs "$output" "$stock_root/postgres-pglite/pglite/other_extensions/vector/LICENSE"
 pnpm -C packages/pglite build
 (cd packages/pglite && npm pack --ignore-scripts --pack-destination "../../$output" --silent)

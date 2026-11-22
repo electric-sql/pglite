@@ -81,6 +81,16 @@ subprocess.run(
     ],
     check=True,
 )
+subprocess.run(
+    [
+        "/emsdk/upstream/bin/llvm-objcopy",
+        "--add-section",
+        f"pglite.linked-unshared={output / 'linked-unshared.wasm'}",
+        release / "pglite.wasm",
+        output / "pglite.wasm",
+    ],
+    check=True,
+)
 if loop_variant:
     subprocess.run(
         ["wasm-opt", "--all-features", "-O3", vector_so, "-o", vector_so], check=True
@@ -145,7 +155,7 @@ subprocess.run(
 print("Linked core, pgvector and", len(inputs) - 2, "embedded Wasm modules", flush=True)
 identity = json.loads((release / "runtime-identity.json").read_text())
 for mode, file in [
-    ("classic", release / "pglite.wasm"),
+    ("classic", output / "pglite.wasm"),
     ("postmaster", output / "postmaster.wasm"),
 ]:
     digest = sha256(file.read_bytes()).hexdigest()

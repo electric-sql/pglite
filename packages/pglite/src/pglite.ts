@@ -38,7 +38,11 @@ import {
   pgliteRuntimeIdentity,
 } from './runtime-identity.js'
 import { prepareExtensionSet } from './extension-registry.js'
-import { linkMemory, sideModuleLinker } from './wasm/linked-memory.js'
+import {
+  classicMemoryProvider,
+  linkMemory,
+  sideModuleLinker,
+} from './wasm/linked-memory.js'
 import { loadExtensionArtifact } from './extension-archive.js'
 import {
   DEFAULT_PGLITE_ARTIFACT_LIMITS,
@@ -388,11 +392,11 @@ export class PGlite
       ...(this.debug ? ['-d', this.debug.toString()] : []),
     ]
 
-    if (!options.pgliteWasmModule) {
+    const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
+    let coreModule = options.pgliteWasmModule
+    if (!coreModule) {
       // Start the wasm download in the background so it's ready when we need it
-      pglUtils.startArtifactDownload(
-        new URL('../release/pglite.wasm', import.meta.url),
-      )
+      pglUtils.startArtifactDownload(moduleUrl)
     }
 
     if (!options.initdbWasmModule) {
@@ -424,6 +428,24 @@ export class PGlite
       maximum: 32768,
     })
 
+    let linkedImports: WebAssembly.Imports | undefined
+    if (
+      preparedExtensions?.extensions.some(
+        ({ descriptor }) =>
+          descriptor.target.topology === 'faceted' &&
+          descriptor.manifest.sideModules.length > 0,
+      )
+    ) {
+      coreModule ??= await pglUtils.compileWasm(moduleUrl)
+      const provider = classicMemoryProvider(coreModule)
+      linkedImports = await linkMemory(
+        wasmMemory,
+        wasmMemory,
+        wasmMemory,
+        () => provider,
+      )
+    }
+
     let emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: POSTGRES_EXE_PATH,
       PGLITE_ENV: {},
@@ -431,13 +453,8 @@ export class PGlite
       arguments: args,
       noExitRuntime: true,
       wasmMemory: wasmMemory,
-      pgliteLinkSideModule: preparedExtensions?.extensions.some(
-        (e) => e.descriptor.target.topology === 'faceted',
-      )
-        ? sideModuleLinker(
-            await linkMemory(wasmMemory, wasmMemory, wasmMemory),
-            false,
-          )
+      pgliteLinkSideModule: linkedImports
+        ? sideModuleLinker(linkedImports, false)
         : undefined,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
@@ -454,10 +471,9 @@ export class PGlite
           global_memory: wasmMemory,
           scoped_memory: wasmMemory,
         }
-        const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
 
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .instantiateWasm(imports, moduleUrl, coreModule)
           .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)

@@ -20,6 +20,8 @@ core=/bench/trial/packages/pglite
 control=/build/workspace/packages/pglite/release
 "$src/build/linked/provider-immediates" "$control/postmaster.wasm" "$core/release/postmaster.wasm" \
   "$control/linked-shared.wasm" "$core/release/linked-shared.wasm" "$control/linked-unshared.wasm" "$core/release/linked-unshared.wasm"
+/emsdk/upstream/bin/llvm-objcopy --add-section "pglite.linked-unshared=$core/release/linked-unshared.wasm" \
+  /sdk/classic/bin/pglite.wasm "$core/release/pglite.wasm"
 bash "$root/perf/system/rebuild-core.sh" "$core"
 dir=/bench/trial/vector-files
 mkdir -p "$dir"

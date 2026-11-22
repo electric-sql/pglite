@@ -5,7 +5,8 @@ import type { Filesystem } from '../../fs/base.js'
 import type { PGlite } from '../../pglite.js'
 import type { PostgresMod } from '../../postgresMod.js'
 import { loadExtensionFiles } from '../../extensionUtils.js'
-import { linkMemory, sideModuleLinker } from '../../wasm/linked-memory.js'
+import { sideModuleLinker } from '../../wasm/linked-memory.js'
+import { linkPostmasterMemory } from '../../wasm/postmaster-linked-memory.js'
 import { PgliteMemoryViews } from '../../wasm/multi-memory.js'
 import {
   ProcessControlRegistry,
@@ -181,7 +182,11 @@ async function main(): Promise<void> {
       })
     }
     const linkedImports = linked
-      ? await linkMemory(privateMemory, data.globalMemory, scopedMemory)
+      ? await linkPostmasterMemory(
+          privateMemory,
+          data.globalMemory,
+          scopedMemory,
+        )
       : undefined
     postgres = await createPostgres({
       ...filesystemOptions,

@@ -62,6 +62,8 @@ export const pglite = new PGliteWorker(
 
 ### Workaround: manually provide `pgliteWasmModule`, `initdbWasmModule` and `fsBundle`
 
+Classic uses the same three core assets when loading linked extensions. If you optimize `pglite.wasm` after packaging, preserve its `pglite.linked-unshared` custom section.
+
 1. Copy `pglite.wasm`, `initdb.wasm` and `pglite.data` from `node_modules/@electric-sql/pglite/dist/` to your public/build directory so your web server can serve them.
 
 2. Pass them manually when creating a PGlite instance:

@@ -45,11 +45,19 @@ if [[ ${2:-all} != catalog ]]; then
 
   export PGLITE_VERIFY_LAZY_EXTENSIONS=1
   export PGLITE_OBSERVE_MANIFEST="$app/sizes.json"
+  mkdir manual-assets postmaster-providers
   for node in node20 node22; do
     for mode in classic postmaster; do
       export PGLITE_OBSERVE_LOG="$out/$node-$mode-links.jsonl"
       : >"$PGLITE_OBSERVE_LOG"
-      "$node" --require "$app/observe-wasm.cjs" check-sql.mjs "$mode" sdk
+      if [[ $mode == classic ]]; then
+        mv "$dist"/{pglite.wasm,initdb.wasm,pglite.data} manual-assets/
+        mv "$dist"/linked-{unshared,shared}.wasm postmaster-providers/
+        PGLITE_CLASSIC_ASSETS="$app/manual-assets" "$node" --require "$app/observe-wasm.cjs" check-sql.mjs "$mode" sdk
+        mv manual-assets/* postmaster-providers/* "$dist/"
+      else
+        "$node" --require "$app/observe-wasm.cjs" check-sql.mjs "$mode" sdk
+      fi
       node22 --input-type=module - "$mode" <<'JS'
 import fs from 'node:fs'
 import assert from 'node:assert/strict'

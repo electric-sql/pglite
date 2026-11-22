@@ -21,6 +21,11 @@ if [[ $phase != extensions ]]; then
   for tool in pg_dump pg_isready psql pg_restore createdb createuser dropdb dropuser clusterdb vacuumdb reindexdb; do
     cp "$out"/classic/bin/"$tool".* "$tools/"
   done
+  classic="$out/classic/bin/pglite.wasm"
+  /emsdk/upstream/bin/llvm-objcopy --add-section pglite.linked-unshared=/opt/pglite-linked/linked-unshared.wasm \
+    "$classic" "$core/pglite.wasm"
+  # Only the custom section should be appended to the classic executable.
+  cmp -n "$(stat -c %s "$classic")" "$classic" "$core/pglite.wasm"
   cp /opt/pglite-linked/linked-{shared,unshared}.wasm "$core/"
   pglite-linked-transform "$out/postmaster/bin/pglite.wasm" "$core/postmaster.wasm" "$out/main-report.json" main
   cp "$out/postmaster/bin/pglite.js" "$core/postmaster.js"

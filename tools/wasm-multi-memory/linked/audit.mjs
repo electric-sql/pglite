@@ -12,6 +12,16 @@ const providerExports = new Set(
     new WebAssembly.Module(readFileSync(modules['linked-shared.wasm'])),
   ).map((entry) => entry.name),
 )
+const classic = new WebAssembly.Module(readFileSync(modules['pglite.wasm']))
+const embedded = WebAssembly.Module.customSections(
+  classic,
+  'pglite.linked-unshared',
+)
+assert.equal(embedded.length, 1)
+assert.deepEqual(
+  Buffer.from(embedded[0]),
+  readFileSync(modules['linked-unshared.wasm']),
+)
 for (const shared of [false, true]) {
   const memory = new WebAssembly.Memory({ initial: 1, maximum: 2, shared })
   const name = shared ? 'linked-shared.wasm' : 'linked-unshared.wasm'

@@ -1,30 +1,36 @@
-import { RefreshingViews } from './multi-memory.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
-
+import { RefreshingViews } from './multi-memory.js'
 import { PGLITE_LINKED_MEMORY_ABI } from '../extension-artifacts.js'
 
-const modules = new Map<boolean, Promise<WebAssembly.Module>>()
+const classicProviders = new WeakMap<
+  WebAssembly.Module,
+  Promise<WebAssembly.Module>
+>()
 
-function provider(shared: boolean) {
-  let module = modules.get(shared)
-  if (!module) {
-    const url = shared
-      ? new URL('../release/linked-shared.wasm', import.meta.url)
-      : new URL('../release/linked-unshared.wasm', import.meta.url)
-    module = pglUtils
-      .getFsBundle(url)
-      .then((bytes) => WebAssembly.compile(bytes))
-    modules.set(shared, module)
-    module.catch(() => modules.delete(shared))
+export function classicMemoryProvider(core: WebAssembly.Module) {
+  let provider = classicProviders.get(core)
+  if (!provider) {
+    const sections = WebAssembly.Module.customSections(
+      core,
+      'pglite.linked-unshared',
+    )
+    if (sections.length !== 1) {
+      throw new Error(
+        'Linked extensions require a pglite.wasm built with the embedded memory provider',
+      )
+    }
+    provider = WebAssembly.compile(sections[0])
+    classicProviders.set(core, provider)
+    provider.catch(() => classicProviders.delete(core))
   }
-  return module
+  return provider
 }
 
 export async function linkMemory(
   privateHeap: WebAssembly.Memory,
   global: WebAssembly.Memory,
   scoped: WebAssembly.Memory,
-  getProvider = provider,
+  getProvider: (shared: boolean) => Promise<WebAssembly.Module>,
 ) {
   const nodeBuffers = pglUtils.IN_NODE && typeof Buffer !== 'undefined'
   const heaps = [privateHeap, global, scoped].map(
