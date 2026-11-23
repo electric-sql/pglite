@@ -62,7 +62,7 @@
     "react-dom": "^19.0.0"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:1.0.0"
+    "@electric-sql/pglite": "workspace:0.6.0"
   },
   "peerDependenciesMeta": {
     "@electric-sql/pglite": {

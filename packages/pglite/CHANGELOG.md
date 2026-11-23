@@ -1,6 +1,6 @@
 # @electric-sql/pglite
 
-## 1.0.0
+## 0.6.0
 
 ### Minor Changes
 

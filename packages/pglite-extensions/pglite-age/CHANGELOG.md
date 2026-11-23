@@ -2,10 +2,10 @@
 
 ## 0.1.0
 
-### Patch Changes
+### Minor Changes
 
 - Updated dependencies [c8695fb]
-  - @electric-sql/pglite@1.0.0
+  - @electric-sql/pglite@.6.0
 
 ## 0.0.18
 

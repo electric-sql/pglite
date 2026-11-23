@@ -61,6 +61,6 @@
     "@electric-sql/pglite-utils": "workspace:*"
   },
   "peerDependencies": {
-    "@electric-sql/pglite": "workspace:1.0.0"
+    "@electric-sql/pglite": "workspace:0.6.0"
   }
 }
