@@ -41,6 +41,13 @@ export class Writer {
     return this
   }
 
+  public addUint16(num: number): Writer {
+    this.#ensure(2)
+    this.#bufferView.setUint16(this.#offset, num, this.#littleEndian)
+    this.#offset += 2
+    return this
+  }
+
   public addCString(string: string): Writer {
     if (string) {
       // TODO(msfstef): might be faster to extract `addString` code and

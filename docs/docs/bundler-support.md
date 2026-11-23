@@ -99,3 +99,36 @@ const nextConfig = {
 
 export default nextConfig
 ```
+
+## Nitro
+
+PGlite can be used in [Nitro](https://nitro.build/) server routes (e.g. in [Nuxt](https://nuxt.com/)) with the `node-server` preset without any extra configuration. This has only been tested with Node.js and the `node-server` preset.
+
+### Nuxt 4 + Nitro 2
+
+Works out of the box: Nitro 2 traces `@electric-sql/pglite` as an external dependency and copies the whole package, including the WASM and data files, to `.output/server/node_modules`.
+
+```ts
+// server/api/query.ts
+import { PGlite } from '@electric-sql/pglite'
+
+export default defineEventHandler(async () => {
+  const db = await PGlite.create()
+  return (await db.query('select 1 as one')).rows
+})
+```
+
+### Nuxt 5 nightly + Nitro 3 RC
+
+Works out of the box (requires Nitro `3.0.261103-rc` or later; earlier betas do not emit the binaries): Nitro 3 bundles PGlite and emits `pglite.wasm`, `initdb.wasm` and `pglite.data` as assets. Note that `defineHandler` must be imported explicitly:
+
+```ts
+// server/api/query.ts
+import { PGlite } from '@electric-sql/pglite'
+import { defineHandler } from 'nitro/h3'
+
+export default defineHandler(async () => {
+  const db = await PGlite.create()
+  return (await db.query('select 1 as one')).rows
+})
+```

@@ -5,6 +5,7 @@ import type {
 import type { Filesystem } from './fs/base.js'
 import type { DumpTarCompressionOptions } from './fs/tarUtils.js'
 import type { Parser, Serializer } from './types.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type FilesystemType = 'nodefs' | 'idbfs' | 'memoryfs'
 
@@ -89,6 +90,7 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   username?: string
   database?: string
   fs?: Filesystem
+  pgDataProxyFs?: pglUtils.FS
   debug?: DebugLevel
   relaxedDurability?: boolean
   extensions?: TExtensions
@@ -103,6 +105,8 @@ export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   startParams?: string[]
   initDbStartParams?: string[]
   postgresqlconf?: string[] | string
+  onStdout?: (text: string) => boolean
+  onStderr?: (text: string) => boolean
 }
 
 export type PGliteInterface<T extends Extensions = Extensions> =
@@ -173,6 +177,16 @@ export type Row<T = { [key: string]: any }> = T
 export type Results<T = { [key: string]: any }> = {
   rows: Row<T>[]
   affectedRows?: number
+  /**
+   * The command of the query that was run, e.g. "SELECT", "INSERT", "CREATE".
+   */
+  command?: string
+  /**
+   * The number of rows reported by the command tag, e.g. the rows returned
+   * by a SELECT or changed by an UPDATE. Unlike `affectedRows` this is per statement
+   * and not cumulative across a multi-statement query.
+   */
+  rowCount?: number
   fields: { name: string; dataTypeID: number }[]
   blob?: Blob // Only set when a file is returned, such as from a COPY command
 }

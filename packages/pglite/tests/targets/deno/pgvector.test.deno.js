@@ -68,6 +68,8 @@ Deno.test({
           },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 3,
       },
     ])
   },

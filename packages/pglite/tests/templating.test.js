@@ -52,6 +52,18 @@ describe('templating', () => {
     })
   })
 
+  it('should double embedded double quotes in identifiers', () => {
+    expect(query`SELECT * FROM ${identifier`sales"2026`};`).toEqual({
+      query: 'SELECT * FROM "sales""2026";',
+      params: [],
+    })
+
+    expect(query`SELECT * FROM ${identifier`${'two""quotes'}`};`).toEqual({
+      query: 'SELECT * FROM "two""""quotes";',
+      params: [],
+    })
+  })
+
   it('should correctly escape identifiers', () => {
     expect(
       query`

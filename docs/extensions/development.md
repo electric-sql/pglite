@@ -110,9 +110,7 @@ These steps allow our build environment to pick up the extension's code, then bu
 
 PGlite's frontend code is in the main [PGlite repo](https://github.com/electric-sql/pglite).
 
-You will need to create a new package for your extension. The easiest way is to just copy the files from an existing extension package such as `packages/pglite-pgvector`. Obviously, you will need to adapt all the references to the previous extension.
-
-```
+You will need to create a new package for your extension. The easiest way is to just copy the files from an existing extension package such as `packages/pglite-extensions/pglite-pgvector`. Obviously, you will need to adapt all the references to the previous extension.
 
 To make it available in our online [REPL](https://pglite.dev/repl/), add the extension to `docs/repl/allExtensions.ts`:
 
@@ -162,7 +160,7 @@ This will build **everything**, including your new extension. If there are no er
 
 ```
 
-$ cd packages/pglite-myawesomextension
+$ cd packages/pglite-extensions/pglite-myawesomextension
 $ pnpm test
 
 ```
@@ -186,4 +184,3 @@ As mentioned before, some extensions require more effort to integrate with PGlit
 Another source of pain for building an extension is the need to export symbols from the dependencies or from PGlite itself. Sometimes these are obvious only at runtime.
 
 We are still working on documentation and examples showing how to build more complex Postgres extensions for use with PGlite. Please check back soon, or reach out on [Discord](https://discord.com/channels/933657521581858818/1212676471588520006) if you would like to try building a particular extension for PGlite.
-```

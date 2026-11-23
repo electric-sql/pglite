@@ -50,9 +50,12 @@ export async function formatQuery(
 
   const dataTypeIDs = parseDescribeStatementResults(messages)
 
-  // replace $1, $2, etc with  %1L, %2L, etc
+  // replace $1, $2, etc with %1$L, %2$L, etc
+  // The `$` in `%n$L` is required for positional arguments; a bare `%nL` is
+  // "min width n" and makes format() consume arguments sequentially, binding
+  // the wrong values when placeholders are out of order or repeated.
   const subbedQuery = query.replace(/\$([0-9]+)/g, (_, num) => {
-    return '%' + num + 'L'
+    return '%' + num + '$L'
   })
 
   const ret = await tx.query<{

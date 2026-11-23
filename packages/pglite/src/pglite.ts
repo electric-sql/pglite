@@ -6,6 +6,7 @@ import {
   loadExtensions,
 } from './extensionUtils.js'
 import { type Filesystem, loadFs, parseDataDir } from './fs/index.js'
+import { MemoryFS } from './fs/memoryfs.js'
 import { DumpTarCompressionOptions, loadTar } from './fs/tarUtils.js'
 import type {
   DebugLevel,
@@ -77,6 +78,7 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
+  private readonly PGLITE_EXIT_ALIVE = 99
   #onData: ((bytes: Uint8Array) => number) | undefined
 
   get ENV(): any {
@@ -260,7 +262,7 @@ export class PGlite
             dataDir: dataDirOrPGliteOptions,
             ...(options ?? {}),
           }
-        : (dataDirOrPGliteOptions ?? {})
+        : (dataDirOrPGliteOptions ?? options ?? {})
 
     const pg = new PGlite(resolvedOpts)
     await pg.waitReady
@@ -293,10 +295,6 @@ export class PGlite
    * @returns A promise that resolves when the database is ready
    */
   async #init(options: PGliteOptions) {
-    // PGlite modifies process.exitCode when it does exit(XX)
-    // we need to restore the previous value
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     if (options.fs) {
       this.fs = options.fs
     } else {
@@ -332,10 +330,9 @@ export class PGlite
     // It's resolved value `fsBundleBuffer` is set and used in `getPreloadedPackage`
     // which is called via `PostgresModFactory` after we have awaited
     // `fsBundleBufferPromise` below.
-    const fsBundleUrl = new URL('../release/pglite.data', import.meta.url)
     const fsBundleBufferPromise = options.fsBundle
       ? options.fsBundle.arrayBuffer()
-      : pglUtils.getFsBundle(fsBundleUrl)
+      : pglUtils.getFsBundle(new URL('../release/pglite.data', import.meta.url))
     let fsBundleBuffer: ArrayBuffer
     fsBundleBufferPromise.then((buffer) => {
       fsBundleBuffer = buffer
@@ -358,16 +355,28 @@ export class PGlite
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
+        if (options.onStdout) {
+          if (options.onStdout(text)) {
+            return this.#print(text)
+          }
+        }
         this.#print(text)
       },
       printErr: (text: string) => {
+        if (options.onStderr) {
+          if (options.onStderr(text)) {
+            return this.#printErr(text)
+          }
+        }
         this.#printErr(text)
       },
       instantiateWasm: (imports, successCallback) => {
-        const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
-
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
+          .instantiateWasm(
+            imports,
+            options.pgliteWasmModule ??
+              (() => new URL('../release/pglite.wasm', import.meta.url)),
+          )
           .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
@@ -470,9 +479,17 @@ export class PGlite
           }
         },
         (mod: PostgresMod) => {
-          mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
-          mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
-          mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
+          if (options.pgDataProxyFs) {
+            mod.FS.mkdirTree(PGDATA)
+            mod.FS.mount(
+              mod.PROXYFS,
+              {
+                root: PGDATA,
+                fs: options.pgDataProxyFs,
+              },
+              PGDATA,
+            )
+          }
         },
       ],
     }
@@ -529,6 +546,11 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
+    // set file and folder flags
+    this.mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
+    this.mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
+    this.mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
+
     // Sync the filesystem from any previous store
     await this.fs!.initialSyncFs()
 
@@ -536,91 +558,105 @@ export class PGlite
       await this.#fillIcuDataDir(options.icuDataDir)
     }
 
-    if (!options.noInitDb) {
-      // If the user has provided a tarball to load the database from, do that now.
-      // We do this after the initial sync so that we can throw if the database
-      // already exists.
-      if (options.loadDataDir) {
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          throw new Error('Database already exists, cannot load from tarball')
-        }
-        this.#log('pglite: loading data from tarball')
-        await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    if (options.noInitDb === true) {
+      return
+    }
+
+    // If the user has provided a tarball to load the database from, do that now.
+    // We do this after the initial sync so that we can throw if the database
+    // already exists.
+    if (options.loadDataDir) {
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        throw new Error('Database already exists, cannot load from tarball')
+      }
+      this.#log('pglite: loading data from tarball')
+      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    } else {
+      // Check if the database exists in the file system, if not we run initdb
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        this.#log('pglite: found DB, resuming')
       } else {
-        // Check if the database exists in the file system, if not we run initdb
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          this.#log('pglite: found DB, resuming')
-        } else {
-          this.#log('pglite: no db in filesystem, running initdb')
+        this.#log('pglite: no db in filesystem, running initdb')
 
-          const pgInitDbOpts = { ...options }
-          pgInitDbOpts.noInitDb = true
-          pgInitDbOpts.dataDir = undefined
-          pgInitDbOpts.extensions = undefined
-          pgInitDbOpts.loadDataDir = undefined
-          // The initdb instance must run on its own scratch filesystem: a
-          // user-provided `fs` must not leak into it, or its second `init()`
-          // collides with resources the outer instance already holds (e.g. an
-          // OPFS VFS's sync access handles, which are exclusive per file).
-          pgInitDbOpts.fs = undefined
-          const pg_initDb = await PGlite.create(pgInitDbOpts)
+        const pgInitDbOpts = { ...options }
+        pgInitDbOpts.noInitDb = true
+        pgInitDbOpts.dataDir = undefined
+        pgInitDbOpts.extensions = undefined
+        pgInitDbOpts.loadDataDir = undefined
+        // The initdb instance must run on its own scratch filesystem: a
+        // user-provided `fs` must not leak into it, or its second `init()`
+        // collides with resources the outer instance already holds (e.g. an
+        // OPFS VFS's sync access handles, which are exclusive per file).
+        pgInitDbOpts.fs = undefined
+        // An in-memory PGDATA can be proxied so initdb operates on it directly.
+        // Other filesystems get the result copied over once initdb is done:
+        // it is faster for them, and an interrupted initdb can't leave a
+        // partial database in persistent storage.
+        const proxyPgData = this.fs instanceof MemoryFS
+        if (proxyPgData) {
+          this.mod.FS.mkdirTree(PGDATA, 0o700)
+          pgInitDbOpts.pgDataProxyFs = this.mod.FS
+        }
 
+        const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
+
+        try {
           // Initialize the database
-          const initdbResult = await initdb({
-            pg: pg_initDb,
+          const initDbResult = await initdb({
+            pg: pgliteForInitDb,
             debug: options.debug,
             wasmModule: options.initdbWasmModule,
             args: options.initDbStartParams,
           })
 
-          if (initdbResult.exitCode !== 0) {
-            if (!initdbResult.stderr.includes('exists but is not empty')) {
+          if (initDbResult.exitCode !== 0) {
+            if (!initDbResult.stderr.includes('exists but is not empty')) {
               throw new Error(
-                'INITDB failed to initialize: ' + initdbResult.stderr,
+                'INITDB failed to initialize: ' + initDbResult.stderr,
               )
             }
           }
 
-          const pgdatatar = await pg_initDb.dumpDataDir('none')
-          pg_initDb.close()
-          await loadTar(this.mod.FS, pgdatatar, PGDATA)
-
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
+          if (!proxyPgData) {
+            const pgdatatar = await pgliteForInitDb.dumpDataDir('none')
+            await loadTar(this.mod.FS, pgdatatar, PGDATA)
+          }
+        } finally {
+          await pgliteForInitDb.close()
         }
-      }
-      // Start compiling dynamic extensions present in FS.
-      await loadExtensions(this.mod, (...args) => this.#log(...args))
-
-      this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
-
-      this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({
-        pgDataFolder: PGDATA,
-        startParams: [
-          ...(options.startParams || PGlite.defaultStartParams),
-          ...(this.debug ? ['-d', this.debug.toString()] : []),
-        ],
-      })
-      this.#setPGliteActive()
-
-      this.#ready = true
-
-      if (options.username) {
-        await this.exec(`SET ROLE ${options.username};`)
-      }
-
-      // Init array types
-      await this._initArrayTypes()
-
-      // Init extensions
-      for (const initFn of extensionInitFns) {
-        await initFn()
+        // Sync any changes back to the persisted store (if there is one)
+        // TODO: only sync here if initdb did init db.
+        await this.syncToFs()
       }
     }
+    // Start compiling dynamic extensions present in FS.
+    await loadExtensions(this.mod, (...args) => this.#log(...args))
 
-    pglUtils.pgliteProc.exitCode = prevExitCode
+    this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
+
+    this.mod!._pgl_setPGliteActive(1)
+    this.#startInSingleMode({
+      pgDataFolder: PGDATA,
+      startParams: [
+        ...(options.startParams || PGlite.defaultStartParams),
+        ...(this.debug ? ['-d', this.debug.toString()] : []),
+      ],
+    })
+    this.#setPGliteActive()
+
+    this.#ready = true
+
+    if (options.username) {
+      await this.exec(`SET ROLE ${options.username};`)
+    }
+
+    // Init array types
+    await this._initArrayTypes()
+
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn()
+    }
   }
 
   #handlePostgresqlConf(
@@ -700,26 +736,29 @@ export class PGlite
     mod._pgl_set_pclose_fn(this.#pclose_fn)
 
     // set the write callback
-    this.#pglite_socket_write = mod.addFunction((ptr: any, length: number) => {
-      let bytes
-      try {
-        bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
-      } catch (e: any) {
-        console.error('error', e)
-        throw e
-      }
-      return this.#onData!(bytes)
-    }, 'iii')
+    this.#pglite_socket_write = mod.addFunction(
+      (ptr: number, length: number) => {
+        let bytes
+        try {
+          bytes = this.mod!.HEAPU8.subarray(ptr, ptr + length)
+        } catch (e: any) {
+          console.error('error', e)
+          throw e
+        }
+        return this.#onData!(bytes)
+      },
+      'ipi',
+    )
 
     // set the read callback
     this.#pglite_socket_read = mod.addFunction(
-      (ptr: any, max_length: number) => {
+      (ptr: number, max_length: number) => {
         // copy current data to wasm buffer
         let length = this.#outputData.length - this.#readOffset
         if (length > max_length) {
           length = max_length
         }
-        this.mod!.HEAP8.set(
+        this.mod!.HEAPU8.set(
           (this.#outputData as Uint8Array).subarray(
             this.#readOffset,
             this.#readOffset + length,
@@ -730,7 +769,7 @@ export class PGlite
 
         return length
       },
-      'iii',
+      'ipi',
     )
 
     mod._pgl_set_rw_cbs(this.#pglite_socket_read, this.#pglite_socket_write)
@@ -790,8 +829,19 @@ export class PGlite
    * @returns A promise that resolves when the database is closed
    */
   async close() {
+    // make sure the initialization has finished by awaiting ready
+    // do not acquire the mutex, since init might need it
     await this._checkReady()
-    this.#closing = true
+    // wait for pending queries and transactions to finish. Public query(),
+    // exec() and transaction() calls take the transaction mutex before the
+    // query mutex, so taking only the query mutex here would let a call that
+    // was issued before close() reach the query mutex after teardown.
+    await this.#transactionMutex.runExclusive(async () => {
+      await this.#queryMutex.runExclusive(async () => {
+        await this._checkReady() // a concurrent close() may have run first
+        this.#closing = true
+      })
+    })
 
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
@@ -825,21 +875,18 @@ export class PGlite
     this.#ready = false
     this.#running = false
 
-    // PGlite modifies process.exitCode when it does exit(XX)
-    // we need to restore the previous value
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     try {
       // exit the runtime. since we're using `noExitRuntime: true` on our module,
       // we need to do this explicitly
-      this.mod!._emscripten_force_exit(/* exit code */ 0)
+      this.mod!._emscripten_force_exit(0)
     } catch (e: any) {
       this.#log(e)
       if (e.status !== 0) {
         this.#log('Error when exiting', e.toString())
       }
     } finally {
-      pglUtils.pgliteProc.exitCode = prevExitCode
+      // clear mod to release memory
+      this.mod = undefined
     }
   }
 
@@ -929,8 +976,6 @@ export class PGlite
       return result
     }
 
-    const prevExitCode = pglUtils.pgliteProc.exitCode
-
     // execute the message
     try {
       // a single message might contain multiple batched queries
@@ -939,9 +984,12 @@ export class PGlite
         this.#readOffset < message.length ||
         mod._pq_buffer_remaining_data() > 0
       ) {
+        let sp: number
         try {
+          sp = mod.stackSave()
           mod._PostgresMainLoopOnce()
         } catch (e: any) {
+          mod.stackRestore(sp!)
           // we catch here only the "known" exceptions
           if (e.status === this.POSTGRES_MAIN_LONGJMP) {
             // this is the siglongjmp call that a Database exception has occured
@@ -961,7 +1009,6 @@ export class PGlite
     } finally {
       mod._PostgresSendReadyForQueryIfNecessary()
       mod._pgl_pq_flush()
-      pglUtils.pgliteProc.exitCode = prevExitCode
     }
 
     this.#outputData = []
@@ -1015,7 +1062,12 @@ export class PGlite
       onRawData(bytes)
       return bytes.length
     }
-    this.execProtocolRawSync(message)
+    try {
+      this.execProtocolRawSync(message)
+    } finally {
+      // don't leave the streaming callback installed for later raw/sync calls
+      this.#onData = undefined
+    }
     if (syncToFs) {
       await this.syncToFs()
     }
@@ -1274,9 +1326,13 @@ export class PGlite
   async dumpDataDir(
     compression?: DumpTarCompressionOptions,
   ): Promise<File | Blob> {
-    await this._checkReady()
-    const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
-    return this.fs!.dumpTar(dbname, compression)
+    const data = await this.#queryMutex.runExclusive(async () => {
+      await this._checkReady() // a concurrent close() may have run first
+      const dbname = this.dataDir?.split('/').pop() ?? 'pgdata'
+      return this.fs!.dumpTar(dbname, compression)
+    })
+
+    return data
   }
 
   /**
@@ -1330,8 +1386,11 @@ export class PGlite
       opts.pgDataFolder,
       this.mod!.ENV.PGDATABASE,
     ]
-    const result = this.mod!.callMain(singleModeArgs)
-    if (result !== 99) {
+    let mainReturnValue = -1
+
+    mainReturnValue = this.mod!.callMain(singleModeArgs)
+
+    if (mainReturnValue !== this.PGLITE_EXIT_ALIVE) {
       throw new Error('PGlite failed to initialize properly')
     }
   }

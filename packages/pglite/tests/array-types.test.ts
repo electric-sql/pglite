@@ -77,6 +77,8 @@ describe('array types', () => {
         },
       ],
       affectedRows: 0,
+      command: 'SELECT',
+      rowCount: 1,
     })
   })
 

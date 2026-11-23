@@ -66,6 +66,13 @@ describe('parse', () => {
     ).toEqual(new Date('2021-01-01T12:00:00.000Z').getUTCMilliseconds())
   })
 
+  it('infinity for date 1082, timestamp 1114 and timestamptz 1184', () => {
+    for (const type of [1082, 1114, 1184]) {
+      expect(types.parseType('infinity', type)).toEqual(Infinity)
+      expect(types.parseType('-infinity', type)).toEqual(-Infinity)
+    }
+  })
+
   it('timestamptz 1184 before year 100', () => {
     expect(types.parseType('0050-06-15 12:30:00+00', 1184)).toEqual(
       new Date('0050-06-15T12:30:00.000Z'),
@@ -166,6 +173,11 @@ describe('serialize', () => {
     expect(types.serializers[1184]('2021-01-01T00:00:00.000Z')).toEqual(
       '2021-01-01T00:00:00.000Z',
     )
+  })
+
+  it('date from infinity', () => {
+    expect(types.serializers[1184](Infinity)).toEqual('infinity')
+    expect(types.serializers[1184](-Infinity)).toEqual('-infinity')
   })
 
   it('not date', () => {

@@ -1,5 +1,115 @@
 # @electric-sql/pglite
 
+## 0.6.0
+
+### Minor Changes
+
+- c8695fb: PostgreSQL 19.0
+
+## 0.5.17
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+
+## 0.5.16
+
+### Patch Changes
+
+- 4f9737a: Export `pglite.wasm`, `initdb.wasm` and `pglite.data` so they can be imported by package path (e.g. `@electric-sql/pglite/pglite.wasm`), and document Nitro/Nuxt support.
+- 26a6e21: Parse `infinity` and `-infinity` in `date`, `timestamp` and `timestamptz` values as `Infinity` and `-Infinity` instead of `Invalid Date`, and serialize them back to `infinity` and `-infinity`.
+- 10378a7: Escape embedded double quotes in `identifier` template helper so identifiers containing `"` produce valid SQL
+- 1cb5ca1: Serialize query descriptions and wait for database initialization so concurrent operations return the correct parameter and result metadata.
+- 3e94d9e: reset the stream callback after execProtocolRawStream so later execProtocolRaw/execProtocolRawSync calls are not routed to it
+
+## 0.5.15
+
+### Patch Changes
+
+- 649dc0e: Reject with `TransactionAbortedError` when committing an aborted transaction rolls it back instead of silently resolving.
+- fe8bdc2: Reduce initdb memory usage by passing a smaller WebAssembly.Memory object during initialization'
+- 7c62782: Upgrade tsup to 8.5.1
+- 84ce5ae: Upgrade emsdk to 6.0.13
+
+## 0.5.14
+
+### Patch Changes
+
+- 1cf7e86: Only build the `pglite.wasm`, `initdb.wasm` and `pglite.data` URLs when PGlite has to load them. Passing `pgliteWasmModule`, `initdbWasmModule` and `fsBundle` now works in bundles where `import.meta.url` is undefined, such as an esbuild IIFE build.
+- 48dd3fb: Use PROXYFS instead of dumping the data dir from the scratch PGlite used for initdb when the data dir is in memory.
+- 268929b: do not copy parsers on each query
+
+## 0.5.13
+
+### Patch Changes
+
+- c7dc39e: `close()` now waits for queries, execs and transactions that were issued before it, so they complete instead of failing with `Cannot read properties of undefined` after teardown.
+- 8364675: Added support for node-postgres through createPgConfig()
+- a4cfd4d: Added MemfsFrontendFS which allows other filesystems be implemented on top of a MEMFS. Example: added Memfs2OpfsFS which is backed by an OPFS fs.
+- 2db5d2d: Upgrade emsdk to 6.0.5
+
+## 0.5.12
+
+### Patch Changes
+
+- 0641b37: Fix custom filesystems not receiving times set with `FS.utime`. Emscripten's `FS.utime` calls `setattr` with `atime` and `mtime`, but the `BaseFilesystem` bridge only handled the older `timestamp` field, so `utimes` was never called on OPFS AHP or any other `BaseFilesystem`. Files restored from a tarball kept the time they were written instead of the time stored in the tarball.
+- e752dbe: Run initdb with `TZ=UTC`, like the backend, so a new database gets `timezone = 'UTC'` in `postgresql.conf`. Before, initdb wrote the host's zone as a fixed offset without daylight saving (e.g. `Etc/GMT+5` for America/New_York), so `timestamptz` input without an offset was stored at a different instant on each non-UTC machine.
+- c31130c: Start under the Node.js permission model (`node --permission`). Emscripten's NODEFS read the fs open flags with `process.binding('constants')`, which Node always denies in that mode, so `new PGlite()` threw `ERR_ACCESS_DENIED` even for `memory://`. The bundled build now reads them from `require('fs').constants`, which holds the same values.
+- 0641b37: Fix files restored from a tarball getting a January 1970 modification time. `loadTar` passed the tar header's time to Emscripten's `FS.utime` in seconds, but `FS.utime` takes milliseconds. This affected every new database (initdb's data dir is restored from a tarball) and every `loadDataDir`. With the Node filesystem the files on disk got those dates too.
+
+## 0.5.11
+
+### Patch Changes
+
+- 5573bb0: bug fix: check ready before close
+- 2372f39: Update submodule
+- 4321a41: Fix premature ReadyForQuery responses after extended-query errors, preventing PostgreSQL clients from desynchronizing before Sync.
+
+## 0.5.10
+
+### Patch Changes
+
+- 367ee2f: Bug fix: wait for running queries to finish before doing a data dir dump
+- cb06c21: Wait for queries to finish before closing PGlite instance. See #1128
+- 78012ca: Fix a windowed `live.query` (one given `offset` and `limit`) leaking its `live_query_<id>_get_total_count` prepared statement on `unsubscribe`. Only `live_query_<id>_get` was deallocated, so the count statement survived every teardown while its backing view was dropped, accumulating dangling prepared statements for the lifetime of the database.
+
+## 0.5.9
+
+### Patch Changes
+
+- 389b731: upgrade to PostgreSQL 18.6
+- 389b731: Export additional core symbols from the main WASM module required by the plpgsql_check extension
+
+## 0.5.8
+
+### Patch Changes
+
+- c771db3: Do not set process.exitCode at all
+
+## 0.5.7
+
+### Patch Changes
+
+- 2f9cf75: Fix convert_to
+
+## 0.5.6
+
+### Patch Changes
+
+- 69b7d87: Apply the second options argument when calling `PGlite.create(undefined, options)`.
+- 6c14380: fixes for process.exitCode
+
+## 0.5.5
+
+### Patch Changes
+
+- a290741: Reset retained protocol parser state after a malformed backend message so later queries can recover.
+- 6b6f28d: Fix `PGlite.create({ fs })` on a fresh database calling the provided filesystem's `init()` twice: the inner initdb instance no longer inherits the user-provided `fs` and always runs on its own scratch filesystem. Previously any VFS holding exclusive resources (e.g. OPFS sync access handles) failed with a contention error on first create.
+- 354f4ae: Fix `formatQuery` (used by `live.query`/`live.incrementalQuery` to inline parameters) emitting `%NL` instead of the positional `%N$L` format specifier. A bare `%NL` is "min width N" and consumes `format()` arguments sequentially, so placeholders that are out of textual order silently bound the wrong values, and repeated placeholders failed with `too few arguments for format()`.
+- 219af1e: Expose the fields node-postgres derives from the CommandComplete command tag on `Results`: `command` (e.g. `SELECT`, `INSERT`, `CREATE`), and `rowCount` (the per-statement count from the tag). The tag was already received and parsed internally to compute `affectedRows`, but these values were not surfaced. Matching node-postgres' `command`/`rowCount` result fields lets pg-compatible adapters report them without re-parsing SQL.
+- 20839a7: Preserve the host `process.exitCode` when closing a PGlite instance. `close()` calls `_emscripten_force_exit(0)`, whose Emscripten runtime sets `process.exitCode = 0`, clobbering any exit code the host process had already set. This mirrors the existing save/restore guards in `#init()` and `execProtocolRaw()`, so closing a database no longer silently resets the host process's exit code.
+- 7e784a4: Reject operations performed through transaction handles after the transaction has closed.
+
 ## 0.5.4
 
 ### Patch Changes

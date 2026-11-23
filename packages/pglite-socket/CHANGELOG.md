@@ -1,5 +1,229 @@
 # @electric-sql/pglite-socket
 
+## 0.3.0
+
+### Minor Changes
+
+- Updated dependencies [c8695fb]
+  - @electric-sql/pglite@0.6.0
+  - @electric-sql/pglite-age@0.1.0
+  - @electric-sql/pglite-pg_hashids@0.1.0
+  - @electric-sql/pglite-pg_ivm@0.1.0
+  - @electric-sql/pglite-pg_textsearch@0.1.0
+  - @electric-sql/pglite-pg_uuidv7@0.1.0
+  - @electric-sql/pglite-pgtap@0.1.0
+  - @electric-sql/pglite-pgvector@0.1.0
+
+## 0.2.20
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+- Updated dependencies [0239150]
+  - @electric-sql/pglite@0.5.17
+  - @electric-sql/pglite-age@0.0.18
+  - @electric-sql/pglite-pg_hashids@0.0.18
+  - @electric-sql/pglite-pg_ivm@0.0.18
+  - @electric-sql/pglite-pg_textsearch@0.0.19
+  - @electric-sql/pglite-pg_uuidv7@0.0.18
+  - @electric-sql/pglite-pgtap@0.0.18
+  - @electric-sql/pglite-pgvector@0.0.18
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [4f9737a]
+- Updated dependencies [26a6e21]
+- Updated dependencies [10378a7]
+- Updated dependencies [1cb5ca1]
+  - @electric-sql/pglite@0.5.16
+  - @electric-sql/pglite-age@0.0.17
+  - @electric-sql/pglite-pg_hashids@0.0.17
+  - @electric-sql/pglite-pg_ivm@0.0.17
+  - @electric-sql/pglite-pg_textsearch@0.0.18
+  - @electric-sql/pglite-pg_uuidv7@0.0.17
+  - @electric-sql/pglite-pgtap@0.0.17
+  - @electric-sql/pglite-pgvector@0.0.17
+
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies [649dc0e]
+- Updated dependencies [fe8bdc2]
+- Updated dependencies [7c62782]
+- Updated dependencies [84ce5ae]
+  - @electric-sql/pglite@0.5.15
+  - @electric-sql/pglite-age@0.0.16
+  - @electric-sql/pglite-pg_hashids@0.0.16
+  - @electric-sql/pglite-pg_ivm@0.0.16
+  - @electric-sql/pglite-pg_textsearch@0.0.17
+  - @electric-sql/pglite-pg_uuidv7@0.0.16
+  - @electric-sql/pglite-pgtap@0.0.16
+  - @electric-sql/pglite-pgvector@0.0.16
+
+## 0.2.17
+
+### Patch Changes
+
+- c6ee288: Stop a handler that `stop()` already detached from touching the database again. A client socket that closed in the same event-loop turn as `stop()` queued its own detach, which ran after `db.close()` and failed with an unhandled `TypeError: Cannot read properties of undefined (reading '_IsTransactionBlock')`.
+- Updated dependencies [1cf7e86]
+- Updated dependencies [48dd3fb]
+- Updated dependencies [268929b]
+  - @electric-sql/pglite@0.5.14
+  - @electric-sql/pglite-age@0.0.15
+  - @electric-sql/pglite-pg_hashids@0.0.15
+  - @electric-sql/pglite-pg_ivm@0.0.15
+  - @electric-sql/pglite-pg_textsearch@0.0.16
+  - @electric-sql/pglite-pg_uuidv7@0.0.15
+  - @electric-sql/pglite-pgtap@0.0.15
+  - @electric-sql/pglite-pgvector@0.0.15
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [c7dc39e]
+- Updated dependencies [8364675]
+- Updated dependencies [a4cfd4d]
+- Updated dependencies [2db5d2d]
+  - @electric-sql/pglite@0.5.13
+  - @electric-sql/pglite-age@0.0.14
+  - @electric-sql/pglite-pg_hashids@0.0.14
+  - @electric-sql/pglite-pg_ivm@0.0.14
+  - @electric-sql/pglite-pg_textsearch@0.0.15
+  - @electric-sql/pglite-pg_uuidv7@0.0.14
+  - @electric-sql/pglite-pgtap@0.0.14
+  - @electric-sql/pglite-pgvector@0.0.14
+
+## 0.2.15
+
+### Patch Changes
+
+- e0585be: Release a connection slot when its handler ends in an error (for example `ECONNRESET` or an idle timeout). Previously only a clean `close` removed the handler, so `maxConnections` filled up and new connections were refused until the server restarted.
+- Updated dependencies [0641b37]
+- Updated dependencies [e752dbe]
+- Updated dependencies [c31130c]
+- Updated dependencies [0641b37]
+  - @electric-sql/pglite@0.5.12
+  - @electric-sql/pglite-age@0.0.13
+  - @electric-sql/pglite-pg_hashids@0.0.13
+  - @electric-sql/pglite-pg_ivm@0.0.13
+  - @electric-sql/pglite-pg_textsearch@0.0.14
+  - @electric-sql/pglite-pg_uuidv7@0.0.13
+  - @electric-sql/pglite-pgtap@0.0.13
+  - @electric-sql/pglite-pgvector@0.0.13
+
+## 0.2.14
+
+### Patch Changes
+
+- Updated dependencies [5573bb0]
+- Updated dependencies [2372f39]
+- Updated dependencies [4321a41]
+  - @electric-sql/pglite@0.5.11
+  - @electric-sql/pglite-age@0.0.12
+  - @electric-sql/pglite-pg_hashids@0.0.12
+  - @electric-sql/pglite-pg_ivm@0.0.12
+  - @electric-sql/pglite-pg_textsearch@0.0.13
+  - @electric-sql/pglite-pg_uuidv7@0.0.12
+  - @electric-sql/pglite-pgtap@0.0.12
+  - @electric-sql/pglite-pgvector@0.0.12
+
+## 0.2.13
+
+### Patch Changes
+
+- Updated dependencies [367ee2f]
+- Updated dependencies [cb06c21]
+- Updated dependencies [78012ca]
+  - @electric-sql/pglite@0.5.10
+  - @electric-sql/pglite-age@0.0.11
+  - @electric-sql/pglite-pg_hashids@0.0.11
+  - @electric-sql/pglite-pg_ivm@0.0.11
+  - @electric-sql/pglite-pg_textsearch@0.0.12
+  - @electric-sql/pglite-pg_uuidv7@0.0.11
+  - @electric-sql/pglite-pgtap@0.0.11
+  - @electric-sql/pglite-pgvector@0.0.11
+
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies [389b731]
+- Updated dependencies [389b731]
+  - @electric-sql/pglite@0.5.9
+  - @electric-sql/pglite-age@0.0.10
+  - @electric-sql/pglite-pg_hashids@0.0.10
+  - @electric-sql/pglite-pg_ivm@0.0.10
+  - @electric-sql/pglite-pg_textsearch@0.0.11
+  - @electric-sql/pglite-pg_uuidv7@0.0.10
+  - @electric-sql/pglite-pgtap@0.0.10
+  - @electric-sql/pglite-pgvector@0.0.10
+
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [c771db3]
+  - @electric-sql/pglite@0.5.8
+  - @electric-sql/pglite-age@0.0.9
+  - @electric-sql/pglite-pg_hashids@0.0.9
+  - @electric-sql/pglite-pg_ivm@0.0.9
+  - @electric-sql/pglite-pg_textsearch@0.0.10
+  - @electric-sql/pglite-pg_uuidv7@0.0.9
+  - @electric-sql/pglite-pgtap@0.0.9
+  - @electric-sql/pglite-pgvector@0.0.9
+
+## 0.2.10
+
+### Patch Changes
+
+- Updated dependencies [2f9cf75]
+  - @electric-sql/pglite@0.5.7
+  - @electric-sql/pglite-age@0.0.8
+  - @electric-sql/pglite-pg_hashids@0.0.8
+  - @electric-sql/pglite-pg_ivm@0.0.8
+  - @electric-sql/pglite-pg_textsearch@0.0.9
+  - @electric-sql/pglite-pg_uuidv7@0.0.8
+  - @electric-sql/pglite-pgtap@0.0.8
+  - @electric-sql/pglite-pgvector@0.0.8
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [69b7d87]
+- Updated dependencies [6c14380]
+  - @electric-sql/pglite@0.5.6
+  - @electric-sql/pglite-age@0.0.7
+  - @electric-sql/pglite-pg_hashids@0.0.7
+  - @electric-sql/pglite-pg_ivm@0.0.7
+  - @electric-sql/pglite-pg_textsearch@0.0.8
+  - @electric-sql/pglite-pg_uuidv7@0.0.7
+  - @electric-sql/pglite-pgtap@0.0.7
+  - @electric-sql/pglite-pgvector@0.0.7
+
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [a290741]
+- Updated dependencies [6b6f28d]
+- Updated dependencies [354f4ae]
+- Updated dependencies [219af1e]
+- Updated dependencies [20839a7]
+- Updated dependencies [7e784a4]
+  - @electric-sql/pglite@0.5.5
+  - @electric-sql/pglite-age@0.0.6
+  - @electric-sql/pglite-pg_hashids@0.0.6
+  - @electric-sql/pglite-pg_ivm@0.0.6
+  - @electric-sql/pglite-pg_textsearch@0.0.7
+  - @electric-sql/pglite-pg_uuidv7@0.0.6
+  - @electric-sql/pglite-pgtap@0.0.6
+  - @electric-sql/pglite-pgvector@0.0.6
+
 ## 0.2.7
 
 ### Patch Changes

@@ -1,10 +1,10 @@
 import { tar, untar, type TarFile, REGTYPE, DIRTYPE } from 'tinytar'
-import type { FS } from '../postgresMod.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export type DumpTarCompressionOptions = 'none' | 'gzip' | 'auto'
 
 export async function dumpTar(
-  FS: FS,
+  FS: pglUtils.FS,
   pgDataDir: string,
   dbname: string = 'pgdata',
   compression: DumpTarCompressionOptions = 'auto',
@@ -32,7 +32,7 @@ const compressedMimeTypes = [
 ]
 
 export async function loadTar(
-  FS: FS,
+  FS: pglUtils.FS,
   file: File | Blob,
   pgDataDir: string,
 ): Promise<void> {
@@ -62,24 +62,20 @@ export async function loadTar(
 
   for (const file of files) {
     const filePath = `${pgDataDir}/${file.name}`
-
     // Ensure the directory structure exists
     const dirPath = filePath.split('/').slice(0, -1)
     for (let i = 1; i <= dirPath.length; i++) {
       const dir = dirPath.slice(0, i).join('/')
-      if (!FS.analyzePath(dir).exists) {
-        FS.mkdir(dir)
+      if (dir.length && !FS.analyzePath(dir).exists) {
+        FS.mkdirTree(dir)
       }
     }
 
     // Write the file or directory
     if (file.type === REGTYPE) {
       FS.writeFile(filePath, file.data)
-      FS.utime(
-        filePath,
-        dateToUnixTimestamp(file.modifyTime),
-        dateToUnixTimestamp(file.modifyTime),
-      )
+      const modifyTime = dateToMilliseconds(file.modifyTime)
+      FS.utime(filePath, modifyTime, modifyTime)
     } else if (file.type === DIRTYPE) {
       if (!FS.analyzePath(filePath).exists) {
         FS.mkdir(filePath)
@@ -88,7 +84,7 @@ export async function loadTar(
   }
 }
 
-function readDirectory(FS: FS, path: string) {
+function readDirectory(FS: pglUtils.FS, path: string) {
   const files: TarFile[] = []
 
   const traverseDirectory = (currentPath: string) => {
@@ -120,7 +116,7 @@ function readDirectory(FS: FS, path: string) {
   return files
 }
 
-export function createTarball(FS: FS, directoryPath: string) {
+export function createTarball(FS: pglUtils.FS, directoryPath: string) {
   const files = readDirectory(FS, directoryPath)
   const tarball = tar(files)
   return tarball
@@ -231,10 +227,10 @@ export async function unzipNode(file: Uint8Array): Promise<Uint8Array> {
   return await gunzipPromise(file)
 }
 
-function dateToUnixTimestamp(date: Date | number | undefined): number {
+function dateToMilliseconds(date: Date | number | undefined): number {
   if (!date) {
-    return Math.floor(Date.now() / 1000)
+    return Date.now()
   } else {
-    return typeof date === 'number' ? date : Math.floor(date.getTime() / 1000)
+    return typeof date === 'number' ? date * 1000 : date.getTime()
   }
 }

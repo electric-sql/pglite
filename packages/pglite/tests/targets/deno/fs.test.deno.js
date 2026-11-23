@@ -23,11 +23,15 @@ Deno.test({
     assertEquals(multiStatementResult, [
       {
         affectedRows: 1,
+        command: 'INSERT',
+        rowCount: 1,
         rows: [],
         fields: [],
       },
       {
         affectedRows: 2,
+        command: 'UPDATE',
+        rowCount: 1,
         rows: [],
         fields: [],
       },
@@ -38,6 +42,8 @@ Deno.test({
           { name: 'name', dataTypeID: 25 },
         ],
         affectedRows: 2,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
@@ -61,6 +67,8 @@ Deno.test({
           { name: 'name', dataTypeID: 25 },
         ],
         affectedRows: 0,
+        command: 'SELECT',
+        rowCount: 1,
       },
     ])
 
