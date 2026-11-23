@@ -1,5 +1,5 @@
 import tinyTar from 'tinytar'
-import type { PostgresMod, FS } from './postgresMod.js'
+import type { PostgresMod } from './postgresMod.js'
 import { pglUtils } from '@electric-sql/pglite-utils'
 
 export async function loadExtensionBundle(
@@ -138,7 +138,7 @@ function loadExtension(
 }
 
 export function copyToFS(
-  fs: FS,
+  fs: pglUtils.FS,
   filePath: string,
   data: Uint8Array,
   mode?: number,

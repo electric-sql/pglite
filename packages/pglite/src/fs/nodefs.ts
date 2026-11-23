@@ -23,8 +23,8 @@ export class NodeFS extends EmscriptenBuiltinFilesystem {
       preRun: [
         ...(opts.preRun || []),
         (mod: any) => {
-          const nodefs = mod.FS.filesystems.NODEFS
-          mod.FS.mkdir(PGDATA)
+          const nodefs = mod.NODEFS
+          mod.FS.mkdirTree(PGDATA)
           mod.FS.mount(nodefs, { root: this.rootDir }, PGDATA)
         },
       ],

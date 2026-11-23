@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PGlite MEMFS2OPFS Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./utils.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@electric-sql/pglite": "../dist/index.js",
+          "@electric-sql/pglite/worker": "../dist/worker/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>PGlite MEMFS2OPFS Example</h1>
+    <p>
+      Each load inserts a row, reload to check it was persisted. Add
+      <code>?worker</code> to the URL to run PGlite in a worker.
+    </p>
+    <div class="script-plus-log">
+      <script type="module">
+        import { PGlite } from '@electric-sql/pglite'
+        import { PGliteWorker } from '@electric-sql/pglite/worker'
+        import { Memfs2OpfsFS } from '../dist/fs/memfs2opfs.js'
+
+        const useWorker = new URLSearchParams(location.search).has('worker')
+        console.log(useWorker ? 'Starting in a worker...' : 'Starting...')
+        const start = performance.now()
+        const pg = useWorker
+          ? new PGliteWorker(
+              new Worker(new URL('./memfs2opfs-worker.js', import.meta.url), {
+                type: 'module',
+              }),
+            )
+          : new PGlite({
+              fs: new Memfs2OpfsFS('memfs2opfs-db', { debug: true }),
+            })
+        await pg.waitReady
+        // Expose the instance for the console, eg. await pg.query('SELECT 1')
+        window.pg = pg
+        console.log('Ready! Took', performance.now() - start, 'ms')
+
+        await pg.exec(`
+  CREATE TABLE IF NOT EXISTS visits (
+    id SERIAL PRIMARY KEY,
+    at TIMESTAMPTZ DEFAULT now()
+  );
+`)
+        await pg.exec('INSERT INTO visits DEFAULT VALUES;')
+        const res = await pg.query(
+          'SELECT count(*)::int AS visits FROM visits;',
+        )
+        console.log('Visits so far:', res.rows[0].visits)
+      </script>
+      <div id="log"></div>
+    </div>
+  </body>
+</html>

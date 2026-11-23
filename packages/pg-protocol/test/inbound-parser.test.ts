@@ -322,6 +322,18 @@ describe('PgPacketStream', () => {
     )
     testForMessage(oneParameterDescBuf, expectedOneParameterMessage)
     testForMessage(twoParameterDescBuf, expectedTwoParameterMessage)
+
+    it('parses a parameterDescription with more than 32767 parameters', async () => {
+      const dataTypeIDs = new Array(32768).fill(25)
+      const buffer = buffers.parameterDescription(dataTypeIDs)
+      const messages = await parseBuffers([buffer])
+      const message = messages[0] as ParameterDescriptionMessage
+
+      expect(message.parameterCount).toBe(32768)
+      expect(message.dataTypeIDs).toHaveLength(32768)
+      expect(message.dataTypeIDs[0]).toBe(25)
+      expect(message.dataTypeIDs[32767]).toBe(25)
+    })
   })
 
   describe('parsing rows', () => {

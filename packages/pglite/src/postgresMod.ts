@@ -1,18 +1,5 @@
 import PostgresModFactory from '../release/pglite'
-
-type IDBFS = Emscripten.FileSystemType & {
-  quit: () => void
-  dbs: Record<string, IDBDatabase>
-}
-
-export type FS = typeof FS & {
-  filesystems: {
-    MEMFS: Emscripten.FileSystemType
-    NODEFS: Emscripten.FileSystemType
-    IDBFS: IDBFS
-  }
-  quit: () => void
-}
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export interface PostgresMod
   extends Omit<EmscriptenModule, 'preInit' | 'preRun' | 'postRun'> {
@@ -21,13 +8,18 @@ export interface PostgresMod
   postRun: Array<{ (mod: PostgresMod): void }>
   thisProgram: string
   stdin: (() => number | null) | null
-  FS: FS
+  FS: pglUtils.FS
   wasmMemory: WebAssembly.Memory
   PROXYFS: Emscripten.FileSystemType
+  MEMFS: Emscripten.FileSystemType
+  IDBFS: Emscripten.FileSystemType
+  NODEFS: Emscripten.FileSystemType
   WASM_PREFIX: string
   pg_extensions: Record<string, Promise<Blob | null>>
   UTF8ToString: (ptr: number, maxBytesToRead?: number) => string
   stringToUTF8OnStack: (s: string) => number
+  stackSave: () => number
+  stackRestore: (sp: number) => number
   _pgl_set_system_fn: (system_fn: number) => void
   _pgl_set_popen_fn: (popen_fn: number) => void
   _pgl_set_pclose_fn: (pclose_fn: number) => void
@@ -64,8 +56,6 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
-  _pgl_getPGliteExitStatus: () => number
-  _pgl_setPGliteExitStatus: (status: number) => number
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

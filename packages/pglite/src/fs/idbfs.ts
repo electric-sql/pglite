@@ -2,6 +2,7 @@ import { EmscriptenBuiltinFilesystem } from './base.js'
 import type { PostgresMod } from '../postgresMod.js'
 import { PGlite } from '../pglite.js'
 import { PGDATA, PG_ROOT } from '../initdb.js'
+import { pglUtils } from '@electric-sql/pglite-utils'
 
 export class IdbFs extends EmscriptenBuiltinFilesystem {
   async init(pg: PGlite, opts: Partial<PostgresMod>) {
@@ -11,18 +12,13 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
       preRun: [
         ...(opts.preRun || []),
         (mod: any) => {
-          const idbfs = mod.FS.filesystems.IDBFS
+          const idbfs = mod.IDBFS
           // Mount the idbfs to the users dataDir then symlink the PGDATA to the
           // idbfs mount point.
           // We specifically use /pglite as the root directory for the idbfs
-          // as the fs will ber persisted in the indexeddb as a database with
+          // as the fs will be persisted in the indexeddb as a database with
           // the path as the name.
-          if (!mod.FS.analyzePath(PG_ROOT).exists) {
-            mod.FS.mkdir(PG_ROOT)
-          }
-          if (!mod.FS.analyzePath(`${PG_ROOT}/${this.dataDir}`).exists) {
-            mod.FS.mkdir(`${PG_ROOT}/${this.dataDir}`)
-          }
+          mod.FS.mkdirTree(`${PG_ROOT}/${this.dataDir}`)
           mod.FS.mount(idbfs, {}, `${PG_ROOT}/${this.dataDir}`)
           mod.FS.symlink(`${PG_ROOT}/${this.dataDir}`, PGDATA)
         },
@@ -61,7 +57,9 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
     // This needs to be handled in application code if you want to delete the
     // database after it has been closed. If you try to delete the database
     // before it has fully closed it will throw a blocking error.
-    const indexedDb = this.pg!.Module.FS.filesystems.IDBFS.dbs[this.dataDir!]
+    const indexedDb = (this.pg!.Module.IDBFS as pglUtils.IDBFS).dbs[
+      this.dataDir!
+    ]
     if (indexedDb) {
       indexedDb.close()
     }
