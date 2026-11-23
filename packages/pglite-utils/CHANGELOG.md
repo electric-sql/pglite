@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.1.0
+
+### Minor Changes
+
+- 231212c: PostgreSQL 19.0
+
 ## 0.0.7
 
 ### Patch Changes
