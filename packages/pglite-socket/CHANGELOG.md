@@ -1,5 +1,23 @@
 # @electric-sql/pglite-socket
 
+## 1.0.0
+
+### Minor Changes
+
+- 231212c: PostgreSQL 19.0
+
+### Patch Changes
+
+- Updated dependencies [231212c]
+  - @electric-sql/pglite@1.0.0
+  - @electric-sql/pglite-age@1.0.0
+  - @electric-sql/pglite-pg_hashids@1.0.0
+  - @electric-sql/pglite-pg_ivm@1.0.0
+  - @electric-sql/pglite-pg_textsearch@1.0.0
+  - @electric-sql/pglite-pg_uuidv7@1.0.0
+  - @electric-sql/pglite-pgtap@1.0.0
+  - @electric-sql/pglite-pgvector@1.0.0
+
 ## 0.2.20
 
 ### Patch Changes

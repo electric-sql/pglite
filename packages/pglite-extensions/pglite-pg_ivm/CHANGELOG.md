@@ -1,5 +1,16 @@
 # @electric-sql/pglite-pg_ivm
 
+## 1.0.0
+
+### Minor Changes
+
+- 231212c: PostgreSQL 19.0
+
+### Patch Changes
+
+- Updated dependencies [231212c]
+  - @electric-sql/pglite@1.0.0
+
 ## 0.0.18
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @electric-sql/pglite-repl
 
+## 1.0.0
+
+### Minor Changes
+
+- 231212c: PostgreSQL 19.0
+
+### Patch Changes
+
+- Updated dependencies [231212c]
+  - @electric-sql/pglite@1.0.0
+  - @electric-sql/pglite-react@1.0.0
+
 ## 0.4.17
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @electric-sql/pglite-icu-full
 
+## 0.2.0
+
+### Minor Changes
+
+- 231212c: PostgreSQL 19.0
+
 ## 0.1.1
 
 ### Patch Changes
