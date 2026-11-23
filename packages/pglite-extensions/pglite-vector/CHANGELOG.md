@@ -1,5 +1,12 @@
 # @electric-sql/pglite-pgvector
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [c8695fb]
+  - @electric-sql/pglite@1.0.0
+
 ## 0.0.18
 
 ### Patch Changes

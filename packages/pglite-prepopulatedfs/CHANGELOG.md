@@ -1,5 +1,12 @@
 # @electric-sql/pglite-prepopulatedfs
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [c8695fb]
+  - @electric-sql/pglite@1.0.0
+
 ## 0.5.17
 
 ### Patch Changes
