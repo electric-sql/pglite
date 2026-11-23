@@ -511,6 +511,33 @@ export function tests(env, dbFilename, target) {
     })
 
     if (dbFilename.startsWith('idb://')) {
+      it(`idb persists a truncate`, async () => {
+        const res = await evaluate(async () => {
+          const { PGlite } = await import(PGLITE_PATH)
+          const name = 'idb://truncate-persist'
+          let pg = new PGlite(name)
+          await pg.waitReady
+          await pg.exec('CREATE TABLE t (id int, pad text)')
+          await pg.exec(
+            "INSERT INTO t SELECT g, repeat('x', 1000) FROM generate_series(1, 300) g",
+          )
+          await pg.exec('CHECKPOINT')
+          await pg.exec('DELETE FROM t')
+          await pg.exec('VACUUM t')
+          await pg.exec('CHECKPOINT')
+          await pg.close()
+
+          pg = new PGlite(name)
+          await pg.waitReady
+          const count = (await pg.query('SELECT count(*)::int AS n FROM t'))
+            .rows[0].n
+          await pg.close()
+          return count
+        })
+
+        expect(res).toBe(0)
+      })
+
       it(`idb close and delete`, async () => {
         const res = await evaluate(async () => {
           await db.query('select 1;')
