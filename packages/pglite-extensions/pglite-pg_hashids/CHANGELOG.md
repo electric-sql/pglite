@@ -1,8 +1,8 @@
 # @electric-sql/pglite-pg_hashids
 
-## 1.0.0
+## 0.1.0
 
-### Patch Changes
+### Minor Changes
 
 - Updated dependencies [c8695fb]
   - @electric-sql/pglite@1.0.0
