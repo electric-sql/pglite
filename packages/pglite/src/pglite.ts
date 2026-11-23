@@ -546,7 +546,7 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-    // set file flags
+    // set file and folder flags
     this.mod.FS.chmod('/home/postgres/.pgpass', 0o0600) // https://www.postgresql.org/docs/current/libpq-pgpass.html
     this.mod.FS.chmod(INITDB_EXE_PATH, 0o0555)
     this.mod.FS.chmod(POSTGRES_EXE_PATH, 0o0555)
@@ -558,102 +558,104 @@ export class PGlite
       await this.#fillIcuDataDir(options.icuDataDir)
     }
 
-    if (!options.noInitDb) {
-      // If the user has provided a tarball to load the database from, do that now.
-      // We do this after the initial sync so that we can throw if the database
-      // already exists.
-      if (options.loadDataDir) {
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          throw new Error('Database already exists, cannot load from tarball')
-        }
-        this.#log('pglite: loading data from tarball')
-        await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    if (options.noInitDb === true) {
+      return
+    }
+
+    // If the user has provided a tarball to load the database from, do that now.
+    // We do this after the initial sync so that we can throw if the database
+    // already exists.
+    if (options.loadDataDir) {
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        throw new Error('Database already exists, cannot load from tarball')
+      }
+      this.#log('pglite: loading data from tarball')
+      await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
+    } else {
+      // Check if the database exists in the file system, if not we run initdb
+      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+        this.#log('pglite: found DB, resuming')
       } else {
-        // Check if the database exists in the file system, if not we run initdb
-        if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
-          this.#log('pglite: found DB, resuming')
-        } else {
-          this.#log('pglite: no db in filesystem, running initdb')
+        this.#log('pglite: no db in filesystem, running initdb')
 
-          const pgInitDbOpts = { ...options }
-          pgInitDbOpts.noInitDb = true
-          pgInitDbOpts.dataDir = undefined
-          pgInitDbOpts.extensions = undefined
-          pgInitDbOpts.loadDataDir = undefined
-          // The initdb instance must run on its own scratch filesystem: a
-          // user-provided `fs` must not leak into it, or its second `init()`
-          // collides with resources the outer instance already holds (e.g. an
-          // OPFS VFS's sync access handles, which are exclusive per file).
-          pgInitDbOpts.fs = undefined
-          // An in-memory PGDATA can be proxied so initdb operates on it directly.
-          // Other filesystems get the result copied over once initdb is done:
-          // it is faster for them, and an interrupted initdb can't leave a
-          // partial database in persistent storage.
-          const proxyPgData = this.fs instanceof MemoryFS
-          if (proxyPgData) {
-            this.mod.FS.mkdirTree(PGDATA, 0o700)
-            pgInitDbOpts.pgDataProxyFs = this.mod.FS
-          }
-
-          const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
-
-          try {
-            // Initialize the database
-            const initDbResult = await initdb({
-              pg: pgliteForInitDb,
-              debug: options.debug,
-              wasmModule: options.initdbWasmModule,
-              args: options.initDbStartParams,
-            })
-
-            if (initDbResult.exitCode !== 0) {
-              if (!initDbResult.stderr.includes('exists but is not empty')) {
-                throw new Error(
-                  'INITDB failed to initialize: ' + initDbResult.stderr,
-                )
-              }
-            }
-
-            if (!proxyPgData) {
-              const pgdatatar = await pgliteForInitDb.dumpDataDir('none')
-              await loadTar(this.mod.FS, pgdatatar, PGDATA)
-            }
-          } finally {
-            await pgliteForInitDb.close()
-          }
-          // Sync any changes back to the persisted store (if there is one)
-          // TODO: only sync here if initdb did init db.
-          await this.syncToFs()
+        const pgInitDbOpts = { ...options }
+        pgInitDbOpts.noInitDb = true
+        pgInitDbOpts.dataDir = undefined
+        pgInitDbOpts.extensions = undefined
+        pgInitDbOpts.loadDataDir = undefined
+        // The initdb instance must run on its own scratch filesystem: a
+        // user-provided `fs` must not leak into it, or its second `init()`
+        // collides with resources the outer instance already holds (e.g. an
+        // OPFS VFS's sync access handles, which are exclusive per file).
+        pgInitDbOpts.fs = undefined
+        // An in-memory PGDATA can be proxied so initdb operates on it directly.
+        // Other filesystems get the result copied over once initdb is done:
+        // it is faster for them, and an interrupted initdb can't leave a
+        // partial database in persistent storage.
+        const proxyPgData = this.fs instanceof MemoryFS
+        if (proxyPgData) {
+          this.mod.FS.mkdirTree(PGDATA, 0o700)
+          pgInitDbOpts.pgDataProxyFs = this.mod.FS
         }
+
+        const pgliteForInitDb = await PGlite.create(pgInitDbOpts)
+
+        try {
+          // Initialize the database
+          const initDbResult = await initdb({
+            pg: pgliteForInitDb,
+            debug: options.debug,
+            wasmModule: options.initdbWasmModule,
+            args: options.initDbStartParams,
+          })
+
+          if (initDbResult.exitCode !== 0) {
+            if (!initDbResult.stderr.includes('exists but is not empty')) {
+              throw new Error(
+                'INITDB failed to initialize: ' + initDbResult.stderr,
+              )
+            }
+          }
+
+          if (!proxyPgData) {
+            const pgdatatar = await pgliteForInitDb.dumpDataDir('none')
+            await loadTar(this.mod.FS, pgdatatar, PGDATA)
+          }
+        } finally {
+          await pgliteForInitDb.close()
+        }
+        // Sync any changes back to the persisted store (if there is one)
+        // TODO: only sync here if initdb did init db.
+        await this.syncToFs()
       }
-      // Start compiling dynamic extensions present in FS.
-      await loadExtensions(this.mod, (...args) => this.#log(...args))
+    }
+    // Start compiling dynamic extensions present in FS.
+    await loadExtensions(this.mod, (...args) => this.#log(...args))
 
-      this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
+    this.#handlePostgresqlConf(extSharedPreloadLibraries, options)
 
-      this.mod!._pgl_setPGliteActive(1)
-      this.#startInSingleMode({
-        pgDataFolder: PGDATA,
-        startParams: [
-          ...(options.startParams || PGlite.defaultStartParams),
-          ...(this.debug ? ['-d', this.debug.toString()] : []),
-        ],
-      })
-      this.#setPGliteActive()
+    this.mod!._pgl_setPGliteActive(1)
+    this.#startInSingleMode({
+      pgDataFolder: PGDATA,
+      startParams: [
+        ...(options.startParams || PGlite.defaultStartParams),
+        ...(this.debug ? ['-d', this.debug.toString()] : []),
+      ],
+    })
+    this.#setPGliteActive()
 
-      this.#ready = true
+    this.#ready = true
 
-      if (options.username) {
-        await this.exec(`SET ROLE ${options.username};`)
-      }
+    if (options.username) {
+      await this.exec(`SET ROLE ${options.username};`)
+    }
 
-      // Init array types
-      await this._initArrayTypes()
+    // Init array types
+    await this._initArrayTypes()
 
-      // Init extensions
-      for (const initFn of extensionInitFns) {
-        await initFn()
-      }
+    // Init extensions
+    for (const initFn of extensionInitFns) {
+      await initFn()
     }
   }
 
