@@ -1,5 +1,11 @@
 # @electric-sql/pglite-icu-full
 
+## 0.1.1
+
+### Patch Changes
+
+- 0239150: upgrade to PostgreSQL 18.7
+
 ## 0.1.0
 
 ### Minor Changes

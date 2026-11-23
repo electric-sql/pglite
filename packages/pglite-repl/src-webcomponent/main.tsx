@@ -5,8 +5,8 @@ import {
   defaultLightTheme,
   defaultDarkThemeInit,
   defaultDarkTheme,
-} from '../src/Repl'
-import type { ReplProps, ReplTheme } from '../src/Repl'
+} from '../src/Repl.js'
+import type { ReplProps, ReplTheme } from '../src/Repl.js'
 import type { PGlite } from '@electric-sql/pglite'
 import type { Extension } from '@uiw/react-codemirror'
 

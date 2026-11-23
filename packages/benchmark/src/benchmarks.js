@@ -24,6 +24,15 @@ const CONFIGURATIONS = new Map(
       options: { relaxedDurability: true },
     },
     {
+      label: 'MEMFS2OPFS',
+      dataDir: 'memfs2opfs://benchmark-memfs2opfs',
+    },
+    {
+      label: 'MEMFS2OPFS <br> <i>relaxed durability</i>',
+      dataDir: 'memfs2opfs://benchmark-memfs2opfs-rd',
+      options: { relaxedDurability: true },
+    },
+    {
       label: 'OPFS Access Handle Pool',
       dataDir: 'opfs-ahp://benchmark-ahp',
     },

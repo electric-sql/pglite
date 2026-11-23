@@ -251,6 +251,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
             await tx.exec(`
               DROP VIEW IF EXISTS live_query_${id}_view;
               DEALLOCATE live_query_${id}_get;
+              ${isWindowed ? `DEALLOCATE live_query_${id}_get_total_count;` : ''}
             `)
           })
         }

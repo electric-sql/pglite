@@ -32,16 +32,27 @@ export async function startArtifactDownload(url: URL) {
 // compile them on subsequent calls.
 const cachedWasmModules = new Map<string, WebAssembly.Module>()
 
+// `moduleSource` is either a precompiled module or a function returning its URL.
+// Callers that pass a precompiled module may run where `import.meta.url` is not
+// a valid base URL (for example an IIFE or CJS bundle), so the URL must not be
+// built eagerly.
 export async function instantiateWasm(
   imports: WebAssembly.Imports,
-  moduleUrl: URL,
-  module?: WebAssembly.Module,
+  moduleSource: WebAssembly.Module | (() => URL),
 ): Promise<{
   instance: WebAssembly.Instance
   module: WebAssembly.Module
 }> {
-  if (module || cachedWasmModules.has(moduleUrl.toString())) {
-    const mod = module || cachedWasmModules.get(moduleUrl.toString())!
+  if (typeof moduleSource !== 'function') {
+    return {
+      instance: await WebAssembly.instantiate(moduleSource, imports),
+      module: moduleSource,
+    }
+  }
+
+  const moduleUrl = moduleSource()
+  if (cachedWasmModules.has(moduleUrl.toString())) {
+    const mod = cachedWasmModules.get(moduleUrl.toString())!
     return {
       instance: await WebAssembly.instantiate(mod, imports),
       module: mod,
@@ -173,4 +184,18 @@ export function rmdirRecursive(fs: MinimalFS, path: string) {
       /* ignore if already gone */
     }
   }
+}
+
+export type IDBFS = Emscripten.FileSystemType & {
+  quit: () => void
+  dbs: Record<string, IDBDatabase>
+}
+
+export type FS = typeof FS & {
+  filesystems: {
+    MEMFS: Emscripten.FileSystemType
+    NODEFS: Emscripten.FileSystemType
+    IDBFS: IDBFS
+  }
+  quit: () => void
 }

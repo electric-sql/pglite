@@ -114,6 +114,43 @@ or to persist to the filesystem:
 const db = new PGlite("./path/to/pgdata");
 ```
 
+## pg (node-postgres)
+
+Since `v0.5.13`, PGlite exposes a connection object that you can directly pass to `pg` ([node-postgres](https://github.com/brianc/node-postgres)) modules (clients):
+
+```javascript
+import { createPgConfig } from '@electric-sql/pglite/node-postgres'
+import { Client, Pool } from 'pg'
+import Cursor from 'pg-cursor'
+
+// use with pg Client
+const pgConfig1 = createPgConfig()
+const client = new Client(pgConfig1)
+await client.connect()
+await client.query(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`)
+
+// or with Pool
+const pgConfig2 = createPgConfig()
+const pool = new Pool(pgConfig2)
+const conn = await pool.connect()
+
+await conn.query(`
+  CREATE TABLE IF NOT EXISTS test (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+  );
+`)
+
+// or even with Cursor from pg-cursor
+const cursor = client.query(new Cursor('SELECT * FROM items;'))
+
+```
+
 ## How it works
 
 PostgreSQL typically operates using a process forking model; whenever a client initiates a connection, a new process is forked to manage that connection. However, programs compiled with Emscripten - a C to WebAssembly (WASM) compiler - cannot fork new processes, and operates strictly in a single-process mode. As a result, PostgreSQL cannot be directly compiled to WASM for conventional operation.

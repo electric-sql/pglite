@@ -67,4 +67,22 @@ describe('exec protocol', () => {
       db.execProtocol(serialize.query('invalid sql')),
     ).rejects.toThrow()
   })
+
+  it('should not leave the stream callback installed after execProtocolRawStream', async () => {
+    const chunks: Uint8Array[] = []
+    await db.execProtocolRawStream(serialize.query('SELECT 1'), {
+      onRawData: (bytes) => chunks.push(bytes),
+    })
+    expect(chunks.length).toBeGreaterThan(0)
+    const seen = chunks.length
+
+    // A later sync call must return its own data instead of feeding the old callback
+    const data = db.execProtocolRawSync(serialize.query('SELECT 2'))
+    expect(data.length).toBeGreaterThan(0)
+    expect(chunks.length).toEqual(seen)
+
+    const result = await db.execProtocolRaw(serialize.query('SELECT 3'))
+    expect(result.length).toBeGreaterThan(0)
+    expect(chunks.length).toEqual(seen)
+  })
 })
