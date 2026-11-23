@@ -4,6 +4,12 @@ import { PGlite } from '../dist/index.js'
 describe('instantiation', () => {
   testInstatiationMethod('constructor')
   testInstatiationMethod('static `create` factory')
+
+  it('should apply options when the data dir is undefined', async () => {
+    const pg = await PGlite.create(undefined, { debug: 1 })
+
+    expect(pg.debug).toBe(1)
+  })
 })
 
 function testInstatiationMethod(

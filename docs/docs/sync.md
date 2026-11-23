@@ -126,8 +126,26 @@ It takes the following options as an object:
 - `schema: string`<br>
   The name of the Postgres schema that the table to sync into is part of, defaults to `"public"`.
 
-- `mapColumns: MapColumns`<br>
-  An object indicating the mapping of the shape column values to your local table. This can be either a simple object of `localColumnName: shapeColumnName` mapping, or a function that takes a replication message and returns a mapping of `localColumnName: newValue`.
+- `mapColumns?: MapColumns`<br>
+  Optional mapping from shape columns to columns in the local table. Pass an object whose keys are local column names and whose values are shape column names:
+
+  ```ts
+  mapColumns: {
+    id: 'todo_id',
+    task: 'description',
+    done: 'completed',
+  }
+  ```
+
+  Or pass a callback that receives the full Electric `ChangeMessage` and returns an object keyed by local column names:
+
+  ```ts
+  mapColumns: (message) => ({
+    id: message.value.todo_id,
+    task: message.value.description,
+    done: message.value.completed,
+  })
+  ```
 
 - `primaryKey: string[]`<br>
   An array of column names that form the primary key of the table you are syncing into. Used for updates and deletes.

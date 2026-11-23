@@ -233,24 +233,13 @@ onMounted(async () => {
     white-space: nowrap;
     transition: color 0.25s, border-color 0.25s, background-color 0.25s;
     text-decoration: none;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   @media (min-width: 1000px) {
     .row {
       display: flex;
-    }
-
-    .try-it-now,
-    .postgres-new {
-      width: 50%;
-    }
-
-    .try-it-now {
-      padding-left: 1rem;
-    }
-
-    .postgres-new {
-      padding-right: 1rem;
     }
 
     .try-it-now .repl {
@@ -262,22 +251,7 @@ onMounted(async () => {
 
 <span class="vpi-social-github"></span>
 
-<div class="row">
-  <div class="postgres-new">
-    <div class="info">
-      <h3>Experience PGlite with <a href="https://database.build">database.build</a></h3>
-      <p>
-        Create and publish a Postgres database using AI
-        <br class="hide-xs" />
-        built on PGlite by <a href="https://supabase.com">Supabase</a>:
-      </p>
-    </div>
-    <video controls poster="https://static.pglite.dev/videos/postgres-new-showcase-loop.png">
-      <source src="https://static.pglite.dev/videos/postgres-new-showcase-loop-1080p.mp4" type="video/mp4" />
-    </video>
-    <a class="link-btn" href="https://database.build">
-      What would you like to create?</a>
-  </div>
+<div>
   <div class="try-it-now">
     <div class="info">
       <h3>Try PGlite Now</h3>

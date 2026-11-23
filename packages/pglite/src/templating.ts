@@ -128,7 +128,7 @@ export function identifier(
 ): TemplatePart {
   return {
     _templateType: 'part',
-    str: `"${String.raw(strings, ...values)}"`,
+    str: `"${String.raw(strings, ...values).replace(/"/g, '""')}"`,
   }
 }
 

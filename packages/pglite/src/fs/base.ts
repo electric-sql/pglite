@@ -3,7 +3,7 @@ import type { PGlite } from '../pglite.js'
 import { dumpTar, type DumpTarCompressionOptions } from './tarUtils.js'
 import { PGDATA } from '../initdb.js'
 
-export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp'
+export type FsType = 'nodefs' | 'idbfs' | 'memoryfs' | 'opfs-ahp' | 'memfs2opfs'
 
 /**
  * Filesystem interface.
@@ -102,7 +102,7 @@ export abstract class BaseFilesystem implements Filesystem {
         ...(emscriptenOptions.preRun || []),
         (mod: PostgresMod) => {
           const EMFS = createEmscriptenFS(mod, this)
-          mod.FS.mkdir(PGDATA)
+          mod.FS.mkdirTree(PGDATA)
           mod.FS.mount(EMFS, {}, PGDATA)
         },
       ],
@@ -324,6 +324,11 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
           if (attr.timestamp !== undefined) {
             baseFS.utimes(path, attr.timestamp, attr.timestamp)
           }
+          if (attr.atime || attr.mtime) {
+            const atime = new Date(attr.atime || attr.mtime).getTime()
+            const mtime = new Date(attr.mtime || attr.atime).getTime()
+            baseFS.utimes(path, atime, mtime)
+          }
           if (attr.size !== undefined) {
             baseFS.truncate(path, attr.size)
           }
@@ -510,7 +515,7 @@ const createEmscriptenFS = (Module: PostgresMod, baseFS: BaseFilesystem) => {
 
         EMFS.stream_ops.read(
           stream,
-          Module.HEAP8 as unknown as Uint8Array,
+          Module.HEAPU8 as unknown as Uint8Array,
           ptr,
           length,
           position,
