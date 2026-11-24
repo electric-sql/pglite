@@ -17,8 +17,7 @@ import type {
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
-  QueryOptions,
-  Results,
+  PGliteSessionOptions,
   Transaction,
 } from './interface.js'
 import PostgresModFactory, { type PostgresMod } from './postgresMod.js'
@@ -42,6 +41,20 @@ import { OS, PGliteOS, PostgresProcess, ProcessInfo } from './processUtils'
 const postgresExePath = '/pglite/bin/postgres'
 const initdbExePath = '/pglite/bin/initdb'
 
+// Marks the options of an instance created by PGlite.createPostmaster()
+const POSTMASTER = Symbol('pglite.postmaster')
+
+/**
+ * What an instance is:
+ * - single: Postgres in single-user mode, one process and one session
+ *   (PGlite.create)
+ * - postmaster: the Postgres server process; it runs no queries itself,
+ *   sessions are created from it (PGlite.createPostmaster)
+ * - subprocess: a process started by a postmaster; a session is a backend
+ *   subprocess (postmaster.createSession)
+ */
+type ProcessMode = 'single' | 'postmaster' | 'subprocess'
+
 export class PGlite
   extends BasePGlite
   implements PGliteInterface, AsyncDisposable
@@ -52,13 +65,17 @@ export class PGlite
   // we handle Postgres' main longjmp manually, by intercepting it and exiting with this error code
   // keep in sync with pglitec.c->POSTGRES_MAIN_LONGJMP
   private readonly POSTGRES_MAIN_LONGJMP = 100
-  #singleMode: boolean = true
+  // the instance running the postmaster, if there is one
+  static #postmasterRunning: PGlite | undefined = undefined
+  #mode: ProcessMode = 'single'
+  // postmaster: the options it was created with, the defaults of its sessions
+  #options: PGliteOptions = {}
+  // postmaster: sessions are created one at a time
+  #sessionMutex = new Mutex()
+  // subprocess: the postmaster that started it
+  #postmaster: PGlite | undefined = undefined
   #pendingChildProcesses = new Array<ProcessInfo>()
   #childProcesses = new Array<PostgresProcess>()
-  #backend: PGlite | undefined = undefined
-  // a process started by a postmaster (as opposed to the postmaster itself,
-  // or a single mode instance)
-  #isSubprocess: boolean = false
   // the Postgres process has run its exit sequence (proc_exit)
   #exited: boolean = false
 
@@ -104,6 +121,14 @@ export class PGlite
   // during a query, such as COPY FROM or COPY TO.
   #queryReadBuffer?: ArrayBuffer
   #queryWriteChunks?: Uint8Array[]
+  // postmaster: the session running a query. All processes use the
+  // postmaster's filesystem, so its /dev/blob device serves every session.
+  #activeSession: PGlite | undefined = undefined
+
+  /** The instance whose query is reading or writing /dev/blob */
+  get #blobOwner(): PGlite {
+    return this.#activeSession ?? this
+  }
 
   #notifyListeners = new Map<string, Set<(payload: string) => void>>()
   #globalNotifyListeners = new Set<(channel: string, payload: string) => void>()
@@ -170,6 +195,12 @@ export class PGlite
     // (default) sysv type exists
     '-c',
     `dynamic_shared_memory_type=mmap`, // shared memory in emscripten giving me a hard time
+    // No parallel queries: the leader would have to wait for its workers in
+    // the middle of the query, which a process cannot do yet.
+    '-c',
+    'max_parallel_workers_per_gather=0',
+    '-c',
+    'max_parallel_maintenance_workers=0',
   ]
 
   /**
@@ -230,13 +261,16 @@ export class PGlite
     // Save the extensions for later use
     this.#extensions = options.extensions ?? {}
 
-    // default to single mode
-    options.singleMode = options.singleMode ?? true
-    this.#singleMode = options.singleMode
-    this.#isSubprocess = options.processInfo !== undefined
+    if (options.processInfo !== undefined) {
+      this.#mode = 'subprocess'
+      this.#postmaster = options.processInfo.parent as PGlite
+    } else if ((options as any)[POSTMASTER]) {
+      this.#mode = 'postmaster'
+      this.#options = options
+    }
 
     // Initialize the database, and store the promise so we can wait for it to be ready
-    if (options.singleMode) {
+    if (this.#mode === 'single') {
       this.waitReady = this.#initSingle(options)
     } else {
       this.waitReady = this.#initNormal(options)
@@ -285,6 +319,51 @@ export class PGlite
     const pg = new PGlite(resolvedOpts)
     await pg.waitReady
     return pg as any
+  }
+
+  /**
+   * Create a postmaster: the Postgres server process of a multi-session
+   * PGlite. It takes the same parameters as `PGlite.create()`.
+   * The postmaster does not run queries itself; open sessions on it with
+   * `createSession()`. Closing it closes its sessions.
+   * @returns A promise that resolves to the postmaster when it's ready.
+   */
+  static async createPostmaster(options?: PGliteOptions): Promise<Postmaster>
+
+  static async createPostmaster(
+    dataDir?: string,
+    options?: PGliteOptions,
+  ): Promise<Postmaster>
+
+  static async createPostmaster(
+    dataDirOrPGliteOptions?: string | PGliteOptions,
+    options?: PGliteOptions,
+  ): Promise<Postmaster> {
+    const resolvedOpts: PGliteOptions =
+      typeof dataDirOrPGliteOptions === 'string'
+        ? {
+            dataDir: dataDirOrPGliteOptions,
+            ...(options ?? {}),
+          }
+        : { ...(dataDirOrPGliteOptions ?? {}) }
+    ;(resolvedOpts as any)[POSTMASTER] = true
+
+    // The emulated OS (process table, common memory, shared memory
+    // segments) exists once: it can host one Postgres server at a time.
+    if (PGlite.#postmasterRunning) {
+      throw new Error(
+        'A postmaster is already running: close it before creating another one',
+      )
+    }
+    const pg = new PGlite(resolvedOpts)
+    PGlite.#postmasterRunning = pg
+    try {
+      await pg.waitReady
+      return new Postmaster(pg)
+    } catch (e) {
+      PGlite.#postmasterRunning = undefined
+      throw e
+    }
   }
 
   #print(text: string): void {
@@ -597,7 +676,7 @@ export class PGlite
       this.mod!._pgl_setPGliteActive(1)
 
       let startParams
-      if (options.singleMode) {
+      if (this.#mode === 'single') {
         startParams = [
           '--single', // selects single-user mode (must be first argument)
           ...(options.startParams || PGlite.defParamsSingleMode),
@@ -750,31 +829,6 @@ export class PGlite
       // Init array types
       await this._initArrayTypes()
     }
-  }
-
-  async #backendExec(
-    query: string,
-    options?: QueryOptions,
-  ): Promise<Array<Results>> {
-    if (this.isPostmaster) {
-      if (this.#backend) {
-        return this.#backend.exec(query, options)
-      }
-    }
-    throw new Error('Crap')
-  }
-
-  async #backendQuery<T>(
-    query: string,
-    params?: any[],
-    options?: QueryOptions,
-  ): Promise<Results<T>> {
-    if (this.isPostmaster) {
-      if (this.#backend) {
-        return this.#backend.query(query, params, options)
-      }
-    }
-    throw new Error('Crap')
   }
 
   async #createPostmaster(options: PGliteOptions<Extensions>) {
@@ -960,7 +1014,7 @@ export class PGlite
     // instance used to run initdb) the process has a memory of its own.
     const useCommonMemory =
       options.processInfo !== undefined ||
-      (!options.singleMode && !options.noInitDb)
+      (this.#mode === 'postmaster' && !options.noInitDb)
     if (useCommonMemory) {
       this.memoryBase = PGliteOS.allocProcessMemory(this.pid)
     }
@@ -1048,7 +1102,7 @@ export class PGlite
               length: number,
               position: number,
             ) => {
-              const buf = this.#queryReadBuffer
+              const buf = this.#blobOwner.#queryReadBuffer
               if (!buf) {
                 throw new Error(
                   'No /dev/blob File or Blob provided to read from',
@@ -1069,12 +1123,15 @@ export class PGlite
               length: number,
               _position: number,
             ) => {
-              this.#queryWriteChunks ??= []
-              this.#queryWriteChunks.push(buffer.slice(offset, offset + length))
+              const owner = this.#blobOwner
+              owner.#queryWriteChunks ??= []
+              owner.#queryWriteChunks.push(
+                buffer.slice(offset, offset + length),
+              )
               return length
             },
             llseek: (stream: any, offset: number, whence: number) => {
-              const buf = this.#queryReadBuffer
+              const buf = this.#blobOwner.#queryReadBuffer
               if (!buf) {
                 throw new Error('No /dev/blob File or Blob provided to llseek')
               }
@@ -1261,16 +1318,18 @@ export class PGlite
     await this._checkReady()
     this.#closing = true
 
-    if (this.#isSubprocess) {
+    if (this.#mode === 'subprocess') {
       this.#closeSubprocess()
       return
     }
 
-    if (!this.#singleMode) {
+    if (this.#mode === 'postmaster') {
       // Stop the processes started by this postmaster, last started first:
       // the backends go before the auxiliary processes they rely on.
       this.#pendingChildProcesses.length = 0
       for (const child of this.#childProcesses.reverse()) {
+        // a session may have been closed by its user already
+        if ((child as PGlite).closed) continue
         try {
           await (child as PGlite).close()
         } catch (e: any) {
@@ -1278,10 +1337,6 @@ export class PGlite
         }
       }
       this.#childProcesses = []
-      this.#backend = undefined
-      // exec() and query() were redirected to the backend
-      delete (this as any).exec
-      delete (this as any).query
     }
 
     // Close all extensions
@@ -1292,7 +1347,9 @@ export class PGlite
     // Close the database
     try {
       this.mod!._pgl_setPGliteActive(0)
-      await this.execProtocol(serialize.end())
+      if (this.#mode === 'single') {
+        await this.execProtocol(serialize.end())
+      }
       this.mod!._pgl_run_atexit_funcs()
     } catch (e: any) {
       const err = e as { name: string; status: number }
@@ -1310,7 +1367,11 @@ export class PGlite
       // free again and its shared memory attachments are dropped.
       this.removeOsFunctions()
       PGliteOS.unregisterProcess(this)
-      if (!this.#singleMode) {
+      if (this.#mode === 'postmaster') {
+        // (the helper instance that runs initdb is not the running one)
+        if (PGlite.#postmasterRunning === this) {
+          PGlite.#postmasterRunning = undefined
+        }
         PGliteOS.postmasterListenSocket = -1
       }
     }
@@ -1368,6 +1429,20 @@ export class PGlite
       mod.removeFunction(this.#pglite_socket_recv)
       mod.removeFunction(this.#pglite_socket_send)
       this.removeOsFunctions()
+      const postmaster = this.#postmaster
+      if (postmaster && !postmaster.#closing && !postmaster.closed) {
+        // closed on its own (a session ended by its user): the postmaster
+        // gets SIGCHLD and reaps the process, as for any exiting child
+        try {
+          PGliteOS.reportChildExit(postmaster.pid, this.pid, 0)
+          postmaster.postmasterLoopOnce()
+        } catch (e: any) {
+          this.#log(`Error reporting exit of ${this.pid}`, e.toString())
+        }
+        postmaster.#childProcesses = postmaster.#childProcesses.filter(
+          (proc) => proc !== this,
+        )
+      }
       PGliteOS.unregisterProcess(this)
     }
 
@@ -1437,7 +1512,13 @@ export class PGlite
    * @returns The direct message data response produced by Postgres
    */
   execProtocolRawSync(message: Uint8Array) {
+    if (this.#mode === 'postmaster') {
+      throw new Error('A postmaster does not run queries')
+    }
     const mod = this.mod!
+    if (this.#postmaster) {
+      this.#postmaster.#activeSession = this
+    }
 
     this.#readOffset = 0
     this.#writeOffset = 0
@@ -1841,7 +1922,7 @@ export class PGlite
   }
 
   #setPGliteActive(): void {
-    if (!this.#singleMode) {
+    if (this.#mode !== 'single') {
       throw new Error('not in single mode')
     }
     if (this.#running) {
@@ -1858,16 +1939,14 @@ export class PGlite
   }): Promise<void> {
     const args = [...opts.startParams, '-D', opts.pgDataFolder]
     const result = this.mod!.callMain(args)
-    if (this.#singleMode === true) {
+    if (this.#mode === 'single') {
       if (result !== 99)
         throw new Error('PGlite (single mode) failed to initialize properly')
     } else {
-      // not single mode
+      // the postmaster
       if (result === 102) {
-        await this.#startPendingSubprocesses()
-        // postmaster is waiting (listening) for new connections on the socket
-        this.triggerNewConnection()
-        this.postmasterLoopOnce()
+        // it is now waiting for connections; start the processes it
+        // launched on the way (checkpointer, background writer...)
         await this.#startPendingSubprocesses()
       } else {
         throw new Error('PGlite (normal mode) failed to initialize properly')
@@ -1927,30 +2006,145 @@ export class PGlite
     return pid
   }
 
-  async #startPendingSubprocesses() {
+  /**
+   * Start the processes the postmaster has launched.
+   * @param sessionOptions options for the backends among them
+   * @returns the processes started
+   */
+  async #startPendingSubprocesses(
+    sessionOptions: PGliteSessionOptions = {},
+  ): Promise<PGlite[]> {
+    const started: PGlite[] = []
     let pendingProc = this.#pendingChildProcesses.shift()
     while (pendingProc) {
-      const proc = await this.#startSubProcess(pendingProc)
-      if (proc.isBackend && this.isPostmaster && !this.#backend) {
-        this.#backend = proc as PGlite
-        this.exec = this.#backendExec
-        this.query = this.#backendQuery
-      }
+      const proc = await this.#startSubProcess(pendingProc, sessionOptions)
       this.#childProcesses.push(proc)
+      started.push(proc)
 
       pendingProc = this.#pendingChildProcesses.shift()
     }
+    return started
   }
 
-  async #startSubProcess(processInfo: ProcessInfo): Promise<PGlite> {
+  async #startSubProcess(
+    processInfo: ProcessInfo,
+    sessionOptions: PGliteSessionOptions,
+  ): Promise<PGlite> {
     this.#log('starting process', processInfo.pid, processInfo.childType)
+    const isBackend = processInfo.childType === 1 // B_BACKEND
     const newProcess = await PGlite.create({
-      singleMode: false,
+      debug: this.#options.debug,
+      ...(isBackend
+        ? {
+            username: this.#options.username,
+            parsers: this.#options.parsers,
+            serializers: this.#options.serializers,
+            ...sessionOptions,
+          }
+        : {}),
       processInfo,
       masterFS: this.Module.FS,
       noInitDb: true,
       fs: this.fs,
     })
     return newProcess
+  }
+
+  /**
+   * Start a backend for a new session. Used by Postmaster.createSession().
+   * @internal
+   */
+  async _createSession(options: PGliteSessionOptions = {}): Promise<PGlite> {
+    if (this.#mode !== 'postmaster') {
+      throw new Error('Not a postmaster')
+    }
+    await this._checkReady()
+    return this.#sessionMutex.runExclusive(async () => {
+      // a client connects: the postmaster accepts and launches a backend
+      this.triggerNewConnection()
+      this.postmasterLoopOnce()
+      const started = await this.#startPendingSubprocesses(options)
+      const session = started.find((proc) => proc.isBackend)
+      if (!session) {
+        throw new Error('The postmaster did not start a backend')
+      }
+      return session
+    })
+  }
+}
+
+/**
+ * The Postgres server process of a multi-session PGlite.
+ *
+ * A postmaster runs no queries. It owns the database files and the
+ * background processes, and sessions are opened on it: each session is a
+ * Postgres backend process of its own, with the interface of a PGlite.
+ *
+ * Create one with `PGlite.createPostmaster()`.
+ */
+export class Postmaster implements AsyncDisposable {
+  // the instance running the postmaster process
+  #pg: PGlite
+
+  /** @internal use `PGlite.createPostmaster()` */
+  constructor(pg: PGlite) {
+    this.#pg = pg
+  }
+
+  /** The directory the database files are stored in */
+  get dataDir(): string | undefined {
+    return this.#pg.dataDir
+  }
+
+  /** The debug level the postmaster was created with */
+  get debug(): DebugLevel {
+    return this.#pg.debug
+  }
+
+  /** True until the postmaster starts closing */
+  get ready(): boolean {
+    return this.#pg.ready
+  }
+
+  /** True once the postmaster is closed */
+  get closed(): boolean {
+    return this.#pg.closed
+  }
+
+  /**
+   * Open a new session: a Postgres backend process of its own, sharing the
+   * database with the other sessions.
+   * @param options Session options; each defaults to the postmaster's
+   * @returns A PGlite instance for the session. Closing it ends the session.
+   */
+  async createSession(options: PGliteSessionOptions = {}): Promise<PGlite> {
+    return this.#pg._createSession(options)
+  }
+
+  /**
+   * Dump the data directory to a tarball.
+   * Taken from a running server: loading it requires crash recovery.
+   */
+  async dumpDataDir(
+    compression?: DumpTarCompressionOptions,
+  ): Promise<File | Blob> {
+    return this.#pg.dumpDataDir(compression)
+  }
+
+  /** Write pending changes to the persistent filesystem, if there is one */
+  async syncToFs(): Promise<void> {
+    return this.#pg.syncToFs()
+  }
+
+  /**
+   * Shut down: close the sessions still open, stop the background
+   * processes and close the filesystem.
+   */
+  async close(): Promise<void> {
+    return this.#pg.close()
+  }
+
+  async [Symbol.asyncDispose]() {
+    await this.close()
   }
 }

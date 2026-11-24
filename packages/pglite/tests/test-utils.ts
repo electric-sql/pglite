@@ -43,8 +43,7 @@ export async function testEsmCjsAndDTC(
 
 export async function testSingleAndNormal(
   fn: (pgType: 'single' | 'normal') => Promise<void>,
-)
-{
+) {
   describe('single', async () => {
     await fn('single')
   })

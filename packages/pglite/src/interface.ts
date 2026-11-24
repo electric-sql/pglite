@@ -83,8 +83,16 @@ export interface DumpDataDirResult {
   filename: string
 }
 
+/**
+ * Options of a session created with `postmaster.createSession()`.
+ * Each defaults to what the postmaster was created with.
+ */
+export type PGliteSessionOptions = Pick<
+  PGliteOptions,
+  'username' | 'debug' | 'parsers' | 'serializers'
+>
+
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
-  singleMode?: boolean
   noInitDb?: boolean
   dataDir?: string
   username?: string

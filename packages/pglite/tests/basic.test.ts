@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { expectToThrowAsync, testEsmCjsAndDTC, testSingleAndNormal } from './test-utils.ts'
+import { expectToThrowAsync, testEsmCjsAndDTC } from './test-utils.ts'
 import { identifier } from '../dist/templating.js'
-import { PGlite } from '../dist/index.js'
+import { PGlite, Postmaster } from '../dist/index.js'
 
-// await testSingleAndNormal(async (pgType) => {})
 await testEsmCjsAndDTC(async (importType) => {
   const { PGlite } =
     importType === 'esm'
@@ -13,22 +12,19 @@ await testEsmCjsAndDTC(async (importType) => {
         )) as unknown as typeof import('../dist/index.js'))
 
   describe(`basic`, () => {
-
+    let postmaster: Postmaster
     let db: PGlite
 
     beforeEach(async () => {
-      db = await PGlite.create({singleMode: false})
+      postmaster = await PGlite.createPostmaster()
+      db = await postmaster.createSession()
     })
 
-    afterEach(async()=> { 
-      if (!db.closed) {
-        try {
-          await db.close()
-        } catch {
-        }
-      }
+    afterEach(async () => {
+      // closes the sessions too
+      await postmaster.close()
     })
-    
+
     it('exec', async () => {
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
@@ -63,8 +59,6 @@ await testEsmCjsAndDTC(async (importType) => {
           affectedRows: 2,
         },
       ])
-
-      
     })
 
     it('query', async () => {
@@ -148,7 +142,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('types', async () => {
-      
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -346,7 +339,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('params', async () => {
-      
       await db.query(`
     CREATE TABLE IF NOT EXISTS test (
       id SERIAL PRIMARY KEY,
@@ -380,7 +372,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('array params', async () => {
-      
       await db.query(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -433,7 +424,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('error', async () => {
-      
       await expectToThrowAsync(async () => {
         await db.query('SELECT * FROM test;')
       }, 'relation "test" does not exist')
@@ -502,7 +492,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('merge delete', async () => {
-      
       await db.exec(`
       CREATE TABLE employees (
       id SERIAL PRIMARY KEY,
@@ -535,7 +524,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('copy to/from blob', async () => {
-      
       await db.exec(`
         CREATE TABLE IF NOT EXISTS test (
           id SERIAL PRIMARY KEY,
@@ -617,8 +605,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('use same param multiple times', async () => {
-      
-
       await db.exec(`
       CREATE TABLE IF NOT EXISTS test (
         id SERIAL PRIMARY KEY,
@@ -644,8 +630,6 @@ await testEsmCjsAndDTC(async (importType) => {
       })
     })
     it('timezone', async () => {
-      
-
       const res = await db.query(
         `SELECT now(),* FROM pg_timezone_names WHERE name = current_setting('TIMEZONE')`,
       )
@@ -653,8 +637,6 @@ await testEsmCjsAndDTC(async (importType) => {
     })
 
     it('default database, user and role should be "postgres"', async () => {
-      
-
       const databaseAndRole = await db.exec(
         `SELECT current_database(), current_user, current_role;`,
       )
@@ -678,8 +660,6 @@ await testEsmCjsAndDTC(async (importType) => {
 
     // this tests the parameter 'max_parallel_workers_per_gather=0',
     it('it shouldnt use parallel workers on gather', async () => {
-      
-
       const ROWS = 400_000
 
       await db.exec(`

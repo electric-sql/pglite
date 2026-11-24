@@ -3,10 +3,10 @@ import { testEsmCjsAndDTC } from './test-utils.ts'
 
 it('exec', async () => {
   const { PGlite } = await import('../dist/index.js')
-  const db = await PGlite.create({
-    singleMode: false,
+  const postmaster = await PGlite.createPostmaster({
     debug: 5,
   })
+  const db = await postmaster.createSession()
   const result = await db.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
