@@ -160,7 +160,7 @@ export const types = {
     parse: (x: string | number) => {
       if (x === 'infinity') return Infinity
       if (x === '-infinity') return -Infinity
-      if (typeof x === 'string') {
+      if (typeof x === 'string' && /^\d{4}-/.test(x)) {
         const iso = x.replace(' ', 'T')
         return new Date(iso === x ? x : iso.replace(/([+-]\d{2})$/, '$1:00'))
       }
