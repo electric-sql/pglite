@@ -7,7 +7,7 @@ it('exec', async () => {
     singleMode: false,
     debug: 5,
   })
-  const result = await db.backendExec(`
+  const result = await db.exec(`
   CREATE TABLE IF NOT EXISTS test (
     id SERIAL PRIMARY KEY,
     name TEXT

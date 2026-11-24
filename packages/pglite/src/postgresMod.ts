@@ -49,6 +49,14 @@ export interface PostgresMod
   _pgl_set_accept_fn: (accept_fn: number) => number
   _pgl_set_close_fn: (close_fn: number) => number
   _pgl_set_poll_fn: (poll_fn: number) => number
+  _pgl_set_shmget_fn: (shmget_fn: number) => number
+  _pgl_set_shmat_fn: (shmat_fn: number) => number
+  _pgl_set_shmdt_fn: (shmdt_fn: number) => number
+  _pgl_set_shmctl_fn: (shmctl_fn: number) => number
+  _pgl_set_mmap_fn: (mmap_fn: number) => number
+  _pgl_set_munmap_fn: (munmap_fn: number) => number
+  _pgl_set_heap_limit: (limit: number) => number
+  _ShutdownXLOG: (code: number, arg: number) => void
   _pgl_freopen: (filepath: number, mode: number, stream: number) => number
   _pgl_pq_flush: () => void
   _fopen: (path: number, mode: number) => number
@@ -79,13 +87,6 @@ export interface PostgresMod
   _emscripten_force_exit: (status: number) => void
   _pgl_run_atexit_funcs: () => void
   _pq_buffer_remaining_data: () => number
-  _after_fork_inchild: () => void
-  _after_fork_process_inchild: (
-    child_type: number,
-    startup_data: number,
-    startup_data_len: number,
-    client_sock: number,
-  ) => void
   _hlp_pipe_replace: (prevFd: number, newFd: number) => number
   _hlp_trigger_new_connection: () => number
   _hlp_get_dummy_client_socket_ptr: () => number
@@ -96,8 +97,6 @@ export interface PostgresMod
   _pgl_shm_flush: () => void
   _pgl_shm_load: () => void
   _pq_endmsgread: () => void
-  exports?: any
-  capturedImports?: any
 }
 
 type PostgresFactory<T extends PostgresMod = PostgresMod> = (

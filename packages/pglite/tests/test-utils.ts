@@ -40,3 +40,16 @@ export async function testEsmCjsAndDTC(
     await fn('cjs')
   })
 }
+
+export async function testSingleAndNormal(
+  fn: (pgType: 'single' | 'normal') => Promise<void>,
+)
+{
+  describe('single', async () => {
+    await fn('single')
+  })
+
+  describe('normal', async () => {
+    await fn('normal')
+  })
+}

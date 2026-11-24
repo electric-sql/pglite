@@ -35,12 +35,7 @@ import {
 import { initdb } from './initdb'
 
 import { pglUtils } from '@electric-sql/pglite-utils'
-import {
-  ClientSocket,
-  PGliteOS,
-  PostgresProcess,
-  ProcessInfo,
-} from './processUtils'
+import { OS, PGliteOS, PostgresProcess, ProcessInfo } from './processUtils'
 
 // import fs from 'fs';
 
@@ -59,15 +54,20 @@ export class PGlite
   private readonly POSTGRES_MAIN_LONGJMP = 100
   #singleMode: boolean = true
   #pendingChildProcesses = new Array<ProcessInfo>()
-  #processInfo: ProcessInfo | undefined
   #childProcesses = new Array<PostgresProcess>()
-  #pglite_hlp_shmem: number = -1
-  #shmemAddr: number | undefined = undefined
-  #shmemLength: number | undefined = undefined
   #backend: PGlite | undefined = undefined
+  // a process started by a postmaster (as opposed to the postmaster itself,
+  // or a single mode instance)
+  #isSubprocess: boolean = false
+  // the Postgres process has run its exit sequence (proc_exit)
+  #exited: boolean = false
 
   get isBackend(): boolean {
     return this.childType === 1
+  }
+
+  get isCheckpointer(): boolean {
+    return this.childType === 10 // B_CHECKPOINTER
   }
 
   get isPostmaster(): boolean {
@@ -166,8 +166,8 @@ export class PGlite
     'listen_addresses=', // disable listening on TCP
     '-c',
     `unix_socket_directories=@pglite_abstract_socket`, // enable Unix-domain abstract socket
-    '-c',
-    `shared_memory_type=mmap`, // shared memory in emscripten giving me a hard time
+    // shared_memory_type: Postgres is built with EXEC_BACKEND, where only the
+    // (default) sysv type exists
     '-c',
     `dynamic_shared_memory_type=mmap`, // shared memory in emscripten giving me a hard time
   ]
@@ -233,21 +233,7 @@ export class PGlite
     // default to single mode
     options.singleMode = options.singleMode ?? true
     this.#singleMode = options.singleMode
-
-    this.#processInfo = options.processInfo ?? {
-      childType: -1,
-      clientSocket: {
-        sock: -1,
-        raddr: { addr: new Uint8Array(128), salen: 0 },
-      },
-      parent: {} as PostgresProcess,
-      pid: this.pid,
-      startupData: 0,
-      startupDataLen: 0,
-    }
-
-    this.#shmemAddr = options.processInfo?.shmemAddr
-    this.#shmemLength = options.processInfo?.shmemLength
+    this.#isSubprocess = options.processInfo !== undefined
 
     // Initialize the database, and store the promise so we can wait for it to be ready
     if (options.singleMode) {
@@ -677,132 +663,85 @@ export class PGlite
     // Load the database engine
     this.mod = await PostgresModFactory(emscriptenOpts)
 
-    if (this.mod.exports) {
-      this.mod.exports
-      this.mod.exports!.__wasm_apply_data_relocs()
-      this.mod.exports!.emscripten_stack_init?.()
-      this.mod.exports!.__wasm_call_ctors()
-    } else {
-      throw new Error('No exports')
+    const processInfo = options.processInfo!
+    if (!processInfo.childKind || !processInfo.paramFile) {
+      throw new Error(`Process ${this.pid} has no launch parameters`)
     }
 
-    if (options.processInfo?.heap) {
-      this.mod.HEAPU8.set(options.processInfo.heap)
-      options.processInfo.heap = undefined
-
-      // // now patch the pipedes
-      // let i = 0
-      // let firstNewFd = 0
-      // while (i < options.masterFS.streams.length) {
-      //   const stream = options.masterFS.streams[i++]
-      //   if (!stream || !stream.path) break
-      //   if (stream.path.startsWith('pipe')) {
-      //     if (firstNewFd === stream.fd) break
-      //     // ideally, we would duplicate the stream, but dupStream doesn't work as expected
-      //     // when the returned fd is passed to poll
-      //     // so just create a new fd
-      //     const newStream = options.masterFS.dupStream(stream)
-      //     if (!firstNewFd) firstNewFd = newStream.fd
-      //     this.Module._hlp_pipe_replace(stream.fd, newStream.fd)
-      //   }
-      // }
-
-      this.mod.setFS(options.masterFS)
-      // a couple of pipes are inherited from the parent
-      // but this doesn't work properly atm; just create new pipes instead
-      this.Module._hlp_pipe_init_pipes()
-
-      this.fs = options.fs
-      // (mod.FS as any).streams = options.proxyFS.streams.slice()
-      // mod.PIPEFS = options.proxyFS.Module.PIPEFS;
-    }
+    // All processes see the same files and the same file descriptors.
+    // The child finds its parameter file and the descriptors it inherits
+    // from the postmaster (client socket, postmaster death pipe) by number.
+    this.mod.setFS(options.masterFS)
+    this.fs = options.fs
 
     this.mod._pgl_setPGliteActive(1)
 
-    {
-      this.mod._after_fork_inchild()
+    if (this.isBackend) {
+      // the backend reads the startup packet from its client socket
+      const enc = new TextEncoder()
+      const params = [
+        ...enc.encode('user\0postgres\0'),
+        // ...enc.encode('database\0postgres\0'),
+        // ...enc.encode('application_name\0pglite\0'),
+        // ...enc.encode('client_encoding\0UTF8\0'),
+        // ...enc.encode('DateStyle\0ISO, MDY\0'),
+        0x00, // terminator
+      ]
+      const len = 4 + 4 + params.length // length field + version + params
+      const buf = new Uint8Array(len)
+      const view = new DataView(buf.buffer)
+      view.setInt32(0, len) // length (big-endian)
+      view.setInt32(4, 0x00030000) // protocol 3.0
+      buf.set(params, 8)
+      this.#outputData = buf
+    }
 
-      let clientSocketPtr: number = 0
-
-      if (options.processInfo?.childType === 1) {
-        clientSocketPtr = this.mod._hlp_get_dummy_client_socket_ptr()
-        const enc = new TextEncoder()
-        const params = [
-          ...enc.encode('user\0postgres\0'),
-          // ...enc.encode('database\0postgres\0'),
-          // ...enc.encode('application_name\0pglite\0'),
-          // ...enc.encode('client_encoding\0UTF8\0'),
-          // ...enc.encode('DateStyle\0ISO, MDY\0'),
-          0x00, // terminator
-        ]
-        const len = 4 + 4 + params.length // length field + version + params
-        const buf = new Uint8Array(len)
-        const view = new DataView(buf.buffer)
-        view.setInt32(0, len) // length (big-endian)
-        view.setInt32(4, 0x00030000) // protocol 3.0
-        buf.set(params, 8)
-        this.#outputData = buf
-      }
-
-      // const x = this.mod.FS.readFile('/pglite/data/global/1262')
-
-      // await fs.writeFileSync(`/tmp/pglite.${options.processInfo!.childType}.bin`, new Uint8Array(x))
-      try {
-        this.mod._after_fork_process_inchild(
-          options.processInfo!.childType,
-          options.processInfo!.startupData,
-          options.processInfo!.startupDataLen,
-          clientSocketPtr,
-        )
-      } catch (e: any) {
-        this.#log('after_fork_process_inchild', e.toString())
-        if (e.status !== null && e.status !== undefined) {
-          if (this.#shmemAddr && this.#shmemLength) {
-            this.#processInfo?.parent.Module.HEAPU8.set(
-              this.mod.HEAPU8.subarray(
-                this.#shmemAddr,
-                this.#shmemAddr + this.#shmemLength,
-              ),
-              this.#shmemAddr,
-            )
-          }
-
-          this.mod._pgl_shm_flush()
-
-          if (e.status === 102) {
-            // PGlite intentional exit on poll and no self latch set - good
-            this.#log('exit on empty poll + no self latch set', this.pid)
-          } else {
-            if (e.status === 0) {
-              this.#log('child exited normally', this.pid)
-              PGliteOS.reportChildExit(
-                this.#processInfo!.parent.pid,
-                this.pid,
-                e.status,
-              )
-              options.processInfo!.parent.Module._pgl_shm_load()
-              options.processInfo!.parent.Module._PostmasterServerLoopOnce()
-            } else {
-              if (e.status === 99) {
-                // B_BACKEND exit on no more data
-                console.log('B_BACKEND: no more data to process')
-              } else {
-                console.error('unhandled exit status', JSON.stringify(e))
-              }
-            }
-          }
-        } else {
-          console.error('unknown error occured', e.toString())
-        }
+    // This is what the postmaster's execv() would have started:
+    //   postgres --forkchild=<kind> <param file>
+    // main() dispatches to SubPostmasterMain(), which reads the parameter
+    // file, re-attaches to shared memory and runs the child's main function.
+    let exitStatus: number | undefined
+    try {
+      exitStatus = this.mod.callMain([
+        `--forkchild=${processInfo.childKind}`,
+        processInfo.paramFile,
+      ])
+    } catch (e: any) {
+      this.#log('SubPostmasterMain', e.toString())
+      if (e.status !== null && e.status !== undefined) {
+        exitStatus = e.status
+      } else {
+        console.error('unknown error occured', e.toString())
       }
     }
+
+    if (exitStatus !== undefined) {
+      if (exitStatus === 102) {
+        // PGlite intentional exit on poll and no self latch set - good
+        this.#log('exit on empty poll + no self latch set', this.pid)
+      } else if (exitStatus === 0) {
+        this.#log('child exited normally', this.pid)
+        this.#exited = true
+        PGliteOS.reportChildExit(processInfo.parent.pid, this.pid, exitStatus)
+        processInfo.parent.Module._PostmasterServerLoopOnce()
+      } else if (exitStatus === 99) {
+        // B_BACKEND exit on no more data
+        console.log('B_BACKEND: no more data to process')
+      } else {
+        console.error('unhandled exit status', exitStatus)
+        // exit(103) is the backend waiting for its client; anything else
+        // went through proc_exit()
+        this.#exited = exitStatus !== 103
+      }
+    }
+
     this.#running = true
 
     this.#ready = true
 
     if (this.isBackend) {
-      const result = await this.exec('SELECT version()')
-      console.log(JSON.stringify(result))
+      // const result = await this.exec('SELECT version()')
+      // console.log(JSON.stringify(result))
 
       if (options.username) {
         await this.exec(`SET ROLE ${options.username};`)
@@ -813,13 +752,26 @@ export class PGlite
     }
   }
 
-  async backendExec(
+  async #backendExec(
     query: string,
     options?: QueryOptions,
   ): Promise<Array<Results>> {
     if (this.isPostmaster) {
       if (this.#backend) {
         return this.#backend.exec(query, options)
+      }
+    }
+    throw new Error('Crap')
+  }
+
+  async #backendQuery<T>(
+    query: string,
+    params?: any[],
+    options?: QueryOptions,
+  ): Promise<Results<T>> {
+    if (this.isPostmaster) {
+      if (this.#backend) {
+        return this.#backend.query(query, params, options)
       }
     }
     throw new Error('Crap')
@@ -1003,15 +955,25 @@ export class PGlite
     args: string[] | undefined,
     fsBundleBuffer?: ArrayBuffer,
   ) {
-    let capturedImports
-    let theExports
+    // A process of a multi-process PGlite lives in its own part of the
+    // memory common to all processes. Otherwise (single mode, or the helper
+    // instance used to run initdb) the process has a memory of its own.
+    const useCommonMemory =
+      options.processInfo !== undefined ||
+      (!options.singleMode && !options.noInitDb)
+    if (useCommonMemory) {
+      this.memoryBase = PGliteOS.allocProcessMemory(this.pid)
+    }
+    const memoryBase = this.memoryBase
+    // the layout anchors that the glue resolves after instantiation
+    let gotMem: Record<string, WebAssembly.Global> | undefined
 
     const emscriptenOpts: Partial<PostgresMod> = {
       thisProgram: postgresExePath,
       WASM_PREFIX,
       arguments: args,
       noExitRuntime: true,
-      wasmMemory: options.noInitDb === true ? undefined : PGliteOS.wasmMemory,
+      wasmMemory: useCommonMemory ? PGliteOS.wasmMemory : undefined,
       // Provide a stdin that returns EOF to avoid browser prompt
       stdin: () => null,
       print: (text: string) => {
@@ -1022,13 +984,17 @@ export class PGlite
       },
       instantiateWasm: (imports, successCallback) => {
         const moduleUrl = new URL('../release/pglite.wasm', import.meta.url)
-        capturedImports = imports
+        gotMem = (imports as any)['GOT.mem']
         pglUtils
-          .instantiateWasm(imports, moduleUrl, options.pgliteWasmModule)
-          .then(({ instance, module, exports }) => {
+          .instantiateWasm(
+            imports,
+            moduleUrl,
+            options.pgliteWasmModule,
+            memoryBase,
+          )
+          .then(({ instance, module }) => {
             // @ts-ignore wrong type in Emscripten typings
             successCallback(instance, module)
-            theExports = exports
           })
         return {}
       },
@@ -1050,6 +1016,16 @@ export class PGlite
       preRun: [
         (mod: PostgresMod) => {
           this.mod = mod
+        },
+        () => {
+          // By now the glue has resolved where the stack and the heap of
+          // the module are. Move them to this process' part of the memory,
+          // before any code of the module runs.
+          if (memoryBase && gotMem) {
+            for (const name of ['__heap_base', '__stack_high', '__stack_low']) {
+              gotMem[name].value += memoryBase
+            }
+          }
         },
         (mod: PostgresMod) => {
           mod.onRuntimeInitialized = () => {
@@ -1163,12 +1139,14 @@ export class PGlite
         // },
       ],
     }
-    emscriptenOpts.exports = theExports
-    emscriptenOpts.capturedImports = capturedImports
     return emscriptenOpts
   }
 
   #onRuntimeInitialized(mod: PostgresMod) {
+    if (this.memoryBase !== undefined) {
+      // the heap must stay inside this process' part of the common memory
+      mod._pgl_set_heap_limit(this.memoryBase + OS.PROCESS_SIZE)
+    }
     this.addOsFunctions(PGliteOS)
     PGliteOS.registerProcess(this)
 
@@ -1251,18 +1229,8 @@ export class PGlite
       'iipii',
     )
 
-    this.#pglite_hlp_shmem = mod.addFunction((addr: number, length: number) => {
-      // if (this.#shmemAddr) {
-      //   throw new Error('Unhandled case')
-      // }
-      this.#shmemAddr = addr
-      this.#shmemLength = length
-      // console.log(addr, length)
-    }, 'vii')
-
     mod._pgl_set_send_fn(this.#pglite_socket_send)
     mod._pgl_set_recv_fn(this.#pglite_socket_recv)
-    mod._set_hlp_shmem(this.#pglite_hlp_shmem)
   }
   /**
    * The Postgres Emscripten Module
@@ -1293,6 +1261,29 @@ export class PGlite
     await this._checkReady()
     this.#closing = true
 
+    if (this.#isSubprocess) {
+      this.#closeSubprocess()
+      return
+    }
+
+    if (!this.#singleMode) {
+      // Stop the processes started by this postmaster, last started first:
+      // the backends go before the auxiliary processes they rely on.
+      this.#pendingChildProcesses.length = 0
+      for (const child of this.#childProcesses.reverse()) {
+        try {
+          await (child as PGlite).close()
+        } catch (e: any) {
+          this.#log(`Error closing process ${child.pid}`, e.toString())
+        }
+      }
+      this.#childProcesses = []
+      this.#backend = undefined
+      // exec() and query() were redirected to the backend
+      delete (this as any).exec
+      delete (this as any).query
+    }
+
     // Close all extensions
     for (const closeFn of this.#extensionsClose) {
       await closeFn()
@@ -1315,6 +1306,13 @@ export class PGlite
     } finally {
       this.mod!.removeFunction(this.#pglite_socket_recv)
       this.mod!.removeFunction(this.#pglite_socket_send)
+      // The process is gone for the OS: its part of the common memory is
+      // free again and its shared memory attachments are dropped.
+      this.removeOsFunctions()
+      PGliteOS.unregisterProcess(this)
+      if (!this.#singleMode) {
+        PGliteOS.postmasterListenSocket = -1
+      }
     }
 
     // Close the filesystem
@@ -1335,6 +1333,48 @@ export class PGlite
         this.#log('Error when exiting', e.toString())
       }
     }
+  }
+
+  /**
+   * Stop a process started by a postmaster.
+   *
+   * The process is not running: it left its main loop the last time it had
+   * nothing to do. So we cannot signal it and let it shut down by itself;
+   * instead we run what its exit would have run (Postgres' proc_exit
+   * callbacks: release the PGPROC, locks, shared memory...), and then tell
+   * the OS that the process is gone.
+   * The filesystem belongs to the postmaster and is left alone.
+   */
+  #closeSubprocess() {
+    const mod = this.mod!
+    try {
+      mod._pgl_setPGliteActive(0)
+      if (!this.#exited) {
+        if (this.isCheckpointer) {
+          // What the checkpointer does when the postmaster tells it to shut
+          // down: write the shutdown checkpoint. It is the last process to
+          // be stopped, nobody else writes anymore.
+          mod._ShutdownXLOG(0, 0)
+        }
+        mod._pgl_run_atexit_funcs()
+        this.#exited = true
+      }
+    } catch (e: any) {
+      const err = e as { name: string; status: number }
+      if (!(err.name === 'ExitStatus' && err.status === 0)) {
+        this.#log(`Error closing process ${this.pid}`, e.toString())
+      }
+    } finally {
+      mod.removeFunction(this.#pglite_socket_recv)
+      mod.removeFunction(this.#pglite_socket_send)
+      this.removeOsFunctions()
+      PGliteOS.unregisterProcess(this)
+    }
+
+    this.#closed = true
+    this.#closing = false
+    this.#ready = false
+    this.#running = false
   }
 
   /**
@@ -1871,24 +1911,17 @@ export class PGlite
 
   protected pglite_fork(
     childType: number,
-    startupData: number,
-    startupDataLen: number,
-    clientSocket: ClientSocket,
+    childKind: string,
+    paramFile: string,
   ): number {
     const pid = PGliteOS.nextPid++
 
     this.#pendingChildProcesses.push({
       pid,
       childType,
-      startupData,
-      startupDataLen,
-      heap: this.Module.HEAPU8.slice(),
+      childKind,
+      paramFile,
       parent: this,
-      clientSocket,
-      shmemAddr: this.#shmemAddr,
-      shmemLength: this.#shmemLength,
-      wasmMemory: PGliteOS.wasmMemory,
-      memoryDelta: PGliteOS.nextMemoryDelta,
     })
 
     return pid
@@ -1900,6 +1933,8 @@ export class PGlite
       const proc = await this.#startSubProcess(pendingProc)
       if (proc.isBackend && this.isPostmaster && !this.#backend) {
         this.#backend = proc as PGlite
+        this.exec = this.#backendExec
+        this.query = this.#backendQuery
       }
       this.#childProcesses.push(proc)
 
