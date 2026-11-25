@@ -19,6 +19,18 @@ export class IdbFs extends EmscriptenBuiltinFilesystem {
           // as the fs will be persisted in the indexeddb as a database with
           // the path as the name.
           mod.FS.mkdirTree(`${PG_ROOT}/${this.dataDir}`)
+          // Emscripten's FS.doTruncate does not update the node timestamps,
+          // and IDBFS.reconcile only persists a file when its mtime differs
+          // from the stored one. Without this, a truncate (e.g. VACUUM
+          // shrinking a relation file) is never written back to IndexedDB.
+          const doTruncate = mod.FS.doTruncate
+          if (typeof doTruncate === 'function') {
+            mod.FS.doTruncate = (stream: any, node: any, len: number) => {
+              // doTruncate throws on failure, so this only runs on success
+              doTruncate.call(mod.FS, stream, node, len)
+              node.mtime = node.ctime = Date.now()
+            }
+          }
           mod.FS.mount(idbfs, {}, `${PG_ROOT}/${this.dataDir}`)
           mod.FS.symlink(`${PG_ROOT}/${this.dataDir}`, PGDATA)
         },
