@@ -566,14 +566,14 @@ export class PGlite
     // We do this after the initial sync so that we can throw if the database
     // already exists.
     if (options.loadDataDir) {
-      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+      if (pglUtils.pathExists(this.mod.FS, PGDATA + '/PG_VERSION')) {
         throw new Error('Database already exists, cannot load from tarball')
       }
       this.#log('pglite: loading data from tarball')
       await loadTar(this.mod.FS, options.loadDataDir, PGDATA)
     } else {
       // Check if the database exists in the file system, if not we run initdb
-      if (this.mod.FS.analyzePath(PGDATA + '/PG_VERSION').exists) {
+      if (pglUtils.pathExists(this.mod.FS, PGDATA + '/PG_VERSION')) {
         this.#log('pglite: found DB, resuming')
       } else {
         this.#log('pglite: no db in filesystem, running initdb')

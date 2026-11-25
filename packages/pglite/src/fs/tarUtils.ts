@@ -66,7 +66,7 @@ export async function loadTar(
     const dirPath = filePath.split('/').slice(0, -1)
     for (let i = 1; i <= dirPath.length; i++) {
       const dir = dirPath.slice(0, i).join('/')
-      if (dir.length && !FS.analyzePath(dir).exists) {
+      if (dir.length) {
         FS.mkdirTree(dir)
       }
     }
@@ -77,9 +77,7 @@ export async function loadTar(
       const modifyTime = dateToMilliseconds(file.modifyTime)
       FS.utime(filePath, modifyTime, modifyTime)
     } else if (file.type === DIRTYPE) {
-      if (!FS.analyzePath(filePath).exists) {
-        FS.mkdir(filePath)
-      }
+        FS.mkdirTree(filePath)
     }
   }
 }

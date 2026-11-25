@@ -87,9 +87,9 @@ function loadExtension(
   data.forEach((entry: tinyTar.TarFile) => {
     if (entry.name.endsWith('/')) {
       const dirPath = `${mod.WASM_PREFIX}/${entry.name}`
-      if (mod.FS.analyzePath(dirPath).exists === false) {
-        mod.FS.mkdirTree(dirPath)
-      }
+      // errno = 20 (EEXISTS) is swallowed by emscripten FS implementation
+      // all other codes throw, which is what we want
+      mod.FS.mkdirTree(dirPath)
     } else if (!entry.name.startsWith('.')) {
       const filePath = mod.WASM_PREFIX + '/' + entry.name
       if (entry.name.endsWith('.so')) {
@@ -145,9 +145,9 @@ export function copyToFS(
 ) {
   try {
     const dirPath = filePath.substring(0, filePath.lastIndexOf('/'))
-    if (fs.analyzePath(dirPath).exists === false) {
-      fs.mkdirTree(dirPath)
-    }
+    // errno = 20 (EEXISTS) is swallowed by emscripten FS implementation
+    // all other codes throw, which is what we want
+    fs.mkdirTree(dirPath)
     fs.writeFile(filePath, data)
     if (mode) {
       fs.chmod(filePath, mode)
