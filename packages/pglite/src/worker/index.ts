@@ -209,6 +209,13 @@ export class PGliteWorker
     method: Method,
     ...args: Parameters<WorkerApi[Method]>
   ): Promise<ReturnType<WorkerApi[Method]>> {
+    if (!this.#connected) {
+      // No leader is listening on the tab channel, and a BroadcastChannel does not buffer, so
+      // this call would be dropped with nothing left to settle it - not even the leader-change
+      // listener below, as that change has already been dispatched.
+      throw new LeaderChangedError()
+    }
+
     const callId = pglUtils.uuid()
     const message: WorkerRpcCall<Method> = {
       type: 'rpc-call',
