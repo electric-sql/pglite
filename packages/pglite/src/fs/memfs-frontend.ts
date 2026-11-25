@@ -155,7 +155,7 @@ export class MemfsFrontendFS extends EmscriptenBuiltinFilesystem {
       for await (const entry of this.backend.load()) {
         const path = PGDATA + entry.path
         if (entry.kind === 'dir') {
-          FS.mkdir(path, 0o700)
+          FS.mkdirTree(path, 0o700)
         } else {
           FS.writeFile(path, entry.data, { mode: 0o600, canOwn: true } as any)
           if (entry.mtime !== undefined) {
