@@ -35,9 +35,9 @@ export type ReplTheme = 'light' | 'dark' | 'auto'
 type ThemeInit = (options?: Partial<CreateThemeOptions>) => Extension
 
 export const defaultLightThemeInit: ThemeInit = githubLightInit
-export const defaultLightTheme = githubLight
+export const defaultLightTheme: Extension = githubLight
 export const defaultDarkThemeInit: ThemeInit = githubDarkInit
-export const defaultDarkTheme = githubDark
+export const defaultDarkTheme: Extension = githubDark
 
 export interface ReplProps {
   pg?: PGliteInterface
