@@ -77,7 +77,7 @@ export async function loadTar(
       const modifyTime = dateToMilliseconds(file.modifyTime)
       FS.utime(filePath, modifyTime, modifyTime)
     } else if (file.type === DIRTYPE) {
-        FS.mkdirTree(filePath)
+      FS.mkdirTree(filePath)
     }
   }
 }

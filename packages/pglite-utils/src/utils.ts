@@ -202,10 +202,10 @@ export type FS = typeof FS & {
 
 export function pathExists(fs: FS, path: string) {
   try {
-    fs.stat(path);
-    return true;
+    fs.stat(path)
+    return true
   } catch (err: any) {
-    if (err.name === 'ErrnoError' && err.code === 'ENOENT') return false;
-    throw err; // Don’t hide other filesystem errors
+    if (err.name === 'ErrnoError' && err.code === 'ENOENT') return false
+    throw err // Don’t hide other filesystem errors
   }
 }
