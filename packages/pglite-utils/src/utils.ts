@@ -205,7 +205,7 @@ export function pathExists(fs: FS, path: string) {
     fs.stat(path)
     return true
   } catch (err: any) {
-    if (err.name === 'ErrnoError' && err.code === 'ENOENT') return false
+    if (err.name === 'ErrnoError' && err.errno === 44) return false
     throw err // Don’t hide other filesystem errors
   }
 }
