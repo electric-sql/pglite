@@ -314,5 +314,27 @@ function testLiveQuery(queryHook: 'useLiveQuery' | 'useLiveIncrementalQuery') {
         },
       ])
     })
+
+    it('stops the previous live query when the query ref changes', async () => {
+      await db.exec(`
+        CREATE TABLE other (id SERIAL PRIMARY KEY, name TEXT);
+        INSERT INTO test (name) VALUES ('test1');
+        INSERT INTO other (name) VALUES ('other1');
+      `)
+
+      const query = ref('SELECT * FROM test')
+
+      const result = hookFn(query, [], incKey)
+
+      await flushPromises()
+      query.value = 'SELECT * FROM other'
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([{ id: 1, name: 'other1' }])
+
+      // a change only the previous query sees must not replace the results
+      await db.exec(`INSERT INTO test (name) VALUES ('test2');`)
+      await flushPromises()
+      expect(result?.rows?.value).toEqual([{ id: 1, name: 'other1' }])
+    })
   })
 }
