@@ -94,6 +94,8 @@ Options:
   -m, --max-connections=N Maximum concurrent connections (default is no concurrency: 1)
 `
 
+type ListeningAddress = { host: string; port: number } | { path: string }
+
 interface ServerConfig {
   dbPath: string
   port: number
@@ -135,10 +137,9 @@ class PGLiteServerRunner {
     }
   }
 
-  private createDatabaseUrl(): string {
-    const { host, port, path } = this.config
-
-    if (path) {
+  private createDatabaseUrl(address: ListeningAddress): string {
+    if ('path' in address) {
+      const { path } = address
       // Unix socket connection
       const socketDir = path.endsWith('/.s.PGSQL.5432')
         ? path.slice(0, -13)
@@ -146,6 +147,7 @@ class PGLiteServerRunner {
       return `postgresql://postgres:postgres@/postgres?host=${encodeURIComponent(socketDir)}`
     } else {
       // TCP connection
+      const { host, port } = address
       return `postgresql://postgres:postgres@${host}:${port}/postgres`
     }
   }
@@ -233,14 +235,12 @@ class PGLiteServerRunner {
     }
 
     this.server.addEventListener('listening', (event) => {
-      const detail = (
-        event as CustomEvent<{ port: number; host: string } | { host: string }>
-      ).detail
+      const detail = (event as CustomEvent<ListeningAddress>).detail
       console.log(`PGLiteSocketServer listening on ${JSON.stringify(detail)}`)
 
       // Run the command after server starts listening
       if (this.config.runCommand && this.subprocessManager) {
-        const databaseUrl = this.createDatabaseUrl()
+        const databaseUrl = this.createDatabaseUrl(detail)
         this.subprocessManager.spawn(
           this.config.runCommand,
           databaseUrl,

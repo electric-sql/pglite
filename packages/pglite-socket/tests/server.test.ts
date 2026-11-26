@@ -1,8 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { spawn, ChildProcess } from 'node:child_process'
 import { createConnection } from 'net'
+import { createInterface } from 'node:readline'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import postgres from 'postgres'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const serverScript = path.resolve(__dirname, '../src/scripts/server.ts')
@@ -153,6 +155,44 @@ describe('Server Script Tests', () => {
 
       expect(output).toContain('PGlite database initialized')
       expect(output).toContain(`"port":${testPort}`)
+    }, 10000)
+
+    it('should pass the assigned TCP port to the child process', async () => {
+      const server = spawn(
+        'tsx',
+        [
+          serverScript,
+          '--port=0',
+          '--include-database-url',
+          '--run',
+          'node -p process.env.DATABASE_URL',
+        ],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      )
+      serverProcess = server
+
+      let databaseUrl: string | undefined
+      const output = createInterface({ input: server.stdout })
+      for await (const line of output) {
+        if (line.startsWith('postgresql://')) {
+          databaseUrl = line
+          break
+        }
+      }
+
+      if (!databaseUrl)
+        throw new Error('Child process did not print DATABASE_URL')
+      expect(Number(new URL(databaseUrl).port)).toBeGreaterThan(0)
+
+      const sql = postgres(databaseUrl, {
+        connect_timeout: 3,
+        fetch_types: false,
+      })
+      try {
+        expect(await sql`select 1 as value`).toEqual([{ value: 1 }])
+      } finally {
+        await sql.end()
+      }
     }, 10000)
 
     it('should work with memory database', async () => {
