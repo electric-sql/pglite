@@ -11,9 +11,9 @@ describe('arrayParser', () => {
     }
     const textArrayOid = 1009
 
-    expect(() => arrayParser('{"first value"}', parseText, textArrayOid)).toThrow(
-      'rejected text value',
-    )
+    expect(() =>
+      arrayParser('{"first value"}', parseText, textArrayOid),
+    ).toThrow('rejected text value')
     expect(
       arrayParser('{"second value","third value"}', parseText, textArrayOid),
     ).toEqual(['second value', 'third value'])
