@@ -361,8 +361,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                       .join(',\n')},
                     ARRAY[]::text[] AS __changed_columns__
                   FROM curr
-                  LEFT JOIN prev ON curr.${key} = prev.${key}
-                  WHERE prev.${key} IS NULL
+                  LEFT JOIN prev ON curr."${key}" = prev."${key}"
+                  WHERE prev."${key}" IS NULL
                 UNION ALL
                   -- DELETE operations: Include only the primary key
                   SELECT 
@@ -378,8 +378,8 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                       .join(',\n')},
                       ARRAY[]::text[] AS __changed_columns__
                   FROM prev
-                  LEFT JOIN curr ON prev.${key} = curr.${key}
-                  WHERE curr.${key} IS NULL
+                  LEFT JOIN curr ON prev."${key}" = curr."${key}"
+                  WHERE curr."${key}" IS NULL
                 UNION ALL
                   -- UPDATE operations: Include only changed columns
                   SELECT 
@@ -409,7 +409,7 @@ const setup = async (pg: PGliteInterface, _emscriptenOpts: any) => {
                           ', ',
                         )}]) WHERE unnest IS NOT NULL) AS __changed_columns__
                   FROM curr
-                  INNER JOIN prev ON curr.${key} = prev.${key}
+                  INNER JOIN prev ON curr."${key}" = prev."${key}"
                   WHERE NOT (curr IS NOT DISTINCT FROM prev)
                 )
               SELECT * FROM data_diff;

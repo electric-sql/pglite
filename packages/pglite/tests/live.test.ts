@@ -724,6 +724,61 @@ await testEsmCjsAndDTC(async (importType) => {
       ])
     })
 
+    it('incremental query with a mixed-case key', async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS "camelTable" (
+          "userId" INT PRIMARY KEY,
+          "displayName" TEXT
+        );
+      `)
+
+      await db.exec(`
+        INSERT INTO "camelTable" ("userId", "displayName")
+        VALUES (1, 'one'), (2, 'two');
+      `)
+
+      let updatedResults
+      const eventTarget = new EventTarget()
+
+      const { initialResults, unsubscribe } = await db.live.incrementalQuery(
+        'SELECT * FROM "camelTable" ORDER BY "userId";',
+        [],
+        'userId',
+        (result) => {
+          updatedResults = result
+          eventTarget.dispatchEvent(new Event('change'))
+        },
+      )
+
+      expect(initialResults.rows).toEqual([
+        { userId: 1, displayName: 'one' },
+        { userId: 2, displayName: 'two' },
+      ])
+
+      await db.exec(
+        `UPDATE "camelTable" SET "displayName" = 'uno' WHERE "userId" = 1;`,
+      )
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([
+        { userId: 1, displayName: 'uno' },
+        { userId: 2, displayName: 'two' },
+      ])
+
+      await db.exec(`DELETE FROM "camelTable" WHERE "userId" = 2;`)
+
+      await new Promise((resolve) =>
+        eventTarget.addEventListener('change', resolve, { once: true }),
+      )
+
+      expect(updatedResults.rows).toEqual([{ userId: 1, displayName: 'uno' }])
+
+      await unsubscribe()
+    })
+
     it('basic live changes', async () => {
       await db.exec(`
         CREATE TABLE IF NOT EXISTS testTable (
