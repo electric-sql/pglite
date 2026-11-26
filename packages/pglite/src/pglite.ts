@@ -1255,7 +1255,12 @@ export class PGlite
       throw e
     }
     return async (tx?: Transaction) => {
-      await this.unlisten(pgChannel, callback, tx)
+      // The channel has to be unsubscribed with the name it was listened
+      // with. The normalized name loses the quotes of a quoted identifier,
+      // so `unlisten` would run `UNLISTEN name-with-hyphen` and fail on the
+      // syntax error, or fold a mixed case name to lower case and leave the
+      // listener registered.
+      await this.unlisten(channel, callback, tx)
     }
   }
 
