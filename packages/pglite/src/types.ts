@@ -287,22 +287,26 @@ export function arraySerializer(
   }
 }
 
-const arrayParserState = {
-  i: 0,
-  char: null as string | null,
-  str: '',
-  quoted: false,
-  last: 0,
-  p: null as string | null,
+interface ArrayParserState {
+  i: number
+  char: string | null
+  str: string
+  quoted: boolean
+  last: number
+  p: string | null
 }
 
 export function arrayParser(x: string, parser: Parser, typarray: number) {
-  arrayParserState.i = arrayParserState.last = 0
-  return arrayParserLoop(arrayParserState, x, parser, typarray)[0]
+  return arrayParserLoop(
+    { i: 0, char: null, str: '', quoted: false, last: 0, p: null },
+    x,
+    parser,
+    typarray,
+  )[0]
 }
 
 function arrayParserLoop(
-  s: typeof arrayParserState,
+  s: ArrayParserState,
   x: string,
   parser: Parser | undefined,
   typarray: number,
