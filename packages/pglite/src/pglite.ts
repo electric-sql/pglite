@@ -14,6 +14,7 @@ import type {
   ExecProtocolOptionsStream,
   ExecProtocolResult,
   Extensions,
+  PgDataProxyFs,
   PGliteInterface,
   PGliteInterfaceExtensions,
   PGliteOptions,
@@ -481,15 +482,38 @@ export class PGlite
         },
         (mod: PostgresMod) => {
           if (options.pgDataProxyFs) {
-            mod.FS.mkdirTree(PGDATA)
-            mod.FS.mount(
-              mod.PROXYFS,
-              {
-                root: PGDATA,
-                fs: options.pgDataProxyFs,
-              },
-              PGDATA,
-            )
+            let readOnly: boolean = true
+            if ('readOnly' in options.pgDataProxyFs) {
+              readOnly = options.pgDataProxyFs.readOnly === true
+            } else {
+              // when pgDataProxyFS points directly to an FS, we consider it is mountable as rw
+              readOnly = false
+            }
+            if (readOnly) {
+                const tempDir = `/tmp/${Date.now()}`
+                mod.FS.mkdirTree(tempDir)
+                mod.FS.mount(
+                  mod.PROXYFS,
+                  {
+                    root: PGDATA,
+                    fs: (options.pgDataProxyFs as PgDataProxyFs).fs,
+                  },
+                  tempDir,
+                )
+                pglUtils.copyDir(mod.FS, tempDir, PGDATA, true)
+                mod.FS.unmount(tempDir)
+                mod.FS.rmdir(tempDir)              
+            } else {
+                mod.FS.mkdirTree(PGDATA)
+                mod.FS.mount(
+                mod.PROXYFS,
+                {
+                  root: PGDATA,
+                  fs: options.pgDataProxyFs,
+                },
+                PGDATA,
+              )
+              }
           }
         },
       ],
@@ -1359,9 +1383,8 @@ export class PGlite
     return x
   }
 
-  async clone(): Promise<PGliteInterface> {
-    const dump = await this.dumpDataDir('none')
-    return PGlite.create({ loadDataDir: dump, extensions: this.#extensions })
+  async clone2(): Promise<PGliteInterface> {
+    return await PGlite.create({ pgDataProxyFs: { fs: this.Module.FS, readOnly: true }, extensions: this.#extensions })
   }
 
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {

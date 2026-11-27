@@ -84,13 +84,17 @@ export interface DumpDataDirResult {
   filename: string
 }
 
+export interface PgDataProxyFs {
+  fs: pglUtils.FS
+  readOnly: boolean
+}
 export interface PGliteOptions<TExtensions extends Extensions = Extensions> {
   noInitDb?: boolean
   dataDir?: string
   username?: string
   database?: string
   fs?: Filesystem
-  pgDataProxyFs?: pglUtils.FS
+  pgDataProxyFs?: pglUtils.FS | PgDataProxyFs
   debug?: DebugLevel
   relaxedDurability?: boolean
   extensions?: TExtensions

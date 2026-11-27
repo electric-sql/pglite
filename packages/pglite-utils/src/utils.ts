@@ -209,3 +209,44 @@ export function pathExists(fs: FS, path: string) {
     throw err // Don’t hide other filesystem errors
   }
 }
+
+export function copyDir(
+  FS: FS,
+  fromPath: string,
+  toPath: string,
+  recursive: boolean = true,
+): void {
+  const fromStat = FS.stat(fromPath)
+  if (!FS.isDir(fromStat.mode)) {
+    throw new Error(`copyDir: '${fromPath}' is not a directory`)
+  }
+  FS.mkdirTree(toPath, fromStat.mode)
+  for (const entry of FS.readdir(fromPath)) {
+    if (entry === '.' || entry === '..') continue
+    const from = `${fromPath}/${entry}`
+    const to = `${toPath}/${entry}`
+    const stat = FS.lstat(from)
+    if (FS.isDir(stat.mode)) {
+      if (recursive) {
+        copyDir(FS, from, to, true)
+      }
+    } else if (FS.isLink(stat.mode)) {
+      try {
+        FS.unlink(to)
+      } catch {
+        // nothing to replace
+      }
+      FS.symlink(FS.readlink(from), to)
+    } else if (FS.isFile(stat.mode)) {
+      // `readFile` returns a private copy, so the filesystem can adopt the
+      // buffer (MEMFS does) instead of copying it a second time.
+      FS.writeFile(to, FS.readFile(from), {
+        mode: stat.mode,
+        canOwn: true,
+      } as any)
+      FS.utime(to, stat.atime.getTime(), stat.mtime.getTime())
+    }
+  }
+  // set last, as creating the entries above updates the directory's mtime
+  FS.utime(toPath, fromStat.atime.getTime(), fromStat.mtime.getTime())
+}
