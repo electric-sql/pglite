@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PGlite } from '../dist/index.js'
+import { benchmarkFunction } from './test-utils.js'
 
 describe('clone', () => {
   it('clone pglite instance', async () => {
@@ -38,5 +39,23 @@ describe('clone', () => {
 
     expect(ret1.rows.length).toBe(1)
     expect(ret2.rows.length).toBe(2)
+  })
+
+  it.skip('clone vs clone2', async () => {
+    const db = await PGlite.create()
+
+    const prevClone = async () => {
+      const dump = await db.dumpDataDir('none')
+      return PGlite.create({ loadDataDir: dump })
+    }
+
+    const elapsedClone = await benchmarkFunction(async () => await prevClone())
+    const elapsedClone2 = await benchmarkFunction(async () => await db.clone())
+
+    console.log(
+      `clone duration: clone2 avg (trimmed) ${elapsedClone2.toFixed(2)} ms vs. clone ${elapsedClone.toFixed(2)} ms.\nSpeedup: ${(elapsedClone / elapsedClone2).toFixed(2)}x`,
+    )
+
+    expect(elapsedClone2).toBeLessThan(elapsedClone)
   })
 })
