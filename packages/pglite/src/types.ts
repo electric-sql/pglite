@@ -296,13 +296,17 @@ interface ArrayParserState {
   p: string | null
 }
 
+const initialArrayParserState: ArrayParserState = {
+  i: 0,
+  char: null,
+  str: '',
+  quoted: false,
+  last: 0,
+  p: null,
+}
+
 export function arrayParser(x: string, parser: Parser, typarray: number) {
-  return arrayParserLoop(
-    { i: 0, char: null, str: '', quoted: false, last: 0, p: null },
-    x,
-    parser,
-    typarray,
-  )[0]
+  return arrayParserLoop({ ...initialArrayParserState }, x, parser, typarray)[0]
 }
 
 function arrayParserLoop(
