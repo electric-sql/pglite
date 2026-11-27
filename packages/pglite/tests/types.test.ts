@@ -73,6 +73,18 @@ describe('parse', () => {
     }
   })
 
+  it('timestamptz 1184 before year 100', () => {
+    expect(types.parseType('0050-06-15 12:30:00+00', 1184)).toEqual(
+      new Date('0050-06-15T12:30:00.000Z'),
+    )
+  })
+
+  it('timestamptz 1184 after year 9999', () => {
+    expect(types.parseType('12345-06-15 12:30:00+00', 1184)).toEqual(
+      new Date('+012345-06-15T12:30:00.000Z'),
+    )
+  })
+
   it('bytea 17', () => {
     expect(types.parseType('\\x010203', 17)).toEqual(Uint8Array.from([1, 2, 3]))
   })
