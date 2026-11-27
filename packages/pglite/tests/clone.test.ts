@@ -70,7 +70,7 @@ describe('clone', () => {
     }
 
     const elapsedClone = await benchmarkFunction(async () => await prevClone())
-    const elapsedClone2 = await benchmarkFunction(async () => await db.clone2())
+    const elapsedClone2 = await benchmarkFunction(async () => await db.clone())
 
     console.log(
       `clone duration: clone2 avg (trimmed) ${elapsedClone2.toFixed(2)} ms vs. clone ${elapsedClone.toFixed(2)} ms.\nSpeedup: ${(elapsedClone / elapsedClone2).toFixed(2)}x`,
@@ -78,5 +78,4 @@ describe('clone', () => {
 
     expect(elapsedClone2).toBeLessThan(elapsedClone)
   })
-
 })

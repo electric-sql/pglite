@@ -11,7 +11,7 @@ await testEsmCjsAndDTC(async (importType) => {
           '../dist/index.cjs'
         )) as unknown as typeof import('../dist/index.js'))
 
-  describe(`basic`, () => {
+  describe(`basic`, async () => {
     let db: PGlite
     let dataDirArchive: File | Blob
 

@@ -41,18 +41,20 @@ export async function testEsmCjsAndDTC(
   })
 }
 
-export async function benchmarkFunction(f: any, repeatCount: number = 10): Promise<number> {
-    const runningTimes: number[] = []
-    for (let i = 0; i < repeatCount; i++) {
-      const start = performance.now()
-      await f()
-      const elapsed = performance.now() - start
-      runningTimes.push(elapsed)
-    }
-    runningTimes.sort((a, b) => a - b)
-    const trimmed = runningTimes.slice(1, -1)
-    const elapsed =
-      trimmed.reduce((s, v) => s + v, 0) / trimmed.length
-    
-    return elapsed
+export async function benchmarkFunction(
+  f: any,
+  repeatCount: number = 10,
+): Promise<number> {
+  const runningTimes: number[] = []
+  for (let i = 0; i < repeatCount; i++) {
+    const start = performance.now()
+    await f()
+    const elapsed = performance.now() - start
+    runningTimes.push(elapsed)
+  }
+  runningTimes.sort((a, b) => a - b)
+  const trimmed = runningTimes.slice(1, -1)
+  const elapsed = trimmed.reduce((s, v) => s + v, 0) / trimmed.length
+
+  return elapsed
 }

@@ -490,22 +490,22 @@ export class PGlite
               readOnly = false
             }
             if (readOnly) {
-                const tempDir = `/tmp/${Date.now()}`
-                mod.FS.mkdirTree(tempDir)
-                mod.FS.mount(
-                  mod.PROXYFS,
-                  {
-                    root: PGDATA,
-                    fs: (options.pgDataProxyFs as PgDataProxyFs).fs,
-                  },
-                  tempDir,
-                )
-                pglUtils.copyDir(mod.FS, tempDir, PGDATA, true)
-                mod.FS.unmount(tempDir)
-                mod.FS.rmdir(tempDir)              
+              const tempDir = `/tmp/${Date.now()}`
+              mod.FS.mkdirTree(tempDir)
+              mod.FS.mount(
+                mod.PROXYFS,
+                {
+                  root: PGDATA,
+                  fs: (options.pgDataProxyFs as PgDataProxyFs).fs,
+                },
+                tempDir,
+              )
+              pglUtils.copyDir(mod.FS, tempDir, PGDATA, true)
+              mod.FS.unmount(tempDir)
+              mod.FS.rmdir(tempDir)
             } else {
-                mod.FS.mkdirTree(PGDATA)
-                mod.FS.mount(
+              mod.FS.mkdirTree(PGDATA)
+              mod.FS.mount(
                 mod.PROXYFS,
                 {
                   root: PGDATA,
@@ -513,7 +513,7 @@ export class PGlite
                 },
                 PGDATA,
               )
-              }
+            }
           }
         },
       ],
@@ -1383,8 +1383,11 @@ export class PGlite
     return x
   }
 
-  async clone2(): Promise<PGliteInterface> {
-    return await PGlite.create({ pgDataProxyFs: { fs: this.Module.FS, readOnly: true }, extensions: this.#extensions })
+  async clone(): Promise<PGliteInterface> {
+    return await PGlite.create({
+      pgDataProxyFs: { fs: this.Module.FS, readOnly: true },
+      extensions: this.#extensions,
+    })
   }
 
   _runExclusiveListen<T>(fn: () => Promise<T>): Promise<T> {
