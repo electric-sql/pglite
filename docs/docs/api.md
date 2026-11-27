@@ -122,6 +122,7 @@ Path to the directory for storing the Postgres database. You can provide a URI s
 - `pgDataProxyFs?: PgDataProxyFs` <br />
   PGDATA directory can be shared between modules. For example this is used during initialization of the database, when the PGlite instance that is run by `initdb` shares the same PGDATA directory with the long lived instance that will execute the user queries. This avoids copying the folders between thos instances.
   The same is used by `clone()`: the PGDATA directory of the cloned instance is mounted in a temp folder inside the cloning instance from where it is copied to the PGDATA dir.
+
 #### `options.extensions`
 
 PGlite and Postgres extensions are loaded into a PGLite instance on start, and can include both a WASM build of a Postgres extension and/or a PGlite client plugin.

@@ -615,11 +615,10 @@ export class PGlite
         const proxyPgData = this.fs instanceof MemoryFS
         if (proxyPgData) {
           this.mod.FS.mkdirTree(PGDATA, 0o700)
-          pgInitDbOpts.pgDataProxyFs =  
-          {
+          pgInitDbOpts.pgDataProxyFs = {
             fs: this.mod.FS,
             readOnly: false,
-            pgDataPath: PGDATA
+            pgDataPath: PGDATA,
           }
         }
 
