@@ -1,5 +1,16 @@
 # @electric-sql/pglite-pgtap
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [7ab610e]
+- Updated dependencies [c3d7f20]
+- Updated dependencies [76cc0e7]
+- Updated dependencies [077a178]
+- Updated dependencies [3d71d1f]
+  - @electric-sql/pglite@0.6.1
+
 ## 0.1.0
 
 ### Minor Changes

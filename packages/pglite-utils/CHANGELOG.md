@@ -1,5 +1,11 @@
 # @electric-sql/pglite-utils
 
+## 0.0.8
+
+### Patch Changes
+
+- 077a178: Improve clone speed by sharing the cloned and cloning instances PGDATA dir through PROXYFS
+
 ## 0.0.7
 
 ### Patch Changes
