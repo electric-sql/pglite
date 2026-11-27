@@ -47,11 +47,11 @@
     "stylecheck": "pnpm lint && prettier -c ./src"
   },
   "dependencies": {
-    "@codemirror/autocomplete": "^6.18.1",
-    "@codemirror/commands": "^6.7.0",
-    "@codemirror/lang-sql": "^6.8.0",
-    "@codemirror/language": "^6.10.3",
-    "@codemirror/view": "^6.34.1",
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.2",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/view": "^6.44.2",
     "@electric-sql/pglite-react": "workspace:*",
     "@uiw/codemirror-theme-github": "4.23.5",
     "@uiw/codemirror-theme-xcode": "4.23.5",
