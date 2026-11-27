@@ -1,5 +1,15 @@
 # @electric-sql/pglite
 
+## 0.6.1
+
+### Patch Changes
+
+- 7ab610e: Fix `idb://` not persisting a file truncate (e.g. after `DELETE` + `VACUUM`) by updating the node mtime on truncate so IDBFS writes it back
+- c3d7f20: Quote the key column in `live.incrementalQuery` and `live.changes`, so a mixed-case key such as `"userId"` works
+- 76cc0e7: Loading a data directory from a tarball (`loadDataDir`, `clone()`) is faster: each directory is now created once, instead of every parent directory being walked again for every file. Opening a 102 MB data directory of about 2,900 files took a median 312 ms instead of 400 ms in our measurements.
+- 077a178: Improve clone speed by sharing the cloned and cloning instances PGDATA dir through PROXYFS
+- 3d71d1f: `syncToFs()` (and every `query()`/`exec()` that ends with it) no longer resolves early when another sync has been requested but has not started yet. It now waits for that queued sync, so with `relaxedDurability: false` a resolved call means its writes have been persisted. `relaxedDurability: true` is unchanged.
+
 ## 0.6.0
 
 ### Minor Changes

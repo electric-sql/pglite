@@ -1,5 +1,24 @@
 # @electric-sql/pglite-socket
 
+## 0.3.1
+
+### Patch Changes
+
+- a13d309: Pass the assigned TCP port in the child process's `DATABASE_URL` when `pglite-server` is started with `--port=0`.
+- Updated dependencies [7ab610e]
+- Updated dependencies [c3d7f20]
+- Updated dependencies [76cc0e7]
+- Updated dependencies [077a178]
+- Updated dependencies [3d71d1f]
+  - @electric-sql/pglite@0.6.1
+  - @electric-sql/pglite-age@0.1.1
+  - @electric-sql/pglite-pg_hashids@0.1.1
+  - @electric-sql/pglite-pg_ivm@0.1.1
+  - @electric-sql/pglite-pg_textsearch@0.1.1
+  - @electric-sql/pglite-pg_uuidv7@0.1.1
+  - @electric-sql/pglite-pgtap@0.1.1
+  - @electric-sql/pglite-pgvector@0.1.1
+
 ## 0.3.0
 
 ### Minor Changes
