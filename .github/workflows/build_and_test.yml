@@ -249,6 +249,64 @@ jobs:
           name: pglite-icu-full-node-v${{ matrix.node }}
           path: ./packages/pglite-icu-full/electric-sql-pglite-icu-full-*.tgz
 
+  build-and-test-standalone:
+    name: Build and test standalone (non-JS) PGlite WASM module
+    runs-on: blacksmith-32vcpu-ubuntu-2204
+    # non-blocking while the standalone build is new: a failure here does not fail the workflow
+    continue-on-error: true
+    # one test loads a data dir created by the regular build
+    needs: [build-all]
+    env:
+      TZ: UTC
+    steps:
+      # a fresh checkout: the standalone build is out-of-tree and needs an unconfigured source tree
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get postgres-pglite submodule hash
+        id: postgres-pglite-commit-id
+        run: echo "hash=$(git rev-parse HEAD:postgres-pglite)" >> "$GITHUB_OUTPUT"
+
+      - name: Get PGlite version
+        id: pglite-version
+        run: echo "version=$(pnpm -s pglite:version)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache standalone WASM build artifacts
+        id: standalone-cache
+        uses: actions/cache@v5
+        with:
+          path: packages/pglite-standalone/release
+          key: wasm-build-standalone-${{ steps.postgres-pglite-commit-id.outputs.hash }}-pglite-${{ steps.pglite-version.outputs.version }}
+
+      - name: Build standalone module if necessary
+        if: steps.standalone-cache.outputs.cache-hit != 'true'
+        run: pnpm wasm:build:standalone
+
+      - name: Download PGlite WASM build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: pglite-interim-build-files-node-v22.x
+          path: ./packages/pglite/release
+
+      - name: Build dependencies
+        run: pnpm --filter "@electric-sql/pglite-standalone^..." build
+
+      - name: Typecheck
+        working-directory: ./packages/pglite-standalone
+        run: pnpm typecheck
+
+      - name: Test
+        working-directory: ./packages/pglite-standalone
+        run: pnpm test
+
   build-and-test-pglite-dependents:
     name: Build and Test packages dependent on PGlite
     runs-on: blacksmith-32vcpu-ubuntu-2204
