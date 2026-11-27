@@ -1,0 +1,36 @@
+{
+  "name": "@electric-sql/pglite-standalone",
+  "version": "0.0.1",
+  "description": "PGlite as a standalone WASM module for non-JS hosts (Wasmtime, Wasmer, ...)",
+  "author": "Electric DB Limited",
+  "homepage": "https://pglite.dev",
+  "license": "Apache-2.0",
+  "keywords": [
+    "postgres",
+    "sql",
+    "database",
+    "wasm",
+    "wasi",
+    "pglite"
+  ],
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electric-sql/pglite.git",
+    "directory": "packages/pglite-standalone"
+  },
+  "scripts": {
+    "lint": "eslint ./src ./tests --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ./src ./tests",
+    "typecheck": "tsc",
+    "stylecheck": "pnpm lint && prettier --check ./src ./tests",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@electric-sql/pg-protocol": "workspace:*",
+    "@electric-sql/pglite": "workspace:*",
+    "@types/node": "^20.16.11",
+    "vitest": "^2.1.2"
+  }
+}
