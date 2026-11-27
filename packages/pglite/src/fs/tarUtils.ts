@@ -60,16 +60,22 @@ export async function loadTar(
     }
   }
 
+  // A data directory holds thousands of files in a few dozen directories, so
+  // create each directory once instead of walking every parent of every file.
+  // mkdirTree creates any missing parents itself.
+  const createdDirs = new Set<string>()
+  const ensureDir = (path: string) => {
+    const dir = path.replace(/\/+$/, '')
+    if (dir.length && !createdDirs.has(dir)) {
+      FS.mkdirTree(dir)
+      createdDirs.add(dir)
+    }
+  }
+
   for (const file of files) {
     const filePath = `${pgDataDir}/${file.name}`
     // Ensure the directory structure exists
-    const dirPath = filePath.split('/').slice(0, -1)
-    for (let i = 1; i <= dirPath.length; i++) {
-      const dir = dirPath.slice(0, i).join('/')
-      if (dir.length) {
-        FS.mkdirTree(dir)
-      }
-    }
+    ensureDir(filePath.split('/').slice(0, -1).join('/'))
 
     // Write the file or directory
     if (file.type === REGTYPE) {
@@ -77,7 +83,7 @@ export async function loadTar(
       const modifyTime = dateToMilliseconds(file.modifyTime)
       FS.utime(filePath, modifyTime, modifyTime)
     } else if (file.type === DIRTYPE) {
-      FS.mkdirTree(filePath)
+      ensureDir(filePath)
     }
   }
 }
