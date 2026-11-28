@@ -154,6 +154,9 @@ async function createPlugin(
         shapes: Object.fromEntries(
           Object.entries(shapes).map(([key, shapeOptions]) => {
             const shapeMetadata = subState?.shape_metadata[key]
+            // MultiShapeStream types each shape's options by row type, while
+            // ShapeStream and our own options use the parser extensions type,
+            // so the `transformer` option needs a cast to line up.
             return [
               key,
               {
@@ -165,7 +168,9 @@ async function createPlugin(
                     }
                   : {}),
                 signal: aborter.signal,
-              } satisfies ShapeStreamOptions,
+              } satisfies ShapeStreamOptions as ShapeStreamOptions<
+                Row<unknown>
+              >,
             ]
           }),
         ),
