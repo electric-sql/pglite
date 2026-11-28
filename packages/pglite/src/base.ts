@@ -24,10 +24,47 @@ import { serialize as serializeProtocol } from '@electric-sql/pg-protocol'
 import {
   RowDescriptionMessage,
   ParameterDescriptionMessage,
+  DataRowMessage,
   DatabaseError,
   BackendMessage,
 } from '@electric-sql/pg-protocol/messages'
 import { makePGliteError, TransactionAbortedError } from './errors.js'
+
+const RESOLVE_TYPES_STATEMENT = 'pglite_resolve_param_types'
+
+/**
+ * Finds the non-domain base type of domains, following domains over domains.
+ * Without `oids` it returns every domain. With `oids` it returns those of
+ * them that are domains or arrays of a domain. Each row is the requested
+ * oid, the domain (the oid itself, or the array element) and its base type.
+ */
+function domainTypesQuery(oids?: number[]) {
+  const filter = oids ? `AND t.oid IN (${oids.join(',')})` : ''
+  const arrays = oids
+    ? `UNION ALL
+      SELECT t.oid, t.typelem FROM pg_catalog.pg_type t
+      JOIN pg_catalog.pg_type e ON e.oid = t.typelem
+      WHERE t.typcategory = 'A' AND t.typtype <> 'd' AND e.typtype = 'd'
+      ${filter}`
+    : ''
+  return `
+    WITH RECURSIVE req AS (
+      SELECT t.oid, t.oid AS dom FROM pg_catalog.pg_type t
+      WHERE t.typtype = 'd' ${filter}
+      ${arrays}
+    ), base AS (
+      SELECT req.oid, req.dom, t.typbasetype AS cur FROM req
+      JOIN pg_catalog.pg_type t ON t.oid = req.dom
+      UNION ALL
+      SELECT base.oid, base.dom, t.typbasetype FROM base
+      JOIN pg_catalog.pg_type t ON t.oid = base.cur
+      WHERE t.typtype = 'd'
+    )
+    SELECT base.oid, base.dom, base.cur AS base FROM base
+    JOIN pg_catalog.pg_type t ON t.oid = base.cur
+    WHERE t.typtype <> 'd'
+  `
+}
 
 export abstract class BasePGlite
   implements Pick<PGliteInterface, 'query' | 'sql' | 'exec' | 'transaction'>
@@ -35,6 +72,8 @@ export abstract class BasePGlite
   serializers: Record<number | string, Serializer> = { ...serializers }
   parsers: Record<number | string, Parser> = { ...parsers }
   #arrayTypesInitialized = false
+  // Param type oids already looked up that have no serializer (e.g. enums)
+  #unresolvedTypes = new Set<number>()
 
   // # Abstract properties:
   abstract debug: DebugLevel
@@ -160,6 +199,65 @@ export abstract class BasePGlite
       this.parsers[type.typarray] = (x) =>
         arrayParser(x, this.parsers[type.oid], type.typarray)
     }
+
+    const domains = await this.query<{
+      oid: number
+      dom: number
+      base: number
+    }>(domainTypesQuery())
+    this.#registerDomainTypes(domains.rows)
+    this.#unresolvedTypes.clear()
+  }
+
+  /**
+   * ParameterDescription reports a domain by its own oid, which has no
+   * serializer. Use the serializer of the base type for it, and for arrays of
+   * it. Strings are sent as is, as for types without a serializer.
+   */
+  #registerDomainTypes(rows: { oid: number; dom: number; base: number }[]) {
+    for (const { oid, dom, base } of rows) {
+      const serialize = this.serializers[base]
+      if (serialize) {
+        this.serializers[dom] = (x) =>
+          typeof x === 'string' ? x : serialize(x)
+      }
+      if (oid !== dom) {
+        this.serializers[oid] = (x) =>
+          arraySerializer(x, this.serializers[dom], oid)
+      }
+    }
+  }
+
+  /**
+   * Looks up param types that have no serializer, e.g. a domain created after
+   * init. Runs as a named statement, so the unnamed statement of the current
+   * query is kept and doesn't have to be parsed again.
+   */
+  async #resolveParamTypes(oids: number[], options?: QueryOptions) {
+    const name = RESOLVE_TYPES_STATEMENT
+    const messages: BackendMessage[] = []
+    for (const message of [
+      serializeProtocol.close({ type: 'S', name }),
+      serializeProtocol.parse({ name, text: domainTypesQuery(oids) }),
+      serializeProtocol.bind({ statement: name }),
+      serializeProtocol.execute({}),
+      serializeProtocol.close({ type: 'S', name }),
+    ]) {
+      messages.push(...(await this.#execProtocolNoSync(message, options)))
+    }
+
+    const rows = messages
+      .filter((msg): msg is DataRowMessage => msg.name === 'dataRow')
+      .map((msg) => ({
+        oid: Number(msg.fields[0]),
+        dom: Number(msg.fields[1]),
+        base: Number(msg.fields[2]),
+      }))
+    this.#registerDomainTypes(rows)
+
+    for (const oid of oids) {
+      if (!this.serializers[oid]) this.#unresolvedTypes.add(oid)
+    }
   }
 
   async #execProtocolNoSync(
@@ -275,6 +373,24 @@ export abstract class BasePGlite
             options,
           ),
         )
+
+        const unknownTypes = new Set<number>()
+        params.forEach((param, i) => {
+          const oid = dataTypeIDs[i]
+          if (
+            param !== null &&
+            param !== undefined &&
+            typeof param !== 'string' &&
+            !options?.serializers?.[oid] &&
+            !this.serializers[oid] &&
+            !this.#unresolvedTypes.has(oid)
+          ) {
+            unknownTypes.add(oid)
+          }
+        })
+        if (unknownTypes.size > 0) {
+          await this.#resolveParamTypes([...unknownTypes], options)
+        }
 
         const values = params.map((param, i) => {
           const oid = dataTypeIDs[i]
