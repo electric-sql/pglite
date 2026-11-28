@@ -746,11 +746,11 @@ importers:
   packages/pglite-sync:
     dependencies:
       '@electric-sql/client':
-        specifier: ^1.0.9
-        version: 1.0.9
+        specifier: ^1.5.28
+        version: 1.5.28
       '@electric-sql/experimental':
-        specifier: ^1.0.9
-        version: 1.0.9(@electric-sql/client@1.0.9)
+        specifier: ^6.0.28
+        version: 6.0.28(@electric-sql/client@1.5.28)
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.1
@@ -1200,13 +1200,14 @@ packages:
       search-insights:
         optional: true
 
-  '@electric-sql/client@1.0.9':
-    resolution: {integrity: sha512-9fLjGww+5mGBJ9o47sizCSkyLixjoA49IRh8jBVxzpDq4EGwv77k54df0hRYWtD4VoBQL+49MyT9KDfE/a5Ygw==}
+  '@electric-sql/client@1.5.28':
+    resolution: {integrity: sha512-b0cym3YWXL6PbQmEF0xDRsLt2xgXX46stvOSRAIXRPAP6dLZIHZL0o0HxeTdsZ27L3PbIg6Pw6KnyanRVGtWPA==}
+    hasBin: true
 
-  '@electric-sql/experimental@1.0.9':
-    resolution: {integrity: sha512-s+b+KbTrmoZVYfhIz4XXhVFENVxstvsEmK7tMf7jduGiR2sEj2QImaJe1Wb5y5GAurx5xm5MftsZ1Hx/nhhWgA==}
+  '@electric-sql/experimental@6.0.28':
+    resolution: {integrity: sha512-zHcDIw8257ha+YhtOkaqbOYxEkiRnqorLYP2wS4iESFgHqo0Dfvf3NvPuGTKD8BJMBwrIAlCmb8RLhZIC02dFg==}
     peerDependencies:
-      '@electric-sql/client': 1.0.9
+      '@electric-sql/client': 1.5.28
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     resolution: {integrity: sha512-5m96qe7TFR/wzL05fyl1TRKfm+I73gIdDea+vXh60MQzUUfX9FXSiR8id6TI4aRhomUrd/l8hLTq8E2ymTCIFw==}
@@ -5729,17 +5730,17 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/client@1.0.9':
+  '@electric-sql/client@1.5.28':
     dependencies:
       '@microsoft/fetch-event-source': 2.0.1
     optionalDependencies:
-      '@rollup/rollup-darwin-arm64': 4.24.0
+      '@rollup/rollup-darwin-arm64': 4.67.4
 
-  '@electric-sql/experimental@1.0.9(@electric-sql/client@1.0.9)':
+  '@electric-sql/experimental@6.0.28(@electric-sql/client@1.5.28)':
     dependencies:
-      '@electric-sql/client': 1.0.9
+      '@electric-sql/client': 1.5.28
     optionalDependencies:
-      '@rollup/rollup-darwin-arm64': 4.24.0
+      '@rollup/rollup-darwin-arm64': 4.67.4
 
   '@embedded-postgres/darwin-arm64@15.5.1-beta.11':
     optional: true

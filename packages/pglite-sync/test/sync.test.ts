@@ -77,6 +77,44 @@ describe('pglite-sync', () => {
     expect(passedOnError).toBe(onError)
   })
 
+  it('passes the liveSse shape option through to MultiShapeStream', async () => {
+    const shapeStreamInits = vi.fn()
+    MockMultiShapeStream.mockImplementation((initOpts) => {
+      shapeStreamInits(initOpts)
+      return {
+        subscribe: vi.fn(),
+        unsubscribeAll: vi.fn(),
+        isUpToDate: true,
+        shapes: {
+          shape: {
+            subscribe: vi.fn(),
+            unsubscribeAll: vi.fn(),
+          },
+        },
+      }
+    })
+
+    const shape = await pg.electric.syncShapeToTable({
+      shape: {
+        url: 'http://localhost:3000/v1/shape',
+        params: { table: 'todo' },
+        liveSse: true,
+      },
+      table: 'todo',
+      primaryKey: ['id'],
+      shapeKey: null,
+    })
+
+    expect(shapeStreamInits).toHaveBeenCalledTimes(1)
+    const { shapes } = shapeStreamInits.mock.calls[0][0]
+    expect(shapes.shape).toMatchObject({
+      url: 'http://localhost:3000/v1/shape',
+      liveSse: true,
+    })
+
+    shape.unsubscribe()
+  })
+
   it('handles inserts/updates/deletes', async () => {
     let feedMessage: (
       lsn: number,
