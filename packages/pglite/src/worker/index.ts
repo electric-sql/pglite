@@ -143,6 +143,7 @@ export class PGliteWorker
     this.#workerProcess.postMessage({
       type: 'init',
       options: workerOptions,
+      tabId: this.#tabId,
     })
 
     // Wait for the worker let us know it's ready
@@ -164,7 +165,14 @@ export class PGliteWorker
     this.#broadcastChannel.addEventListener('message', async (event) => {
       if (event.data.type === 'leader-here') {
         this.#connected = false
-        this.#eventTarget.dispatchEvent(new Event('leader-change'))
+        // Our own worker also sends us 'leader-now', so only fire one
+        // leader-change event when this tab becomes the leader
+        if (event.data.tabId !== this.#tabId) {
+          this.#eventTarget.dispatchEvent(new Event('leader-change'))
+        } else if (!this.#isLeader) {
+          this.#isLeader = true
+          this.#eventTarget.dispatchEvent(new Event('leader-change'))
+        }
         this.#leaderNotifyLoop()
       } else if (event.data.type === 'notify') {
         this.#receiveNotification(event.data.channel, event.data.payload)
@@ -181,7 +189,7 @@ export class PGliteWorker
     })
 
     this.#workerProcess.addEventListener('message', async (event) => {
-      if (event.data.type === 'leader-now') {
+      if (event.data.type === 'leader-now' && !this.#isLeader) {
         this.#isLeader = true
         this.#eventTarget.dispatchEvent(new Event('leader-change'))
       }
@@ -517,19 +525,20 @@ export async function worker({ init }: WorkerOptions) {
   postMessage({ type: 'here' })
 
   // Await the main thread to send us the options
-  const options = await new Promise<Exclude<PGliteWorkerOptions, 'extensions'>>(
-    (resolve) => {
-      addEventListener(
-        'message',
-        (event) => {
-          if (event.data.type === 'init') {
-            resolve(event.data.options)
-          }
-        },
-        { once: true },
-      )
-    },
-  )
+  const { options, tabId } = await new Promise<{
+    options: Exclude<PGliteWorkerOptions, 'extensions'>
+    tabId: string
+  }>((resolve) => {
+    addEventListener(
+      'message',
+      (event) => {
+        if (event.data.type === 'init') {
+          resolve(event.data)
+        }
+      },
+      { once: true },
+    )
+  })
 
   // ID for this multi-tab worker - this is used to identify the group of workers
   // that are trying to elect a leader for a shared PGlite instance.
@@ -565,7 +574,7 @@ export async function worker({ init }: WorkerOptions) {
   }
 
   // Notify the other tabs that we are the leader
-  broadcastChannel.postMessage({ type: 'leader-here', id })
+  broadcastChannel.postMessage({ type: 'leader-here', id, tabId })
 
   // Let the main thread know we are the leader
   postMessage({ type: 'leader-now' })
