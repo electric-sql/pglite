@@ -176,4 +176,22 @@ describe('notify API', () => {
     expect(caseSensitive1).toHaveBeenCalledOnce()
     expect(otherCharsWithQuotes).toHaveBeenCalledOnce()
   })
+
+  it('unsubscribes from a channel name that needs quoting', async () => {
+    const listener = vi.fn()
+
+    // The channel name has to reach the UNLISTEN statement as it was written.
+    // Unquoted, a name holding a hyphen is a syntax error, and a mixed case
+    // name is folded to lower case by Postgres, which leaves the listener
+    // registered on the channel it was listening to.
+    const unsub = await pg.listen('"name-with-hyphen"', listener)
+    await pg.exec(`NOTIFY "name-with-hyphen", 'payload1'`)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    expect(listener).toHaveBeenCalledOnce()
+
+    await unsub()
+    await pg.exec(`NOTIFY "name-with-hyphen", 'payload2'`)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    expect(listener).toHaveBeenCalledOnce()
+  })
 })
